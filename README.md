@@ -139,8 +139,9 @@ mkdocs build
 To enable documentation deployment for this repository:
 
 1. Go to **Settings** > **Pages** in the repository
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**
-3. The documentation will automatically deploy when changes are pushed to `main`
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**
+3. Select the **gh-pages** branch and **/ (root)** folder
+4. The documentation will automatically deploy when changes are pushed to `main` or when a new release is published
 
 ## License
 
