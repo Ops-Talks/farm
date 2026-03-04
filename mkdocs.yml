@@ -11,15 +11,15 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: green
-      accent: teal
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: green
-      accent: teal
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -94,6 +94,9 @@ nav:
     - Catalog API: api-reference/catalog.md
     - Documentation API: api-reference/docs.md
     - Authentication API: api-reference/auth.md
+
+extra_css:
+  - stylesheets/extra.css
 
 extra:
   social:
