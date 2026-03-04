@@ -25,6 +25,10 @@
          <lastmod>2026-03-04</lastmod>
     </url>
     <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/plugins/</loc>
+         <lastmod>2026-03-04</lastmod>
+    </url>
+    <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/</loc>
          <lastmod>2026-03-04</lastmod>
     </url>
@@ -34,6 +38,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/contributing/</loc>
+         <lastmod>2026-03-04</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/plugins/</loc>
          <lastmod>2026-03-04</lastmod>
     </url>
     <url>
@@ -70,6 +78,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/getting-started/</loc>
+         <lastmod>2026-03-04</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/system-discovery/</loc>
          <lastmod>2026-03-04</lastmod>
     </url>
 </urlset>
