@@ -1,0 +1,104 @@
+site_name: Farm Documentation
+site_description: Documentation for Farm - An open-source developer portal platform
+site_author: Ops-Talks
+site_url: https://ops-talks.github.io/farm/
+
+repo_name: Ops-Talks/farm
+repo_url: https://github.com/Ops-Talks/farm
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: green
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - user-guide/index.md
+    - Getting Started: user-guide/getting-started.md
+    - Using the Catalog: user-guide/catalog.md
+    - Managing Documentation: user-guide/documentation.md
+    - Authentication: user-guide/authentication.md
+    - FAQ: user-guide/faq.md
+  - Developer Guide:
+    - developer-guide/index.md
+    - Development Setup: developer-guide/setup.md
+    - Architecture: developer-guide/architecture.md
+    - Contributing: developer-guide/contributing.md
+    - Testing: developer-guide/testing.md
+    - System Design: developer-guide/system-design.md
+  - API Reference:
+    - api-reference/index.md
+    - Health API: api-reference/health.md
+    - Catalog API: api-reference/catalog.md
+    - Documentation API: api-reference/docs.md
+    - Authentication API: api-reference/auth.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Ops-Talks/farm
+  generator: false
+
+copyright: Copyright &copy; 2024 Ops-Talks - Licensed under AGPL-3.0
