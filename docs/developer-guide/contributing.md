@@ -122,6 +122,7 @@ Include the following in your PR description:
 - Prefer explicit types over `any`
 - Use interfaces for object shapes
 - Document public APIs with JSDoc comments
+- Follow the project's [NestJS development standards](https://github.com/Ops-Talks/farm/blob/main/.github/nestjs_instructions.md) for best practices on decorators, dependency injection, and modular architecture.
 
 ### File Organization
 

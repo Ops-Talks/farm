@@ -1,6 +1,6 @@
 # Farm
 
-Farm is an open-source developer portal platform designed as an alternative to [Backstage](https://backstage.io). It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
+Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ## What is Farm?
 

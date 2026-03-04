@@ -35,6 +35,15 @@ The [Architecture](architecture.md) documentation explains:
 - Data flow
 - Key design decisions
 
+### Plugin System
+
+The [Plugin System](plugins.md) documentation explains:
+
+- Core concepts of the Farm plugin architecture
+- How to create a new plugin
+- Metadata-driven development
+- Best practices for modularity
+
 ### Contributing
 
 The [Contributing Guide](contributing.md) outlines:
@@ -68,6 +77,7 @@ The [System Design](system-design.md) document provides:
 |-------|-------------|
 | [Setup](setup.md) | Development environment configuration |
 | [Architecture](architecture.md) | System architecture overview |
+| [Plugin System](plugins.md) | Extending Farm's functionality |
 | [Contributing](contributing.md) | How to contribute to Farm |
 | [Testing](testing.md) | Testing strategies and guidelines |
 | [System Design](system-design.md) | Detailed system design documentation |

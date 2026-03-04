@@ -1,6 +1,5 @@
 /**
  * Represents the type of a software component in the catalog.
- * Mirrors Backstage component kinds to provide a familiar structure.
  */
 export enum ComponentKind {
   SERVICE = "service",

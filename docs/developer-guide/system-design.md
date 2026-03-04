@@ -18,7 +18,7 @@ Farm is a developer portal platform designed to help organizations manage their 
 
 ### Non-Goals
 
-- Replace full-featured platforms like Backstage
+- Replace complex, full-featured developer platforms
 - Provide a plugin ecosystem
 - Support real-time collaboration features
 

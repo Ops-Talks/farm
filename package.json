@@ -1,7 +1,7 @@
 {
   "name": "farm",
-  "version": "0.1.0",
-  "description": "Farm - An open-source developer portal platform, an alternative to Backstage",
+  "version": "0.2.1",
+  "description": "Farm - An open-source developer portal platform",
   "author": "Ops-Talks",
   "private": true,
   "license": "AGPL-3.0",

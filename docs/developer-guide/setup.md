@@ -10,6 +10,8 @@ This guide walks you through setting up a development environment for Farm.
 |----------|---------|---------|
 | Node.js | 18+ | JavaScript runtime |
 | npm | 9+ | Package manager |
+| Docker | 20+ | Containerization and environment isolation |
+| Make | 4+ | Task automation and simplified commands |
 | Git | Latest | Version control |
 
 ### Recommended Tools
@@ -36,11 +38,25 @@ npm install
 
 ### 3. Start the Development Server
 
+#### Option A: Local Development (Node.js)
+
 ```bash
 npm run start:dev
 ```
 
 The development server starts with hot-reload enabled. Changes to source files will automatically restart the server.
+
+#### Option B: Containerized Development (Docker + Make)
+
+```bash
+make up-docker
+```
+
+This command builds the production image and starts the API in a container. To run the documentation server:
+
+```bash
+make docs-up
+```
 
 ## Project Structure
 
@@ -88,6 +104,18 @@ farm/
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:cov` | Run tests with coverage |
 | `npm run test:e2e` | Run end-to-end tests |
+
+## Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make docs-up` | Start the documentation server (MkDocs) |
+| `make docs-down` | Stop and remove documentation container |
+| `make docs-build` | Build static documentation site |
+| `make test-docker` | Execute project tests in a Docker container |
+| `make up-docker` | Start the Farm API in a Docker container |
+| `make down-docker` | Stop the Farm API container |
+| `make healthcheck` | Query the local API health endpoint |
 
 ## Development Workflow
 

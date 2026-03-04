@@ -36,6 +36,7 @@ All responses are JSON formatted. Successful responses include the requested dat
 | [Catalog](catalog.md) | Software component management |
 | [Documentation](docs.md) | Technical documentation management |
 | [Authentication](auth.md) | User authentication and management |
+| [Plugins](plugins.md) | Plugin discovery and management |
 
 ## HTTP Status Codes
 

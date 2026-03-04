@@ -41,6 +41,14 @@ Learn about [user authentication](authentication.md) in Farm, including:
 - Login and session management
 - User roles
 
+### System Discovery
+
+Farm provides a [discovery mechanism](system-discovery.md) to see which features and modules are currently active in your organization's portal. This allows users to:
+
+- Identify active plugins and their versions
+- Access a centralized list of system capabilities
+- Stay informed about platform updates
+
 ## Quick Links
 
 | Topic | Description |

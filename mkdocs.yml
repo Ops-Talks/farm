@@ -77,6 +77,7 @@ nav:
   - User Guide:
     - user-guide/index.md
     - Getting Started: user-guide/getting-started.md
+    - System Discovery: user-guide/system-discovery.md
     - Using the Catalog: user-guide/catalog.md
     - Managing Documentation: user-guide/documentation.md
     - Authentication: user-guide/authentication.md
@@ -85,6 +86,7 @@ nav:
     - developer-guide/index.md
     - Development Setup: developer-guide/setup.md
     - Architecture: developer-guide/architecture.md
+    - Plugin System: developer-guide/plugins.md
     - Contributing: developer-guide/contributing.md
     - Testing: developer-guide/testing.md
     - System Design: developer-guide/system-design.md
@@ -94,6 +96,7 @@ nav:
     - Catalog API: api-reference/catalog.md
     - Documentation API: api-reference/docs.md
     - Authentication API: api-reference/auth.md
+    - Plugins API: api-reference/plugins.md
 
 extra_css:
   - stylesheets/extra.css
