@@ -115,6 +115,34 @@ npm run build
 npm run lint
 ```
 
+## Documentation
+
+Full documentation is available at [https://ops-talks.github.io/farm/](https://ops-talks.github.io/farm/).
+
+### Building Documentation Locally
+
+Documentation is built using [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/).
+
+```bash
+# Install dependencies
+pip install mkdocs-material mkdocs mkdocs-minify-plugin
+
+# Serve documentation locally
+mkdocs serve
+
+# Build documentation
+mkdocs build
+```
+
+### Enabling GitHub Pages (for repository administrators)
+
+To enable documentation deployment for this repository:
+
+1. Go to **Settings** > **Pages** in the repository
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**
+3. Select the **gh-pages** branch and **/ (root)** folder
+4. The documentation will automatically deploy when changes are pushed to `main` or when a new release is published
+
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0. See the [LICENSE](LICENSE) file for details.
