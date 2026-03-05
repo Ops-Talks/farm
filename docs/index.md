@@ -1,5 +1,9 @@
 # Farm
 
+<p align="center">
+  <img src="img/farm01.svg" alt="Farm Logo" width="600">
+</p>
+
 Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ## What is Farm?

@@ -8,6 +8,8 @@ repo_url: https://github.com/Ops-Talks/farm
 
 theme:
   name: material
+  logo: img/farm01.svg
+  favicon: img/farm01.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
