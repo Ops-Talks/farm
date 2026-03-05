@@ -14,10 +14,9 @@ describe("AppController", () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe("getHealth", () => {
-    it("should return status ok", () => {
-      const result = appController.getHealth();
-      expect(result.status).toBe("ok");
+  describe("getHello", () => {
+    it('should return "Farm API is running..."', () => {
+      expect(appController.getHello()).toContain("Farm API is running");
     });
   });
 });

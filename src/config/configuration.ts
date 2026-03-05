@@ -6,6 +6,9 @@ import * as Joi from "joi";
 export const configuration = () => ({
   env: process.env.NODE_ENV || "development",
   port: parseInt(process.env.PORT ?? "3000", 10) || 3000,
+  log: {
+    level: process.env.LOG_LEVEL || "info",
+  },
   database: {
     type: process.env.DATABASE_TYPE || "postgres",
     host: process.env.DATABASE_HOST || "localhost",
@@ -32,4 +35,7 @@ export const validationSchema = Joi.object({
   DATABASE_PASSWORD: Joi.string().default("postgres"),
   DATABASE_NAME: Joi.string().default("farm"),
   DATABASE_SYNC: Joi.boolean().default(false),
+  LOG_LEVEL: Joi.string()
+    .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
+    .default("info"),
 });

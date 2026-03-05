@@ -8,9 +8,10 @@ This guide walks you through setting up a development environment for Farm.
 
 | Software | Version | Purpose |
 |----------|---------|---------|
-| Node.js | 18+ | JavaScript runtime |
-| npm | 9+ | Package manager |
-| Docker | 20+ | Containerization and environment isolation |
+| Node.js | 20+ | JavaScript runtime |
+| npm | 10+ | Package manager |
+| Docker | 24+ | Containerization and environment isolation |
+| Docker Compose | 2.20+ | Multi-container orchestration |
 | Make | 4+ | Task automation and simplified commands |
 | Git | Latest | Version control |
 
@@ -38,9 +39,28 @@ npm install
 
 ### 3. Start the Development Server
 
-#### Option A: Local Development (Node.js)
+#### Option A: Containerized Development (Recommended)
+
+The easiest way to get started is to use the provided Makefile commands, which orchestrate the API and PostgreSQL database:
 
 ```bash
+make up-docker
+```
+
+This command builds the API image and starts both the application and its database dependencies. To stop and clean up:
+
+```bash
+make down-docker
+# Or to wipe database data as well:
+make down-docker-clean
+```
+
+#### Option B: Local Development (Node.js)
+
+For local development, you need a PostgreSQL instance running. You can start just the database using Docker:
+
+```bash
+docker compose up -d postgres
 npm run start:dev
 ```
 
@@ -48,13 +68,9 @@ The development server starts with hot-reload enabled. Changes to source files w
 
 Once the server is running, you can access the interactive API documentation (Swagger UI) at `http://localhost:3000/api/docs`.
 
-#### Option B: Containerized Development (Docker + Make)
+#### Running Documentation Server
 
-```bash
-make up-docker
-```
-
-This command builds the production image and starts the API in a container. To run the documentation server:
+To run the MkDocs documentation server:
 
 ```bash
 make docs-up
@@ -66,27 +82,18 @@ make docs-up
 farm/
   src/
     app.module.ts          # Root application module
-    app.controller.ts      # Health check controller
-    app.service.ts         # Application service
+    app.controller.ts      # Root controller
+    app.service.ts         # Root service
     main.ts                # Application entry point
+    common/                # Shared utilities and global layers
+      filters/             # Global exception filters
+      health/              # Terminus health check module
+      logger/              # Winston structured logging
+    config/                # Environment configuration
+    migrations/            # TypeORM migrations
     auth/                  # Authentication module
-      auth.controller.ts
-      auth.service.ts
-      auth.module.ts
-      dto/                 # Data Transfer Objects
-      entities/            # Entity definitions
     catalog/               # Catalog module
-      catalog.controller.ts
-      catalog.service.ts
-      catalog.module.ts
-      dto/
-      entities/
     documentation/         # Documentation module
-      documentation.controller.ts
-      documentation.service.ts
-      documentation.module.ts
-      dto/
-      entities/
   test/                    # End-to-end tests
   docs/                    # Documentation source files
 ```
@@ -111,13 +118,15 @@ farm/
 
 | Target | Description |
 |--------|-------------|
+| `make up-docker` | Build and start API and PostgreSQL database |
+| `make down-docker` | Stop Docker containers |
+| `make down-docker-clean` | Stop containers and remove database volumes |
+| `make healthcheck` | Query the local API advanced health endpoint |
 | `make docs-up` | Start the documentation server (MkDocs) |
 | `make docs-down` | Stop and remove documentation container |
 | `make docs-build` | Build static documentation site |
-| `make test-docker` | Execute project tests in a Docker container |
-| `make up-docker` | Start the Farm API in a Docker container |
-| `make down-docker` | Stop the Farm API container |
-| `make healthcheck` | Query the local API health endpoint |
+| `make test-docker` | Execute project tests in a clean container |
+| `make check` | Run fmt, lint, and all tests |
 
 ## Development Workflow
 
@@ -185,8 +194,16 @@ Then attach your debugger to port 9229.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | 3000 | HTTP server port |
-| `npm_package_version` | 0.1.0 | Application version (set automatically) |
+| `NODE_ENV` | `development` | Runtime environment (`development`, `production`, `test`) |
+| `PORT` | `3000` | HTTP server port |
+| `LOG_LEVEL` | `info` | Minimum log level for Winston |
+| `DATABASE_TYPE` | `postgres` | Database engine (`postgres`, `sqlite`) |
+| `DATABASE_HOST` | `localhost` | Hostname for database connection |
+| `DATABASE_PORT` | `5432` | Port for database connection |
+| `DATABASE_USER` | `postgres` | Database username |
+| `DATABASE_PASSWORD` | `postgres` | Database password |
+| `DATABASE_NAME` | `farm` | Database name |
+| `DATABASE_SYNC` | `false` | Enable TypeORM auto-sync (use with caution) |
 
 ## Troubleshooting
 

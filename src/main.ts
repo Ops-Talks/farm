@@ -1,18 +1,23 @@
 import { NestFactory, Reflector } from "@nestjs/core";
-import {
-  ValidationPipe,
-  Logger,
-  ClassSerializerInterceptor,
-} from "@nestjs/common";
+import { ValidationPipe, ClassSerializerInterceptor } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { WinstonModule } from "nest-winston";
 import { AppModule } from "./app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
+import { loggerConfigFactory } from "./common/logger/logger.config";
 
 async function bootstrap() {
-  const logger = new Logger("Bootstrap");
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+
   const configService = app.get(ConfigService);
+  const env = configService.get<string>("env") || "development";
+  const logLevel = configService.get<string>("log.level") || "info";
+
+  const logger = WinstonModule.createLogger(loggerConfigFactory(env, logLevel));
+  app.useLogger(logger);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -33,7 +38,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
-    .setVersion("0.2.4")
+    .setVersion("0.2.5")
     .addTag("farm")
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

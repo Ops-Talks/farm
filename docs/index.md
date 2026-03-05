@@ -49,15 +49,18 @@ Farm is built with modern technologies:
 
 ## Quick Start
 
+The fastest way to get Farm running is using Docker and Docker Compose. This starts both the API and a PostgreSQL database.
+
 ```bash
 # Clone the repository
 git clone https://github.com/Ops-Talks/farm.git
+cd farm
 
-# Install dependencies
-npm install
+# Start the entire environment (API + Database)
+make up-docker
 
-# Start the development server
-npm run start:dev
+# Check if everything is healthy
+make healthcheck
 ```
 
 The API server starts on port 3000 by default. You can access:

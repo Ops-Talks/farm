@@ -46,14 +46,16 @@ The common layer provides cross-cutting concerns that are shared across all modu
 
 **Responsibilities:**
 
-- Global exception filtering
-- Custom validation pipes
-- Global interceptors
-- Shared decorators
+- **Structured Logging**: Uses Winston for JSON-formatted logs in production and pretty-printed logs in development.
+- **Advanced Health Monitoring**: Uses Terminus to provide detailed health checks (Database, Memory, Disk).
+- **Global Exception Filtering**: Standardized error response handling.
+- **Custom Validation Pipes**: Ensuring data integrity across all endpoints.
 
 **Files:**
 
 - `src/common/filters/http-exception.filter.ts` - Standardized error response handling
+- `src/common/logger/logger.config.ts` - Winston logger configuration
+- `src/common/health/health.controller.ts` - Terminus health indicators
 
 ### App Module
 
@@ -62,14 +64,14 @@ The root module that bootstraps the application and imports all feature modules.
 **Responsibilities:**
 
 - Application bootstrapping
-- Global configuration
-- Health check endpoint
+- Global configuration and environment validation
+- Global interceptors and filters registration
 
 **Files:**
 
 - `app.module.ts` - Module definition
-- `app.controller.ts` - Health controller
-- `app.service.ts` - Health service
+- `app.controller.ts` - Root controller
+- `app.service.ts` - Root service
 - `main.ts` - Application entry point
 
 ### Auth Module
@@ -149,13 +151,13 @@ Manages technical documentation associated with components.
 
 ## Data Storage
 
-Farm uses **TypeORM** as its Object-Relational Mapper (ORM) to handle database interactions. By default, it is configured to use **PostgreSQL** for development and production environments.
+Farm uses **TypeORM** as its Object-Relational Mapper (ORM) to handle database interactions with **PostgreSQL**.
 
 **Key features:**
 
-- **Persistence**: Data survives application restarts.
-- **Relational Integrity**: Relationships between entities can be enforced.
-- **Environment Flexibility**: Uses SQLite in-memory for E2E tests and PostgreSQL for actual deployments.
+- **Migrations**: Database schema changes are managed through formal migrations, ensuring consistency across environments.
+- **Persistence**: Data survives application restarts in development and production.
+- **Environment Flexibility**: Uses SQLite in-memory for unit and E2E tests, and PostgreSQL for Docker and production deployments.
 - **Asynchronous**: All database operations are non-blocking and use `async/await`.
 
 ## Validation

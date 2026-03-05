@@ -7,6 +7,7 @@ import { PluginManagerModule } from "./plugin-manager/plugin-manager.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { DocumentationModule } from "./documentation/documentation.module";
 import { AuthModule } from "./auth/auth.module";
+import { HealthModule } from "./common/health/health.module";
 import { configuration, validationSchema } from "./config/configuration";
 
 @Module({
@@ -28,8 +29,11 @@ import { configuration, validationSchema } from "./config/configuration";
         database: configService.get<string>("database.name"),
         synchronize: configService.get<boolean>("database.synchronize"),
         autoLoadEntities: true,
+        migrations: [__dirname + "/migrations/*.{.ts,.js}"],
+        migrationsRun: configService.get<string>("env") === "production",
       }),
     }),
+    HealthModule,
     PluginManagerModule.forRoot([
       {
         metadata: {

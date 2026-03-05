@@ -268,10 +268,20 @@ it('should throw ConflictException for duplicate', () => {
 });
 ```
 
-## Continuous Integration
+### Running Tests via Docker (Recommended)
 
-Tests run automatically on pull requests. Ensure all tests pass before submitting a PR:
+To run tests in a clean, isolated container environment:
 
 ```bash
-npm run lint && npm run test && npm run test:e2e
+make test-docker
 ```
+
+### Continuous Integration
+
+Tests run automatically on pull requests. You can run the full project check locally using:
+
+```bash
+make check
+```
+
+This command runs formatting, linting, unit tests, and E2E tests.

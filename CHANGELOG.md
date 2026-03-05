@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-03-05
+
+### Added
+- **Infrastructure Orchestration**: Created `docker-compose.yml` to manage API and PostgreSQL database.
+- **Advanced Health Monitoring**: Integrated `@nestjs/terminus` for detailed system health checks.
+  - New endpoints: `GET /api/health` providing status for Database, Memory, Disk, and Version.
+  - Integrated Docker healthchecks in `docker-compose.yml` using the new endpoint.
+- **Structured Logging**: Integrated `nest-winston` and `winston` for professional log management.
+  - Configurable log levels via `LOG_LEVEL` environment variable.
+  - JSON-formatted logs for production and pretty-printed logs for development.
+  - Automatic log rotation for production via `winston-daily-rotate-file`.
+- **Database Migrations**: Set up TypeORM migration strategy.
+  - Added `src/config/typeorm-cli.config.ts` for migration management.
+  - Generated initial migration for current schema.
+  - Added npm scripts: `migration:generate`, `migration:run`, `migration:revert`.
+- **Environment Configuration**: Added `.env` support and improved validation schema in `src/config/configuration.ts`.
+
+### Changed
+- **Makefile Improvements**: Updated `up-docker` and `down-docker` to use Docker Compose and added `down-docker-clean` for full environment reset.
+- **Documentation**: Updated `README.md` with Docker instructions and new project roadmap in `NEXT_STEPS.md`.
+
 ## [0.2.4] - 2026-03-05
 ### Changed
 - Updated ESLint configuration to ignore the unbound-method rule in test files.

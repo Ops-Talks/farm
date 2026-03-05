@@ -6,10 +6,13 @@ This guide will help you get Farm up and running quickly.
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js**: Version 18 or higher
-- **npm**: Version 9 or higher
+- **Node.js**: Version 20 or higher
+- **npm**: Version 10 or higher
+- **Docker & Docker Compose**: For containerized environment (Recommended)
 
-## Installation
+## Installation (Docker - Recommended)
+
+The fastest way to get Farm running is using Docker Compose. This starts both the API and a PostgreSQL database.
 
 ### 1. Clone the Repository
 
@@ -18,15 +21,37 @@ git clone https://github.com/Ops-Talks/farm.git
 cd farm
 ```
 
-### 2. Install Dependencies
+### 2. Start the Environment
+
+```bash
+make up-docker
+```
+
+This command will:
+- Build the API production image
+- Pull the PostgreSQL 16 image
+- Start both containers in a shared network
+- Wait for the database to be healthy before starting the API
+
+## Installation (Local Development)
+
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
+### 2. Database Setup
+
+Ensure you have a PostgreSQL instance running. You can start just the database using Docker:
+
+```bash
+docker compose up -d postgres
+```
+
 ### 3. Start the Application
 
-For development:
+For development with hot-reload:
 
 ```bash
 npm run start:dev

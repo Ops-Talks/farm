@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker healthcheck test test-e2e test-cov lint fmt check release
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean healthcheck test test-e2e test-cov lint fmt check release
 
 help:
 	@echo "Available Targets:"
@@ -43,11 +43,13 @@ test-docker:
 	docker run --rm $(TEST_IMAGE)
 
 up-docker:
-	docker build -t $(APP_IMAGE) .
-	docker run --rm -d --name farm-api -p 3000:3000 $(APP_IMAGE)
+	docker compose up -d --build
 
 down-docker:
-	-docker stop farm-api
+	docker compose down
+
+down-docker-clean:
+	docker compose down -v
 
 healthcheck:
 	curl -fsS http://localhost:3000/api/health
