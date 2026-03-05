@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- Atualização do ESLint para ignorar a regra unbound-method em arquivos de teste.
-- Sincronização da versão do package.json para 0.2.4.
-- Adição de /coverage ao .gitignore e remoção do diretório coverage/ do controle de versão.
+- Updated ESLint configuration to ignore the unbound-method rule in test files.
+- Synchronized package.json version to 0.2.4.
+- Added /coverage to .gitignore and removed the coverage/ directory from version control.
 
 ### Fixed
-- Ajuste nos mocks do Jest em src/documentation/documentation.service.spec.ts para conformidade com ESLint.
+- Adjusted Jest mocks in src/documentation/documentation.service.spec.ts for ESLint compliance.
 
 ## [0.2.4] - 2026-03-05
 
