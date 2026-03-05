@@ -1,5 +1,12 @@
 # Farm
 
+[![CI](https://github.com/Ops-Talks/farm/actions/workflows/ci.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Ops-Talks/farm/graph/badge.svg)](https://codecov.io/gh/Ops-Talks/farm)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2018-brightgreen)](https://nodejs.org/)
+[![NestJS Version](https://img.shields.io/badge/nestjs-%5E11.0.1-red)](https://nestjs.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
 Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ## Overview
@@ -23,6 +30,7 @@ Farm enables engineering teams to:
 
 - Node.js >= 18
 - npm >= 9
+- PostgreSQL (recommended for local development)
 
 ### Installation
 

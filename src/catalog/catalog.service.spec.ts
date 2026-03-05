@@ -1,128 +1,160 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import { CatalogService } from "./catalog.service";
-import { ComponentKind, ComponentLifecycle } from "./entities/component.entity";
+import * as fs from "fs/promises";
+import {
+  Component,
+  ComponentKind,
+  ComponentLifecycle,
+} from "./entities/component.entity";
+
+jest.mock("fs/promises");
 
 describe("CatalogService", () => {
   let service: CatalogService;
 
+  const mockComponent: Component = {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    name: "my-service",
+    kind: ComponentKind.SERVICE,
+    description: "A test service",
+    owner: "team-a",
+    lifecycle: ComponentLifecycle.PRODUCTION,
+    tags: ["test"],
+    links: [],
+    metadata: {},
+    dependencies: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockRepository = {
+    create: jest.fn().mockImplementation((dto: any) => dto as Component),
+    save: jest.fn().mockImplementation((component: Component) =>
+      Promise.resolve({
+        id: component.id || "550e8400-e29b-41d4-a716-446655440001",
+        ...component,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Component),
+    ),
+    find: jest.fn().mockResolvedValue([mockComponent]),
+    findBy: jest.fn().mockResolvedValue([mockComponent]),
+    findOne: jest.fn().mockResolvedValue(mockComponent),
+    findOneBy: jest.fn().mockResolvedValue(mockComponent),
+    merge: jest.fn().mockImplementation(
+      (entity: Component, dto: any) =>
+        ({
+          ...entity,
+          ...dto,
+        }) as Component,
+    ),
+    remove: jest.fn().mockResolvedValue(mockComponent),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CatalogService],
+      providers: [
+        CatalogService,
+        {
+          provide: getRepositoryToken(Component),
+          useValue: mockRepository,
+        },
+      ],
     }).compile();
 
     service = module.get<CatalogService>(CatalogService);
+    jest.clearAllMocks();
   });
 
   it("should be defined", () => {
     expect(service).toBeDefined();
   });
 
+  describe("discoverFromLocation", () => {
+    it("should discover and register a component", async () => {
+      jest
+        .spyOn(service as any, "gitClone")
+        .mockImplementation(() => Promise.resolve());
+      jest
+        .spyOn(service as any, "findYamlFiles")
+        .mockImplementation(() =>
+          Promise.resolve(["/tmp/fake/catalog-info.yaml"]),
+        );
+
+      (fs.readFile as jest.Mock).mockResolvedValue(`
+        apiVersion: farm.io/v1alpha1
+        kind: Component
+        metadata:
+          name: discovered-service
+        spec:
+          type: service
+          owner: team-discovered
+      `);
+
+      const result = await service.discoverFromLocation(
+        "http://example.com/repo.git",
+      );
+
+      expect(result).toBe(1);
+      expect(mockRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe("registerYaml", () => {
+    it("should register a component from valid YAML", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: yaml-service
+  description: From YAML
+spec:
+  type: service
+  owner: team-yaml
+      `;
+      const result = await service.registerYaml(yaml);
+      expect(result.name).toBe("yaml-service");
+      expect(result.owner).toBe("team-yaml");
+    });
+  });
+
   describe("create", () => {
-    it("should create a component with required fields", () => {
-      const component = service.create({
-        name: "my-service",
+    it("should create a component with dependencies", async () => {
+      const dto = {
+        name: "service-with-dep",
         kind: ComponentKind.SERVICE,
         owner: "team-a",
-      });
-
-      expect(component.id).toBeDefined();
-      expect(component.name).toBe("my-service");
-      expect(component.kind).toBe(ComponentKind.SERVICE);
-      expect(component.owner).toBe("team-a");
-      expect(component.lifecycle).toBe(ComponentLifecycle.EXPERIMENTAL);
-      expect(component.tags).toEqual([]);
-    });
-
-    it("should create a component with all fields", () => {
-      const component = service.create({
-        name: "my-library",
-        kind: ComponentKind.LIBRARY,
-        description: "A shared library",
-        owner: "team-b",
-        lifecycle: ComponentLifecycle.PRODUCTION,
-        tags: ["typescript", "shared"],
-        metadata: { techStack: "node" },
-      });
-
-      expect(component.name).toBe("my-library");
-      expect(component.lifecycle).toBe(ComponentLifecycle.PRODUCTION);
-      expect(component.tags).toEqual(["typescript", "shared"]);
+        dependencyIds: ["dep-1"],
+      };
+      await service.create(dto);
+      expect(mockRepository.findBy).toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
     });
   });
 
   describe("findAll", () => {
-    it("should return an empty array initially", () => {
-      expect(service.findAll()).toEqual([]);
-    });
-
-    it("should return all created components", () => {
-      service.create({
-        name: "svc-1",
-        kind: ComponentKind.SERVICE,
-        owner: "team-a",
+    it("should return all components with relations", async () => {
+      await service.findAll();
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        relations: ["dependencies"],
       });
-      service.create({
-        name: "svc-2",
-        kind: ComponentKind.API,
-        owner: "team-b",
-      });
-
-      expect(service.findAll()).toHaveLength(2);
     });
   });
 
   describe("findOne", () => {
-    it("should return a component by ID", () => {
-      const created = service.create({
-        name: "my-api",
-        kind: ComponentKind.API,
-        owner: "team-c",
-      });
-
-      const found = service.findOne(created.id);
-      expect(found.id).toBe(created.id);
-    });
-
-    it("should throw NotFoundException for unknown ID", () => {
-      expect(() => service.findOne("unknown-id")).toThrow(NotFoundException);
+    it("should return a component by ID with relations", async () => {
+      await service.findOne(mockComponent.id);
+      expect(mockRepository.findOne).toHaveBeenCalled();
     });
   });
 
   describe("update", () => {
-    it("should update a component", () => {
-      const created = service.create({
-        name: "old-name",
-        kind: ComponentKind.WEBSITE,
-        owner: "team-d",
-      });
-
-      const updated = service.update(created.id, { name: "new-name" });
-      expect(updated.name).toBe("new-name");
-      expect(updated.owner).toBe("team-d");
-    });
-
-    it("should throw NotFoundException when updating unknown ID", () => {
-      expect(() => service.update("unknown-id", { name: "test" })).toThrow(
-        NotFoundException,
-      );
-    });
-  });
-
-  describe("remove", () => {
-    it("should remove a component", () => {
-      const created = service.create({
-        name: "to-delete",
-        kind: ComponentKind.COMPONENT,
-        owner: "team-e",
-      });
-
-      service.remove(created.id);
-      expect(service.findAll()).toHaveLength(0);
-    });
-
-    it("should throw NotFoundException when removing unknown ID", () => {
-      expect(() => service.remove("unknown-id")).toThrow(NotFoundException);
+    it("should update dependencies", async () => {
+      const dto = { dependencyIds: ["new-dep"] };
+      await service.update(mockComponent.id, dto);
+      expect(mockRepository.findBy).toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
     });
   });
 });

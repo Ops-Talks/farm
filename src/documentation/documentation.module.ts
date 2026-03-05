@@ -1,11 +1,14 @@
 import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import { DocumentationController } from "./documentation.controller";
 import { DocumentationService } from "./documentation.service";
+import { Documentation } from "./entities/documentation.entity";
 
 /**
  * Module for managing technical documentation associated with catalog components.
  */
 @Module({
+  imports: [TypeOrmModule.forFeature([Documentation])],
   controllers: [DocumentationController],
   providers: [DocumentationService],
   exports: [DocumentationService],

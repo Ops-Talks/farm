@@ -8,6 +8,11 @@ describe("AppController (e2e)", () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
+    // Force sqlite for E2E tests
+    process.env.DATABASE_TYPE = "sqlite";
+    process.env.DATABASE_NAME = ":memory:";
+    process.env.DATABASE_SYNC = "true";
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

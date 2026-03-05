@@ -1,102 +1,107 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { randomUUID } from "crypto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import axios from "axios";
 import { Documentation } from "./entities/documentation.entity";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 import { UpdateDocumentationDto } from "./dto/update-documentation.dto";
 
 /**
- * Service responsible for managing technical documentation entries.
- * Associates documentation pages with components in the catalog.
+ * Service handling technical documentation lifecycle.
  */
 @Injectable()
 export class DocumentationService {
-  private readonly docs: Map<string, Documentation> = new Map();
+  constructor(
+    @InjectRepository(Documentation)
+    private readonly documentationRepository: Repository<Documentation>,
+  ) {}
 
   /**
    * Creates a new documentation entry.
-   * @param createDocumentationDto - Data for the documentation entry to create
-   * @returns The newly created documentation entry
+   * @param createDocumentationDto - Entry data
+   * @returns The newly created documentation
    */
-  create(createDocumentationDto: CreateDocumentationDto): Documentation {
-    const doc: Documentation = {
-      id: randomUUID(),
-      title: createDocumentationDto.title,
-      content: createDocumentationDto.content,
-      componentId: createDocumentationDto.componentId,
-      author: createDocumentationDto.author,
-      version: createDocumentationDto.version ?? "1.0.0",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    this.docs.set(doc.id, doc);
-    return doc;
+  async create(
+    createDocumentationDto: CreateDocumentationDto,
+  ): Promise<Documentation> {
+    const documentation = this.documentationRepository.create(
+      createDocumentationDto,
+    );
+    return await this.documentationRepository.save(documentation);
   }
 
   /**
    * Retrieves all documentation entries.
-   * @returns An array of all documentation entries
+   * @returns All documentation
    */
-  findAll(): Documentation[] {
-    return Array.from(this.docs.values());
+  async findAll(): Promise<Documentation[]> {
+    return await this.documentationRepository.find();
   }
 
   /**
-   * Retrieves documentation entries for a specific component.
-   * @param componentId - The ID of the component
-   * @returns Documentation entries associated with the component
+   * Retrieves a single entry by ID.
+   * @param id - UUID
+   * @returns The found documentation
+   * @throws NotFoundException if not found
    */
-  findByComponent(componentId: string): Documentation[] {
-    return Array.from(this.docs.values()).filter(
-      (doc) => doc.componentId === componentId,
-    );
-  }
-
-  /**
-   * Retrieves a single documentation entry by its ID.
-   * @param id - The UUID of the documentation entry
-   * @returns The documentation entry with the specified ID
-   * @throws NotFoundException if no documentation with the given ID exists
-   */
-  findOne(id: string): Documentation {
-    const doc = this.docs.get(id);
-    if (!doc) {
+  async findOne(id: string): Promise<Documentation> {
+    const documentation = await this.documentationRepository.findOneBy({ id });
+    if (!documentation) {
       throw new NotFoundException(`Documentation with ID "${id}" not found`);
     }
-    return doc;
+    return documentation;
   }
 
   /**
-   * Updates an existing documentation entry.
-   * @param id - The UUID of the documentation entry to update
-   * @param updateDocumentationDto - Fields to update
-   * @returns The updated documentation entry
-   * @throws NotFoundException if no documentation with the given ID exists
+   * Fetches the raw Markdown content from the documentation's source URL.
+   * @param id - The UUID of the documentation entry
+   * @returns The raw Markdown content as a string
    */
-  update(
+  async getContent(id: string): Promise<string> {
+    const doc = await this.findOne(id);
+    try {
+      const response = await axios.get<string>(doc.sourceUrl);
+      return response.data;
+    } catch {
+      throw new NotFoundException(
+        `Failed to fetch content from ${doc.sourceUrl}`,
+      );
+    }
+  }
+
+  /**
+   * Finds documentation associated with a specific component.
+   * @param componentId - UUID of the component
+   * @returns Array of associated documentation
+   */
+  async findByComponent(componentId: string): Promise<Documentation[]> {
+    return await this.documentationRepository.find({ where: { componentId } });
+  }
+
+  /**
+   * Updates an entry.
+   * @param id - UUID
+   * @param updateDocumentationDto - Fields to update
+   * @returns The updated documentation
+   */
+  async update(
     id: string,
     updateDocumentationDto: UpdateDocumentationDto,
-  ): Documentation {
-    const existing = this.findOne(id);
-    const updated: Documentation = {
-      ...existing,
-      ...updateDocumentationDto,
-      id: existing.id,
-      createdAt: existing.createdAt,
-      updatedAt: new Date(),
-    };
-
-    this.docs.set(id, updated);
-    return updated;
+  ): Promise<Documentation> {
+    const documentation = await this.findOne(id);
+    const updated = this.documentationRepository.merge(
+      documentation,
+      updateDocumentationDto,
+    );
+    return await this.documentationRepository.save(updated);
   }
 
   /**
-   * Removes a documentation entry.
-   * @param id - The UUID of the documentation entry to remove
-   * @throws NotFoundException if no documentation with the given ID exists
+   * Removes an entry.
+   * @param id - UUID
    */
-  remove(id: string): void {
-    this.findOne(id);
-    this.docs.delete(id);
+  async remove(id: string): Promise<void> {
+    const documentation = await this.findOne(id);
+    await this.documentationRepository.remove(documentation);
   }
 }

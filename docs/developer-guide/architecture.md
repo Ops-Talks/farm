@@ -19,18 +19,41 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
                     |  (Express/HTTP)  |
                     +--------+---------+
                              |
-            +----------------+----------------+
-            |                |                |
-            v                v                v
-    +-------+------+  +------+-------+  +-----+--------+
-    |    Auth      |  |   Catalog    |  | Documentation |
-    |   Module     |  |    Module    |  |    Module    |
-    +--------------+  +--------------+  +--------------+
+             +---------------+----------------+
+             |               |                |
+             v               v                v
+     +-------+------+  +------+-------+  +-----+--------+
+     |    Auth      |  |   Catalog    |  | Documentation |
+     |   Module     |  |    Module    |  |    Module    |
+     +--------------+  +--------------+  +--------------+
+             |               |                |
+             +---------------+----------------+
+                             |
+                             v
+                    +------------------+
+                    |  Common Layer    |
+                    | (Filters/Pipes)  |
+                    +------------------+
 ```
 
 ## Module Structure
 
-Farm consists of the following modules:
+Farm consists of the following modules and layers:
+
+### Common Layer
+
+The common layer provides cross-cutting concerns that are shared across all modules.
+
+**Responsibilities:**
+
+- Global exception filtering
+- Custom validation pipes
+- Global interceptors
+- Shared decorators
+
+**Files:**
+
+- `src/common/filters/http-exception.filter.ts` - Standardized error response handling
 
 ### App Module
 
@@ -78,16 +101,20 @@ Manages the software component catalog.
 - Component CRUD operations
 - Component lifecycle management
 - Component metadata storage
+- YAML-driven component registration
+- Discovery of components from git repositories
 
 **Components:**
 
 | Component | Purpose |
 |-----------|---------|
-| `CatalogController` | HTTP endpoints for catalog operations |
-| `CatalogService` | Business logic for catalog management |
-| `Component` entity | Component data structure |
+| `CatalogController` | HTTP endpoints for catalog operations, including discovery |
+| `CatalogService` | Business logic for catalog management and discovery |
+| `Component` entity | Component data structure with dependency relations |
 | `CreateComponentDto` | Create request validation |
 | `UpdateComponentDto` | Update request validation |
+| `CreateLocationDto` | DTO for triggering discovery |
+| `RegisterComponentYamlDto` | DTO for manual YAML registration |
 
 ### Documentation Module
 
@@ -113,41 +140,29 @@ Manages technical documentation associated with components.
 
 1. **HTTP Request**: Client sends HTTP request to the NestJS application
 2. **Routing**: NestJS routes the request to the appropriate controller
-3. **Validation**: DTOs validate incoming request data
-4. **Controller**: Controller method handles the request
-5. **Service**: Service performs business logic
-6. **Storage**: Data is stored in memory (Map structures)
-7. **Response**: Result is returned to the client
+3. **YAML Processing**: If registering via YAML, the `CatalogService` uses `js-yaml` to parse and validate the `catalog-info.yaml` content.
+4. **Validation**: DTOs validate incoming request data
+5. **Controller**: Controller method handles the request
+6. **Service**: Service performs business logic and interacts with repositories
+7. **Storage**: Data is persisted in a PostgreSQL database (in-memory SQLite for tests)
+8. **Response**: Result is returned to the client
 
 ## Data Storage
 
-Currently, Farm uses in-memory storage with JavaScript Map objects:
+Farm uses **TypeORM** as its Object-Relational Mapper (ORM) to handle database interactions. By default, it is configured to use **PostgreSQL** for development and production environments.
 
-```typescript
-private readonly components: Map<string, Component> = new Map();
-```
+**Key features:**
 
-**Characteristics:**
-
-- Fast read and write operations
-- Data does not persist across restarts
-- Suitable for development and testing
-- Production deployment will require database integration
+- **Persistence**: Data survives application restarts.
+- **Relational Integrity**: Relationships between entities can be enforced.
+- **Environment Flexibility**: Uses SQLite in-memory for E2E tests and PostgreSQL for actual deployments.
+- **Asynchronous**: All database operations are non-blocking and use `async/await`.
 
 ## Validation
 
-Farm uses `class-validator` for request validation:
+Farm uses `class-validator` for request validation at the DTO level.
 
-```typescript
-@IsString()
-@IsNotEmpty()
-name: string;
-
-@IsEnum(ComponentKind)
-kind: ComponentKind;
-```
-
-**Global Validation Pipe:**
+**Global Validation Pipe Configuration:**
 
 ```typescript
 app.useGlobalPipes(
@@ -155,9 +170,17 @@ app.useGlobalPipes(
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
   }),
 );
 ```
+
+- `whitelist`: Strips properties that do not have any decorators in the DTO.
+- `forbidNonWhitelisted`: Throws an error if non-whitelisted properties are present.
+- `transform`: Automatically transforms payloads to be objects typed according to their DTO classes.
+- `enableImplicitConversion`: Allows for automatic type conversion based on the TypeScript types in the DTO.
 
 ## API Prefix
 
@@ -169,17 +192,24 @@ app.setGlobalPrefix("api");
 
 ## Error Handling
 
-NestJS provides built-in exception handling:
+Farm uses a global exception filter (`AllExceptionsFilter`) to ensure all errors return a standardized JSON response.
 
-- `NotFoundException` - Resource not found (404)
-- `ConflictException` - Duplicate resource (409)
-- `UnauthorizedException` - Authentication failure (401)
-- `BadRequestException` - Validation failure (400)
+**Response Format:**
+
+```json
+{
+  "statusCode": 400,
+  "timestamp": "2023-10-27T10:00:00.000Z",
+  "path": "/api/catalog/components",
+  "message": "Validation failed"
+}
+```
+
+The filter catches both built-in NestJS exceptions (like `NotFoundException`, `ConflictException`, etc.) and generic errors, logging them with the appropriate context and returning a clean response to the client.
 
 ## Future Architecture Considerations
 
-- **Database Integration**: Replace in-memory storage with a persistent database
-- **Caching**: Add caching layer for frequently accessed data
-- **Authentication Middleware**: Implement JWT-based authentication
-- **Plugin System**: Allow extensibility through plugins
-- **Event Bus**: Add event-driven communication between modules
+- **Caching**: Add caching layer for frequently accessed data (e.g., Redis).
+- **Authentication Middleware**: Implement JWT-based authentication with Passport.js.
+- **Plugin System**: Allow extensibility through plugins.
+- **Event Bus**: Add event-driven communication between modules.

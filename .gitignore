@@ -25,3 +25,10 @@ lerna-debug.log*
 
 # MkDocs build output
 /site
+
+# Agent configurations
+.github/agents/Farm-Developer.agent.md
+
+# Project planning and documentation
+NEXT_STEPS.md
+

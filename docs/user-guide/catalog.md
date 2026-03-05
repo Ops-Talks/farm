@@ -46,25 +46,52 @@ Each component in the catalog has the following properties:
 
 ## Managing Components
 
-### Creating a Component
+### Registering via YAML (Recommended)
 
-To register a new component in the catalog:
+Farm supports registering components using a `catalog-info.yaml` structure, similar to Spotify Backstage. This allows you to keep your component definition alongside your code.
+
+To register a component via YAML content:
 
 ```bash
-curl -X POST http://localhost:3000/api/catalog/components \
+curl -X POST http://localhost:3000/api/catalog/register-yaml \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "user-service",
-    "kind": "service",
-    "description": "Handles user management and authentication",
-    "owner": "platform-team",
-    "lifecycle": "production",
-    "tags": ["backend", "auth"],
-    "metadata": {
-      "repository": "https://github.com/example/user-service"
-    }
+    "yaml": "apiVersion: farm.io/v1alpha1\nkind: Component\nmetadata:\n  name: user-service\n  description: Handles user profiles\nspec:\n  type: service\n  owner: platform-team\n  lifecycle: production"
   }'
 ```
+
+The YAML structure should follow this format:
+
+```yaml
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: user-service
+  description: Brief description
+  tags: [tag1, tag2]
+spec:
+  type: service # one of: service, library, website, api, component
+  owner: team-name
+  lifecycle: production # one of: experimental, production, deprecated
+```
+
+### Discovering Components from a Git Repository
+
+To automatically discover and register all `catalog-info.yaml` files from a git repository, use the `/locations` endpoint:
+
+```bash
+curl -X POST http://localhost:3000/api/catalog/locations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://github.com/my-org/my-repository.git"
+  }'
+```
+
+This will trigger an asynchronous process to clone the repository and register all found components.
+
+### Creating a Component (REST)
+
+You can also create a component using a standard JSON payload:
 
 ### Listing Components
 

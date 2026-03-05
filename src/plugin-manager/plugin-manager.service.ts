@@ -13,11 +13,13 @@ export class PluginManagerService {
   register(metadata: PluginMetadata): void {
     if (this.plugins.has(metadata.name)) {
       this.logger.warn(
-        `Plugin ${metadata.name} is already registered. Overwriting.`
+        `Plugin ${metadata.name} is already registered. Overwriting.`,
       );
     }
     this.plugins.set(metadata.name, metadata);
-    this.logger.log(`Plugin registered: ${metadata.name} (v${metadata.version})`);
+    this.logger.log(
+      `Plugin registered: ${metadata.name} (v${metadata.version})`,
+    );
   }
 
   /**

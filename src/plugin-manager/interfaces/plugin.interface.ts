@@ -5,7 +5,10 @@ import { ApiProperty } from "@nestjs/swagger";
  * Metadata for a Farm plugin
  */
 export class PluginMetadata {
-  @ApiProperty({ example: "github-actions", description: "The unique plugin name" })
+  @ApiProperty({
+    example: "github-actions",
+    description: "The unique plugin name",
+  })
   name: string;
 
   @ApiProperty({ example: "1.0.0", description: "The plugin version" })

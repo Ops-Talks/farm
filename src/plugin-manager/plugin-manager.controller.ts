@@ -18,7 +18,7 @@ export class PluginManagerController {
     description: "Returns an array of plugin metadata.",
     type: [PluginMetadata],
   })
-  async getPlugins(): Promise<PluginMetadata[]> {
+  getPlugins(): PluginMetadata[] {
     return this.pluginManagerService.getPlugins();
   }
 }

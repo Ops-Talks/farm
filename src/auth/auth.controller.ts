@@ -6,17 +6,28 @@ import {
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { User } from "./entities/user.entity";
+import { ErrorResponseDto } from "../common/dto/error-response.dto";
 
 /**
  * Controller for authentication and user management operations.
  */
 @ApiTags("Authentication")
 @Controller("auth")
+@ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: "Bad Request - Validation failed.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  description: "Internal Server Error.",
+  type: ErrorResponseDto,
+})
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -33,9 +44,13 @@ export class AuthController {
     description: "The user has been successfully registered.",
     type: User,
   })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: "Invalid input." })
-  register(@Body() registerUserDto: RegisterUserDto): User {
-    return this.authService.register(registerUserDto);
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "User already exists.",
+    type: ErrorResponseDto,
+  })
+  async register(@Body() registerUserDto: RegisterUserDto): Promise<User> {
+    return await this.authService.register(registerUserDto);
   }
 
   /**
@@ -53,9 +68,12 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: "Invalid credentials.",
+    type: ErrorResponseDto,
   })
-  login(@Body() loginDto: LoginDto): { user: User; token: string } {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<{ user: User; token: string }> {
+    return await this.authService.login(loginDto);
   }
 
   /**
@@ -69,7 +87,7 @@ export class AuthController {
     description: "Return all users.",
     type: [User],
   })
-  findAll(): User[] {
-    return this.authService.findAll();
+  async findAll(): Promise<User[]> {
+    return await this.authService.findAll();
   }
 }

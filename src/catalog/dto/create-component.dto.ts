@@ -74,4 +74,14 @@ export class CreateComponentDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  @ApiProperty({
+    example: ["550e8400-e29b-41d4-a716-446655440001"],
+    description: "IDs of components this component depends on",
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  dependencyIds?: string[];
 }
