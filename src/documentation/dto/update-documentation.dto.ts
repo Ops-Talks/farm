@@ -1,4 +1,4 @@
-import { PartialType } from "@nestjs/mapped-types";
+import { PartialType } from "@nestjs/swagger";
 import { CreateDocumentationDto } from "./create-documentation.dto";
 
 /**

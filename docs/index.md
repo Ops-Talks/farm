@@ -4,9 +4,9 @@
   <img src="img/farm01.svg" alt="Farm Logo" width="600">
 </p>
 
-Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
-
 ## What is Farm?
+
+Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 Farm enables engineering teams to:
 
@@ -44,8 +44,8 @@ Farm is built with modern technologies:
 | Technology | Purpose |
 |------------|---------|
 | [NestJS](https://docs.nestjs.com) | Progressive Node.js framework for building server-side applications |
-| TypeScript | Typed superset of JavaScript for enhanced developer experience |
-| REST API | HTTP-based API following REST principles |
+| [TypeScript](https://www.typescriptlang.org/) | Typed superset of JavaScript for enhanced developer experience |
+| [REST API](https://www.w3.org/TR/2004/NOTE-ws-arch-20040211/#relwwwrest) | HTTP-based API following REST principles |
 
 ## Quick Start
 
@@ -60,7 +60,10 @@ npm install
 npm run start:dev
 ```
 
-The API server starts on port 3000 by default. Access the health endpoint at `http://localhost:3000/api/health`.
+The API server starts on port 3000 by default. You can access:
+
+- **Health Endpoint**: `http://localhost:3000/api/health`
+- **Interactive API Documentation (Swagger)**: `http://localhost:3000/api/docs`
 
 ## License
 

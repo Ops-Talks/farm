@@ -41,20 +41,12 @@ npm run start:prod
 
 ## Verifying the Installation
 
-Once the application is running, verify it by accessing the health endpoint:
+Once the application is running, verify it by accessing the following endpoints:
 
-```bash
-curl http://localhost:3000/api/health
-```
+- **Health Status**: `http://localhost:3000/api/health`
+- **Interactive Documentation**: `http://localhost:3000/api/docs`
 
-You should receive a response like:
-
-```json
-{
-  "status": "ok",
-  "version": "0.1.0"
-}
-```
+The Swagger UI provides a comprehensive and interactive view of all available REST API endpoints.
 
 ## Configuration
 

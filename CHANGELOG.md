@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2026-03-04
+
+### Added
+- **Swagger/OpenAPI Documentation**: Integrated `@nestjs/swagger` for comprehensive API documentation.
+  - Added `@nestjs/swagger` and `swagger-ui-express` dependencies to `package.json`.
+  - Configured `@nestjs/swagger` compiler plugin in `nest-cli.json`.
+  - Initialized `SwaggerModule` in `src/main.ts` with title "Farm API" and version "0.2.3", served at `/api/docs`.
+  - Applied OpenAPI decorators to `LoginDto` and `RegisterUserDto` in `src/auth/dto/`.
+  - Documented API endpoints for `Auth`, `Catalog`, `Documentation`, and `Plugin Manager` modules.
+  - Documented the `/health` check endpoint in `src/app.controller.ts`.
+
+### Changed
+- **DTO Inheritance**: Refactored `src/catalog/dto/update-component.dto.ts` and `src/documentation/dto/update-documentation.dto.ts` to use `@nestjs/swagger`'s `PartialType`.
+- **Swagger Compatibility**: Converted `PluginMetadata` from interface to class in `src/plugin-manager/interfaces/plugin.interface.ts` for runtime reflection.
+- **MkDocs Integration**: Updated static documentation to reference the new Swagger UI:
+  - `docs/index.md`: Updated "Quick Start" to include Swagger UI link.
+  - `docs/api-reference/index.md`: Added "Interactive Documentation" section pointing to `/api/docs`.
+  - `docs/user-guide/getting-started.md`: Updated "Verifying the Installation" with Swagger UI check.
+  - `docs/developer-guide/setup.md`: Added Swagger UI availability note to local development section.
+- **API Reference Documentation Audit**: Audited `docs/api-reference/*.md` files to remove redundant API details, linking directly to Swagger UI for comprehensive endpoint and data model information.
+
 ## [0.2.2] - 2026-03-04
 
 ### Added

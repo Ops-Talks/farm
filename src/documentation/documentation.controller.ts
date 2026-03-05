@@ -10,6 +10,13 @@ import {
   HttpStatus,
   Query,
 } from "@nestjs/common";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { DocumentationService } from "./documentation.service";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 import { UpdateDocumentationDto } from "./dto/update-documentation.dto";
@@ -19,6 +26,7 @@ import { Documentation } from "./entities/documentation.entity";
  * Controller for managing technical documentation.
  * Provides REST endpoints to create and manage documentation for catalog components.
  */
+@ApiTags("Documentation")
 @Controller("docs")
 export class DocumentationController {
   constructor(private readonly documentationService: DocumentationService) {}
@@ -30,6 +38,12 @@ export class DocumentationController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a new documentation entry" })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "Documentation successfully created.",
+    type: Documentation,
+  })
   create(
     @Body() createDocumentationDto: CreateDocumentationDto,
   ): Documentation {
@@ -42,6 +56,17 @@ export class DocumentationController {
    * @returns An array of documentation entries
    */
   @Get()
+  @ApiOperation({ summary: "List all documentation entries" })
+  @ApiQuery({
+    name: "componentId",
+    required: false,
+    description: "Filter docs by component UUID",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Return documentation list.",
+    type: [Documentation],
+  })
   findAll(@Query("componentId") componentId?: string): Documentation[] {
     if (componentId) {
       return this.documentationService.findByComponent(componentId);
@@ -55,6 +80,14 @@ export class DocumentationController {
    * @returns The documentation entry with the specified ID
    */
   @Get(":id")
+  @ApiOperation({ summary: "Get documentation by ID" })
+  @ApiParam({ name: "id", description: "The UUID of the documentation" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Documentation found.",
+    type: Documentation,
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Not Found." })
   findOne(@Param("id") id: string): Documentation {
     return this.documentationService.findOne(id);
   }
@@ -66,6 +99,14 @@ export class DocumentationController {
    * @returns The updated documentation entry
    */
   @Patch(":id")
+  @ApiOperation({ summary: "Update documentation" })
+  @ApiParam({ name: "id", description: "The UUID of the documentation" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Documentation successfully updated.",
+    type: Documentation,
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Not Found." })
   update(
     @Param("id") id: string,
     @Body() updateDocumentationDto: UpdateDocumentationDto,
@@ -79,6 +120,10 @@ export class DocumentationController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Delete documentation" })
+  @ApiParam({ name: "id", description: "The UUID of the documentation" })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: "Deleted." })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "Not Found." })
   remove(@Param("id") id: string): void {
     this.documentationService.remove(id);
   }

@@ -2,52 +2,7 @@
 
 The Health API provides an endpoint to check the status of the Farm application.
 
-## Endpoints
-
-### Check Health
-
-Check if the application is running and healthy.
-
-```
-GET /api/health
-```
-
-#### Request
-
-No request body required.
-
-#### Response
-
-**Status Code**: 200 OK
-
-**Response Body**:
-
-```json
-{
-  "status": "ok",
-  "version": "0.1.0"
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| status | string | Current health status, always "ok" if responding |
-| version | string | Application version from package.json |
-
-#### Example
-
-```bash
-curl http://localhost:3000/api/health
-```
-
-Response:
-
-```json
-{
-  "status": "ok",
-  "version": "0.1.0"
-}
-```
+For interactive documentation, including all available endpoints, data models, and request/response examples, please refer to the [Swagger UI](/api/docs).
 
 ## Use Cases
 

@@ -46,6 +46,8 @@ npm run start:dev
 
 The development server starts with hot-reload enabled. Changes to source files will automatically restart the server.
 
+Once the server is running, you can access the interactive API documentation (Swagger UI) at `http://localhost:3000/api/docs`.
+
 #### Option B: Containerized Development (Docker + Make)
 
 ```bash
