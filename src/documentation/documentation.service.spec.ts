@@ -95,3 +95,5 @@ describe("DocumentationService", () => {
         NotFoundException,
       );
     });
+  });
+});

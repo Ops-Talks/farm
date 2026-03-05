@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker healthcheck test test-e2e test-cov lint fmt check
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker healthcheck test test-e2e test-cov lint fmt check release
 
 help:
 	@echo "Available Targets:"
@@ -22,6 +22,7 @@ help:
 	@echo "  make lint       # Runs linter and fixes issues"
 	@echo "  make fmt        # Formats code using Prettier"
 	@echo "  make check      # Runs fmt, lint and all tests"
+	@echo "  make release    # Creates a new release using release-it (interactive)"
 
 docs: docs-up
 
@@ -67,3 +68,6 @@ fmt:
 	npm run format
 
 check: fmt lint test test-e2e
+
+release:
+	npm run release
