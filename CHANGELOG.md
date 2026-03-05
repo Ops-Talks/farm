@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-03-04
+
+### Added
+- **Docs Branding Asset**: Added `docs/img/farm01.svg` and configured it as project favicon.
+- **Dockerized Test Workflow**: Added multi-stage `Dockerfile` with dedicated `test` and `production` targets.
+- **Container Build Optimization**: Added `.dockerignore` for faster Docker builds.
+- **Developer Commands**: Added Makefile targets for API validation via Docker (`test-docker`, `up-docker`, `down-docker`, `healthcheck`).
+
+### Changed
+- **Documentation Theme Customization**: Updated MkDocs Material configuration to support custom color tokens.
+- **Visual Identity**: Applied Electric Indigo (`#6F00FF`) and Neon Fuchsia (`#FE59C2`) in `docs/stylesheets/extra.css`.
+- **Header Styling**: Added gradient styling for header and tabs in documentation.
+- **Homepage Content**: Updated `docs/index.md` to render the Farm logo in the page body.
+
+### Fixed
+- **MkDocs Color Configuration**: Replaced invalid theme color configuration approach with proper CSS variable overrides.
+
 ## [0.2.1] - 2026-03-04
 
 ### Added
