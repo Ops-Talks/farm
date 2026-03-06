@@ -38,7 +38,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
-    .setVersion("0.2.5")
+    .setVersion("0.3.0")
     .addTag("farm")
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

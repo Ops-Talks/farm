@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -16,21 +17,37 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from "@nestjs/swagger";
 import { DocumentationService } from "./documentation.service";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 import { UpdateDocumentationDto } from "./dto/update-documentation.dto";
 import { Documentation } from "./entities/documentation.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../common/guards/roles.guard";
+import { Roles } from "../common/decorators/roles.decorator";
 
 /**
  * Controller for managing technical documentation.
  */
 @ApiTags("Documentation")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("docs")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden - User does not have sufficient permissions.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -48,6 +65,7 @@ export class DocumentationController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Roles("admin")
   @ApiOperation({ summary: "Create a new documentation entry" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -137,6 +155,7 @@ export class DocumentationController {
    * @returns The updated documentation entry
    */
   @Patch(":id")
+  @Roles("admin")
   @ApiOperation({ summary: "Update documentation metadata" })
   @ApiParam({ name: "id", description: "The UUID of the documentation" })
   @ApiResponse({
@@ -162,6 +181,7 @@ export class DocumentationController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles("admin")
   @ApiOperation({ summary: "Delete documentation" })
   @ApiParam({ name: "id", description: "The UUID of the documentation" })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: "Deleted." })

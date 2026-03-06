@@ -5,6 +5,8 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { JwtService } from "@nestjs/jwt";
+import * as bcrypt from "bcrypt";
 import { User } from "./entities/user.entity";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -17,6 +19,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -47,7 +50,7 @@ export class AuthService {
   /**
    * Authenticates a user.
    * @param loginDto - Login credentials
-   * @returns The user and a dummy token
+   * @returns The user and a real JWT token
    * @throws UnauthorizedException if credentials are invalid
    */
   async login(loginDto: LoginDto): Promise<{ user: User; token: string }> {
@@ -55,14 +58,40 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({ where: { username } });
 
-    if (!user || user.password !== password) {
+    if (!user) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Invalid credentials");
+    }
+
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      roles: user.roles,
+    };
+
     return {
       user,
-      token: "dummy-jwt-token",
+      token: this.jwtService.sign(payload),
     };
+  }
+
+  /**
+   * Validates a user for Passport strategy.
+   * @param username - User's username
+   * @param password - User's password
+   * @returns The validated user or null
+   */
+  async validateUser(username: string, pass: string): Promise<User | null> {
+    const user = await this.userRepository.findOne({ where: { username } });
+    if (user && (await bcrypt.compare(pass, user.password))) {
+      return user;
+    }
+    return null;
   }
 
   /**

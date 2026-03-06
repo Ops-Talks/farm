@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-03-05
+## [Unreleased]
+
+### Added
+- **JWT Authentication**: Replaced placeholder auth with robust JWT-based authentication using Passport.js.
+  - Implemented `LocalStrategy` for login validation.
+  - Implemented `JwtStrategy` for endpoint protection.
+  - Added `JwtAuthGuard` to secure sensitive routes.
+- **Role-Based Access Control (RBAC)**: Implemented role management.
+  - Added `@Roles()` decorator and `RolesGuard`.
+  - Restricted write operations (POST, PATCH, DELETE) in Catalog and Documentation to `admin` users.
+- **Rate Limiting**: Integrated `@nestjs/throttler` for API protection.
+  - Configured global rate limiting with configurable TTL and limit via environment variables.
+- **Security Enhancements**:
+  - Implemented automatic password hashing using `bcrypt` in the `User` entity.
+  - Added `ApiBearerAuth` to Swagger documentation for all protected endpoints.
+- **Configuration**: Added `JWT_SECRET`, `JWT_EXPIRATION`, `THROTTLE_TTL`, and `THROTTLE_LIMIT` to environment variables.
+
+## [0.2.5] - 2026-03-05
+
 
 ### Added
 - **Infrastructure Orchestration**: Created `docker-compose.yml` to manage API and PostgreSQL database.

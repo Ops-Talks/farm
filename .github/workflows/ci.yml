@@ -28,9 +28,13 @@ jobs:
 
       - name: Run unit tests with coverage
         run: npm run test:cov
+        env:
+          JEST_JUNIT_CLASSNAME: "{filepath}"
 
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          JEST_JUNIT_CLASSNAME: "{filepath}"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -40,11 +44,18 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: true
 
-      - name: Upload test results to Codecov
-        uses: codecov/codecov-action@v5
-        if: always()
+      - name: Upload unit test results to Codecov
+        uses: codecov/test-results-action@v1
+        if: ${{ !cancelled() }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          report-type: test_results
           files: ./coverage/junit.xml
+          fail_ci_if_error: true
+
+      - name: Upload E2E test results to Codecov
+        uses: codecov/test-results-action@v1
+        if: ${{ !cancelled() }}
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/junit-e2e.xml
           fail_ci_if_error: true

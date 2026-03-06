@@ -7,28 +7,27 @@
 [![NestJS Version](https://img.shields.io/badge/nestjs-%5E11.0.1-red)](https://nestjs.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and team infrastructure.
+Farm is an open-source developer portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ## Quick Start (Docker)
 
-The fastest way to get Farm running is using Docker and Docker Compose. This starts both the API and a PostgreSQL database.
+Use Docker Compose to launch the API together with a PostgreSQL database:
 
 ```bash
-# Start the entire environment (API + Database)
+# start API + DB
 make up-docker
 
-# Check if everything is healthy
+# verify health
 make healthcheck
 
-# Stop and remove containers
+# stop containers
 make down-docker
 
-# Stop and remove everything including database volumes (clean reset)
+# stop and remove volumes (clean slate)
 make down-docker-clean
 ```
 
-The API will be available at [http://localhost:3000/api](http://localhost:3000/api).
-Interactive API documentation (Swagger) is available at [http://localhost:3000/api/docs](http://localhost:3000/api/docs).
+Once running, the API is at [http://localhost:3000/api](http://localhost:3000/api) and Swagger UI at `/api/docs`.
 
 ## Technology Stack
 
@@ -38,60 +37,40 @@ Interactive API documentation (Swagger) is available at [http://localhost:3000/a
 - [Terminus](https://docs.nestjs.com/recipes/terminus) - Advanced health monitoring
 - [Swagger](https://swagger.io/) - API Documentation
 
-## Getting Started (Local Development)
+## Development
 
-### Prerequisites
+Prerequisites: Node.js ≥20, npm ≥10 (PostgreSQL optional if using Docker).
 
-- Node.js >= 20
-- npm >= 10
-- PostgreSQL (or use Docker for the database)
-
-### Installation
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-### Database Migrations
-
-Farm uses TypeORM migrations to manage the database schema.
+Start the app:
 
 ```bash
-# Generate a new migration based on entity changes
-npm run migration:generate --name=Description
-
-# Run pending migrations
-npm run migration:run
-
-# Revert the last migration
-npm run migration:revert
+npm run start:dev    # watch mode
+e npm run start:prod  # build+run
 ```
 
-### Running the Application
-
-```bash
-# Development mode (with watch)
-npm run start:dev
-
-# Production mode
-npm run start:prod
-```
+Migrations are handled via TypeORM: see `npm run migration:*` commands documented in package.json.
 
 ## Makefile Commands
 
-A `Makefile` is provided for common development tasks:
+### Common tasks
 
 | Command | Description |
 |---------|-------------|
-| `make up-docker` | Build and start API and DB in Docker |
-| `make down-docker` | Stop Docker containers |
-| `make healthcheck` | Query the local API health endpoint |
-| `make test` | Run local unit tests |
-| `make test-e2e` | Run local end-to-end tests |
-| `make test-docker` | Run tests inside a Docker container |
-| `make lint` | Run linter and fix issues |
-| `make fmt` | Format code with Prettier |
-| `make check` | Run fmt, lint, and all tests |
+| `make up-docker` | Build & start API + DB |
+| `make down-docker` | Stop containers |
+| `make healthcheck` | Hit health endpoint |
+| `make test` | Unit tests |
+| `make test-e2e` | End-to-end tests |
+| `make test-docker` | Run tests in Docker |
+| `make lint` | Lint code |
+| `make fmt` | Prettier format |
+| `make check` | Lint, fmt, and tests |
 
 ## API Endpoints
 
@@ -168,31 +147,9 @@ npm run lint
 
 ## Documentation
 
-Full documentation is available at [https://ops-talks.github.io/farm/](https://ops-talks.github.io/farm/).
+Full user and developer docs are published at [https://ops-talks.github.io/farm/](https://ops-talks.github.io/farm/).
 
-### Building Documentation Locally
-
-Documentation is built using [MkDocs](https://www.mkdocs.org/) with the [Material theme](https://squidfunk.github.io/mkdocs-material/).
-
-```bash
-# Install dependencies
-pip install mkdocs-material mkdocs mkdocs-minify-plugin
-
-# Serve documentation locally
-mkdocs serve
-
-# Build documentation
-mkdocs build
-```
-
-### Enabling GitHub Pages (for repository administrators)
-
-To enable documentation deployment for this repository:
-
-1. Go to **Settings** > **Pages** in the repository
-2. Under **Build and deployment**, set **Source** to **Deploy from a branch**
-3. Select the **gh-pages** branch and **/ (root)** folder
-4. The documentation will automatically deploy when changes are pushed to `main` or when a new release is published
+Local builds are possible with MkDocs if you need to preview changes; otherwise just edit the `docs/` directory and commit.
 
 ## License
 

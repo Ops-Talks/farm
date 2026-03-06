@@ -1,0 +1,85 @@
+import { Test, TestingModule } from "@nestjs/testing";
+import { CatalogController } from "./catalog.controller";
+import { CatalogService } from "./catalog.service";
+import { CreateComponentDto } from "./dto/create-component.dto";
+import { UpdateComponentDto } from "./dto/update-component.dto";
+import { ComponentKind } from "./entities/component.entity";
+
+const mockCatalogService = {
+  create: jest.fn(),
+  findAll: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+};
+
+describe("CatalogController", () => {
+  let controller: CatalogController;
+  let service: typeof mockCatalogService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CatalogController],
+      providers: [{ provide: CatalogService, useValue: mockCatalogService }],
+    }).compile();
+
+    controller = module.get<CatalogController>(CatalogController);
+    service = module.get<CatalogService>(CatalogService);
+  });
+
+  it("should be defined", () => {
+    expect(controller).toBeDefined();
+  });
+
+  it("should create a component", async () => {
+    const dto: CreateComponentDto = {
+      name: "Test",
+      kind: ComponentKind.SERVICE,
+      owner: "test-team",
+    };
+    service.create.mockResolvedValue({ id: "1", ...dto });
+    expect(await controller.create(dto)).toEqual({ id: "1", ...dto });
+    expect(service.create).toHaveBeenCalledWith(dto);
+  });
+
+  it("should return all components", async () => {
+    service.findAll.mockResolvedValue([
+      { id: "1", name: "Test", type: "service" },
+    ]);
+    expect(await controller.findAll()).toEqual([
+      { id: "1", name: "Test", type: "service" },
+    ]);
+  });
+
+  it("should return one component", async () => {
+    service.findOne.mockResolvedValue({
+      id: "1",
+      name: "Test",
+      type: "service",
+    });
+    expect(await controller.findOne("1")).toEqual({
+      id: "1",
+      name: "Test",
+      type: "service",
+    });
+  });
+
+  it("should update a component", async () => {
+    service.update.mockResolvedValue({
+      id: "1",
+      name: "Updated",
+      type: "service",
+    });
+    const updateDto: UpdateComponentDto = { name: "Updated" };
+    expect(await controller.update("1", updateDto)).toEqual({
+      id: "1",
+      name: "Updated",
+      type: "service",
+    });
+  });
+
+  it("should remove a component (no content)", async () => {
+    service.remove.mockResolvedValue({ deleted: true });
+    expect(await controller.remove("1")).toBeUndefined();
+  });
+});

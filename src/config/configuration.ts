@@ -18,6 +18,15 @@ export const configuration = () => ({
     name: process.env.DATABASE_NAME || "farm",
     synchronize: process.env.DATABASE_SYNC === "true",
   },
+  auth: {
+    jwtSecret:
+      process.env.JWT_SECRET || "super-secret-key-change-me-in-production",
+    jwtExpiresIn: process.env.JWT_EXPIRATION || "3600s",
+  },
+  throttle: {
+    ttl: parseInt(process.env.THROTTLE_TTL ?? "60000", 10) || 60000,
+    limit: parseInt(process.env.THROTTLE_LIMIT ?? "10", 10) || 10,
+  },
 });
 
 /**
@@ -38,4 +47,8 @@ export const validationSchema = Joi.object({
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
     .default("info"),
+  JWT_SECRET: Joi.string().default("super-secret-key-change-me-in-production"),
+  JWT_EXPIRATION: Joi.string().default("3600s"),
+  THROTTLE_TTL: Joi.number().default(60000),
+  THROTTLE_LIMIT: Joi.number().default(10),
 });

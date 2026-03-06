@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -17,6 +18,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiNoContentResponse,
+  ApiBearerAuth,
 } from "@nestjs/swagger";
 import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
@@ -25,16 +27,31 @@ import { RegisterComponentYamlDto } from "./dto/register-component-yaml.dto";
 import { CreateLocationDto } from "./dto/create-location.dto";
 import { Component } from "./entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../common/guards/roles.guard";
+import { Roles } from "../common/decorators/roles.decorator";
 
 /**
  * Controller for the software component catalog.
  * Provides REST endpoints to manage components tracked in Farm.
  */
 @ApiTags("Catalog")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("catalog")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden - User does not have sufficient permissions.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -52,6 +69,7 @@ export class CatalogController {
    */
   @Post("locations")
   @HttpCode(HttpStatus.ACCEPTED)
+  @Roles("admin")
   @ApiOperation({ summary: "Register a new location for discovery" })
   @ApiResponse({
     status: HttpStatus.ACCEPTED,
@@ -76,6 +94,7 @@ export class CatalogController {
    */
   @Post("register-yaml")
   @HttpCode(HttpStatus.CREATED)
+  @Roles("admin")
   @ApiOperation({ summary: "Register a component via YAML content" })
   @ApiCreatedResponse({
     description: "The component has been successfully registered.",
@@ -94,6 +113,7 @@ export class CatalogController {
    */
   @Post("components")
   @HttpCode(HttpStatus.CREATED)
+  @Roles("admin")
   @ApiOperation({ summary: "Create a new component" })
   @ApiCreatedResponse({
     description: "The component has been successfully created.",
@@ -147,6 +167,7 @@ export class CatalogController {
    * @returns The updated component
    */
   @Patch("components/:id")
+  @Roles("admin")
   @ApiOperation({ summary: "Update a component" })
   @ApiParam({ name: "id", description: "The UUID of the component to update" })
   @ApiOkResponse({
@@ -171,6 +192,7 @@ export class CatalogController {
    */
   @Delete("components/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles("admin")
   @ApiOperation({ summary: "Delete a component" })
   @ApiParam({ name: "id", description: "The UUID of the component to remove" })
   @ApiNoContentResponse({ description: "Component successfully removed." })
