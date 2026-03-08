@@ -1,6 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
 import { DeploymentsService } from "./deployments.service";
 import { Deployment, DeploymentStatus } from "./entities/deployment.entity";
@@ -13,9 +12,9 @@ import {
 
 describe("DeploymentsService", () => {
   let service: DeploymentsService;
-  let deploymentRepo: Repository<Deployment>;
-  let environmentRepo: Repository<Environment>;
-  let componentRepo: Repository<Component>;
+  let deploymentRepo: Record<string, jest.Mock>;
+  let environmentRepo: Record<string, jest.Mock>;
+  let componentRepo: Record<string, jest.Mock>;
 
   const mockComponent: Partial<Component> = {
     id: "comp-uuid-1",
@@ -44,47 +43,74 @@ describe("DeploymentsService", () => {
     updatedAt: new Date(),
   };
 
+  // Reusable mock QueryBuilder that chains properly
+  const createMockQueryBuilder = (result: unknown[] = []) => {
+    const qb: Record<string, jest.Mock> = {};
+    const chainMethods = [
+      "select",
+      "addSelect",
+      "where",
+      "andWhere",
+      "groupBy",
+      "orderBy",
+      "innerJoin",
+      "leftJoinAndSelect",
+      "setParameters",
+      "setParameter",
+    ];
+    for (const method of chainMethods) {
+      qb[method] = jest.fn().mockReturnValue(qb);
+    }
+    qb.getQuery = jest.fn().mockReturnValue("SUBQUERY");
+    qb.getParameters = jest.fn().mockReturnValue({});
+    qb.getMany = jest.fn().mockResolvedValue(result);
+    qb.getRawMany = jest.fn().mockResolvedValue(result);
+    return qb;
+  };
+
   beforeEach(async () => {
+    const deploymentQb = createMockQueryBuilder();
+    const componentQb = createMockQueryBuilder();
+
+    deploymentRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      merge: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(deploymentQb),
+    };
+
+    environmentRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+    };
+
+    componentRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(componentQb),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DeploymentsService,
         {
           provide: getRepositoryToken(Deployment),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            find: jest.fn(),
-            findOne: jest.fn(),
-            merge: jest.fn(),
-          },
+          useValue: deploymentRepo,
         },
         {
           provide: getRepositoryToken(Environment),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-          },
+          useValue: environmentRepo,
         },
         {
           provide: getRepositoryToken(Component),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-          },
+          useValue: componentRepo,
         },
       ],
     }).compile();
 
     service = module.get<DeploymentsService>(DeploymentsService);
-    deploymentRepo = module.get<Repository<Deployment>>(
-      getRepositoryToken(Deployment),
-    );
-    environmentRepo = module.get<Repository<Environment>>(
-      getRepositoryToken(Environment),
-    );
-    componentRepo = module.get<Repository<Component>>(
-      getRepositoryToken(Component),
-    );
   });
 
   it("should be defined", () => {
@@ -93,18 +119,10 @@ describe("DeploymentsService", () => {
 
   describe("create", () => {
     it("should create a deployment", async () => {
-      jest
-        .spyOn(componentRepo, "findOne")
-        .mockResolvedValue(mockComponent as Component);
-      jest
-        .spyOn(environmentRepo, "findOne")
-        .mockResolvedValue(mockEnvironment as Environment);
-      jest
-        .spyOn(deploymentRepo, "create")
-        .mockReturnValue(mockDeployment as Deployment);
-      jest
-        .spyOn(deploymentRepo, "save")
-        .mockResolvedValue(mockDeployment as Deployment);
+      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+      environmentRepo.findOne.mockResolvedValue(mockEnvironment as Environment);
+      deploymentRepo.create.mockReturnValue(mockDeployment as Deployment);
+      deploymentRepo.save.mockResolvedValue(mockDeployment as Deployment);
 
       const result = await service.create({
         componentId: "comp-uuid-1",
@@ -117,7 +135,7 @@ describe("DeploymentsService", () => {
     });
 
     it("should throw NotFoundException if component not found", async () => {
-      jest.spyOn(componentRepo, "findOne").mockResolvedValue(null);
+      componentRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.create({
@@ -129,10 +147,8 @@ describe("DeploymentsService", () => {
     });
 
     it("should throw NotFoundException if environment not found", async () => {
-      jest
-        .spyOn(componentRepo, "findOne")
-        .mockResolvedValue(mockComponent as Component);
-      jest.spyOn(environmentRepo, "findOne").mockResolvedValue(null);
+      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+      environmentRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.create({
@@ -146,9 +162,7 @@ describe("DeploymentsService", () => {
 
   describe("findAll", () => {
     it("should return deployments with filters", async () => {
-      jest
-        .spyOn(deploymentRepo, "find")
-        .mockResolvedValue([mockDeployment as Deployment]);
+      deploymentRepo.find.mockResolvedValue([mockDeployment as Deployment]);
 
       const result = await service.findAll({
         componentId: "comp-uuid-1",
@@ -169,9 +183,7 @@ describe("DeploymentsService", () => {
 
   describe("findOne", () => {
     it("should return a deployment by ID", async () => {
-      jest
-        .spyOn(deploymentRepo, "findOne")
-        .mockResolvedValue(mockDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(mockDeployment as Deployment);
 
       const result = await service.findOne("deploy-uuid-1");
 
@@ -179,7 +191,7 @@ describe("DeploymentsService", () => {
     });
 
     it("should throw NotFoundException if not found", async () => {
-      jest.spyOn(deploymentRepo, "findOne").mockResolvedValue(null);
+      deploymentRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("nonexistent")).rejects.toThrow(
         NotFoundException,
@@ -198,15 +210,9 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.IN_PROGRESS,
       };
 
-      jest
-        .spyOn(deploymentRepo, "findOne")
-        .mockResolvedValue(pendingDeployment as Deployment);
-      jest
-        .spyOn(deploymentRepo, "merge")
-        .mockReturnValue(updatedDeployment as Deployment);
-      jest
-        .spyOn(deploymentRepo, "save")
-        .mockResolvedValue(updatedDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
+      deploymentRepo.merge.mockReturnValue(updatedDeployment as Deployment);
+      deploymentRepo.save.mockResolvedValue(updatedDeployment as Deployment);
 
       const result = await service.update("deploy-uuid-1", {
         status: DeploymentStatus.IN_PROGRESS,
@@ -221,9 +227,7 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.PENDING,
       };
 
-      jest
-        .spyOn(deploymentRepo, "findOne")
-        .mockResolvedValue(pendingDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
 
       await expect(
         service.update("deploy-uuid-1", {
@@ -234,29 +238,29 @@ describe("DeploymentsService", () => {
   });
 
   describe("findLatestByComponent", () => {
-    it("should return latest deployments per environment", async () => {
-      jest
-        .spyOn(componentRepo, "findOne")
-        .mockResolvedValue(mockComponent as Component);
-      jest
-        .spyOn(environmentRepo, "find")
-        .mockResolvedValue([mockEnvironment as Environment]);
-
+    it("should return latest deployments using a single query", async () => {
       const succeededDeployment = {
         ...mockDeployment,
         status: DeploymentStatus.SUCCEEDED,
       };
-      jest
-        .spyOn(deploymentRepo, "findOne")
-        .mockResolvedValue(succeededDeployment as Deployment);
+
+      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+
+      const qb = createMockQueryBuilder([succeededDeployment]);
+      deploymentRepo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findLatestByComponent("comp-uuid-1");
 
       expect(result).toHaveLength(1);
+      expect(result[0].status).toBe(DeploymentStatus.SUCCEEDED);
+      // Verify QueryBuilder was used (single query) instead of per-environment loop
+      expect(deploymentRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(qb.innerJoin).toHaveBeenCalled();
+      expect(qb.getMany).toHaveBeenCalledTimes(1);
     });
 
     it("should throw NotFoundException if component not found", async () => {
-      jest.spyOn(componentRepo, "findOne").mockResolvedValue(null);
+      componentRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.findLatestByComponent("nonexistent"),
@@ -265,22 +269,21 @@ describe("DeploymentsService", () => {
   });
 
   describe("getMatrix", () => {
-    it("should return a deployment matrix", async () => {
-      jest
-        .spyOn(componentRepo, "find")
-        .mockResolvedValue([mockComponent as Component]);
-      jest
-        .spyOn(environmentRepo, "find")
-        .mockResolvedValue([mockEnvironment as Environment]);
+    it("should return a deployment matrix using aggregated queries", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
 
-      const succeededDeployment = {
-        ...mockDeployment,
-        status: DeploymentStatus.SUCCEEDED,
+      environmentRepo.find.mockResolvedValue([mockEnvironment as Environment]);
+
+      const latestDep = {
+        componentId: "comp-uuid-1",
+        environmentId: "env-uuid-1",
         version: "v1.0.0",
+        status: DeploymentStatus.SUCCEEDED,
+        deployedAt: new Date(),
       };
-      jest
-        .spyOn(deploymentRepo, "findOne")
-        .mockResolvedValue(succeededDeployment as Deployment);
+      const deployQb = createMockQueryBuilder([latestDep]);
+      deploymentRepo.createQueryBuilder.mockReturnValue(deployQb);
 
       const result = await service.getMatrix();
 
@@ -288,6 +291,36 @@ describe("DeploymentsService", () => {
       expect(result[0].name).toBe("user-service");
       expect(result[0].environments).toHaveLength(1);
       expect(result[0].environments[0].version).toBe("v1.0.0");
+      // Verify filters are applied at query level, not in-memory
+      expect(componentRepo.createQueryBuilder).toHaveBeenCalled();
+      // Verify single aggregation query instead of M*N loop
+      expect(deployQb.getRawMany).toHaveBeenCalledTimes(1);
+    });
+
+    it("should return empty array when no components match filters", async () => {
+      const componentQb = createMockQueryBuilder([]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+
+      const result = await service.getMatrix({
+        owner: "nonexistent-team",
+      });
+
+      expect(result).toHaveLength(0);
+      // Should not query deployments at all when no components match
+      expect(deploymentRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("should apply kindGroup filter at query level", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([]);
+
+      await service.getMatrix({ kindGroup: "development" as never });
+
+      expect(componentQb.andWhere).toHaveBeenCalledWith(
+        "c.kind IN (:...kinds)",
+        expect.objectContaining({ kinds: expect.any(Array) as unknown }),
+      );
     });
   });
 });

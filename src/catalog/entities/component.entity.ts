@@ -8,6 +8,7 @@ import {
   ManyToOne,
   JoinTable,
   JoinColumn,
+  Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -150,6 +151,7 @@ export class Component {
   description: string;
 
   @ApiProperty({ example: "platform-team", description: "The owner team/user" })
+  @Index()
   @Column()
   owner: string;
 

@@ -155,6 +155,7 @@ export class DeploymentsService {
 
   /**
    * Returns the latest successful deployment for each environment of a given component.
+   * Uses a single query with a subquery for MAX(createdAt) grouped by environmentId.
    * @param componentId - The UUID of the component
    * @returns An array of the latest deployments per environment
    */
@@ -168,32 +169,39 @@ export class DeploymentsService {
       );
     }
 
-    const environments = await this.environmentRepository.find({
-      order: { order: "ASC" },
-    });
+    const subQuery = this.deploymentRepository
+      .createQueryBuilder("sub")
+      .select("sub.environmentId", "environmentId")
+      .addSelect("MAX(sub.createdAt)", "maxCreatedAt")
+      .where("sub.componentId = :componentId", { componentId })
+      .andWhere("sub.status = :status", {
+        status: DeploymentStatus.SUCCEEDED,
+      })
+      .groupBy("sub.environmentId");
 
-    const results: Deployment[] = [];
-    for (const env of environments) {
-      const latest = await this.deploymentRepository.findOne({
-        where: {
-          componentId,
-          environmentId: env.id,
-          status: DeploymentStatus.SUCCEEDED,
-        },
-        relations: ["component", "environment"],
-        order: { createdAt: "DESC" },
-      });
-      if (latest) {
-        results.push(latest);
-      }
-    }
+    const results = await this.deploymentRepository
+      .createQueryBuilder("d")
+      .innerJoin(
+        "(" + subQuery.getQuery() + ")",
+        "latest",
+        "d.environmentId = latest.environmentId AND d.createdAt = latest.maxCreatedAt",
+      )
+      .setParameters(subQuery.getParameters())
+      .leftJoinAndSelect("d.component", "component")
+      .leftJoinAndSelect("d.environment", "environment")
+      .where("d.componentId = :componentId", { componentId })
+      .andWhere("d.status = :status", {
+        status: DeploymentStatus.SUCCEEDED,
+      })
+      .orderBy("environment.order", "ASC")
+      .getMany();
 
     return results;
   }
 
   /**
    * Returns a matrix of all components with their latest successful deployment per environment.
-   * Supports optional filters to narrow the component set.
+   * Applies filters at the query level and uses a single aggregation query.
    * @param filters - Optional filters: kindGroup, owner, lifecycle
    * @returns Array of component entries with their environment deployment status
    */
@@ -215,78 +223,110 @@ export class DeploymentsService {
       }>;
     }>
   > {
-    let components = await this.componentRepository.find({
-      order: { name: "ASC" },
-    });
+    const componentQuery = this.componentRepository.createQueryBuilder("c");
 
     if (filters?.kindGroup) {
       const allowedKinds = Object.entries(COMPONENT_KIND_GROUPS)
         .filter(([, group]) => group === filters.kindGroup)
         .map(([kind]) => kind);
-      components = components.filter((c) => allowedKinds.includes(c.kind));
+      componentQuery.andWhere("c.kind IN (:...kinds)", { kinds: allowedKinds });
     }
 
     if (filters?.owner) {
-      components = components.filter((c) => c.owner === filters.owner);
+      componentQuery.andWhere("c.owner = :owner", { owner: filters.owner });
     }
 
     if (filters?.lifecycle) {
-      components = components.filter((c) => c.lifecycle === filters.lifecycle);
+      componentQuery.andWhere("c.lifecycle = :lifecycle", {
+        lifecycle: filters.lifecycle,
+      });
+    }
+
+    componentQuery.orderBy("c.name", "ASC");
+
+    const components = await componentQuery.getMany();
+
+    if (components.length === 0) {
+      return [];
     }
 
     const environments = await this.environmentRepository.find({
       order: { order: "ASC" },
     });
 
-    const matrix: Array<{
-      id: string;
-      name: string;
-      kind: string;
-      environments: Array<{
+    if (environments.length === 0) {
+      return components.map((c) => ({
+        id: c.id,
+        name: c.name,
+        kind: c.kind,
+        environments: [],
+      }));
+    }
+
+    const componentIds = components.map((c) => c.id);
+
+    // Single query to get the latest successful deployment per component per environment
+    const latestDeployments = await this.deploymentRepository
+      .createQueryBuilder("d")
+      .select("d.componentId", "componentId")
+      .addSelect("d.environmentId", "environmentId")
+      .addSelect("d.version", "version")
+      .addSelect("d.status", "status")
+      .addSelect("d.createdAt", "deployedAt")
+      .where("d.componentId IN (:...componentIds)", { componentIds })
+      .andWhere("d.status = :status", {
+        status: DeploymentStatus.SUCCEEDED,
+      })
+      .andWhere(
+        "d.createdAt = " +
+          this.deploymentRepository
+            .createQueryBuilder("sub")
+            .select("MAX(sub.createdAt)")
+            .where("sub.componentId = d.componentId")
+            .andWhere("sub.environmentId = d.environmentId")
+            .andWhere("sub.status = :subStatus")
+            .getQuery(),
+      )
+      .setParameter("subStatus", DeploymentStatus.SUCCEEDED)
+      .getRawMany<{
+        componentId: string;
         environmentId: string;
-        environmentName: string;
-        version: string | null;
-        status: DeploymentStatus | null;
-        deployedAt: Date | null;
-      }>;
-    }> = [];
+        version: string;
+        status: DeploymentStatus;
+        deployedAt: Date;
+      }>();
 
-    for (const component of components) {
-      const envStatuses: Array<{
-        environmentId: string;
-        environmentName: string;
-        version: string | null;
-        status: DeploymentStatus | null;
-        deployedAt: Date | null;
-      }> = [];
-
-      for (const env of environments) {
-        const latest = await this.deploymentRepository.findOne({
-          where: {
-            componentId: component.id,
-            environmentId: env.id,
-            status: DeploymentStatus.SUCCEEDED,
-          },
-          order: { createdAt: "DESC" },
-        });
-
-        envStatuses.push({
-          environmentId: env.id,
-          environmentName: env.name,
-          version: latest?.version || null,
-          status: latest?.status || null,
-          deployedAt: latest?.createdAt || null,
-        });
+    // Index deployments by composite key for O(1) lookup
+    const deploymentMap = new Map<
+      string,
+      {
+        version: string;
+        status: DeploymentStatus;
+        deployedAt: Date;
       }
-
-      matrix.push({
-        id: component.id,
-        name: component.name,
-        kind: component.kind,
-        environments: envStatuses,
+    >();
+    for (const dep of latestDeployments) {
+      deploymentMap.set(`${dep.componentId}:${dep.environmentId}`, {
+        version: dep.version,
+        status: dep.status,
+        deployedAt: dep.deployedAt,
       });
     }
 
-    return matrix;
+    return components.map((component) => ({
+      id: component.id,
+      name: component.name,
+      kind: component.kind,
+      environments: environments.map((env) => {
+        const dep = deploymentMap.get(`${component.id}:${env.id}`);
+        return {
+          environmentId: env.id,
+          environmentName: env.name,
+          version: dep?.version || null,
+          status: dep?.status || null,
+          deployedAt: dep?.deployedAt || null,
+        };
+      }),
+    }));
   }
 }
