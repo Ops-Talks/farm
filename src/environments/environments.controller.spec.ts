@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { EnvironmentsController } from "./environments.controller";
 import { EnvironmentsService } from "./environments.service";
 import { EnvironmentType } from "./entities/environment.entity";
+import { PaginatedResponseDto } from "../common/dto";
 
 describe("EnvironmentsController", () => {
   let controller: EnvironmentsController;
@@ -26,7 +27,7 @@ describe("EnvironmentsController", () => {
           provide: EnvironmentsService,
           useValue: {
             create: jest.fn().mockResolvedValue(mockEnvironment),
-            findAll: jest.fn().mockResolvedValue([mockEnvironment]),
+            findAll: jest.fn().mockResolvedValue([[mockEnvironment], 1]),
             findOne: jest.fn().mockResolvedValue(mockEnvironment),
             update: jest.fn().mockResolvedValue(mockEnvironment),
             remove: jest.fn().mockResolvedValue(undefined),
@@ -52,10 +53,14 @@ describe("EnvironmentsController", () => {
     expect(service.create).toHaveBeenCalled();
   });
 
-  it("should return all environments", async () => {
-    const result = await controller.findAll();
-    expect(result).toHaveLength(1);
-    expect(service.findAll).toHaveBeenCalled();
+  it("should return all environments with pagination", async () => {
+    const result = await controller.findAll({ skip: 0, take: 20 });
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+    expect(service.findAll).toHaveBeenCalledWith(0, 20);
   });
 
   it("should return one environment", async () => {

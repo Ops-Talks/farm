@@ -76,6 +76,7 @@ describe("DeploymentsService", () => {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       findOne: jest.fn(),
       merge: jest.fn(),
       createQueryBuilder: jest.fn().mockReturnValue(deploymentQb),
@@ -162,20 +163,26 @@ describe("DeploymentsService", () => {
 
   describe("findAll", () => {
     it("should return deployments with filters", async () => {
-      deploymentRepo.find.mockResolvedValue([mockDeployment as Deployment]);
+      deploymentRepo.findAndCount.mockResolvedValue([
+        [mockDeployment as Deployment],
+        1,
+      ]);
 
-      const result = await service.findAll({
+      const [data, total] = await service.findAll(0, 20, {
         componentId: "comp-uuid-1",
         status: DeploymentStatus.PENDING,
       });
 
-      expect(result).toHaveLength(1);
-      expect(deploymentRepo.find).toHaveBeenCalledWith(
+      expect(data).toHaveLength(1);
+      expect(total).toBe(1);
+      expect(deploymentRepo.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
             componentId: "comp-uuid-1",
             status: DeploymentStatus.PENDING,
           },
+          skip: 0,
+          take: 20,
         }),
       );
     });

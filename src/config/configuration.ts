@@ -17,6 +17,7 @@ export const configuration = () => ({
     password: process.env.DATABASE_PASSWORD || "postgres",
     name: process.env.DATABASE_NAME || "farm",
     synchronize: process.env.DATABASE_SYNC === "true",
+    poolSize: parseInt(process.env.DATABASE_POOL_SIZE ?? "10", 10) || 10,
   },
   auth: {
     jwtSecret:
@@ -47,6 +48,7 @@ export const validationSchema = Joi.object({
   DATABASE_PASSWORD: Joi.string().default("postgres"),
   DATABASE_NAME: Joi.string().default("farm"),
   DATABASE_SYNC: Joi.boolean().default(false),
+  DATABASE_POOL_SIZE: Joi.number().integer().min(1).max(100).default(10),
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
     .default("info"),

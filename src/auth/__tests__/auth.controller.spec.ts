@@ -7,6 +7,7 @@ import { LoginDto } from "../dto/login.dto";
 const mockAuthService = {
   register: jest.fn(),
   login: jest.fn(),
+  refresh: jest.fn(),
   findAll: jest.fn(),
 };
 
@@ -41,11 +42,13 @@ describe("AuthController", () => {
 
   it("login should return token and user", async () => {
     const dto: LoginDto = { username: "u", password: "p" };
-    service.login.mockResolvedValue({ user: { id: "1" }, token: "t" });
-    expect(await controller.login(dto)).toEqual({
+    const result = {
       user: { id: "1" },
       token: "t",
-    });
+      refreshToken: "rt",
+    };
+    service.login.mockResolvedValue(result);
+    expect(await controller.login(dto)).toEqual(result);
   });
 
   it("findAll should return users", async () => {

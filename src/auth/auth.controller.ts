@@ -12,6 +12,8 @@ import { AuthService } from "./auth.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { LoginResponseDto } from "./dto/login-response.dto";
+import { RefreshResponseDto } from "./dto/refresh-response.dto";
 import { User } from "./entities/user.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
 
@@ -84,6 +86,7 @@ export class AuthController {
     status: HttpStatus.OK,
     description:
       "Successfully authenticated. Returns access token and refresh token.",
+    type: LoginResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -95,9 +98,7 @@ export class AuthController {
     description: "Too many requests. Rate limit: 5 per minute.",
     type: ErrorResponseDto,
   })
-  async login(
-    @Body() loginDto: LoginDto,
-  ): Promise<{ user: User; token: string; refreshToken: string }> {
+  async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
     return await this.authService.login(loginDto);
   }
 
@@ -120,6 +121,7 @@ export class AuthController {
     status: HttpStatus.OK,
     description:
       "Successfully refreshed. Returns new access token and rotated refresh token.",
+    type: RefreshResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -133,7 +135,7 @@ export class AuthController {
   })
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
-  ): Promise<{ token: string; refreshToken: string }> {
+  ): Promise<RefreshResponseDto> {
     return await this.authService.refresh(
       refreshTokenDto.username,
       refreshTokenDto.refreshToken,

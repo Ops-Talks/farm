@@ -53,9 +53,11 @@ export class TeamsService {
    * Retrieves all teams.
    * @returns An array of all teams
    */
-  async findAll(): Promise<Team[]> {
-    return await this.teamRepository.find({
+  async findAll(skip = 0, take = 20): Promise<[Team[], number]> {
+    return await this.teamRepository.findAndCount({
       order: { name: "ASC" },
+      skip,
+      take,
     });
   }
 

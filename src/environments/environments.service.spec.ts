@@ -30,6 +30,7 @@ describe("EnvironmentsService", () => {
             create: jest.fn(),
             save: jest.fn(),
             find: jest.fn(),
+            findAndCount: jest.fn(),
             findOne: jest.fn(),
             merge: jest.fn(),
             remove: jest.fn(),
@@ -84,14 +85,17 @@ describe("EnvironmentsService", () => {
   describe("findAll", () => {
     it("should return all environments ordered", async () => {
       jest
-        .spyOn(repository, "find")
-        .mockResolvedValue([mockEnvironment as Environment]);
+        .spyOn(repository, "findAndCount")
+        .mockResolvedValue([[mockEnvironment as Environment], 1]);
 
-      const result = await service.findAll();
+      const [data, total] = await service.findAll();
 
-      expect(result).toHaveLength(1);
-      expect(repository.find).toHaveBeenCalledWith({
+      expect(data).toHaveLength(1);
+      expect(total).toBe(1);
+      expect(repository.findAndCount).toHaveBeenCalledWith({
         order: { order: "ASC", name: "ASC" },
+        skip: 0,
+        take: 20,
       });
     });
   });

@@ -4,6 +4,7 @@ import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { ComponentKind } from "./entities/component.entity";
+import { PaginatedResponseDto } from "../common/dto";
 
 const mockCatalogService = {
   create: jest.fn(),
@@ -42,13 +43,15 @@ describe("CatalogController", () => {
     expect(service.create).toHaveBeenCalledWith(dto);
   });
 
-  it("should return all components", async () => {
-    service.findAll.mockResolvedValue([
-      { id: "1", name: "Test", type: "service" },
-    ]);
-    expect(await controller.findAll()).toEqual([
-      { id: "1", name: "Test", type: "service" },
-    ]);
+  it("should return all components with pagination", async () => {
+    const items = [{ id: "1", name: "Test", type: "service" }];
+    service.findAll.mockResolvedValue([items, 1]);
+    const result = await controller.findAll({ skip: 0, take: 20 });
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toEqual(items);
+    expect(result.total).toBe(1);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
   });
 
   it("should return one component", async () => {

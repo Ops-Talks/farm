@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -27,6 +28,10 @@ import { Team } from "./entities/team.entity";
 import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import {
+  PaginationQueryDto,
+  PaginatedResponseDto,
+} from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -91,10 +96,21 @@ export class TeamsController {
   @ApiOperation({ summary: "List all teams" })
   @ApiOkResponse({
     description: "Successfully retrieved team list.",
-    type: [Team],
+    type: PaginatedResponseDto,
   })
-  async findAll(): Promise<Team[]> {
-    return await this.teamsService.findAll();
+  async findAll(
+    @Query() pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<Team>> {
+    const [data, total] = await this.teamsService.findAll(
+      pagination.skip,
+      pagination.take,
+    );
+    return new PaginatedResponseDto(
+      data,
+      total,
+      pagination.skip ?? 0,
+      pagination.take ?? 20,
+    );
   }
 
   /**

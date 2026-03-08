@@ -29,6 +29,10 @@ import { RegisterComponentYamlDto } from "./dto/register-component-yaml.dto";
 import { CreateLocationDto } from "./dto/create-location.dto";
 import { Component, ComponentKindGroup } from "./entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import {
+  PaginationQueryDto,
+  PaginatedResponseDto,
+} from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -143,12 +147,23 @@ export class CatalogController {
   })
   @ApiOkResponse({
     description: "Successfully retrieved component list.",
-    type: [Component],
+    type: PaginatedResponseDto,
   })
   async findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query("kindGroup") kindGroup?: ComponentKindGroup,
-  ): Promise<Component[]> {
-    return await this.catalogService.findAll(kindGroup);
+  ): Promise<PaginatedResponseDto<Component>> {
+    const [data, total] = await this.catalogService.findAll(
+      pagination.skip,
+      pagination.take,
+      kindGroup,
+    );
+    return new PaginatedResponseDto(
+      data,
+      total,
+      pagination.skip ?? 0,
+      pagination.take ?? 20,
+    );
   }
 
   /**

@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -25,6 +26,10 @@ import { CreateEnvironmentDto } from "./dto/create-environment.dto";
 import { UpdateEnvironmentDto } from "./dto/update-environment.dto";
 import { Environment } from "./entities/environment.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import {
+  PaginationQueryDto,
+  PaginatedResponseDto,
+} from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -91,10 +96,21 @@ export class EnvironmentsController {
   @ApiOperation({ summary: "List all environments" })
   @ApiOkResponse({
     description: "Successfully retrieved environment list.",
-    type: [Environment],
+    type: PaginatedResponseDto,
   })
-  async findAll(): Promise<Environment[]> {
-    return await this.environmentsService.findAll();
+  async findAll(
+    @Query() pagination: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<Environment>> {
+    const [data, total] = await this.environmentsService.findAll(
+      pagination.skip,
+      pagination.take,
+    );
+    return new PaginatedResponseDto(
+      data,
+      total,
+      pagination.skip ?? 0,
+      pagination.take ?? 20,
+    );
   }
 
   /**

@@ -28,6 +28,10 @@ import {
   SearchResult,
 } from "./interfaces/documentation.interfaces";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import {
+  PaginationQueryDto,
+  PaginatedResponseDto,
+} from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -97,15 +101,23 @@ export class DocumentationController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Return documentation list.",
-    type: [Documentation],
+    type: PaginatedResponseDto,
   })
   async findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query("componentId") componentId?: string,
-  ): Promise<Documentation[]> {
-    if (componentId) {
-      return await this.documentationService.findByComponent(componentId);
-    }
-    return await this.documentationService.findAll();
+  ): Promise<PaginatedResponseDto<Documentation>> {
+    const [data, total] = await this.documentationService.findAll(
+      pagination.skip,
+      pagination.take,
+      componentId,
+    );
+    return new PaginatedResponseDto(
+      data,
+      total,
+      pagination.skip ?? 0,
+      pagination.take ?? 20,
+    );
   }
 
   /**

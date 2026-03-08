@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
 import { TeamType } from "./entities/team.entity";
+import { PaginatedResponseDto } from "../common/dto";
 
 describe("TeamsController", () => {
   let controller: TeamsController;
@@ -43,7 +44,7 @@ describe("TeamsController", () => {
           provide: TeamsService,
           useValue: {
             create: jest.fn().mockResolvedValue(mockTeam),
-            findAll: jest.fn().mockResolvedValue([mockTeam]),
+            findAll: jest.fn().mockResolvedValue([[mockTeam], 1]),
             findOne: jest.fn().mockResolvedValue(mockTeam),
             update: jest.fn().mockResolvedValue(mockTeam),
             remove: jest.fn().mockResolvedValue(undefined),
@@ -76,10 +77,14 @@ describe("TeamsController", () => {
     expect(service.create).toHaveBeenCalled();
   });
 
-  it("should return all teams", async () => {
-    const result = await controller.findAll();
-    expect(result).toHaveLength(1);
-    expect(service.findAll).toHaveBeenCalled();
+  it("should return all teams with pagination", async () => {
+    const result = await controller.findAll({ skip: 0, take: 20 });
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+    expect(service.findAll).toHaveBeenCalledWith(0, 20);
   });
 
   it("should return one team", async () => {

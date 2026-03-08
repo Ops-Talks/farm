@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DocumentationController } from "./documentation.controller";
 import { DocumentationService } from "./documentation.service";
+import { PaginatedResponseDto } from "../common/dto";
 
 describe("DocumentationController", () => {
   let controller: DocumentationController;
@@ -27,7 +28,7 @@ describe("DocumentationController", () => {
           provide: DocumentationService,
           useValue: {
             create: jest.fn().mockResolvedValue(mockDoc),
-            findAll: jest.fn().mockResolvedValue([mockDoc]),
+            findAll: jest.fn().mockResolvedValue([[mockDoc], 1]),
             findByComponent: jest.fn().mockResolvedValue([mockDoc]),
             findOne: jest.fn().mockResolvedValue(mockDoc),
             getContent: jest.fn().mockResolvedValue("# Hello World"),
@@ -81,16 +82,24 @@ describe("DocumentationController", () => {
   });
 
   describe("findAll", () => {
-    it("should return all documentation entries", async () => {
-      const result = await controller.findAll();
-      expect(result).toHaveLength(1);
-      expect(service.findAll).toHaveBeenCalled();
+    it("should return all documentation entries with pagination", async () => {
+      const result = await controller.findAll({ skip: 0, take: 20 });
+      expect(result).toBeInstanceOf(PaginatedResponseDto);
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
+      expect(service.findAll).toHaveBeenCalledWith(0, 20, undefined);
     });
 
     it("should filter by componentId when provided", async () => {
-      const result = await controller.findAll("comp-uuid-1");
-      expect(result).toHaveLength(1);
-      expect(service.findByComponent).toHaveBeenCalledWith("comp-uuid-1");
+      const result = await controller.findAll(
+        { skip: 0, take: 20 },
+        "comp-uuid-1",
+      );
+      expect(result).toBeInstanceOf(PaginatedResponseDto);
+      expect(result.data).toHaveLength(1);
+      expect(service.findAll).toHaveBeenCalledWith(0, 20, "comp-uuid-1");
     });
   });
 

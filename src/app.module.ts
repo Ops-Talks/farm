@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
@@ -13,6 +13,7 @@ import { EnvironmentsModule } from "./environments/environments.module";
 import { TeamsModule } from "./teams/teams.module";
 import { HealthModule } from "./common/health/health.module";
 import { configuration, validationSchema } from "./config/configuration";
+import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 
 @Module({
   imports: [
@@ -35,6 +36,10 @@ import { configuration, validationSchema } from "./config/configuration";
         autoLoadEntities: true,
         migrations: [__dirname + "/migrations/*.{.ts,.js}"],
         migrationsRun: configService.get<string>("env") === "production",
+        extra:
+          configService.get<string>("database.type") === "postgres"
+            ? { max: configService.get<number>("database.poolSize") ?? 10 }
+            : undefined,
       }),
     }),
     HealthModule,
@@ -105,4 +110,11 @@ import { configuration, validationSchema } from "./config/configuration";
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestLoggerMiddleware)
+      .exclude("api/health{*path}")
+      .forRoutes("{*path}");
+  }
+}

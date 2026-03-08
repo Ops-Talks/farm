@@ -36,6 +36,7 @@ describe("DocumentationService", () => {
         Promise.resolve({ ...doc, id: doc.id ?? "uuid" } as Documentation),
       ),
     find: jest.fn().mockResolvedValue([mockDoc]),
+    findAndCount: jest.fn().mockResolvedValue([[mockDoc], 1]),
     findOneBy: jest.fn().mockResolvedValue(mockDoc),
     merge: jest.fn().mockImplementation(
       (entity: Documentation, dto: any) =>
@@ -77,6 +78,32 @@ describe("DocumentationService", () => {
       };
       const result = await service.create(dto);
       expect(result.title).toBe(dto.title);
+    });
+  });
+
+  describe("findAll", () => {
+    it("should return all documentation entries", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockDoc], 1]);
+      const [data, total] = await service.findAll();
+      expect(data).toEqual([mockDoc]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: {},
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should filter by componentId when provided", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockDoc], 1]);
+      const [data, total] = await service.findAll(0, 20, "comp-uuid");
+      expect(data).toEqual([mockDoc]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { componentId: "comp-uuid" },
+        skip: 0,
+        take: 20,
+      });
     });
   });
 

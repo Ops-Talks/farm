@@ -79,21 +79,27 @@ export class DeploymentsService {
    * @param filters - Optional filters for componentId, environmentId, status
    * @returns An array of matching deployments
    */
-  async findAll(filters?: {
-    componentId?: string;
-    environmentId?: string;
-    status?: DeploymentStatus;
-  }): Promise<Deployment[]> {
+  async findAll(
+    skip = 0,
+    take = 20,
+    filters?: {
+      componentId?: string;
+      environmentId?: string;
+      status?: DeploymentStatus;
+    },
+  ): Promise<[Deployment[], number]> {
     const where: Record<string, unknown> = {};
 
     if (filters?.componentId) where.componentId = filters.componentId;
     if (filters?.environmentId) where.environmentId = filters.environmentId;
     if (filters?.status) where.status = filters.status;
 
-    return await this.deploymentRepository.find({
+    return await this.deploymentRepository.findAndCount({
       where,
       relations: ["component", "environment"],
       order: { createdAt: "DESC" },
+      skip,
+      take,
     });
   }
 

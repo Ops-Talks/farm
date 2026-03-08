@@ -29,6 +29,10 @@ import {
   ComponentLifecycle,
 } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
+import {
+  PaginationQueryDto,
+  PaginatedResponseDto,
+} from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -109,18 +113,25 @@ export class DeploymentsController {
   })
   @ApiOkResponse({
     description: "Successfully retrieved deployment list.",
-    type: [Deployment],
+    type: PaginatedResponseDto,
   })
   async findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query("componentId") componentId?: string,
     @Query("environmentId") environmentId?: string,
     @Query("status") status?: DeploymentStatus,
-  ): Promise<Deployment[]> {
-    return await this.deploymentsService.findAll({
-      componentId,
-      environmentId,
-      status,
-    });
+  ): Promise<PaginatedResponseDto<Deployment>> {
+    const [data, total] = await this.deploymentsService.findAll(
+      pagination.skip,
+      pagination.take,
+      { componentId, environmentId, status },
+    );
+    return new PaginatedResponseDto(
+      data,
+      total,
+      pagination.skip ?? 0,
+      pagination.take ?? 20,
+    );
   }
 
   /**

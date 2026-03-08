@@ -44,6 +44,7 @@ describe("TeamsService", () => {
     teamRepo = {
       findOne: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       merge: jest.fn(),
@@ -106,9 +107,15 @@ describe("TeamsService", () => {
 
   describe("findAll", () => {
     it("should return all teams", async () => {
-      teamRepo.find.mockResolvedValue([mockTeam]);
-      const result = await service.findAll();
-      expect(result).toHaveLength(1);
+      teamRepo.findAndCount.mockResolvedValue([[mockTeam], 1]);
+      const [data, total] = await service.findAll();
+      expect(data).toHaveLength(1);
+      expect(total).toBe(1);
+      expect(teamRepo.findAndCount).toHaveBeenCalledWith({
+        order: { name: "ASC" },
+        skip: 0,
+        take: 20,
+      });
     });
   });
 

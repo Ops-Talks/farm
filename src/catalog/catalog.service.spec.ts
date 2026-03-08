@@ -41,6 +41,7 @@ describe("CatalogService", () => {
       } as Component),
     ),
     find: jest.fn().mockResolvedValue([mockComponent]),
+    findAndCount: jest.fn().mockResolvedValue([[mockComponent], 1]),
     findBy: jest.fn().mockResolvedValue([mockComponent]),
     findOne: jest.fn().mockResolvedValue(mockComponent),
     findOneBy: jest.fn().mockResolvedValue(mockComponent),
@@ -137,9 +138,14 @@ spec:
 
   describe("findAll", () => {
     it("should return all components with relations", async () => {
-      await service.findAll();
-      expect(mockRepository.find).toHaveBeenCalledWith({
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      const [data, total] = await service.findAll();
+      expect(data).toEqual([mockComponent]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         relations: ["dependencies"],
+        skip: 0,
+        take: 20,
       });
     });
   });

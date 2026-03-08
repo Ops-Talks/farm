@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { DeploymentsController } from "./deployments.controller";
 import { DeploymentsService } from "./deployments.service";
 import { DeploymentStatus } from "./entities/deployment.entity";
+import { PaginatedResponseDto } from "../common/dto";
 
 describe("DeploymentsController", () => {
   let controller: DeploymentsController;
@@ -44,7 +45,7 @@ describe("DeploymentsController", () => {
           provide: DeploymentsService,
           useValue: {
             create: jest.fn().mockResolvedValue(mockDeployment),
-            findAll: jest.fn().mockResolvedValue([mockDeployment]),
+            findAll: jest.fn().mockResolvedValue([[mockDeployment], 1]),
             findOne: jest.fn().mockResolvedValue(mockDeployment),
             update: jest.fn().mockResolvedValue(mockDeployment),
             findLatestByComponent: jest
@@ -74,14 +75,19 @@ describe("DeploymentsController", () => {
     expect(service.create).toHaveBeenCalled();
   });
 
-  it("should return deployments with filters", async () => {
+  it("should return deployments with filters and pagination", async () => {
     const result = await controller.findAll(
+      { skip: 0, take: 20 },
       "comp-uuid-1",
       undefined,
       DeploymentStatus.PENDING,
     );
-    expect(result).toHaveLength(1);
-    expect(service.findAll).toHaveBeenCalledWith({
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.data).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+    expect(service.findAll).toHaveBeenCalledWith(0, 20, {
       componentId: "comp-uuid-1",
       environmentId: undefined,
       status: DeploymentStatus.PENDING,

@@ -91,7 +91,7 @@ export class CreateComponentDto {
     required: false,
   })
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID("4", { each: true })
   @IsOptional()
   dependencyIds?: string[];
 }

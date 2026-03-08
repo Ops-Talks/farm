@@ -33,7 +33,7 @@ export class CreateDocumentationDto {
     example: "550e8400-e29b-41d4-a716-446655440001",
     description: "The ID of the associated component",
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   componentId: string;
 

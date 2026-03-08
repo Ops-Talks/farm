@@ -50,9 +50,11 @@ export class EnvironmentsService {
    * Retrieves all environments ordered by the order field.
    * @returns An array of all environments
    */
-  async findAll(): Promise<Environment[]> {
-    return await this.environmentRepository.find({
+  async findAll(skip = 0, take = 20): Promise<[Environment[], number]> {
+    return await this.environmentRepository.findAndCount({
       order: { order: "ASC", name: "ASC" },
+      skip,
+      take,
     });
   }
 

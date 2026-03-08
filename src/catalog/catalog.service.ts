@@ -186,20 +186,28 @@ export class CatalogService {
    * @param kindGroup - Optional kind group to filter components by domain
    * @returns An array of matching components
    */
-  async findAll(kindGroup?: ComponentKindGroup): Promise<Component[]> {
+  async findAll(
+    skip = 0,
+    take = 20,
+    kindGroup?: ComponentKindGroup,
+  ): Promise<[Component[], number]> {
     if (kindGroup) {
       const kinds = Object.entries(COMPONENT_KIND_GROUPS)
         .filter(([, group]) => group === kindGroup)
         .map(([kind]) => kind as ComponentKind);
 
-      return await this.componentRepository.find({
+      return await this.componentRepository.findAndCount({
         where: kinds.map((kind) => ({ kind })),
         relations: ["dependencies"],
+        skip,
+        take,
       });
     }
 
-    return await this.componentRepository.find({
+    return await this.componentRepository.findAndCount({
       relations: ["dependencies"],
+      skip,
+      take,
     });
   }
 

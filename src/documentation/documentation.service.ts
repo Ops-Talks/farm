@@ -65,8 +65,18 @@ export class DocumentationService {
    * Retrieves all documentation entries.
    * @returns All documentation
    */
-  async findAll(): Promise<Documentation[]> {
-    return await this.documentationRepository.find();
+  async findAll(
+    skip = 0,
+    take = 20,
+    componentId?: string,
+  ): Promise<[Documentation[], number]> {
+    const where: Record<string, unknown> = {};
+    if (componentId) where.componentId = componentId;
+    return await this.documentationRepository.findAndCount({
+      where,
+      skip,
+      take,
+    });
   }
 
   /**

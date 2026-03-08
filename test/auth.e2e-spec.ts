@@ -208,4 +208,40 @@ describe("Auth Lifecycle (e2e)", () => {
       .get("/api/catalog/components")
       .expect(401);
   });
+
+  it("should reject access with malformed JWT token", async () => {
+    await request(app.getHttpServer())
+      .get("/api/catalog/components")
+      .set("Authorization", "Bearer invalid.jwt.token")
+      .expect(401);
+  });
+
+  it("should reject non-admin users from admin-only endpoints", async () => {
+    // Register a regular user (not promoted to admin)
+    const userData = {
+      username: "regular_user",
+      email: "regular@test.com",
+      password: "RegularPass1",
+      displayName: "Regular User",
+    };
+
+    await request(app.getHttpServer())
+      .post("/api/auth/register")
+      .send(userData)
+      .expect(201);
+
+    const loginRes = await request(app.getHttpServer())
+      .post("/api/auth/login")
+      .send({ username: userData.username, password: userData.password })
+      .expect(200);
+
+    const userToken = (loginRes.body as { token: string }).token;
+
+    // Try to access admin-only endpoint
+    await request(app.getHttpServer())
+      .post("/api/catalog/components")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ name: "test", kind: "service", owner: "team" })
+      .expect(403);
+  });
 });
