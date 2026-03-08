@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Dockerfile**: Pre-create `logs/` directory with `node` ownership to prevent EACCES permission error when running as non-root user.
+
 ## [0.4.6] - 2026-03-08
 
 ### Added
