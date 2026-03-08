@@ -32,6 +32,7 @@ services:
       DATABASE_PASSWORD: password
       DATABASE_NAME: farm
       DATABASE_SYNC: "false"
+      JWT_SECRET: ${JWT_SECRET:-change-me-this-must-be-at-least-32-characters-long}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
