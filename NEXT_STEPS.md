@@ -628,6 +628,130 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 ---
 
+### FARM-E20: Advanced Observability
+
+> **Priority:** MEDIUM -- Enhances production monitoring and incident response capabilities.
+
+#### FARM-S51: Application Metrics
+
+- [ ] FARM-T148: Integrate Prometheus metrics
+  - [ ] FARM-ST138: Install `prom-client` and `@willsoto/nestjs-prometheus` packages
+  - [ ] FARM-ST139: Configure default metrics (event loop lag, heap size, GC) in `AppModule`
+  - [ ] FARM-ST140: Expose `/metrics` endpoint (unauthenticated, behind internal network in production)
+  - [ ] FARM-ST141: Add custom counters for HTTP requests by route, method, and status code
+  - [ ] FARM-ST142: Add histogram for request duration by endpoint
+
+#### FARM-S52: Distributed Tracing
+
+- [ ] FARM-T149: Integrate OpenTelemetry tracing
+  - [ ] FARM-ST143: Install `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`
+  - [ ] FARM-ST144: Create tracing configuration factory with Jaeger/OTLP exporter support
+  - [ ] FARM-ST145: Add `OTEL_EXPORTER_ENDPOINT` and `OTEL_SERVICE_NAME` to configuration and Joi validation
+  - [ ] FARM-ST146: Propagate trace context through HTTP headers (W3C Trace Context)
+  - [ ] FARM-ST147: Add trace IDs to Winston log output for log-trace correlation
+
+---
+
+### FARM-E21: Caching and Performance
+
+> **Priority:** MEDIUM -- Reduces database load and improves response times for read-heavy endpoints.
+
+#### FARM-S53: In-Memory and Redis Caching
+
+- [ ] FARM-T150: Integrate NestJS cache manager with Redis
+  - [ ] FARM-ST148: Install `@nestjs/cache-manager` and `cache-manager-redis-yet` packages
+  - [ ] FARM-ST149: Configure `CacheModule.registerAsync()` in `AppModule` with Redis connection from env vars (`REDIS_HOST`, `REDIS_PORT`)
+  - [ ] FARM-ST150: Add fallback to in-memory cache when Redis is unavailable (development mode)
+  - [ ] FARM-ST151: Add `REDIS_HOST`, `REDIS_PORT`, and `CACHE_TTL` to configuration and Joi validation
+- [ ] FARM-T151: Apply caching to high-traffic read endpoints
+  - [ ] FARM-ST152: Add `@UseInterceptors(CacheInterceptor)` to `GET /catalog/components` and `GET /catalog/components/:id`
+  - [ ] FARM-ST153: Add cache invalidation on component create, update, and delete operations
+  - [ ] FARM-ST154: Add `@UseInterceptors(CacheInterceptor)` to `GET /plugins` endpoints (menu-items, routes)
+- [ ] FARM-T152: Add Redis service to Docker Compose
+  - [ ] FARM-ST155: Add `redis:7-alpine` service with healthcheck to `docker-compose.yml`
+  - [ ] FARM-ST156: Add API service dependency on Redis container health
+
+---
+
+### FARM-E22: Background Job Processing
+
+> **Priority:** MEDIUM -- Enables async operations for catalog discovery, notifications, and scheduled tasks.
+
+#### FARM-S54: Bull Queue Integration
+
+- [ ] FARM-T153: Set up BullMQ job processing infrastructure
+  - [ ] FARM-ST157: Install `@nestjs/bullmq` and `bullmq` packages
+  - [ ] FARM-ST158: Configure `BullModule.forRootAsync()` in `AppModule` with Redis connection
+  - [ ] FARM-ST159: Create `CatalogDiscoveryProcessor` to handle async YAML catalog ingestion
+  - [ ] FARM-ST160: Create `NotificationProcessor` placeholder for future email/webhook notifications
+- [ ] FARM-T154: Add Bull Board dashboard
+  - [ ] FARM-ST161: Install `@bull-board/nestjs` and `@bull-board/api` packages
+  - [ ] FARM-ST162: Mount Bull Board UI at `/admin/queues` behind admin role guard
+
+---
+
+### FARM-E23: Database Seeders and Developer Experience
+
+> **Priority:** LOW -- Improves onboarding and local development workflow.
+
+#### FARM-S55: Database Seeding
+
+- [ ] FARM-T155: Create TypeORM seed infrastructure
+  - [ ] FARM-ST163: Create `src/database/seeds/` directory with seed runner script
+  - [ ] FARM-ST164: Create `initial-seed.ts` with sample admin user, 3 components (service, library, website), 2 teams, 2 environments
+  - [ ] FARM-ST165: Add `npm run seed` script to `package.json` and `make seed` to `Makefile`
+  - [ ] FARM-ST166: Guard seeder to only run in development/test environments
+
+#### FARM-S56: API Versioning
+
+- [ ] FARM-T156: Implement URI-based API versioning
+  - [ ] FARM-ST167: Enable NestJS versioning with `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`
+  - [ ] FARM-ST168: Add `@Version('1')` to all existing controllers as baseline
+  - [ ] FARM-ST169: Update Swagger configuration to reflect versioned paths
+  - [ ] FARM-ST170: Update all E2E tests to use `/api/v1/` prefixed paths
+
+---
+
+### FARM-E24: Communication and Notifications
+
+> **Priority:** LOW -- Enables user-facing notifications and external integrations.
+
+#### FARM-S57: Email Service
+
+- [ ] FARM-T157: Integrate nodemailer for transactional emails
+  - [ ] FARM-ST171: Install `@nestjs-modules/mailer` and `nodemailer` packages
+  - [ ] FARM-ST172: Configure `MailerModule.forRootAsync()` with SMTP settings from env vars (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`)
+  - [ ] FARM-ST173: Create email templates directory with Handlebars templates (welcome, password-reset)
+  - [ ] FARM-ST174: Add `SMTP_*` variables to configuration, Joi validation, and `.env.example`
+
+#### FARM-S58: WebSocket Real-Time Updates
+
+- [ ] FARM-T158: Add WebSocket gateway for live events
+  - [ ] FARM-ST175: Install `@nestjs/websockets` and `@nestjs/platform-socket.io` packages
+  - [ ] FARM-ST176: Create `EventsGateway` with `@WebSocketGateway()` decorator
+  - [ ] FARM-ST177: Emit events on deployment status changes (`deployment.created`, `deployment.updated`)
+  - [ ] FARM-ST178: Emit events on catalog changes (`component.created`, `component.updated`, `component.deleted`)
+  - [ ] FARM-ST179: Add JWT-based authentication to WebSocket handshake
+
+---
+
+### FARM-E25: TypeScript Strictness
+
+> **Priority:** LOW -- Improves type safety and catches bugs at compile time.
+
+#### FARM-S59: Enable Strict TypeScript Compiler Options
+
+- [ ] FARM-T159: Enable `noImplicitAny` in tsconfig.json
+  - [ ] FARM-ST180: Set `noImplicitAny: true` in `tsconfig.json`
+  - [ ] FARM-ST181: Fix all resulting type errors across the codebase
+  - [ ] FARM-ST182: Verify build, unit tests, and E2E tests pass
+- [ ] FARM-T160: Enable `strictBindCallApply` in tsconfig.json
+  - [ ] FARM-ST183: Set `strictBindCallApply: true` in `tsconfig.json`
+  - [ ] FARM-ST184: Fix all resulting type errors
+  - [ ] FARM-ST185: Verify build, unit tests, and E2E tests pass
+
+---
+
 ## Implementation Priority
 
 The recommended execution order, respecting dependencies:
@@ -652,4 +776,11 @@ The recommended execution order, respecting dependencies:
 
 ### Upcoming Phases
 
-All phases complete.
+| Phase | Epic | Dependency | Priority |
+|---|---|---|---|
+| 14 | FARM-E20: Advanced Observability | None | MEDIUM |
+| 15 | FARM-E21: Caching and Performance | None | MEDIUM |
+| 16 | FARM-E22: Background Job Processing | FARM-E21 (Redis) | MEDIUM |
+| 17 | FARM-E25: TypeScript Strictness | None | LOW |
+| 18 | FARM-E23: Database Seeders and Developer Experience | None | LOW |
+| 19 | FARM-E24: Communication and Notifications | FARM-E22 (Queues) | LOW |
