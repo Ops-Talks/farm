@@ -16,12 +16,10 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     res.on("finish", () => {
       const { statusCode } = res;
       const duration = Date.now() - startTime;
+      const user = (req as unknown as Record<string, unknown>).user;
       const userId =
-        (req as Record<string, unknown>).user != null
-          ? String(
-              ((req as Record<string, unknown>).user as Record<string, unknown>)
-                .sub,
-            )
+        user != null
+          ? String((user as Record<string, unknown>).sub)
           : "anonymous";
       this.logger.log(
         `${method} ${originalUrl} ${statusCode} ${duration}ms - ${userId}`,

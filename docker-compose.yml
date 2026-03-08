@@ -26,7 +26,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_TYPE: postgres
-      DATABASE_HOST: ${DATABASE_HOST:-postgres}
+      DATABASE_HOST: postgres
       DATABASE_PORT: ${DATABASE_PORT:-5432}
       DATABASE_USER: ${DATABASE_USER:-postgres}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
