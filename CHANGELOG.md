@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Authentication UI (FARM-E18)**: AuthProvider context with `useAuth()` hook, client-side route guard (`AuthGuard`), and app shell layout with sidebar navigation and user menu with sign-out.
 - **Route groups**: Next.js `(protected)` route group wrapping Dashboard, Catalog, Deployments, and Teams pages with `AuthGuard` and `AppShell` layout.
 - **Placeholder pages**: Catalog, Deployments, and Teams stub pages under the protected layout.
+- **Dashboard panels (FARM-E19)**: Enhanced dashboard with four panels: quick stats (component/team/environment/deployment counts), system health (color-coded indicators with byte formatting), real-time activity feed (WebSocket event subscriptions), and background queue info (Bull Board link).
 
 ## [0.6.0] - 2026-03-08
 

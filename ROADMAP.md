@@ -280,29 +280,29 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST66 | Sub-task | Handle refresh token expiry (force re-login) | `DONE` |
 | FARM-ST67 | Sub-task | Implement logout (clear tokens, disconnect WebSocket) | `DONE` |
 
-### FARM-E19: Dashboard `TODO`
+### FARM-E19: Dashboard `DONE`
 
 > High-level overview of system health, queues, and recent activity.
 
-#### FARM-S72: Dashboard Page `TODO`
+#### FARM-S72: Dashboard Page `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T18 | Task | System health panel | `TODO` |
-| FARM-ST68 | Sub-task | Fetch `GET /api/health` and display status indicators | `TODO` |
-| FARM-ST69 | Sub-task | Show database, memory, and disk health with color coding | `TODO` |
-| FARM-ST70 | Sub-task | Auto-refresh health status on interval | `TODO` |
-| FARM-T19 | Task | Queue status panel | `TODO` |
-| FARM-ST71 | Sub-task | Display active BullMQ queues with job counts | `TODO` |
-| FARM-ST72 | Sub-task | Show waiting, active, completed, and failed job totals | `TODO` |
-| FARM-ST73 | Sub-task | Link to full queues page for details | `TODO` |
-| FARM-T20 | Task | Recent activity feed | `TODO` |
-| FARM-ST74 | Sub-task | Subscribe to WebSocket events for real-time updates | `TODO` |
-| FARM-ST75 | Sub-task | Display recent component and deployment events | `TODO` |
-| FARM-ST76 | Sub-task | Show timestamp, event type, and affected resource | `TODO` |
-| FARM-T21 | Task | Quick stats summary | `TODO` |
-| FARM-ST77 | Sub-task | Fetch total components, teams, environments, and deployments | `TODO` |
-| FARM-ST78 | Sub-task | Display stat cards with counts | `TODO` |
+| FARM-T18 | Task | System health panel | `DONE` |
+| FARM-ST68 | Sub-task | Fetch `GET /api/health` and display status indicators | `DONE` |
+| FARM-ST69 | Sub-task | Show database, memory, and disk health with color coding | `DONE` |
+| FARM-ST70 | Sub-task | Auto-refresh health status on interval | `DONE` |
+| FARM-T19 | Task | Queue status panel | `DONE` |
+| FARM-ST71 | Sub-task | Display active BullMQ queues with job counts | `DONE` |
+| FARM-ST72 | Sub-task | Show waiting, active, completed, and failed job totals | `DONE` |
+| FARM-ST73 | Sub-task | Link to full queues page for details | `DONE` |
+| FARM-T20 | Task | Recent activity feed | `DONE` |
+| FARM-ST74 | Sub-task | Subscribe to WebSocket events for real-time updates | `DONE` |
+| FARM-ST75 | Sub-task | Display recent component and deployment events | `DONE` |
+| FARM-ST76 | Sub-task | Show timestamp, event type, and affected resource | `DONE` |
+| FARM-T21 | Task | Quick stats summary | `DONE` |
+| FARM-ST77 | Sub-task | Fetch total components, teams, environments, and deployments | `DONE` |
+| FARM-ST78 | Sub-task | Display stat cards with counts | `DONE` |
 
 ### FARM-E20: Catalog UI `TODO`
 

@@ -1,30 +1,9 @@
-"use client";
-
-import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { health } from "@/lib/api-client";
-import type { HealthStatus } from "@/types/api";
+import { HealthPanel } from "@/components/dashboard/health-panel";
+import { QuickStats } from "@/components/dashboard/quick-stats";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { QueuePanel } from "@/components/dashboard/queue-panel";
 
 export default function DashboardPage() {
-  const [healthData, setHealthData] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchHealth = useCallback(() => {
-    health
-      .check()
-      .then(setHealthData)
-      .catch(() => setHealthData(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    fetchHealth();
-    const interval = setInterval(fetchHealth, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchHealth]);
-
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -34,62 +13,36 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              System Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : healthData ? (
-              <Badge
-                variant={
-                  healthData.status === "ok" ? "default" : "destructive"
-                }
-                className="text-lg"
-              >
-                {healthData.status === "ok" ? "Healthy" : "Degraded"}
-              </Badge>
-            ) : (
-              <Badge variant="destructive" className="text-lg">
-                Unreachable
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
+      {/* Quick stats */}
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          Overview
+        </h2>
+        <QuickStats />
+      </section>
 
-        {healthData &&
-          Object.entries(healthData.details).map(([key, detail]) => (
-            <Card key={key}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium capitalize text-muted-foreground">
-                  {key.replace(/_/g, " ")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge
-                  variant={
-                    detail.status === "up" ? "default" : "destructive"
-                  }
-                >
-                  {detail.status === "up" ? "UP" : "DOWN"}
-                </Badge>
-                {Object.entries(detail)
-                  .filter(([k]) => k !== "status")
-                  .map(([k, v]) => (
-                    <p
-                      key={k}
-                      className="mt-1 text-xs text-muted-foreground"
-                    >
-                      {k}: {String(v)}
-                    </p>
-                  ))}
-              </CardContent>
-            </Card>
-          ))}
+      {/* System health */}
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          System Health
+        </h2>
+        <HealthPanel />
+      </section>
+
+      {/* Activity feed and queue panel side by side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            Live Activity
+          </h2>
+          <ActivityFeed />
+        </section>
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            Queues
+          </h2>
+          <QueuePanel />
+        </section>
       </div>
     </div>
   );
