@@ -92,9 +92,42 @@ All endpoints are prefixed with `/api`. For full details, visit `/api/docs` when
 
 - `POST /api/docs` - Create a documentation entry
 - `GET /api/docs` - List all documentation (supports `?componentId=` filter)
-- `GET /api/docs/:id` - Get a specific documentation entry
+- `GET /api/docs/search` - Search documentation by title (`?q=&componentId=`)
+- `GET /api/docs/tree` - Get documentation navigation tree (`?componentId=`)
+- `GET /api/docs/:id` - Get documentation metadata
+- `GET /api/docs/:id/content` - Get raw Markdown content
+- `GET /api/docs/:id/rendered` - Get rendered HTML content
 - `PATCH /api/docs/:id` - Update a documentation entry
 - `DELETE /api/docs/:id` - Remove a documentation entry
+
+#### Teams
+
+- `POST /api/teams` - Create a team (admin)
+- `GET /api/teams` - List all teams
+- `GET /api/teams/:id` - Get team by ID
+- `PATCH /api/teams/:id` - Update a team (admin)
+- `DELETE /api/teams/:id` - Delete a team (admin)
+- `POST /api/teams/:id/members/:userId` - Add team member (admin)
+- `DELETE /api/teams/:id/members/:userId` - Remove team member (admin)
+- `GET /api/teams/:id/members` - List team members
+- `GET /api/teams/:id/components` - List team components
+
+#### Environments
+
+- `POST /api/environments` - Create environment (admin)
+- `GET /api/environments` - List all environments
+- `GET /api/environments/:id` - Get environment by ID
+- `PATCH /api/environments/:id` - Update environment (admin)
+- `DELETE /api/environments/:id` - Delete environment (admin)
+
+#### Deployments
+
+- `POST /api/deployments` - Record a deployment (admin)
+- `GET /api/deployments` - List deployments (filterable)
+- `GET /api/deployments/:id` - Get deployment details
+- `PATCH /api/deployments/:id` - Update deployment status (admin)
+- `GET /api/deployments/latest` - Latest deployments per environment (`?componentId=`)
+- `GET /api/deployments/matrix` - Component-environment deployment matrix
 
 #### Auth
 

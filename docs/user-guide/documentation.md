@@ -10,6 +10,8 @@ Documentation in Farm is designed to:
 - Enable easy discovery of relevant documentation
 - Support versioning for documentation entries
 - Allow filtering documentation by component
+- Organize documentation into navigation trees with parent/child hierarchy
+- Render Markdown content to sanitized HTML
 
 ## Documentation Properties
 
@@ -18,10 +20,20 @@ Each documentation entry has the following properties:
 | Property | Description | Required |
 |----------|-------------|----------|
 | `title` | Title of the documentation | Yes |
-| `content` | The documentation content | Yes |
-| `componentId` | ID of the associated component | Yes |
+| `sourceUrl` | URL pointing to a raw Markdown file | Yes |
+| `componentId` | UUID of the associated component | Yes |
 | `author` | Author of the documentation | Yes |
 | `version` | Version string | No (defaults to `1.0.0`) |
+| `parentId` | UUID of a parent documentation entry for tree hierarchy | No |
+| `order` | Numeric sort order within the same parent level | No (defaults to `0`) |
+
+## Authentication
+
+All documentation endpoints require a valid JWT token and the `admin` role. Include the token in the `Authorization` header:
+
+```bash
+-H "Authorization: Bearer {token}"
+```
 
 ## Managing Documentation
 
@@ -32,12 +44,29 @@ To create a new documentation entry:
 ```bash
 curl -X POST http://localhost:3000/api/docs \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
   -d '{
     "title": "User Service API Guide",
-    "content": "# User Service API\n\nThis guide covers the User Service API...",
+    "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/user-service.md",
     "componentId": "{component-id}",
     "author": "platform-team",
     "version": "1.0.0"
+  }'
+```
+
+You can optionally nest the entry under a parent and control sort order:
+
+```bash
+curl -X POST http://localhost:3000/api/docs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
+  -d '{
+    "title": "Authentication",
+    "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/auth.md",
+    "componentId": "{component-id}",
+    "author": "platform-team",
+    "parentId": "{parent-doc-id}",
+    "order": 1
   }'
 ```
 
@@ -46,7 +75,8 @@ curl -X POST http://localhost:3000/api/docs \
 To retrieve all documentation entries:
 
 ```bash
-curl http://localhost:3000/api/docs
+curl -H "Authorization: Bearer {token}" \
+  http://localhost:3000/api/docs
 ```
 
 ### Filtering by Component
@@ -54,15 +84,53 @@ curl http://localhost:3000/api/docs
 To get documentation for a specific component:
 
 ```bash
-curl "http://localhost:3000/api/docs?componentId={component-id}"
+curl -H "Authorization: Bearer {token}" \
+  "http://localhost:3000/api/docs?componentId={component-id}"
 ```
 
-### Getting Specific Documentation
+### Searching Documentation
 
-To retrieve a documentation entry by ID:
+To search documentation entries by title, with an optional component scope:
 
 ```bash
-curl http://localhost:3000/api/docs/{doc-id}
+curl -H "Authorization: Bearer {token}" \
+  "http://localhost:3000/api/docs/search?q=api&componentId={component-id}"
+```
+
+### Getting the Navigation Tree
+
+To retrieve a hierarchical navigation tree for a component's documentation:
+
+```bash
+curl -H "Authorization: Bearer {token}" \
+  "http://localhost:3000/api/docs/tree?componentId={component-id}"
+```
+
+### Getting Documentation Metadata
+
+To retrieve a documentation entry's metadata by ID:
+
+```bash
+curl -H "Authorization: Bearer {token}" \
+  http://localhost:3000/api/docs/{doc-id}
+```
+
+### Getting Raw Markdown Content
+
+To fetch the raw Markdown content from the `sourceUrl`:
+
+```bash
+curl -H "Authorization: Bearer {token}" \
+  http://localhost:3000/api/docs/{doc-id}/content
+```
+
+### Getting Rendered HTML Content
+
+To fetch the Markdown content rendered and sanitized as HTML:
+
+```bash
+curl -H "Authorization: Bearer {token}" \
+  http://localhost:3000/api/docs/{doc-id}/rendered
 ```
 
 ### Updating Documentation
@@ -72,8 +140,9 @@ To update an existing documentation entry:
 ```bash
 curl -X PATCH http://localhost:3000/api/docs/{doc-id} \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
   -d '{
-    "content": "# Updated Content\n\nThis is the updated documentation...",
+    "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/user-service-v2.md",
     "version": "1.1.0"
   }'
 ```
@@ -83,7 +152,8 @@ curl -X PATCH http://localhost:3000/api/docs/{doc-id} \
 To remove a documentation entry:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/docs/{doc-id}
+curl -X DELETE http://localhost:3000/api/docs/{doc-id} \
+  -H "Authorization: Bearer {token}"
 ```
 
 ## Best Practices
@@ -93,10 +163,11 @@ curl -X DELETE http://localhost:3000/api/docs/{doc-id}
 - Create separate documentation entries for different topics (e.g., API guides, deployment guides, architecture docs)
 - Use clear and descriptive titles
 - Link documentation entries to the appropriate component
+- Use `parentId` and `order` to build logical navigation trees
 
 ### Content Guidelines
 
-- Write documentation in Markdown format for easy rendering
+- Host documentation as Markdown files accessible via URL (e.g., in a Git repository)
 - Include code examples where appropriate
 - Keep documentation up to date with component changes
 - Include version information when documenting versioned APIs
