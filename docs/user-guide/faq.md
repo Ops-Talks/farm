@@ -22,8 +22,8 @@ Farm's backend is built with NestJS and TypeScript. The documentation is managed
 
 ### How do I install Farm?
 
-See the [Getting Started](../getting-started.md) guide for detailed installation instructions.
+See the [Getting Started](getting-started.md) guide for detailed installation instructions.
 
 ### Can I contribute to Farm?
 
-Absolutely! Check out our [Contributing Guide](../../developer-guide/contributing.md) for more information.
+Absolutely! Check out our [Contributing Guide](../developer-guide/contributing.md) for more information.
