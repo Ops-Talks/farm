@@ -418,15 +418,15 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST115 | Sub-task | Implement team creation and editing forms (admin only) | `DONE` |
 | FARM-ST116 | Sub-task | Add/remove member actions | `DONE` |
 
-#### FARM-S82: Documentation Browser `PARTIAL`
+#### FARM-S82: Documentation Browser `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T33 | Task | Documentation viewer | `PARTIAL` |
-| FARM-ST117 | Sub-task | Fetch documentation tree (`GET /api/v1/docs/tree`) for navigation sidebar | `PARTIAL` |
-| FARM-ST118 | Sub-task | Render Markdown content from `GET /api/v1/docs/:id/rendered` | `PARTIAL` |
-| FARM-ST119 | Sub-task | Implement documentation search (`GET /api/v1/docs/search`) | `PARTIAL` |
-| FARM-ST120 | Sub-task | Create/edit documentation form (admin only) | `PARTIAL` |
+| FARM-T33 | Task | Documentation viewer | `DONE` |
+| FARM-ST117 | Sub-task | Fetch documentation tree (`GET /api/v1/docs/tree`) for navigation sidebar | `DONE` |
+| FARM-ST118 | Sub-task | Render Markdown content from `GET /api/v1/docs/:id/rendered` | `DONE` |
+| FARM-ST119 | Sub-task | Implement documentation search (`GET /api/v1/docs/search`) | `DONE` |
+| FARM-ST120 | Sub-task | Create/edit documentation form (admin only) | `DONE` |
 
 #### FARM-S83: Navigation Layout `DONE`
 

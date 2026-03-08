@@ -42,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Teams API client**: Extended `teams` API client with `update()`, `delete()`, `getMembers()`, `addMember()`, `removeMember()`, and `getComponents()` methods.
 - **Breadcrumb navigation (FARM-S83)**: Added path-based breadcrumb bar in the top header for contextual navigation across all pages.
 - **Dark mode support**: Wired up `next-themes` ThemeProvider with system/light/dark modes and a theme toggle in the user dropdown menu.
+- **Documentation browser (FARM-S82)**: Full documentation viewer at `/docs` with tree sidebar navigation per component, rendered Markdown content display, search by title with relevance scores, and admin create/edit/delete forms. Integrated `@tailwindcss/typography` for styled prose rendering.
+- **Documentation API client**: Added `docs.list()`, `docs.get()`, `docs.getContent()`, `docs.getRendered()`, `docs.search()`, `docs.tree()`, `docs.create()`, `docs.update()`, `docs.delete()` methods and `DocumentationEntry`/`DocumentationTreeNode`/`DocumentationSearchResult` types.
 
 ## [0.6.0] - 2026-03-08
 

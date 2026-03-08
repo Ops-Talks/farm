@@ -2,6 +2,9 @@ import type {
   CatalogComponent,
   Deployment,
   DeploymentMatrixRow,
+  DocumentationEntry,
+  DocumentationSearchResult,
+  DocumentationTreeNode,
   Environment,
   ErrorResponse,
   HealthStatus,
@@ -378,6 +381,56 @@ export const queues = {
       `/v1/queues/${encodeURIComponent(queueName)}/jobs/${encodeURIComponent(jobId)}/retry`,
       { method: "POST" },
     );
+  },
+};
+
+// -- Documentation API --
+
+export const docs = {
+  list(
+    query?: PaginationQuery & { componentId?: string },
+  ): Promise<PaginatedResponse<DocumentationEntry>> {
+    return request(`/v1/docs${toQueryString(query ?? {})}`);
+  },
+
+  get(id: string): Promise<DocumentationEntry> {
+    return request(`/v1/docs/${id}`);
+  },
+
+  getContent(id: string): Promise<string> {
+    return request(`/v1/docs/${id}/content`);
+  },
+
+  getRendered(id: string): Promise<string> {
+    return request(`/v1/docs/${id}/rendered`);
+  },
+
+  search(q: string, componentId?: string): Promise<DocumentationSearchResult[]> {
+    const params: Record<string, string> = { q };
+    if (componentId) params.componentId = componentId;
+    return request(`/v1/docs/search${toQueryString(params)}`);
+  },
+
+  tree(componentId: string): Promise<DocumentationTreeNode[]> {
+    return request(`/v1/docs/tree?componentId=${encodeURIComponent(componentId)}`);
+  },
+
+  create(data: Partial<DocumentationEntry>): Promise<DocumentationEntry> {
+    return request("/v1/docs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  update(id: string, data: Partial<DocumentationEntry>): Promise<DocumentationEntry> {
+    return request(`/v1/docs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(id: string): Promise<void> {
+    return request(`/v1/docs/${id}`, { method: "DELETE" });
   },
 };
 

@@ -304,3 +304,33 @@ export interface ObservabilitySummary {
   latencyPercentiles: LatencyPercentiles;
   grafanaUrl: string | null;
 }
+
+// -- Documentation --
+
+export interface DocumentationEntry {
+  id: string;
+  title: string;
+  sourceUrl: string;
+  componentId: string;
+  author: string;
+  version: string;
+  parentId: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentationTreeNode {
+  id: string;
+  title: string;
+  parentId: string | null;
+  order: number;
+  children: DocumentationTreeNode[];
+}
+
+export interface DocumentationSearchResult {
+  id: string;
+  title: string;
+  componentId: string;
+  score: number;
+}
