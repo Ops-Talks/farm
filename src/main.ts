@@ -3,6 +3,7 @@ import { ValidationPipe, ClassSerializerInterceptor } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
+import helmet from "helmet";
 import { AppModule } from "./app.module";
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const { version } = require("../package.json");
@@ -20,6 +21,9 @@ async function bootstrap() {
 
   const logger = WinstonModule.createLogger(loggerConfigFactory(env, logLevel));
   app.useLogger(logger);
+
+  app.use(helmet());
+  app.enableShutdownHooks();
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -49,6 +53,7 @@ async function bootstrap() {
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
     .setVersion(version as string)
+    .addBearerAuth()
     .addTag("farm")
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

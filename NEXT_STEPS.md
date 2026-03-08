@@ -599,6 +599,35 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 ---
 
+### FARM-E19: Production Readiness Hardening
+
+> **Priority:** HIGH -- Required before serving production traffic.
+
+#### FARM-S47: Security Headers
+
+- [x] FARM-T144: Install and configure Helmet
+  - [x] FARM-ST131: Install `helmet` package via npm
+  - [x] FARM-ST132: Add `app.use(helmet())` in `src/main.ts` after app creation
+  - [x] FARM-ST133: Verify build, unit tests, and E2E tests pass with Helmet enabled
+
+#### FARM-S48: Graceful Shutdown
+
+- [x] FARM-T145: Enable NestJS shutdown hooks
+  - [x] FARM-ST134: Add `app.enableShutdownHooks()` in `src/main.ts` to drain connections on SIGTERM/SIGINT
+  - [x] FARM-ST135: Log shutdown events via the application logger
+
+#### FARM-S49: Swagger Authentication
+
+- [x] FARM-T146: Add bearer auth to Swagger UI
+  - [x] FARM-ST136: Add `.addBearerAuth()` to `DocumentBuilder` chain in `src/main.ts` so Swagger UI exposes an Authorize button for JWT tokens
+
+#### FARM-S50: Container Security
+
+- [x] FARM-T147: Run container as non-root user
+  - [x] FARM-ST137: Add `USER node` directive before `CMD` in the Dockerfile production stage
+
+---
+
 ## Implementation Priority
 
 The recommended execution order, respecting dependencies:
@@ -619,7 +648,8 @@ The recommended execution order, respecting dependencies:
 | 10 | FARM-E17: Documentation Accuracy | Done |
 | 11 | FARM-E16: Observability and Ops | Done |
 | 12 | FARM-E18: Test Coverage Expansion | Done |
+| 13 | FARM-E19: Production Readiness Hardening | Done |
 
 ### Upcoming Phases
 
-All phases complete! 🎉
+All phases complete.

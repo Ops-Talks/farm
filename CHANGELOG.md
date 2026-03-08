@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Helmet security headers**: Installed `helmet` and applied via `app.use(helmet())` in `main.ts` for X-Frame-Options, Content-Security-Policy, and other HTTP security headers.
+- **Graceful shutdown**: Enabled `app.enableShutdownHooks()` in `main.ts` to drain active connections and close the database pool cleanly on SIGTERM/SIGINT.
+- **Swagger bearer auth**: Added `.addBearerAuth()` to Swagger DocumentBuilder so the UI exposes an Authorize button for JWT tokens.
+
+### Changed
+- **Dockerfile**: Added `USER node` directive in production stage to run container as non-root user.
+
 ## [0.4.5] - 2026-03-08
 
 ### Added
