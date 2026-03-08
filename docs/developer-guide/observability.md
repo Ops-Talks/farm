@@ -16,7 +16,7 @@ graph LR
 |-------------|---------------------------------|-------|
 | Prometheus  | Metrics collection and storage  | 9090  |
 | Tempo       | Distributed trace storage       | 3200  |
-| Grafana     | Dashboards and visualization    | 3001  |
+| Grafana     | Dashboards and visualization    | 3002  |
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ This launches the base stack (PostgreSQL, Redis, API) plus Prometheus, Tempo, an
 
 | Service    | URL                          |
 |------------|------------------------------|
-| Grafana    | <http://localhost:3001>      |
+| Grafana    | <http://localhost:3002>      |
 | Prometheus | <http://localhost:9090>      |
 | Tempo      | <http://localhost:3200>      |
 | Farm API   | <http://localhost:3000/api>  |

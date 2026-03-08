@@ -95,7 +95,7 @@ describe("ObservabilityService", () => {
 
   const mockConfigService = {
     get: jest.fn((key: string) => {
-      if (key === "grafana.url") return "http://localhost:3001";
+      if (key === "grafana.url") return "http://localhost:3002";
       return undefined;
     }),
   };
@@ -157,7 +157,7 @@ describe("ObservabilityService", () => {
     it("should return grafanaUrl from config", async () => {
       const result = await service.getSummary();
 
-      expect(result.grafanaUrl).toBe("http://localhost:3001");
+      expect(result.grafanaUrl).toBe("http://localhost:3002");
     });
   });
 

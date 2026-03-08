@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cache interceptors**: Applied `CacheInterceptor` to `GET /catalog/components`, `GET /catalog/components/:id`, and all plugin GET endpoints for reduced database load.
 - **Cache invalidation**: Automatic cache clear on component create, update, delete, and YAML registration operations.
 - **Redis Docker service**: Added `redis:7-alpine` service with healthcheck to `docker-compose.yml`; API depends on Redis health.
-- **Observability stack**: Added `docker-compose.observability.yml` with Grafana (port 3001), Prometheus (port 9090), and Grafana Tempo (ports 3200/4318) for metrics visualization and distributed trace inspection.
+- **Observability stack**: Added `docker-compose.observability.yml` with Grafana (port 3002), Prometheus (port 9090), and Grafana Tempo (ports 3200/4318) for metrics visualization and distributed trace inspection.
 - **Pre-provisioned Grafana dashboard**: Farm API Overview dashboard with request rate, latency percentiles (p50/p95/p99), error rate, duration heatmap, and recent traces panels -- provisioned automatically on startup.
 - **Makefile targets**: Added `make up-observability` and `make down-observability` for one-command observability stack management.
 - **Observability documentation**: New `docs/developer-guide/observability.md` covering stack architecture, quick start, dashboard panels, metrics reference, PromQL examples, and extension guides.

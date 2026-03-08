@@ -16,7 +16,7 @@ describe("ObservabilityController", () => {
     totalRequests: 1500,
     requestsByStatus: { "2xx": 1400, "4xx": 80, "5xx": 20, other: 0 },
     latencyPercentiles: { p50: 0.005, p90: 0.025, p95: 0.1, p99: 0.5 },
-    grafanaUrl: "http://localhost:3001",
+    grafanaUrl: "http://localhost:3002",
   };
 
   const mockService = {
@@ -48,7 +48,7 @@ describe("ObservabilityController", () => {
 
       expect(result.uptime).toBe(3600);
       expect(result.totalRequests).toBe(1500);
-      expect(result.grafanaUrl).toBe("http://localhost:3001");
+      expect(result.grafanaUrl).toBe("http://localhost:3002");
       expect(mockService.getSummary).toHaveBeenCalled();
     });
   });

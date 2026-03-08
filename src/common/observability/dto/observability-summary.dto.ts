@@ -62,7 +62,7 @@ export class ObservabilitySummaryDto {
   latencyPercentiles: LatencyPercentilesDto;
 
   @ApiProperty({
-    example: "http://localhost:3001",
+    example: "http://localhost:3002",
     nullable: true,
     description: "Grafana dashboard URL if configured",
   })

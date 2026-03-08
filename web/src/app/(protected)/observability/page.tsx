@@ -347,7 +347,7 @@ function MetricsTab({ summary }: { summary: ObservabilitySummary | null }) {
             are available in the pre-configured Grafana dashboard.
           </p>
           <a
-            href={summary.grafanaUrl || "http://localhost:3001"}
+            href={summary.grafanaUrl || "http://localhost:3002"}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -362,7 +362,7 @@ function MetricsTab({ summary }: { summary: ObservabilitySummary | null }) {
 // -- Traces Tab --
 
 function TracesTab({ summary }: { summary: ObservabilitySummary | null }) {
-  const grafanaUrl = summary?.grafanaUrl || "http://localhost:3001";
+  const grafanaUrl = summary?.grafanaUrl || "http://localhost:3002";
   const tempoExploreUrl = `${grafanaUrl}/explore?orgId=1&left=%7B%22datasource%22:%22Tempo%22%7D`;
 
   return (
@@ -491,7 +491,7 @@ export default function ObservabilityPage() {
             </Button>
           </a>
           <a
-            href={summary?.grafanaUrl || "http://localhost:3001"}
+            href={summary?.grafanaUrl || "http://localhost:3002"}
             target="_blank"
             rel="noopener noreferrer"
           >
