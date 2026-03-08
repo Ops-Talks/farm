@@ -31,6 +31,12 @@ export const configuration = () => ({
     ttl: parseInt(process.env.THROTTLE_TTL ?? "60000", 10) || 60000,
     limit: parseInt(process.env.THROTTLE_LIMIT ?? "10", 10) || 10,
   },
+  otel: {
+    enabled: process.env.OTEL_ENABLED === "true",
+    exporterEndpoint:
+      process.env.OTEL_EXPORTER_ENDPOINT || "http://localhost:4318/v1/traces",
+    serviceName: process.env.OTEL_SERVICE_NAME || "farm-api",
+  },
 });
 
 /**
@@ -61,4 +67,9 @@ export const validationSchema = Joi.object({
   ALLOWED_ORIGINS: Joi.string().default("*"),
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(10),
+  OTEL_ENABLED: Joi.boolean().default(false),
+  OTEL_EXPORTER_ENDPOINT: Joi.string()
+    .uri()
+    .default("http://localhost:4318/v1/traces"),
+  OTEL_SERVICE_NAME: Joi.string().default("farm-api"),
 });

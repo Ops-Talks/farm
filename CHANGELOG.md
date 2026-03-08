@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Prometheus metrics**: Integrated `prom-client` and `@willsoto/nestjs-prometheus` with default process metrics, custom HTTP request counter (`http_requests_total`), and request duration histogram (`http_request_duration_seconds`) by method, route, and status code. Exposed at `GET /api/metrics`.
+- **OpenTelemetry tracing**: Integrated `@opentelemetry/sdk-node` with auto-instrumentations for HTTP, Express, and TypeORM. Exports traces via OTLP HTTP to configurable endpoint. Opt-in via `OTEL_ENABLED=true` environment variable.
+- **Log-trace correlation**: Winston log entries in production include `trace_id` and `span_id` fields from the active OpenTelemetry span for cross-referencing logs with distributed traces.
+- **MetricsInterceptor**: Global NestJS interceptor that records per-request Prometheus metrics with route-level granularity.
+
 ## [0.4.7] - 2026-03-08
 
 ### Fixed

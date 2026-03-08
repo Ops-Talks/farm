@@ -9,6 +9,11 @@ import { AppModule } from "./app.module";
 const { version } = require("../package.json");
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { loggerConfigFactory } from "./common/logger/logger.config";
+import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
+
+// Initialize OpenTelemetry before NestJS bootstraps so auto-instrumentations
+// can patch HTTP, Express, and TypeORM modules at import time.
+initTracing();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -63,4 +68,6 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}/api`);
 }
-void bootstrap();
+void bootstrap().catch(async () => {
+  await shutdownTracing();
+});

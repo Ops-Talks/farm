@@ -634,21 +634,21 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S51: Application Metrics
 
-- [ ] FARM-T148: Integrate Prometheus metrics
-  - [ ] FARM-ST138: Install `prom-client` and `@willsoto/nestjs-prometheus` packages
-  - [ ] FARM-ST139: Configure default metrics (event loop lag, heap size, GC) in `AppModule`
-  - [ ] FARM-ST140: Expose `/metrics` endpoint (unauthenticated, behind internal network in production)
-  - [ ] FARM-ST141: Add custom counters for HTTP requests by route, method, and status code
-  - [ ] FARM-ST142: Add histogram for request duration by endpoint
+- [x] FARM-T148: Integrate Prometheus metrics
+  - [x] FARM-ST138: Install `prom-client` and `@willsoto/nestjs-prometheus` packages
+  - [x] FARM-ST139: Configure default metrics (event loop lag, heap size, GC) in `AppModule`
+  - [x] FARM-ST140: Expose `/metrics` endpoint (unauthenticated, behind internal network in production)
+  - [x] FARM-ST141: Add custom counters for HTTP requests by route, method, and status code
+  - [x] FARM-ST142: Add histogram for request duration by endpoint
 
 #### FARM-S52: Distributed Tracing
 
-- [ ] FARM-T149: Integrate OpenTelemetry tracing
-  - [ ] FARM-ST143: Install `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`
-  - [ ] FARM-ST144: Create tracing configuration factory with Jaeger/OTLP exporter support
-  - [ ] FARM-ST145: Add `OTEL_EXPORTER_ENDPOINT` and `OTEL_SERVICE_NAME` to configuration and Joi validation
-  - [ ] FARM-ST146: Propagate trace context through HTTP headers (W3C Trace Context)
-  - [ ] FARM-ST147: Add trace IDs to Winston log output for log-trace correlation
+- [x] FARM-T149: Integrate OpenTelemetry tracing
+  - [x] FARM-ST143: Install `@opentelemetry/sdk-node`, `@opentelemetry/auto-instrumentations-node`
+  - [x] FARM-ST144: Create tracing configuration factory with Jaeger/OTLP exporter support
+  - [x] FARM-ST145: Add `OTEL_EXPORTER_ENDPOINT` and `OTEL_SERVICE_NAME` to configuration and Joi validation
+  - [x] FARM-ST146: Propagate trace context through HTTP headers (W3C Trace Context)
+  - [x] FARM-ST147: Add trace IDs to Winston log output for log-trace correlation
 
 ---
 
@@ -773,12 +773,12 @@ The recommended execution order, respecting dependencies:
 | 11 | FARM-E16: Observability and Ops | Done |
 | 12 | FARM-E18: Test Coverage Expansion | Done |
 | 13 | FARM-E19: Production Readiness Hardening | Done |
+| 14 | FARM-E20: Advanced Observability | Done |
 
 ### Upcoming Phases
 
 | Phase | Epic | Dependency | Priority |
 |---|---|---|---|
-| 14 | FARM-E20: Advanced Observability | None | MEDIUM |
 | 15 | FARM-E21: Caching and Performance | None | MEDIUM |
 | 16 | FARM-E22: Background Job Processing | FARM-E21 (Redis) | MEDIUM |
 | 17 | FARM-E25: TypeScript Strictness | None | LOW |
