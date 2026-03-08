@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database seeder**: Idempotent seed runner (`npm run seed` / `make seed`) with initial data: 2 users (admin + developer), 2 teams, 3 components (service, library, website), 2 environments (development, staging). Guarded against production execution.
 - **API versioning**: Enabled URI-based versioning (`/api/v1/...`) via `VersioningType.URI` with `defaultVersion: '1'`. Health (`/api/health`) and root (`/api`) endpoints remain version-neutral. All E2E tests updated to versioned paths.
 
+### Changed
+- **TypeScript strict mode**: Enabled `noImplicitAny`, `strictBindCallApply`, `strictFunctionTypes`, `noImplicitThis`, `alwaysStrict`, `useUnknownInCatchVariables`, and `noFallthroughCasesInSwitch` in tsconfig.json. Combined with existing `strictNullChecks`, the project now enforces near-full TypeScript strict mode (only `strictPropertyInitialization` excluded for NestJS DTO/entity compatibility).
+
 ## [0.5.0] - 2026-03-08
 
 ### Added

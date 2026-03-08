@@ -754,14 +754,14 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S59: Enable Strict TypeScript Compiler Options
 
-- [ ] FARM-T159: Enable `noImplicitAny` in tsconfig.json
-  - [ ] FARM-ST180: Set `noImplicitAny: true` in `tsconfig.json`
-  - [ ] FARM-ST181: Fix all resulting type errors across the codebase
-  - [ ] FARM-ST182: Verify build, unit tests, and E2E tests pass
-- [ ] FARM-T160: Enable `strictBindCallApply` in tsconfig.json
-  - [ ] FARM-ST183: Set `strictBindCallApply: true` in `tsconfig.json`
-  - [ ] FARM-ST184: Fix all resulting type errors
-  - [ ] FARM-ST185: Verify build, unit tests, and E2E tests pass
+- [x] FARM-T159: Enable `noImplicitAny` in tsconfig.json
+  - [x] FARM-ST180: Set `noImplicitAny: true` in `tsconfig.json`
+  - [x] FARM-ST181: Fix all resulting type errors across the codebase
+  - [x] FARM-ST182: Verify build, unit tests, and E2E tests pass
+- [x] FARM-T160: Enable `strictBindCallApply` in tsconfig.json
+  - [x] FARM-ST183: Set `strictBindCallApply: true` in `tsconfig.json`
+  - [x] FARM-ST184: Fix all resulting type errors
+  - [x] FARM-ST185: Verify build, unit tests, and E2E tests pass
 
 ---
 
@@ -789,11 +789,11 @@ The recommended execution order, respecting dependencies:
 | 14 | FARM-E20: Advanced Observability | Done |
 | 15 | FARM-E21: Caching and Performance | Done |
 | 16 | FARM-E22: Background Job Processing | Done |
+| 17 | FARM-E25: TypeScript Strictness | Done |
 
 ### Upcoming Phases
 
 | Phase | Epic | Dependency | Priority |
 |---|---|---|---|
-| 17 | FARM-E25: TypeScript Strictness | None | LOW |
 | 18 | FARM-E23: Database Seeders and Developer Experience | Done |
 | 19 | FARM-E24: Communication and Notifications | FARM-E22 (Queues) | LOW |
