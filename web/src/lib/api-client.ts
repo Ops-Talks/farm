@@ -200,7 +200,7 @@ export const auth = {
 
 export const catalog = {
   listComponents(
-    query?: PaginationQuery & { kind?: string; lifecycle?: string; owner?: string; search?: string },
+    query?: PaginationQuery & { kindGroup?: string },
   ): Promise<PaginatedResponse<CatalogComponent>> {
     return request(`/v1/catalog/components${toQueryString(query ?? {})}`);
   },
@@ -225,6 +225,20 @@ export const catalog = {
 
   deleteComponent(id: string): Promise<void> {
     return request(`/v1/catalog/components/${id}`, { method: "DELETE" });
+  },
+
+  registerYaml(yaml: string): Promise<CatalogComponent> {
+    return request("/v1/catalog/register-yaml", {
+      method: "POST",
+      body: JSON.stringify({ yaml }),
+    });
+  },
+
+  discoverFromLocation(url: string): Promise<{ message: string; jobId?: string }> {
+    return request("/v1/catalog/locations", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    });
   },
 };
 

@@ -304,41 +304,41 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST77 | Sub-task | Fetch total components, teams, environments, and deployments | `DONE` |
 | FARM-ST78 | Sub-task | Display stat cards with counts | `DONE` |
 
-### FARM-E20: Catalog UI `TODO`
+### FARM-E20: Catalog UI `DONE`
 
 > Component listing, detail view, and registration interface.
 
-#### FARM-S73: Component Listing `TODO`
+#### FARM-S73: Component Listing `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T22 | Task | Component list page | `TODO` |
-| FARM-ST79 | Sub-task | Fetch `GET /api/v1/catalog/components` with pagination | `TODO` |
-| FARM-ST80 | Sub-task | Implement data table with sorting and pagination controls | `TODO` |
-| FARM-ST81 | Sub-task | Add kind group filter tabs (Dev, Infra, Data, Security) | `TODO` |
-| FARM-ST82 | Sub-task | Add search input for component name filtering | `TODO` |
-| FARM-ST83 | Sub-task | Subscribe to WebSocket for live component updates | `TODO` |
+| FARM-T22 | Task | Component list page | `DONE` |
+| FARM-ST79 | Sub-task | Fetch `GET /api/v1/catalog/components` with pagination | `DONE` |
+| FARM-ST80 | Sub-task | Implement data table with sorting and pagination controls | `DONE` |
+| FARM-ST81 | Sub-task | Add kind group filter tabs (Dev, Infra, Data, Security) | `DONE` |
+| FARM-ST82 | Sub-task | Add search input for component name filtering | `DONE` |
+| FARM-ST83 | Sub-task | Subscribe to WebSocket for live component updates | `DONE` |
 
-#### FARM-S74: Component Detail View `TODO`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T23 | Task | Component detail page | `TODO` |
-| FARM-ST84 | Sub-task | Fetch `GET /api/v1/catalog/components/:id` and display metadata | `TODO` |
-| FARM-ST85 | Sub-task | Show lifecycle badge, owner team, tags, and contact info | `TODO` |
-| FARM-ST86 | Sub-task | Display linked documentation (from Documentation module) | `TODO` |
-| FARM-ST87 | Sub-task | Show deployment history for the component | `TODO` |
-| FARM-ST88 | Sub-task | Display dependency graph (if dependencies exist) | `TODO` |
-
-#### FARM-S75: Component Registration `TODO`
+#### FARM-S74: Component Detail View `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T24 | Task | Component creation form | `TODO` |
-| FARM-ST89 | Sub-task | Create form with all component fields and validation | `TODO` |
-| FARM-ST90 | Sub-task | Implement `POST /api/v1/catalog/components` submission | `TODO` |
-| FARM-ST91 | Sub-task | Add YAML import option (`POST /api/v1/catalog/register-yaml`) | `TODO` |
-| FARM-ST92 | Sub-task | Add repository discovery trigger (`POST /api/v1/catalog/locations`) | `TODO` |
+| FARM-T23 | Task | Component detail page | `DONE` |
+| FARM-ST84 | Sub-task | Fetch `GET /api/v1/catalog/components/:id` and display metadata | `DONE` |
+| FARM-ST85 | Sub-task | Show lifecycle badge, owner team, tags, and contact info | `DONE` |
+| FARM-ST86 | Sub-task | Display linked documentation (from Documentation module) | `DONE` |
+| FARM-ST87 | Sub-task | Show deployment history for the component | `DONE` |
+| FARM-ST88 | Sub-task | Display dependency graph (if dependencies exist) | `DONE` |
+
+#### FARM-S75: Component Registration `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T24 | Task | Component creation form | `DONE` |
+| FARM-ST89 | Sub-task | Create form with all component fields and validation | `DONE` |
+| FARM-ST90 | Sub-task | Implement `POST /api/v1/catalog/components` submission | `DONE` |
+| FARM-ST91 | Sub-task | Add YAML import option (`POST /api/v1/catalog/register-yaml`) | `DONE` |
+| FARM-ST92 | Sub-task | Add repository discovery trigger (`POST /api/v1/catalog/locations`) | `DONE` |
 
 ### FARM-E21: Deployment Matrix UI `TODO`
 

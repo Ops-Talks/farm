@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Route groups**: Next.js `(protected)` route group wrapping Dashboard, Catalog, Deployments, and Teams pages with `AuthGuard` and `AppShell` layout.
 - **Placeholder pages**: Catalog, Deployments, and Teams stub pages under the protected layout.
 - **Dashboard panels (FARM-E19)**: Enhanced dashboard with four panels: quick stats (component/team/environment/deployment counts), system health (color-coded indicators with byte formatting), real-time activity feed (WebSocket event subscriptions), and background queue info (Bull Board link).
+- **Catalog list page (FARM-E20)**: Component data table with name, kind, lifecycle, owner, tags columns. KindGroup filter tabs (All/Dev/Infra/Data/Security), client-side name search, pagination, and WebSocket live refresh on component changes.
+- **Catalog detail page**: Dynamic `/catalog/[id]` route displaying component metadata, lifecycle badge, owner, tags, links, external metadata, dependency graph, and recent deployment history.
+- **Component registration form**: Form-based and YAML import modes for `POST /catalog/components` and `POST /catalog/register-yaml`. Includes kind/lifecycle selects, tag input with preview, and validation error display.
+- **API client extensions**: Added `catalog.registerYaml()` and `catalog.discoverFromLocation()` methods. Updated `listComponents` to use `kindGroup` filter matching backend API.
 
 ## [0.6.0] - 2026-03-08
 
