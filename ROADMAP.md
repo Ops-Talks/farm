@@ -257,28 +257,28 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ## Phase 5: Front-End Core Pages `TODO`
 
-### FARM-E18: Authentication UI `TODO`
+### FARM-E18: Authentication UI `DONE`
 
 > Login page, token management, and route protection.
 
-#### FARM-S71: Login and Auth Flow `TODO`
+#### FARM-S71: Login and Auth Flow `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T15 | Task | Login page | `TODO` |
-| FARM-ST57 | Sub-task | Create login form component (username, password) | `TODO` |
-| FARM-ST58 | Sub-task | Implement `POST /api/v1/auth/login` integration | `TODO` |
-| FARM-ST59 | Sub-task | Store access and refresh tokens securely | `TODO` |
-| FARM-ST60 | Sub-task | Handle login errors (invalid credentials, rate limited) | `TODO` |
-| FARM-ST61 | Sub-task | Redirect to dashboard on successful login | `TODO` |
-| FARM-T16 | Task | Protected routes | `TODO` |
-| FARM-ST62 | Sub-task | Create auth guard / route middleware | `TODO` |
-| FARM-ST63 | Sub-task | Redirect unauthenticated users to `/login` | `TODO` |
-| FARM-ST64 | Sub-task | Implement role-based route access (admin vs user) | `TODO` |
-| FARM-T17 | Task | Token lifecycle management | `TODO` |
-| FARM-ST65 | Sub-task | Implement silent token refresh using `POST /api/v1/auth/refresh` | `TODO` |
-| FARM-ST66 | Sub-task | Handle refresh token expiry (force re-login) | `TODO` |
-| FARM-ST67 | Sub-task | Implement logout (clear tokens, disconnect WebSocket) | `TODO` |
+| FARM-T15 | Task | Login page | `DONE` |
+| FARM-ST57 | Sub-task | Create login form component (username, password) | `DONE` |
+| FARM-ST58 | Sub-task | Implement `POST /api/v1/auth/login` integration | `DONE` |
+| FARM-ST59 | Sub-task | Store access and refresh tokens securely | `DONE` |
+| FARM-ST60 | Sub-task | Handle login errors (invalid credentials, rate limited) | `DONE` |
+| FARM-ST61 | Sub-task | Redirect to dashboard on successful login | `DONE` |
+| FARM-T16 | Task | Protected routes | `DONE` |
+| FARM-ST62 | Sub-task | Create auth guard / route middleware | `DONE` |
+| FARM-ST63 | Sub-task | Redirect unauthenticated users to `/login` | `DONE` |
+| FARM-ST64 | Sub-task | Implement role-based route access (admin vs user) | `DONE` |
+| FARM-T17 | Task | Token lifecycle management | `DONE` |
+| FARM-ST65 | Sub-task | Implement silent token refresh using `POST /api/v1/auth/refresh` | `DONE` |
+| FARM-ST66 | Sub-task | Handle refresh token expiry (force re-login) | `DONE` |
+| FARM-ST67 | Sub-task | Implement logout (clear tokens, disconnect WebSocket) | `DONE` |
 
 ### FARM-E19: Dashboard `TODO`
 

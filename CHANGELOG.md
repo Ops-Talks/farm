@@ -16,10 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API client**: Type-safe HTTP client with JWT token management, automatic 401 refresh, and typed API methods for all backend endpoints.
 - **WebSocket client**: Socket.IO client with JWT auth handshake, automatic reconnection with exponential backoff, and typed event subscription matching `FarmEvent` enum.
 - **Login page**: Authentication form with error handling and session token storage.
-- **Dashboard page**: System health overview displaying API health status with per-check detail cards.
+- **Dashboard page**: System health overview displaying API health status with per-check detail cards, auto-refresh every 30 seconds.
 - **Landing page**: Farm portal home with feature navigation cards.
 - **Front-end Docker**: Multi-stage Dockerfile (`web/Dockerfile`) and `web` service in `docker-compose.yml` on port 3001.
 - **ADR-001**: Architecture Decision Record documenting front-end stack selection (Next.js + Shadcn/ui + Tailwind CSS).
+- **Authentication UI (FARM-E18)**: AuthProvider context with `useAuth()` hook, client-side route guard (`AuthGuard`), and app shell layout with sidebar navigation and user menu with sign-out.
+- **Route groups**: Next.js `(protected)` route group wrapping Dashboard, Catalog, Deployments, and Teams pages with `AuthGuard` and `AppShell` layout.
+- **Placeholder pages**: Catalog, Deployments, and Teams stub pages under the protected layout.
 
 ## [0.6.0] - 2026-03-08
 

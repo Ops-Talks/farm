@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { auth, setTokens, ApiError } from "@/lib/api-client";
+import { useAuth } from "@/contexts/auth-context";
+import { ApiError } from "@/lib/api-client";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,9 +20,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await auth.login({ username, password });
-      setTokens(res.token, res.refreshToken, res.user.username);
-      router.push("/dashboard");
+      await login(username, password);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
