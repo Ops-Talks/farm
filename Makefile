@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check release web-dev web-build web-lint
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check release web-dev web-build web-lint web-test
 
 help:
 	@echo "Available Targets:"
@@ -28,7 +28,9 @@ help:
 	@echo "  make test-cov   # Runs local tests with coverage"
 	@echo "  make lint       # Runs linter and fixes issues"
 	@echo "  make fmt        # Formats code using Prettier"
-	@echo "  make check      # Runs fmt, lint and all tests"
+	@echo "  make check-back  # Runs fmt, lint and all back-end tests"
+	@echo "  make check-front # Runs front-end lint, build and tests"
+	@echo "  make check      # Runs both check-back and check-front"
 	@echo "  make release    # Creates a new release using release-it (interactive)"
 
 docs: docs-up
@@ -90,7 +92,11 @@ lint:
 fmt:
 	npm run format
 
-check: fmt lint test test-e2e
+check-back: fmt lint test test-e2e
+
+check-front: web-lint web-build web-test
+
+check: check-back check-front
 
 seed:
 	npm run seed
@@ -106,3 +112,6 @@ web-build:
 
 web-lint:
 	cd web && npm run lint
+
+web-test:
+	cd web && npm test
