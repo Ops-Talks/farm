@@ -45,17 +45,19 @@ jobs:
           fail_ci_if_error: true
 
       - name: Upload unit test results to Codecov
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         if: ${{ !cancelled() }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/junit.xml
+          report_type: test_results
           fail_ci_if_error: true
 
       - name: Upload E2E test results to Codecov
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         if: ${{ !cancelled() }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/junit-e2e.xml
+          report_type: test_results
           fail_ci_if_error: true

@@ -42,10 +42,10 @@ export class HealthController {
     return this.health.check([
       // Check database connection
       () => this.db.pingCheck("database"),
-      // Check heap memory usage (limit to 150MB)
-      () => this.memory.checkHeap("memory_heap", 150 * 1024 * 1024),
-      // Check RSS memory usage (limit to 300MB)
-      () => this.memory.checkRSS("memory_rss", 300 * 1024 * 1024),
+      // Check heap memory usage (limit to 512MB)
+      () => this.memory.checkHeap("memory_heap", 512 * 1024 * 1024),
+      // Check RSS memory usage (limit to 1024MB)
+      () => this.memory.checkRSS("memory_rss", 1024 * 1024 * 1024),
       // Check disk storage usage
       () =>
         this.disk.checkStorage("storage", {
