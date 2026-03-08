@@ -68,4 +68,4 @@ When the rate limit is exceeded, the API returns `429 Too Many Requests`.
 
 ## Versioning
 
-The API does not currently use versioning. Breaking changes will be documented in release notes.
+The API uses URI-based versioning. All resource endpoints are prefixed with `/api/v1/`. Infrastructure endpoints (`/api/health`, `/api/metrics`, `/api/docs`) remain version-neutral and do not include a version prefix.

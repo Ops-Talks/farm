@@ -7,7 +7,7 @@
 [![NestJS Version](https://img.shields.io/badge/nestjs-%5E11.0.1-red)](https://nestjs.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-Farm is an open-source developer portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.
+Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ## Quick Start (Docker)
 

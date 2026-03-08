@@ -80,6 +80,23 @@ The [Observability Guide](observability.md) covers:
 - Log-trace correlation
 - Starting the observability stack with Docker Compose
 
+### WebSockets
+
+The [WebSocket Guide](websockets.md) covers:
+
+- Connecting to the `/events` namespace with Socket.IO
+- JWT-authenticated handshake
+- Available real-time events (catalog and deployment changes)
+
+### Background Queues
+
+The [Queue Guide](queues.md) covers:
+
+- BullMQ job processing with Redis
+- Available queues (catalog-discovery, notifications)
+- Bull Board monitoring dashboard
+- Adding new queues and processors
+
 ## Quick Reference
 
 | Topic | Description |
@@ -91,6 +108,8 @@ The [Observability Guide](observability.md) covers:
 | [Testing](testing.md) | Testing strategies and guidelines |
 | [System Design](system-design.md) | Detailed system design documentation |
 | [Observability](observability.md) | Metrics, tracing, and Grafana dashboards |
+| [WebSockets](websockets.md) | Real-time event streaming via Socket.IO |
+| [Queues](queues.md) | Background job processing with BullMQ |
 
 ## Technology Stack
 

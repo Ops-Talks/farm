@@ -76,7 +76,7 @@ To retrieve all documentation entries:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  http://localhost:3000/api/docs
+  http://localhost:3000/api/v1/docs
 ```
 
 ### Filtering by Component
@@ -94,7 +94,7 @@ To search documentation entries by title, with an optional component scope:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  "http://localhost:3000/api/docs/search?q=api&componentId={component-id}"
+  "http://localhost:3000/api/v1/docs/search?q=api&componentId={component-id}"
 ```
 
 ### Getting the Navigation Tree
@@ -103,7 +103,7 @@ To retrieve a hierarchical navigation tree for a component's documentation:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  "http://localhost:3000/api/docs/tree?componentId={component-id}"
+  "http://localhost:3000/api/v1/docs/tree?componentId={component-id}"
 ```
 
 ### Getting Documentation Metadata
@@ -112,7 +112,7 @@ To retrieve a documentation entry's metadata by ID:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  http://localhost:3000/api/docs/{doc-id}
+  http://localhost:3000/api/v1/docs/{doc-id}
 ```
 
 ### Getting Raw Markdown Content
@@ -121,7 +121,7 @@ To fetch the raw Markdown content from the `sourceUrl`:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  http://localhost:3000/api/docs/{doc-id}/content
+  http://localhost:3000/api/v1/docs/{doc-id}/content
 ```
 
 ### Getting Rendered HTML Content
@@ -130,7 +130,7 @@ To fetch the Markdown content rendered and sanitized as HTML:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  http://localhost:3000/api/docs/{doc-id}/rendered
+  http://localhost:3000/api/v1/docs/{doc-id}/rendered
 ```
 
 ### Updating Documentation
@@ -138,7 +138,7 @@ curl -H "Authorization: Bearer {token}" \
 To update an existing documentation entry:
 
 ```bash
-curl -X PATCH http://localhost:3000/api/docs/{doc-id} \
+curl -X PATCH http://localhost:3000/api/v1/docs/{doc-id} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
   -d '{
@@ -152,7 +152,7 @@ curl -X PATCH http://localhost:3000/api/docs/{doc-id} \
 To remove a documentation entry:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/docs/{doc-id} \
+curl -X DELETE http://localhost:3000/api/v1/docs/{doc-id} \
   -H "Authorization: Bearer {token}"
 ```
 

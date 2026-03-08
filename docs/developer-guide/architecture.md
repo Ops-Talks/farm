@@ -295,4 +295,4 @@ Farm includes integrated observability with Prometheus metrics and OpenTelemetry
 ## Future Architecture Considerations
 
 - **Event Bus**: Add event-driven communication between modules.
-- **Job Queues**: Add BullMQ for background processing of catalog discovery and notifications.
+- **Email Service**: Integrate nodemailer for transactional email notifications.
