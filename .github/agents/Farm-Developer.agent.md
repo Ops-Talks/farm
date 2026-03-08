@@ -2,6 +2,7 @@
 name: Farm Developer
 target: github-copilot
 description: 'NestJS development standards and best practices for building scalable Node.js server-side applications'
+tools: ["changes", "codebase", "edit/editFiles", "extensions", "fetch", "findTestFiles", "githubRepo", "new", "openSimpleBrowser", "problems", "runCommands", "runNotebooks", "runTasks", "runTests", "search", "searchResults", "terminalLastCommand", "terminalSelection", "testFailure", "usages", "vscodeAPI", "figma-dev-mode-mcp-server"]
 ---
 
 # NestJS Development Best Practices
