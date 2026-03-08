@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Frontend test suite**: 101 tests across 11 files using Vitest + React Testing Library covering API client, WebSocket client, auth context, auth guard, dashboard widgets, and all page components.
+- **Makefile targets**: `check-back`, `check-front`, and `web-test` targets; `check` now runs both backend and frontend checks.
+
+### Changed
+- **Developer Guide restructured**: Split into Backend and Frontend sub-sections; moved backend docs into `developer-guide/backend/` and created `developer-guide/frontend/` with architecture and testing guides.
+- **Project description**: Updated across all files to canonical text: "Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure."
+- **ADR-001 removed**: Front-end technology stack content absorbed into `developer-guide/frontend/architecture.md`.
+
 ## [0.6.1] - 2026-03-08
 
 ### Added
