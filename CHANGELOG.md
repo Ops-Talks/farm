@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Multi-Team Catalog Expansion**: Extended component kinds for Dev, Infra, Data, and Security teams (23 kinds total) with ComponentKindGroup enum and lifecycle stages.
+- **Environments and Deployments Module**: Full environment management with deployment lifecycle tracking, status transitions, and deployment matrix endpoint.
+- **Teams and Ownership Module**: Team CRUD, member management (ManyToMany with Users), and component ownership via teamId foreign key.
+- **TechDocs Enhancement**: Markdown rendering with `marked`, documentation tree hierarchy (parentId/order), and in-memory search endpoint.
+- **Plugin System Evolution**: Plugin manifest support, menu item and route contribution registries, directory scanning for external plugins.
+- **E2E Test Suite**: 22 end-to-end tests covering auth, catalog, catalog-yaml, documentation, environments, and deployments.
+- **Database Migrations**: Added migrations for environments/deployments, teams/ownership, and documentation tree fields.
+
+### Changed
+- **Health Check Thresholds**: Increased memory thresholds from 150MB/300MB to 512MB/1024MB to prevent false failures in CI environments.
+- **CI Pipeline**: Migrated from deprecated `codecov/test-results-action@v1` to `codecov/codecov-action@v5` with `report_type: test_results`.
+
+### Fixed
+- **TypeScript Build Errors**: Fixed 13 compilation errors caused by `ConfigService.get()` returning `string | undefined` in ThrottlerModule, JwtModule, JwtStrategy, and multiple spec files.
+- **Type Safety**: Fixed mock type mismatches in auth, catalog, documentation, and teams spec files.
+
 ## [0.4.1] - 2026-03-07
 
 ### Added
