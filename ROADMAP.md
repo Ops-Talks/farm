@@ -364,27 +364,27 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST99 | Sub-task | Display deployment timeline with status transitions | `DONE` |
 | FARM-ST100 | Sub-task | Show deployment metadata and version info | `DONE` |
 
-### FARM-E22: Jobs and Queues UI `TODO`
+### FARM-E22: Jobs and Queues UI `DONE`
 
 > BullMQ queue monitoring and job management interface.
 
-#### FARM-S78: Queue Dashboard `TODO`
+#### FARM-S78: Queue Dashboard `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T27 | Task | Queue overview page | `TODO` |
-| FARM-ST101 | Sub-task | List all BullMQ queues with job counts by status | `TODO` |
-| FARM-ST102 | Sub-task | Display queue health indicators | `TODO` |
-| FARM-ST103 | Sub-task | Provide link to Bull Board (`/api/admin/queues`) for advanced management | `TODO` |
+| FARM-T27 | Task | Queue overview page | `DONE` |
+| FARM-ST101 | Sub-task | List all BullMQ queues with job counts by status | `DONE` |
+| FARM-ST102 | Sub-task | Display queue health indicators | `DONE` |
+| FARM-ST103 | Sub-task | Provide link to Bull Board (`/api/admin/queues`) for advanced management | `DONE` |
 
-#### FARM-S79: Job History `TODO`
+#### FARM-S79: Job History `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T28 | Task | Job listing and detail view | `TODO` |
-| FARM-ST104 | Sub-task | List recent jobs per queue with status badges | `TODO` |
-| FARM-ST105 | Sub-task | Show job payload, result, and error details | `TODO` |
-| FARM-ST106 | Sub-task | Implement job retry action for failed jobs | `TODO` |
+| FARM-T28 | Task | Job listing and detail view | `DONE` |
+| FARM-ST104 | Sub-task | List recent jobs per queue with status badges | `DONE` |
+| FARM-ST105 | Sub-task | Show job payload, result, and error details | `DONE` |
+| FARM-ST106 | Sub-task | Implement job retry action for failed jobs | `DONE` |
 
 ### FARM-E23: Observability UI `TODO`
 

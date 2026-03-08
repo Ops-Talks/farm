@@ -5,10 +5,12 @@ import type {
   Environment,
   ErrorResponse,
   HealthStatus,
+  JobInfo,
   LoginRequest,
   LoginResponse,
   PaginatedResponse,
   PaginationQuery,
+  QueueInfo,
   RefreshTokenRequest,
   RefreshTokenResponse,
   Team,
@@ -314,6 +316,40 @@ export const teams = {
       method: "POST",
       body: JSON.stringify(data),
     });
+  },
+};
+
+// -- Queues API --
+
+export const queues = {
+  list(): Promise<QueueInfo[]> {
+    return request("/v1/queues");
+  },
+
+  get(name: string): Promise<QueueInfo> {
+    return request(`/v1/queues/${encodeURIComponent(name)}`);
+  },
+
+  listJobs(
+    queueName: string,
+    query?: { status?: string; start?: number; limit?: number },
+  ): Promise<JobInfo[]> {
+    return request(
+      `/v1/queues/${encodeURIComponent(queueName)}/jobs${toQueryString(query ?? {})}`,
+    );
+  },
+
+  getJob(queueName: string, jobId: string): Promise<JobInfo> {
+    return request(
+      `/v1/queues/${encodeURIComponent(queueName)}/jobs/${encodeURIComponent(jobId)}`,
+    );
+  },
+
+  retryJob(queueName: string, jobId: string): Promise<void> {
+    return request(
+      `/v1/queues/${encodeURIComponent(queueName)}/jobs/${encodeURIComponent(jobId)}/retry`,
+      { method: "POST" },
+    );
   },
 };
 

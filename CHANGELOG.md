@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deployment matrix page (FARM-E21)**: Visual grid with components as rows, environments as columns, color-coded cells by deployment status (succeeded/pending/in-progress/failed/rolled-back). KindGroup filter tabs and WebSocket live refresh on deployment changes.
 - **Deployment history page**: Filterable deployment list at `/deployments/history` with status tabs, component/environment links, version, deployer, and pagination.
 - **Deployment matrix types**: Added `DeploymentMatrixRow` and `DeploymentMatrixEnvironment` interfaces. Fixed deployment API routes from `/v1/environments/deployments` to `/v1/deployments`. Added `deployments.latest()` method.
+- **Queue management API (FARM-E22)**: REST endpoints at `/api/v1/queues` for listing queues with job counts, inspecting individual queue stats, listing/filtering jobs by status, viewing job details (payload, result, errors, stack trace), and retrying failed jobs. Admin-only with Swagger documentation.
+- **Queue dashboard page**: Queue overview at `/queues` with cards showing job counts by status (active/waiting/completed/failed/delayed), auto-refresh every 15 seconds, and Bull Board link.
+- **Queue detail page**: Job listing at `/queues/:name` with status filter tabs, expandable job detail panels showing payload, result, errors, stack trace, and retry button for failed jobs.
+- **Queue API client**: Added `queues.list()`, `queues.get()`, `queues.listJobs()`, `queues.getJob()`, `queues.retryJob()` methods and `QueueInfo`/`JobInfo` types.
 
 ## [0.6.0] - 2026-03-08
 

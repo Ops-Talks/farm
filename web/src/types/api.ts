@@ -238,3 +238,37 @@ export interface DeploymentMatrixRow {
   kind: string;
   environments: DeploymentMatrixEnvironment[];
 }
+
+// -- Queues and Jobs --
+
+export interface JobCounts {
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+  waiting: number;
+  paused: number;
+  prioritized: number;
+}
+
+export interface QueueInfo {
+  name: string;
+  isPaused: boolean;
+  jobCounts: JobCounts;
+}
+
+export interface JobInfo {
+  id: string;
+  queueName: string;
+  name: string;
+  status: string;
+  data: Record<string, unknown>;
+  returnValue?: unknown;
+  failedReason?: string;
+  attemptsMade: number;
+  progress: number | object;
+  timestamp: number;
+  processedOn?: number;
+  finishedOn?: number;
+  stacktrace?: string[];
+}

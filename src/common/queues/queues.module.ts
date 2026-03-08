@@ -5,11 +5,11 @@ import { BullBoardModule } from "@bull-board/nestjs";
 import { ExpressAdapter } from "@bull-board/express";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { NotificationProcessor } from "./notification.processor";
+import { QueuesService } from "./queues.service";
+import { QueuesController } from "./queues.controller";
+import { QUEUE_NAMES } from "./queue-names";
 
-export const QUEUE_NAMES = {
-  CATALOG_DISCOVERY: "catalog-discovery",
-  NOTIFICATIONS: "notifications",
-} as const;
+export { QUEUE_NAMES } from "./queue-names";
 
 @Module({})
 export class QueuesModule {
@@ -20,6 +20,8 @@ export class QueuesModule {
       return {
         module: QueuesModule,
         global: true,
+        controllers: [QueuesController],
+        providers: [QueuesService],
       };
     }
 
@@ -50,7 +52,8 @@ export class QueuesModule {
           { name: QUEUE_NAMES.NOTIFICATIONS, adapter: BullMQAdapter },
         ),
       ],
-      providers: [NotificationProcessor],
+      controllers: [QueuesController],
+      providers: [NotificationProcessor, QueuesService],
     };
   }
 }
