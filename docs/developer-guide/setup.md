@@ -135,6 +135,9 @@ farm/
 | `make docs-build` | Build static documentation site |
 | `make test-docker` | Execute project tests in a clean container |
 | `make check` | Run fmt, lint, and all tests |
+| `make up-observability` | Start API + DB + Redis + Grafana + Prometheus + Tempo |
+| `make down-observability` | Stop the observability stack |
+| `make release` | Create a new release using release-it (interactive) |
 
 ## Development Workflow
 
@@ -218,6 +221,12 @@ Then attach your debugger to port 9229.
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (comma-separated URLs or `*` for all) |
 | `THROTTLE_TTL` | `60000` | Rate limit time window in milliseconds |
 | `THROTTLE_LIMIT` | `10` | Maximum requests per TTL window |
+| `REDIS_HOST` | *(empty)* | Redis hostname. Leave empty for in-memory cache |
+| `REDIS_PORT` | `6379` | Redis port |
+| `CACHE_TTL` | `30` | Cache time-to-live in seconds |
+| `OTEL_ENABLED` | `false` | Enable OpenTelemetry trace export |
+| `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint for traces |
+| `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
 
 ## Troubleshooting
 

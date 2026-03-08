@@ -71,6 +71,15 @@ The [System Design](system-design.md) document provides:
 - Data models
 - Technology choices
 
+### Observability
+
+The [Observability Guide](observability.md) covers:
+
+- Prometheus metrics and Grafana dashboards
+- OpenTelemetry distributed tracing with Tempo
+- Log-trace correlation
+- Starting the observability stack with Docker Compose
+
 ## Quick Reference
 
 | Topic | Description |
@@ -81,6 +90,7 @@ The [System Design](system-design.md) document provides:
 | [Contributing](contributing.md) | How to contribute to Farm |
 | [Testing](testing.md) | Testing strategies and guidelines |
 | [System Design](system-design.md) | Detailed system design documentation |
+| [Observability](observability.md) | Metrics, tracing, and Grafana dashboards |
 
 ## Technology Stack
 

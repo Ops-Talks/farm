@@ -36,6 +36,10 @@ Once running, the API is at [http://localhost:3000/api](http://localhost:3000/ap
 - [Winston](https://github.com/winstonjs/winston) - Structured logging
 - [Terminus](https://docs.nestjs.com/recipes/terminus) - Advanced health monitoring
 - [Swagger](https://swagger.io/) - API Documentation
+- [Redis](https://redis.io) - Response caching
+- [Prometheus](https://prometheus.io) - Metrics collection
+- [Grafana](https://grafana.com) - Observability dashboards
+- [OpenTelemetry](https://opentelemetry.io) - Distributed tracing
 
 ## Development
 
@@ -71,6 +75,9 @@ Migrations are handled via TypeORM: see `npm run migration:*` commands documente
 | `make lint` | Lint code |
 | `make fmt` | Prettier format |
 | `make check` | Lint, fmt, and tests |
+| `make up-observability` | Start with Grafana + Prometheus + Tempo |
+| `make down-observability` | Stop observability stack |
+| `make release` | Create a release (interactive) |
 
 ## API Endpoints
 

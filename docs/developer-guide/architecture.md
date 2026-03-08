@@ -266,7 +266,33 @@ Farm uses a global exception filter (`AllExceptionsFilter`) to ensure all errors
 
 The filter catches both built-in NestJS exceptions (like `NotFoundException`, `ConflictException`, etc.) and generic errors, logging them with the appropriate context and returning a clean response to the client.
 
+## Caching Layer
+
+Farm integrates `@nestjs/cache-manager` with Redis for response caching. The cache is configured globally via `CacheModule.registerAsync()` in `AppModule`:
+
+- **Redis store** is used when `REDIS_HOST` is set (production/Docker).
+- **In-memory store** is used as fallback when `REDIS_HOST` is empty (development/testing).
+- **Cache TTL** is configurable via the `CACHE_TTL` environment variable (default: 30 seconds).
+
+Cached endpoints:
+
+- `GET /api/catalog/components` -- component listing
+- `GET /api/catalog/components/:id` -- component detail
+- `GET /api/plugins` -- plugin listing
+- `GET /api/plugins/menu-items` -- plugin menu items
+- `GET /api/plugins/routes` -- plugin route contributions
+
+Cache invalidation is triggered automatically on component create, update, delete, and YAML registration operations via `cacheManager.clear()`.
+
+## Observability
+
+Farm includes integrated observability with Prometheus metrics and OpenTelemetry tracing. See the [Observability Guide](observability.md) for full details.
+
+- **Prometheus metrics** are exposed at `GET /api/metrics` (request counters, latency histograms, Node.js process metrics).
+- **OpenTelemetry traces** are exported via OTLP HTTP when `OTEL_ENABLED=true` (auto-instrumented HTTP, Express, and TypeORM spans).
+- **Log-trace correlation** injects `trace_id` and `span_id` into Winston log entries in production mode.
+
 ## Future Architecture Considerations
 
-- **Caching**: Add caching layer for frequently accessed data (e.g., Redis).
 - **Event Bus**: Add event-driven communication between modules.
+- **Job Queues**: Add BullMQ for background processing of catalog discovery and notifications.
