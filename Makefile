@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability healthcheck test test-e2e test-cov lint fmt check release web-dev web-build web-lint
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check release web-dev web-build web-lint
 
 help:
 	@echo "Available Targets:"
@@ -20,6 +20,8 @@ help:
 	@echo "  make web-lint   # Lints the front-end code"
 	@echo "  make up-observability   # Starts the stack with Grafana, Prometheus, and Tempo"
 	@echo "  make down-observability # Stops the observability stack"
+	@echo "  make up-all             # Starts the full stack (API + DB + Redis + Observability + Docs)"
+	@echo "  make down-all           # Stops the full stack"
 	@echo "  make healthcheck # Queries the local API /api/health endpoint"
 	@echo "  make test       # Runs local unit tests"
 	@echo "  make test-e2e   # Runs local e2e tests"
@@ -60,6 +62,14 @@ up-observability:
 	docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d --build
 
 down-observability:
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml down
+
+up-all:
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d --build
+	docker compose -f $(COMPOSE_FILE) up -d
+
+down-all:
+	docker compose -f $(COMPOSE_FILE) down
 	docker compose -f docker-compose.yml -f docker-compose.observability.yml down
 
 healthcheck:
