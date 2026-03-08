@@ -4,6 +4,8 @@ import { ConfigService } from "@nestjs/config";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
 import { AppModule } from "./app.module";
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
+const { version } = require("../package.json");
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { loggerConfigFactory } from "./common/logger/logger.config";
 
@@ -38,7 +40,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
-    .setVersion("0.3.1")
+    .setVersion(version as string)
     .addTag("farm")
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

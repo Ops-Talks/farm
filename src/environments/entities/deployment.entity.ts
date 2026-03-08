@@ -127,7 +127,7 @@ export class Deployment {
     example: "2023-06-15T10:30:00Z",
     description: "When the deployment started",
   })
-  @Column({ type: "datetime", nullable: true })
+  @Column({ nullable: true })
   startedAt: Date;
 
   @ApiProperty({
@@ -135,7 +135,7 @@ export class Deployment {
     description: "When the deployment finished",
     required: false,
   })
-  @Column({ type: "datetime", nullable: true })
+  @Column({ nullable: true })
   finishedAt: Date;
 
   @ApiProperty({
