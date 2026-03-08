@@ -1,0 +1,160 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+const mockListComponents = vi.fn();
+vi.mock("@/lib/api-client", () => ({
+  catalog: { listComponents: (...args: unknown[]) => mockListComponents(...args) },
+}));
+
+vi.mock("@/lib/ws-client", () => ({
+  subscribe: vi.fn(() => vi.fn()),
+}));
+
+vi.mock("@/types/api", () => ({
+  ComponentKindGroup: { DEV: "dev", INFRA: "infra", DATA: "data", SECURITY: "security" },
+  FarmEvent: {
+    COMPONENT_CREATED: "component.created",
+    COMPONENT_UPDATED: "component.updated",
+    COMPONENT_DELETED: "component.deleted",
+  },
+}));
+
+import CatalogPage from "@/app/(protected)/catalog/page";
+
+const mockComponent = (overrides: Record<string, unknown> = {}) => ({
+  id: "c1",
+  name: "auth-service",
+  kind: "service",
+  lifecycle: "production",
+  owner: "team-alpha",
+  tags: ["typescript", "nestjs", "auth"],
+  updatedAt: "2025-01-15T10:00:00Z",
+  ...overrides,
+});
+
+describe("CatalogPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should render heading and register button", async () => {
+    mockListComponents.mockResolvedValue({ data: [], total: 0, skip: 0, take: 20 });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Software Catalog")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Register Component")).toBeInTheDocument();
+  });
+
+  it("should display components in table", async () => {
+    mockListComponents.mockResolvedValue({
+      data: [mockComponent()],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("auth-service")).toBeInTheDocument();
+    });
+    expect(screen.getByText("service")).toBeInTheDocument();
+    expect(screen.getByText("production")).toBeInTheDocument();
+    expect(screen.getByText("team-alpha")).toBeInTheDocument();
+  });
+
+  it("should show component count", async () => {
+    mockListComponents.mockResolvedValue({
+      data: [mockComponent()],
+      total: 5,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("5 components registered")).toBeInTheDocument();
+    });
+  });
+
+  it("should show empty state", async () => {
+    mockListComponents.mockResolvedValue({ data: [], total: 0, skip: 0, take: 20 });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No components found. Register your first component.")).toBeInTheDocument();
+    });
+  });
+
+  it("should filter by search text", async () => {
+    const user = userEvent.setup();
+    mockListComponents.mockResolvedValue({
+      data: [
+        mockComponent({ id: "c1", name: "auth-service" }),
+        mockComponent({ id: "c2", name: "payment-api" }),
+      ],
+      total: 2,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("auth-service")).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText("Filter by name..."), "payment");
+
+    expect(screen.queryByText("auth-service")).not.toBeInTheDocument();
+    expect(screen.getByText("payment-api")).toBeInTheDocument();
+  });
+
+  it("should render kind group filter tabs", async () => {
+    mockListComponents.mockResolvedValue({ data: [], total: 0, skip: 0, take: 20 });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("All")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Dev")).toBeInTheDocument();
+    expect(screen.getByText("Infra")).toBeInTheDocument();
+    expect(screen.getByText("Data")).toBeInTheDocument();
+    expect(screen.getByText("Security")).toBeInTheDocument();
+  });
+
+  it("should show tags with overflow indicator", async () => {
+    mockListComponents.mockResolvedValue({
+      data: [mockComponent({ tags: ["t1", "t2", "t3", "t4", "t5"] })],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("t1")).toBeInTheDocument();
+    });
+    expect(screen.getByText("t2")).toBeInTheDocument();
+    expect(screen.getByText("t3")).toBeInTheDocument();
+    expect(screen.getByText("+2")).toBeInTheDocument();
+  });
+
+  it("should handle API errors gracefully", async () => {
+    mockListComponents.mockRejectedValue(new Error("Network error"));
+
+    render(<CatalogPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No components found. Register your first component.")).toBeInTheDocument();
+    });
+  });
+});

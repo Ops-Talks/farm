@@ -255,7 +255,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
-## Phase 5: Front-End Core Pages `TODO`
+## Phase 5: Front-End Core Pages `DONE`
 
 ### FARM-E18: Authentication UI `DONE`
 
@@ -440,6 +440,172 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
+## Phase 5.5: Front-End Quality and Hardening `TODO`
+
+> Issues, enhancements, and test coverage discovered during deep frontend analysis.
+
+### FARM-E30: Front-End Testing Infrastructure `DONE`
+
+> Set up Vitest + React Testing Library and create comprehensive unit tests for all frontend code.
+
+#### FARM-S103: Test Framework Setup `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T35 | Task | Install and configure Vitest with React Testing Library | `DONE` |
+| FARM-ST125 | Sub-task | Install vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom | `DONE` |
+| FARM-ST126 | Sub-task | Configure vitest.config.ts with jsdom, path aliases, and setup file | `DONE` |
+| FARM-ST127 | Sub-task | Create test setup file with jest-dom matchers and global mocks (next/navigation, next-themes) | `DONE` |
+| FARM-ST128 | Sub-task | Add `test` and `test:coverage` scripts to web/package.json | `DONE` |
+
+#### FARM-S104: API Client and Utility Tests `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T36 | Task | Unit tests for api-client.ts | `DONE` |
+| FARM-ST129 | Sub-task | Test token storage (setTokens, clearTokens, getAccessToken) with sessionStorage mock | `DONE` |
+| FARM-ST130 | Sub-task | Test request() wrapper (success, error, 204 handling) | `DONE` |
+| FARM-ST131 | Sub-task | Test automatic 401 token refresh flow | `DONE` |
+| FARM-ST132 | Sub-task | Test ApiError class construction and message formatting | `DONE` |
+| FARM-ST133 | Sub-task | Test toQueryString helper with various input shapes | `DONE` |
+| FARM-ST134 | Sub-task | Test all API namespace methods (auth, catalog, deployments, teams, queues, docs, health, observability) | `DONE` |
+| FARM-T37 | Task | Unit tests for ws-client.ts | `DONE` |
+| FARM-ST135 | Sub-task | Test subscribe/unsubscribe with mocked socket.io-client | `DONE` |
+| FARM-ST136 | Sub-task | Test disconnect and isConnected | `DONE` |
+| FARM-ST137 | Sub-task | Test reconnection and listener re-registration | `DONE` |
+
+#### FARM-S105: Auth and Provider Tests `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T38 | Task | Unit tests for AuthContext and AuthProvider | `DONE` |
+| FARM-ST138 | Sub-task | Test login flow (calls API, stores tokens, sets user, redirects) | `DONE` |
+| FARM-ST139 | Sub-task | Test logout flow (clears tokens, disconnects WS, redirects) | `DONE` |
+| FARM-ST140 | Sub-task | Test session restoration from sessionStorage | `DONE` |
+| FARM-ST141 | Sub-task | Test hasRole helper | `DONE` |
+| FARM-T39 | Task | Unit tests for AuthGuard component | `DONE` |
+| FARM-ST142 | Sub-task | Test redirect to /login when not authenticated | `DONE` |
+| FARM-ST143 | Sub-task | Test role-based redirect when insufficient permissions | `DONE` |
+| FARM-ST144 | Sub-task | Test children render when authenticated | `DONE` |
+
+#### FARM-S106: Page Component Tests `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T40 | Task | Login page tests | `DONE` |
+| FARM-ST145 | Sub-task | Test form rendering (username, password, submit button) | `DONE` |
+| FARM-ST146 | Sub-task | Test form submission calls login | `DONE` |
+| FARM-ST147 | Sub-task | Test error display on failed login | `DONE` |
+| FARM-ST148 | Sub-task | Test loading state during submission | `DONE` |
+| FARM-T41 | Task | Dashboard page tests | `DONE` |
+| FARM-ST149 | Sub-task | Test QuickStats renders stat cards with fetched data | `DONE` |
+| FARM-ST150 | Sub-task | Test HealthPanel renders health status badges | `DONE` |
+| FARM-ST151 | Sub-task | Test HealthPanel shows API Unreachable on error | `DONE` |
+| FARM-ST152 | Sub-task | Test ActivityFeed shows empty state and renders events | `DONE` |
+| FARM-T42 | Task | Catalog page tests | `DONE` |
+| FARM-ST153 | Sub-task | Test component list rendering with pagination | `DONE` |
+| FARM-ST154 | Sub-task | Test kind group filter tabs | `DONE` |
+| FARM-ST155 | Sub-task | Test search input filtering | `DONE` |
+| FARM-ST156 | Sub-task | Test component detail page rendering | `DONE` |
+| FARM-ST157 | Sub-task | Test component creation form validation and submission | `DONE` |
+| FARM-T43 | Task | Deployment pages tests | `DONE` |
+| FARM-ST158 | Sub-task | Test deployment matrix rendering with status colors | `DONE` |
+| FARM-ST159 | Sub-task | Test deployment history table with pagination | `DONE` |
+| FARM-ST160 | Sub-task | Test status filter tabs | `DONE` |
+| FARM-T44 | Task | Teams pages tests | `DONE` |
+| FARM-ST161 | Sub-task | Test team listing with type filter and search | `DONE` |
+| FARM-ST162 | Sub-task | Test team detail page (members, components, edit/delete) | `DONE` |
+| FARM-ST163 | Sub-task | Test team creation form | `DONE` |
+| FARM-T45 | Task | Queues pages tests | `DONE` |
+| FARM-ST164 | Sub-task | Test queue list rendering with job counts | `DONE` |
+| FARM-ST165 | Sub-task | Test queue detail page with job list and retry action | `DONE` |
+| FARM-T46 | Task | Observability page tests | `DONE` |
+| FARM-ST166 | Sub-task | Test health tab rendering | `DONE` |
+| FARM-ST167 | Sub-task | Test metrics tab with formatted values | `DONE` |
+| FARM-ST168 | Sub-task | Test tab switching | `DONE` |
+| FARM-T47 | Task | Docs page tests | `TODO` |
+| FARM-ST169 | Sub-task | Test documentation tree sidebar rendering | `TODO` |
+| FARM-ST170 | Sub-task | Test doc content viewer with rendered markdown | `TODO` |
+| FARM-ST171 | Sub-task | Test documentation search | `TODO` |
+
+#### FARM-S107: Layout and Navigation Tests `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T48 | Task | AppShell layout tests | `TODO` |
+| FARM-ST172 | Sub-task | Test sidebar navigation links and active state | `TODO` |
+| FARM-ST173 | Sub-task | Test breadcrumb rendering for nested routes | `TODO` |
+| FARM-ST174 | Sub-task | Test user dropdown menu (display name, email, roles, sign out) | `TODO` |
+| FARM-ST175 | Sub-task | Test dark mode theme cycling | `TODO` |
+
+### FARM-E31: Front-End Bug Fixes `TODO`
+
+> Issues identified during frontend codebase analysis.
+
+#### FARM-S108: Runtime and Configuration Bugs `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T49 | Task | Fix QueuePanel hardcoded NEXT_PUBLIC_API_URL reference | `TODO` |
+| FARM-ST176 | Sub-task | QueuePanel uses `process.env.NEXT_PUBLIC_API_URL` to build Bull Board URL; should use relative `/api` path like other components | `TODO` |
+| FARM-T50 | Task | Fix WebSocket client hardcoded localhost URL | `TODO` |
+| FARM-ST177 | Sub-task | ws-client.ts uses `process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000"` which breaks in Docker; needs a relative or configurable approach | `TODO` |
+| FARM-T51 | Task | Phase 5 summary row still shows TODO in ROADMAP | `TODO` |
+| FARM-ST178 | Sub-task | Update Phase 5 status from `TODO` to `DONE` in summary table | `TODO` |
+
+### FARM-E32: Front-End Enhancements `TODO`
+
+> UX improvements, missing features, and architectural enhancements.
+
+#### FARM-S109: Error Handling and Loading States `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T52 | Task | Add Next.js error boundaries | `TODO` |
+| FARM-ST179 | Sub-task | Create `app/(protected)/error.tsx` global error boundary | `TODO` |
+| FARM-ST180 | Sub-task | Create `app/(protected)/not-found.tsx` for 404 pages | `TODO` |
+| FARM-ST181 | Sub-task | Create `app/(protected)/loading.tsx` with skeleton loading | `TODO` |
+| FARM-T53 | Task | Add per-page loading.tsx files | `TODO` |
+| FARM-ST182 | Sub-task | Create loading states for catalog, teams, deployments, queues, observability, docs pages | `TODO` |
+
+#### FARM-S110: Accessibility and UX Improvements `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T54 | Task | Keyboard navigation improvements | `TODO` |
+| FARM-ST183 | Sub-task | Add proper aria-labels to all interactive elements | `TODO` |
+| FARM-ST184 | Sub-task | Ensure focus management on page transitions | `TODO` |
+| FARM-ST185 | Sub-task | Add skip-to-content link for screen readers | `TODO` |
+| FARM-T55 | Task | Toast notifications for mutations | `TODO` |
+| FARM-ST186 | Sub-task | Add success/error toasts for create, update, delete operations across all pages | `TODO` |
+| FARM-ST187 | Sub-task | Sonner is installed but only used in docs page; extend to catalog, teams, deployments | `TODO` |
+
+#### FARM-S111: Mobile Responsiveness `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T56 | Task | Mobile navigation improvements | `TODO` |
+| FARM-ST188 | Sub-task | Replace horizontal mobile nav buttons with hamburger menu (Sheet component) | `TODO` |
+| FARM-ST189 | Sub-task | Ensure all tables are horizontally scrollable on small screens | `TODO` |
+| FARM-ST190 | Sub-task | Test and fix all pages at 375px, 768px, and 1024px breakpoints | `TODO` |
+
+#### FARM-S112: Component Architecture Improvements `TODO`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T57 | Task | Extract reusable page patterns | `TODO` |
+| FARM-ST191 | Sub-task | Create shared PageHeader component (title, description, action buttons) | `TODO` |
+| FARM-ST192 | Sub-task | Create shared FilterTabs component (used by catalog, deployments, teams) | `TODO` |
+| FARM-ST193 | Sub-task | Create shared EmptyState component with consistent styling | `TODO` |
+| FARM-ST194 | Sub-task | Create shared ConfirmDialog component for delete actions | `TODO` |
+| FARM-T58 | Task | Decompose large page files | `TODO` |
+| FARM-ST195 | Sub-task | Split docs/page.tsx (651 lines) into separate TreeSidebar, DocViewer, DocForm, SearchPanel components | `TODO` |
+| FARM-ST196 | Sub-task | Split observability/page.tsx (529 lines) into HealthTab, MetricsTab, TracesTab components in separate files | `TODO` |
+| FARM-ST197 | Sub-task | Split teams/[id]/page.tsx (509 lines) into MembersTable, ComponentsTable, TeamEditForm components | `TODO` |
+| FARM-ST198 | Sub-task | Split queues/[name]/page.tsx (345 lines) into JobDetailPanel, JobList components in separate files | `TODO` |
+
+---
+
 ## Phase 6: Advanced Features `TODO`
 
 ### FARM-E25: Multi-Tenant and RBAC `TODO`
@@ -506,6 +672,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
 | Phase 3: Backend Completion | 1 | 1 | `DONE` |
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
-| Phase 5: Front-End Core Pages | 7 | 12 | `TODO` |
+| Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
+| Phase 5.5: Front-End Quality | 3 | 10 | `TODO` |
 | Phase 6: Advanced Features | 5 | 19 | `TODO` |
-| **Total** | **29** | **101** | |
+| **Total** | **32** | **111** | |

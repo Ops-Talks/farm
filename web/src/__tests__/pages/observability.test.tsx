@@ -1,0 +1,109 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+const mockHealthCheck = vi.fn();
+const mockSummary = vi.fn();
+vi.mock("@/lib/api-client", () => ({
+  health: { check: () => mockHealthCheck() },
+  observability: { summary: () => mockSummary() },
+}));
+
+import ObservabilityPage from "@/app/(protected)/observability/page";
+
+const fullSummary = {
+  status: "healthy",
+  uptime: 3600,
+  version: "1.0.0",
+  memory: { heapUsed: 52428800, heapTotal: 104857600, rss: 157286400 },
+  tracing: { enabled: true, provider: "otlp" },
+  dashboards: {
+    grafanaUrl: "http://localhost:3002",
+    prometheusUrl: "http://localhost:9090",
+    tempoUrl: "http://localhost:3200",
+  },
+  totalRequests: 1000,
+  requestsByStatus: { "2xx": 900, "4xx": 80, "5xx": 10, other: 10 },
+  latencyPercentiles: { p50: 0.010, p90: 0.050, p95: 0.100, p99: 0.250 },
+  grafanaUrl: "http://localhost:3002",
+  prometheusUrl: "http://localhost:9090",
+  tempoUrl: "http://localhost:3200",
+};
+
+const healthData = {
+  status: "ok",
+  info: {},
+  error: {},
+  details: {
+    database: { status: "up" },
+    memory: { status: "up", heapUsed: 52428800 },
+  },
+};
+
+describe("ObservabilityPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should render heading and tabs", async () => {
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Health")).toBeInTheDocument();
+    expect(screen.getByText("Metrics")).toBeInTheDocument();
+    expect(screen.getByText("Traces")).toBeInTheDocument();
+  });
+
+  it("should show health information by default", async () => {
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Overall Status")).toBeInTheDocument();
+    });
+  });
+
+  it("should show API Unreachable when health check fails", async () => {
+    mockHealthCheck.mockRejectedValue(new Error("Connection refused"));
+    mockSummary.mockRejectedValue(new Error("fail"));
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("API Unreachable")).toBeInTheDocument();
+    });
+  });
+
+  it("should switch between tabs", async () => {
+    const user = userEvent.setup();
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Overall Status")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Metrics"));
+    expect(screen.getByText("Grafana")).toBeInTheDocument();
+
+    await user.click(screen.getByText("Traces"));
+    expect(screen.getByText("Distributed Tracing")).toBeInTheDocument();
+  });
+
+  it("should show loading skeletons initially", () => {
+    mockHealthCheck.mockReturnValue(new Promise(() => {}));
+    mockSummary.mockReturnValue(new Promise(() => {}));
+
+    render(<ObservabilityPage />);
+    expect(screen.getByText("Observability")).toBeInTheDocument();
+  });
+});
