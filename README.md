@@ -31,6 +31,8 @@ Once running, the API is at [http://localhost:3000/api](http://localhost:3000/ap
 
 ## Technology Stack
 
+### Backend
+
 - [NestJS](https://docs.nestjs.com) - Progressive Node.js framework
 - [TypeORM](https://typeorm.io) - Data persistence with PostgreSQL
 - [Passport](http://www.passportjs.org/) + [JWT](https://jwt.io/) - Authentication and authorization
@@ -45,6 +47,14 @@ Once running, the API is at [http://localhost:3000/api](http://localhost:3000/ap
 - [Prometheus](https://prometheus.io) - Metrics collection
 - [Grafana](https://grafana.com) - Observability dashboards
 - [OpenTelemetry](https://opentelemetry.io) - Distributed tracing
+
+### Front-End
+
+- [Next.js](https://nextjs.org/) 16 - React framework with App Router
+- [React](https://react.dev/) 19 - UI component library
+- [Tailwind CSS](https://tailwindcss.com/) 4 - Utility-first CSS framework
+- [Shadcn/ui](https://ui.shadcn.com/) - Accessible component library (Radix UI primitives)
+- [Socket.IO Client](https://socket.io/docs/v4/client-api/) - Real-time event subscription
 
 ## Development
 

@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Email templates**: Welcome email and deployment notification templates with shared HTML layout, located in `src/common/email/templates/`.
 - **NotificationProcessor email integration**: The BullMQ notification processor now sends emails via EmailService for `type: "email"` jobs, using the specified Handlebars template and context.
 - **EmailModule**: Global module providing EmailService across the application with SMTP connection verification on startup.
+- **Front-end foundation**: Next.js 16 application with React 19, TypeScript strict mode, Tailwind CSS 4, and Shadcn/ui component library in `web/` directory.
+- **API client**: Type-safe HTTP client with JWT token management, automatic 401 refresh, and typed API methods for all backend endpoints.
+- **WebSocket client**: Socket.IO client with JWT auth handshake, automatic reconnection with exponential backoff, and typed event subscription matching `FarmEvent` enum.
+- **Login page**: Authentication form with error handling and session token storage.
+- **Dashboard page**: System health overview displaying API health status with per-check detail cards.
+- **Landing page**: Farm portal home with feature navigation cards.
+- **Front-end Docker**: Multi-stage Dockerfile (`web/Dockerfile`) and `web` service in `docker-compose.yml` on port 3001.
+- **ADR-001**: Architecture Decision Record documenting front-end stack selection (Next.js + Shadcn/ui + Tailwind CSS).
 
 ## [0.6.0] - 2026-03-08
 

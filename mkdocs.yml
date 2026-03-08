@@ -96,6 +96,8 @@ nav:
     - Queues: developer-guide/queues.md
     - Email: developer-guide/email.md
     - System Design: developer-guide/system-design.md
+  - Architecture Decision Records:
+    - adr/001-frontend-stack.md
   - API Reference:
     - api-reference/index.md
     - Health API: api-reference/health.md

@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability healthcheck test test-e2e test-cov lint fmt check release
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability healthcheck test test-e2e test-cov lint fmt check release web-dev web-build web-lint
 
 help:
 	@echo "Available Targets:"
@@ -15,6 +15,9 @@ help:
 	@echo "  make test-docker # Runs Farm tests via Docker"
 	@echo "  make up-docker   # Starts the Farm API in Docker (port 3000)"
 	@echo "  make down-docker # Stops the Farm API container"
+	@echo "  make web-dev    # Starts the front-end dev server (port 3000)"
+	@echo "  make web-build  # Builds the front-end for production"
+	@echo "  make web-lint   # Lints the front-end code"
 	@echo "  make up-observability   # Starts the stack with Grafana, Prometheus, and Tempo"
 	@echo "  make down-observability # Stops the observability stack"
 	@echo "  make healthcheck # Queries the local API /api/health endpoint"
@@ -84,3 +87,12 @@ seed:
 
 release:
 	npm run release
+
+web-dev:
+	cd web && npm run dev
+
+web-build:
+	cd web && npm run build
+
+web-lint:
+	cd web && npm run lint

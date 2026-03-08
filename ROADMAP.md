@@ -220,67 +220,38 @@ Farm project roadmap organized using JIRA-like hierarchy.
 
 ---
 
-## Phase 4: Front-End Foundation `TODO`
+## Phase 4: Front-End Foundation `DONE`
 
-### FARM-E17: Tech Stack and Project Setup `TODO`
+### FARM-E17: Tech Stack and Project Setup `DONE`
 
-> Select front-end framework, configure monorepo, and establish build tooling.
+> Select front-end framework, configure project, and establish build tooling.
 
-#### FARM-S68: Front-End Stack Selection `TODO`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T07 | Task | Evaluate and select primary front-end framework | `TODO` |
-| FARM-ST24 | Sub-task | Compare Next.js (React), Vue 3 + Vite, and SvelteKit for Farm use case | `TODO` |
-| FARM-ST25 | Sub-task | Evaluate SSR/SSG/SPA tradeoffs for internal developer portal | `TODO` |
-| FARM-ST26 | Sub-task | Assess component library ecosystem (tables, charts, forms, dark mode) | `TODO` |
-| FARM-ST27 | Sub-task | Evaluate Socket.IO client integration per framework | `TODO` |
-| FARM-ST28 | Sub-task | Document decision in ADR (Architecture Decision Record) | `TODO` |
-| FARM-T08 | Task | Select UI component library | `TODO` |
-| FARM-ST29 | Sub-task | Compare MUI, Chakra, Radix UI + Tailwind, Vuetify, Shadcn/ui | `TODO` |
-| FARM-ST30 | Sub-task | Evaluate suitability for data-heavy console (tables, filters, dialogs) | `TODO` |
-| FARM-ST31 | Sub-task | Verify dark mode support and theming capabilities | `TODO` |
-
-#### FARM-S69: Monorepo Configuration `TODO`
+#### FARM-S68: Front-End Stack Selection `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T09 | Task | Restructure repository for monorepo | `TODO` |
-| FARM-ST32 | Sub-task | Move existing backend to `apps/api/` (or equivalent structure) | `TODO` |
-| FARM-ST33 | Sub-task | Create `apps/web/` for front-end application | `TODO` |
-| FARM-ST34 | Sub-task | Create `packages/shared/` for shared TypeScript types and DTOs | `TODO` |
-| FARM-ST35 | Sub-task | Update root `package.json` with workspaces configuration | `TODO` |
-| FARM-ST36 | Sub-task | Update all import paths and build scripts | `TODO` |
-| FARM-T10 | Task | Configure shared package | `TODO` |
-| FARM-ST37 | Sub-task | Extract API response types from backend DTOs to shared package | `TODO` |
-| FARM-ST38 | Sub-task | Generate API client from Swagger/OpenAPI spec (e.g., openapi-typescript) | `TODO` |
-| FARM-ST39 | Sub-task | Set up shared TypeScript configuration (`tsconfig.base.json`) | `TODO` |
+| FARM-T07 | Task | Evaluate and select primary front-end framework | `DONE` |
+| FARM-T08 | Task | Select UI component library | `DONE` |
 
-#### FARM-S70: Front-End Build and Tooling `TODO`
+Decision documented in ADR-001: Next.js 16 (React 19) + Shadcn/ui + Tailwind CSS 4.
+
+#### FARM-S69: Project Configuration `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T11 | Task | Initialize front-end application | `TODO` |
-| FARM-ST40 | Sub-task | Scaffold front-end app with framework CLI | `TODO` |
-| FARM-ST41 | Sub-task | Configure TypeScript with strict mode | `TODO` |
-| FARM-ST42 | Sub-task | Set up ESLint and Prettier (aligned with backend config) | `TODO` |
-| FARM-ST43 | Sub-task | Configure environment variables (`API_BASE_URL`, `WS_URL`) | `TODO` |
-| FARM-T12 | Task | Docker and CI integration | `TODO` |
-| FARM-ST44 | Sub-task | Create front-end Dockerfile (multi-stage: build + nginx/node) | `TODO` |
-| FARM-ST45 | Sub-task | Add `web` service to `docker-compose.yml` | `TODO` |
-| FARM-ST46 | Sub-task | Add `make up-web`, `make build-web` Makefile targets | `TODO` |
-| FARM-ST47 | Sub-task | Update GitHub Actions workflow for front-end build and tests | `TODO` |
-| FARM-T13 | Task | API client and integration layer | `TODO` |
-| FARM-ST48 | Sub-task | Create HTTP client wrapper with base URL configuration | `TODO` |
-| FARM-ST49 | Sub-task | Implement JWT token storage (httpOnly cookie or secure storage) | `TODO` |
-| FARM-ST50 | Sub-task | Add automatic `Authorization: Bearer` header injection | `TODO` |
-| FARM-ST51 | Sub-task | Implement 401/403 interceptor with redirect to login | `TODO` |
-| FARM-ST52 | Sub-task | Implement automatic token refresh on 401 | `TODO` |
-| FARM-T14 | Task | Socket.IO client setup | `TODO` |
-| FARM-ST53 | Sub-task | Install `socket.io-client` | `TODO` |
-| FARM-ST54 | Sub-task | Create WebSocket connection manager with JWT auth handshake | `TODO` |
-| FARM-ST55 | Sub-task | Implement reconnection logic with exponential backoff | `TODO` |
-| FARM-ST56 | Sub-task | Create typed event handlers matching `FarmEvent` enum | `TODO` |
+| FARM-T09 | Task | Create `web/` directory with Next.js application | `DONE` |
+| FARM-T10 | Task | Configure shared API types in `web/src/types/` | `DONE` |
+
+Backend remains at project root; front-end in `web/` directory with independent `package.json`.
+
+#### FARM-S70: Front-End Build and Tooling `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T11 | Task | Initialize front-end application with TypeScript strict mode | `DONE` |
+| FARM-T12 | Task | Docker and Makefile integration | `DONE` |
+| FARM-T13 | Task | API client and integration layer (JWT, refresh, interceptors) | `DONE` |
+| FARM-T14 | Task | Socket.IO client setup with typed event handlers | `DONE` |
 
 ---
 
@@ -534,7 +505,7 @@ Farm project roadmap organized using JIRA-like hierarchy.
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
 | Phase 3: Backend Completion | 1 | 1 | `DONE` |
-| Phase 4: Front-End Foundation | 1 | 3 | `TODO` |
+| Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `TODO` |
 | Phase 6: Advanced Features | 5 | 19 | `TODO` |
 | **Total** | **29** | **101** | |
