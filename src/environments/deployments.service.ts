@@ -238,10 +238,27 @@ export class DeploymentsService {
       order: { order: "ASC" },
     });
 
-    const matrix = [];
+    const matrix: Array<{
+      id: string;
+      name: string;
+      kind: string;
+      environments: Array<{
+        environmentId: string;
+        environmentName: string;
+        version: string | null;
+        status: DeploymentStatus | null;
+        deployedAt: Date | null;
+      }>;
+    }> = [];
 
     for (const component of components) {
-      const envStatuses = [];
+      const envStatuses: Array<{
+        environmentId: string;
+        environmentName: string;
+        version: string | null;
+        status: DeploymentStatus | null;
+        deployedAt: Date | null;
+      }> = [];
 
       for (const env of environments) {
         const latest = await this.deploymentRepository.findOne({

@@ -20,7 +20,7 @@ describe("TeamsService", () => {
     type: TeamType.PLATFORM,
     contactEmail: "platform@example.com",
     slackChannel: "#platform",
-    metadata: null,
+    metadata: null as unknown as Record<string, unknown>,
     members: [],
     createdAt: new Date(),
     updatedAt: new Date(),

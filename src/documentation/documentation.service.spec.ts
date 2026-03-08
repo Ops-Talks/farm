@@ -33,7 +33,7 @@ describe("DocumentationService", () => {
     save: jest
       .fn()
       .mockImplementation((doc: Documentation) =>
-        Promise.resolve({ id: "uuid", ...doc } as Documentation),
+        Promise.resolve({ ...doc, id: doc.id ?? "uuid" } as Documentation),
       ),
     find: jest.fn().mockResolvedValue([mockDoc]),
     findOneBy: jest.fn().mockResolvedValue(mockDoc),

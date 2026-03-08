@@ -43,8 +43,8 @@ import { configuration, validationSchema } from "./config/configuration";
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => [
         {
-          ttl: configService.get<number>("throttle.ttl"),
-          limit: configService.get<number>("throttle.limit"),
+          ttl: configService.get<number>("throttle.ttl") ?? 60000,
+          limit: configService.get<number>("throttle.limit") ?? 10,
         },
       ],
     }),

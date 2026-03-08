@@ -28,8 +28,8 @@ describe("AuthService", () => {
     create: jest.fn().mockImplementation((dto: any) => dto as User),
     save: jest.fn().mockImplementation((user: User) =>
       Promise.resolve({
-        id: "uuid",
         ...user,
+        id: user.id ?? "uuid",
       } as User),
     ),
     find: jest.fn().mockResolvedValue([mockUser]),

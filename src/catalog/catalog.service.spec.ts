@@ -19,6 +19,8 @@ describe("CatalogService", () => {
     kind: ComponentKind.SERVICE,
     description: "A test service",
     owner: "team-a",
+    teamId: null as unknown as string,
+    team: null,
     lifecycle: ComponentLifecycle.PRODUCTION,
     tags: ["test"],
     links: [],
@@ -32,8 +34,8 @@ describe("CatalogService", () => {
     create: jest.fn().mockImplementation((dto: any) => dto as Component),
     save: jest.fn().mockImplementation((component: Component) =>
       Promise.resolve({
-        id: component.id || "550e8400-e29b-41d4-a716-446655440001",
         ...component,
+        id: component.id || "550e8400-e29b-41d4-a716-446655440001",
         createdAt: new Date(),
         updatedAt: new Date(),
       } as Component),

@@ -21,7 +21,7 @@ describe("AuthController", () => {
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
-    service = module.get<AuthService>(AuthService);
+    service = module.get(AuthService);
   });
 
   it("should be defined", () => {

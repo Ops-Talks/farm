@@ -24,7 +24,7 @@ describe("CatalogController", () => {
     }).compile();
 
     controller = module.get<CatalogController>(CatalogController);
-    service = module.get<CatalogService>(CatalogService);
+    service = module.get(CatalogService);
   });
 
   it("should be defined", () => {

@@ -2,7 +2,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "../auth.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { User } from "../entities/user.entity";
-import { Repository } from "typeorm";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { ConflictException, UnauthorizedException } from "@nestjs/common";
@@ -42,7 +41,7 @@ describe("AuthService", () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    repo = module.get<Repository<User>>(getRepositoryToken(User));
+    repo = module.get(getRepositoryToken(User));
   });
 
   afterEach(() => {
