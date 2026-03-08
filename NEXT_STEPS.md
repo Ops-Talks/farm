@@ -650,6 +650,17 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
   - [x] FARM-ST146: Propagate trace context through HTTP headers (W3C Trace Context)
   - [x] FARM-ST147: Add trace IDs to Winston log output for log-trace correlation
 
+#### FARM-S52b: Observability Visualization Stack
+
+- [x] FARM-T149b: Add Grafana observability stack
+  - [x] Create `docker-compose.observability.yml` with Grafana, Prometheus, and Tempo
+  - [x] Add `observability/prometheus.yml` scrape config targeting Farm API metrics
+  - [x] Add `observability/tempo.yml` with OTLP HTTP receiver and local storage
+  - [x] Pre-provision Grafana data sources (Prometheus + Tempo) and starter dashboard
+  - [x] Add Farm API Overview dashboard (request rate, latency percentiles, error rate, heatmap, traces)
+  - [x] Add `make up-observability` and `make down-observability` Makefile targets
+  - [x] Add `docs/developer-guide/observability.md` documentation
+
 ---
 
 ### FARM-E21: Caching and Performance ✅

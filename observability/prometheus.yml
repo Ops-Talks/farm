@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "farm-api"
+    metrics_path: "/api/metrics"
+    static_configs:
+      - targets: ["farm-api:3000"]
+        labels:
+          service: "farm-api"

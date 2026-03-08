@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean healthcheck test test-e2e test-cov lint fmt check release
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability healthcheck test test-e2e test-cov lint fmt check release
 
 help:
 	@echo "Available Targets:"
@@ -15,6 +15,8 @@ help:
 	@echo "  make test-docker # Runs Farm tests via Docker"
 	@echo "  make up-docker   # Starts the Farm API in Docker (port 3000)"
 	@echo "  make down-docker # Stops the Farm API container"
+	@echo "  make up-observability   # Starts the stack with Grafana, Prometheus, and Tempo"
+	@echo "  make down-observability # Stops the observability stack"
 	@echo "  make healthcheck # Queries the local API /api/health endpoint"
 	@echo "  make test       # Runs local unit tests"
 	@echo "  make test-e2e   # Runs local e2e tests"
@@ -50,6 +52,12 @@ down-docker:
 
 down-docker-clean:
 	docker compose down -v
+
+up-observability:
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d --build
+
+down-observability:
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml down
 
 healthcheck:
 	curl -fsS http://localhost:3000/api/health

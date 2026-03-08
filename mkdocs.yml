@@ -91,6 +91,7 @@ nav:
     - Plugin System: developer-guide/plugins.md
     - Contributing: developer-guide/contributing.md
     - Testing: developer-guide/testing.md
+    - Observability: developer-guide/observability.md
     - System Design: developer-guide/system-design.md
   - API Reference:
     - api-reference/index.md
