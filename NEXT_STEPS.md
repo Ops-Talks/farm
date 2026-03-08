@@ -684,20 +684,21 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 ---
 
-### FARM-E22: Background Job Processing
+### FARM-E22: Background Job Processing ✅
 
 > **Priority:** MEDIUM -- Enables async operations for catalog discovery, notifications, and scheduled tasks.
+> **Status:** DONE (v0.5.0)
 
 #### FARM-S54: Bull Queue Integration
 
-- [ ] FARM-T153: Set up BullMQ job processing infrastructure
-  - [ ] FARM-ST157: Install `@nestjs/bullmq` and `bullmq` packages
-  - [ ] FARM-ST158: Configure `BullModule.forRootAsync()` in `AppModule` with Redis connection
-  - [ ] FARM-ST159: Create `CatalogDiscoveryProcessor` to handle async YAML catalog ingestion
-  - [ ] FARM-ST160: Create `NotificationProcessor` placeholder for future email/webhook notifications
-- [ ] FARM-T154: Add Bull Board dashboard
-  - [ ] FARM-ST161: Install `@bull-board/nestjs` and `@bull-board/api` packages
-  - [ ] FARM-ST162: Mount Bull Board UI at `/admin/queues` behind admin role guard
+- [x] FARM-T153: Set up BullMQ job processing infrastructure
+  - [x] FARM-ST157: Install `@nestjs/bullmq` and `bullmq` packages
+  - [x] FARM-ST158: Configure `BullModule.forRootAsync()` in `AppModule` with Redis connection (via `QueuesModule`)
+  - [x] FARM-ST159: Create `CatalogDiscoveryProcessor` to handle async YAML catalog ingestion
+  - [x] FARM-ST160: Create `NotificationProcessor` placeholder for future email/webhook notifications
+- [x] FARM-T154: Add Bull Board dashboard
+  - [x] FARM-ST161: Install `@bull-board/nestjs` and `@bull-board/api` packages
+  - [x] FARM-ST162: Mount Bull Board UI at `/api/admin/queues` with Express adapter
 
 ---
 
@@ -785,13 +786,13 @@ The recommended execution order, respecting dependencies:
 | 12 | FARM-E18: Test Coverage Expansion | Done |
 | 13 | FARM-E19: Production Readiness Hardening | Done |
 | 14 | FARM-E20: Advanced Observability | Done |
+| 15 | FARM-E21: Caching and Performance | Done |
+| 16 | FARM-E22: Background Job Processing | Done |
 
 ### Upcoming Phases
 
 | Phase | Epic | Dependency | Priority |
 |---|---|---|---|
-| 15 | FARM-E21: Caching and Performance | None | MEDIUM |
-| 16 | FARM-E22: Background Job Processing | FARM-E21 (Redis) | MEDIUM |
 | 17 | FARM-E25: TypeScript Strictness | None | LOW |
 | 18 | FARM-E23: Database Seeders and Developer Experience | None | LOW |
 | 19 | FARM-E24: Communication and Notifications | FARM-E22 (Queues) | LOW |

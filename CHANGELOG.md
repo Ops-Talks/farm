@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **BullMQ job processing**: Integrated `@nestjs/bullmq` and `bullmq` for async background job processing using Redis.
+- **Catalog discovery queue**: `POST /catalog/locations` now enqueues an async BullMQ job instead of processing synchronously, with graceful sync fallback when Redis is unavailable.
+- **CatalogDiscoveryProcessor**: Dedicated BullMQ processor for async YAML catalog ingestion from git repositories.
+- **NotificationProcessor**: Placeholder BullMQ processor for future email/webhook notification support.
+- **Bull Board dashboard**: Queue monitoring UI at `/api/admin/queues` via `@bull-board/nestjs` and `@bull-board/express`.
+- **QueuesModule**: Centralized queue module with conditional loading -- BullMQ/Bull Board skipped in test mode to prevent Redis connection leaks.
+
 ## [0.5.0] - 2026-03-08
 
 ### Added

@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
   Inject,
+  Optional,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -25,6 +26,8 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { CacheInterceptor, Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
@@ -37,6 +40,10 @@ import { PaginatedResponseDto } from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
+import {
+  CATALOG_DISCOVERY_QUEUE,
+  CatalogDiscoveryJobData,
+} from "./processors/catalog-discovery.processor";
 
 /**
  * Controller for the software component catalog.
@@ -70,6 +77,9 @@ export class CatalogController {
   constructor(
     private readonly catalogService: CatalogService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    @Optional()
+    @InjectQueue(CATALOG_DISCOVERY_QUEUE)
+    private readonly discoveryQueue?: Queue<CatalogDiscoveryJobData>,
   ) {}
 
   /**
@@ -87,12 +97,23 @@ export class CatalogController {
   })
   async discoverFromLocation(
     @Body() createLocationDto: CreateLocationDto,
-  ): Promise<{ message: string; discovered: number }> {
+  ): Promise<{ message: string; jobId?: string; discovered?: number }> {
+    if (this.discoveryQueue) {
+      const job = await this.discoveryQueue.add("discover", {
+        url: createLocationDto.url,
+      });
+      return {
+        message: `Discovery job enqueued for ${createLocationDto.url}`,
+        jobId: job.id,
+      };
+    }
+
+    // Synchronous fallback when queue is unavailable
     const discovered = await this.catalogService.discoverFromLocation(
       createLocationDto.url,
     );
     return {
-      message: `Discovery initiated for ${createLocationDto.url}`,
+      message: `Discovery completed for ${createLocationDto.url}`,
       discovered,
     };
   }

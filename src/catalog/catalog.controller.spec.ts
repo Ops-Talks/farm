@@ -1,11 +1,13 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { getQueueToken } from "@nestjs/bullmq";
 import { CatalogController } from "./catalog.controller";
 import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { ComponentKind } from "./entities/component.entity";
 import { PaginatedResponseDto } from "../common/dto";
+import { CATALOG_DISCOVERY_QUEUE } from "./processors/catalog-discovery.processor";
 
 const mockCatalogService = {
   create: jest.fn(),
@@ -22,6 +24,10 @@ const mockCacheManager = {
   clear: jest.fn(),
 };
 
+const mockDiscoveryQueue = {
+  add: jest.fn(),
+};
+
 describe("CatalogController", () => {
   let controller: CatalogController;
   let service: typeof mockCatalogService;
@@ -32,6 +38,10 @@ describe("CatalogController", () => {
       providers: [
         { provide: CatalogService, useValue: mockCatalogService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        {
+          provide: getQueueToken(CATALOG_DISCOVERY_QUEUE),
+          useValue: mockDiscoveryQueue,
+        },
       ],
     }).compile();
 
@@ -95,5 +105,17 @@ describe("CatalogController", () => {
   it("should remove a component (no content)", async () => {
     service.remove.mockResolvedValue({ deleted: true });
     expect(await controller.remove("1")).toBeUndefined();
+  });
+
+  it("should enqueue a discovery job", async () => {
+    mockDiscoveryQueue.add.mockResolvedValue({ id: "job-123" });
+    const result = await controller.discoverFromLocation({
+      url: "https://github.com/example/repo",
+    });
+    expect(result.jobId).toBe("job-123");
+    expect(result.message).toContain("https://github.com/example/repo");
+    expect(mockDiscoveryQueue.add).toHaveBeenCalledWith("discover", {
+      url: "https://github.com/example/repo",
+    });
   });
 });
