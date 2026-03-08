@@ -15,6 +15,18 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: farm-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -33,6 +45,9 @@ services:
       DATABASE_NAME: ${DATABASE_NAME:-farm}
       DATABASE_SYNC: "false"
       JWT_SECRET: ${JWT_SECRET:-change-me-this-must-be-at-least-32-characters-long}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_TTL: ${CACHE_TTL:-30}
     healthcheck:
       test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request({hostname:'localhost',port:3000,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"]
       interval: 30s
@@ -40,4 +55,6 @@ services:
       retries: 3
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy

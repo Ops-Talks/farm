@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { CatalogController } from "./catalog.controller";
 import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
@@ -14,6 +15,13 @@ const mockCatalogService = {
   remove: jest.fn(),
 };
 
+const mockCacheManager = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  clear: jest.fn(),
+};
+
 describe("CatalogController", () => {
   let controller: CatalogController;
   let service: typeof mockCatalogService;
@@ -21,7 +29,10 @@ describe("CatalogController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CatalogController],
-      providers: [{ provide: CatalogService, useValue: mockCatalogService }],
+      providers: [
+        { provide: CatalogService, useValue: mockCatalogService },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
+      ],
     }).compile();
 
     controller = module.get<CatalogController>(CatalogController);

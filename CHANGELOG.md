@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OpenTelemetry tracing**: Integrated `@opentelemetry/sdk-node` with auto-instrumentations for HTTP, Express, and TypeORM. Exports traces via OTLP HTTP to configurable endpoint. Opt-in via `OTEL_ENABLED=true` environment variable.
 - **Log-trace correlation**: Winston log entries in production include `trace_id` and `span_id` fields from the active OpenTelemetry span for cross-referencing logs with distributed traces.
 - **MetricsInterceptor**: Global NestJS interceptor that records per-request Prometheus metrics with route-level granularity.
+- **Redis caching**: Integrated `@nestjs/cache-manager` with `@keyv/redis` for response caching. Falls back to in-memory cache when `REDIS_HOST` is not set.
+- **Cache interceptors**: Applied `CacheInterceptor` to `GET /catalog/components`, `GET /catalog/components/:id`, and all plugin GET endpoints for reduced database load.
+- **Cache invalidation**: Automatic cache clear on component create, update, delete, and YAML registration operations.
+- **Redis Docker service**: Added `redis:7-alpine` service with healthcheck to `docker-compose.yml`; API depends on Redis health.
 
 ## [0.4.7] - 2026-03-08
 

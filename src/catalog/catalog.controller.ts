@@ -10,6 +10,8 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  UseInterceptors,
+  Inject,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -22,6 +24,7 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { CacheInterceptor, Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import { CatalogService } from "./catalog.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
@@ -64,7 +67,10 @@ import { Roles } from "../common/decorators/roles.decorator";
   type: ErrorResponseDto,
 })
 export class CatalogController {
-  constructor(private readonly catalogService: CatalogService) {}
+  constructor(
+    private readonly catalogService: CatalogService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   /**
    * Triggers discovery on a new repository location.
@@ -107,7 +113,9 @@ export class CatalogController {
   async registerYaml(
     @Body() registerYamlDto: RegisterComponentYamlDto,
   ): Promise<Component> {
-    return await this.catalogService.registerYaml(registerYamlDto.yaml);
+    const result = await this.catalogService.registerYaml(registerYamlDto.yaml);
+    await this.cacheManager.clear();
+    return result;
   }
 
   /**
@@ -126,7 +134,9 @@ export class CatalogController {
   async create(
     @Body() createComponentDto: CreateComponentDto,
   ): Promise<Component> {
-    return await this.catalogService.create(createComponentDto);
+    const result = await this.catalogService.create(createComponentDto);
+    await this.cacheManager.clear();
+    return result;
   }
 
   /**
@@ -135,6 +145,7 @@ export class CatalogController {
    * @returns An array of all components
    */
   @Get("components")
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "List all components" })
   @ApiQuery({
     name: "kindGroup",
@@ -169,6 +180,7 @@ export class CatalogController {
    * @returns The component with the specified ID
    */
   @Get("components/:id")
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get component by ID" })
   @ApiParam({ name: "id", description: "The UUID of the component" })
   @ApiOkResponse({
@@ -207,7 +219,9 @@ export class CatalogController {
     @Param("id") id: string,
     @Body() updateComponentDto: UpdateComponentDto,
   ): Promise<Component> {
-    return await this.catalogService.update(id, updateComponentDto);
+    const result = await this.catalogService.update(id, updateComponentDto);
+    await this.cacheManager.clear();
+    return result;
   }
 
   /**
@@ -227,5 +241,6 @@ export class CatalogController {
   })
   async remove(@Param("id") id: string): Promise<void> {
     await this.catalogService.remove(id);
+    await this.cacheManager.clear();
   }
 }

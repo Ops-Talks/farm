@@ -1,10 +1,17 @@
-import { Controller, Get, UseGuards, HttpStatus } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  UseGuards,
+  HttpStatus,
+  UseInterceptors,
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { CacheInterceptor } from "@nestjs/cache-manager";
 import { PluginManagerService } from "./plugin-manager.service";
 import {
   PluginMetadata,
@@ -38,6 +45,7 @@ export class PluginManagerController {
    */
   @Get()
   @Roles("admin")
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get all registered plugins" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -52,6 +60,7 @@ export class PluginManagerController {
    * Retrieves all menu items contributed by registered plugins
    */
   @Get("menu-items")
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get all plugin menu items" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -67,6 +76,7 @@ export class PluginManagerController {
    */
   @Get("routes")
   @Roles("admin")
+  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get all plugin route contributions" })
   @ApiResponse({
     status: HttpStatus.OK,

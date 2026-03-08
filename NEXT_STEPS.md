@@ -652,24 +652,24 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 ---
 
-### FARM-E21: Caching and Performance
+### FARM-E21: Caching and Performance ✅
 
 > **Priority:** MEDIUM -- Reduces database load and improves response times for read-heavy endpoints.
 
 #### FARM-S53: In-Memory and Redis Caching
 
-- [ ] FARM-T150: Integrate NestJS cache manager with Redis
-  - [ ] FARM-ST148: Install `@nestjs/cache-manager` and `cache-manager-redis-yet` packages
-  - [ ] FARM-ST149: Configure `CacheModule.registerAsync()` in `AppModule` with Redis connection from env vars (`REDIS_HOST`, `REDIS_PORT`)
-  - [ ] FARM-ST150: Add fallback to in-memory cache when Redis is unavailable (development mode)
-  - [ ] FARM-ST151: Add `REDIS_HOST`, `REDIS_PORT`, and `CACHE_TTL` to configuration and Joi validation
-- [ ] FARM-T151: Apply caching to high-traffic read endpoints
-  - [ ] FARM-ST152: Add `@UseInterceptors(CacheInterceptor)` to `GET /catalog/components` and `GET /catalog/components/:id`
-  - [ ] FARM-ST153: Add cache invalidation on component create, update, and delete operations
-  - [ ] FARM-ST154: Add `@UseInterceptors(CacheInterceptor)` to `GET /plugins` endpoints (menu-items, routes)
-- [ ] FARM-T152: Add Redis service to Docker Compose
-  - [ ] FARM-ST155: Add `redis:7-alpine` service with healthcheck to `docker-compose.yml`
-  - [ ] FARM-ST156: Add API service dependency on Redis container health
+- [x] FARM-T150: Integrate NestJS cache manager with Redis
+  - [x] FARM-ST148: Install `@nestjs/cache-manager` and `@keyv/redis` packages (cache-manager v7 uses Keyv adapters)
+  - [x] FARM-ST149: Configure `CacheModule.registerAsync()` in `AppModule` with Redis connection from env vars (`REDIS_HOST`, `REDIS_PORT`)
+  - [x] FARM-ST150: Add fallback to in-memory cache when Redis is unavailable (development mode)
+  - [x] FARM-ST151: Add `REDIS_HOST`, `REDIS_PORT`, and `CACHE_TTL` to configuration and Joi validation
+- [x] FARM-T151: Apply caching to high-traffic read endpoints
+  - [x] FARM-ST152: Add `@UseInterceptors(CacheInterceptor)` to `GET /catalog/components` and `GET /catalog/components/:id`
+  - [x] FARM-ST153: Add cache invalidation on component create, update, and delete operations
+  - [x] FARM-ST154: Add `@UseInterceptors(CacheInterceptor)` to `GET /plugins` endpoints (menu-items, routes)
+- [x] FARM-T152: Add Redis service to Docker Compose
+  - [x] FARM-ST155: Add `redis:7-alpine` service with healthcheck to `docker-compose.yml`
+  - [x] FARM-ST156: Add API service dependency on Redis container health
 
 ---
 

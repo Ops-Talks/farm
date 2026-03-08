@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { CacheModule } from "@nestjs/cache-manager";
 import { PluginManagerController } from "./plugin-manager.controller";
 import { PluginManagerService } from "./plugin-manager.service";
 
@@ -35,6 +36,7 @@ describe("PluginManagerController", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
       controllers: [PluginManagerController],
       providers: [
         {

@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import {
   PrometheusModule,
@@ -53,6 +54,27 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
       }),
     }),
     HealthModule,
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redisHost = configService.get<string>("cache.redisHost");
+        const ttl = (configService.get<number>("cache.ttl") ?? 30) * 1000;
+
+        if (redisHost) {
+          const KeyvRedis = (await import("@keyv/redis")).default;
+          const redisPort =
+            configService.get<number>("cache.redisPort") ?? 6379;
+          return {
+            stores: [new KeyvRedis(`redis://${redisHost}:${redisPort}`)],
+            ttl,
+          };
+        }
+
+        return { ttl };
+      },
+    }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

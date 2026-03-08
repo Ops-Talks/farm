@@ -37,6 +37,11 @@ export const configuration = () => ({
       process.env.OTEL_EXPORTER_ENDPOINT || "http://localhost:4318/v1/traces",
     serviceName: process.env.OTEL_SERVICE_NAME || "farm-api",
   },
+  cache: {
+    redisHost: process.env.REDIS_HOST || "",
+    redisPort: parseInt(process.env.REDIS_PORT ?? "6379", 10) || 6379,
+    ttl: parseInt(process.env.CACHE_TTL ?? "30", 10) || 30,
+  },
 });
 
 /**
@@ -72,4 +77,7 @@ export const validationSchema = Joi.object({
     .uri()
     .default("http://localhost:4318/v1/traces"),
   OTEL_SERVICE_NAME: Joi.string().default("farm-api"),
+  REDIS_HOST: Joi.string().allow("").default(""),
+  REDIS_PORT: Joi.number().default(6379),
+  CACHE_TTL: Joi.number().integer().min(1).default(30),
 });
