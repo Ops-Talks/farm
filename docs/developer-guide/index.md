@@ -4,129 +4,72 @@ Welcome to the Farm Developer Guide. This section provides comprehensive documen
 
 ## Overview
 
-This guide covers everything you need to know as a developer working with Farm:
-
-- Setting up your development environment
-- Understanding the architecture
-- Contributing to the project
-- Testing strategies
+Farm is a full-stack application consisting of a **NestJS backend** (API, database, queues, WebSockets) and a **Next.js frontend** (dashboard, catalog browser, monitoring). This guide is organized into shared topics and stack-specific sections.
 
 ## Getting Started
 
 If you are new to Farm development, start with the [Development Setup](setup.md) guide to configure your environment.
 
-## Documentation Sections
+## Backend
 
-### Development Setup
-
-The [Development Setup](setup.md) guide covers:
-
-- Prerequisites and dependencies
-- Installation steps
-- Running the development server
-- Debugging tips
-
-### Architecture
-
-The [Architecture](architecture.md) documentation explains:
-
-- Overall system design
-- Module structure
-- Data flow
-- Key design decisions
-
-### Plugin System
-
-The [Plugin System](plugins.md) documentation explains:
-
-- Core concepts of the Farm plugin architecture
-- How to create a new plugin
-- Metadata-driven development
-- Best practices for modularity
-
-### Contributing
-
-The [Contributing Guide](contributing.md) outlines:
-
-- Code of conduct
-- Contribution workflow
-- Code style guidelines
-- Pull request process
-
-### Testing
-
-The [Testing Guide](testing.md) covers:
-
-- Unit testing
-- End-to-end testing
-- Test coverage
-- Writing effective tests
-
-### System Design
-
-The [System Design](system-design.md) document provides:
-
-- High-level architecture diagrams
-- Component interactions
-- Data models
-- Technology choices
-
-### Observability
-
-The [Observability Guide](observability.md) covers:
-
-- Prometheus metrics and Grafana dashboards
-- OpenTelemetry distributed tracing with Tempo
-- Log-trace correlation
-- Starting the observability stack with Docker Compose
-
-### WebSockets
-
-The [WebSocket Guide](websockets.md) covers:
-
-- Connecting to the `/events` namespace with Socket.IO
-- JWT-authenticated handshake
-- Available real-time events (catalog and deployment changes)
-
-### Background Queues
-
-The [Queue Guide](queues.md) covers:
-
-- BullMQ job processing with Redis
-- Available queues (catalog-discovery, notifications)
-- Bull Board monitoring dashboard
-- Adding new queues and processors
-
-### Email Service
-
-The [Email Guide](email.md) covers:
-
-- SMTP configuration and opt-in setup
-- Handlebars email templates (welcome, deployment notification)
-- Sending emails synchronously or via the notification queue
-- Graceful degradation when SMTP is not configured
-
-## Quick Reference
+The [Backend Developer Guide](backend/index.md) covers the NestJS API server:
 
 | Topic | Description |
 |-------|-------------|
-| [Setup](setup.md) | Development environment configuration |
-| [Architecture](architecture.md) | System architecture overview |
-| [Plugin System](plugins.md) | Extending Farm's functionality |
-| [Contributing](contributing.md) | How to contribute to Farm |
-| [Testing](testing.md) | Testing strategies and guidelines |
-| [System Design](system-design.md) | Detailed system design documentation |
-| [Observability](observability.md) | Metrics, tracing, and Grafana dashboards |
-| [WebSockets](websockets.md) | Real-time event streaming via Socket.IO |
-| [Queues](queues.md) | Background job processing with BullMQ |
-| [Email](email.md) | Transactional email with SMTP and Handlebars |
+| [Architecture](backend/architecture.md) | Module structure, request flow, data storage, and caching |
+| [Plugin System](backend/plugins.md) | Extending Farm with metadata-driven plugins |
+| [Testing](backend/testing.md) | Unit tests with Jest, E2E tests, coverage thresholds |
+| [Observability](backend/observability.md) | Prometheus metrics, Grafana dashboards, OpenTelemetry tracing |
+| [WebSockets](backend/websockets.md) | Real-time event streaming via Socket.IO |
+| [Queues](backend/queues.md) | Background job processing with BullMQ and Redis |
+| [Email](backend/email.md) | Transactional email with SMTP and Handlebars templates |
+
+## Frontend
+
+The [Frontend Developer Guide](frontend/index.md) covers the Next.js web application:
+
+| Topic | Description |
+|-------|-------------|
+| [Architecture](frontend/architecture.md) | Project structure, routing, API integration, and design decisions |
+| [Testing](frontend/testing.md) | Vitest setup, writing component tests, and coverage |
+
+## Shared Topics
+
+| Topic | Description |
+|-------|-------------|
+| [Development Setup](setup.md) | Prerequisites, installation, Docker, and environment variables |
+| [Contributing](contributing.md) | Contribution workflow, code style, and pull request guidelines |
+| [System Design](system-design.md) | High-level system architecture, data models, and API design |
 
 ## Technology Stack
 
-Farm is built with:
+| Layer | Technology |
+|-------|------------|
+| Backend Framework | NestJS 11 (TypeScript) |
+| Frontend Framework | Next.js 16 (React 19) |
+| Database | PostgreSQL (SQLite for tests) |
+| Cache | Redis (in-memory fallback) |
+| Queue | BullMQ with Redis |
+| UI Components | Shadcn/ui + Tailwind CSS v4 |
+| Backend Tests | Jest (unit + E2E) |
+| Frontend Tests | Vitest + React Testing Library |
+| Observability | Prometheus, Grafana, OpenTelemetry, Tempo |
+| Containerization | Docker + Docker Compose |
 
-- **NestJS**: A progressive Node.js framework for building efficient and scalable server-side applications
-- **TypeScript**: Typed superset of JavaScript that compiles to plain JavaScript
-- **Jest**: JavaScript testing framework with a focus on simplicity
-- **ESLint**: Pluggable linting utility for JavaScript and TypeScript
-- **Prettier**: Opinionated code formatter
+## Quick Reference
+
+```bash
+# Full stack (Docker)
+make up-all
+
+# Backend only
+make up-docker
+
+# Run all checks
+make check          # Backend + Frontend
+make check-back     # Backend only (fmt, lint, test, e2e)
+make check-front    # Frontend only (lint, build, test)
+
+# Seed sample data
+make seed
+```

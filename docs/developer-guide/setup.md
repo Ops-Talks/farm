@@ -21,6 +21,7 @@ This guide walks you through setting up a development environment for Farm.
   - ESLint
   - Prettier
   - TypeScript and JavaScript Language Features
+  - Tailwind CSS IntelliSense
 
 ## Getting Started
 
@@ -34,7 +35,11 @@ cd farm
 ### 2. Install Dependencies
 
 ```bash
+# Backend dependencies
 npm install
+
+# Frontend dependencies
+cd web && npm install && cd ..
 ```
 
 Copy the example environment file and adjust values as needed:
@@ -45,48 +50,72 @@ cp .env.example .env
 
 ### 3. Start the Development Server
 
-#### Option A: Containerized Development (Recommended)
+#### Option A: Full Stack with Docker (Recommended)
 
-The easiest way to get started is to use the provided Makefile commands, which orchestrate the API and PostgreSQL database:
+Start the entire stack (API, database, Redis, observability, docs, and web) with a single command:
 
 ```bash
-make up-docker
+make up-all
 ```
 
-This command builds the API image and starts both the application and its database dependencies. To stop and clean up:
+This builds all images and starts all containers. Access points:
+
+| Service | URL |
+|---------|-----|
+| Web UI | [http://localhost:3001](http://localhost:3001) |
+| API | [http://localhost:3000/api](http://localhost:3000/api) |
+| Swagger UI | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
+| Grafana | [http://localhost:3002](http://localhost:3002) |
+| Prometheus | [http://localhost:9090](http://localhost:9090) |
+| MkDocs | [http://localhost:8000](http://localhost:8000) |
+
+To stop and clean up:
 
 ```bash
-make down-docker
+make down-all
 # Or to wipe database data as well:
 make down-docker-clean
 ```
 
 #### Seeding Sample Data
 
-After starting the application, populate the database with sample data (admin user, teams, components, environments):
+After starting the application, populate the database with sample data:
 
 ```bash
 DATABASE_PASSWORD=password DATABASE_SYNC=true make seed
 ```
 
-This creates a default admin user (`admin` / `Admin1234`) and sample catalog entries. The seeder is idempotent and only runs in development/test environments.
+This creates default users and sample catalog entries. The seeder is idempotent and only runs in development/test environments.
 
-#### Option B: Local Development (Node.js)
+| User | Password | Role |
+|------|----------|------|
+| admin | Admin1234 | admin |
+| developer | Developer1 | user |
 
-For local development, you need a PostgreSQL instance running. You can start just the database using Docker:
+#### Option B: Backend Only (Docker)
 
 ```bash
-docker compose up -d postgres
-npm run start:dev
+make up-docker
 ```
 
-The development server starts with hot-reload enabled. Changes to source files will automatically restart the server.
+This starts the API and PostgreSQL database. Use when working on backend features without the full observability stack.
 
-Once the server is running, you can access the interactive API documentation (Swagger UI) at `http://localhost:3000/api/docs`.
+#### Option C: Local Development (Node.js)
+
+For local development with hot-reload, start the database with Docker and run the backend and frontend locally:
+
+```bash
+# Start PostgreSQL
+docker compose up -d postgres
+
+# Start backend (port 3000)
+npm run start:dev
+
+# Start frontend (port 3000, separate terminal)
+cd web && npm run dev
+```
 
 #### Running Documentation Server
-
-To run the MkDocs documentation server:
 
 ```bash
 make docs-up
@@ -96,15 +125,10 @@ make docs-up
 
 ```
 farm/
-  src/
+  src/                     # NestJS backend source
     app.module.ts          # Root application module
-    app.controller.ts      # Root controller
-    app.service.ts         # Root service
     main.ts                # Application entry point
-    common/                # Shared utilities and global layers
-      filters/             # Global exception filters
-      health/              # Terminus health check module
-      logger/              # Winston structured logging
+    common/                # Shared utilities (filters, health, logger)
     config/                # Environment configuration
     migrations/            # TypeORM migrations
     auth/                  # Authentication module
@@ -113,17 +137,26 @@ farm/
     environments/          # Environments and Deployments module
     teams/                 # Teams and Ownership module
   test/                    # End-to-end tests
-  docs/                    # Documentation source files
+  web/                     # Next.js frontend
+    src/
+      app/                 # App Router pages
+      components/          # React components
+      contexts/            # Context providers
+      lib/                 # API client, WebSocket, utilities
+      types/               # TypeScript types
+    vitest.config.ts       # Vitest configuration
+  docs/                    # MkDocs documentation source
 ```
 
 ## Available Scripts
+
+### Backend
 
 | Script | Description |
 |--------|-------------|
 | `npm run start` | Start the application |
 | `npm run start:dev` | Start with hot-reload |
 | `npm run start:debug` | Start with debugging enabled |
-| `npm run start:prod` | Start production build |
 | `npm run build` | Build the application |
 | `npm run lint` | Run ESLint |
 | `npm run format` | Format code with Prettier |
@@ -132,6 +165,17 @@ farm/
 | `npm run test:cov` | Run tests with coverage |
 | `npm run test:e2e` | Run end-to-end tests |
 
+### Frontend
+
+| Script | Description |
+|--------|-------------|
+| `cd web && npm run dev` | Start dev server with hot-reload |
+| `cd web && npm run build` | Build for production |
+| `cd web && npm run lint` | Run ESLint |
+| `cd web && npm test` | Run Vitest tests |
+| `cd web && npm run test:watch` | Run tests in watch mode |
+| `cd web && npm run test:coverage` | Run tests with coverage |
+
 ## Makefile Targets
 
 | Target | Description |
@@ -139,16 +183,22 @@ farm/
 | `make up-docker` | Build and start API and PostgreSQL database |
 | `make down-docker` | Stop Docker containers |
 | `make down-docker-clean` | Stop containers and remove database volumes |
-| `make healthcheck` | Query the local API advanced health endpoint |
-| `make docs-up` | Start the documentation server (MkDocs) |
-| `make docs-down` | Stop and remove documentation container |
-| `make docs-build` | Build static documentation site |
-| `make test-docker` | Execute project tests in a clean container |
-| `make check` | Run fmt, lint, and all tests |
 | `make up-observability` | Start API + DB + Redis + Grafana + Prometheus + Tempo |
-| `make down-observability` | Stop the observability stack |
-| `make seed` | Seed the database with sample data (dev/test only) |
-| `make release` | Create a new release using release-it (interactive) |
+| `make up-all` | Start the full stack (API + DB + Redis + Observability + Docs + Web) |
+| `make down-all` | Stop the full stack |
+| `make healthcheck` | Query the local API advanced health endpoint |
+| `make seed` | Seed the database with sample data |
+| `make check` | Run all checks (backend + frontend) |
+| `make check-back` | Run backend checks (fmt, lint, test, e2e) |
+| `make check-front` | Run frontend checks (lint, build, test) |
+| `make web-dev` | Start the frontend dev server |
+| `make web-build` | Build the frontend for production |
+| `make web-lint` | Lint the frontend code |
+| `make web-test` | Run frontend tests |
+| `make docs-up` | Start the documentation server (MkDocs) |
+| `make docs-down` | Stop documentation container |
+| `make test-docker` | Execute backend tests in a clean container |
+| `make release` | Create a new release using release-it |
 
 ## Development Workflow
 
@@ -161,10 +211,11 @@ farm/
 
 2. Make your changes
 
-3. Run linting and tests:
+3. Run checks:
    ```bash
-   npm run lint
-   npm run test
+   make check          # Full check (backend + frontend)
+   make check-back     # Backend only
+   make check-front    # Frontend only
    ```
 
 4. Commit your changes:
@@ -183,7 +234,7 @@ Farm uses ESLint and Prettier to maintain consistent code style:
 
 ### Debugging
 
-#### Using VS Code
+#### Backend (VS Code)
 
 Create a `.vscode/launch.json` file:
 
@@ -194,56 +245,64 @@ Create a `.vscode/launch.json` file:
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Farm",
+      "name": "Debug Farm API",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start:debug"],
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "console": "integratedTerminal"
     }
   ]
 }
 ```
 
-#### Using Command Line
+#### Backend (Command Line)
 
 ```bash
 npm run start:debug
+# Attach debugger to port 9229
 ```
-
-Then attach your debugger to port 9229.
 
 ## Environment Variables
 
+### Backend
+
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NODE_ENV` | `development` | Runtime environment (`development`, `production`, `test`) |
+| `NODE_ENV` | `development` | Runtime environment |
 | `PORT` | `3000` | HTTP server port |
 | `LOG_LEVEL` | `info` | Minimum log level for Winston |
 | `DATABASE_TYPE` | `postgres` | Database engine (`postgres`, `sqlite`) |
-| `DATABASE_HOST` | `localhost` | Hostname for database connection |
-| `DATABASE_PORT` | `5432` | Port for database connection |
+| `DATABASE_HOST` | `localhost` | Database hostname |
+| `DATABASE_PORT` | `5432` | Database port |
 | `DATABASE_USER` | `postgres` | Database username |
 | `DATABASE_PASSWORD` | `postgres` | Database password |
 | `DATABASE_NAME` | `farm` | Database name |
-| `DATABASE_SYNC` | `false` | Enable TypeORM auto-sync (use with caution) |
-| `DATABASE_POOL_SIZE` | `10` | Database connection pool size (1-100, PostgreSQL only) |
-| `JWT_SECRET` | (auto-generated in dev) | Secret key for JWT signing. **Required** in production (min 32 chars) |
+| `DATABASE_SYNC` | `false` | Enable TypeORM auto-sync |
+| `DATABASE_POOL_SIZE` | `10` | Database connection pool size |
+| `JWT_SECRET` | (auto-generated in dev) | Secret key for JWT signing (min 32 chars in production) |
 | `JWT_EXPIRATION` | `3600s` | JWT token expiration time |
-| `ALLOWED_ORIGINS` | `*` | CORS allowed origins (comma-separated URLs or `*` for all) |
-| `THROTTLE_TTL` | `60000` | Rate limit time window in milliseconds |
+| `ALLOWED_ORIGINS` | `*` | CORS allowed origins |
+| `THROTTLE_TTL` | `60000` | Rate limit time window (ms) |
 | `THROTTLE_LIMIT` | `10` | Maximum requests per TTL window |
-| `REDIS_HOST` | *(empty)* | Redis hostname. Leave empty for in-memory cache |
+| `REDIS_HOST` | *(empty)* | Redis hostname (empty for in-memory cache) |
 | `REDIS_PORT` | `6379` | Redis port |
-| `CACHE_TTL` | `30` | Cache time-to-live in seconds |
+| `CACHE_TTL` | `30` | Cache time-to-live (seconds) |
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry trace export |
-| `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint for traces |
+| `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint |
 | `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
+
+### Frontend
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_URL` | *(none)* | Public API URL (fallback for rewrites) |
+| `API_INTERNAL_URL` | `http://api:3000/api` | Internal Docker API URL (build-time) |
+| `NEXT_PUBLIC_WS_URL` | `http://localhost:3000` | WebSocket server URL |
 
 ## Troubleshooting
 
 ### Port Already in Use
 
-If port 3000 is already in use, either stop the conflicting process or use a different port:
+If port 3000 is already in use:
 
 ```bash
 PORT=3001 npm run start:dev
@@ -251,17 +310,33 @@ PORT=3001 npm run start:dev
 
 ### Dependency Issues
 
-If you encounter dependency issues, try:
-
 ```bash
 rm -rf node_modules package-lock.json
 npm install
 ```
 
-### TypeScript Errors
-
-Ensure your TypeScript version matches the project requirements:
+### Frontend Build Errors
 
 ```bash
-npm ls typescript
+cd web
+rm -rf node_modules .next
+npm install
+npm run build
 ```
+
+### Docker Port Conflicts
+
+The default port mapping is:
+
+| Container | Port |
+|-----------|------|
+| farm-api | 3000 |
+| farm-web | 3001 |
+| farm-grafana | 3002 |
+| farm-prometheus | 9090 |
+| farm-tempo | 3200, 4318 |
+| farm-docs | 8000 |
+| farm-db | 5432 |
+| farm-redis | 6379 |
+
+If a port is already in use, stop the conflicting process or adjust the port mapping in `docker-compose.yml` or `docker-compose.observability.yml`.

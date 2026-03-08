@@ -87,17 +87,21 @@ nav:
   - Developer Guide:
     - developer-guide/index.md
     - Development Setup: developer-guide/setup.md
-    - Architecture: developer-guide/architecture.md
-    - Plugin System: developer-guide/plugins.md
     - Contributing: developer-guide/contributing.md
-    - Testing: developer-guide/testing.md
-    - Observability: developer-guide/observability.md
-    - WebSockets: developer-guide/websockets.md
-    - Queues: developer-guide/queues.md
-    - Email: developer-guide/email.md
     - System Design: developer-guide/system-design.md
-  - Architecture Decision Records:
-    - adr/001-frontend-stack.md
+    - Backend:
+      - developer-guide/backend/index.md
+      - Architecture: developer-guide/backend/architecture.md
+      - Plugin System: developer-guide/backend/plugins.md
+      - Testing: developer-guide/backend/testing.md
+      - Observability: developer-guide/backend/observability.md
+      - WebSockets: developer-guide/backend/websockets.md
+      - Queues: developer-guide/backend/queues.md
+      - Email: developer-guide/backend/email.md
+    - Frontend:
+      - developer-guide/frontend/index.md
+      - Architecture: developer-guide/frontend/architecture.md
+      - Testing: developer-guide/frontend/testing.md
   - API Reference:
     - api-reference/index.md
     - Health API: api-reference/health.md
