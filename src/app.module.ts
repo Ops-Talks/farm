@@ -49,7 +49,7 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
         database: configService.get<string>("database.name"),
         synchronize: configService.get<boolean>("database.synchronize"),
         autoLoadEntities: true,
-        migrations: [__dirname + "/migrations/*.{.ts,.js}"],
+        migrations: [__dirname + "/migrations/*.{ts,js}"],
         migrationsRun: configService.get<string>("env") === "production",
         extra:
           configService.get<string>("database.type") === "postgres"

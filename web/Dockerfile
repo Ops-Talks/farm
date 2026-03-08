@@ -9,6 +9,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+ARG API_INTERNAL_URL=http://api:3000/api
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 RUN npm run build
 
 # Stage 3: Production
