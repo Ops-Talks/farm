@@ -1,0 +1,27 @@
+<h2>Deployment {{status}}</h2>
+<p>A deployment for <strong>{{componentName}}</strong> has been updated.</p>
+<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+  <tr>
+    <td style="padding: 8px 0; color: #666;">Component</td>
+    <td style="padding: 8px 0; font-weight: 600;">{{componentName}}</td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; color: #666;">Environment</td>
+    <td style="padding: 8px 0; font-weight: 600;">{{environment}}</td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; color: #666;">Version</td>
+    <td style="padding: 8px 0; font-weight: 600;">{{version}}</td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; color: #666;">Status</td>
+    <td style="padding: 8px 0; font-weight: 600;">{{status}}</td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; color: #666;">Deployed By</td>
+    <td style="padding: 8px 0; font-weight: 600;">{{deployedBy}}</td>
+  </tr>
+</table>
+{{#if url}}
+<p><a href="{{url}}" style="color: #6F00FF;">View Deployment</a></p>
+{{/if}}

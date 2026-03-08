@@ -201,45 +201,22 @@ Farm project roadmap organized using JIRA-like hierarchy.
 
 ---
 
-## Phase 3: Backend Completion `TODO`
+## Phase 3: Backend Completion `DONE`
 
-### FARM-E16: Communication and Notifications `TODO`
+### FARM-E16: Communication and Notifications `DONE`
 
 > Email service for transactional notifications.
 
-#### FARM-S67: Email Service `TODO`
+#### FARM-S67: Email Service `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T01 | Task | Install and configure Nodemailer | `TODO` |
-| FARM-ST01 | Sub-task | Add `nodemailer` and `@types/nodemailer` dependencies | `TODO` |
-| FARM-ST02 | Sub-task | Create SMTP configuration in `src/config/configuration.ts` | `TODO` |
-| FARM-ST03 | Sub-task | Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` to `.env.example` | `TODO` |
-| FARM-T02 | Task | Create EmailModule and EmailService | `TODO` |
-| FARM-ST04 | Sub-task | Create `src/common/email/email.module.ts` with ConfigModule import | `TODO` |
-| FARM-ST05 | Sub-task | Create `src/common/email/email.service.ts` with Nodemailer transporter | `TODO` |
-| FARM-ST06 | Sub-task | Implement `sendMail()` method with typed options | `TODO` |
-| FARM-ST07 | Sub-task | Add connection verification on module init (`transporter.verify()`) | `TODO` |
-| FARM-T03 | Task | Implement email templates with Handlebars | `TODO` |
-| FARM-ST08 | Sub-task | Install `handlebars` dependency | `TODO` |
-| FARM-ST09 | Sub-task | Create `src/common/email/templates/` directory | `TODO` |
-| FARM-ST10 | Sub-task | Create welcome email template (`welcome.hbs`) | `TODO` |
-| FARM-ST11 | Sub-task | Create password reset template (`password-reset.hbs`) | `TODO` |
-| FARM-ST12 | Sub-task | Create deployment notification template (`deployment-notification.hbs`) | `TODO` |
-| FARM-ST13 | Sub-task | Implement template compilation and rendering in EmailService | `TODO` |
-| FARM-T04 | Task | Integrate email with notification queue | `TODO` |
-| FARM-ST14 | Sub-task | Wire `NotificationProcessor` to call EmailService | `TODO` |
-| FARM-ST15 | Sub-task | Define notification job payload interface | `TODO` |
-| FARM-ST16 | Sub-task | Add email notification on deployment status change | `TODO` |
-| FARM-T05 | Task | Unit and E2E tests | `TODO` |
-| FARM-ST17 | Sub-task | Unit tests for EmailService (template rendering, send) | `TODO` |
-| FARM-ST18 | Sub-task | Unit tests for NotificationProcessor with email integration | `TODO` |
-| FARM-ST19 | Sub-task | E2E test for email notification trigger | `TODO` |
-| FARM-T06 | Task | Documentation | `TODO` |
-| FARM-ST20 | Sub-task | Create `docs/developer-guide/email.md` | `TODO` |
-| FARM-ST21 | Sub-task | Update `docs/developer-guide/index.md` with email section | `TODO` |
-| FARM-ST22 | Sub-task | Add email configuration to setup guide | `TODO` |
-| FARM-ST23 | Sub-task | Update CHANGELOG.md and NEXT_STEPS.md | `TODO` |
+| FARM-T01 | Task | Install and configure Nodemailer | `DONE` |
+| FARM-T02 | Task | Create EmailModule and EmailService | `DONE` |
+| FARM-T03 | Task | Implement email templates with Handlebars | `DONE` |
+| FARM-T04 | Task | Integrate email with notification queue | `DONE` |
+| FARM-T05 | Task | Unit and E2E tests | `DONE` |
+| FARM-T06 | Task | Documentation | `DONE` |
 
 ---
 
@@ -556,7 +533,7 @@ Farm project roadmap organized using JIRA-like hierarchy.
 |-------|-------|---------|--------|
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
-| Phase 3: Backend Completion | 1 | 1 | `TODO` |
+| Phase 3: Backend Completion | 1 | 1 | `DONE` |
 | Phase 4: Front-End Foundation | 1 | 3 | `TODO` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `TODO` |
 | Phase 6: Advanced Features | 5 | 19 | `TODO` |

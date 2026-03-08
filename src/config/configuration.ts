@@ -42,6 +42,14 @@ export const configuration = () => ({
     redisPort: parseInt(process.env.REDIS_PORT ?? "6379", 10) || 6379,
     ttl: parseInt(process.env.CACHE_TTL ?? "30", 10) || 30,
   },
+  smtp: {
+    host: process.env.SMTP_HOST || "",
+    port: parseInt(process.env.SMTP_PORT ?? "587", 10) || 587,
+    secure: process.env.SMTP_SECURE === "true",
+    user: process.env.SMTP_USER || "",
+    pass: process.env.SMTP_PASS || "",
+    from: process.env.SMTP_FROM || "Farm <noreply@farm.local>",
+  },
 });
 
 /**
@@ -80,4 +88,10 @@ export const validationSchema = Joi.object({
   REDIS_HOST: Joi.string().allow("").default(""),
   REDIS_PORT: Joi.number().default(6379),
   CACHE_TTL: Joi.number().integer().min(1).default(30),
+  SMTP_HOST: Joi.string().allow("").default(""),
+  SMTP_PORT: Joi.number().default(587),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_USER: Joi.string().allow("").default(""),
+  SMTP_PASS: Joi.string().allow("").default(""),
+  SMTP_FROM: Joi.string().default("Farm <noreply@farm.local>"),
 });

@@ -94,6 +94,7 @@ nav:
     - Observability: developer-guide/observability.md
     - WebSockets: developer-guide/websockets.md
     - Queues: developer-guide/queues.md
+    - Email: developer-guide/email.md
     - System Design: developer-guide/system-design.md
   - API Reference:
     - api-reference/index.md

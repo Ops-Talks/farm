@@ -97,6 +97,15 @@ The [Queue Guide](queues.md) covers:
 - Bull Board monitoring dashboard
 - Adding new queues and processors
 
+### Email Service
+
+The [Email Guide](email.md) covers:
+
+- SMTP configuration and opt-in setup
+- Handlebars email templates (welcome, deployment notification)
+- Sending emails synchronously or via the notification queue
+- Graceful degradation when SMTP is not configured
+
 ## Quick Reference
 
 | Topic | Description |
@@ -110,6 +119,7 @@ The [Queue Guide](queues.md) covers:
 | [Observability](observability.md) | Metrics, tracing, and Grafana dashboards |
 | [WebSockets](websockets.md) | Real-time event streaming via Socket.IO |
 | [Queues](queues.md) | Background job processing with BullMQ |
+| [Email](email.md) | Transactional email with SMTP and Handlebars |
 
 ## Technology Stack
 

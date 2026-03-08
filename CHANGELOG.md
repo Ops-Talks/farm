@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Email service**: Integrated `nodemailer` with SMTP transport and `handlebars` template engine for transactional email notifications. Opt-in via `SMTP_HOST` environment variable with graceful degradation when not configured.
+- **Email templates**: Welcome email and deployment notification templates with shared HTML layout, located in `src/common/email/templates/`.
+- **NotificationProcessor email integration**: The BullMQ notification processor now sends emails via EmailService for `type: "email"` jobs, using the specified Handlebars template and context.
+- **EmailModule**: Global module providing EmailService across the application with SMTP connection verification on startup.
+
 ## [0.6.0] - 2026-03-08
 
 ### Added

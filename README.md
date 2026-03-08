@@ -36,6 +36,7 @@ Once running, the API is at [http://localhost:3000/api](http://localhost:3000/ap
 - [Passport](http://www.passportjs.org/) + [JWT](https://jwt.io/) - Authentication and authorization
 - [Socket.IO](https://socket.io/) - WebSocket real-time events
 - [BullMQ](https://docs.bullmq.io/) - Background job processing with Redis
+- [Nodemailer](https://nodemailer.com/) + [Handlebars](https://handlebarsjs.com/) - Transactional email with templates
 - [Redis](https://redis.io) - Response caching and job queues
 - [Winston](https://github.com/winstonjs/winston) - Structured logging
 - [Terminus](https://docs.nestjs.com/recipes/terminus) - Advanced health monitoring
