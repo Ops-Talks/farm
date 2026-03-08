@@ -33,10 +33,14 @@ Once running, the API is at [http://localhost:3000/api](http://localhost:3000/ap
 
 - [NestJS](https://docs.nestjs.com) - Progressive Node.js framework
 - [TypeORM](https://typeorm.io) - Data persistence with PostgreSQL
+- [Passport](http://www.passportjs.org/) + [JWT](https://jwt.io/) - Authentication and authorization
+- [Socket.IO](https://socket.io/) - WebSocket real-time events
+- [BullMQ](https://docs.bullmq.io/) - Background job processing with Redis
+- [Redis](https://redis.io) - Response caching and job queues
 - [Winston](https://github.com/winstonjs/winston) - Structured logging
 - [Terminus](https://docs.nestjs.com/recipes/terminus) - Advanced health monitoring
-- [Swagger](https://swagger.io/) - API Documentation
-- [Redis](https://redis.io) - Response caching
+- [Swagger](https://swagger.io/) - API documentation
+- [Helmet](https://helmetjs.github.io/) - HTTP security headers
 - [Prometheus](https://prometheus.io) - Metrics collection
 - [Grafana](https://grafana.com) - Observability dashboards
 - [OpenTelemetry](https://opentelemetry.io) - Distributed tracing
@@ -55,7 +59,7 @@ Start the app:
 
 ```bash
 npm run start:dev    # watch mode
-e npm run start:prod  # build+run
+npm run start:prod   # build+run
 ```
 
 Migrations are handled via TypeORM: see `npm run migration:*` commands documented in package.json.
@@ -75,72 +79,79 @@ Migrations are handled via TypeORM: see `npm run migration:*` commands documente
 | `make lint` | Lint code |
 | `make fmt` | Prettier format |
 | `make check` | Lint, fmt, and tests |
+| `make seed` | Seed database with sample data |
 | `make up-observability` | Start with Grafana + Prometheus + Tempo |
 | `make down-observability` | Stop observability stack |
 | `make release` | Create a release (interactive) |
 
 ## API Endpoints
 
-All endpoints are prefixed with `/api`. For full details, visit `/api/docs` when the server is running.
+All versioned endpoints use the `/api/v1/` prefix. Health and metrics remain at `/api/` (version-neutral). For full details, visit `/api/docs` when the server is running.
 
 #### Health & Monitoring
 
 - `GET /api/health` - Advanced health status (DB, Memory, Disk, Version)
+- `GET /api/metrics` - Prometheus metrics
 
 #### Catalog
 
-- `POST /api/catalog/components` - Register a new component
-- `GET /api/catalog/components` - List all components
-- `GET /api/catalog/components/:id` - Get a specific component
-- `PATCH /api/catalog/components/:id` - Update a component
-- `DELETE /api/catalog/components/:id` - Remove a component
+- `POST /api/v1/catalog/components` - Register a new component
+- `GET /api/v1/catalog/components` - List all components
+- `GET /api/v1/catalog/components/:id` - Get a specific component
+- `PATCH /api/v1/catalog/components/:id` - Update a component
+- `DELETE /api/v1/catalog/components/:id` - Remove a component
 
 #### Documentation
 
-- `POST /api/docs` - Create a documentation entry
-- `GET /api/docs` - List all documentation (supports `?componentId=` filter)
-- `GET /api/docs/search` - Search documentation by title (`?q=&componentId=`)
-- `GET /api/docs/tree` - Get documentation navigation tree (`?componentId=`)
-- `GET /api/docs/:id` - Get documentation metadata
-- `GET /api/docs/:id/content` - Get raw Markdown content
-- `GET /api/docs/:id/rendered` - Get rendered HTML content
-- `PATCH /api/docs/:id` - Update a documentation entry
-- `DELETE /api/docs/:id` - Remove a documentation entry
+- `POST /api/v1/docs` - Create a documentation entry
+- `GET /api/v1/docs` - List all documentation (supports `?componentId=` filter)
+- `GET /api/v1/docs/search` - Search documentation by title (`?q=&componentId=`)
+- `GET /api/v1/docs/tree` - Get documentation navigation tree (`?componentId=`)
+- `GET /api/v1/docs/:id` - Get documentation metadata
+- `GET /api/v1/docs/:id/content` - Get raw Markdown content
+- `GET /api/v1/docs/:id/rendered` - Get rendered HTML content
+- `PATCH /api/v1/docs/:id` - Update a documentation entry
+- `DELETE /api/v1/docs/:id` - Remove a documentation entry
 
 #### Teams
 
-- `POST /api/teams` - Create a team (admin)
-- `GET /api/teams` - List all teams
-- `GET /api/teams/:id` - Get team by ID
-- `PATCH /api/teams/:id` - Update a team (admin)
-- `DELETE /api/teams/:id` - Delete a team (admin)
-- `POST /api/teams/:id/members/:userId` - Add team member (admin)
-- `DELETE /api/teams/:id/members/:userId` - Remove team member (admin)
-- `GET /api/teams/:id/members` - List team members
-- `GET /api/teams/:id/components` - List team components
+- `POST /api/v1/teams` - Create a team (admin)
+- `GET /api/v1/teams` - List all teams
+- `GET /api/v1/teams/:id` - Get team by ID
+- `PATCH /api/v1/teams/:id` - Update a team (admin)
+- `DELETE /api/v1/teams/:id` - Delete a team (admin)
+- `POST /api/v1/teams/:id/members/:userId` - Add team member (admin)
+- `DELETE /api/v1/teams/:id/members/:userId` - Remove team member (admin)
+- `GET /api/v1/teams/:id/members` - List team members
+- `GET /api/v1/teams/:id/components` - List team components
 
 #### Environments
 
-- `POST /api/environments` - Create environment (admin)
-- `GET /api/environments` - List all environments
-- `GET /api/environments/:id` - Get environment by ID
-- `PATCH /api/environments/:id` - Update environment (admin)
-- `DELETE /api/environments/:id` - Delete environment (admin)
+- `POST /api/v1/environments` - Create environment (admin)
+- `GET /api/v1/environments` - List all environments
+- `GET /api/v1/environments/:id` - Get environment by ID
+- `PATCH /api/v1/environments/:id` - Update environment (admin)
+- `DELETE /api/v1/environments/:id` - Delete environment (admin)
 
 #### Deployments
 
-- `POST /api/deployments` - Record a deployment (admin)
-- `GET /api/deployments` - List deployments (filterable)
-- `GET /api/deployments/:id` - Get deployment details
-- `PATCH /api/deployments/:id` - Update deployment status (admin)
-- `GET /api/deployments/latest` - Latest deployments per environment (`?componentId=`)
-- `GET /api/deployments/matrix` - Component-environment deployment matrix
+- `POST /api/v1/deployments` - Record a deployment (admin)
+- `GET /api/v1/deployments` - List deployments (filterable)
+- `GET /api/v1/deployments/:id` - Get deployment details
+- `PATCH /api/v1/deployments/:id` - Update deployment status (admin)
+- `GET /api/v1/deployments/latest` - Latest deployments per environment (`?componentId=`)
+- `GET /api/v1/deployments/matrix` - Component-environment deployment matrix
 
 #### Auth
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Authenticate a user
-- `GET /api/auth/users` - List all users
+- `POST /api/v1/auth/register` - Register a new user
+- `POST /api/v1/auth/login` - Authenticate a user
+- `POST /api/v1/auth/refresh` - Refresh JWT token
+- `GET /api/v1/auth/users` - List all users
+
+#### WebSocket Events
+
+Real-time events are available on the `/events` namespace via Socket.IO. See [WebSocket docs](docs/developer-guide/websockets.md) for details.
 
 ### Component Kinds
 
