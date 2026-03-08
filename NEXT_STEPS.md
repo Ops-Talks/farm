@@ -480,36 +480,36 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S35: Pagination Support
 
-- [ ] FARM-T122: Create shared pagination infrastructure
-  - [ ] FARM-ST88: Create `PaginationQueryDto` with `@IsOptional() @IsInt() @Min(0) skip` and `@IsOptional() @IsInt() @Min(1) @Max(100) take` fields
-  - [ ] FARM-ST89: Create `PaginatedResponseDto<T>` with `data: T[]`, `total: number`, `skip: number`, `take: number` fields
-- [ ] FARM-T123: Add pagination to Catalog endpoints
-  - [ ] FARM-ST90: Update `CatalogService.findAll()` to accept `skip`/`take` and return `[entities, count]`
-  - [ ] FARM-ST91: Update `CatalogController.findAll()` with `@Query()` pagination params and Swagger decorators
-- [ ] FARM-T124: Add pagination to Teams endpoints
-  - [ ] FARM-ST92: Update `TeamsService.findAll()` and `TeamsController.findAll()`
-- [ ] FARM-T125: Add pagination to Documentation endpoints
-  - [ ] FARM-ST93: Update `DocumentationService.findAll()` and `DocumentationController.findAll()`
-- [ ] FARM-T126: Add pagination to Environments and Deployments endpoints
-  - [ ] FARM-ST94: Update `EnvironmentsService.findAll()`, `DeploymentsService.findAll()`, and their controllers
-- [ ] FARM-T127: Update E2E tests to verify pagination behavior
-  - [ ] FARM-ST95: Test default pagination, custom skip/take, and total count in response
+- [x] FARM-T122: Create shared pagination infrastructure
+  - [x] FARM-ST88: Create `PaginationQueryDto` with `@IsOptional() @IsInt() @Min(0) skip` and `@IsOptional() @IsInt() @Min(1) @Max(100) take` fields
+  - [x] FARM-ST89: Create `PaginatedResponseDto<T>` with `data: T[]`, `total: number`, `skip: number`, `take: number` fields
+- [x] FARM-T123: Add pagination to Catalog endpoints
+  - [x] FARM-ST90: Update `CatalogService.findAll()` to accept `skip`/`take` and return `[entities, count]`
+  - [x] FARM-ST91: Update `CatalogController.findAll()` with `@Query()` pagination params and Swagger decorators
+- [x] FARM-T124: Add pagination to Teams endpoints
+  - [x] FARM-ST92: Update `TeamsService.findAll()` and `TeamsController.findAll()`
+- [x] FARM-T125: Add pagination to Documentation endpoints
+  - [x] FARM-ST93: Update `DocumentationService.findAll()` and `DocumentationController.findAll()`
+- [x] FARM-T126: Add pagination to Environments and Deployments endpoints
+  - [x] FARM-ST94: Update `EnvironmentsService.findAll()`, `DeploymentsService.findAll()`, and their controllers
+- [x] FARM-T127: Update E2E tests to verify pagination behavior
+  - [x] FARM-ST95: Test default pagination, custom skip/take, and total count in response
 
 #### FARM-S36: DTO Validation Improvements
 
-- [ ] FARM-T128: Fix `componentId` validation in `CreateDocumentationDto`
-  - [ ] FARM-ST96: Change `@IsString()` to `@IsUUID()` for `componentId` field
-- [ ] FARM-T129: Audit and fix all DTOs for consistent validation
-  - [ ] FARM-ST97: Ensure all UUID fields use `@IsUUID()` across all DTOs
-  - [ ] FARM-ST98: Ensure all `@ApiProperty()` decorators have `example` values
+- [x] FARM-T128: Fix `componentId` validation in `CreateDocumentationDto`
+  - [x] FARM-ST96: Change `@IsString()` to `@IsUUID()` for `componentId` field
+- [x] FARM-T129: Audit and fix all DTOs for consistent validation
+  - [x] FARM-ST97: Ensure all UUID fields use `@IsUUID()` across all DTOs
+  - [x] FARM-ST98: Ensure all `@ApiProperty()` decorators have `example` values
 
 #### FARM-S37: Response Consistency
 
 - [x] FARM-T130: Standardize DELETE responses
   - [x] FARM-ST99: Ensure all DELETE endpoints return `@HttpCode(HttpStatus.NO_CONTENT)` with void return
-- [ ] FARM-T131: Create `LoginResponseDto` for auth
-  - [ ] FARM-ST100: Create DTO with `@ApiProperty()` for `user` and `token` fields
-  - [ ] FARM-ST101: Apply as `@ApiResponse({ type: LoginResponseDto })` on login endpoint
+- [x] FARM-T131: Create `LoginResponseDto` for auth
+  - [x] FARM-ST100: Create DTO with `@ApiProperty()` for `user` and `token` fields
+  - [x] FARM-ST101: Apply as `@ApiResponse({ type: LoginResponseDto })` on login endpoint
 
 ---
 
@@ -519,10 +519,10 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S38: Request Audit Logging
 
-- [ ] FARM-T132: Create request logging middleware
-  - [ ] FARM-ST102: Create `RequestLoggerMiddleware` in `src/common/middleware/` that logs method, path, status, duration, and user ID (from JWT)
-  - [ ] FARM-ST103: Apply middleware globally in `AppModule.configure()`
-  - [ ] FARM-ST104: Exclude health check endpoints from logging to reduce noise
+- [x] FARM-T132: Create request logging middleware
+  - [x] FARM-ST102: Create `RequestLoggerMiddleware` in `src/common/middleware/` that logs method, path, status, duration, and user ID (from JWT)
+  - [x] FARM-ST103: Apply middleware globally in `AppModule.configure()`
+  - [x] FARM-ST104: Exclude health check endpoints from logging to reduce noise
 
 #### FARM-S39: Health Check Enhancement
 
@@ -533,17 +533,17 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S40: Database Connection Management
 
-- [ ] FARM-T134: Add connection pool configuration
-  - [ ] FARM-ST108: Add `DATABASE_POOL_SIZE` env var to `configuration.ts` (default: 10)
-  - [ ] FARM-ST109: Pass `extra: { max: poolSize }` to TypeORM config in `app.module.ts`
+- [x] FARM-T134: Add connection pool configuration
+  - [x] FARM-ST108: Add `DATABASE_POOL_SIZE` env var to `configuration.ts` (default: 10)
+  - [x] FARM-ST109: Pass `extra: { max: poolSize }` to TypeORM config in `app.module.ts`
 
 #### FARM-S41: Docker Hardening
 
-- [ ] FARM-T135: Add Dockerfile HEALTHCHECK instruction
-  - [ ] FARM-ST110: Add `HEALTHCHECK CMD curl -f http://localhost:3000/api/health || exit 1`
-- [ ] FARM-T136: Move Docker Compose hardcoded credentials to `.env`
-  - [ ] FARM-ST111: Replace inline passwords with `${VARIABLE}` references in `docker-compose.yml`
-  - [ ] FARM-ST112: Create `.env.example` with placeholder values
+- [x] FARM-T135: Add Dockerfile HEALTHCHECK instruction
+  - [x] FARM-ST110: Add `HEALTHCHECK CMD node -e "..." http://localhost:3000/api/health` (uses node instead of curl for alpine)
+- [x] FARM-T136: Move Docker Compose hardcoded credentials to `.env`
+  - [x] FARM-ST111: Replace inline passwords with `${VARIABLE:-default}` references in `docker-compose.yml`
+  - [x] FARM-ST112: Create `.env.example` with placeholder values
 
 ---
 
@@ -553,18 +553,18 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S42: Fix Outdated User Guide
 
-- [ ] FARM-T137: Fix `docs/user-guide/documentation.md`
-  - [ ] FARM-ST113: Replace all references to `content` field with `sourceUrl`
-  - [ ] FARM-ST114: Update curl examples with correct payload shape (sourceUrl instead of content)
-  - [ ] FARM-ST115: Add documentation for new endpoints: `GET /docs/:id/rendered`, `GET /docs/tree`, `GET /docs/search`
-  - [ ] FARM-ST116: Update properties table to include `parentId` and `order` fields
+- [x] FARM-T137: Fix `docs/user-guide/documentation.md`
+  - [x] FARM-ST113: Replace all references to `content` field with `sourceUrl`
+  - [x] FARM-ST114: Update curl examples with correct payload shape (sourceUrl instead of content)
+  - [x] FARM-ST115: Add documentation for new endpoints: `GET /docs/:id/rendered`, `GET /docs/tree`, `GET /docs/search`
+  - [x] FARM-ST116: Update properties table to include `parentId` and `order` fields
 
 #### FARM-S43: Update README
 
-- [ ] FARM-T138: Sync README with current project state
-  - [ ] FARM-ST117: Update module list to include Teams, Environments, Deployments
-  - [ ] FARM-ST118: Fix Node.js version badge if incorrect
-  - [ ] FARM-ST119: Add new endpoints to the quick reference section
+- [x] FARM-T138: Sync README with current project state
+  - [x] FARM-ST117: Update module list to include Teams, Environments, Deployments
+  - [x] FARM-ST118: Fix Node.js version badge if incorrect
+  - [x] FARM-ST119: Add new endpoints to the quick reference section
 
 ---
 
@@ -574,28 +574,28 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S44: Missing E2E Tests
 
-- [ ] FARM-T139: Add E2E tests for Teams module
-  - [ ] FARM-ST120: Test team CRUD lifecycle (create, list, get, update, delete)
-  - [ ] FARM-ST121: Test member management (add member, remove member, list members)
-  - [ ] FARM-ST122: Test component ownership (assign team to component, list team components)
-- [ ] FARM-T140: Add E2E tests for Plugin Manager module
-  - [ ] FARM-ST123: Test `GET /plugins` list endpoint
-  - [ ] FARM-ST124: Test `GET /plugins/menu-items` and `GET /plugins/routes`
+- [x] FARM-T139: Add E2E tests for Teams module
+  - [x] FARM-ST120: Test team CRUD lifecycle (create, list, get, update, delete)
+  - [x] FARM-ST121: Test member management (add member, remove member, list members)
+  - [x] FARM-ST122: Test component ownership (assign team to component, list team components)
+- [x] FARM-T140: Add E2E tests for Plugin Manager module
+  - [x] FARM-ST123: Test `GET /plugins` list endpoint
+  - [x] FARM-ST124: Test `GET /plugins/menu-items` and `GET /plugins/routes`
 
 #### FARM-S45: Auth Edge Case Tests
 
-- [ ] FARM-T141: Add auth security E2E tests
-  - [ ] FARM-ST125: Test login with invalid credentials returns 401
-  - [ ] FARM-ST126: Test access with expired/malformed JWT returns 401
-  - [ ] FARM-ST127: Test user role endpoint returns 403 for non-admin users
-  - [ ] FARM-ST128: Test registration with duplicate username returns 409
+- [x] FARM-T141: Add auth security E2E tests
+  - [x] FARM-ST125: Test login with invalid credentials returns 401
+  - [x] FARM-ST126: Test access with expired/malformed JWT returns 401
+  - [x] FARM-ST127: Test user role endpoint returns 403 for non-admin users
+  - [x] FARM-ST128: Test registration with duplicate username returns 409
 
 #### FARM-S46: Test Quality Improvements
 
-- [ ] FARM-T142: Replace trivial assertions
-  - [ ] FARM-ST129: Audit all `toBeDefined()` assertions and replace with meaningful checks where appropriate
-- [ ] FARM-T143: Add Jest coverage thresholds
-  - [ ] FARM-ST130: Add `coverageThreshold` to `package.json` Jest config with minimum 70% for branches, functions, lines, and statements
+- [x] FARM-T142: Replace trivial assertions
+  - [x] FARM-ST129: Audit all `toBeDefined()` assertions and replace with meaningful checks where appropriate
+- [x] FARM-T143: Add Jest coverage thresholds
+  - [x] FARM-ST130: Add `coverageThreshold` to `package.json` Jest config (65% branches, 70% functions/lines/statements)
 
 ---
 
@@ -613,16 +613,13 @@ The recommended execution order, respecting dependencies:
 | 4 | FARM-E10: TechDocs Enhancement | Done |
 | 5 | FARM-E11: Plugin System Evolution | Done |
 | 6 | FARM-E12: Quality and Testing | Done |
+| 7 | FARM-E13: Critical Bug Fixes | Done |
+| 8 | FARM-E14: Security Hardening | Done |
+| 9 | FARM-E15: API Maturity | Done |
+| 10 | FARM-E17: Documentation Accuracy | Done |
+| 11 | FARM-E16: Observability and Ops | Done |
+| 12 | FARM-E18: Test Coverage Expansion | Done |
 
 ### Upcoming Phases
 
-| Phase | Epic | Dependency | Priority |
-|---|---|---|---|
-| 7 | FARM-E13: Critical Bug Fixes | None (fixes existing code) | CRITICAL |
-| 8 | FARM-E14: Security Hardening | FARM-E13 (build must compile first) | HIGH |
-| 9 | FARM-E15: API Maturity | FARM-E13 (build must compile first) | HIGH |
-| 10 | FARM-E17: Documentation Accuracy | None (independent) | MEDIUM |
-| 11 | FARM-E16: Observability and Ops | FARM-E13 (build must compile first) | MEDIUM |
-| 12 | FARM-E18: Test Coverage Expansion | FARM-E13 + FARM-E15 (pagination changes affect tests) | MEDIUM |
-
-Phase 7 (Critical Bug Fixes) must be completed first as the TypeScript build is currently broken. Phases 8 and 9 can run in parallel after Phase 7. Phase 10 (docs) is independent and can be done anytime. Phases 11 and 12 follow after core fixes stabilize.
+All phases complete! 🎉

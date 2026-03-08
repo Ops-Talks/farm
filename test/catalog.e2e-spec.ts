@@ -58,9 +58,17 @@ describe("Catalog CRUD (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const components = listRes.body as ComponentResponse[];
-    expect(Array.isArray(components)).toBe(true);
-    expect(components.some((c) => c.id === componentId)).toBe(true);
+    const listBody = listRes.body as {
+      data: ComponentResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(listBody.data.some((c) => c.id === componentId)).toBe(true);
+    expect(listBody.total).toBeGreaterThanOrEqual(1);
+    expect(listBody.skip).toBe(0);
+    expect(listBody.take).toBe(20);
 
     // Step 3: Get the component by ID
     const getRes = await request(app.getHttpServer())
@@ -117,9 +125,15 @@ describe("Catalog CRUD (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const infraComponents = infraRes.body as ComponentResponse[];
+    const infraBody = infraRes.body as {
+      data: ComponentResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(infraBody.data)).toBe(true);
     expect(
-      infraComponents.every((c) =>
+      infraBody.data.every((c) =>
         [
           "pipeline",
           "queue",
@@ -130,6 +144,7 @@ describe("Catalog CRUD (e2e)", () => {
         ].includes(c.kind),
       ),
     ).toBe(true);
+    expect(infraBody.total).toBeGreaterThanOrEqual(1);
   });
 
   it("should reject creation with invalid kind", async () => {

@@ -28,10 +28,7 @@ import { Team } from "./entities/team.entity";
 import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
-import {
-  PaginationQueryDto,
-  PaginatedResponseDto,
-} from "../common/dto";
+import { PaginationQueryDto, PaginatedResponseDto } from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";

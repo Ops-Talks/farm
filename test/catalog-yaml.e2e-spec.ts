@@ -57,10 +57,17 @@ spec:
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const components = listRes.body as ComponentResponse[];
-    expect(components.some((c) => c.name === "yaml-registered-service")).toBe(
-      true,
-    );
+    const listBody = listRes.body as {
+      data: ComponentResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(
+      listBody.data.some((c) => c.name === "yaml-registered-service"),
+    ).toBe(true);
+    expect(listBody.total).toBeGreaterThanOrEqual(1);
   });
 
   it("should reject YAML with missing kind: Component", async () => {

@@ -93,10 +93,11 @@ describe("DocumentationController", () => {
     });
 
     it("should filter by componentId when provided", async () => {
-      const result = await controller.findAll(
-        { skip: 0, take: 20 },
-        "comp-uuid-1",
-      );
+      const result = await controller.findAll({
+        skip: 0,
+        take: 20,
+        componentId: "comp-uuid-1",
+      });
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
       expect(service.findAll).toHaveBeenCalledWith(0, 20, "comp-uuid-1");
@@ -131,7 +132,7 @@ describe("DocumentationController", () => {
     it("should return documentation navigation tree", async () => {
       const result = await controller.getTree("comp-uuid-1");
       expect(result).toHaveLength(1);
-      expect(result[0].children).toBeDefined();
+      expect(Array.isArray(result[0].children)).toBe(true);
       expect(service.buildTree).toHaveBeenCalledWith("comp-uuid-1");
     });
   });
@@ -140,7 +141,7 @@ describe("DocumentationController", () => {
     it("should return search results", async () => {
       const result = await controller.search("getting");
       expect(result).toHaveLength(1);
-      expect(result[0].score).toBeDefined();
+      expect(typeof result[0].score).toBe("number");
       expect(service.search).toHaveBeenCalledWith("getting", undefined);
     });
 

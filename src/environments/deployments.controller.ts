@@ -29,10 +29,8 @@ import {
   ComponentLifecycle,
 } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
-import {
-  PaginationQueryDto,
-  PaginatedResponseDto,
-} from "../common/dto";
+import { ListDeploymentsQueryDto } from "./dto/list-deployments-query.dto";
+import { PaginatedResponseDto } from "../common/dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -116,21 +114,22 @@ export class DeploymentsController {
     type: PaginatedResponseDto,
   })
   async findAll(
-    @Query() pagination: PaginationQueryDto,
-    @Query("componentId") componentId?: string,
-    @Query("environmentId") environmentId?: string,
-    @Query("status") status?: DeploymentStatus,
+    @Query() query: ListDeploymentsQueryDto,
   ): Promise<PaginatedResponseDto<Deployment>> {
     const [data, total] = await this.deploymentsService.findAll(
-      pagination.skip,
-      pagination.take,
-      { componentId, environmentId, status },
+      query.skip,
+      query.take,
+      {
+        componentId: query.componentId,
+        environmentId: query.environmentId,
+        status: query.status,
+      },
     );
     return new PaginatedResponseDto(
       data,
       total,
-      pagination.skip ?? 0,
-      pagination.take ?? 20,
+      query.skip ?? 0,
+      query.take ?? 20,
     );
   }
 

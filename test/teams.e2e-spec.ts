@@ -91,7 +91,9 @@ describe("Teams (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const teams = extractItems<TeamResponse>(listRes.body);
+    const teams = extractItems<TeamResponse>(
+      listRes.body as TeamResponse[] | { data: TeamResponse[] },
+    );
     expect(teams.some((t) => t.id === teamId)).toBe(true);
 
     // Step 3: Get team by ID and verify all fields
@@ -161,7 +163,9 @@ describe("Teams (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const users = extractItems<UserResponse>(usersRes.body);
+    const users = extractItems<UserResponse>(
+      usersRes.body as UserResponse[] | { data: UserResponse[] },
+    );
     const adminUser = users.find((u) => u.username === "e2e-admin");
     expect(adminUser).toBeDefined();
     const userId = adminUser!.id;
@@ -181,7 +185,9 @@ describe("Teams (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const members = extractItems<UserResponse>(membersRes.body);
+    const members = extractItems<UserResponse>(
+      membersRes.body as UserResponse[] | { data: UserResponse[] },
+    );
     expect(members.some((m) => m.id === userId)).toBe(true);
 
     // Remove the member
@@ -197,7 +203,7 @@ describe("Teams (e2e)", () => {
       .expect(200);
 
     const remainingMembers = extractItems<UserResponse>(
-      membersAfterRemove.body,
+      membersAfterRemove.body as UserResponse[] | { data: UserResponse[] },
     );
     expect(remainingMembers.some((m) => m.id === userId)).toBe(false);
   });
@@ -235,7 +241,9 @@ describe("Teams (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const components = extractItems<ComponentResponse>(componentsRes.body);
+    const components = extractItems<ComponentResponse>(
+      componentsRes.body as ComponentResponse[] | { data: ComponentResponse[] },
+    );
     expect(components.some((c) => c.name === componentDto.name)).toBe(true);
     expect(components.some((c) => c.owner === team.name)).toBe(true);
   });

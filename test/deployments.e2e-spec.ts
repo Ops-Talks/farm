@@ -123,9 +123,17 @@ describe("Deployments Lifecycle (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const deployments = listRes.body as DeploymentResponse[];
-    expect(Array.isArray(deployments)).toBe(true);
-    expect(deployments.some((d) => d.id === deploymentId)).toBe(true);
+    const listBody = listRes.body as {
+      data: DeploymentResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(listBody.data.some((d) => d.id === deploymentId)).toBe(true);
+    expect(listBody.total).toBeGreaterThanOrEqual(1);
+    expect(listBody.skip).toBe(0);
+    expect(listBody.take).toBe(20);
 
     // Step 6: Get latest deployment per environment
     const latestRes = await request(app.getHttpServer())

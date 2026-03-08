@@ -53,9 +53,17 @@ describe("Environments CRUD (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const environments = listRes.body as EnvironmentResponse[];
-    expect(Array.isArray(environments)).toBe(true);
-    expect(environments.some((e) => e.id === envId)).toBe(true);
+    const listBody = listRes.body as {
+      data: EnvironmentResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(listBody.data.some((e) => e.id === envId)).toBe(true);
+    expect(listBody.total).toBeGreaterThanOrEqual(1);
+    expect(listBody.skip).toBe(0);
+    expect(listBody.take).toBe(20);
 
     // Step 3: Get by ID
     const getRes = await request(app.getHttpServer())

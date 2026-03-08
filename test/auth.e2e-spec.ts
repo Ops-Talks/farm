@@ -80,7 +80,15 @@ describe("Auth Lifecycle (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    expect(Array.isArray(catalogRes.body)).toBe(true);
+    const catalogBody = catalogRes.body as {
+      data: unknown[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(catalogBody.data)).toBe(true);
+    expect(catalogBody.skip).toBe(0);
+    expect(catalogBody.take).toBe(20);
   });
 
   it("should refresh an access token using a valid refresh token", async () => {

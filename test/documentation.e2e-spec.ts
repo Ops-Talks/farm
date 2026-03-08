@@ -86,9 +86,17 @@ describe("Documentation CRUD (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const docs = listRes.body as DocumentationResponse[];
-    expect(Array.isArray(docs)).toBe(true);
-    expect(docs.some((d) => d.id === docId)).toBe(true);
+    const listBody = listRes.body as {
+      data: DocumentationResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(listBody.data)).toBe(true);
+    expect(listBody.data.some((d) => d.id === docId)).toBe(true);
+    expect(listBody.total).toBeGreaterThanOrEqual(1);
+    expect(listBody.skip).toBe(0);
+    expect(listBody.take).toBe(20);
 
     // Step 4: Filter documentation by componentId
     const filteredRes = await request(app.getHttpServer())
@@ -96,8 +104,16 @@ describe("Documentation CRUD (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const filteredDocs = filteredRes.body as DocumentationResponse[];
-    expect(filteredDocs.every((d) => d.componentId === componentId)).toBe(true);
+    const filteredBody = filteredRes.body as {
+      data: DocumentationResponse[];
+      total: number;
+      skip: number;
+      take: number;
+    };
+    expect(Array.isArray(filteredBody.data)).toBe(true);
+    expect(filteredBody.data.every((d) => d.componentId === componentId)).toBe(
+      true,
+    );
 
     // Step 5: Update documentation
     const updateDto = {

@@ -76,7 +76,7 @@ describe("Plugin Manager (e2e)", () => {
     });
 
     it("should reject non-admin users", async () => {
-      const userToken = await registerAndLogin(app, {
+      await registerAndLogin(app, {
         username: "plugin_viewer",
         email: "plugin_viewer@test.com",
         password: "ViewerPass1",

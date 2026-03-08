@@ -183,7 +183,7 @@ describe("TeamsService", () => {
 
       const result = await service.addMember("team-uuid-1", "user-uuid-1");
       expect(teamRepo.save).toHaveBeenCalled();
-      expect(result).toBeDefined();
+      expect(result.members).toContainEqual(mockUser);
     });
 
     it("should not duplicate an existing member", async () => {
@@ -213,7 +213,7 @@ describe("TeamsService", () => {
 
       const result = await service.removeMember("team-uuid-1", "user-uuid-1");
       expect(teamRepo.save).toHaveBeenCalled();
-      expect(result).toBeDefined();
+      expect(result.members).toEqual([]);
     });
   });
 
