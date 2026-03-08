@@ -80,7 +80,7 @@ Returns the hierarchical documentation tree for a component:
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/docs/tree?componentId=<uuid>"
+  "http://localhost:3000/api/v1/docs/tree?componentId=<uuid>"
 ```
 
 ## Search
@@ -89,13 +89,13 @@ Search documentation entries by query string:
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/docs/search?q=getting+started"
+  "http://localhost:3000/api/v1/docs/search?q=getting+started"
 ```
 
 ## Deleting Documentation
 
 ```bash
-curl -X DELETE http://localhost:3000/api/docs/{id} \
+curl -X DELETE http://localhost:3000/api/v1/docs/{id} \
   -H "Authorization: Bearer <token>"
 ```
 

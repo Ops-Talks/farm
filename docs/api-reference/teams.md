@@ -165,7 +165,7 @@ Returns all catalog components owned by the team (matched by `component.owner` =
 Components can be assigned to a team via the `teamId` field:
 
 ```http
-POST /api/catalog
+POST /api/v1/catalog/components
 Content-Type: application/json
 Authorization: Bearer <token>
 
