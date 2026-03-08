@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Pagination**: All list endpoints now return paginated responses (`data`, `total`, `skip`, `take`). Accepts `skip` (default 0) and `take` (default 20, max 100) query parameters. Applied to Catalog, Teams, Documentation, Environments, and Deployments modules.
+- **Per-endpoint Query DTOs**: `ListComponentsQueryDto`, `ListDocumentationQueryDto`, `ListDeploymentsQueryDto` extend `PaginationQueryDto` with module-specific filter fields.
+- **LoginResponseDto / RefreshResponseDto**: Typed response DTOs for auth endpoints with Swagger annotations.
+- **Request Logger Middleware**: Logs HTTP method, path, status code, duration, and authenticated user ID. Excludes health check endpoints from logging.
+- **DATABASE_POOL_SIZE**: New environment variable (default 10, range 1-100) for PostgreSQL connection pool configuration.
+- **Docker HEALTHCHECK**: Dockerfile includes a health check using Node.js (compatible with Alpine images without curl).
+- **Docker env var extraction**: `docker-compose.yml` credentials use `${VAR:-default}` pattern; `.env.example` template created.
+- **E2E Tests for Teams**: CRUD lifecycle, member management, and component ownership tests.
+- **E2E Tests for Plugin Manager**: List plugins, menu items, routes, auth, and non-admin rejection tests.
+- **Auth edge case E2E tests**: Malformed JWT returns 401, non-admin user returns 403.
+- **Jest coverage thresholds**: Enforced minimums (65% branches, 70% functions/lines/statements) in `package.json`.
+
+### Changed
+- **DTO validation**: `componentId` in `CreateDocumentationDto` changed from `@IsString()` to `@IsUUID()`. `dependencyIds` in `CreateComponentDto` changed from `@IsString({each:true})` to `@IsUUID("4",{each:true})`.
+- **Test assertions**: Replaced trivial `toBeDefined()` checks with meaningful assertions in documentation and teams specs.
+
+### Fixed
+- **Docker build failure**: Fixed TypeScript strict compilation error in `RequestLoggerMiddleware` (TS2352 cast through `unknown`).
+- **Docker startup failure**: Hardcoded `DATABASE_HOST: postgres` in `docker-compose.yml` to prevent `.env` file from overriding the container-internal hostname.
+- **Express path syntax**: Updated middleware path from `"api/health(.*)"` to `"api/health{*path}"` for current path-to-regexp version.
+
+### Documentation
+- Updated API reference docs (catalog, teams, environments, deployments, documentation) with pagination parameters and response format.
+- Expanded `docs/api-reference/docs.md` with full endpoint list, properties table, and usage examples.
+- Added `DATABASE_POOL_SIZE` to environment variables table in setup guide.
+- Added `.env.example` copy step to getting started guide.
+- Updated coverage thresholds in testing guide to match actual configuration.
+- Updated `docs/user-guide/documentation.md` with `sourceUrl` field and new endpoints.
+- Updated `README.md` with Teams, Environments, and Deployments endpoint sections.
+
 ## [0.4.4] - 2026-03-08
 
 ### Fixed
