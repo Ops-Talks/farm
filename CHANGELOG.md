@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.2] - 2026-03-08
 
 ### Added
 - **Frontend test suite**: 101 tests across 11 files using Vitest + React Testing Library covering API client, WebSocket client, auth context, auth guard, dashboard widgets, and all page components.
