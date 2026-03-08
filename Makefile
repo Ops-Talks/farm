@@ -79,5 +79,8 @@ fmt:
 
 check: fmt lint test test-e2e
 
+seed:
+	npm run seed
+
 release:
 	npm run release

@@ -702,17 +702,18 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 ---
 
-### FARM-E23: Database Seeders and Developer Experience
+### FARM-E23: Database Seeders and Developer Experience ✅
 
 > **Priority:** LOW -- Improves onboarding and local development workflow.
+> **Status:** DONE (v0.5.0)
 
 #### FARM-S55: Database Seeding
 
-- [ ] FARM-T155: Create TypeORM seed infrastructure
-  - [ ] FARM-ST163: Create `src/database/seeds/` directory with seed runner script
-  - [ ] FARM-ST164: Create `initial-seed.ts` with sample admin user, 3 components (service, library, website), 2 teams, 2 environments
-  - [ ] FARM-ST165: Add `npm run seed` script to `package.json` and `make seed` to `Makefile`
-  - [ ] FARM-ST166: Guard seeder to only run in development/test environments
+- [x] FARM-T155: Create TypeORM seed infrastructure
+  - [x] FARM-ST163: Create `src/database/seeds/` directory with seed runner script
+  - [x] FARM-ST164: Create `initial-seed.ts` with sample admin user, 3 components (service, library, website), 2 teams, 2 environments
+  - [x] FARM-ST165: Add `npm run seed` script to `package.json` and `make seed` to `Makefile`
+  - [x] FARM-ST166: Guard seeder to only run in development/test environments
 
 #### FARM-S56: API Versioning
 
@@ -794,5 +795,5 @@ The recommended execution order, respecting dependencies:
 | Phase | Epic | Dependency | Priority |
 |---|---|---|---|
 | 17 | FARM-E25: TypeScript Strictness | None | LOW |
-| 18 | FARM-E23: Database Seeders and Developer Experience | None | LOW |
+| 18 | FARM-E23: Database Seeders and Developer Experience | Done |
 | 19 | FARM-E24: Communication and Notifications | FARM-E22 (Queues) | LOW |

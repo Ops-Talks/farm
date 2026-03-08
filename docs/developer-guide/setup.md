@@ -61,6 +61,16 @@ make down-docker
 make down-docker-clean
 ```
 
+#### Seeding Sample Data
+
+After starting the application, populate the database with sample data (admin user, teams, components, environments):
+
+```bash
+DATABASE_PASSWORD=password DATABASE_SYNC=true make seed
+```
+
+This creates a default admin user (`admin` / `Admin1234`) and sample catalog entries. The seeder is idempotent and only runs in development/test environments.
+
 #### Option B: Local Development (Node.js)
 
 For local development, you need a PostgreSQL instance running. You can start just the database using Docker:
@@ -137,6 +147,7 @@ farm/
 | `make check` | Run fmt, lint, and all tests |
 | `make up-observability` | Start API + DB + Redis + Grafana + Prometheus + Tempo |
 | `make down-observability` | Stop the observability stack |
+| `make seed` | Seed the database with sample data (dev/test only) |
 | `make release` | Create a new release using release-it (interactive) |
 
 ## Development Workflow
