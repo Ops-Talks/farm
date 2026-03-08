@@ -6,8 +6,9 @@ Farm provides user authentication and management capabilities to control access 
 
 The authentication system in Farm supports:
 
-- User registration
-- User login with session tokens
+- User registration with password strength validation
+- User login with JWT access tokens
+- Refresh token rotation for session continuity
 - User listing for administration
 
 ## User Properties
@@ -17,7 +18,7 @@ Each user in Farm has the following properties:
 | Property | Description |
 |----------|-------------|
 | `id` | Unique identifier (UUID) |
-| `username` | Unique username |
+| `username` | Unique username (2-50 characters) |
 | `email` | Email address |
 | `displayName` | Display name for the user |
 | `roles` | Array of role strings |
@@ -36,7 +37,7 @@ curl -X POST http://localhost:3000/api/auth/register \
   -d '{
     "username": "johndoe",
     "email": "john.doe@example.com",
-    "password": "securepassword123",
+    "password": "SecurePass1",
     "displayName": "John Doe"
   }'
 ```
@@ -57,14 +58,14 @@ Response:
 
 ### Logging In
 
-To authenticate and receive a session token:
+To authenticate and receive a JWT access token and refresh token:
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
-    "password": "securepassword123"
+    "password": "SecurePass1"
   }'
 ```
 
@@ -81,9 +82,40 @@ Response:
     "createdAt": "2024-01-15T10:30:00.000Z",
     "updatedAt": "2024-01-15T10:30:00.000Z"
   },
-  "token": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "a1b2c3d4e5f6..."
 }
 ```
+
+Use the `token` value in the `Authorization` header for subsequent requests:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+
+### Refreshing a Token
+
+When your access token expires, use the refresh token to obtain a new one without re-entering credentials:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "refreshToken": "a1b2c3d4e5f6..."
+  }'
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "f6e5d4c3b2a1..."
+}
+```
+
+The refresh token is rotated on each use. The old refresh token is immediately invalidated.
 
 ### Listing Users
 
@@ -101,6 +133,8 @@ curl http://localhost:3000/api/auth/users
 |-------|-------------|-------------|
 | Username or email already in use | 409 Conflict | The username or email is already registered |
 | Validation error | 400 Bad Request | Required fields are missing or invalid |
+| Weak password | 400 Bad Request | Password does not meet strength requirements |
+| Too many requests | 429 Too Many Requests | Rate limit exceeded (5 per minute) |
 
 ### Login Errors
 
@@ -108,23 +142,43 @@ curl http://localhost:3000/api/auth/users
 |-------|-------------|-------------|
 | Invalid username or password | 401 Unauthorized | The credentials are incorrect |
 | Validation error | 400 Bad Request | Required fields are missing or invalid |
+| Too many requests | 429 Too Many Requests | Rate limit exceeded (5 per minute) |
 
 ## Security Considerations
 
 ### Password Requirements
 
-- Passwords should be at least 8 characters long
-- Use a mix of uppercase, lowercase, numbers, and special characters
-- Never share passwords or store them in plain text
+Passwords are validated with the following rules:
 
-### Session Tokens
+- Minimum 8 characters long
+- Must contain at least one lowercase letter
+- Must contain at least one uppercase letter
+- Must contain at least one digit
 
+### JWT Tokens
+
+- Access tokens are short-lived (configurable via `JWT_EXPIRATION`, default 3600s)
 - Store tokens securely on the client side
 - Do not expose tokens in URLs or logs
-- Tokens should be used for authenticating subsequent requests
+- Include the token in the `Authorization: Bearer <token>` header
+
+### Refresh Tokens
+
+- Refresh tokens are long-lived and stored as bcrypt hashes in the database
+- Each use rotates the token (old token is invalidated)
+- If a previously used refresh token is reused, all refresh tokens for the user are invalidated (replay attack protection)
+
+### Rate Limiting
+
+Authentication endpoints are rate-limited to prevent brute force attacks:
+
+- **Login**: 5 requests per minute
+- **Register**: 5 requests per minute
+- **Refresh**: 10 requests per minute
 
 ### Best Practices
 
 - Use HTTPS in production environments
-- Implement rate limiting to prevent brute force attacks
+- Set a strong `JWT_SECRET` environment variable (minimum 32 characters, enforced in production)
+- Configure `ALLOWED_ORIGINS` for CORS instead of using the wildcard default
 - Regularly audit user accounts and access

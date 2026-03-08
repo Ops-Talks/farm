@@ -24,6 +24,9 @@ The [Catalog](catalog.md) is the heart of Farm. It provides a centralized regist
 - Shared libraries
 - APIs
 - Websites and frontend applications
+- Infrastructure resources (pipelines, queues, databases, clusters)
+- Data assets (datasets, data pipelines, ML models)
+- Security artifacts (secrets, policies, certificates)
 
 ### Documentation Management
 
@@ -37,9 +40,26 @@ Farm allows you to [manage documentation](documentation.md) associated with each
 
 Learn about [user authentication](authentication.md) in Farm, including:
 
-- User registration
-- Login and session management
-- User roles
+- User registration with password strength validation
+- Login and JWT token management
+- Refresh token rotation
+- User roles and rate limiting
+
+### Environments and Deployments
+
+Farm tracks deployment environments and component deployments, enabling:
+
+- Environment management (development, staging, production, sandbox)
+- Deployment recording with status tracking
+- Deployment matrix showing latest versions across environments
+
+### Teams and Ownership
+
+Organize your organization with team management:
+
+- Create teams by type (dev, infra, security, data, platform)
+- Assign members to teams
+- Link catalog components to team ownership
 
 ### System Discovery
 

@@ -9,8 +9,8 @@ For interactive documentation, including the full JSON response schema, please r
 The `/api/health` endpoint performs the following checks:
 
 - **Database**: Verifies connectivity with the PostgreSQL database.
-- **Memory (Heap)**: Ensures heap memory usage is within safe limits (150MB).
-- **Memory (RSS)**: Ensures Resident Set Size memory usage is within safe limits (300MB).
+- **Memory (Heap)**: Ensures heap memory usage is within safe limits (512MB).
+- **Memory (RSS)**: Ensures Resident Set Size memory usage is within safe limits (1024MB).
 - **Disk Storage**: Verifies that disk usage on the root partition is below 90%.
 - **Version**: Returns the current application version.
 

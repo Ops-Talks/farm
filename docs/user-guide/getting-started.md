@@ -99,7 +99,7 @@ curl -X POST http://localhost:3000/api/auth/register \
   -d '{
     "username": "admin",
     "email": "admin@example.com",
-    "password": "securepassword123",
+    "password": "SecurePass1",
     "displayName": "Admin User"
   }'
 ```

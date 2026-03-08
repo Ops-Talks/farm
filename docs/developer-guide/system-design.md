@@ -19,7 +19,6 @@ Farm is a developer portal platform designed to help organizations manage their 
 ### Non-Goals
 
 - Replace complex, full-featured developer platforms
-- Provide a plugin ecosystem
 - Support real-time collaboration features
 
 ## System Architecture
@@ -90,22 +89,26 @@ Farm is a developer portal platform designed to help organizations manage their 
 | Component | Responsibility |
 |-----------|---------------|
 | AuthController | HTTP request handling for auth endpoints |
-| AuthService | User registration, login, and lookup logic |
+| AuthService | User registration, login, refresh, and lookup logic |
 | User Entity | User data structure |
 | RegisterUserDto | Validation for registration requests |
 | LoginDto | Validation for login requests |
+| RefreshTokenDto | Validation for refresh token requests |
 
 **Data Flow**:
 
 ```
 Registration:
-Client -> AuthController.register() -> AuthService.register() -> Store in Map
+Client -> AuthController.register() -> AuthService.register() -> TypeORM Repository
 
 Login:
-Client -> AuthController.login() -> AuthService.login() -> Validate + Generate Token
+Client -> AuthController.login() -> AuthService.login() -> Validate + Generate JWT + Refresh Token
+
+Refresh:
+Client -> AuthController.refresh() -> AuthService.refresh() -> Validate + Rotate Refresh Token + New JWT
 
 List Users:
-Client -> AuthController.findAll() -> AuthService.findAll() -> Return from Map
+Client -> AuthController.findAll() -> AuthService.findAll() -> TypeORM Repository
 ```
 
 ### Catalog Module
@@ -119,7 +122,7 @@ Client -> AuthController.findAll() -> AuthService.findAll() -> Return from Map
 | CatalogController | HTTP request handling for catalog endpoints |
 | CatalogService | CRUD operations for components, YAML registration, git discovery |
 | Component Entity | Component data structure with dependency relations |
-| ComponentKind Enum | Types of components (20 kinds across 4 domains) |
+| ComponentKind Enum | Types of components (23 kinds across 4 domains) |
 | ComponentKindGroup Enum | Domain grouping (dev, infra, data, security) |
 | ComponentLifecycle Enum | Lifecycle stages (planned, experimental, production, deprecated, decommissioned) |
 | CreateComponentDto | Validation for create requests |
@@ -207,6 +210,7 @@ class User {
   email: string;        // Email address
   displayName: string;  // Display name
   roles: string[];      // User roles
+  refreshToken: string; // Hashed refresh token (nullable)
   createdAt: Date;      // Creation timestamp
   updatedAt: Date;      // Last update timestamp
 }
@@ -334,12 +338,16 @@ Standard HTTP status codes are used for error responses:
 - JWT-based authentication with Passport.js
 - Role-based access control (RBAC) with `@Roles()` decorator
 - All mutation endpoints require `admin` role
+- Refresh token rotation with replay attack detection
+- CORS configuration with `ALLOWED_ORIGINS` env var
+- Rate limiting on auth endpoints (login: 5/min, register: 5/min, refresh: 10/min)
+- Password strength validation (lowercase + uppercase + digit required)
+- JWT secret enforcement in production (min 32 characters)
 
 ### Future Improvements
 
 - Add API key support for service-to-service communication
 - Support OAuth/SAML integration
-- Implement rate limiting
 
 ## Scalability Considerations
 

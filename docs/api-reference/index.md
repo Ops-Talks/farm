@@ -55,7 +55,16 @@ All responses are JSON formatted. Successful responses include the requested dat
 
 ## Rate Limiting
 
-Rate limiting is not currently implemented. This feature is planned for future releases.
+Rate limiting is enforced globally via the `@nestjs/throttler` module. Authentication endpoints have stricter per-endpoint limits:
+
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| `POST /api/auth/login` | 5 requests | 1 minute |
+| `POST /api/auth/register` | 5 requests | 1 minute |
+| `POST /api/auth/refresh` | 10 requests | 1 minute |
+| All other endpoints | Configurable via `THROTTLE_LIMIT` | Configurable via `THROTTLE_TTL` |
+
+When the rate limit is exceeded, the API returns `429 Too Many Requests`.
 
 ## Versioning
 

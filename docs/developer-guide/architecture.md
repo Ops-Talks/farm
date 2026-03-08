@@ -80,8 +80,9 @@ Handles user authentication and management.
 
 **Responsibilities:**
 
-- User registration
-- User login and token generation
+- User registration with password strength validation
+- User login and JWT token generation
+- Refresh token mechanism with token rotation
 - User listing
 
 **Components:**
@@ -93,6 +94,7 @@ Handles user authentication and management.
 | `User` entity | User data structure |
 | `RegisterUserDto` | Registration request validation |
 | `LoginDto` | Login request validation |
+| `RefreshTokenDto` | Refresh token request validation |
 
 ### Catalog Module
 
