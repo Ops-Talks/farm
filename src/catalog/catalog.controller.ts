@@ -8,6 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -18,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiNoContentResponse,
+  ApiQuery,
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { CatalogService } from "./catalog.service";
@@ -25,7 +27,7 @@ import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { RegisterComponentYamlDto } from "./dto/register-component-yaml.dto";
 import { CreateLocationDto } from "./dto/create-location.dto";
-import { Component } from "./entities/component.entity";
+import { Component, ComponentKindGroup } from "./entities/component.entity";
 import { ErrorResponseDto } from "../common/dto/error-response.dto";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
@@ -127,16 +129,26 @@ export class CatalogController {
 
   /**
    * Retrieves all components from the catalog.
+   * @param kindGroup - Optional filter by domain group (dev, infra, data, security)
    * @returns An array of all components
    */
   @Get("components")
   @ApiOperation({ summary: "List all components" })
+  @ApiQuery({
+    name: "kindGroup",
+    required: false,
+    enum: ComponentKindGroup,
+    description:
+      "Filter components by domain group (dev, infra, data, security)",
+  })
   @ApiOkResponse({
     description: "Successfully retrieved component list.",
     type: [Component],
   })
-  async findAll(): Promise<Component[]> {
-    return await this.catalogService.findAll();
+  async findAll(
+    @Query("kindGroup") kindGroup?: ComponentKindGroup,
+  ): Promise<Component[]> {
+    return await this.catalogService.findAll(kindGroup);
   }
 
   /**

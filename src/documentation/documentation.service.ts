@@ -1,16 +1,47 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import axios from "axios";
+import { marked } from "marked";
 import { Documentation } from "./entities/documentation.entity";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 import { UpdateDocumentationDto } from "./dto/update-documentation.dto";
+import {
+  DocumentationTreeNode,
+  SearchResult,
+} from "./interfaces/documentation.interfaces";
+
+/**
+ * Strips dangerous HTML elements and attributes from rendered content.
+ * Removes script/iframe/object/embed tags and event handler attributes.
+ */
+export function sanitizeHtml(html: string): string {
+  let sanitized = html.replace(
+    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
+    "",
+  );
+  sanitized = sanitized.replace(
+    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi,
+    "",
+  );
+  sanitized = sanitized.replace(
+    /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi,
+    "",
+  );
+  sanitized = sanitized.replace(
+    /href\s*=\s*["']?\s*javascript:[^"'>\s]*/gi,
+    'href="#"',
+  );
+  return sanitized;
+}
 
 /**
  * Service handling technical documentation lifecycle.
  */
 @Injectable()
 export class DocumentationService {
+  private readonly logger = new Logger(DocumentationService.name);
+
   constructor(
     @InjectRepository(Documentation)
     private readonly documentationRepository: Repository<Documentation>,
@@ -70,12 +101,90 @@ export class DocumentationService {
   }
 
   /**
+   * Fetches Markdown content and renders it to sanitized HTML.
+   * @param id - The UUID of the documentation entry
+   * @returns Sanitized HTML string
+   */
+  async renderContent(id: string): Promise<string> {
+    const markdown = await this.getContent(id);
+    const rawHtml = await marked(markdown);
+    return sanitizeHtml(rawHtml);
+  }
+
+  /**
    * Finds documentation associated with a specific component.
    * @param componentId - UUID of the component
    * @returns Array of associated documentation
    */
   async findByComponent(componentId: string): Promise<Documentation[]> {
     return await this.documentationRepository.find({ where: { componentId } });
+  }
+
+  /**
+   * Builds a navigation tree for documentation entries belonging to a component.
+   * @param componentId - UUID of the component
+   * @returns Array of root-level tree nodes with nested children
+   */
+  async buildTree(componentId: string): Promise<DocumentationTreeNode[]> {
+    const docs = await this.documentationRepository.find({
+      where: { componentId },
+      order: { order: "ASC", title: "ASC" },
+    });
+
+    const nodeMap = new Map<string, DocumentationTreeNode>();
+    for (const doc of docs) {
+      nodeMap.set(doc.id, {
+        id: doc.id,
+        title: doc.title,
+        parentId: doc.parentId,
+        order: doc.order,
+        children: [],
+      });
+    }
+
+    const roots: DocumentationTreeNode[] = [];
+    for (const node of nodeMap.values()) {
+      if (node.parentId && nodeMap.has(node.parentId)) {
+        nodeMap.get(node.parentId)!.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+
+    return roots;
+  }
+
+  /**
+   * Searches documentation entries by title matching.
+   * @param query - The search query string
+   * @param componentId - Optional component ID to scope the search
+   * @returns Array of search results with relevance scores
+   */
+  async search(query: string, componentId?: string): Promise<SearchResult[]> {
+    const queryLower = query.toLowerCase();
+    const where: Record<string, unknown> = {};
+    if (componentId) {
+      where.componentId = componentId;
+    }
+
+    const docs = await this.documentationRepository.find({ where });
+    const results: SearchResult[] = [];
+
+    for (const doc of docs) {
+      const titleLower = doc.title.toLowerCase();
+      if (titleLower.includes(queryLower)) {
+        const score = queryLower === titleLower ? 1.0 : 0.5;
+        results.push({
+          id: doc.id,
+          title: doc.title,
+          componentId: doc.componentId,
+          score,
+        });
+      }
+    }
+
+    results.sort((a, b) => b.score - a.score);
+    return results;
   }
 
   /**

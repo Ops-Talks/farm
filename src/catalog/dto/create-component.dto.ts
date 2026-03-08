@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   IsArray,
   IsObject,
 } from "class-validator";
@@ -45,6 +46,15 @@ export class CreateComponentDto {
   @IsString()
   @IsNotEmpty()
   owner: string;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440050",
+    description: "UUID of the owning team (alternative to owner string)",
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  teamId?: string;
 
   @ApiProperty({
     enum: ComponentLifecycle,

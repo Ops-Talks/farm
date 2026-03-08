@@ -14,7 +14,9 @@ import { spawn } from "child_process";
 import {
   Component,
   ComponentKind,
+  ComponentKindGroup,
   ComponentLifecycle,
+  COMPONENT_KIND_GROUPS,
 } from "./entities/component.entity";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
@@ -180,10 +182,22 @@ export class CatalogService {
   }
 
   /**
-   * Retrieves all components from the catalog.
-   * @returns An array of all registered components
+   * Retrieves all components from the catalog, optionally filtered by kind group.
+   * @param kindGroup - Optional kind group to filter components by domain
+   * @returns An array of matching components
    */
-  async findAll(): Promise<Component[]> {
+  async findAll(kindGroup?: ComponentKindGroup): Promise<Component[]> {
+    if (kindGroup) {
+      const kinds = Object.entries(COMPONENT_KIND_GROUPS)
+        .filter(([, group]) => group === kindGroup)
+        .map(([kind]) => kind as ComponentKind);
+
+      return await this.componentRepository.find({
+        where: kinds.map((kind) => ({ kind })),
+        relations: ["dependencies"],
+      });
+    }
+
     return await this.componentRepository.find({
       relations: ["dependencies"],
     });

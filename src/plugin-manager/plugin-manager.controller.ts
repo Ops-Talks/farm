@@ -6,7 +6,11 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { PluginManagerService } from "./plugin-manager.service";
-import { PluginMetadata } from "./interfaces/plugin.interface";
+import {
+  PluginMetadata,
+  PluginMenuItem,
+  PluginRouteContribution,
+} from "./interfaces/plugin.interface";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -42,5 +46,34 @@ export class PluginManagerController {
   })
   getPlugins(): PluginMetadata[] {
     return this.pluginManagerService.getPlugins();
+  }
+
+  /**
+   * Retrieves all menu items contributed by registered plugins
+   */
+  @Get("menu-items")
+  @ApiOperation({ summary: "Get all plugin menu items" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns an array of menu items from all plugins.",
+    type: [PluginMenuItem],
+  })
+  getMenuItems(): PluginMenuItem[] {
+    return this.pluginManagerService.getMenuItems();
+  }
+
+  /**
+   * Retrieves all route contributions from registered plugins
+   */
+  @Get("routes")
+  @Roles("admin")
+  @ApiOperation({ summary: "Get all plugin route contributions" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns an array of route contributions from all plugins.",
+    type: [PluginRouteContribution],
+  })
+  getRoutes(): PluginRouteContribution[] {
+    return this.pluginManagerService.getRoutes();
   }
 }

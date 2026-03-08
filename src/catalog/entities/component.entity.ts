@@ -5,15 +5,18 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
+  ManyToOne,
   JoinTable,
+  JoinColumn,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
 /**
  * Represents the kind of a catalog entity.
- * Aligned with Backstage model.
+ * Aligned with Backstage model and extended for Infra, Data, and Security teams.
  */
 export enum ComponentKind {
+  // Dev kinds
   SERVICE = "service",
   LIBRARY = "library",
   WEBSITE = "website",
@@ -22,15 +25,75 @@ export enum ComponentKind {
   SYSTEM = "system",
   DOMAIN = "domain",
   RESOURCE = "resource",
+
+  // Infrastructure kinds
+  PIPELINE = "pipeline",
+  QUEUE = "queue",
+  DATABASE = "database",
+  STORAGE = "storage",
+  CLUSTER = "cluster",
+  NETWORK = "network",
+
+  // Data kinds
+  DATASET = "dataset",
+  DATA_PIPELINE = "data-pipeline",
+  ML_MODEL = "ml-model",
+
+  // Security kinds
+  SECRET = "secret",
+  POLICY = "policy",
+  CERTIFICATE = "certificate",
 }
+
+/**
+ * Logical grouping of component kinds by team domain.
+ */
+export enum ComponentKindGroup {
+  DEV = "dev",
+  INFRA = "infra",
+  DATA = "data",
+  SECURITY = "security",
+}
+
+/**
+ * Maps each ComponentKind to its logical group.
+ */
+export const COMPONENT_KIND_GROUPS: Record<ComponentKind, ComponentKindGroup> =
+  {
+    [ComponentKind.SERVICE]: ComponentKindGroup.DEV,
+    [ComponentKind.LIBRARY]: ComponentKindGroup.DEV,
+    [ComponentKind.WEBSITE]: ComponentKindGroup.DEV,
+    [ComponentKind.API]: ComponentKindGroup.DEV,
+    [ComponentKind.COMPONENT]: ComponentKindGroup.DEV,
+    [ComponentKind.SYSTEM]: ComponentKindGroup.DEV,
+    [ComponentKind.DOMAIN]: ComponentKindGroup.DEV,
+    [ComponentKind.RESOURCE]: ComponentKindGroup.DEV,
+
+    [ComponentKind.PIPELINE]: ComponentKindGroup.INFRA,
+    [ComponentKind.QUEUE]: ComponentKindGroup.INFRA,
+    [ComponentKind.DATABASE]: ComponentKindGroup.INFRA,
+    [ComponentKind.STORAGE]: ComponentKindGroup.INFRA,
+    [ComponentKind.CLUSTER]: ComponentKindGroup.INFRA,
+    [ComponentKind.NETWORK]: ComponentKindGroup.INFRA,
+
+    [ComponentKind.DATASET]: ComponentKindGroup.DATA,
+    [ComponentKind.DATA_PIPELINE]: ComponentKindGroup.DATA,
+    [ComponentKind.ML_MODEL]: ComponentKindGroup.DATA,
+
+    [ComponentKind.SECRET]: ComponentKindGroup.SECURITY,
+    [ComponentKind.POLICY]: ComponentKindGroup.SECURITY,
+    [ComponentKind.CERTIFICATE]: ComponentKindGroup.SECURITY,
+  };
 
 /**
  * Represents the lifecycle stage of a component.
  */
 export enum ComponentLifecycle {
+  PLANNED = "planned",
   EXPERIMENTAL = "experimental",
   PRODUCTION = "production",
   DEPRECATED = "deprecated",
+  DECOMMISSIONED = "decommissioned",
 }
 
 /**
@@ -89,6 +152,19 @@ export class Component {
   @ApiProperty({ example: "platform-team", description: "The owner team/user" })
   @Column()
   owner: string;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440050",
+    description: "The ID of the owning team (replaces owner string)",
+    required: false,
+    deprecated: true,
+  })
+  @Column({ nullable: true })
+  teamId: string;
+
+  @ManyToOne("Team", { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "teamId" })
+  team: any;
 
   @ApiProperty({
     enum: ComponentLifecycle,

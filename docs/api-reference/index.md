@@ -20,7 +20,26 @@ Farm provides an interactive API documentation interface using Swagger UI. This 
 
 ## Authentication
 
-Currently, most endpoints are publicly accessible. Authentication middleware is planned for future releases.
+All endpoints are protected with JWT-based authentication. Include a Bearer token in the `Authorization` header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
+
+## Available APIs
+
+| API | Base Path | Description |
+|-----|-----------|-------------|
+| [Health](health.md) | `/api/health` | Health check endpoints |
+| [Auth](auth.md) | `/api/auth` | User registration and login |
+| [Catalog](catalog.md) | `/api/catalog` | Software component catalog |
+| [Documentation](docs.md) | `/api/documentation` | Technical documentation |
+| [Environments](environments.md) | `/api/environments` | Deployment environments |
+| [Deployments](deployments.md) | `/api/deployments` | Component deployment tracking |
+| [Teams](teams.md) | `/api/teams` | Team ownership and membership |
+| [Plugins](plugins.md) | `/api/plugins` | Plugin registry |
 
 ## Response Format
 

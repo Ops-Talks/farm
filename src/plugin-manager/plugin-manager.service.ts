@@ -1,10 +1,19 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { PluginMetadata } from "./interfaces/plugin.interface";
+import {
+  PluginMetadata,
+  PluginMenuItem,
+  PluginRouteContribution,
+  PluginManifest,
+} from "./interfaces/plugin.interface";
+import * as fs from "fs";
+import * as path from "path";
 
 @Injectable()
 export class PluginManagerService {
   private readonly logger = new Logger(PluginManagerService.name);
   private readonly plugins = new Map<string, PluginMetadata>();
+  private readonly menuItems: PluginMenuItem[] = [];
+  private readonly routes: PluginRouteContribution[] = [];
 
   /**
    * Registers a plugin's metadata in the central registry
@@ -35,5 +44,83 @@ export class PluginManagerService {
    */
   getPlugin(name: string): PluginMetadata | undefined {
     return this.plugins.get(name);
+  }
+
+  /**
+   * Registers menu items contributed by a plugin.
+   * @param items Array of menu items to register
+   */
+  registerMenuItems(items: PluginMenuItem[]): void {
+    this.menuItems.push(...items);
+    this.menuItems.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  /**
+   * Returns all registered menu items, sorted by order.
+   */
+  getMenuItems(): PluginMenuItem[] {
+    return [...this.menuItems];
+  }
+
+  /**
+   * Registers route contributions from a plugin.
+   * @param contributions Array of route contributions
+   */
+  registerRoutes(contributions: PluginRouteContribution[]): void {
+    this.routes.push(...contributions);
+  }
+
+  /**
+   * Returns all registered route contributions.
+   */
+  getRoutes(): PluginRouteContribution[] {
+    return [...this.routes];
+  }
+
+  /**
+   * Scans a directory for plugin manifests (plugin.json files).
+   * Each subdirectory that contains a valid plugin.json is returned.
+   * @param dir The directory to scan
+   * @returns Array of discovered plugin manifests
+   */
+  scanDirectory(dir: string): PluginManifest[] {
+    const manifests: PluginManifest[] = [];
+
+    if (!fs.existsSync(dir)) {
+      this.logger.warn(`Plugin directory does not exist: ${dir}`);
+      return manifests;
+    }
+
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+
+      const manifestPath = path.join(dir, entry.name, "plugin.json");
+      if (!fs.existsSync(manifestPath)) continue;
+
+      try {
+        const raw = fs.readFileSync(manifestPath, "utf-8");
+        const manifest = JSON.parse(raw) as PluginManifest;
+
+        if (!manifest.name || !manifest.version || !manifest.main) {
+          this.logger.warn(
+            `Invalid plugin manifest in ${entry.name}: missing required fields`,
+          );
+          continue;
+        }
+
+        manifests.push(manifest);
+        this.logger.log(
+          `Discovered plugin: ${manifest.name} (v${manifest.version})`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to parse plugin.json in ${entry.name}`,
+          error,
+        );
+      }
+    }
+
+    return manifests;
   }
 }

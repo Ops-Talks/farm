@@ -94,6 +94,8 @@ farm/
     auth/                  # Authentication module
     catalog/               # Catalog module
     documentation/         # Documentation module
+    environments/          # Environments and Deployments module
+    teams/                 # Teams and Ownership module
   test/                    # End-to-end tests
   docs/                    # Documentation source files
 ```

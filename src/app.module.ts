@@ -9,6 +9,8 @@ import { PluginManagerModule } from "./plugin-manager/plugin-manager.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { DocumentationModule } from "./documentation/documentation.module";
 import { AuthModule } from "./auth/auth.module";
+import { EnvironmentsModule } from "./environments/environments.module";
+import { TeamsModule } from "./teams/teams.module";
 import { HealthModule } from "./common/health/health.module";
 import { configuration, validationSchema } from "./config/configuration";
 
@@ -70,6 +72,22 @@ import { configuration, validationSchema } from "./config/configuration";
           description: "Authentication and authorization",
         },
         module: AuthModule,
+      },
+      {
+        metadata: {
+          name: "core-environments",
+          version: "1.0.0",
+          description: "Environment and deployment management",
+        },
+        module: EnvironmentsModule,
+      },
+      {
+        metadata: {
+          name: "core-teams",
+          version: "1.0.0",
+          description: "Team and ownership management",
+        },
+        module: TeamsModule,
       },
     ]),
   ],

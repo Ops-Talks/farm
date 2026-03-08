@@ -38,15 +38,16 @@ Farm is a developer portal platform designed to help organizations manage their 
 |                       Farm API Server                             |
 |  +------------------------------------------------------------+  |
 |  |                    NestJS Application                       |  |
-|  |  +----------+  +-----------+  +-------------+              |  |
-|  |  |   Auth   |  |  Catalog  |  | Documentation|              |  |
-|  |  |  Module  |  |   Module  |  |    Module   |              |  |
-|  |  +----+-----+  +-----+-----+  +------+------+              |  |
-|  |       |              |               |                      |  |
-|  |  +----v--------------v---------------v----+                |  |
-|  |  |           In-Memory Storage            |                |  |
-|  |  |     (Map<string, Entity> instances)    |                |  |
-|  |  +----------------------------------------+                |  |
+|  |  +--------+ +--------+ +-------+ +------+ +---------+     |  |
+|  |  |  Auth  | |Catalog | | Docs  | | Envs | | Plugin  |     |  |
+|  |  | Module | | Module | |Module | |Module| | Manager |     |  |
+|  |  +---+----+ +---+----+ +---+---+ +--+---+ +----+----+     |  |
+|  |      |          |          |         |          |           |  |
+|  |  +---v----------v----------v---------v----------v------+   |  |
+|  |  |               PostgreSQL Database                   |   |  |
+|  |  |    (users, components, documentation, environments, |   |  |
+|  |  |     deployments, migrations)                        |   |  |
+|  |  +-----------------------------------------------------+   |  |
 |  +------------------------------------------------------------+  |
 +------------------------------------------------------------------+
 ```
@@ -62,17 +63,20 @@ Farm is a developer portal platform designed to help organizations manage their 
 |  +------------------------------------------------------------+  |
 +----------------------------------+-------------------------------+
                                    |
-         +-------------------------+-------------------------+
-         |                         |                         |
-         v                         v                         v
-+----------------+       +----------------+       +------------------+
-|   Auth Module  |       | Catalog Module |       | Documentation    |
-|                |       |                |       |     Module       |
-| AuthController |       | CatalogController      | DocController    |
-| AuthService    |       | CatalogService |       | DocService       |
-| User Entity    |       | Component Entity       | Documentation    |
-| DTOs           |       | DTOs           |       | DTOs             |
-+----------------+       +----------------+       +------------------+
+     +----------+------------------+------------------+----------+
+     |          |                  |                  |          |
+     v          v                  v                  v          v
++----------+ +----------+ +-------------+ +------------+ +--------+
+|   Auth   | | Catalog  | |Documentation| |Environments| |Plugin  |
+|  Module  | |  Module  | |   Module    | |   Module   | |Manager |
+|          | |          | |             | |            | |        |
+| AuthCtrl | | CatCtrl  | |  DocCtrl    | | EnvCtrl    | |Registry|
+| AuthSvc  | | CatSvc   | |  DocSvc     | | EnvSvc     | |        |
+| User     | | Component| |  Doc Entity | | DeployCtrl | |        |
+| DTOs     | | DTOs     | |  DTOs       | | DeploySvc  | |        |
+|          | |          | |             | | Env Entity | |        |
+|          | |          | |             | | Deploy Ent | |        |
++----------+ +----------+ +-------------+ +------------+ +--------+
 ```
 
 ## Module Design
@@ -113,27 +117,27 @@ Client -> AuthController.findAll() -> AuthService.findAll() -> Return from Map
 | Component | Responsibility |
 |-----------|---------------|
 | CatalogController | HTTP request handling for catalog endpoints |
-| CatalogService | CRUD operations for components |
-| Component Entity | Component data structure |
-| ComponentKind Enum | Types of components |
-| ComponentLifecycle Enum | Lifecycle stages |
+| CatalogService | CRUD operations for components, YAML registration, git discovery |
+| Component Entity | Component data structure with dependency relations |
+| ComponentKind Enum | Types of components (20 kinds across 4 domains) |
+| ComponentKindGroup Enum | Domain grouping (dev, infra, data, security) |
+| ComponentLifecycle Enum | Lifecycle stages (planned, experimental, production, deprecated, decommissioned) |
 | CreateComponentDto | Validation for create requests |
 | UpdateComponentDto | Validation for update requests |
+| CreateLocationDto | DTO for triggering git discovery |
+| RegisterComponentYamlDto | DTO for manual YAML registration |
 
 **Data Flow**:
 
 ```
 Create Component:
-Client -> CatalogController.create() -> CatalogService.create() -> Store in Map
+Client -> CatalogController.create() -> CatalogService.create() -> TypeORM Repository
 
-Get Component:
-Client -> CatalogController.findOne() -> CatalogService.findOne() -> Lookup in Map
+List Components (with optional kindGroup filter):
+Client -> CatalogController.findAll(?kindGroup) -> CatalogService.findAll() -> TypeORM Repository
 
-Update Component:
-Client -> CatalogController.update() -> CatalogService.update() -> Modify in Map
-
-Delete Component:
-Client -> CatalogController.remove() -> CatalogService.remove() -> Remove from Map
+Discovery:
+Client -> CatalogController.discover(url) -> CatalogService.discoverFromLocation() -> Clone + Parse YAML -> TypeORM Repository
 ```
 
 ### Documentation Module
@@ -154,10 +158,42 @@ Client -> CatalogController.remove() -> CatalogService.remove() -> Remove from M
 
 ```
 Create Documentation:
-Client -> DocController.create() -> DocService.create() -> Store in Map
+Client -> DocController.create() -> DocService.create() -> TypeORM Repository
 
 Filter by Component:
-Client -> DocController.findAll(componentId) -> DocService.findByComponent() -> Filter Map
+Client -> DocController.findAll(componentId) -> DocService.findByComponent() -> TypeORM Repository
+```
+
+### Environments Module
+
+**Purpose**: Manage deployment environments and track component deployments.
+
+**Components**:
+
+| Component | Responsibility |
+|-----------|---------------|
+| EnvironmentsController | HTTP request handling for environment management |
+| EnvironmentsService | CRUD operations with name uniqueness validation |
+| Environment Entity | Environment data structure (type, order, metadata) |
+| DeploymentsController | HTTP request handling for deployments, matrix, and latest views |
+| DeploymentsService | Deployment tracking with status transition validation |
+| Deployment Entity | Deployment data structure linking components to environments |
+| CreateEnvironmentDto | Validation for environment create requests |
+| UpdateEnvironmentDto | Validation for environment update requests |
+| CreateDeploymentDto | Validation for deployment create requests |
+| UpdateDeploymentDto | Validation for deployment update requests |
+
+**Data Flow**:
+
+```
+Record Deployment:
+Client -> DeploymentsController.create() -> DeploymentsService.create() -> TypeORM Repository
+
+Update Deployment Status:
+Client -> DeploymentsController.update() -> DeploymentsService.update() -> Validate Transition -> TypeORM Repository
+
+Deployment Matrix:
+Client -> DeploymentsController.getMatrix() -> DeploymentsService.getMatrix() -> Query Latest per Component/Env
 ```
 
 ## Data Models
@@ -182,13 +218,15 @@ class User {
 class Component {
   id: string;                     // UUID
   name: string;                   // Component name
-  kind: ComponentKind;            // Type of component
+  kind: ComponentKind;            // Type of component (20 kinds across 4 domains)
   description: string;            // Description
   owner: string;                  // Owner team/individual
   lifecycle: ComponentLifecycle;  // Lifecycle stage
   tags: string[];                 // Tags for categorization
   links: ComponentLink[];         // External links
   metadata: Record<string, unknown>; // Custom metadata
+  dependsOn: Component[];        // Components this depends on
+  dependedOnBy: Component[];     // Components that depend on this
   createdAt: Date;                // Creation timestamp
   updatedAt: Date;                // Last update timestamp
 }
@@ -206,6 +244,41 @@ class Documentation {
   version: string;      // Version string
   createdAt: Date;      // Creation timestamp
   updatedAt: Date;      // Last update timestamp
+}
+```
+
+### Environment Entity
+
+```typescript
+class Environment {
+  id: string;                        // UUID
+  name: string;                      // Unique environment name
+  description: string;               // Description
+  type: EnvironmentType;             // development, staging, production, sandbox
+  order: number;                     // Display order for sorting
+  metadata: Record<string, unknown>; // Additional metadata (e.g., region, provider)
+  createdAt: Date;                   // Creation timestamp
+  updatedAt: Date;                   // Last update timestamp
+}
+```
+
+### Deployment Entity
+
+```typescript
+class Deployment {
+  id: string;                        // UUID
+  version: string;                   // Version being deployed (e.g., "v2.3.1")
+  status: DeploymentStatus;          // pending, in_progress, succeeded, failed, rolled_back
+  deployedBy: string;                // Username or system that triggered the deploy
+  commitSha: string;                 // Git commit SHA
+  description: string;               // Notes about the deployment
+  metadata: Record<string, unknown>; // Additional metadata (e.g., pipeline URL)
+  componentId: string;               // FK to Component
+  environmentId: string;             // FK to Environment
+  startedAt: Date;                   // When the deployment started
+  finishedAt: Date;                  // When the deployment finished
+  createdAt: Date;                   // Creation timestamp
+  updatedAt: Date;                   // Last update timestamp
 }
 ```
 
@@ -257,28 +330,27 @@ Standard HTTP status codes are used for error responses:
 
 ### Current Implementation
 
-- Passwords are hashed with SHA-256 before storage
-- Session tokens are UUIDs generated at login
+- Passwords are hashed with bcrypt before storage
+- JWT-based authentication with Passport.js
+- Role-based access control (RBAC) with `@Roles()` decorator
+- All mutation endpoints require `admin` role
 
 ### Future Improvements
 
-- Implement JWT-based authentication
-- Add password strength validation
-- Implement rate limiting
 - Add API key support for service-to-service communication
 - Support OAuth/SAML integration
+- Implement rate limiting
 
 ## Scalability Considerations
 
-### Current Limitations
+### Current State
 
-- In-memory storage limits data persistence
-- Single-instance deployment
-- No caching layer
+- PostgreSQL for production, SQLite for testing
+- Single-instance deployment with Docker support
+- TypeORM migrations for schema management
 
 ### Future Improvements
 
-- Database integration (PostgreSQL, MongoDB)
 - Redis caching layer
 - Horizontal scaling with load balancing
 - Event-driven architecture for real-time updates
@@ -299,13 +371,6 @@ Standard HTTP status codes are used for error responses:
 - Better caching with HTTP
 - Easier debugging
 - Lower learning curve
-
-### Why In-Memory Storage?
-
-- Rapid prototyping
-- No external dependencies for development
-- Simplifies testing
-- Easy to replace with database later
 
 ## Deployment Architecture
 

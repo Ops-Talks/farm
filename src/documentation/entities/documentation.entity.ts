@@ -49,6 +49,23 @@ export class Documentation {
   version: string;
 
   @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440000",
+    description: "Parent documentation ID for navigation tree hierarchy",
+    required: false,
+    nullable: true,
+  })
+  @Column({ type: "varchar", nullable: true })
+  parentId: string | null;
+
+  @ApiProperty({
+    example: 0,
+    description: "Sort order within the same parent level",
+    default: 0,
+  })
+  @Column({ type: "integer", default: 0 })
+  order: number;
+
+  @ApiProperty({
     example: "2023-01-01T00:00:00Z",
     description: "The creation date",
   })

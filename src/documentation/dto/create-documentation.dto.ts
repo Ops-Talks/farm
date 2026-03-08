@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsString, IsUrl } from "class-validator";
+import {
+  IsNotEmpty,
+  IsString,
+  IsUrl,
+  IsOptional,
+  IsUUID,
+  IsInt,
+  Min,
+} from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 /**
@@ -38,4 +46,24 @@ export class CreateDocumentationDto {
   @IsString()
   @IsNotEmpty()
   version: string;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440000",
+    description: "Parent documentation ID for navigation tree hierarchy",
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  parentId?: string;
+
+  @ApiProperty({
+    example: 0,
+    description: "Sort order within the same parent level",
+    required: false,
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  order?: number;
 }

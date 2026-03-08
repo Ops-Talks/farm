@@ -19,15 +19,15 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
                     |  (Express/HTTP)  |
                     +--------+---------+
                              |
-             +---------------+----------------+
-             |               |                |
-             v               v                v
-     +-------+------+  +------+-------+  +-----+--------+
-     |    Auth      |  |   Catalog    |  | Documentation |
-     |   Module     |  |    Module    |  |    Module    |
-     +--------------+  +--------------+  +--------------+
-             |               |                |
-             +---------------+----------------+
+     +----------+------------+-----------+------------+--------+
+     |          |            |           |            |        |
+     v          v            v           v            v        v
+ +--------+ +--------+ +-----------+ +---------+ +--------+ +------+
+ |  Auth  | |Catalog | |  Docs     | |  Envs   | |Plugin  | |Teams |
+ | Module | | Module | |  Module   | | Module  | |Manager | |Module|
+ +--------+ +--------+ +-----------+ +---------+ +--------+ +------+
+     |          |            |           |            |        |
+     +----------+------------+-----------+------------+--------+
                              |
                              v
                     +------------------+
@@ -96,15 +96,28 @@ Handles user authentication and management.
 
 ### Catalog Module
 
-Manages the software component catalog.
+Manages the software component catalog, serving Dev, Infra, Data, and Security teams.
 
 **Responsibilities:**
 
 - Component CRUD operations
-- Component lifecycle management
+- Component lifecycle management (experimental, development, production, deprecated, end_of_life)
 - Component metadata storage
 - YAML-driven component registration
 - Discovery of components from git repositories
+
+**Component Kind Groups:**
+
+The catalog organizes 23 component kinds across four domain groups, enabling multi-team usage:
+
+| Domain Group | Audience | Component Kinds |
+|-------------|----------|-----------------|
+| `dev` | Development teams | service, library, website, api, component, system, domain, resource |
+| `infra` | Infrastructure / SRE teams | pipeline, queue, database, storage, cluster, network |
+| `data` | Data engineering teams | dataset, data_pipeline, ml_model |
+| `security` | Security teams | secret, policy, certificate |
+
+Use the `kindGroup` query parameter on catalog endpoints to filter components by domain (e.g., `GET /api/catalog/components?kindGroup=infra`).
 
 **Components:**
 
@@ -127,6 +140,9 @@ Manages technical documentation associated with components.
 - Documentation CRUD operations
 - Filtering by component
 - Version management
+- Markdown rendering with HTML sanitization
+- Navigation tree building (parentId / order hierarchy)
+- Title-based search with relevance scoring
 
 **Components:**
 
@@ -137,6 +153,45 @@ Manages technical documentation associated with components.
 | `Documentation` entity | Documentation data structure |
 | `CreateDocumentationDto` | Create request validation |
 | `UpdateDocumentationDto` | Update request validation |
+
+### Environments Module
+
+Manages deployment environments and tracks component deployments across those environments.
+
+**Responsibilities:**
+
+- Environment CRUD operations (development, staging, production, sandbox)
+- Deployment recording and status tracking
+- Deployment status machine (pending, in_progress, succeeded, failed, rolled_back)
+- Component-Environment deployment matrix
+- Latest deployment lookup per component
+
+**Components:**
+
+| Component | Purpose |
+|-----------|---------|
+| `EnvironmentsController` | HTTP endpoints for environment management |
+| `EnvironmentsService` | Business logic for environments with name uniqueness validation |
+| `Environment` entity | Environment data structure with type, order, and metadata |
+| `DeploymentsController` | HTTP endpoints for deployment tracking, matrix, and latest views |
+| `DeploymentsService` | Business logic for deployments with status transition validation |
+| `Deployment` entity | Deployment data structure linking components to environments |
+| `CreateEnvironmentDto` | Environment create request validation |
+| `UpdateEnvironmentDto` | Environment update request validation |
+| `CreateDeploymentDto` | Deployment create request validation |
+| `UpdateDeploymentDto` | Deployment update request validation |
+
+### Teams Module
+
+The Teams module provides team ownership and membership management. Teams are categorized by type (dev, infra, security, data, platform, other) and can be associated with catalog components.
+
+| Component | Purpose |
+|-----------|---------|
+| `TeamsController` | HTTP endpoints for team CRUD and member management |
+| `TeamsService` | Business logic for teams with name uniqueness and member operations |
+| `Team` entity | Team data structure with type, members (ManyToMany to User), and metadata |
+| `CreateTeamDto` | Team create request validation |
+| `UpdateTeamDto` | Team update request validation |
 
 ## Request Flow
 
@@ -212,6 +267,4 @@ The filter catches both built-in NestJS exceptions (like `NotFoundException`, `C
 ## Future Architecture Considerations
 
 - **Caching**: Add caching layer for frequently accessed data (e.g., Redis).
-- **Authentication Middleware**: Implement JWT-based authentication with Passport.js.
-- **Plugin System**: Allow extensibility through plugins.
 - **Event Bus**: Add event-driven communication between modules.
