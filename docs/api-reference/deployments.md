@@ -60,20 +60,39 @@ curl -X POST http://localhost:3000/api/deployments \
 
 ## Listing Deployments
 
-Supports optional filters for `componentId`, `environmentId`, and `status`:
+Supports optional filters for `componentId`, `environmentId`, and `status`. All list results are paginated with `skip` and `take` query parameters (defaults: `skip=0`, `take=20`, max `take=100`).
 
 ```bash
-# List all deployments
+# List all deployments with pagination
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/deployments
+  "http://localhost:3000/api/deployments?skip=0&take=20"
 
 # Filter by component
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/deployments?componentId=<uuid>"
+  "http://localhost:3000/api/deployments?componentId=<uuid>&skip=0&take=10"
 
 # Filter by environment and status
 curl -H "Authorization: Bearer <token>" \
   "http://localhost:3000/api/deployments?environmentId=<uuid>&status=succeeded"
+```
+
+### Paginated Response (200)
+
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "componentId": "...",
+      "environmentId": "...",
+      "version": "v2.3.1",
+      "status": "succeeded"
+    }
+  ],
+  "total": 128,
+  "skip": 0,
+  "take": 20
+}
 ```
 
 ## Deployment Matrix

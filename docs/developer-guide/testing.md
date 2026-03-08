@@ -212,14 +212,16 @@ Coverage reports are generated in the `coverage/` directory.
 
 ### Coverage Goals
 
-Aim for the following coverage targets:
+The project enforces coverage thresholds via Jest configuration in `package.json`. The current minimum thresholds are:
 
-| Type | Target |
-|------|--------|
-| Statements | 80% |
-| Branches | 75% |
-| Functions | 80% |
-| Lines | 80% |
+| Type | Threshold |
+|------|-----------|
+| Statements | 70% |
+| Branches | 65% |
+| Functions | 70% |
+| Lines | 70% |
+
+Running `npm run test:cov` will fail if coverage drops below these thresholds.
 
 ## Best Practices
 

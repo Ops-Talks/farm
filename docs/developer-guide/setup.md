@@ -37,6 +37,12 @@ cd farm
 npm install
 ```
 
+Copy the example environment file and adjust values as needed:
+
+```bash
+cp .env.example .env
+```
+
 ### 3. Start the Development Server
 
 #### Option A: Containerized Development (Recommended)
@@ -206,6 +212,7 @@ Then attach your debugger to port 9229.
 | `DATABASE_PASSWORD` | `postgres` | Database password |
 | `DATABASE_NAME` | `farm` | Database name |
 | `DATABASE_SYNC` | `false` | Enable TypeORM auto-sync (use with caution) |
+| `DATABASE_POOL_SIZE` | `10` | Database connection pool size (1-100, PostgreSQL only) |
 | `JWT_SECRET` | (auto-generated in dev) | Secret key for JWT signing. **Required** in production (min 32 chars) |
 | `JWT_EXPIRATION` | `3600s` | JWT token expiration time |
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins (comma-separated URLs or `*` for all) |

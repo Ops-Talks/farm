@@ -43,11 +43,29 @@ curl -X POST http://localhost:3000/api/environments \
 
 ## Listing Environments
 
-Environments are returned sorted by the `order` field:
+Environments are returned sorted by the `order` field. Supports pagination via `skip` and `take` query parameters (defaults: `skip=0`, `take=20`, max `take=100`).
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/environments
+  "http://localhost:3000/api/environments?skip=0&take=20"
+```
+
+### Paginated Response (200)
+
+```json
+{
+  "data": [
+    {
+      "id": "...",
+      "name": "production",
+      "type": "production",
+      "order": 3
+    }
+  ],
+  "total": 4,
+  "skip": 0,
+  "take": 20
+}
 ```
 
 ## Updating an Environment

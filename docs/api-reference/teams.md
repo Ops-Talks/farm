@@ -69,9 +69,29 @@ Authorization: Bearer <token>
 
 ## List All Teams
 
+Supports pagination via `skip` and `take` query parameters (defaults: `skip=0`, `take=20`, max `take=100`).
+
 ```http
-GET /api/teams
+GET /api/teams?skip=0&take=20
 Authorization: Bearer <token>
+```
+
+### Paginated Response (200)
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440010",
+      "name": "platform-engineering",
+      "displayName": "Platform Engineering",
+      "type": "platform"
+    }
+  ],
+  "total": 5,
+  "skip": 0,
+  "take": 20
+}
 ```
 
 ## Get Team by ID

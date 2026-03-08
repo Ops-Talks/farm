@@ -34,3 +34,39 @@ The `GET /api/catalog/components` endpoint supports a `kindGroup` query paramete
 curl -H "Authorization: Bearer <token>" \
   http://localhost:3000/api/catalog/components?kindGroup=infra
 ```
+
+## Pagination
+
+All list endpoints return paginated responses. The following query parameters are supported:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `skip` | integer | `0` | Number of records to skip |
+| `take` | integer | `20` | Number of records to return (max 100) |
+
+**Example:**
+
+```bash
+# List components with pagination and filtering
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/api/catalog/components?kindGroup=infra&skip=0&take=10"
+```
+
+### Paginated Response Format
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "name": "my-service",
+      "kind": "service",
+      "owner": "platform-engineering",
+      "lifecycle": "production"
+    }
+  ],
+  "total": 42,
+  "skip": 0,
+  "take": 10
+}
+```
