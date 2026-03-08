@@ -5,10 +5,6 @@
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/adr/001-frontend-stack/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
@@ -49,27 +45,7 @@
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/architecture/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/contributing/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/email/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/observability/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/plugins/</loc>
-         <lastmod>2026-03-08</lastmod>
-    </url>
-    <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/queues/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
@@ -81,11 +57,47 @@
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/testing/</loc>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/developer-guide/websockets/</loc>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/architecture/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/email/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/observability/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/plugins/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/queues/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/testing/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/backend/websockets/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/frontend/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/frontend/architecture/</loc>
+         <lastmod>2026-03-08</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/developer-guide/frontend/testing/</loc>
          <lastmod>2026-03-08</lastmod>
     </url>
     <url>
