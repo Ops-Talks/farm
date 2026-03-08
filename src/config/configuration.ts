@@ -23,6 +23,9 @@ export const configuration = () => ({
       process.env.JWT_SECRET || "super-secret-key-change-me-in-production",
     jwtExpiresIn: process.env.JWT_EXPIRATION || "3600s",
   },
+  cors: {
+    allowedOrigins: process.env.ALLOWED_ORIGINS || "*",
+  },
   throttle: {
     ttl: parseInt(process.env.THROTTLE_TTL ?? "60000", 10) || 60000,
     limit: parseInt(process.env.THROTTLE_LIMIT ?? "10", 10) || 10,
@@ -47,8 +50,13 @@ export const validationSchema = Joi.object({
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
     .default("info"),
-  JWT_SECRET: Joi.string().default("super-secret-key-change-me-in-production"),
+  JWT_SECRET: Joi.string().when("NODE_ENV", {
+    is: "production",
+    then: Joi.string().min(32).required(),
+    otherwise: Joi.string().default("super-secret-key-change-me-in-production"),
+  }),
   JWT_EXPIRATION: Joi.string().default("3600s"),
+  ALLOWED_ORIGINS: Joi.string().default("*"),
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(10),
 });

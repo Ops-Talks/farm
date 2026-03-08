@@ -41,12 +41,17 @@ import { configuration, validationSchema } from "./config/configuration";
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => [
-        {
-          ttl: configService.get<number>("throttle.ttl") ?? 60000,
-          limit: configService.get<number>("throttle.limit") ?? 10,
-        },
-      ],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: configService.get<number>("throttle.ttl") ?? 60000,
+            limit: configService.get<number>("throttle.limit") ?? 10,
+          },
+        ],
+        skipIf: () =>
+          configService.get<string>("env") === "test" ||
+          process.env.NODE_ENV === "test",
+      }),
     }),
     PluginManagerModule.forRoot([
       {

@@ -15,12 +15,14 @@ import { App } from "supertest/types";
 /**
  * Creates and initializes a NestJS application for E2E testing
  * with SQLite in-memory database, global pipes, and serialization.
+ * Rate limiting uses high thresholds to avoid flaky test failures.
  */
 export async function createE2EApp(): Promise<INestApplication<App>> {
+  process.env.NODE_ENV = "test";
   process.env.DATABASE_TYPE = "sqlite";
   process.env.DATABASE_NAME = ":memory:";
   process.env.DATABASE_SYNC = "true";
-  process.env.JWT_SECRET = "e2e-test-secret";
+  process.env.JWT_SECRET = "e2e-test-secret-that-is-at-least-32-characters";
 
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
@@ -57,7 +59,7 @@ export async function registerAndLogin(
   const user = {
     username: userData?.username || "e2e-admin",
     email: userData?.email || "admin@e2e-test.com",
-    password: userData?.password || "testpassword123",
+    password: userData?.password || "TestPassword1",
     displayName: userData?.displayName || "E2E Admin",
   };
 

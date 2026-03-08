@@ -35,6 +35,14 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  const allowedOrigins =
+    configService.get<string>("cors.allowedOrigins") || "*";
+  app.enableCors({
+    origin: allowedOrigins === "*" ? true : allowedOrigins.split(","),
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  });
+
   app.setGlobalPrefix("api");
 
   const config = new DocumentBuilder()

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Refresh Token Mechanism**: `POST /auth/refresh` endpoint with token rotation, bcrypt-hashed storage, and replay attack detection (invalidates token on reuse).
+- **Password Strength Validation**: `RegisterUserDto.password` requires lowercase, uppercase, and digit; `username` enforces length 2-50.
+- **CORS Configuration**: Configurable `ALLOWED_ORIGINS` env var with wildcard and comma-separated URL support.
+- **Rate Limiting on Auth Endpoints**: `@Throttle` on login (5/min), register (5/min), refresh (10/min) with Swagger rate limit headers; skips throttling in test environment.
+- **Database Indexes**: Added `@Index()` on `Component.owner` and `Documentation.componentId` with migration.
+
+### Changed
+- **JWT Secret Enforcement**: `JWT_SECRET` is required with min 32 characters in production via Joi validation.
+- **ThrottlerModule**: Uses `skipIf` callback to disable rate limiting in test environment.
+
+### Fixed
+- **N+1 Query Performance**: Rewrote `findLatestByComponent()` and `getMatrix()` in DeploymentsService from O(M*N) loops to single QueryBuilder queries with SQL-level filtering.
+- **Swagger Version**: Reads version dynamically from `package.json` instead of hardcoded string.
+
 ## [0.4.2] - 2026-03-07
 
 ### Added

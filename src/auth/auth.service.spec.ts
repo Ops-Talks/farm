@@ -18,6 +18,7 @@ describe("AuthService", () => {
     displayName: "John",
     password: "hashed_password",
     roles: ["user"],
+    refreshToken: null as unknown as string,
     createdAt: new Date(),
     updatedAt: new Date(),
     hashPassword: jest.fn(),
@@ -25,7 +26,7 @@ describe("AuthService", () => {
 
   const mockRepository = {
     findOne: jest.fn(),
-    create: jest.fn().mockImplementation((dto: any) => dto as User),
+    create: jest.fn().mockImplementation((dto: unknown) => dto as User),
     save: jest.fn().mockImplementation((user: User) =>
       Promise.resolve({
         ...user,
@@ -33,6 +34,7 @@ describe("AuthService", () => {
       } as User),
     ),
     find: jest.fn().mockResolvedValue([mockUser]),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
   };
 
   const mockJwtService = {
@@ -56,6 +58,7 @@ describe("AuthService", () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    (bcrypt.hash as jest.Mock).mockResolvedValue("hashed-token");
   });
 
   it("should be defined", () => {
@@ -89,7 +92,7 @@ describe("AuthService", () => {
   });
 
   describe("login", () => {
-    it("should login with valid credentials", async () => {
+    it("should login with valid credentials and return refreshToken", async () => {
       mockRepository.findOne.mockResolvedValueOnce(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
@@ -99,7 +102,12 @@ describe("AuthService", () => {
       });
 
       expect(result.token).toBe("mock-jwt-token");
+      expect(result.refreshToken).toBeDefined();
+      expect(typeof result.refreshToken).toBe("string");
       expect(result.user.username).toBe(mockUser.username);
+      expect(mockRepository.update).toHaveBeenCalledWith("uuid", {
+        refreshToken: "hashed-token",
+      });
     });
 
     it("should throw UnauthorizedException for invalid password", async () => {

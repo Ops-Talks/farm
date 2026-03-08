@@ -51,6 +51,10 @@ export class User {
   @Column("simple-array", { nullable: true })
   roles: string[];
 
+  @Exclude()
+  @Column({ nullable: true })
+  refreshToken: string;
+
   @ApiProperty({
     example: "2023-01-01T00:00:00Z",
     description: "The creation date",
