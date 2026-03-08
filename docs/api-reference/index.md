@@ -4,7 +4,7 @@ This section provides detailed reference documentation for all Farm API endpoint
 
 ## Overview
 
-Farm exposes a REST API for managing the developer portal. All endpoints are prefixed with `/api`.
+Farm exposes a REST API for managing the portal. All endpoints are prefixed with `/api`.
 
 ## Base URL
 

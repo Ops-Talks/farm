@@ -4,7 +4,7 @@ Welcome to the Farm User Guide. This section provides comprehensive documentatio
 
 ## Overview
 
-Farm provides a developer portal that helps you:
+Farm provides a centralized portal that helps you:
 
 - Organize and discover software components across your organization
 - Maintain documentation associated with each component

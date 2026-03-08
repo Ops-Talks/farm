@@ -4,7 +4,7 @@
 
 ### What is Farm?
 
-Farm is an open-source developer portal platform. It provides a centralized hub for managing software components, technical documentation, and user authentication.
+Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.
 
 ### Why should my team use Farm?
 

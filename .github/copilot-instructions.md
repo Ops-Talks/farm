@@ -1,6 +1,6 @@
 # Copilot Instructions for Farm
 
-Farm is an open-source developer portal platform (like Backstage) built with NestJS 11, TypeORM, and PostgreSQL. Use EN_US for all docs and code comments. No emojis.
+Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure. Built with NestJS 11, TypeORM, PostgreSQL, and Next.js 16. Use EN_US for all docs and code comments. No emojis.
 
 ## Commands
 

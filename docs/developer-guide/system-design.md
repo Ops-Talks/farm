@@ -4,13 +4,13 @@ This document provides a comprehensive overview of the Farm system design, inclu
 
 ## Introduction
 
-Farm is a developer portal platform designed to help organizations manage their software catalog, technical documentation, and user access. This document describes the system architecture and design decisions that shape the platform.
+Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure. This document describes the system architecture and design decisions that shape the platform.
 
 ## Goals and Non-Goals
 
 ### Goals
 
-- Provide a simple, easy-to-deploy developer portal
+- Provide a simple, easy-to-deploy full stack portal
 - Enable teams to catalog and discover software components
 - Associate documentation with software components
 - Support user authentication and access management
@@ -425,4 +425,4 @@ Developer Machine
 
 ## Conclusion
 
-Farm is designed as a simple, modular developer portal that can grow with organizational needs. The current implementation provides core functionality with a clear path for future enhancements including database integration, improved security, and scalability features.
+Farm is designed as a simple, modular full stack portal that can grow with organizational needs. The current implementation provides core functionality with a clear path for future enhancements including database integration, improved security, and scalability features.

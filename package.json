@@ -1,7 +1,7 @@
 {
   "name": "farm",
   "version": "0.6.1",
-  "description": "Farm - An open-source developer portal platform",
+  "description": "Farm - An open-source full stack portal",
   "author": "Ops-Talks",
   "private": true,
   "license": "AGPL-3.0",
