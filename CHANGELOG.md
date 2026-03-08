@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Docker JWT_SECRET**: Added `JWT_SECRET` env var to `docker-compose.yml` for production mode compatibility.
+
+### Changed
+- **Documentation Sync**: Updated 9 documentation files to reflect current implementation (rate limiting, JWT auth, refresh tokens, password validation, memory thresholds, env vars).
+
 
 ## [0.4.3] - 2026-03-08
 
