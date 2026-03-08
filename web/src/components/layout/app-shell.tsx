@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -34,9 +35,48 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+function Breadcrumbs({ pathname }: { pathname: string }) {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length <= 1) return null;
+
+  const crumbs = segments.map((seg, i) => {
+    const href = "/" + segments.slice(0, i + 1).join("/");
+    const label = seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " ");
+    const isLast = i === segments.length - 1;
+    return { href, label, isLast };
+  });
+
+  return (
+    <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+      {crumbs.map((c, i) => (
+        <span key={c.href} className="flex items-center gap-1">
+          {i > 0 && <span>/</span>}
+          {c.isLast ? (
+            <span className="text-foreground font-medium">{c.label}</span>
+          ) : (
+            <Link href={c.href} className="hover:text-foreground">
+              {c.label}
+            </Link>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
+
+  const themeLabel =
+    theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
 
   return (
     <div className="flex min-h-screen">
@@ -75,6 +115,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
 
+          {/* Breadcrumbs (desktop) */}
+          <div className="hidden md:block">
+            <Breadcrumbs pathname={pathname} />
+          </div>
+
           {/* Mobile nav */}
           <nav className="flex items-center gap-1 md:hidden">
             {navItems.map((item) => {
@@ -91,9 +136,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-
-          {/* Spacer for desktop */}
-          <div className="hidden md:block" />
 
           {/* User menu */}
           <DropdownMenu>
@@ -117,6 +159,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>
                 Roles: {user?.roles.join(", ")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={cycleTheme}>
+                Theme: {themeLabel}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>Sign out</DropdownMenuItem>

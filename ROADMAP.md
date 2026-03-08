@@ -404,39 +404,39 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST111 | Sub-task | Link to Grafana Tempo for distributed trace inspection | `DONE` |
 | FARM-ST112 | Sub-task | Display recent traces with duration and status (future iteration) | `DONE` |
 
-### FARM-E24: Teams and Settings UI `TODO`
+### FARM-E24: Teams and Settings UI `DONE`
 
 > Team management, user settings, and platform administration.
 
-#### FARM-S81: Team Management Page `TODO`
+#### FARM-S81: Team Management Page `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T32 | Task | Team listing and detail | `TODO` |
-| FARM-ST113 | Sub-task | Fetch `GET /api/v1/teams` and display team cards | `TODO` |
-| FARM-ST114 | Sub-task | Show team members, owned components, and type badge | `TODO` |
-| FARM-ST115 | Sub-task | Implement team creation and editing forms (admin only) | `TODO` |
-| FARM-ST116 | Sub-task | Add/remove member actions | `TODO` |
+| FARM-T32 | Task | Team listing and detail | `DONE` |
+| FARM-ST113 | Sub-task | Fetch `GET /api/v1/teams` and display team cards | `DONE` |
+| FARM-ST114 | Sub-task | Show team members, owned components, and type badge | `DONE` |
+| FARM-ST115 | Sub-task | Implement team creation and editing forms (admin only) | `DONE` |
+| FARM-ST116 | Sub-task | Add/remove member actions | `DONE` |
 
-#### FARM-S82: Documentation Browser `TODO`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T33 | Task | Documentation viewer | `TODO` |
-| FARM-ST117 | Sub-task | Fetch documentation tree (`GET /api/v1/docs/tree`) for navigation sidebar | `TODO` |
-| FARM-ST118 | Sub-task | Render Markdown content from `GET /api/v1/docs/:id/rendered` | `TODO` |
-| FARM-ST119 | Sub-task | Implement documentation search (`GET /api/v1/docs/search`) | `TODO` |
-| FARM-ST120 | Sub-task | Create/edit documentation form (admin only) | `TODO` |
-
-#### FARM-S83: Navigation Layout `TODO`
+#### FARM-S82: Documentation Browser `PARTIAL`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T34 | Task | Global navigation structure | `TODO` |
-| FARM-ST121 | Sub-task | Implement sidebar with sections: Dashboard, Catalog, Deployments, Docs, Queues, Observability, Teams, Settings | `TODO` |
-| FARM-ST122 | Sub-task | Add top bar with user info, notifications, and logout | `TODO` |
-| FARM-ST123 | Sub-task | Implement breadcrumb navigation | `TODO` |
-| FARM-ST124 | Sub-task | Support dark mode toggle | `TODO` |
+| FARM-T33 | Task | Documentation viewer | `PARTIAL` |
+| FARM-ST117 | Sub-task | Fetch documentation tree (`GET /api/v1/docs/tree`) for navigation sidebar | `PARTIAL` |
+| FARM-ST118 | Sub-task | Render Markdown content from `GET /api/v1/docs/:id/rendered` | `PARTIAL` |
+| FARM-ST119 | Sub-task | Implement documentation search (`GET /api/v1/docs/search`) | `PARTIAL` |
+| FARM-ST120 | Sub-task | Create/edit documentation form (admin only) | `PARTIAL` |
+
+#### FARM-S83: Navigation Layout `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T34 | Task | Global navigation structure | `DONE` |
+| FARM-ST121 | Sub-task | Implement sidebar with sections: Dashboard, Catalog, Deployments, Docs, Queues, Observability, Teams, Settings | `DONE` |
+| FARM-ST122 | Sub-task | Add top bar with user info, notifications, and logout | `DONE` |
+| FARM-ST123 | Sub-task | Implement breadcrumb navigation | `DONE` |
+| FARM-ST124 | Sub-task | Support dark mode toggle | `DONE` |
 
 ---
 

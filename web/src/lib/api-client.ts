@@ -318,6 +318,33 @@ export const teams = {
       body: JSON.stringify(data),
     });
   },
+
+  update(id: string, data: Partial<Team>): Promise<Team> {
+    return request(`/v1/teams/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(id: string): Promise<void> {
+    return request(`/v1/teams/${id}`, { method: "DELETE" });
+  },
+
+  getMembers(id: string): Promise<User[]> {
+    return request(`/v1/teams/${id}/members`);
+  },
+
+  addMember(teamId: string, userId: string): Promise<void> {
+    return request(`/v1/teams/${teamId}/members/${userId}`, { method: "POST" });
+  },
+
+  removeMember(teamId: string, userId: string): Promise<void> {
+    return request(`/v1/teams/${teamId}/members/${userId}`, { method: "DELETE" });
+  },
+
+  getComponents(id: string): Promise<CatalogComponent[]> {
+    return request(`/v1/teams/${id}/components`);
+  },
 };
 
 // -- Queues API --

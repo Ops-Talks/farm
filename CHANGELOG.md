@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Observability API (FARM-E23)**: REST endpoint at `/api/v1/observability/summary` returning process uptime, memory usage, HTTP request counts by status group, latency percentiles (p50/p90/p95/p99) from Prometheus histogram, and configurable Grafana URL. Admin-only with Swagger documentation.
 - **Observability UI page**: Tabbed interface at `/observability` with Health (detailed component status, uptime, memory), Metrics (request counts, error rate, latency percentiles, Grafana dashboard link), and Traces (OpenTelemetry setup guide, Tempo/Grafana explore links, instrumented component overview).
 - **GRAFANA_URL config**: Added `GRAFANA_URL` environment variable for linking to external Grafana instance from the observability dashboard.
+- **Teams management UI (FARM-E24)**: Full team management with listing page showing team cards filtered by type (dev/infra/security/data/platform/other) with search, team detail page displaying members and owned components, team creation form, and inline editing/deletion for admins. Member management with add/remove actions using user search.
+- **Teams API client**: Extended `teams` API client with `update()`, `delete()`, `getMembers()`, `addMember()`, `removeMember()`, and `getComponents()` methods.
+- **Breadcrumb navigation (FARM-S83)**: Added path-based breadcrumb bar in the top header for contextual navigation across all pages.
+- **Dark mode support**: Wired up `next-themes` ThemeProvider with system/light/dark modes and a theme toggle in the user dropdown menu.
 
 ## [0.6.0] - 2026-03-08
 
