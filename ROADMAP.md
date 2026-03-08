@@ -386,23 +386,23 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST105 | Sub-task | Show job payload, result, and error details | `DONE` |
 | FARM-ST106 | Sub-task | Implement job retry action for failed jobs | `DONE` |
 
-### FARM-E23: Observability UI `TODO`
+### FARM-E23: Observability UI `DONE`
 
 > Health checks, metrics visualization, and trace inspection.
 
-#### FARM-S80: Health and Metrics Page `TODO`
+#### FARM-S80: Health and Metrics Page `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T29 | Task | Health check display | `TODO` |
-| FARM-ST107 | Sub-task | Fetch and render `GET /api/health` with detailed component status | `TODO` |
-| FARM-ST108 | Sub-task | Display uptime, memory usage, and disk space | `TODO` |
-| FARM-T30 | Task | Grafana integration | `TODO` |
-| FARM-ST109 | Sub-task | Embed or link to Grafana Farm API Overview dashboard | `TODO` |
-| FARM-ST110 | Sub-task | Display key metrics inline (request rate, p95 latency, error rate) | `TODO` |
-| FARM-T31 | Task | Trace viewer | `TODO` |
-| FARM-ST111 | Sub-task | Link to Grafana Tempo for distributed trace inspection | `TODO` |
-| FARM-ST112 | Sub-task | Display recent traces with duration and status (future iteration) | `TODO` |
+| FARM-T29 | Task | Health check display | `DONE` |
+| FARM-ST107 | Sub-task | Fetch and render `GET /api/health` with detailed component status | `DONE` |
+| FARM-ST108 | Sub-task | Display uptime, memory usage, and disk space | `DONE` |
+| FARM-T30 | Task | Grafana integration | `DONE` |
+| FARM-ST109 | Sub-task | Embed or link to Grafana Farm API Overview dashboard | `DONE` |
+| FARM-ST110 | Sub-task | Display key metrics inline (request rate, p95 latency, error rate) | `DONE` |
+| FARM-T31 | Task | Trace viewer | `DONE` |
+| FARM-ST111 | Sub-task | Link to Grafana Tempo for distributed trace inspection | `DONE` |
+| FARM-ST112 | Sub-task | Display recent traces with duration and status (future iteration) | `DONE` |
 
 ### FARM-E24: Teams and Settings UI `TODO`
 

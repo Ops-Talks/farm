@@ -8,6 +8,7 @@ import type {
   JobInfo,
   LoginRequest,
   LoginResponse,
+  ObservabilitySummary,
   PaginatedResponse,
   PaginationQuery,
   QueueInfo,
@@ -358,5 +359,13 @@ export const queues = {
 export const health = {
   check(): Promise<HealthStatus> {
     return request("/health");
+  },
+};
+
+// -- Observability API --
+
+export const observability = {
+  summary(): Promise<ObservabilitySummary> {
+    return request("/v1/observability/summary");
   },
 };

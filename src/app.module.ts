@@ -19,6 +19,7 @@ import { EnvironmentsModule } from "./environments/environments.module";
 import { TeamsModule } from "./teams/teams.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
+import { ObservabilityModule } from "./common/observability/observability.module";
 import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
@@ -57,6 +58,7 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
       }),
     }),
     HealthModule,
+    ObservabilityModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],

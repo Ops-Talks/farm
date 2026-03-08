@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Queue dashboard page**: Queue overview at `/queues` with cards showing job counts by status (active/waiting/completed/failed/delayed), auto-refresh every 15 seconds, and Bull Board link.
 - **Queue detail page**: Job listing at `/queues/:name` with status filter tabs, expandable job detail panels showing payload, result, errors, stack trace, and retry button for failed jobs.
 - **Queue API client**: Added `queues.list()`, `queues.get()`, `queues.listJobs()`, `queues.getJob()`, `queues.retryJob()` methods and `QueueInfo`/`JobInfo` types.
+- **Observability API (FARM-E23)**: REST endpoint at `/api/v1/observability/summary` returning process uptime, memory usage, HTTP request counts by status group, latency percentiles (p50/p90/p95/p99) from Prometheus histogram, and configurable Grafana URL. Admin-only with Swagger documentation.
+- **Observability UI page**: Tabbed interface at `/observability` with Health (detailed component status, uptime, memory), Metrics (request counts, error rate, latency percentiles, Grafana dashboard link), and Traces (OpenTelemetry setup guide, Tempo/Grafana explore links, instrumented component overview).
+- **GRAFANA_URL config**: Added `GRAFANA_URL` environment variable for linking to external Grafana instance from the observability dashboard.
 
 ## [0.6.0] - 2026-03-08
 

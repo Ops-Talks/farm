@@ -272,3 +272,35 @@ export interface JobInfo {
   finishedOn?: number;
   stacktrace?: string[];
 }
+
+// -- Observability --
+
+export interface MemoryUsage {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  external: number;
+}
+
+export interface RequestsByStatus {
+  "2xx": number;
+  "4xx": number;
+  "5xx": number;
+  other: number;
+}
+
+export interface LatencyPercentiles {
+  p50: number;
+  p90: number;
+  p95: number;
+  p99: number;
+}
+
+export interface ObservabilitySummary {
+  uptime: number;
+  memory: MemoryUsage;
+  totalRequests: number;
+  requestsByStatus: RequestsByStatus;
+  latencyPercentiles: LatencyPercentiles;
+  grafanaUrl: string | null;
+}

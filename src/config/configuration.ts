@@ -50,6 +50,9 @@ export const configuration = () => ({
     pass: process.env.SMTP_PASS || "",
     from: process.env.SMTP_FROM || "Farm <noreply@farm.local>",
   },
+  grafana: {
+    url: process.env.GRAFANA_URL || "",
+  },
 });
 
 /**
@@ -94,4 +97,5 @@ export const validationSchema = Joi.object({
   SMTP_USER: Joi.string().allow("").default(""),
   SMTP_PASS: Joi.string().allow("").default(""),
   SMTP_FROM: Joi.string().default("Farm <noreply@farm.local>"),
+  GRAFANA_URL: Joi.string().allow("").default(""),
 });
