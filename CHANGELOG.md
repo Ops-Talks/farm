@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-03-08
 
 ### Added
 - **Prometheus metrics**: Integrated `prom-client` and `@willsoto/nestjs-prometheus` with default process metrics, custom HTTP request counter (`http_requests_total`), and request duration histogram (`http_request_duration_seconds`) by method, route, and status code. Exposed at `GET /api/metrics`.
