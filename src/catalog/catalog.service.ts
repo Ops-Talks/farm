@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
@@ -20,6 +21,7 @@ import {
 } from "./entities/component.entity";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
+import { EventsGateway } from "../common/events/events.gateway";
 
 /**
  * Interface representing the structure of a catalog-info.yaml file.
@@ -53,6 +55,7 @@ export class CatalogService {
   constructor(
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
+    @Optional() private readonly eventsGateway?: EventsGateway,
   ) {}
 
   /**
@@ -178,7 +181,17 @@ export class CatalogService {
       });
     }
 
-    return await this.componentRepository.save(component);
+    const saved = await this.componentRepository.save(component);
+
+    this.eventsGateway?.emitComponentCreated({
+      id: saved.id,
+      name: saved.name,
+      kind: saved.kind,
+      owner: saved.owner,
+      timestamp: new Date().toISOString(),
+    });
+
+    return saved;
   }
 
   /**
@@ -250,7 +263,17 @@ export class CatalogService {
       });
     }
 
-    return await this.componentRepository.save(updated);
+    const saved = await this.componentRepository.save(updated);
+
+    this.eventsGateway?.emitComponentUpdated({
+      id: saved.id,
+      name: saved.name,
+      kind: saved.kind,
+      owner: saved.owner,
+      timestamp: new Date().toISOString(),
+    });
+
+    return saved;
   }
 
   /**
@@ -261,5 +284,11 @@ export class CatalogService {
   async remove(id: string): Promise<void> {
     const component = await this.findOne(id);
     await this.componentRepository.remove(component);
+
+    this.eventsGateway?.emitComponentDeleted({
+      id,
+      name: component.name,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

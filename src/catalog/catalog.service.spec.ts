@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { CatalogService } from "./catalog.service";
+import { EventsGateway } from "../common/events/events.gateway";
 import * as fs from "fs/promises";
 import {
   Component,
@@ -55,6 +56,12 @@ describe("CatalogService", () => {
     remove: jest.fn().mockResolvedValue(mockComponent),
   };
 
+  const mockEventsGateway = {
+    emitComponentCreated: jest.fn(),
+    emitComponentUpdated: jest.fn(),
+    emitComponentDeleted: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,6 +69,10 @@ describe("CatalogService", () => {
         {
           provide: getRepositoryToken(Component),
           useValue: mockRepository,
+        },
+        {
+          provide: EventsGateway,
+          useValue: mockEventsGateway,
         },
       ],
     }).compile();

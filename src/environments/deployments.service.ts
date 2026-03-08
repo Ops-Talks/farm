@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -20,6 +21,7 @@ import {
 } from "../catalog/entities/component.entity";
 import { CreateDeploymentDto } from "./dto/create-deployment.dto";
 import { UpdateDeploymentDto } from "./dto/update-deployment.dto";
+import { EventsGateway } from "../common/events/events.gateway";
 
 /**
  * Service responsible for managing deployments of components to environments.
@@ -35,6 +37,7 @@ export class DeploymentsService {
     private readonly environmentRepository: Repository<Environment>,
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
+    @Optional() private readonly eventsGateway?: EventsGateway,
   ) {}
 
   /**
@@ -71,7 +74,18 @@ export class DeploymentsService {
       `Creating deployment: ${component.name}@${createDeploymentDto.version} -> ${environment.name}`,
     );
 
-    return await this.deploymentRepository.save(deployment);
+    const saved = await this.deploymentRepository.save(deployment);
+
+    this.eventsGateway?.emitDeploymentCreated({
+      id: saved.id,
+      componentId: saved.componentId,
+      environmentId: saved.environmentId,
+      version: saved.version,
+      status: saved.status,
+      timestamp: new Date().toISOString(),
+    });
+
+    return saved;
   }
 
   /**
@@ -156,7 +170,18 @@ export class DeploymentsService {
       deployment,
       updateDeploymentDto as Partial<Deployment>,
     );
-    return await this.deploymentRepository.save(updated);
+    const saved = await this.deploymentRepository.save(updated);
+
+    this.eventsGateway?.emitDeploymentUpdated({
+      id: saved.id,
+      componentId: saved.componentId,
+      environmentId: saved.environmentId,
+      version: saved.version,
+      status: saved.status,
+      timestamp: new Date().toISOString(),
+    });
+
+    return saved;
   }
 
   /**

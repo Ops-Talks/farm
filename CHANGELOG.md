@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **TypeScript strict mode**: Enabled `noImplicitAny`, `strictBindCallApply`, `strictFunctionTypes`, `noImplicitThis`, `alwaysStrict`, `useUnknownInCatchVariables`, and `noFallthroughCasesInSwitch` in tsconfig.json. Combined with existing `strictNullChecks`, the project now enforces near-full TypeScript strict mode (only `strictPropertyInitialization` excluded for NestJS DTO/entity compatibility).
+- **WebSocket real-time events**: Added `EventsGateway` (`/events` namespace) with JWT-authenticated handshake via Socket.IO. Emits `component.created`, `component.updated`, `component.deleted`, `deployment.created`, and `deployment.updated` events. Clients connect with `io("ws://host:port/events", { auth: { token: "jwt" } })`.
 
 ## [0.5.0] - 2026-03-08
 

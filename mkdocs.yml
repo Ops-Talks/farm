@@ -92,6 +92,7 @@ nav:
     - Contributing: developer-guide/contributing.md
     - Testing: developer-guide/testing.md
     - Observability: developer-guide/observability.md
+    - WebSockets: developer-guide/websockets.md
     - System Design: developer-guide/system-design.md
   - API Reference:
     - api-reference/index.md

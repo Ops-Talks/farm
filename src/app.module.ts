@@ -19,6 +19,7 @@ import { EnvironmentsModule } from "./environments/environments.module";
 import { TeamsModule } from "./teams/teams.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
+import { EventsModule } from "./common/events/events.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
@@ -77,6 +78,7 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
       },
     }),
     QueuesModule.register(),
+    EventsModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

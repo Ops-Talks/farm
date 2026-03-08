@@ -739,12 +739,12 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
 
 #### FARM-S58: WebSocket Real-Time Updates
 
-- [ ] FARM-T158: Add WebSocket gateway for live events
-  - [ ] FARM-ST175: Install `@nestjs/websockets` and `@nestjs/platform-socket.io` packages
-  - [ ] FARM-ST176: Create `EventsGateway` with `@WebSocketGateway()` decorator
-  - [ ] FARM-ST177: Emit events on deployment status changes (`deployment.created`, `deployment.updated`)
-  - [ ] FARM-ST178: Emit events on catalog changes (`component.created`, `component.updated`, `component.deleted`)
-  - [ ] FARM-ST179: Add JWT-based authentication to WebSocket handshake
+- [x] FARM-T158: Add WebSocket gateway for live events
+  - [x] FARM-ST175: Install `@nestjs/websockets` and `@nestjs/platform-socket.io` packages
+  - [x] FARM-ST176: Create `EventsGateway` with `@WebSocketGateway()` decorator
+  - [x] FARM-ST177: Emit events on deployment status changes (`deployment.created`, `deployment.updated`)
+  - [x] FARM-ST178: Emit events on catalog changes (`component.created`, `component.updated`, `component.deleted`)
+  - [x] FARM-ST179: Add JWT-based authentication to WebSocket handshake
 
 ---
 

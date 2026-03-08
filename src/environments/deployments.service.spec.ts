@@ -9,6 +9,7 @@ import {
   ComponentKind,
   ComponentLifecycle,
 } from "../catalog/entities/component.entity";
+import { EventsGateway } from "../common/events/events.gateway";
 
 describe("DeploymentsService", () => {
   let service: DeploymentsService;
@@ -93,6 +94,11 @@ describe("DeploymentsService", () => {
       createQueryBuilder: jest.fn().mockReturnValue(componentQb),
     };
 
+    const mockEventsGateway = {
+      emitDeploymentCreated: jest.fn(),
+      emitDeploymentUpdated: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DeploymentsService,
@@ -107,6 +113,10 @@ describe("DeploymentsService", () => {
         {
           provide: getRepositoryToken(Component),
           useValue: componentRepo,
+        },
+        {
+          provide: EventsGateway,
+          useValue: mockEventsGateway,
         },
       ],
     }).compile();
