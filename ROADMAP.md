@@ -340,29 +340,29 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST91 | Sub-task | Add YAML import option (`POST /api/v1/catalog/register-yaml`) | `DONE` |
 | FARM-ST92 | Sub-task | Add repository discovery trigger (`POST /api/v1/catalog/locations`) | `DONE` |
 
-### FARM-E21: Deployment Matrix UI `TODO`
+### FARM-E21: Deployment Matrix UI `DONE`
 
 > Visual deployment matrix and deployment tracking interface.
 
-#### FARM-S76: Deployment Matrix View `TODO`
+#### FARM-S76: Deployment Matrix View `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T25 | Task | Deployment matrix page | `TODO` |
-| FARM-ST93 | Sub-task | Fetch `GET /api/v1/deployments/matrix` with filters | `TODO` |
-| FARM-ST94 | Sub-task | Render matrix grid (components as rows, environments as columns) | `TODO` |
-| FARM-ST95 | Sub-task | Color-code cells by deployment status | `TODO` |
-| FARM-ST96 | Sub-task | Add filters by kind group, owner, and lifecycle | `TODO` |
-| FARM-ST97 | Sub-task | Subscribe to WebSocket for real-time deployment status updates | `TODO` |
+| FARM-T25 | Task | Deployment matrix page | `DONE` |
+| FARM-ST93 | Sub-task | Fetch `GET /api/v1/deployments/matrix` with filters | `DONE` |
+| FARM-ST94 | Sub-task | Render matrix grid (components as rows, environments as columns) | `DONE` |
+| FARM-ST95 | Sub-task | Color-code cells by deployment status | `DONE` |
+| FARM-ST96 | Sub-task | Add filters by kind group, owner, and lifecycle | `DONE` |
+| FARM-ST97 | Sub-task | Subscribe to WebSocket for real-time deployment status updates | `DONE` |
 
-#### FARM-S77: Deployment History `TODO`
+#### FARM-S77: Deployment History `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T26 | Task | Deployment list and detail pages | `TODO` |
-| FARM-ST98 | Sub-task | Fetch `GET /api/v1/deployments` with filters (component, environment, status) | `TODO` |
-| FARM-ST99 | Sub-task | Display deployment timeline with status transitions | `TODO` |
-| FARM-ST100 | Sub-task | Show deployment metadata and version info | `TODO` |
+| FARM-T26 | Task | Deployment list and detail pages | `DONE` |
+| FARM-ST98 | Sub-task | Fetch `GET /api/v1/deployments` with filters (component, environment, status) | `DONE` |
+| FARM-ST99 | Sub-task | Display deployment timeline with status transitions | `DONE` |
+| FARM-ST100 | Sub-task | Show deployment metadata and version info | `DONE` |
 
 ### FARM-E22: Jobs and Queues UI `TODO`
 

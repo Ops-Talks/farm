@@ -221,3 +221,20 @@ export interface HealthStatus {
   error: Record<string, { status: string; [key: string]: unknown }>;
   details: Record<string, { status: string; [key: string]: unknown }>;
 }
+
+// -- Deployment Matrix --
+
+export interface DeploymentMatrixEnvironment {
+  environmentId: string;
+  environmentName: string;
+  version: string | null;
+  status: DeploymentStatus | null;
+  deployedAt: string | null;
+}
+
+export interface DeploymentMatrixRow {
+  id: string;
+  name: string;
+  kind: string;
+  environments: DeploymentMatrixEnvironment[];
+}

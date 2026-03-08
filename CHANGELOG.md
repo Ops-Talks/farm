@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Catalog detail page**: Dynamic `/catalog/[id]` route displaying component metadata, lifecycle badge, owner, tags, links, external metadata, dependency graph, and recent deployment history.
 - **Component registration form**: Form-based and YAML import modes for `POST /catalog/components` and `POST /catalog/register-yaml`. Includes kind/lifecycle selects, tag input with preview, and validation error display.
 - **API client extensions**: Added `catalog.registerYaml()` and `catalog.discoverFromLocation()` methods. Updated `listComponents` to use `kindGroup` filter matching backend API.
+- **Deployment matrix page (FARM-E21)**: Visual grid with components as rows, environments as columns, color-coded cells by deployment status (succeeded/pending/in-progress/failed/rolled-back). KindGroup filter tabs and WebSocket live refresh on deployment changes.
+- **Deployment history page**: Filterable deployment list at `/deployments/history` with status tabs, component/environment links, version, deployer, and pagination.
+- **Deployment matrix types**: Added `DeploymentMatrixRow` and `DeploymentMatrixEnvironment` interfaces. Fixed deployment API routes from `/v1/environments/deployments` to `/v1/deployments`. Added `deployments.latest()` method.
 
 ## [0.6.0] - 2026-03-08
 

@@ -1,6 +1,7 @@
 import type {
   CatalogComponent,
   Deployment,
+  DeploymentMatrixRow,
   Environment,
   ErrorResponse,
   HealthStatus,
@@ -267,29 +268,33 @@ export const deployments = {
   list(
     query?: PaginationQuery & { componentId?: string; environmentId?: string; status?: string },
   ): Promise<PaginatedResponse<Deployment>> {
-    return request(`/v1/environments/deployments${toQueryString(query ?? {})}`);
+    return request(`/v1/deployments${toQueryString(query ?? {})}`);
   },
 
   get(id: string): Promise<Deployment> {
-    return request(`/v1/environments/deployments/${id}`);
+    return request(`/v1/deployments/${id}`);
   },
 
   create(data: Partial<Deployment>): Promise<Deployment> {
-    return request("/v1/environments/deployments", {
+    return request("/v1/deployments", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
   update(id: string, data: Partial<Deployment>): Promise<Deployment> {
-    return request(`/v1/environments/deployments/${id}`, {
+    return request(`/v1/deployments/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   },
 
-  matrix(query?: { kind?: string; lifecycle?: string; owner?: string }): Promise<unknown> {
+  matrix(query?: { kindGroup?: string; lifecycle?: string; owner?: string }): Promise<DeploymentMatrixRow[]> {
     return request(`/v1/deployments/matrix${toQueryString(query ?? {})}`);
+  },
+
+  latest(componentId: string): Promise<Deployment[]> {
+    return request(`/v1/deployments/latest?componentId=${encodeURIComponent(componentId)}`);
   },
 };
 
