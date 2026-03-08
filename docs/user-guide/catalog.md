@@ -83,7 +83,7 @@ Farm supports registering components using a `catalog-info.yaml` structure, simi
 To register a component via YAML content:
 
 ```bash
-curl -X POST http://localhost:3000/api/catalog/register-yaml \
+curl -X POST http://localhost:3000/api/v1/catalog/register-yaml \
   -H "Content-Type: application/json" \
   -d '{
     "yaml": "apiVersion: farm.io/v1alpha1\nkind: Component\nmetadata:\n  name: user-service\n  description: Handles user profiles\nspec:\n  type: service\n  owner: platform-team\n  lifecycle: production"
@@ -110,7 +110,7 @@ spec:
 To automatically discover and register all `catalog-info.yaml` files from a git repository, use the `/locations` endpoint:
 
 ```bash
-curl -X POST http://localhost:3000/api/catalog/locations \
+curl -X POST http://localhost:3000/api/v1/catalog/locations \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://github.com/my-org/my-repository.git"
@@ -128,20 +128,20 @@ You can also create a component using a standard JSON payload:
 To retrieve all components:
 
 ```bash
-curl http://localhost:3000/api/catalog/components
+curl http://localhost:3000/api/v1/catalog/components
 ```
 
 To filter components by domain group:
 
 ```bash
 # List only infrastructure components
-curl http://localhost:3000/api/catalog/components?kindGroup=infra
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=infra
 
 # List only data team components
-curl http://localhost:3000/api/catalog/components?kindGroup=data
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=data
 
 # List only security components
-curl http://localhost:3000/api/catalog/components?kindGroup=security
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=security
 ```
 
 ### Getting a Specific Component
@@ -149,7 +149,7 @@ curl http://localhost:3000/api/catalog/components?kindGroup=security
 To retrieve a component by ID:
 
 ```bash
-curl http://localhost:3000/api/catalog/components/{component-id}
+curl http://localhost:3000/api/v1/catalog/components/{component-id}
 ```
 
 ### Updating a Component
@@ -157,7 +157,7 @@ curl http://localhost:3000/api/catalog/components/{component-id}
 To update an existing component:
 
 ```bash
-curl -X PATCH http://localhost:3000/api/catalog/components/{component-id} \
+curl -X PATCH http://localhost:3000/api/v1/catalog/components/{component-id} \
   -H "Content-Type: application/json" \
   -d '{
     "description": "Updated description",
@@ -170,7 +170,7 @@ curl -X PATCH http://localhost:3000/api/catalog/components/{component-id} \
 To remove a component from the catalog:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/catalog/components/{component-id}
+curl -X DELETE http://localhost:3000/api/v1/catalog/components/{component-id}
 ```
 
 ## Best Practices

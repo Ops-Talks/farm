@@ -12,7 +12,7 @@ As Farm grows and more plugins are added, it's important to have a central place
 
 ## How it Works
 
-The backend exposes an API endpoint (`/api/plugins`) that lists all modules that have been registered with the `PluginManager`.
+The backend exposes an API endpoint (`/api/v1/plugins`) that lists all modules that have been registered with the `PluginManager`.
 
 ### Active Plugins
 

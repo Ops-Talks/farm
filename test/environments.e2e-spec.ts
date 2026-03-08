@@ -34,7 +34,7 @@ describe("Environments CRUD (e2e)", () => {
     };
 
     const createRes = await request(app.getHttpServer())
-      .post("/api/environments")
+      .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .send(createDto)
       .expect(201);
@@ -49,7 +49,7 @@ describe("Environments CRUD (e2e)", () => {
 
     // Step 2: List all environments
     const listRes = await request(app.getHttpServer())
-      .get("/api/environments")
+      .get("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -67,7 +67,7 @@ describe("Environments CRUD (e2e)", () => {
 
     // Step 3: Get by ID
     const getRes = await request(app.getHttpServer())
-      .get(`/api/environments/${envId}`)
+      .get(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -82,7 +82,7 @@ describe("Environments CRUD (e2e)", () => {
     };
 
     const updateRes = await request(app.getHttpServer())
-      .patch(`/api/environments/${envId}`)
+      .patch(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
       .send(updateDto)
       .expect(200);
@@ -92,13 +92,13 @@ describe("Environments CRUD (e2e)", () => {
 
     // Step 5: Delete the environment
     await request(app.getHttpServer())
-      .delete(`/api/environments/${envId}`)
+      .delete(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
-      .get(`/api/environments/${envId}`)
+      .get(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
@@ -110,13 +110,13 @@ describe("Environments CRUD (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/environments")
+      .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .send(envDto)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post("/api/environments")
+      .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .send(envDto)
       .expect(409);
@@ -124,7 +124,7 @@ describe("Environments CRUD (e2e)", () => {
 
   it("should reject creation with invalid type", async () => {
     await request(app.getHttpServer())
-      .post("/api/environments")
+      .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "bad-type-env",

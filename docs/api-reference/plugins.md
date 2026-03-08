@@ -8,9 +8,9 @@ For interactive documentation, including all available endpoints, data models, a
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/plugins` | List all registered plugins | JWT + Admin |
-| `GET` | `/api/plugins/menu-items` | Get all plugin menu items | JWT |
-| `GET` | `/api/plugins/routes` | Get all plugin route contributions | JWT + Admin |
+| `GET` | `/api/v1/plugins` | List all registered plugins | JWT + Admin |
+| `GET` | `/api/v1/plugins/menu-items` | Get all plugin menu items | JWT |
+| `GET` | `/api/v1/plugins/routes` | Get all plugin route contributions | JWT + Admin |
 
 ## Caching
 

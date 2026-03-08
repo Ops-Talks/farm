@@ -4,7 +4,7 @@ The Teams API manages team ownership and membership within the Farm platform.
 
 ## Base Path
 
-`/api/teams`
+`/api/v1/teams`
 
 ## Endpoints
 
@@ -36,7 +36,7 @@ Teams are categorized by type:
 ## Create Team
 
 ```http
-POST /api/teams
+POST /api/v1/teams
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -72,7 +72,7 @@ Authorization: Bearer <token>
 Supports pagination via `skip` and `take` query parameters (defaults: `skip=0`, `take=20`, max `take=100`).
 
 ```http
-GET /api/teams?skip=0&take=20
+GET /api/v1/teams?skip=0&take=20
 Authorization: Bearer <token>
 ```
 
@@ -97,14 +97,14 @@ Authorization: Bearer <token>
 ## Get Team by ID
 
 ```http
-GET /api/teams/:id
+GET /api/v1/teams/:id
 Authorization: Bearer <token>
 ```
 
 ## Update Team
 
 ```http
-PATCH /api/teams/:id
+PATCH /api/v1/teams/:id
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -116,7 +116,7 @@ Authorization: Bearer <token>
 ## Delete Team
 
 ```http
-DELETE /api/teams/:id
+DELETE /api/v1/teams/:id
 Authorization: Bearer <token>
 ```
 
@@ -127,7 +127,7 @@ Returns `204 No Content` on success.
 ### Add Member
 
 ```http
-POST /api/teams/:id/members/:userId
+POST /api/v1/teams/:id/members/:userId
 Authorization: Bearer <token>
 ```
 
@@ -136,7 +136,7 @@ Returns `201 Created` with the updated team (including members).
 ### Remove Member
 
 ```http
-DELETE /api/teams/:id/members/:userId
+DELETE /api/v1/teams/:id/members/:userId
 Authorization: Bearer <token>
 ```
 
@@ -145,7 +145,7 @@ Returns `204 No Content` on success.
 ### List Members
 
 ```http
-GET /api/teams/:id/members
+GET /api/v1/teams/:id/members
 Authorization: Bearer <token>
 ```
 
@@ -154,7 +154,7 @@ Returns an array of user objects belonging to the team.
 ## Team Components
 
 ```http
-GET /api/teams/:id/components
+GET /api/v1/teams/:id/components
 Authorization: Bearer <token>
 ```
 

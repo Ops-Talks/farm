@@ -1,4 +1,4 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, VERSION_NEUTRAL } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import {
   HealthCheckService,
@@ -15,7 +15,7 @@ import { ConfigService } from "@nestjs/config";
  * and database connectivity using Terminus.
  */
 @ApiTags("Health")
-@Controller("health")
+@Controller({ path: "health", version: VERSION_NEUTRAL })
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,

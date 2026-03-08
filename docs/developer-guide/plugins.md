@@ -37,7 +37,7 @@ The `PluginManagerModule` is a global module responsible for:
 
 1.  **Registry**: Maintaining a central registry of all active plugins and their metadata.
 2.  **Dynamic Loading**: Using `forRoot` to dynamically import and configure plugin modules.
-3.  **Discovery API**: Exposing an endpoint (`GET /api/plugins`) that lists all active features and their versions.
+3.  **Discovery API**: Exposing an endpoint (`GET /api/v1/plugins`) that lists all active features and their versions.
 
 ## Creating a New Plugin
 

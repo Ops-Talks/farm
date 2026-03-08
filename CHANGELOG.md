@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Bull Board dashboard**: Queue monitoring UI at `/api/admin/queues` via `@bull-board/nestjs` and `@bull-board/express`.
 - **QueuesModule**: Centralized queue module with conditional loading -- BullMQ/Bull Board skipped in test mode to prevent Redis connection leaks.
 - **Database seeder**: Idempotent seed runner (`npm run seed` / `make seed`) with initial data: 2 users (admin + developer), 2 teams, 3 components (service, library, website), 2 environments (development, staging). Guarded against production execution.
+- **API versioning**: Enabled URI-based versioning (`/api/v1/...`) via `VersioningType.URI` with `defaultVersion: '1'`. Health (`/api/health`) and root (`/api`) endpoints remain version-neutral. All E2E tests updated to versioned paths.
 
 ## [0.5.0] - 2026-03-08
 

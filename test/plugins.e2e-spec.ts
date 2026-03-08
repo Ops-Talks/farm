@@ -30,7 +30,7 @@ describe("Plugin Manager (e2e)", () => {
   describe("GET /api/plugins", () => {
     it("should return all 5 core plugins with name, version, and description", async () => {
       const res = await request(app.getHttpServer())
-        .get("/api/plugins")
+        .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
 
@@ -55,7 +55,7 @@ describe("Plugin Manager (e2e)", () => {
 
     it("should include core-catalog with correct metadata", async () => {
       const res = await request(app.getHttpServer())
-        .get("/api/plugins")
+        .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
 
@@ -72,7 +72,7 @@ describe("Plugin Manager (e2e)", () => {
     });
 
     it("should reject unauthenticated requests", async () => {
-      await request(app.getHttpServer()).get("/api/plugins").expect(401);
+      await request(app.getHttpServer()).get("/api/v1/plugins").expect(401);
     });
 
     it("should reject non-admin users", async () => {
@@ -92,14 +92,14 @@ describe("Plugin Manager (e2e)", () => {
 
       // Re-login to get a token reflecting the demoted role
       const loginRes = await request(app.getHttpServer())
-        .post("/api/auth/login")
+        .post("/api/v1/auth/login")
         .send({ username: "plugin_viewer", password: "ViewerPass1" })
         .expect(200);
 
       const viewerToken = (loginRes.body as { token: string }).token;
 
       await request(app.getHttpServer())
-        .get("/api/plugins")
+        .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${viewerToken}`)
         .expect(403);
     });
@@ -110,7 +110,7 @@ describe("Plugin Manager (e2e)", () => {
   describe("GET /api/plugins/:name (non-existent route)", () => {
     it("should return 404 for an unknown sub-path", async () => {
       await request(app.getHttpServer())
-        .get("/api/plugins/nonexistent")
+        .get("/api/v1/plugins/nonexistent")
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(404);
     });
@@ -119,7 +119,7 @@ describe("Plugin Manager (e2e)", () => {
   describe("GET /api/plugins/menu-items", () => {
     it("should return an array of menu items", async () => {
       const res = await request(app.getHttpServer())
-        .get("/api/plugins/menu-items")
+        .get("/api/v1/plugins/menu-items")
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
 
@@ -130,7 +130,7 @@ describe("Plugin Manager (e2e)", () => {
   describe("GET /api/plugins/routes", () => {
     it("should return an array of route contributions", async () => {
       const res = await request(app.getHttpServer())
-        .get("/api/plugins/routes")
+        .get("/api/v1/plugins/routes")
         .set("Authorization", `Bearer ${adminToken}`)
         .expect(200);
 

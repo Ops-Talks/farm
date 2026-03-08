@@ -8,11 +8,11 @@ For interactive documentation, including all available endpoints, data models, a
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/environments` | List all environments (ordered by display order) | JWT |
-| `GET` | `/api/environments/:id` | Get an environment by ID | JWT |
-| `POST` | `/api/environments` | Create a new environment | JWT + Admin |
-| `PATCH` | `/api/environments/:id` | Update an environment | JWT + Admin |
-| `DELETE` | `/api/environments/:id` | Delete an environment | JWT + Admin |
+| `GET` | `/api/v1/environments` | List all environments (ordered by display order) | JWT |
+| `GET` | `/api/v1/environments/:id` | Get an environment by ID | JWT |
+| `POST` | `/api/v1/environments` | Create a new environment | JWT + Admin |
+| `PATCH` | `/api/v1/environments/:id` | Update an environment | JWT + Admin |
+| `DELETE` | `/api/v1/environments/:id` | Delete an environment | JWT + Admin |
 
 ## Environment Types
 
@@ -26,7 +26,7 @@ For interactive documentation, including all available endpoints, data models, a
 ## Creating an Environment
 
 ```bash
-curl -X POST http://localhost:3000/api/environments \
+curl -X POST http://localhost:3000/api/v1/environments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -47,7 +47,7 @@ Environments are returned sorted by the `order` field. Supports pagination via `
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/environments?skip=0&take=20"
+  "http://localhost:3000/api/v1/environments?skip=0&take=20"
 ```
 
 ### Paginated Response (200)
@@ -71,7 +71,7 @@ curl -H "Authorization: Bearer <token>" \
 ## Updating an Environment
 
 ```bash
-curl -X PATCH http://localhost:3000/api/environments/{id} \
+curl -X PATCH http://localhost:3000/api/v1/environments/{id} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -85,6 +85,6 @@ curl -X PATCH http://localhost:3000/api/environments/{id} \
 Deleting an environment will cascade-delete all associated deployments.
 
 ```bash
-curl -X DELETE http://localhost:3000/api/environments/{id} \
+curl -X DELETE http://localhost:3000/api/v1/environments/{id} \
   -H "Authorization: Bearer <token>"
 ```

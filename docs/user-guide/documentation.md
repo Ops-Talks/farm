@@ -42,7 +42,7 @@ All documentation endpoints require a valid JWT token and the `admin` role. Incl
 To create a new documentation entry:
 
 ```bash
-curl -X POST http://localhost:3000/api/docs \
+curl -X POST http://localhost:3000/api/v1/docs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
   -d '{
@@ -57,7 +57,7 @@ curl -X POST http://localhost:3000/api/docs \
 You can optionally nest the entry under a parent and control sort order:
 
 ```bash
-curl -X POST http://localhost:3000/api/docs \
+curl -X POST http://localhost:3000/api/v1/docs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
   -d '{
@@ -85,7 +85,7 @@ To get documentation for a specific component:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
-  "http://localhost:3000/api/docs?componentId={component-id}"
+  "http://localhost:3000/api/v1/docs?componentId={component-id}"
 ```
 
 ### Searching Documentation

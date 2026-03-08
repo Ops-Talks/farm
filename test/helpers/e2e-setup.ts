@@ -2,6 +2,7 @@ import {
   ClassSerializerInterceptor,
   INestApplication,
   ValidationPipe,
+  VersioningType,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Test, TestingModule } from "@nestjs/testing";
@@ -30,6 +31,10 @@ export async function createE2EApp(): Promise<INestApplication<App>> {
 
   const app = moduleFixture.createNestApplication();
   app.setGlobalPrefix("api");
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: "1",
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -64,7 +69,7 @@ export async function registerAndLogin(
   };
 
   await request(app.getHttpServer())
-    .post("/api/auth/register")
+    .post("/api/v1/auth/register")
     .send(user)
     .expect(201);
 
@@ -73,7 +78,7 @@ export async function registerAndLogin(
   await userRepo.update({ username: user.username }, { roles: ["admin"] });
 
   const loginRes = await request(app.getHttpServer())
-    .post("/api/auth/login")
+    .post("/api/v1/auth/login")
     .send({ username: user.username, password: user.password })
     .expect(200);
 

@@ -32,7 +32,7 @@ Each user in Farm has the following properties:
 To create a new user account:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
@@ -61,7 +61,7 @@ Response:
 To authenticate and receive a JWT access token and refresh token:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/login \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
@@ -98,7 +98,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 When your access token expires, use the refresh token to obtain a new one without re-entering credentials:
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/refresh \
+curl -X POST http://localhost:3000/api/v1/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
@@ -122,7 +122,7 @@ The refresh token is rotated on each use. The old refresh token is immediately i
 To retrieve all registered users:
 
 ```bash
-curl http://localhost:3000/api/auth/users
+curl http://localhost:3000/api/v1/auth/users
 ```
 
 ## Error Handling

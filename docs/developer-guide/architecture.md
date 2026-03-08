@@ -119,7 +119,7 @@ The catalog organizes 23 component kinds across four domain groups, enabling mul
 | `data` | Data engineering teams | dataset, data_pipeline, ml_model |
 | `security` | Security teams | secret, policy, certificate |
 
-Use the `kindGroup` query parameter on catalog endpoints to filter components by domain (e.g., `GET /api/catalog/components?kindGroup=infra`).
+Use the `kindGroup` query parameter on catalog endpoints to filter components by domain (e.g., `GET /api/v1/catalog/components?kindGroup=infra`).
 
 **Components:**
 
@@ -259,7 +259,7 @@ Farm uses a global exception filter (`AllExceptionsFilter`) to ensure all errors
 {
   "statusCode": 400,
   "timestamp": "2023-10-27T10:00:00.000Z",
-  "path": "/api/catalog/components",
+  "path": "/api/v1/catalog/components",
   "message": "Validation failed"
 }
 ```
@@ -276,11 +276,11 @@ Farm integrates `@nestjs/cache-manager` with Redis for response caching. The cac
 
 Cached endpoints:
 
-- `GET /api/catalog/components` -- component listing
-- `GET /api/catalog/components/:id` -- component detail
-- `GET /api/plugins` -- plugin listing
-- `GET /api/plugins/menu-items` -- plugin menu items
-- `GET /api/plugins/routes` -- plugin route contributions
+- `GET /api/v1/catalog/components` -- component listing
+- `GET /api/v1/catalog/components/:id` -- component detail
+- `GET /api/v1/plugins` -- plugin listing
+- `GET /api/v1/plugins/menu-items` -- plugin menu items
+- `GET /api/v1/plugins/routes` -- plugin route contributions
 
 Cache invalidation is triggered automatically on component create, update, delete, and YAML registration operations via `cacheManager.clear()`.
 

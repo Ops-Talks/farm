@@ -294,11 +294,11 @@ All endpoints follow RESTful conventions:
 
 | Method | Path Pattern | Purpose |
 |--------|--------------|---------|
-| GET | /api/{resource} | List resources |
-| GET | /api/{resource}/:id | Get single resource |
-| POST | /api/{resource} | Create resource |
-| PATCH | /api/{resource}/:id | Update resource |
-| DELETE | /api/{resource}/:id | Delete resource |
+| GET | /api/v1/{resource} | List resources |
+| GET | /api/v1/{resource}/:id | Get single resource |
+| POST | /api/v1/{resource} | Create resource |
+| PATCH | /api/v1/{resource}/:id | Update resource |
+| DELETE | /api/v1/{resource}/:id | Delete resource |
 
 ### Request Validation
 

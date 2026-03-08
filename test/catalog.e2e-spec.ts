@@ -38,7 +38,7 @@ describe("Catalog CRUD (e2e)", () => {
     };
 
     const createRes = await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send(createDto)
       .expect(201);
@@ -54,7 +54,7 @@ describe("Catalog CRUD (e2e)", () => {
 
     // Step 2: List all components and verify the created one is present
     const listRes = await request(app.getHttpServer())
-      .get("/api/catalog/components")
+      .get("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -72,7 +72,7 @@ describe("Catalog CRUD (e2e)", () => {
 
     // Step 3: Get the component by ID
     const getRes = await request(app.getHttpServer())
-      .get(`/api/catalog/components/${componentId}`)
+      .get(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -87,7 +87,7 @@ describe("Catalog CRUD (e2e)", () => {
     };
 
     const updateRes = await request(app.getHttpServer())
-      .patch(`/api/catalog/components/${componentId}`)
+      .patch(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .send(updateDto)
       .expect(200);
@@ -98,20 +98,20 @@ describe("Catalog CRUD (e2e)", () => {
 
     // Step 5: Delete the component
     await request(app.getHttpServer())
-      .delete(`/api/catalog/components/${componentId}`)
+      .delete(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
-      .get(`/api/catalog/components/${componentId}`)
+      .get(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
 
   it("should filter components by kindGroup", async () => {
     await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "e2e-infra-component",
@@ -121,7 +121,7 @@ describe("Catalog CRUD (e2e)", () => {
       .expect(201);
 
     const infraRes = await request(app.getHttpServer())
-      .get("/api/catalog/components?kindGroup=infra")
+      .get("/api/v1/catalog/components?kindGroup=infra")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -149,7 +149,7 @@ describe("Catalog CRUD (e2e)", () => {
 
   it("should reject creation with invalid kind", async () => {
     await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "bad-kind",

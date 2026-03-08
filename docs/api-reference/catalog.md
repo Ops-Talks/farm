@@ -8,17 +8,17 @@ For interactive documentation, including all available endpoints, data models, a
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/catalog/components` | List all components | JWT |
-| `GET` | `/api/catalog/components/:id` | Get a component by ID | JWT |
-| `POST` | `/api/catalog/components` | Create a new component | JWT + Admin |
-| `PATCH` | `/api/catalog/components/:id` | Update a component | JWT + Admin |
-| `DELETE` | `/api/catalog/components/:id` | Delete a component | JWT + Admin |
-| `POST` | `/api/catalog/register-yaml` | Register a component from YAML | JWT + Admin |
-| `POST` | `/api/catalog/locations` | Discover components from a git repo | JWT + Admin |
+| `GET` | `/api/v1/catalog/components` | List all components | JWT |
+| `GET` | `/api/v1/catalog/components/:id` | Get a component by ID | JWT |
+| `POST` | `/api/v1/catalog/components` | Create a new component | JWT + Admin |
+| `PATCH` | `/api/v1/catalog/components/:id` | Update a component | JWT + Admin |
+| `DELETE` | `/api/v1/catalog/components/:id` | Delete a component | JWT + Admin |
+| `POST` | `/api/v1/catalog/register-yaml` | Register a component from YAML | JWT + Admin |
+| `POST` | `/api/v1/catalog/locations` | Discover components from a git repo | JWT + Admin |
 
 ## Filtering by Domain Group
 
-The `GET /api/catalog/components` endpoint supports a `kindGroup` query parameter to filter components by team domain:
+The `GET /api/v1/catalog/components` endpoint supports a `kindGroup` query parameter to filter components by team domain:
 
 | Value | Kinds Included |
 |-------|---------------|
@@ -32,7 +32,7 @@ The `GET /api/catalog/components` endpoint supports a `kindGroup` query paramete
 ```bash
 # List only infrastructure components
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/catalog/components?kindGroup=infra
+  http://localhost:3000/api/v1/catalog/components?kindGroup=infra
 ```
 
 ## Pagination
@@ -49,7 +49,7 @@ All list endpoints return paginated responses. The following query parameters ar
 ```bash
 # List components with pagination and filtering
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/catalog/components?kindGroup=infra&skip=0&take=10"
+  "http://localhost:3000/api/v1/catalog/components?kindGroup=infra&skip=0&take=10"
 ```
 
 ### Paginated Response Format
@@ -77,7 +77,7 @@ The following GET endpoints use automatic response caching:
 
 | Endpoint | Cached | TTL |
 |----------|--------|-----|
-| `GET /api/catalog/components` | Yes | Configured via `CACHE_TTL` env var (default: 30s) |
-| `GET /api/catalog/components/:id` | Yes | Configured via `CACHE_TTL` env var (default: 30s) |
+| `GET /api/v1/catalog/components` | Yes | Configured via `CACHE_TTL` env var (default: 30s) |
+| `GET /api/v1/catalog/components/:id` | Yes | Configured via `CACHE_TTL` env var (default: 30s) |
 
 Cache is automatically invalidated when components are created, updated, deleted, or registered via YAML. No manual cache management is required.

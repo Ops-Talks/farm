@@ -40,7 +40,7 @@ spec:
 `;
 
     const res = await request(app.getHttpServer())
-      .post("/api/catalog/register-yaml")
+      .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
       .send({ yaml: yamlContent })
       .expect(201);
@@ -53,7 +53,7 @@ spec:
 
     // Verify the component appears in the catalog listing
     const listRes = await request(app.getHttpServer())
-      .get("/api/catalog/components")
+      .get("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -81,7 +81,7 @@ spec:
 `;
 
     await request(app.getHttpServer())
-      .post("/api/catalog/register-yaml")
+      .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
       .send({ yaml: invalidYaml })
       .expect(400);
@@ -98,7 +98,7 @@ spec:
 `;
 
     await request(app.getHttpServer())
-      .post("/api/catalog/register-yaml")
+      .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
       .send({ yaml: incompleteYaml })
       .expect(400);
@@ -106,7 +106,7 @@ spec:
 
   it("should reject an empty yaml field", async () => {
     await request(app.getHttpServer())
-      .post("/api/catalog/register-yaml")
+      .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
       .send({ yaml: "" })
       .expect(400);

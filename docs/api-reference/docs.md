@@ -8,15 +8,15 @@ For interactive documentation, including all available endpoints, data models, a
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/docs` | List documentation entries (paginated) | JWT |
-| `GET` | `/api/docs/tree` | Get hierarchical documentation tree | JWT |
-| `GET` | `/api/docs/search` | Search documentation by query | JWT |
-| `GET` | `/api/docs/:id` | Get a documentation entry by ID | JWT |
-| `GET` | `/api/docs/:id/content` | Get raw content of a documentation entry | JWT |
-| `GET` | `/api/docs/:id/rendered` | Get rendered HTML of a documentation entry | JWT |
-| `POST` | `/api/docs` | Create a new documentation entry | JWT + Admin |
-| `PATCH` | `/api/docs/:id` | Update a documentation entry | JWT + Admin |
-| `DELETE` | `/api/docs/:id` | Delete a documentation entry | JWT + Admin |
+| `GET` | `/api/v1/docs` | List documentation entries (paginated) | JWT |
+| `GET` | `/api/v1/docs/tree` | Get hierarchical documentation tree | JWT |
+| `GET` | `/api/v1/docs/search` | Search documentation by query | JWT |
+| `GET` | `/api/v1/docs/:id` | Get a documentation entry by ID | JWT |
+| `GET` | `/api/v1/docs/:id/content` | Get raw content of a documentation entry | JWT |
+| `GET` | `/api/v1/docs/:id/rendered` | Get rendered HTML of a documentation entry | JWT |
+| `POST` | `/api/v1/docs` | Create a new documentation entry | JWT + Admin |
+| `PATCH` | `/api/v1/docs/:id` | Update a documentation entry | JWT + Admin |
+| `DELETE` | `/api/v1/docs/:id` | Delete a documentation entry | JWT + Admin |
 
 ## Properties
 
@@ -36,7 +36,7 @@ You can also filter by `componentId`:
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/docs?componentId=<uuid>&skip=0&take=10"
+  "http://localhost:3000/api/v1/docs?componentId=<uuid>&skip=0&take=10"
 ```
 
 ### Paginated Response (200)
@@ -64,7 +64,7 @@ curl -H "Authorization: Bearer <token>" \
 ## Creating Documentation
 
 ```bash
-curl -X POST http://localhost:3000/api/docs \
+curl -X POST http://localhost:3000/api/v1/docs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{

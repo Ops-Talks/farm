@@ -8,12 +8,12 @@ For interactive documentation, including all available endpoints, data models, a
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/deployments` | List deployments with optional filters | JWT |
-| `GET` | `/api/deployments/matrix` | Get deployment matrix (latest version per component per environment) | JWT |
-| `GET` | `/api/deployments/latest` | Get latest successful deployment per environment for a component | JWT |
-| `GET` | `/api/deployments/:id` | Get a deployment by ID | JWT |
-| `POST` | `/api/deployments` | Record a new deployment | JWT + Admin |
-| `PATCH` | `/api/deployments/:id` | Update deployment status | JWT + Admin |
+| `GET` | `/api/v1/deployments` | List deployments with optional filters | JWT |
+| `GET` | `/api/v1/deployments/matrix` | Get deployment matrix (latest version per component per environment) | JWT |
+| `GET` | `/api/v1/deployments/latest` | Get latest successful deployment per environment for a component | JWT |
+| `GET` | `/api/v1/deployments/:id` | Get a deployment by ID | JWT |
+| `POST` | `/api/v1/deployments` | Record a new deployment | JWT + Admin |
+| `PATCH` | `/api/v1/deployments/:id` | Update deployment status | JWT + Admin |
 
 ## Deployment Status
 
@@ -42,7 +42,7 @@ Invalid transitions will return a `400 Bad Request` error.
 ## Recording a Deployment
 
 ```bash
-curl -X POST http://localhost:3000/api/deployments \
+curl -X POST http://localhost:3000/api/v1/deployments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -65,15 +65,15 @@ Supports optional filters for `componentId`, `environmentId`, and `status`. All 
 ```bash
 # List all deployments with pagination
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/deployments?skip=0&take=20"
+  "http://localhost:3000/api/v1/deployments?skip=0&take=20"
 
 # Filter by component
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/deployments?componentId=<uuid>&skip=0&take=10"
+  "http://localhost:3000/api/v1/deployments?componentId=<uuid>&skip=0&take=10"
 
 # Filter by environment and status
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/deployments?environmentId=<uuid>&status=succeeded"
+  "http://localhost:3000/api/v1/deployments?environmentId=<uuid>&status=succeeded"
 ```
 
 ### Paginated Response (200)
@@ -101,7 +101,7 @@ Returns a dashboard-ready view showing the latest successful deployment for each
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/deployments/matrix
+  http://localhost:3000/api/v1/deployments/matrix
 ```
 
 **Example response:**
@@ -126,13 +126,13 @@ Returns the latest successful deployment for each environment of a given compone
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  "http://localhost:3000/api/deployments/latest?componentId=<uuid>"
+  "http://localhost:3000/api/v1/deployments/latest?componentId=<uuid>"
 ```
 
 ## Updating Deployment Status
 
 ```bash
-curl -X PATCH http://localhost:3000/api/deployments/{id} \
+curl -X PATCH http://localhost:3000/api/v1/deployments/{id} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{

@@ -715,13 +715,13 @@ The project fails `tsc --noEmit` due to `ConfigService.get<T>()` returning `T | 
   - [x] FARM-ST165: Add `npm run seed` script to `package.json` and `make seed` to `Makefile`
   - [x] FARM-ST166: Guard seeder to only run in development/test environments
 
-#### FARM-S56: API Versioning
+#### FARM-S56: API Versioning ✅
 
-- [ ] FARM-T156: Implement URI-based API versioning
-  - [ ] FARM-ST167: Enable NestJS versioning with `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`
-  - [ ] FARM-ST168: Add `@Version('1')` to all existing controllers as baseline
-  - [ ] FARM-ST169: Update Swagger configuration to reflect versioned paths
-  - [ ] FARM-ST170: Update all E2E tests to use `/api/v1/` prefixed paths
+- [x] FARM-T156: Implement URI-based API versioning
+  - [x] FARM-ST167: Enable NestJS versioning with `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`
+  - [x] FARM-ST168: Add `@Version('1')` to all existing controllers as baseline (via `defaultVersion: '1'`; health and root marked `VERSION_NEUTRAL`)
+  - [x] FARM-ST169: Update Swagger configuration to reflect versioned paths
+  - [x] FARM-ST170: Update all E2E tests to use `/api/v1/` prefixed paths
 
 ---
 

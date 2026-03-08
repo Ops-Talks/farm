@@ -28,7 +28,7 @@ describe("Documentation CRUD (e2e)", () => {
 
     // Create a component to associate documentation with
     const compRes = await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "docs-e2e-service",
@@ -55,7 +55,7 @@ describe("Documentation CRUD (e2e)", () => {
     };
 
     const createRes = await request(app.getHttpServer())
-      .post("/api/docs")
+      .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
       .send(createDto)
       .expect(201);
@@ -72,7 +72,7 @@ describe("Documentation CRUD (e2e)", () => {
 
     // Step 2: Get documentation metadata by ID
     const getRes = await request(app.getHttpServer())
-      .get(`/api/docs/${docId}`)
+      .get(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -82,7 +82,7 @@ describe("Documentation CRUD (e2e)", () => {
 
     // Step 3: List all documentation
     const listRes = await request(app.getHttpServer())
-      .get("/api/docs")
+      .get("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -100,7 +100,7 @@ describe("Documentation CRUD (e2e)", () => {
 
     // Step 4: Filter documentation by componentId
     const filteredRes = await request(app.getHttpServer())
-      .get(`/api/docs?componentId=${componentId}`)
+      .get(`/api/v1/docs?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -122,7 +122,7 @@ describe("Documentation CRUD (e2e)", () => {
     };
 
     const updateRes = await request(app.getHttpServer())
-      .patch(`/api/docs/${docId}`)
+      .patch(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
       .send(updateDto)
       .expect(200);
@@ -133,20 +133,20 @@ describe("Documentation CRUD (e2e)", () => {
 
     // Step 6: Delete documentation
     await request(app.getHttpServer())
-      .delete(`/api/docs/${docId}`)
+      .delete(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(204);
 
     // Step 7: Confirm deletion returns 404
     await request(app.getHttpServer())
-      .get(`/api/docs/${docId}`)
+      .get(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
 
   it("should reject creation with missing required fields", async () => {
     await request(app.getHttpServer())
-      .post("/api/docs")
+      .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
       .send({ title: "Incomplete" })
       .expect(400);
@@ -154,7 +154,7 @@ describe("Documentation CRUD (e2e)", () => {
 
   it("should reject creation with invalid sourceUrl", async () => {
     await request(app.getHttpServer())
-      .post("/api/docs")
+      .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
       .send({
         title: "Bad URL Doc",

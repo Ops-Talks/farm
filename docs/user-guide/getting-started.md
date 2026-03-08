@@ -94,7 +94,7 @@ After installation, you can:
 ## Example: Registering Your First User
 
 ```bash
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
@@ -107,7 +107,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ## Example: Adding Your First Component
 
 ```bash
-curl -X POST http://localhost:3000/api/catalog/components \
+curl -X POST http://localhost:3000/api/v1/catalog/components \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my-first-service",

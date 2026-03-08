@@ -34,7 +34,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Create prerequisite component
     const compRes = await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "deploy-e2e-service",
@@ -47,7 +47,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Create prerequisite environment
     const envRes = await request(app.getHttpServer())
-      .post("/api/environments")
+      .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "deploy-e2e-staging",
@@ -72,7 +72,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     };
 
     const createRes = await request(app.getHttpServer())
-      .post("/api/deployments")
+      .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
       .send(createDto)
       .expect(201);
@@ -88,7 +88,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Step 2: Transition to in_progress
     const progressRes = await request(app.getHttpServer())
-      .patch(`/api/deployments/${deploymentId}`)
+      .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "in_progress" })
       .expect(200);
@@ -97,7 +97,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Step 3: Transition to succeeded
     const successRes = await request(app.getHttpServer())
-      .patch(`/api/deployments/${deploymentId}`)
+      .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
       .send({
         status: "succeeded",
@@ -109,7 +109,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Step 4: Get deployment by ID
     const getRes = await request(app.getHttpServer())
-      .get(`/api/deployments/${deploymentId}`)
+      .get(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -119,7 +119,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Step 5: List deployments with filters
     const listRes = await request(app.getHttpServer())
-      .get(`/api/deployments?componentId=${componentId}`)
+      .get(`/api/v1/deployments?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -137,7 +137,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Step 6: Get latest deployment per environment
     const latestRes = await request(app.getHttpServer())
-      .get(`/api/deployments/latest?componentId=${componentId}`)
+      .get(`/api/v1/deployments/latest?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -148,7 +148,7 @@ describe("Deployments Lifecycle (e2e)", () => {
   it("should reject invalid status transitions", async () => {
     // Create a fresh deployment (status: pending)
     const createRes = await request(app.getHttpServer())
-      .post("/api/deployments")
+      .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         componentId,
@@ -161,7 +161,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
     // Try to go directly from pending to succeeded (invalid: must go through in_progress)
     await request(app.getHttpServer())
-      .patch(`/api/deployments/${deploymentId}`)
+      .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "succeeded" })
       .expect(400);
@@ -169,7 +169,7 @@ describe("Deployments Lifecycle (e2e)", () => {
 
   it("should reject deployment with invalid component/environment IDs", async () => {
     await request(app.getHttpServer())
-      .post("/api/deployments")
+      .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         componentId: "00000000-0000-0000-0000-000000000000",

@@ -1,5 +1,9 @@
 import { NestFactory, Reflector } from "@nestjs/core";
-import { ValidationPipe, ClassSerializerInterceptor } from "@nestjs/common";
+import {
+  ValidationPipe,
+  ClassSerializerInterceptor,
+  VersioningType,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { WinstonModule } from "nest-winston";
@@ -53,6 +57,10 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix("api");
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: "1",
+  });
 
   const config = new DocumentBuilder()
     .setTitle("Farm API")

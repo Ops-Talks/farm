@@ -33,13 +33,13 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | API | Base Path | Description |
 |-----|-----------|-------------|
 | [Health](health.md) | `/api/health` | Health check endpoints |
-| [Auth](auth.md) | `/api/auth` | User registration and login |
-| [Catalog](catalog.md) | `/api/catalog` | Software component catalog |
-| [Documentation](docs.md) | `/api/documentation` | Technical documentation |
-| [Environments](environments.md) | `/api/environments` | Deployment environments |
-| [Deployments](deployments.md) | `/api/deployments` | Component deployment tracking |
-| [Teams](teams.md) | `/api/teams` | Team ownership and membership |
-| [Plugins](plugins.md) | `/api/plugins` | Plugin registry |
+| [Auth](auth.md) | `/api/v1/auth` | User registration and login |
+| [Catalog](catalog.md) | `/api/v1/catalog` | Software component catalog |
+| [Documentation](docs.md) | `/api/v1/docs` | Technical documentation |
+| [Environments](environments.md) | `/api/v1/environments` | Deployment environments |
+| [Deployments](deployments.md) | `/api/v1/deployments` | Component deployment tracking |
+| [Teams](teams.md) | `/api/v1/teams` | Team ownership and membership |
+| [Plugins](plugins.md) | `/api/v1/plugins` | Plugin registry |
 
 ## Response Format
 
@@ -59,9 +59,9 @@ Rate limiting is enforced globally via the `@nestjs/throttler` module. Authentic
 
 | Endpoint | Limit | Window |
 |----------|-------|--------|
-| `POST /api/auth/login` | 5 requests | 1 minute |
-| `POST /api/auth/register` | 5 requests | 1 minute |
-| `POST /api/auth/refresh` | 10 requests | 1 minute |
+| `POST /api/v1/auth/login` | 5 requests | 1 minute |
+| `POST /api/v1/auth/register` | 5 requests | 1 minute |
+| `POST /api/v1/auth/refresh` | 10 requests | 1 minute |
 | All other endpoints | Configurable via `THROTTLE_LIMIT` | Configurable via `THROTTLE_TTL` |
 
 When the rate limit is exceeded, the API returns `429 Too Many Requests`.

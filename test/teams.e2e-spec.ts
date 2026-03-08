@@ -68,7 +68,7 @@ describe("Teams (e2e)", () => {
     };
 
     const createRes = await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send(createDto)
       .expect(201);
@@ -87,7 +87,7 @@ describe("Teams (e2e)", () => {
 
     // Step 2: List all teams and verify the created one is present
     const listRes = await request(app.getHttpServer())
-      .get("/api/teams")
+      .get("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -98,7 +98,7 @@ describe("Teams (e2e)", () => {
 
     // Step 3: Get team by ID and verify all fields
     const getRes = await request(app.getHttpServer())
-      .get(`/api/teams/${teamId}`)
+      .get(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -118,7 +118,7 @@ describe("Teams (e2e)", () => {
     };
 
     const updateRes = await request(app.getHttpServer())
-      .patch(`/api/teams/${teamId}`)
+      .patch(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
       .send(updateDto)
       .expect(200);
@@ -132,13 +132,13 @@ describe("Teams (e2e)", () => {
 
     // Step 5: Delete the team
     await request(app.getHttpServer())
-      .delete(`/api/teams/${teamId}`)
+      .delete(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
-      .get(`/api/teams/${teamId}`)
+      .get(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
@@ -146,7 +146,7 @@ describe("Teams (e2e)", () => {
   it("should manage team members: add -> list -> remove -> verify removal", async () => {
     // Create a team for member management
     const teamRes = await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "e2e-member-team",
@@ -159,7 +159,7 @@ describe("Teams (e2e)", () => {
 
     // Get the admin user's ID from the auth users endpoint
     const usersRes = await request(app.getHttpServer())
-      .get("/api/auth/users")
+      .get("/api/v1/auth/users")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -172,7 +172,7 @@ describe("Teams (e2e)", () => {
 
     // Add the user as a team member
     const addRes = await request(app.getHttpServer())
-      .post(`/api/teams/${teamId}/members/${userId}`)
+      .post(`/api/v1/teams/${teamId}/members/${userId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -181,7 +181,7 @@ describe("Teams (e2e)", () => {
 
     // List members and verify the user is present
     const membersRes = await request(app.getHttpServer())
-      .get(`/api/teams/${teamId}/members`)
+      .get(`/api/v1/teams/${teamId}/members`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -192,13 +192,13 @@ describe("Teams (e2e)", () => {
 
     // Remove the member
     await request(app.getHttpServer())
-      .delete(`/api/teams/${teamId}/members/${userId}`)
+      .delete(`/api/v1/teams/${teamId}/members/${userId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
     // List members and verify the user is gone
     const membersAfterRemove = await request(app.getHttpServer())
-      .get(`/api/teams/${teamId}/members`)
+      .get(`/api/v1/teams/${teamId}/members`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -211,7 +211,7 @@ describe("Teams (e2e)", () => {
   it("should list components owned by a team", async () => {
     // Create a team
     const teamRes = await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "e2e-component-owner",
@@ -230,14 +230,14 @@ describe("Teams (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .send(componentDto)
       .expect(201);
 
     // List team components and verify the component is present
     const componentsRes = await request(app.getHttpServer())
-      .get(`/api/teams/${team.id}/components`)
+      .get(`/api/v1/teams/${team.id}/components`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -251,14 +251,14 @@ describe("Teams (e2e)", () => {
   it("should reject creation with missing required fields", async () => {
     // Missing all required fields
     await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send({})
       .expect(400);
 
     // Missing displayName and type
     await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "incomplete-team" })
       .expect(400);
@@ -266,7 +266,7 @@ describe("Teams (e2e)", () => {
 
   it("should reject creation with invalid team type", async () => {
     await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send({
         name: "bad-type-team",
@@ -284,13 +284,13 @@ describe("Teams (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send(teamDto)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post("/api/teams")
+      .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
       .send(teamDto)
       .expect(409);

@@ -38,7 +38,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Step 1: Register a new user
     const registerRes = await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send(userData)
       .expect(201);
 
@@ -51,7 +51,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Step 2: Login with the registered user
     const loginRes = await request(app.getHttpServer())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ username: userData.username, password: userData.password })
       .expect(200);
 
@@ -66,7 +66,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Step 3: Use JWT token to access a protected endpoint (list users)
     const usersRes = await request(app.getHttpServer())
-      .get("/api/auth/users")
+      .get("/api/v1/auth/users")
       .expect(200);
 
     const users = usersRes.body as UserResponse[];
@@ -76,7 +76,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Step 4: Verify JWT works on a guarded endpoint
     const catalogRes = await request(app.getHttpServer())
-      .get("/api/catalog/components")
+      .get("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
@@ -100,12 +100,12 @@ describe("Auth Lifecycle (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send(userData)
       .expect(201);
 
     const loginRes = await request(app.getHttpServer())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ username: userData.username, password: userData.password })
       .expect(200);
 
@@ -114,7 +114,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Use refresh token to get a new access token
     const refreshRes = await request(app.getHttpServer())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({ username: userData.username, refreshToken })
       .expect(200);
 
@@ -129,13 +129,13 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Old refresh token should no longer work
     await request(app.getHttpServer())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({ username: userData.username, refreshToken })
       .expect(401);
 
     // New refresh token should work
     const secondRefresh = await request(app.getHttpServer())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({
         username: userData.username,
         refreshToken: refreshBody.refreshToken,
@@ -155,7 +155,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     for (const { password } of weakPasswords) {
       await request(app.getHttpServer())
-        .post("/api/auth/register")
+        .post("/api/v1/auth/register")
         .send({
           username: "weakuser",
           email: "weak@test.com",
@@ -168,7 +168,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
   it("should reject registration with too short username", async () => {
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send({
         username: "a",
         email: "short@test.com",
@@ -180,14 +180,14 @@ describe("Auth Lifecycle (e2e)", () => {
 
   it("should reject registration with missing fields", async () => {
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send({ username: "incomplete" })
       .expect(400);
   });
 
   it("should reject login with invalid credentials", async () => {
     await request(app.getHttpServer())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ username: "nonexistent", password: "WrongPass1" })
       .expect(401);
   });
@@ -201,25 +201,25 @@ describe("Auth Lifecycle (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send(userData)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send(userData)
       .expect(409);
   });
 
   it("should reject access to protected endpoints without token", async () => {
     await request(app.getHttpServer())
-      .get("/api/catalog/components")
+      .get("/api/v1/catalog/components")
       .expect(401);
   });
 
   it("should reject access with malformed JWT token", async () => {
     await request(app.getHttpServer())
-      .get("/api/catalog/components")
+      .get("/api/v1/catalog/components")
       .set("Authorization", "Bearer invalid.jwt.token")
       .expect(401);
   });
@@ -234,12 +234,12 @@ describe("Auth Lifecycle (e2e)", () => {
     };
 
     await request(app.getHttpServer())
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send(userData)
       .expect(201);
 
     const loginRes = await request(app.getHttpServer())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ username: userData.username, password: userData.password })
       .expect(200);
 
@@ -247,7 +247,7 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Try to access admin-only endpoint
     await request(app.getHttpServer())
-      .post("/api/catalog/components")
+      .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${userToken}`)
       .send({ name: "test", kind: "service", owner: "team" })
       .expect(403);
