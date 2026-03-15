@@ -589,18 +589,18 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST189 | Sub-task | Ensure all tables are horizontally scrollable on small screens | `TODO` |
 | FARM-ST190 | Sub-task | Test and fix all pages at 375px, 768px, and 1024px breakpoints | `TODO` |
 
-#### FARM-S112: Component Architecture Improvements `TODO`
+#### FARM-S112: Component Architecture Improvements `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T57 | Task | Extract reusable page patterns | `TODO` |
-| FARM-ST191 | Sub-task | Create shared PageHeader component (title, description, action buttons) | `TODO` |
-| FARM-ST192 | Sub-task | Create shared FilterTabs component (used by catalog, deployments, teams) | `TODO` |
+| FARM-T57 | Task | Extract reusable page patterns | `DONE` |
+| FARM-ST191 | Sub-task | Create shared PageHeader component (title, description, action buttons) | `DONE` |
+| FARM-ST192 | Sub-task | Create shared FilterTabs component (used by catalog, deployments, teams) | `DONE` |
 | FARM-ST193 | Sub-task | Create shared EmptyState component with consistent styling | `TODO` |
 | FARM-ST194 | Sub-task | Create shared ConfirmDialog component for delete actions | `TODO` |
-| FARM-T58 | Task | Decompose large page files | `TODO` |
-| FARM-ST195 | Sub-task | Split docs/page.tsx (651 lines) into separate TreeSidebar, DocViewer, DocForm, SearchPanel components | `TODO` |
-| FARM-ST196 | Sub-task | Split observability/page.tsx (529 lines) into HealthTab, MetricsTab, TracesTab components in separate files | `TODO` |
+| FARM-T58 | Task | Decompose large page files | `DONE` |
+| FARM-ST195 | Sub-task | Split docs/page.tsx (651 lines) into separate TreeSidebar, DocViewer, DocForm, SearchPanel components | `DONE` |
+| FARM-ST196 | Sub-task | Split observability/page.tsx (529 lines) into HealthTab, MetricsTab, TracesTab components in separate files | `DONE` |
 | FARM-ST197 | Sub-task | Split teams/[id]/page.tsx (509 lines) into MembersTable, ComponentsTable, TeamEditForm components | `TODO` |
 | FARM-ST198 | Sub-task | Split queues/[name]/page.tsx (345 lines) into JobDetailPanel, JobList components in separate files | `TODO` |
 

@@ -1,0 +1,286 @@
+// Farm API type definitions
+// Mirrors the backend DTOs for type-safe API communication
+
+// -- Enums (re-exported from @farm/types) --
+
+import {
+  ComponentKind,
+  ComponentLifecycle,
+  ComponentKindGroup,
+  DeploymentStatus,
+  EnvironmentType,
+  TeamType,
+  FarmEvent,
+} from "@farm/types";
+
+export {
+  ComponentKind,
+  ComponentLifecycle,
+  ComponentKindGroup,
+  DeploymentStatus,
+  EnvironmentType,
+  TeamType,
+  FarmEvent,
+};
+
+// -- Entities --
+
+export interface ComponentLink {
+  title: string;
+  url: string;
+  icon?: string;
+}
+
+export interface CatalogComponent {
+  id: string;
+  name: string;
+  kind: ComponentKind;
+  description?: string;
+  owner: string;
+  teamId?: string;
+  team?: Team;
+  lifecycle: ComponentLifecycle;
+  tags?: string[];
+  links?: ComponentLink[];
+  metadata?: Record<string, unknown>;
+  dependencies?: CatalogComponent[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Deployment {
+  id: string;
+  version: string;
+  status: DeploymentStatus;
+  deployedBy?: string;
+  commitSha?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  componentId: string;
+  component?: CatalogComponent;
+  environmentId: string;
+  environment?: Environment;
+  startedAt?: string;
+  finishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Environment {
+  id: string;
+  name: string;
+  description?: string;
+  type: EnvironmentType;
+  order: number;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  displayName: string;
+  description?: string;
+  type: TeamType;
+  contactEmail?: string;
+  slackChannel?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  roles: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Auth DTOs --
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  user: User;
+  token: string;
+  refreshToken: string;
+}
+
+export interface RefreshTokenRequest {
+  username: string;
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  token: string;
+  refreshToken: string;
+}
+
+// -- Common DTOs --
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  skip: number;
+  take: number;
+}
+
+export interface PaginationQuery {
+  skip?: number;
+  take?: number;
+}
+
+export interface ErrorResponse {
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  message: string | string[];
+}
+
+// -- WebSocket Event Payloads --
+
+export interface ComponentEventPayload {
+  id: string;
+  name: string;
+  kind: string;
+  owner: string;
+  timestamp: string;
+}
+
+export interface DeploymentEventPayload {
+  id: string;
+  componentId: string;
+  environmentId: string;
+  version: string;
+  status: string;
+  timestamp: string;
+}
+
+// -- Health --
+
+export interface HealthStatus {
+  status: "ok" | "error";
+  info: Record<string, { status: string; [key: string]: unknown }>;
+  error: Record<string, { status: string; [key: string]: unknown }>;
+  details: Record<string, { status: string; [key: string]: unknown }>;
+}
+
+// -- Deployment Matrix --
+
+export interface DeploymentMatrixEnvironment {
+  environmentId: string;
+  environmentName: string;
+  version: string | null;
+  status: DeploymentStatus | null;
+  deployedAt: string | null;
+}
+
+export interface DeploymentMatrixRow {
+  id: string;
+  name: string;
+  kind: string;
+  environments: DeploymentMatrixEnvironment[];
+}
+
+// -- Queues and Jobs --
+
+export interface JobCounts {
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+  waiting: number;
+  paused: number;
+  prioritized: number;
+}
+
+export interface QueueInfo {
+  name: string;
+  isPaused: boolean;
+  jobCounts: JobCounts;
+}
+
+export interface JobInfo {
+  id: string;
+  queueName: string;
+  name: string;
+  status: string;
+  data: Record<string, unknown>;
+  returnValue?: unknown;
+  failedReason?: string;
+  attemptsMade: number;
+  progress: number | object;
+  timestamp: number;
+  processedOn?: number;
+  finishedOn?: number;
+  stacktrace?: string[];
+}
+
+// -- Observability --
+
+export interface MemoryUsage {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  external: number;
+}
+
+export interface RequestsByStatus {
+  "2xx": number;
+  "4xx": number;
+  "5xx": number;
+  other: number;
+}
+
+export interface LatencyPercentiles {
+  p50: number;
+  p90: number;
+  p95: number;
+  p99: number;
+}
+
+export interface ObservabilitySummary {
+  uptime: number;
+  memory: MemoryUsage;
+  totalRequests: number;
+  requestsByStatus: RequestsByStatus;
+  latencyPercentiles: LatencyPercentiles;
+  grafanaUrl: string | null;
+}
+
+// -- Documentation --
+
+export interface DocumentationEntry {
+  id: string;
+  title: string;
+  sourceUrl: string;
+  componentId: string;
+  author: string;
+  version: string;
+  parentId: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentationTreeNode {
+  id: string;
+  title: string;
+  parentId: string | null;
+  order: number;
+  children: DocumentationTreeNode[];
+}
+
+export interface DocumentationSearchResult {
+  id: string;
+  title: string;
+  componentId: string;
+  score: number;
+}

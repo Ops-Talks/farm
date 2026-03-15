@@ -1,0 +1,19 @@
+{
+  "name": "@farm/eslint-config",
+  "version": "0.1.0",
+  "description": "Shared ESLint configuration for the Farm monorepo",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./next": "./next.js",
+    "./nest": "./nest.js"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
+  },
+  "files": [
+    "index.js",
+    "next.js",
+    "nest.js"
+  ]
+}

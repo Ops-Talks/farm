@@ -13,25 +13,25 @@ help:
 	@echo "  make docs-logs  # Displays logs from the documentation service"
 	@echo "  make docs       # Alias for docs-up"
 	@echo "  make test-docker # Runs Farm tests via Docker"
-	@echo "  make up-docker   # Starts the Farm API in Docker (port 3000)"
+	@echo "  make up-docker   # Starts the Farm API in Docker"
 	@echo "  make down-docker # Stops the Farm API container"
-	@echo "  make web-dev    # Starts the front-end dev server (port 3000)"
+	@echo "  make web-dev    # Starts the front-end dev server"
 	@echo "  make web-build  # Builds the front-end for production"
 	@echo "  make web-lint   # Lints the front-end code"
 	@echo "  make up-observability   # Starts the stack with Grafana, Prometheus, and Tempo"
 	@echo "  make down-observability # Stops the observability stack"
-	@echo "  make up-all             # Starts the full stack (API + DB + Redis + Observability + Docs)"
+	@echo "  make up-all             # Starts the full stack"
 	@echo "  make down-all           # Stops the full stack"
 	@echo "  make healthcheck # Queries the local API /api/health endpoint"
-	@echo "  make test       # Runs local unit tests"
-	@echo "  make test-e2e   # Runs local e2e tests"
+	@echo "  make test       # Runs local unit tests (API + Web)"
+	@echo "  make test-e2e   # Runs local API e2e tests"
 	@echo "  make test-cov   # Runs local tests with coverage"
-	@echo "  make lint       # Runs linter and fixes issues"
+	@echo "  make lint       # Runs linter"
 	@echo "  make fmt        # Formats code using Prettier"
 	@echo "  make check-back  # Runs fmt, lint and all back-end tests"
 	@echo "  make check-front # Runs front-end lint, build and tests"
 	@echo "  make check      # Runs both check-back and check-front"
-	@echo "  make release    # Creates a new release using release-it (interactive)"
+	@echo "  make seed       # Runs database seeds"
 
 docs: docs-up
 
@@ -78,40 +78,40 @@ healthcheck:
 	curl -fsS http://localhost:3000/api/health
 
 test:
-	npm run test
+	npm test
 
 test-e2e:
-	npm run test:e2e
+	npm run api:test:e2e
 
 test-cov:
-	npm run test:cov
+	npm run test:cov -w apps/api
 
 lint:
 	npm run lint
 
 fmt:
-	npm run format
+	npm run format -w apps/api
 
-check-back: fmt lint test test-e2e
+check-back: fmt lint test-e2e
 
 check-front: web-lint web-build web-test
 
 check: check-back check-front
 
 seed:
-	npm run seed
+	npm run seed -w apps/api
 
 release:
-	npm run release
+	npm run release -w apps/api
 
 web-dev:
-	cd web && npm run dev
+	npm run web:dev
 
 web-build:
-	cd web && npm run build
+	npm run web:build
 
 web-lint:
-	cd web && npm run lint
+	npm run web:lint
 
 web-test:
-	cd web && npm test
+	npm run web:test

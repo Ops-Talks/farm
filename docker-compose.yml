@@ -29,7 +29,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./apps/api
       target: production
     container_name: farm-api
     restart: always
@@ -61,7 +61,8 @@ services:
 
   web:
     build:
-      context: ./web
+      context: .
+      dockerfile: apps/web/Dockerfile
     container_name: farm-web
     restart: always
     ports:

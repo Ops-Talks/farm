@@ -1,9 +1,9 @@
 # Nestjs specific
-/dist
-/node_modules
+dist/
+node_modules/
 /build
 /tmp
-/coverage
+coverage/
 
 # Logs
 logs
@@ -26,3 +26,4 @@ lerna-debug.log*
 
 # MkDocs build output
 /site
+*NEXT_STEPS.md
