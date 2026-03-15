@@ -523,50 +523,50 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-ST166 | Sub-task | Test health tab rendering | `DONE` |
 | FARM-ST167 | Sub-task | Test metrics tab with formatted values | `DONE` |
 | FARM-ST168 | Sub-task | Test tab switching | `DONE` |
-| FARM-T47 | Task | Docs page tests | `TODO` |
-| FARM-ST169 | Sub-task | Test documentation tree sidebar rendering | `TODO` |
-| FARM-ST170 | Sub-task | Test doc content viewer with rendered markdown | `TODO` |
-| FARM-ST171 | Sub-task | Test documentation search | `TODO` |
+| FARM-T47 | Task | Docs page tests | `DONE` |
+| FARM-ST169 | Sub-task | Test documentation tree sidebar rendering | `DONE` |
+| FARM-ST170 | Sub-task | Test doc content viewer with rendered markdown | `DONE` |
+| FARM-ST171 | Sub-task | Test documentation search | `DONE` |
 
-#### FARM-S107: Layout and Navigation Tests `TODO`
+#### FARM-S107: Layout and Navigation Tests `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T48 | Task | AppShell layout tests | `TODO` |
-| FARM-ST172 | Sub-task | Test sidebar navigation links and active state | `TODO` |
-| FARM-ST173 | Sub-task | Test breadcrumb rendering for nested routes | `TODO` |
-| FARM-ST174 | Sub-task | Test user dropdown menu (display name, email, roles, sign out) | `TODO` |
-| FARM-ST175 | Sub-task | Test dark mode theme cycling | `TODO` |
+| FARM-T48 | Task | AppShell layout tests | `DONE` |
+| FARM-ST172 | Sub-task | Test sidebar navigation links and active state | `DONE` |
+| FARM-ST173 | Sub-task | Test breadcrumb rendering for nested routes | `DONE` |
+| FARM-ST174 | Sub-task | Test user dropdown menu (display name, email, roles, sign out) | `DONE` |
+| FARM-ST175 | Sub-task | Test dark mode theme cycling | `DONE` |
 
-### FARM-E31: Front-End Bug Fixes `TODO`
+### FARM-E31: Front-End Bug Fixes `DONE`
 
 > Issues identified during frontend codebase analysis.
 
-#### FARM-S108: Runtime and Configuration Bugs `TODO`
+#### FARM-S108: Runtime and Configuration Bugs `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T49 | Task | Fix QueuePanel hardcoded NEXT_PUBLIC_API_URL reference | `TODO` |
-| FARM-ST176 | Sub-task | QueuePanel uses `process.env.NEXT_PUBLIC_API_URL` to build Bull Board URL; should use relative `/api` path like other components | `TODO` |
-| FARM-T50 | Task | Fix WebSocket client hardcoded localhost URL | `TODO` |
-| FARM-ST177 | Sub-task | ws-client.ts uses `process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000"` which breaks in Docker; needs a relative or configurable approach | `TODO` |
-| FARM-T51 | Task | Phase 5 summary row still shows TODO in ROADMAP | `TODO` |
-| FARM-ST178 | Sub-task | Update Phase 5 status from `TODO` to `DONE` in summary table | `TODO` |
+| FARM-T49 | Task | Fix QueuePanel hardcoded NEXT_PUBLIC_API_URL reference | `DONE` |
+| FARM-ST176 | Sub-task | QueuePanel uses `process.env.NEXT_PUBLIC_API_URL` to build Bull Board URL; should use relative `/api` path like other components | `DONE` |
+| FARM-T50 | Task | Fix WebSocket client hardcoded localhost URL | `DONE` |
+| FARM-ST177 | Sub-task | ws-client.ts uses `process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000"` which breaks in Docker; needs a relative or configurable approach | `DONE` |
+| FARM-T51 | Task | Phase 5 summary row still shows TODO in ROADMAP | `DONE` |
+| FARM-ST178 | Sub-task | Update Phase 5 status from `TODO` to `DONE` in summary table | `DONE` |
 
-### FARM-E32: Front-End Enhancements `TODO`
+### FARM-E32: Front-End Enhancements `IN PROGRESS`
 
 > UX improvements, missing features, and architectural enhancements.
 
-#### FARM-S109: Error Handling and Loading States `TODO`
+#### FARM-S109: Error Handling and Loading States `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T52 | Task | Add Next.js error boundaries | `TODO` |
-| FARM-ST179 | Sub-task | Create `app/(protected)/error.tsx` global error boundary | `TODO` |
-| FARM-ST180 | Sub-task | Create `app/(protected)/not-found.tsx` for 404 pages | `TODO` |
-| FARM-ST181 | Sub-task | Create `app/(protected)/loading.tsx` with skeleton loading | `TODO` |
-| FARM-T53 | Task | Add per-page loading.tsx files | `TODO` |
-| FARM-ST182 | Sub-task | Create loading states for catalog, teams, deployments, queues, observability, docs pages | `TODO` |
+| FARM-T52 | Task | Add Next.js error boundaries | `DONE` |
+| FARM-ST179 | Sub-task | Create `app/(protected)/error.tsx` global error boundary | `DONE` |
+| FARM-ST180 | Sub-task | Create `app/(protected)/not-found.tsx` for 404 pages | `DONE` |
+| FARM-ST181 | Sub-task | Create `app/(protected)/loading.tsx` with skeleton loading | `DONE` |
+| FARM-T53 | Task | Add per-page loading.tsx files | `DONE` |
+| FARM-ST182 | Sub-task | Create loading states for catalog, teams, deployments, queues, observability, docs pages | `DONE` |
 
 #### FARM-S110: Accessibility and UX Improvements `TODO`
 
@@ -673,6 +673,6 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 3: Backend Completion | 1 | 1 | `DONE` |
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
-| Phase 5.5: Front-End Quality | 3 | 10 | `TODO` |
+| Phase 5.5: Front-End Quality | 3 | 10 | `IN PROGRESS` |
 | Phase 6: Advanced Features | 5 | 19 | `TODO` |
 | **Total** | **32** | **111** | |

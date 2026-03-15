@@ -6,7 +6,7 @@ import { getAccessToken } from "@/lib/api-client";
 type FarmEventPayload = ComponentEventPayload | DeploymentEventPayload;
 type EventHandler = (payload: FarmEventPayload) => void;
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "/events";
 
 let socket: Socket | null = null;
 const listeners = new Map<string, Set<EventHandler>>();

@@ -43,6 +43,23 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
 }));
 
+// Mock ResizeObserver
+global.ResizeObserver = class {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+};
+
+// Mock PointerEvent (needed for Radix UI components like DropdownMenu)
+if (!global.PointerEvent) {
+  class PointerEvent extends MouseEvent {
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+    }
+  }
+  global.PointerEvent = PointerEvent as any;
+}
+
 // Mock sessionStorage
 const storage: Record<string, string> = {};
 const sessionStorageMock = {

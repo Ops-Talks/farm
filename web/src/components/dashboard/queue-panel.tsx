@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_BASE = "/api";
 const BULL_BOARD_URL = `${API_BASE.replace(/\/api$/, "")}/admin/queues`;
 
 const queues = [
