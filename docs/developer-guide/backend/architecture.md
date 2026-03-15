@@ -19,15 +19,15 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
                     |  (Express/HTTP)  |
                     +--------+---------+
                              |
-     +----------+------------+-----------+------------+--------+
-     |          |            |           |            |        |
-     v          v            v           v            v        v
- +--------+ +--------+ +-----------+ +---------+ +--------+ +------+
- |  Auth  | |Catalog | |  Docs     | |  Envs   | |Plugin  | |Teams |
- | Module | | Module | |  Module   | | Module  | |Manager | |Module|
- +--------+ +--------+ +-----------+ +---------+ +--------+ +------+
-     |          |            |           |            |        |
-     +----------+------------+-----------+------------+--------+
+     +----------+------------+-----------+------------+--------+--------+
+     |          |            |           |            |        |        |
+     v          v            v           v            v        v        v
+ +--------+ +--------+ +-----------+ +---------+ +--------+ +------+ +-----------+
+ |  Auth  | |Catalog | |  Docs     | |  Envs   | |Plugin  | |Teams | | AuditLog  |
+ | Module | | Module | |  Module   | | Module  | |Manager | |Module| |  Module   |
+ +--------+ +--------+ +-----------+ +---------+ +--------+ +------+ +-----------+
+     |          |            |           |            |        |        |
+     +----------+------------+-----------+------------+--------+--------+
                              |
                              v
                     +------------------+
@@ -53,9 +53,9 @@ The common layer provides cross-cutting concerns that are shared across all modu
 
 **Files:**
 
-- `src/common/filters/http-exception.filter.ts` - Standardized error response handling
-- `src/common/logger/logger.config.ts` - Winston logger configuration
-- `src/common/health/health.controller.ts` - Terminus health indicators
+- `apps/api/src/common/filters/http-exception.filter.ts` - Standardized error response handling
+- `apps/api/src/common/logger/logger.config.ts` - Winston logger configuration
+- `apps/api/src/common/health/health.controller.ts` - Terminus health indicators
 
 ### App Module
 
@@ -194,6 +194,16 @@ The Teams module provides team ownership and membership management. Teams are ca
 | `Team` entity | Team data structure with type, members (ManyToMany to User), and metadata |
 | `CreateTeamDto` | Team create request validation |
 | `UpdateTeamDto` | Team update request validation |
+
+### Audit Log Module
+
+The Audit Log module records an immutable trail of significant system actions (create, update, delete operations across all resources). It is registered as the `core-audit-log` plugin and lives at `apps/api/src/modules/audit-log/`.
+
+| Component | Purpose |
+|-----------|---------|
+| `AuditLogController` | HTTP endpoints for querying the audit log |
+| `AuditLogService` | Business logic for recording and retrieving audit entries |
+| `AuditLog` entity | Audit entry data structure (actor, action, resource, timestamp) |
 
 ## Request Flow
 

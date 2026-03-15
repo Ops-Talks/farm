@@ -160,7 +160,7 @@ npm run lint
 New features should follow the existing module structure:
 
 ```
-src/
+apps/api/src/modules/
   new-feature/
     new-feature.module.ts
     new-feature.controller.ts

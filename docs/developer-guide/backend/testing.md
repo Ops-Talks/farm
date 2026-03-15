@@ -13,11 +13,13 @@ Farm uses Jest as its testing framework. The test suite includes:
 
 ```
 farm/
-  src/
-    **/*.spec.ts          # Unit tests (co-located with source)
-  test/
-    app.e2e-spec.ts       # End-to-end tests
-    jest-e2e.json         # E2E Jest configuration
+  apps/
+    api/
+      src/
+        **/*.spec.ts          # Unit tests (co-located with source)
+      test/
+        app.e2e-spec.ts       # End-to-end tests
+        jest-e2e.json         # E2E Jest configuration
 ```
 
 ## Running Tests

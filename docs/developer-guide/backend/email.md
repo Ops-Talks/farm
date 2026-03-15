@@ -6,9 +6,9 @@ Farm includes a built-in email service for sending transactional notifications u
 
 The email service consists of three main components:
 
-- **EmailService** (`src/common/email/email.service.ts`) -- Core service that manages the SMTP transporter and template rendering.
-- **EmailModule** (`src/common/email/email.module.ts`) -- Global module that provides EmailService to the entire application.
-- **NotificationProcessor** (`src/common/queues/notification.processor.ts`) -- BullMQ processor that sends emails asynchronously via the notification queue.
+- **EmailService** (`apps/api/src/common/email/email.service.ts`) -- Core service that manages the SMTP transporter and template rendering.
+- **EmailModule** (`apps/api/src/common/email/email.module.ts`) -- Global module that provides EmailService to the entire application.
+- **NotificationProcessor** (`apps/api/src/common/queues/notification.processor.ts`) -- BullMQ processor that sends emails asynchronously via the notification queue.
 
 ## Configuration
 
@@ -53,7 +53,7 @@ View captured emails at `http://localhost:8025`.
 
 ## Email Templates
 
-Templates use [Handlebars](https://handlebarsjs.com/) syntax and are located in `src/common/email/templates/`.
+Templates use [Handlebars](https://handlebarsjs.com/) syntax and are located in `apps/api/src/common/email/templates/`.
 
 ### Available Templates
 
@@ -71,7 +71,7 @@ All templates are wrapped in a shared layout (`layout.hbs`) that provides consis
 
 ### Adding a New Template
 
-1. Create a new `.hbs` file in `src/common/email/templates/`:
+1. Create a new `.hbs` file in `apps/api/src/common/email/templates/`:
 
     ```handlebars
     <h2>{{title}}</h2>

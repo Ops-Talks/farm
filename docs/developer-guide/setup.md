@@ -125,26 +125,32 @@ make docs-up
 
 ```
 farm/
-  src/                     # NestJS backend source
-    app.module.ts          # Root application module
-    main.ts                # Application entry point
-    common/                # Shared utilities (filters, health, logger)
-    config/                # Environment configuration
-    migrations/            # TypeORM migrations
-    auth/                  # Authentication module
-    catalog/               # Catalog module
-    documentation/         # Documentation module
-    environments/          # Environments and Deployments module
-    teams/                 # Teams and Ownership module
-  test/                    # End-to-end tests
-  web/                     # Next.js frontend
-    src/
-      app/                 # App Router pages
-      components/          # React components
-      contexts/            # Context providers
-      lib/                 # API client, WebSocket, utilities
-      types/               # TypeScript types
-    vitest.config.ts       # Vitest configuration
+  apps/
+    api/                   # NestJS backend
+      src/
+        app.module.ts      # Root application module
+        main.ts            # Application entry point
+        common/            # Shared utilities (filters, health, logger)
+        config/            # Environment configuration
+        database/          # Seeds and database utilities
+        migrations/        # TypeORM migrations
+        modules/           # Feature modules
+          auth/            # Authentication module
+          catalog/         # Catalog module
+          documentation/   # Documentation module
+          environments/    # Environments and Deployments module
+          teams/           # Teams and Ownership module
+          audit-log/       # Audit log module
+          plugin-manager/  # Plugin manager module
+      test/                # End-to-end tests
+    web/                   # Next.js frontend
+      src/
+        app/               # App Router pages
+        components/        # React components
+        contexts/          # Context providers
+        lib/               # API client, WebSocket, utilities
+        types/             # TypeScript types
+      vitest.config.ts     # Vitest configuration
   docs/                    # MkDocs documentation source
 ```
 
@@ -286,6 +292,12 @@ npm run start:debug
 | `REDIS_HOST` | *(empty)* | Redis hostname (empty for in-memory cache) |
 | `REDIS_PORT` | `6379` | Redis port |
 | `CACHE_TTL` | `30` | Cache time-to-live (seconds) |
+| `SMTP_HOST` | *(empty)* | SMTP server hostname (empty to disable email) |
+| `SMTP_PORT` | `587` | SMTP server port |
+| `SMTP_SECURE` | `false` | Use TLS (`true` for port 465) |
+| `SMTP_USER` | *(empty)* | SMTP authentication username |
+| `SMTP_PASS` | *(empty)* | SMTP authentication password |
+| `SMTP_FROM` | `Farm <noreply@farm.local>` | Default sender address |
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry trace export |
 | `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint |
 | `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
@@ -297,6 +309,7 @@ npm run start:debug
 | `NEXT_PUBLIC_API_URL` | *(none)* | Public API URL (fallback for rewrites) |
 | `API_INTERNAL_URL` | `http://api:3000/api` | Internal Docker API URL (build-time) |
 | `NEXT_PUBLIC_WS_URL` | `http://localhost:3000` | WebSocket server URL |
+| `NEXT_TELEMETRY_DISABLED` | `1` | Disable Next.js anonymous telemetry (set in `apps/web/.env.local`) |
 
 ## Troubleshooting
 

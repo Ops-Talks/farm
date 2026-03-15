@@ -28,19 +28,22 @@ This section covers the NestJS backend of Farm, including its architecture, modu
 ## Project Structure
 
 ```
-src/
+apps/api/src/
   app.module.ts          # Root application module
   main.ts                # Application entry point
   common/                # Shared utilities (filters, health, logger, observability)
   config/                # Environment configuration
   migrations/            # TypeORM migrations
   database/seeds/        # Database seeders
-  auth/                  # Authentication module
-  catalog/               # Catalog module
-  documentation/         # Documentation module
-  environments/          # Environments and Deployments module
-  teams/                 # Teams and Ownership module
-test/                    # End-to-end tests
+  modules/
+    auth/                # Authentication module
+    catalog/             # Catalog module
+    documentation/       # Documentation module
+    environments/        # Environments and Deployments module
+    teams/               # Teams and Ownership module
+    audit-log/           # Audit log module
+    plugin-manager/      # Plugin manager module
+apps/api/test/           # End-to-end tests
 ```
 
 ## Quick Start

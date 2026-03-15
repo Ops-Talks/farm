@@ -45,16 +45,64 @@ To create a new plugin for Farm, follow these steps:
 
 1.  **Create a Feature Module**: Develop a standard NestJS module (e.g., `MyFeatureModule`).
 2.  **Define Metadata**: Create a metadata object describing your plugin.
-3.  **Register in AppModule**: Add your plugin to the `PluginManagerModule.forRoot` array in `src/app.module.ts`.
+3.  **Register in AppModule**: Add your plugin to the `PluginManagerModule.forRoot` array in `apps/api/src/app.module.ts`.
 
 ### Example
 
 ```typescript
-// src/app.module.ts
+// apps/api/src/app.module.ts
 
 @Module({
   imports: [
     PluginManagerModule.forRoot([
+      {
+        metadata: {
+          name: 'core-auth',
+          version: '1.0.0',
+          description: 'User authentication and JWT management',
+        },
+        module: AuthModule,
+      },
+      {
+        metadata: {
+          name: 'core-catalog',
+          version: '1.0.0',
+          description: 'Software component registry',
+        },
+        module: CatalogModule,
+      },
+      {
+        metadata: {
+          name: 'core-documentation',
+          version: '1.0.0',
+          description: 'Technical documentation management',
+        },
+        module: DocumentationModule,
+      },
+      {
+        metadata: {
+          name: 'core-environments',
+          version: '1.0.0',
+          description: 'Deployment environments and tracking',
+        },
+        module: EnvironmentsModule,
+      },
+      {
+        metadata: {
+          name: 'core-teams',
+          version: '1.0.0',
+          description: 'Team ownership and membership',
+        },
+        module: TeamsModule,
+      },
+      {
+        metadata: {
+          name: 'core-audit-log',
+          version: '1.0.0',
+          description: 'Immutable audit trail for system actions',
+        },
+        module: AuditLogModule,
+      },
       {
         metadata: {
           name: 'my-new-feature',

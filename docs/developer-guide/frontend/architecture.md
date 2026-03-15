@@ -44,7 +44,7 @@ Shadcn/ui was selected as the component library, built on Radix UI primitives wi
 
 ### Monorepo Layout
 
-The frontend lives in `web/` at the repository root rather than a full `apps/api/` + `apps/web/` monorepo restructure. This avoids breaking the existing backend build pipeline, Docker configuration, and CI/CD while keeping the codebase in a single repository.
+The frontend lives in `apps/web/` within the monorepo alongside the NestJS backend at `apps/api/`. Both applications share the repository root for common configuration, Docker orchestration, and CI/CD workflows.
 
 ## Application Architecture
 
@@ -90,7 +90,7 @@ Key components:
 
 ### API Integration
 
-The API client (`web/src/lib/api-client.ts`) provides a typed interface to the NestJS backend:
+The API client (`apps/web/src/lib/api-client.ts`) provides a typed interface to the NestJS backend:
 
 - **Base URL**: Uses relative `/api` path (proxied by Next.js rewrites to the backend)
 - **Token management**: JWT access token and refresh token stored in `sessionStorage`
@@ -117,7 +117,7 @@ The `API_INTERNAL_URL` is a build-time argument in the Dockerfile since Next.js 
 
 ### WebSocket Integration
 
-The WebSocket client (`web/src/lib/ws-client.ts`) connects to the backend Socket.IO `/events` namespace:
+The WebSocket client (`apps/web/src/lib/ws-client.ts`) connects to the backend Socket.IO `/events` namespace:
 
 - **Auto-reconnection**: Infinite reconnection attempts with exponential backoff
 - **JWT authentication**: Passes the access token in the `auth.token` handshake field

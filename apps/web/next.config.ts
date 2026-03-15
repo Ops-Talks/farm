@@ -8,10 +8,6 @@ const apiUrl =
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  // Disable Next.js telemetry (anonymous usage data sent to Vercel).
-  // Also enforced via NEXT_TELEMETRY_DISABLED=1 in Dockerfile and .env files.
-  // See: https://nextjs.org/telemetry
-  telemetryDisabled: true,
   // Required for monorepo: trace file dependencies from the repo root so that
   // workspace packages (e.g. packages/types) are included in the standalone output.
   outputFileTracingRoot: path.join(__dirname, "../../"),

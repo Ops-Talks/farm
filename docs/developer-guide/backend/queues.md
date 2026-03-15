@@ -61,7 +61,7 @@ export class MyProcessor extends WorkerHost {
 }
 ```
 
-2. Register the queue in `QueuesModule` (`src/common/queues/queues.module.ts`):
+2. Register the queue in `QueuesModule` (`apps/api/src/common/queues/queues.module.ts`):
 
 ```typescript
 BullModule.registerQueue(
