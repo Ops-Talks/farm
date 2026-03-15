@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "release": "release-it",
+    "changelog:sync": "node ./scripts/sync-changelog.mjs",
     "typeorm": "npm run build && npx typeorm -d dist/config/typeorm-cli.config.js",
     "migration:generate": "npm run typeorm -- migration:generate src/migrations/initial",
     "migration:run": "npm run typeorm -- migration:run",

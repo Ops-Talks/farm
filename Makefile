@@ -32,6 +32,7 @@ help:
 	@echo "  make check-front # Runs front-end lint, build and tests"
 	@echo "  make check      # Runs both check-back and check-front"
 	@echo "  make seed       # Runs database seeds"
+	@echo "  make release TAG=0.8.3 # Creates a release with auto changelog generation"
 
 docs: docs-up
 
@@ -102,7 +103,7 @@ seed:
 	npm run seed -w apps/api
 
 release:
-	npm run release -w apps/api
+	@VERSION=$${TAG#v}; npm run release -w apps/api -- $${VERSION:+--ci --release-version=$$VERSION}
 
 web-dev:
 	npm run web:dev

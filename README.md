@@ -99,7 +99,7 @@ Migrations are handled via TypeORM: see `npm run migration:*` commands documente
 | `make seed` | Seed database with sample data |
 | `make up-observability` | Start with Grafana + Prometheus + Tempo |
 | `make down-observability` | Stop observability stack |
-| `make release` | Create a release (interactive) |
+| `make release` | Create a release; use `TAG=0.8.3` for a non-interactive versioned release with auto changelog generation |
 
 ## API Endpoints
 
