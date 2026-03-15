@@ -1,6 +1,7 @@
 # Farm
 
 [![CI](https://github.com/Ops-Talks/farm/actions/workflows/ci.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/ci.yml)
+[![Web CI](https://github.com/Ops-Talks/farm/actions/workflows/web-ci.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/web-ci.yml)
 [![codecov](https://codecov.io/gh/Ops-Talks/farm/graph/badge.svg)](https://codecov.io/gh/Ops-Talks/farm)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)

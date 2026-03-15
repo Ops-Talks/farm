@@ -3,10 +3,15 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (leave empty for automatic)'
+      increment:
+        description: 'Version increment type'
         required: false
-        default: ''
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -36,13 +41,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Run Release
-        run: npm run release -- --ci
+        run: npm run release -w apps/api -- --ci --increment=${{ github.event.inputs.increment || 'patch' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload test results
-        if: always()
+      - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: coverage/
+          path: apps/api/coverage/

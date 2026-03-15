@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 jobs:
-  build-and-test:
+  api:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,15 +24,15 @@ jobs:
         run: npm ci
 
       - name: Run lint
-        run: npm run lint
+        run: npm run lint -w apps/api
 
       - name: Run unit tests with coverage
-        run: npm run test:cov
+        run: npm run test:cov -w apps/api
         env:
           JEST_JUNIT_CLASSNAME: "{filepath}"
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e -w apps/api
         env:
           JEST_JUNIT_CLASSNAME: "{filepath}"
 
@@ -40,24 +40,24 @@ jobs:
         uses: codecov/codecov-action@v5
         if: always()
         with:
+          files: ./apps/api/coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload unit test results to Codecov
         uses: codecov/codecov-action@v5
         if: ${{ !cancelled() }}
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/junit.xml
+          files: ./apps/api/coverage/junit.xml
           report_type: test_results
-          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       - name: Upload E2E test results to Codecov
         uses: codecov/codecov-action@v5
         if: ${{ !cancelled() }}
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/junit-e2e.xml
+          files: ./apps/api/coverage/junit-e2e.xml
           report_type: test_results
-          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false

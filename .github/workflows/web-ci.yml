@@ -1,0 +1,55 @@
+name: Web CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  web:
+    name: Lint, Test & Build (apps/web)
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm' # caches ~/.npm based on package-lock.json
+
+      # ── 3. Install ───────────────────────────────────────────────────────────
+      - name: Install dependencies (all workspaces)
+        run: npm ci
+        # npm ci at the repo root installs every workspace in one shot:
+        #   apps/web  +  packages/types  (and any other packages/*)
+
+      # ── 4. Compile shared types ──────────────────────────────────────────────
+      - name: Compile packages/types
+        # apps/web imports from this package; tsc must run first so the
+        # emitted .d.ts / .js files are present before next build resolves them.
+        run: cd packages/types && npx tsc
+
+      # ── 5. Lint ──────────────────────────────────────────────────────────────
+      - name: Lint (apps/web)
+        run: npm run web:lint
+
+      # ── 6. Unit tests ────────────────────────────────────────────────────────
+      - name: Unit tests (apps/web)
+        run: npm run web:test
+
+      # ── 7. Build ─────────────────────────────────────────────────────────────
+      - name: Build (apps/web)
+        run: npm run web:build
+        env:
+          # Opt out of Next.js anonymous telemetry data collection in CI.
+          NEXT_TELEMETRY_DISABLED: 1
