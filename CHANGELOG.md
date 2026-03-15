@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Audit log module**: Immutable audit trail (`core-audit-log` plugin) with `AuditLog` entity, service, controller, and migration.
+- **Notification queue processor**: `NotificationProcessor` with email and webhook support via BullMQ.
+- **Catalog discovery processor**: `CatalogDiscoveryProcessor` for async catalog ingestion jobs.
+- **Telemetry tracing**: OpenTelemetry tracing setup (`tracing.ts`) gated behind `OTEL_ENABLED=false` by default.
+- **Metrics interceptor**: Prometheus HTTP metrics (`http_requests_total`, `http_request_duration_seconds`) via `MetricsInterceptor`.
+- **Request logger middleware**: Structured request/response logging middleware.
+
+### Changed
+- **Monorepo restructure**: API source moved to `apps/api/`, web source to `apps/web/`; config files (`Dockerfile`, `tsconfig.json`, `nest-cli.json`, `eslint.config.mjs`) relocated accordingly.
+- **`.gitignore`**: Fixed `dist/` and `coverage/` patterns to apply to all subdirectories (previously only matched repo root).
+- **`.release-it.json`**: Moved to `apps/api/`; fixed `CHANGELOG.md` path to `../../CHANGELOG.md`.
+- **Next.js telemetry disabled**: `NEXT_TELEMETRY_DISABLED=1` added to `next.config.ts`, `apps/web/.env.local`, and `apps/web/.env.example`.
+- **`.env.example`**: Synced with all current configuration variables (`JWT_SECRET`, `ALLOWED_ORIGINS`, Redis, SMTP, OTEL).
+
+### Fixed
+- **Teams page crash**: `teams.list()` and `environments.list()` API client methods now correctly typed as `Promise<PaginatedResponse<T>>`; `TeamsClient` extracts `.data` from paginated response preventing `TypeError: allTeams.filter is not a function`.
+- **Dashboard quick-stats**: Teams and environments counts now use `.total` instead of `.length` on paginated responses.
+- **AuditLog entity**: Changed `payload` column from `jsonb` (PostgreSQL-only) to `simple-json` for SQLite E2E test compatibility.
+- **Plugins E2E test**: Updated expected plugin count from 5 to 6 to include `core-audit-log`.
+- **Lint errors**: Fixed `require-await`, `no-unsafe-return`, `no-unsafe-member-access`, and `no-require-imports` violations across test files.
+- **Lint warnings**: Typed `Job<T>` generics in `notification.processor.spec.ts` and `catalog-discovery.processor.spec.ts`.
+
 ## [0.6.2] - 2026-03-08
 
 ### Added
