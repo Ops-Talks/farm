@@ -29,7 +29,10 @@
       "npm run lint",
       "npm run test"
     ],
-    "after:bump": "npm run build",
-    "before:release": "git add ../../CHANGELOG.md"
+    "after:bump": [
+      "npm --prefix ../../apps/web version ${version} --no-git-tag-version --allow-same-version",
+      "npm run build"
+    ],
+    "before:release": "git add ../../CHANGELOG.md ../../apps/web/package.json ../../apps/web/package-lock.json"
   }
 }
