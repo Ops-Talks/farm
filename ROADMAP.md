@@ -440,7 +440,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
-## Phase 5.5: Front-End Quality and Hardening `TODO`
+## Phase 5.5: Front-End Quality and Hardening `DONE`
 
 > Issues, enhancements, and test coverage discovered during deep frontend analysis.
 
@@ -553,7 +553,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-T51 | Task | Phase 5 summary row still shows TODO in ROADMAP | `DONE` |
 | FARM-ST178 | Sub-task | Update Phase 5 status from `TODO` to `DONE` in summary table | `DONE` |
 
-### FARM-E32: Front-End Enhancements `IN PROGRESS`
+### FARM-E32: Front-End Enhancements `DONE`
 
 > UX improvements, missing features, and architectural enhancements.
 
@@ -568,26 +568,26 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-T53 | Task | Add per-page loading.tsx files | `DONE` |
 | FARM-ST182 | Sub-task | Create loading states for catalog, teams, deployments, queues, observability, docs pages | `DONE` |
 
-#### FARM-S110: Accessibility and UX Improvements `TODO`
+#### FARM-S110: Accessibility and UX Improvements `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T54 | Task | Keyboard navigation improvements | `TODO` |
-| FARM-ST183 | Sub-task | Add proper aria-labels to all interactive elements | `TODO` |
-| FARM-ST184 | Sub-task | Ensure focus management on page transitions | `TODO` |
-| FARM-ST185 | Sub-task | Add skip-to-content link for screen readers | `TODO` |
-| FARM-T55 | Task | Toast notifications for mutations | `TODO` |
-| FARM-ST186 | Sub-task | Add success/error toasts for create, update, delete operations across all pages | `TODO` |
-| FARM-ST187 | Sub-task | Sonner is installed but only used in docs page; extend to catalog, teams, deployments | `TODO` |
+| FARM-T54 | Task | Keyboard navigation improvements | `DONE` |
+| FARM-ST183 | Sub-task | Add proper aria-labels to all interactive elements | `DONE` |
+| FARM-ST184 | Sub-task | Ensure focus management on page transitions | `DONE` |
+| FARM-ST185 | Sub-task | Add skip-to-content link for screen readers | `DONE` |
+| FARM-T55 | Task | Toast notifications for mutations | `DONE` |
+| FARM-ST186 | Sub-task | Add success/error toasts for create, update, delete operations across all pages | `DONE` |
+| FARM-ST187 | Sub-task | Sonner extended to catalog, teams, deployments, queues | `DONE` |
 
-#### FARM-S111: Mobile Responsiveness `TODO`
+#### FARM-S111: Mobile Responsiveness `DONE`
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T56 | Task | Mobile navigation improvements | `TODO` |
-| FARM-ST188 | Sub-task | Replace horizontal mobile nav buttons with hamburger menu (Sheet component) | `TODO` |
-| FARM-ST189 | Sub-task | Ensure all tables are horizontally scrollable on small screens | `TODO` |
-| FARM-ST190 | Sub-task | Test and fix all pages at 375px, 768px, and 1024px breakpoints | `TODO` |
+| FARM-T56 | Task | Mobile navigation improvements | `DONE` |
+| FARM-ST188 | Sub-task | Replace horizontal mobile nav buttons with hamburger menu (Sheet component) | `DONE` |
+| FARM-ST189 | Sub-task | Ensure all tables are horizontally scrollable on small screens | `DONE` |
+| FARM-ST190 | Sub-task | Test and fix all pages at 375px, 768px, and 1024px breakpoints | `DONE` |
 
 #### FARM-S112: Component Architecture Improvements `DONE`
 
@@ -596,13 +596,13 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-T57 | Task | Extract reusable page patterns | `DONE` |
 | FARM-ST191 | Sub-task | Create shared PageHeader component (title, description, action buttons) | `DONE` |
 | FARM-ST192 | Sub-task | Create shared FilterTabs component (used by catalog, deployments, teams) | `DONE` |
-| FARM-ST193 | Sub-task | Create shared EmptyState component with consistent styling | `TODO` |
-| FARM-ST194 | Sub-task | Create shared ConfirmDialog component for delete actions | `TODO` |
+| FARM-ST193 | Sub-task | Create shared EmptyState component with consistent styling | `DONE` |
+| FARM-ST194 | Sub-task | Create shared ConfirmDialog component for delete actions | `DONE` |
 | FARM-T58 | Task | Decompose large page files | `DONE` |
 | FARM-ST195 | Sub-task | Split docs/page.tsx (651 lines) into separate TreeSidebar, DocViewer, DocForm, SearchPanel components | `DONE` |
 | FARM-ST196 | Sub-task | Split observability/page.tsx (529 lines) into HealthTab, MetricsTab, TracesTab components in separate files | `DONE` |
-| FARM-ST197 | Sub-task | Split teams/[id]/page.tsx (509 lines) into MembersTable, ComponentsTable, TeamEditForm components | `TODO` |
-| FARM-ST198 | Sub-task | Split queues/[name]/page.tsx (345 lines) into JobDetailPanel, JobList components in separate files | `TODO` |
+| FARM-ST197 | Sub-task | Split teams/[id]/page.tsx into TeamEditForm, MembersSection, ComponentsSection components | `DONE` |
+| FARM-ST198 | Sub-task | Split queues/[name]/page.tsx into JobDetailPanel, JobList, queue-utils components | `DONE` |
 
 ---
 
@@ -673,6 +673,6 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 3: Backend Completion | 1 | 1 | `DONE` |
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
-| Phase 5.5: Front-End Quality | 3 | 10 | `IN PROGRESS` |
+| Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
 | Phase 6: Advanced Features | 5 | 19 | `TODO` |
 | **Total** | **32** | **111** | |

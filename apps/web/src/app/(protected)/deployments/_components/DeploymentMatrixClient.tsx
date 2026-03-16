@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
+import { EmptyState } from "@/components/shared/empty-state";
 import { deployments } from "@/lib/api-client";
 import { subscribe } from "@/lib/ws-client";
 import {
@@ -115,12 +117,11 @@ export function DeploymentMatrixClient() {
           </CardContent>
         </Card>
       ) : matrix.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            No components found. Register components and create deployments to
-            populate the matrix.
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No components found"
+          description="Register components and create deployments to populate the matrix."
+          icon={<Layers className="h-6 w-6 text-muted-foreground" />}
+        />
       ) : (
         <Card>
           <CardHeader className="pb-2">
