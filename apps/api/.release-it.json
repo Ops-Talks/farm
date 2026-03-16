@@ -6,7 +6,6 @@
     "requireUpstream": true,
     "tagName": "v${version}",
     "tagAnnotation": "Release v${version}",
-    "commitFiles": ["package.json", "../../CHANGELOG.md"],
     "push": true,
     "pushTags": true
   },
@@ -30,6 +29,7 @@
       "npm run lint",
       "npm run test"
     ],
-    "after:bump": "npm run build"
+    "after:bump": "npm run build",
+    "before:release": "git add ../../CHANGELOG.md"
   }
 }
