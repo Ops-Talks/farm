@@ -12,7 +12,10 @@ Farm enables engineering teams to:
 
 - **Track Software Components**: Maintain a unified catalog of all software components including services, libraries, APIs, and websites
 - **Manage Documentation**: Associate technical documentation with each component for easy discovery and maintenance
-- **Handle Authentication**: Manage user access with role-based authentication
+- **Handle Authentication**: Manage user access with role-based authentication and multi-tenant organization support
+- **Observe Systems**: Monitor metrics, traces, and logs from a unified hub with native PromQL, Jaeger, and Loki integration
+- **Run Pipelines**: Define and execute multi-stage pipelines with real-time log streaming via WebSocket
+- **Manage Alerting**: Create and manage PromQL-based alerting rules linked to catalog components or environments
 - **Discover and Understand**: Provide visibility into the software ecosystem within your organization
 
 ## Who is this documentation for?
@@ -41,11 +44,24 @@ If you are a developer looking to contribute to Farm or deploy it in your enviro
 
 Farm is built with modern technologies:
 
-| Technology | Purpose |
-|------------|---------|
-| [NestJS](https://docs.nestjs.com) | Progressive Node.js framework for building server-side applications |
-| [TypeScript](https://www.typescriptlang.org/) | Typed superset of JavaScript for enhanced developer experience |
-| [REST API](https://www.w3.org/TR/2004/NOTE-ws-arch-20040211/#relwwwrest) | HTTP-based API following REST principles |
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Backend** | [NestJS 11](https://docs.nestjs.com) | Progressive Node.js framework for building scalable server-side applications |
+| **Backend** | [TypeORM](https://typeorm.io) | ORM for database access, migrations, and entity management |
+| **Backend** | [PostgreSQL 16](https://www.postgresql.org) | Primary relational database |
+| **Backend** | [BullMQ](https://docs.bullmq.io) | Redis-backed queue for background job processing (pipelines, notifications) |
+| **Backend** | [Socket.IO](https://socket.io) | WebSocket gateway for real-time event broadcasting |
+| **Frontend** | [Next.js 16](https://nextjs.org) | React framework with App Router and server components |
+| **Frontend** | [React 19](https://react.dev) | UI component model |
+| **Frontend** | [Tailwind CSS](https://tailwindcss.com) | Utility-first CSS framework |
+| **Frontend** | [shadcn/ui](https://ui.shadcn.com) | Accessible component library built on Radix UI |
+| **Shared** | [TypeScript](https://www.typescriptlang.org) | Strongly typed language for both frontend and backend |
+| **Shared** | [@farm/types](https://github.com/Ops-Talks/farm) | Internal package for shared enums, types, and events |
+| **Observability** | [Prometheus](https://prometheus.io) | Metrics collection and PromQL proxy |
+| **Observability** | [Jaeger / Grafana Tempo](https://www.jaegertracing.io) | Distributed trace storage and waterfall viewer |
+| **Observability** | [Loki](https://grafana.com/oss/loki) | Log aggregation and LogQL proxy |
+| **Infrastructure** | [Docker / Docker Compose](https://docs.docker.com) | Container runtime and local development environment |
+| **Infrastructure** | [Redis](https://redis.io) | Queue broker (BullMQ) and optional HTTP cache layer |
 
 ## Quick Start
 
