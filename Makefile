@@ -103,7 +103,7 @@ seed:
 	npm run seed -w apps/api
 
 release:
-	@VERSION=$${TAG#v}; npm run release -w apps/api -- $${VERSION:+--ci --release-version=$$VERSION}
+	@VERSION=$${TAG#v}; npm run release -w apps/api -- $${VERSION:+--ci --increment=$$VERSION}
 
 web-dev:
 	npm run web:dev
