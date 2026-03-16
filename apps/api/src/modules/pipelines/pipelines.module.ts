@@ -8,16 +8,22 @@ import { PipelineProcessor } from "./pipeline.processor";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 
+const isTest = process.env.NODE_ENV === "test";
+
 /**
  * Feature module for pipeline definition management and BullMQ-based execution.
+ * BullMQ queue registration is skipped in test environments to avoid requiring
+ * a live Redis connection during e2e tests.
  */
 @Module({
   imports: [
     TypeOrmModule.forFeature([Pipeline, PipelineRun]),
-    BullModule.registerQueue({ name: QUEUE_NAMES.PIPELINE_EXECUTION }),
+    ...(isTest
+      ? []
+      : [BullModule.registerQueue({ name: QUEUE_NAMES.PIPELINE_EXECUTION })]),
   ],
   controllers: [PipelinesController],
-  providers: [PipelinesService, PipelineProcessor],
+  providers: [PipelinesService, ...(isTest ? [] : [PipelineProcessor])],
   exports: [PipelinesService],
 })
 export class PipelinesModule {}

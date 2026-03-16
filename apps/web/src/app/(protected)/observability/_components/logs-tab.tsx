@@ -86,7 +86,7 @@ export function LogsTab() {
     setRan(true);
     setVisibleCount(MAX_LINES);
     const now = Date.now();
-    const rangeSeconds = TIME_RANGES[rangeIdx].seconds;
+    const rangeSeconds = TIME_RANGES[rangeIdx]!.seconds;
     const end = Math.floor(now / 1000);
     const start = end - rangeSeconds;
 

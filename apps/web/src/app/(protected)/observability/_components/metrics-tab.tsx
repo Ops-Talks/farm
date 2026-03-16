@@ -119,7 +119,7 @@ export function MiniLineChart({ data, height = 80, label }: MiniLineChartProps) 
 
         {/* Area fill */}
         <polygon
-          points={`${toX(times[0])},${toY(minVal)} ${points} ${toX(times[times.length - 1])},${toY(minVal)}`}
+          points={`${toX(times[0]!)},${toY(minVal)} ${points} ${toX(times[times.length - 1]!)},${toY(minVal)}`}
           fill="#6366f1"
           fillOpacity={0.08}
         />
@@ -128,14 +128,14 @@ export function MiniLineChart({ data, height = 80, label }: MiniLineChartProps) 
         {[0, data.length - 1].map((idx) => (
           <text
             key={idx}
-            x={toX(times[idx])}
+            x={toX(times[idx]!)}
             y={height + 14}
             textAnchor={idx === 0 ? "start" : "end"}
             fontSize={9}
             fill="currentColor"
             fillOpacity={0.5}
           >
-            {formatTime(times[idx])}
+            {formatTime(times[idx]!)}
           </text>
         ))}
       </svg>

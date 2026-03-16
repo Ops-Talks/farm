@@ -76,6 +76,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     }
     const reordered = [...stages];
     const [moved] = reordered.splice(fromIndex, 1);
+    if (!moved) return;
     reordered.splice(dropIndex, 0, moved);
     // Reassign order fields to match new positions
     const updated = reordered.map((s, i) => ({ ...s, order: i }));

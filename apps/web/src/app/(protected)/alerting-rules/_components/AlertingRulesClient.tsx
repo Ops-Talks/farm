@@ -85,9 +85,9 @@ export function AlertingRulesClient() {
         title="Alerting Rules"
         description="Manage PromQL-based alerting rules."
       >
-        <Button asChild>
-          <Link href="/alerting-rules/new">Create Rule</Link>
-        </Button>
+        <Link href="/alerting-rules/new">
+          <Button>Create Rule</Button>
+        </Link>
       </PageHeader>
 
       {loading && (
@@ -103,9 +103,9 @@ export function AlertingRulesClient() {
           title="No alerting rules"
           description="Create your first alerting rule to start monitoring your services."
         >
-          <Button asChild className="mt-4">
-            <Link href="/alerting-rules/new">Create Rule</Link>
-          </Button>
+          <Link href="/alerting-rules/new">
+            <Button className="mt-4">Create Rule</Button>
+          </Link>
         </EmptyState>
       )}
 

@@ -66,8 +66,6 @@ export class AlertingRule {
     description: "Severity level of the alert",
   })
   @Column({
-    type: "enum",
-    enum: AlertingSeverity,
     default: AlertingSeverity.WARNING,
   })
   severity: AlertingSeverity;

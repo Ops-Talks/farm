@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -26,8 +27,9 @@ export class PipelinesService {
     private readonly pipelineRepository: Repository<Pipeline>,
     @InjectRepository(PipelineRun)
     private readonly runRepository: Repository<PipelineRun>,
+    @Optional()
     @InjectQueue(QUEUE_NAMES.PIPELINE_EXECUTION)
-    private readonly executionQueue: Queue,
+    private readonly executionQueue?: Queue,
   ) {}
 
   /**
@@ -150,7 +152,7 @@ export class PipelinesService {
 
     const savedRun = await this.runRepository.save(run);
 
-    await this.executionQueue.add(QUEUE_NAMES.PIPELINE_EXECUTION, {
+    await this.executionQueue?.add(QUEUE_NAMES.PIPELINE_EXECUTION, {
       pipelineId,
       runId: savedRun.id,
       triggeredBy,

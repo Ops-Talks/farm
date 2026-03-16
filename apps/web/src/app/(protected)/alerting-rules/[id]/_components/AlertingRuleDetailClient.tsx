@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { AlertingRuleFormClient } from "./AlertingRuleFormClient";
+import { AlertingRuleFormClient } from "../../_components/AlertingRuleFormClient";
 
 interface AlertingRuleDetailClientProps {
   id: string;

@@ -21,7 +21,7 @@ function serviceColorClass(service: string): string {
   for (let i = 0; i < service.length; i++) {
     hash = (hash * 31 + service.charCodeAt(i)) & 0xffffffff;
   }
-  return colors[Math.abs(hash) % colors.length];
+  return colors[Math.abs(hash) % colors.length]!;
 }
 
 function formatDuration(us: number): string {
@@ -155,7 +155,7 @@ export function TraceWaterfall({ traceId }: TraceWaterfallProps) {
           setError("Trace not found.");
           setTrace(null);
         } else {
-          setTrace(res.data[0]);
+          setTrace(res.data[0] ?? null);
           setError(null);
         }
         setFetchedId(traceId);
