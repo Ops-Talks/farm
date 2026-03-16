@@ -61,4 +61,13 @@ export declare enum FarmEvent {
     DEPLOYMENT_CREATED = "deployment.created",
     DEPLOYMENT_UPDATED = "deployment.updated"
 }
+/**
+ * Represents the role a user holds within an organization.
+ * OWNER has full control, ADMIN can manage resources, MEMBER has read access.
+ */
+export declare enum OrgRole {
+    OWNER = "owner",
+    ADMIN = "admin",
+    MEMBER = "member"
+}
 //# sourceMappingURL=index.d.ts.map

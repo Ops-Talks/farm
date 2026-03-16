@@ -24,9 +24,10 @@ import {
 import { EnvironmentsService } from "./environments.service";
 import { CreateEnvironmentDto } from "./dto/create-environment.dto";
 import { UpdateEnvironmentDto } from "./dto/update-environment.dto";
+import { ListEnvironmentsQueryDto } from "./dto/list-environments-query.dto";
 import { Environment } from "./entities/environment.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { PaginationQueryDto, PaginatedResponseDto } from "../../common/dto";
+import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -87,7 +88,8 @@ export class EnvironmentsController {
 
   /**
    * Retrieves all environments ordered by display order.
-   * @returns An array of all environments
+   * @param query - Query params including optional organizationId filter
+   * @returns A paginated list of environments
    */
   @Get()
   @ApiOperation({ summary: "List all environments" })
@@ -96,17 +98,18 @@ export class EnvironmentsController {
     type: PaginatedResponseDto,
   })
   async findAll(
-    @Query() pagination: PaginationQueryDto,
+    @Query() query: ListEnvironmentsQueryDto,
   ): Promise<PaginatedResponseDto<Environment>> {
     const [data, total] = await this.environmentsService.findAll(
-      pagination.skip,
-      pagination.take,
+      query.skip,
+      query.take,
+      query.organizationId,
     );
     return new PaginatedResponseDto(
       data,
       total,
-      pagination.skip ?? 0,
-      pagination.take ?? 20,
+      query.skip ?? 0,
+      query.take ?? 20,
     );
   }
 

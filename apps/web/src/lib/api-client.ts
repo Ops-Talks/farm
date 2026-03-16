@@ -12,6 +12,7 @@ import type {
   LoginRequest,
   LoginResponse,
   ObservabilitySummary,
+  Organization,
   PaginatedResponse,
   PaginationQuery,
   QueueInfo,
@@ -439,6 +440,39 @@ export const docs = {
 export const health = {
   check(): Promise<HealthStatus> {
     return request("/health");
+  },
+};
+
+// -- Organizations API --
+
+export const organizations = {
+  list(): Promise<Organization[]> {
+    return request("/v1/organizations");
+  },
+
+  create(data: { name: string; description?: string }): Promise<Organization> {
+    return request("/v1/organizations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  get(id: string): Promise<Organization> {
+    return request(`/v1/organizations/${id}`);
+  },
+
+  update(
+    id: string,
+    data: Partial<{ name: string; description: string }>,
+  ): Promise<Organization> {
+    return request(`/v1/organizations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(id: string): Promise<void> {
+    return request(`/v1/organizations/${id}`, { method: "DELETE" });
   },
 };
 

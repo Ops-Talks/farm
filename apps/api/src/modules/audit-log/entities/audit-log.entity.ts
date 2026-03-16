@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -63,6 +64,16 @@ export class AuditLog {
   })
   @Column("simple-json", { nullable: true })
   payload: Record<string, unknown> | null;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440100",
+    description: "The UUID of the organization this audit log entry belongs to",
+    required: false,
+    nullable: true,
+  })
+  @Index()
+  @Column({ nullable: true })
+  organizationId: string;
 
   @ApiProperty({
     example: "2023-01-01T00:00:00Z",

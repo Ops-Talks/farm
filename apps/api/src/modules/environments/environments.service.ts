@@ -47,11 +47,19 @@ export class EnvironmentsService {
   }
 
   /**
-   * Retrieves all environments ordered by the order field.
-   * @returns An array of all environments
+   * Retrieves all environments ordered by the order field, optionally scoped to an organization.
+   * @param skip - Number of records to skip
+   * @param take - Number of records to take
+   * @param organizationId - Optional organization UUID to scope results
+   * @returns A tuple of [environments, total count]
    */
-  async findAll(skip = 0, take = 20): Promise<[Environment[], number]> {
+  async findAll(
+    skip = 0,
+    take = 20,
+    organizationId?: string,
+  ): Promise<[Environment[], number]> {
     return await this.environmentRepository.findAndCount({
+      where: organizationId ? { organizationId } : {},
       order: { order: "ASC", name: "ASC" },
       skip,
       take,

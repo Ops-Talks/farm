@@ -255,6 +255,18 @@ export interface ObservabilitySummary {
   grafanaUrl: string | null;
 }
 
+// -- Organizations --
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // -- Documentation --
 
 export interface DocumentationEntry {

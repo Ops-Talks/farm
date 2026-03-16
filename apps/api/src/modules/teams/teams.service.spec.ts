@@ -112,6 +112,7 @@ describe("TeamsService", () => {
       expect(data).toHaveLength(1);
       expect(total).toBe(1);
       expect(teamRepo.findAndCount).toHaveBeenCalledWith({
+        where: {},
         order: { name: "ASC" },
         skip: 0,
         take: 20,

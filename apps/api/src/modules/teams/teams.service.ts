@@ -50,11 +50,19 @@ export class TeamsService {
   }
 
   /**
-   * Retrieves all teams.
-   * @returns An array of all teams
+   * Retrieves all teams, optionally scoped to an organization.
+   * @param skip - Number of records to skip
+   * @param take - Number of records to take
+   * @param organizationId - Optional organization UUID to scope results
+   * @returns A tuple of [teams, total count]
    */
-  async findAll(skip = 0, take = 20): Promise<[Team[], number]> {
+  async findAll(
+    skip = 0,
+    take = 20,
+    organizationId?: string,
+  ): Promise<[Team[], number]> {
     return await this.teamRepository.findAndCount({
+      where: organizationId ? { organizationId } : {},
       order: { name: "ASC" },
       skip,
       take,

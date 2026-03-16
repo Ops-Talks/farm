@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
+exports.OrgRole = exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
 var ComponentKind;
 (function (ComponentKind) {
     ComponentKind["SERVICE"] = "service";
@@ -71,4 +71,14 @@ var FarmEvent;
     FarmEvent["DEPLOYMENT_CREATED"] = "deployment.created";
     FarmEvent["DEPLOYMENT_UPDATED"] = "deployment.updated";
 })(FarmEvent || (exports.FarmEvent = FarmEvent = {}));
+/**
+ * Represents the role a user holds within an organization.
+ * OWNER has full control, ADMIN can manage resources, MEMBER has read access.
+ */
+var OrgRole;
+(function (OrgRole) {
+    OrgRole["OWNER"] = "owner";
+    OrgRole["ADMIN"] = "admin";
+    OrgRole["MEMBER"] = "member";
+})(OrgRole || (exports.OrgRole = OrgRole = {}));
 //# sourceMappingURL=index.js.map

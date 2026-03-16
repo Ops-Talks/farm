@@ -84,7 +84,7 @@ describe("TeamsController", () => {
     expect(result.total).toBe(1);
     expect(result.skip).toBe(0);
     expect(result.take).toBe(20);
-    expect(service.findAll).toHaveBeenCalledWith(0, 20);
+    expect(service.findAll).toHaveBeenCalledWith(0, 20, undefined);
   });
 
   it("should return one team", async () => {

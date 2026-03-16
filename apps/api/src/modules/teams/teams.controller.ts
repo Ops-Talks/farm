@@ -24,11 +24,12 @@ import {
 import { TeamsService } from "./teams.service";
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
+import { ListTeamsQueryDto } from "./dto/list-teams-query.dto";
 import { Team } from "./entities/team.entity";
 import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { PaginationQueryDto, PaginatedResponseDto } from "../../common/dto";
+import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -87,7 +88,8 @@ export class TeamsController {
 
   /**
    * Retrieves all teams.
-   * @returns An array of all teams
+   * @param query - Query params including optional organizationId filter
+   * @returns A paginated list of teams
    */
   @Get()
   @ApiOperation({ summary: "List all teams" })
@@ -96,17 +98,18 @@ export class TeamsController {
     type: PaginatedResponseDto,
   })
   async findAll(
-    @Query() pagination: PaginationQueryDto,
+    @Query() query: ListTeamsQueryDto,
   ): Promise<PaginatedResponseDto<Team>> {
     const [data, total] = await this.teamsService.findAll(
-      pagination.skip,
-      pagination.take,
+      query.skip,
+      query.take,
+      query.organizationId,
     );
     return new PaginatedResponseDto(
       data,
       total,
-      pagination.skip ?? 0,
-      pagination.take ?? 20,
+      query.skip ?? 0,
+      query.take ?? 20,
     );
   }
 

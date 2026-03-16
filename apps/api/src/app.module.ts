@@ -1,7 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import {
@@ -18,6 +18,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { EnvironmentsModule } from "./modules/environments/environments.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { AuditLogModule } from "./modules/audit-log/audit-log.module";
+import { OrganizationModule } from "./modules/organization/organization.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -26,6 +27,7 @@ import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
+import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 
 @Module({
   imports: [
@@ -89,10 +91,8 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         throttlers: [
-          {
-            ttl: configService.get<number>("throttle.ttl") ?? 60000,
-            limit: configService.get<number>("throttle.limit") ?? 10,
-          },
+          { name: "short", ttl: 1000, limit: 5 },
+          { name: "long", ttl: 60000, limit: 100 },
         ],
         skipIf: () =>
           configService.get<string>("env") === "test" ||
@@ -148,6 +148,14 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
         },
         module: AuditLogModule,
       },
+      {
+        metadata: {
+          name: "core-organization",
+          version: "1.0.0",
+          description: "Organization and multi-tenant management",
+        },
+        module: OrganizationModule,
+      },
     ]),
   ],
   controllers: [AppController],
@@ -155,7 +163,7 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: PerUserThrottlerGuard,
     },
     makeCounterProvider({
       name: "http_requests_total",

@@ -23,6 +23,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { MenuIcon } from "lucide-react";
+import { OrgSwitcher } from "@/components/layout/org-switcher";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/docs", label: "Docs" },
   { href: "/queues", label: "Queues" },
   { href: "/observability", label: "Observability" },
+  { href: "/organizations", label: "Organizations" },
   { href: "/teams", label: "Teams" },
 ];
 
@@ -107,6 +109,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <Separator />
+        {/* FARM-S86 — Organization switcher sits between brand and nav links */}
+        <div className="px-2 py-2">
+          <OrgSwitcher />
+        </div>
+        <Separator />
         {/* ST183 – Desktop main nav with descriptive aria-label */}
         <nav aria-label="Main navigation" className="flex flex-1 flex-col gap-1 p-2">
           {navItems.map((item) => {
@@ -152,6 +159,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <SheetHeader className="border-b px-4 py-3">
                   <SheetTitle>Farm</SheetTitle>
                 </SheetHeader>
+                {/* FARM-S86 — org switcher in mobile nav, below the logo */}
+                <div className="border-b px-2 py-2">
+                  <OrgSwitcher />
+                </div>
                 {/* ST183 – Mobile nav with dedicated aria-label */}
                 <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-2">
                   {navItems.map((item) => {

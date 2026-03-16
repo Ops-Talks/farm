@@ -10,6 +10,18 @@ vi.mock("@/contexts/auth-context", () => ({
   }),
 }));
 
+vi.mock("@/contexts/organization-context", () => ({
+  useOrganization: () => ({
+    organizations: [],
+    currentOrg: null,
+    isLoading: false,
+    switchOrg: vi.fn(),
+    refreshOrgs: vi.fn(),
+  }),
+  OrganizationProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+import React from "react";
 import { AppShell } from "@/components/layout/app-shell";
 
 describe("AppShell", () => {

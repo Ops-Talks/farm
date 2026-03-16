@@ -162,8 +162,8 @@ export class CatalogController {
 
   /**
    * Retrieves all components from the catalog.
-   * @param kindGroup - Optional filter by domain group (dev, infra, data, security)
-   * @returns An array of all components
+   * @param query - Query params including optional kindGroup and organizationId filters
+   * @returns A paginated list of components
    */
   @Get("components")
   @UseInterceptors(CacheInterceptor)
@@ -174,6 +174,11 @@ export class CatalogController {
     enum: ComponentKindGroup,
     description:
       "Filter components by domain group (dev, infra, data, security)",
+  })
+  @ApiQuery({
+    name: "organizationId",
+    required: false,
+    description: "Filter components by organization UUID",
   })
   @ApiOkResponse({
     description: "Successfully retrieved component list.",
@@ -186,6 +191,7 @@ export class CatalogController {
       query.skip,
       query.take,
       query.kindGroup,
+      query.organizationId,
     );
     return new PaginatedResponseDto(
       data,

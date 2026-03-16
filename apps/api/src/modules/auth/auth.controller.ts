@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -37,12 +37,14 @@ export class AuthController {
 
   /**
    * Registers a new user account.
+   * Applies strict rate limiting: 5 requests per minute, bypasses the long-window global limit.
    * @param registerUserDto - Registration data
    * @returns The created user profile
    */
   @Post("register")
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @SkipThrottle({ long: true })
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "Register a new user" })
   @ApiHeader({
     name: "X-RateLimit-Limit",
@@ -70,12 +72,14 @@ export class AuthController {
 
   /**
    * Authenticates a user and returns an access token with a refresh token.
+   * Applies strict rate limiting: 5 requests per minute, bypasses the long-window global limit.
    * @param loginDto - Login credentials
    * @returns The authenticated user, access token, and refresh token
    */
   @Post("login")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @SkipThrottle({ long: true })
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: "User login" })
   @ApiHeader({
     name: "X-RateLimit-Limit",
@@ -110,7 +114,7 @@ export class AuthController {
    */
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: "Refresh access token" })
   @ApiHeader({
     name: "X-RateLimit-Limit",

@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -67,6 +68,16 @@ export class Environment {
   })
   @Column("simple-json", { nullable: true })
   metadata: Record<string, unknown>;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440100",
+    description: "The UUID of the organization this environment belongs to",
+    required: false,
+    nullable: true,
+  })
+  @Index()
+  @Column({ nullable: true })
+  organizationId: string;
 
   @ApiProperty({
     example: "2023-01-01T00:00:00Z",

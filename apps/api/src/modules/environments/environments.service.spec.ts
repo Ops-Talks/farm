@@ -93,6 +93,7 @@ describe("EnvironmentsService", () => {
       expect(data).toHaveLength(1);
       expect(total).toBe(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         order: { order: "ASC", name: "ASC" },
         skip: 0,
         take: 20,

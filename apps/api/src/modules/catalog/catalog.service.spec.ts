@@ -154,6 +154,7 @@ spec:
       expect(data).toEqual([mockComponent]);
       expect(total).toBe(1);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: {},
         relations: ["dependencies"],
         skip: 0,
         take: 20,

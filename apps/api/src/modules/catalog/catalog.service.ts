@@ -195,14 +195,18 @@ export class CatalogService {
   }
 
   /**
-   * Retrieves all components from the catalog, optionally filtered by kind group.
+   * Retrieves all components from the catalog, optionally filtered by kind group or organization.
+   * @param skip - Number of records to skip
+   * @param take - Number of records to take
    * @param kindGroup - Optional kind group to filter components by domain
-   * @returns An array of matching components
+   * @param organizationId - Optional organization UUID to scope results
+   * @returns A tuple of [components, total count]
    */
   async findAll(
     skip = 0,
     take = 20,
     kindGroup?: ComponentKindGroup,
+    organizationId?: string,
   ): Promise<[Component[], number]> {
     if (kindGroup) {
       const kinds = Object.entries(COMPONENT_KIND_GROUPS)
@@ -210,7 +214,10 @@ export class CatalogService {
         .map(([kind]) => kind as ComponentKind);
 
       return await this.componentRepository.findAndCount({
-        where: kinds.map((kind) => ({ kind })),
+        where: kinds.map((kind) => ({
+          kind,
+          ...(organizationId ? { organizationId } : {}),
+        })),
         relations: ["dependencies"],
         skip,
         take,
@@ -218,6 +225,7 @@ export class CatalogService {
     }
 
     return await this.componentRepository.findAndCount({
+      where: organizationId ? { organizationId } : {},
       relations: ["dependencies"],
       skip,
       take,
