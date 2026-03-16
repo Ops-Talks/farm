@@ -24,7 +24,7 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
-import { Request } from "express";
+import type { Request } from "express";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";

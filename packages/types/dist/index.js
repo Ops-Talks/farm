@@ -72,6 +72,7 @@ var FarmEvent;
     FarmEvent["DEPLOYMENT_UPDATED"] = "deployment.updated";
     FarmEvent["PIPELINE_RUN_UPDATED"] = "pipeline.run.updated";
     FarmEvent["PIPELINE_LOG"] = "pipeline.log";
+    FarmEvent["AUDIT_LOG_CREATED"] = "audit-log.created";
 })(FarmEvent || (exports.FarmEvent = FarmEvent = {}));
 /**
  * Represents the lifecycle status of a pipeline run.
