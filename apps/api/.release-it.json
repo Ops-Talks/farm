@@ -27,11 +27,11 @@
     "before:init": [
       "npm run changelog:sync",
       "npm run lint",
-      "npm run test"
+      "npm run test",
+      "npm run build"
     ],
     "after:bump": [
-      "npm --prefix ../../apps/web version ${version} --no-git-tag-version --allow-same-version",
-      "npm run build"
+      "npm --prefix ../../apps/web version ${version} --no-git-tag-version --allow-same-version"
     ],
     "before:release": "git add ../../CHANGELOG.md ../../apps/web/package.json ../../apps/web/package-lock.json"
   }

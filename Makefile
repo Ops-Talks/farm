@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check release web-dev web-build web-lint web-test
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check api-build release web-dev web-build web-lint web-test
 
 help:
 	@echo "Available Targets:"
@@ -93,7 +93,10 @@ lint:
 fmt:
 	npm run format -w apps/api
 
-check-back: fmt lint test-e2e
+check-back: fmt lint test-e2e api-build
+
+api-build:
+	npm run api:build
 
 check-front: web-lint web-build web-test
 
