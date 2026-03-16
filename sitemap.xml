@@ -2,130 +2,130 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://ops-talks.github.io/farm/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/auth/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/catalog/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/deployments/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/docs/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/environments/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/health/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/plugins/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/teams/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/contributing/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/setup/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/system-design/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/architecture/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/email/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/observability/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/plugins/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/queues/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/testing/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/backend/websockets/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/frontend/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/frontend/architecture/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/developer-guide/frontend/testing/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/authentication/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/catalog/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/documentation/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/faq/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/getting-started/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/system-discovery/</loc>
-         <lastmod>2026-03-15</lastmod>
+         <lastmod>2026-03-16</lastmod>
     </url>
 </urlset>
