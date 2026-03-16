@@ -82,6 +82,8 @@ nav:
     - System Discovery: user-guide/system-discovery.md
     - Using the Catalog: user-guide/catalog.md
     - Managing Documentation: user-guide/documentation.md
+    - Pipelines: user-guide/pipelines.md
+    - Observability: user-guide/observability.md
     - Authentication: user-guide/authentication.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -112,6 +114,8 @@ nav:
     - Teams API: api-reference/teams.md
     - Authentication API: api-reference/auth.md
     - Plugins API: api-reference/plugins.md
+    - Pipelines API: api-reference/pipelines.md
+    - Observability API: api-reference/observability.md
 
 extra_css:
   - stylesheets/extra.css

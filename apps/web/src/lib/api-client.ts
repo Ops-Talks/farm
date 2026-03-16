@@ -1,4 +1,5 @@
 import type {
+  AlertingRule,
   CatalogComponent,
   Deployment,
   DeploymentMatrixRow,
@@ -8,13 +9,21 @@ import type {
   Environment,
   ErrorResponse,
   HealthStatus,
+  JaegerTrace,
+  JaegerTracesResponse,
   JobInfo,
+  LokiLabelsResponse,
+  LokiLogsResponse,
   LoginRequest,
   LoginResponse,
   ObservabilitySummary,
   Organization,
   PaginatedResponse,
   PaginationQuery,
+  Pipeline,
+  PipelineRun,
+  PipelineStage,
+  PrometheusRangeResponse,
   QueueInfo,
   RefreshTokenRequest,
   RefreshTokenResponse,
@@ -481,5 +490,139 @@ export const organizations = {
 export const observability = {
   summary(): Promise<ObservabilitySummary> {
     return request("/v1/observability/summary");
+  },
+
+  queryRange(
+    query: string,
+    start: number,
+    end: number,
+    step: number,
+  ): Promise<PrometheusRangeResponse> {
+    return request(
+      `/v1/observability/metrics/query-range${toQueryString({ query, start, end, step })}`,
+    );
+  },
+
+  queryInstant(query: string, time?: number): Promise<PrometheusRangeResponse> {
+    return request(
+      `/v1/observability/metrics/query${toQueryString({ query, ...(time !== undefined ? { time } : {}) })}`,
+    );
+  },
+
+  getTraces(params: {
+    service?: string;
+    limit?: number;
+    lookback?: string;
+  }): Promise<JaegerTracesResponse> {
+    return request(`/v1/observability/traces${toQueryString(params)}`);
+  },
+
+  getTraceServices(): Promise<{ data: string[] }> {
+    return request("/v1/observability/traces/services");
+  },
+
+  getTrace(traceId: string): Promise<{ data: JaegerTrace[] }> {
+    return request(`/v1/observability/traces/${encodeURIComponent(traceId)}`);
+  },
+
+  getLogs(params: {
+    query?: string;
+    start?: number;
+    end?: number;
+    limit?: number;
+    direction?: "forward" | "backward";
+  }): Promise<LokiLogsResponse> {
+    return request(`/v1/observability/logs${toQueryString(params)}`);
+  },
+
+  getLogLabels(): Promise<LokiLabelsResponse> {
+    return request("/v1/observability/logs/labels");
+  },
+};
+
+// -- Pipelines API --
+
+export const pipelines = {
+  list(params?: { organizationId?: string }): Promise<Pipeline[]> {
+    return request(`/v1/pipelines${toQueryString(params ?? {})}`);
+  },
+
+  create(data: {
+    name: string;
+    description?: string;
+    stages?: PipelineStage[];
+  }): Promise<Pipeline> {
+    return request("/v1/pipelines", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  get(id: string): Promise<Pipeline> {
+    return request(`/v1/pipelines/${id}`);
+  },
+
+  update(
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string;
+      stages: PipelineStage[];
+    }>,
+  ): Promise<Pipeline> {
+    return request(`/v1/pipelines/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  remove(id: string): Promise<void> {
+    return request(`/v1/pipelines/${id}`, { method: "DELETE" });
+  },
+
+  trigger(id: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${id}/trigger`, { method: "POST" });
+  },
+
+  listRuns(id: string): Promise<PipelineRun[]> {
+    return request(`/v1/pipelines/${id}/runs`);
+  },
+
+  getRun(id: string, runId: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${id}/runs/${runId}`);
+  },
+};
+
+// -- Alerting Rules API --
+
+export const alertingRules = {
+  list(params?: {
+    componentId?: string;
+    severity?: string;
+    organizationId?: string;
+  }): Promise<AlertingRule[]> {
+    return request(`/v1/alerting-rules${toQueryString(params ?? {})}`);
+  },
+
+  create(data: Omit<AlertingRule, "id" | "createdAt" | "updatedAt">): Promise<AlertingRule> {
+    return request("/v1/alerting-rules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  get(id: string): Promise<AlertingRule> {
+    return request(`/v1/alerting-rules/${id}`);
+  },
+
+  update(id: string, data: Partial<AlertingRule>): Promise<AlertingRule> {
+    return request(`/v1/alerting-rules/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  remove(id: string): Promise<void> {
+    return request(`/v1/alerting-rules/${id}`, { method: "DELETE" });
   },
 };

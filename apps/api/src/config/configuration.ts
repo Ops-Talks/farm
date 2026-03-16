@@ -53,6 +53,15 @@ export const configuration = () => ({
   grafana: {
     url: process.env.GRAFANA_URL || "",
   },
+  prometheus: {
+    url: process.env.PROMETHEUS_URL || "http://localhost:9090",
+  },
+  tracing: {
+    jaegerUrl: process.env.JAEGER_URL || "http://localhost:16686",
+  },
+  loki: {
+    url: process.env.LOKI_URL || "http://localhost:3100",
+  },
 });
 
 /**
@@ -98,4 +107,7 @@ export const validationSchema = Joi.object({
   SMTP_PASS: Joi.string().allow("").default(""),
   SMTP_FROM: Joi.string().default("Farm <noreply@farm.local>"),
   GRAFANA_URL: Joi.string().allow("").default(""),
+  PROMETHEUS_URL: Joi.string().uri().default("http://localhost:9090"),
+  JAEGER_URL: Joi.string().uri().default("http://localhost:16686"),
+  LOKI_URL: Joi.string().uri().default("http://localhost:3100"),
 });

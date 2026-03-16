@@ -1,8 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { FindOptionsWhere, Repository } from "typeorm";
 import { AuditLog } from "./entities/audit-log.entity";
 import { CreateAuditLogDto } from "./dto/create-audit-log.dto";
+import { EventsGateway } from "../../common/events/events.gateway";
+import { FarmEvent } from "../../common/events/events.interfaces";
 
 /**
  * Options for filtering audit log queries.
@@ -24,6 +26,7 @@ export class AuditLogService {
   constructor(
     @InjectRepository(AuditLog)
     private readonly auditLogRepository: Repository<AuditLog>,
+    @Optional() private readonly eventsGateway?: EventsGateway,
   ) {}
 
   /**
@@ -36,7 +39,9 @@ export class AuditLogService {
     this.logger.log(
       `Audit: ${entry.action} on ${entry.resourceType}(${entry.resourceId}) by ${entry.actorUsername}`,
     );
-    return await this.auditLogRepository.save(auditLog);
+    const saved = await this.auditLogRepository.save(auditLog);
+    this.eventsGateway?.server?.emit(FarmEvent.AUDIT_LOG_CREATED, saved);
+    return saved;
   }
 
   /**

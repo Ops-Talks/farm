@@ -42,6 +42,7 @@ export class QueuesModule {
         BullModule.registerQueue(
           { name: QUEUE_NAMES.CATALOG_DISCOVERY },
           { name: QUEUE_NAMES.NOTIFICATIONS },
+          { name: QUEUE_NAMES.PIPELINE_EXECUTION },
         ),
         BullBoardModule.forRoot({
           route: "/admin/queues",
@@ -50,6 +51,7 @@ export class QueuesModule {
         BullBoardModule.forFeature(
           { name: QUEUE_NAMES.CATALOG_DISCOVERY, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.NOTIFICATIONS, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.PIPELINE_EXECUTION, adapter: BullMQAdapter },
         ),
       ],
       controllers: [QueuesController],

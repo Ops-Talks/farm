@@ -8,17 +8,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
 import type { HealthStatus, ObservabilitySummary } from "@/types/api";
-// Co-located sub-components — same _components/ directory
+// Co-located sub-components -- same _components/ directory
 import { HealthTab } from "./health-tab";
 import { MetricsTab } from "./metrics-tab";
 import { TracesTab } from "./traces-tab";
+import { LogsTab } from "./logs-tab";
 
-type TabId = "health" | "metrics" | "traces";
+type TabId = "health" | "metrics" | "traces" | "logs";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "health", label: "Health" },
   { id: "metrics", label: "Metrics" },
   { id: "traces", label: "Traces" },
+  { id: "logs", label: "Logs" },
 ];
 
 export function ObservabilityClient() {
@@ -94,6 +96,7 @@ export function ObservabilityClient() {
         )}
         {activeTab === "metrics" && <MetricsTab summary={summary} />}
         {activeTab === "traces" && <TracesTab />}
+        {activeTab === "logs" && <LogsTab />}
       </div>
     </div>
   );

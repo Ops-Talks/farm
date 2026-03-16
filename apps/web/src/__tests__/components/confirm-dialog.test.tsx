@@ -4,8 +4,8 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 // @base-ui/react/dialog is mocked here to keep tests deterministic
 // (it relies on browser APIs for portal/focus management).
-vi.mock("@base-ui/react/dialog", () => {
-  const React = require("react");
+vi.mock("@base-ui/react/dialog", async () => {
+  const React = await import("react");
 
   return {
     Dialog: {

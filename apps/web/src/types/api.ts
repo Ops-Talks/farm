@@ -11,6 +11,7 @@ import {
   EnvironmentType,
   TeamType,
   FarmEvent,
+  PipelineRunStatus,
 } from "@farm/types";
 
 export {
@@ -21,6 +22,7 @@ export {
   EnvironmentType,
   TeamType,
   FarmEvent,
+  PipelineRunStatus,
 };
 
 // -- Entities --
@@ -295,4 +297,161 @@ export interface DocumentationSearchResult {
   title: string;
   componentId: string;
   score: number;
+}
+
+// -- Pipelines --
+
+export interface PipelineStage {
+  id: string;
+  name: string;
+  type: "script" | "approval" | "deploy" | "notify";
+  order: number;
+  config: Record<string, unknown>;
+}
+
+export interface Pipeline {
+  id: string;
+  name: string;
+  description?: string;
+  stages: PipelineStage[];
+  organizationId?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PipelineStageResult {
+  stageId: string;
+  status: string;
+  startedAt?: string;
+  finishedAt?: string;
+  output?: string;
+}
+
+export interface PipelineRun {
+  id: string;
+  pipelineId: string;
+  status: PipelineRunStatus;
+  triggeredBy: string;
+  startedAt?: string;
+  finishedAt?: string;
+  durationMs?: number;
+  logs?: string;
+  stageResults?: PipelineStageResult[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Pipeline WebSocket Payloads --
+
+export interface PipelineLogPayload {
+  runId: string;
+  stage: string;
+  message: string;
+}
+
+// -- Alerting Rules --
+
+export interface AlertingRule {
+  id: string;
+  name: string;
+  description?: string;
+  query: string;
+  duration: string;
+  severity: "critical" | "warning" | "info";
+  componentId?: string;
+  environmentId?: string;
+  labels?: Record<string, string>;
+  annotations?: Record<string, string>;
+  enabled: boolean;
+  organizationId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Prometheus / Metrics --
+
+export interface PrometheusResult {
+  metric: Record<string, string>;
+  values: [number, string][];
+}
+
+export interface PrometheusRangeResponse {
+  status: "success" | "error";
+  data: {
+    resultType: string;
+    result: PrometheusResult[];
+  } | null;
+  error?: string;
+}
+
+// -- Jaeger / Traces --
+
+export interface JaegerSpan {
+  traceID: string;
+  spanID: string;
+  operationName: string;
+  references: { refType: string; traceID: string; spanID: string }[];
+  startTime: number; // microseconds
+  duration: number; // microseconds
+  tags: { key: string; type: string; value: unknown }[];
+  logs: { timestamp: number; fields: { key: string; value: string }[] }[];
+  processID: string;
+  warnings: string[] | null;
+}
+
+export interface JaegerProcess {
+  serviceName: string;
+  tags: { key: string; type: string; value: unknown }[];
+}
+
+export interface JaegerTrace {
+  traceID: string;
+  spans: JaegerSpan[];
+  processes: Record<string, JaegerProcess>;
+  warnings: string[] | null;
+}
+
+export interface JaegerTracesResponse {
+  data: JaegerTrace[] | null;
+  total: number;
+  limit: number;
+  offset: number;
+  errors: null | { code: number; msg: string }[];
+  error?: string;
+}
+
+// -- Loki / Logs --
+
+export interface LokiStreamValue {
+  stream: Record<string, string>;
+  values: [string, string][]; // [nanosecond timestamp string, log line]
+}
+
+export interface LokiLogsResponse {
+  status: "success" | "error";
+  data?: {
+    resultType: string;
+    result: LokiStreamValue[];
+  };
+  error?: string;
+}
+
+export interface LokiLabelsResponse {
+  status: "success" | "error";
+  data?: string[];
+  error?: string;
+}
+
+// -- Audit Log (WebSocket payload) --
+
+export interface AuditLog {
+  id: string;
+  actor: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string;
+  organizationId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }

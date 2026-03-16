@@ -66,6 +66,20 @@ export enum FarmEvent {
   COMPONENT_DELETED = "component.deleted",
   DEPLOYMENT_CREATED = "deployment.created",
   DEPLOYMENT_UPDATED = "deployment.updated",
+  PIPELINE_RUN_UPDATED = "pipeline.run.updated",
+  PIPELINE_LOG = "pipeline.log",
+  AUDIT_LOG_CREATED = "audit-log.created",
+}
+
+/**
+ * Represents the lifecycle status of a pipeline run.
+ */
+export enum PipelineRunStatus {
+  QUEUED = "queued",
+  RUNNING = "running",
+  SUCCEEDED = "succeeded",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
 }
 
 /**

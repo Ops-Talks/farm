@@ -19,6 +19,8 @@ import { EnvironmentsModule } from "./modules/environments/environments.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { AuditLogModule } from "./modules/audit-log/audit-log.module";
 import { OrganizationModule } from "./modules/organization/organization.module";
+import { PipelinesModule } from "./modules/pipelines/pipelines.module";
+import { AlertingModule } from "./modules/alerting/alerting.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -155,6 +157,22 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Organization and multi-tenant management",
         },
         module: OrganizationModule,
+      },
+      {
+        metadata: {
+          name: "core-pipelines",
+          version: "1.0.0",
+          description: "Pipeline definition and execution",
+        },
+        module: PipelinesModule,
+      },
+      {
+        metadata: {
+          name: "core-alerting",
+          version: "1.0.0",
+          description: "Alerting rules management",
+        },
+        module: AlertingModule,
       },
     ]),
   ],

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrgRole = exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
+exports.OrgRole = exports.PipelineRunStatus = exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
 var ComponentKind;
 (function (ComponentKind) {
     ComponentKind["SERVICE"] = "service";
@@ -70,7 +70,20 @@ var FarmEvent;
     FarmEvent["COMPONENT_DELETED"] = "component.deleted";
     FarmEvent["DEPLOYMENT_CREATED"] = "deployment.created";
     FarmEvent["DEPLOYMENT_UPDATED"] = "deployment.updated";
+    FarmEvent["PIPELINE_RUN_UPDATED"] = "pipeline.run.updated";
+    FarmEvent["PIPELINE_LOG"] = "pipeline.log";
 })(FarmEvent || (exports.FarmEvent = FarmEvent = {}));
+/**
+ * Represents the lifecycle status of a pipeline run.
+ */
+var PipelineRunStatus;
+(function (PipelineRunStatus) {
+    PipelineRunStatus["QUEUED"] = "queued";
+    PipelineRunStatus["RUNNING"] = "running";
+    PipelineRunStatus["SUCCEEDED"] = "succeeded";
+    PipelineRunStatus["FAILED"] = "failed";
+    PipelineRunStatus["CANCELLED"] = "cancelled";
+})(PipelineRunStatus || (exports.PipelineRunStatus = PipelineRunStatus = {}));
 /**
  * Represents the role a user holds within an organization.
  * OWNER has full control, ADMIN can manage resources, MEMBER has read access.

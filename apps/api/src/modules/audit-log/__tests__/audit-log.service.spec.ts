@@ -3,10 +3,13 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { AuditLogService } from "../audit-log.service";
 import { AuditLog } from "../entities/audit-log.entity";
 import { CreateAuditLogDto } from "../dto/create-audit-log.dto";
+import { EventsGateway } from "../../../common/events/events.gateway";
+import { FarmEvent } from "../../../common/events/events.interfaces";
 
 describe("AuditLogService", () => {
   let service: AuditLogService;
   let repo: Record<string, jest.Mock>;
+  let mockEventsGateway: { server: { emit: jest.Mock } };
 
   const mockEntry: CreateAuditLogDto = {
     action: "CREATE",
@@ -35,10 +38,15 @@ describe("AuditLogService", () => {
       find: jest.fn(),
     };
 
+    mockEventsGateway = {
+      server: { emit: jest.fn() },
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuditLogService,
         { provide: getRepositoryToken(AuditLog), useValue: repo },
+        { provide: EventsGateway, useValue: mockEventsGateway },
       ],
     }).compile();
 
@@ -61,6 +69,36 @@ describe("AuditLogService", () => {
       expect(repo.create).toHaveBeenCalledWith(mockEntry);
       expect(repo.save).toHaveBeenCalledWith(mockAuditLog);
       expect(result).toEqual(mockAuditLog);
+    });
+
+    it("should emit AUDIT_LOG_CREATED event after saving", async () => {
+      repo.create.mockReturnValue(mockAuditLog);
+      repo.save.mockResolvedValue(mockAuditLog);
+
+      await service.log(mockEntry);
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        FarmEvent.AUDIT_LOG_CREATED,
+        mockAuditLog,
+      );
+    });
+
+    it("should not throw when eventsGateway is not provided", async () => {
+      repo.create.mockReturnValue(mockAuditLog);
+      repo.save.mockResolvedValue(mockAuditLog);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          AuditLogService,
+          { provide: getRepositoryToken(AuditLog), useValue: repo },
+        ],
+      }).compile();
+
+      const serviceWithoutGateway =
+        module.get<AuditLogService>(AuditLogService);
+      await expect(serviceWithoutGateway.log(mockEntry)).resolves.toEqual(
+        mockAuditLog,
+      );
     });
   });
 

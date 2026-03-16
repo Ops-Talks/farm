@@ -156,3 +156,50 @@ scrape_configs:
     static_configs:
       - targets: ["<farm-host>:3000"]
 ```
+
+---
+
+## Observability Proxy Module (FARM-E27)
+
+The `ObservabilityModule` (`apps/api/src/common/observability/`) exposes thin HTTP proxies that forward requests from the Farm UI to external observability tools (Prometheus, Jaeger/Tempo, Loki). It does not store or process data.
+
+### Design principles
+
+- **Thin proxy**: Forwards requests and returns responses as-is.
+- **Graceful degradation**: Every method catches all errors and returns `{ error: '<tool> not available', data: null }` with HTTP 200.
+- **Admin-only**: All endpoints require `@Roles('admin')`.
+
+### Adding a new proxy method
+
+```typescript
+// 1. Add to ObservabilityService
+async queryNewTool(params: Record<string, string>): Promise<unknown> {
+  const baseUrl = this.configService.get<string>('newtool.url');
+  try {
+    const { data } = await firstValueFrom(
+      this.httpService.get(`${baseUrl}/api/v1/endpoint`, { params }),
+    );
+    return data;
+  } catch {
+    return { error: 'NewTool not available', data: null };
+  }
+}
+
+// 2. Add to ObservabilityController
+@Get('newtool/query')
+@Roles('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+async queryNewTool(@Query() query: Record<string, string>) {
+  return this.observabilityService.queryNewTool(query);
+}
+```
+
+### AlertingRule module
+
+`apps/api/src/modules/alerting/` — CRUD for PromQL-based alerting rules linked to components or environments. Registered as plugin `core-alerting`. Migration: `1773684432000-add-alerting-rules.ts`.
+
+### WebSocket event broadcasting
+
+Inject `EventsGateway` with `@Optional()` and call `this.eventsGateway?.server?.emit(FarmEvent.EVENT_NAME, payload)`.
+
+The `FarmEvent` enum must be kept in sync between `packages/types/src/index.ts` and `apps/api/src/common/events/events.interfaces.ts`.

@@ -4,9 +4,20 @@ import userEvent from "@testing-library/user-event";
 
 const mockHealthCheck = vi.fn();
 const mockSummary = vi.fn();
+const mockGetTraceServices = vi.fn();
+const mockGetTraces = vi.fn();
+const mockGetLogs = vi.fn();
+
 vi.mock("@/lib/api-client", () => ({
   health: { check: () => mockHealthCheck() },
-  observability: { summary: () => mockSummary() },
+  observability: {
+    summary: () => mockSummary(),
+    getTraceServices: () => mockGetTraceServices(),
+    getTraces: () => mockGetTraces(),
+    getLogs: () => mockGetLogs(),
+    queryRange: vi.fn(),
+    queryInstant: vi.fn(),
+  },
 }));
 
 import ObservabilityPage from "@/app/(protected)/observability/page";
@@ -43,6 +54,9 @@ const healthData = {
 describe("ObservabilityPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mocks for tabs that auto-fetch on mount
+    mockGetTraceServices.mockResolvedValue({ data: [] });
+    mockGetTraces.mockResolvedValue({ data: [], total: 0, limit: 50, offset: 0, errors: null });
   });
 
   it("should render heading and tabs", async () => {
@@ -57,6 +71,7 @@ describe("ObservabilityPage", () => {
     expect(screen.getByText("Health")).toBeInTheDocument();
     expect(screen.getByText("Metrics")).toBeInTheDocument();
     expect(screen.getByText("Traces")).toBeInTheDocument();
+    expect(screen.getByText("Logs")).toBeInTheDocument();
   });
 
   it("should show health information by default", async () => {
@@ -81,7 +96,7 @@ describe("ObservabilityPage", () => {
     });
   });
 
-  it("should switch between tabs", async () => {
+  it("should switch to Metrics tab and show request rate card", async () => {
     const user = userEvent.setup();
     mockHealthCheck.mockResolvedValue(healthData);
     mockSummary.mockResolvedValue(fullSummary);
@@ -93,15 +108,43 @@ describe("ObservabilityPage", () => {
     });
 
     await user.click(screen.getByText("Metrics"));
-    // Expect content from MetricsTab
     await waitFor(() => {
       expect(screen.getByText("Request Rate")).toBeInTheDocument();
     });
+  });
+
+  it("should switch to Traces tab and show service selector", async () => {
+    const user = userEvent.setup();
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Overall Status")).toBeInTheDocument();
+    });
 
     await user.click(screen.getByText("Traces"));
-    // Expect content from TracesTab (iframe)
     await waitFor(() => {
-      expect(screen.getByTitle("Grafana Tempo")).toBeInTheDocument();
+      // The TracesTab renders a "Refresh" button and "Range:" controls
+      expect(screen.getByText("Range:")).toBeInTheDocument();
+    });
+  });
+
+  it("should switch to Logs tab and show query input", async () => {
+    const user = userEvent.setup();
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Overall Status")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Logs"));
+    await waitFor(() => {
+      expect(screen.getByText("Run Query")).toBeInTheDocument();
     });
   });
 
@@ -110,7 +153,6 @@ describe("ObservabilityPage", () => {
     mockSummary.mockReturnValue(new Promise(() => {}));
 
     const { container } = render(<ObservabilityPage />);
-    // Check for skeleton elements by class
     const skeletons = container.querySelectorAll(".animate-pulse");
     expect(skeletons.length).toBeGreaterThan(0);
   });
