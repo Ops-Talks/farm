@@ -27,3 +27,9 @@ lerna-debug.log*
 # MkDocs build output
 /site
 *NEXT_STEPS.md
+*INIT_COPILOT.md
+
+# Playwright E2E test outputs
+test-results/
+playwright-report/
+e2e/.auth/

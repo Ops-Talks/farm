@@ -53,3 +53,60 @@ jobs:
         env:
           # Opt out of Next.js anonymous telemetry data collection in CI.
           NEXT_TELEMETRY_DISABLED: 1
+
+  e2e:
+    name: E2E Tests — Playwright (apps/web)
+    runs-on: ubuntu-latest
+    # Run after the build job so we know the app at least compiles cleanly
+    needs: web
+
+    steps:
+      # ── 1. Source ────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ───────────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install workspace dependencies ───────────────────────────────────
+      - name: Install dependencies (all workspaces)
+        run: npm ci
+
+      # ── 4. Compile shared types ──────────────────────────────────────────────
+      - name: Compile packages/types
+        run: cd packages/types && npx tsc
+
+      # ── 5. Install Playwright browser binaries ───────────────────────────────
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      # ── 6. Run E2E tests ─────────────────────────────────────────────────────
+      - name: Run E2E tests (apps/web)
+        run: npm run test:e2e -- --project=chromium
+        working-directory: apps/web
+        env:
+          CI: true
+          NEXT_TELEMETRY_DISABLED: 1
+
+      # ── 7. Upload test artefacts on failure ──────────────────────────────────
+      - name: Upload Playwright test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: apps/web/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright HTML report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-html-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+

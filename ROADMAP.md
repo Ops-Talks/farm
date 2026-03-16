@@ -606,6 +606,18 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
+## Phase 5.6: E2E Testing `TODO`
+
+### FARM-E33: End-to-End Test Suite `TODO`
+
+> Playwright-based E2E coverage for critical user flows.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S113 | Story | Playwright E2E test suite for critical user flows | `TODO` |
+
+---
+
 ## Phase 6: Advanced Features `TODO`
 
 ### FARM-E25: Multi-Tenant and RBAC `TODO`
@@ -618,6 +630,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S85 | Story | Fine-grained permission system (beyond admin/user roles) | `TODO` |
 | FARM-S86 | Story | Team-scoped data access (users see only their team data) | `TODO` |
 | FARM-S87 | Story | Organization settings and billing page | `TODO` |
+| FARM-S115 | Story | Per-user and per-role rate limiting | `TODO` |
 
 ### FARM-E26: Workflow and Pipeline UI `TODO`
 
@@ -640,6 +653,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S93 | Story | Alerting rules configuration UI | `TODO` |
 | FARM-S94 | Story | Trace waterfall visualization (native, not Grafana iframe) | `TODO` |
 | FARM-S95 | Story | Log aggregation viewer with search and filtering | `TODO` |
+| FARM-S116 | Story | WebSocket real-time notification broadcasting | `TODO` |
 
 ### FARM-E28: Integrations and Extensibility `TODO`
 
@@ -648,7 +662,9 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
 | FARM-S96 | Story | GitHub/GitLab repository integration | `TODO` |
+| FARM-S114 | Story | OAuth2 social login (GitHub, Google) | `TODO` |
 | FARM-S97 | Story | Slack/Teams notification channels | `TODO` |
+| FARM-S117 | Story | Email domain event wiring to system events | `TODO` |
 | FARM-S98 | Story | Kubernetes cluster discovery and status | `TODO` |
 | FARM-S99 | Story | Plugin marketplace UI (install/uninstall/configure) | `TODO` |
 
@@ -674,5 +690,6 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
-| Phase 6: Advanced Features | 5 | 19 | `TODO` |
-| **Total** | **32** | **111** | |
+| Phase 5.6: E2E Testing | 1 | 1 | `TODO` |
+| Phase 6: Advanced Features | 5 | 24 | `TODO` |
+| **Total** | **33** | **117** | |
