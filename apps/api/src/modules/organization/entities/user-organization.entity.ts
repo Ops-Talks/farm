@@ -32,7 +32,7 @@ export class UserOrganization {
     description: "The UUID of the user",
   })
   @Index()
-  @Column()
+  @Column({ type: "uuid" })
   userId: string;
 
   @ApiProperty({
@@ -40,7 +40,7 @@ export class UserOrganization {
     description: "The UUID of the organization",
   })
   @Index()
-  @Column()
+  @Column({ type: "uuid" })
   organizationId: string;
 
   @ApiProperty({

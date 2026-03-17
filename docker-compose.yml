@@ -29,7 +29,8 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
       target: production
     container_name: farm-api
     restart: always

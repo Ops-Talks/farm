@@ -52,7 +52,7 @@ export class Organization {
     description: "The UUID of the user who owns the organization",
   })
   @Index()
-  @Column()
+  @Column({ type: "uuid" })
   ownerId: string;
 
   @OneToMany(() => UserOrganization, (uo) => uo.organization, {

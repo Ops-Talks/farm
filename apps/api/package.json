@@ -27,6 +27,7 @@
     "seed": "npm run build && node dist/database/seeds/seed-runner.js"
   },
   "dependencies": {
+    "@farm/types": "*",
     "@bull-board/api": "^6.20.3",
     "@bull-board/express": "^6.20.3",
     "@bull-board/nestjs": "^6.20.3",

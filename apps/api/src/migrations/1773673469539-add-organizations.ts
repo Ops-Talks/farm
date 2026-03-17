@@ -11,7 +11,7 @@ export class AddOrganizations1773673469539 implements MigrationInterface {
         `"name" character varying NOT NULL, ` +
         `"slug" character varying NOT NULL, ` +
         `"description" character varying, ` +
-        `"ownerId" character varying NOT NULL, ` +
+        `"ownerId" uuid NOT NULL, ` +
         `"createdAt" TIMESTAMP NOT NULL DEFAULT now(), ` +
         `"updatedAt" TIMESTAMP NOT NULL DEFAULT now(), ` +
         `CONSTRAINT "UQ_organizations_name" UNIQUE ("name"), ` +
@@ -32,8 +32,8 @@ export class AddOrganizations1773673469539 implements MigrationInterface {
     await queryRunner.query(
       `CREATE TABLE "user_organizations" (` +
         `"id" uuid NOT NULL DEFAULT uuid_generate_v4(), ` +
-        `"userId" character varying NOT NULL, ` +
-        `"organizationId" character varying NOT NULL, ` +
+        `"userId" uuid NOT NULL, ` +
+        `"organizationId" uuid NOT NULL, ` +
         `"role" character varying NOT NULL DEFAULT 'member', ` +
         `"createdAt" TIMESTAMP NOT NULL DEFAULT now(), ` +
         `"updatedAt" TIMESTAMP NOT NULL DEFAULT now(), ` +
