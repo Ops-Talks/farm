@@ -5,20 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.10] - 2026-03-17
 
-### Security
-
-- Fixed HIGH CVE GHSA-5528-5vmv-3xc2 (denial of service via uncontrolled recursion in multipart field name parsing in `multer`): upgraded `multer@2.1.0` to `2.1.1` and `@nestjs/platform-express@11.1.15` to `11.1.17`. Affects file upload endpoints in `catalog`, `plugin-manager`, and `pipelines` controllers.
-- Fixed MODERATE CVEs GHSA-5v7r-6r5c-r473 (infinite loop in ASF parser) and GHSA-j47w-4g3g-c36v (ZIP decompression bomb DoS) in `file-type`: upgraded `file-type@21.3.0` to `21.3.2` and `@nestjs/common@11.1.15` to `11.1.17`. Affects any endpoint performing MIME type detection.
-- Fixed HIGH CVE prototype pollution in `flatted`: upgraded `flatted@3.3.4` to `3.4.1`. Affects dev tooling only; not present in the production Docker image.
-- Migrated E2E tests from `sqlite3` to `better-sqlite3@12.8.0`, eliminating the HIGH CVE chain in `sqlite3` transitive dependencies (`tar`, `make-fetch-happen`, `cacache`, `node-gyp`). TypeORM declares `better-sqlite3` as a supported peer dependency (`^8.0.0 || ... || ^12.0.0`). Changes: `apps/api/package.json` (added `better-sqlite3 ^12.8.0` and `@types/better-sqlite3`, removed `sqlite3`); `test/helpers/e2e-setup.ts` and `test/app.e2e-spec.ts` updated to use `DATABASE_TYPE = "better-sqlite3"`; `src/config/configuration.ts` Joi allowlist updated; `test/helpers/better-sqlite3-compat.ts` added to normalize `"timestamp"` to `"datetime"` column type for SQLite compatibility. All 398 unit tests and all E2E tests pass.
+### Changed
+- fix(versions: Os dependencies.
 
 ### Fixed
-
-- **Email templates not copied to Docker production image**: added `assets` declaration (`"common/email/templates/**/*"`) to `apps/api/nest-cli.json` so `.hbs` template files under `src/common/email/templates/` are now compiled into `dist/` during the NestJS build step. Without this, Handlebars templates were absent in the production container and email sending would fail at runtime.
-- **API client pagination extraction**: `organizations.list()`, `pipelines.list()`, and `alertingRules.list()` in `apps/web/src/lib/api-client.ts` now correctly unwrap the `.data` array from `PaginatedResponse<T>` instead of returning the raw paginated envelope. This prevented lists from rendering in the web UI when these endpoints returned paginated results.
-- **Docker monorepo build and PostgreSQL migration compatibility** (commit `84877da`).
+- **docker**: fix monorepo build and PostgreSQL migration compatibility...
+- **docker**: fix monorepo build and PostgreSQL migration compatibility.
 
 ## [0.9.2] - 2026-03-16
 
