@@ -271,6 +271,20 @@ export interface Organization {
   updatedAt: string;
 }
 
+/**
+ * Represents a single member of an organization, as returned by the members
+ * sub-resource endpoints under /api/v1/organizations/:id/members.
+ */
+export interface MemberResponse {
+  userId: string;
+  username: string;
+  email: string;
+  /** The role this user holds within the organization. */
+  role: "owner" | "admin" | "member";
+  /** ISO-8601 timestamp of when the user joined the organization. */
+  joinedAt: string;
+}
+
 // -- Documentation --
 
 export interface DocumentationEntry {

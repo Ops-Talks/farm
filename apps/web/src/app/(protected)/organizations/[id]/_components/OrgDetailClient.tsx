@@ -106,8 +106,12 @@ export function OrgDetailClient() {
         {/* General settings form */}
         <OrgSettingsForm org={org} onUpdated={setOrg} />
 
-        {/* Members section (placeholder) */}
-        <MembersSection />
+      {/* Members section */}
+        <MembersSection
+          orgId={id}
+          currentUserId={user?.id ?? ""}
+          canManage={isOwner}
+        />
       </div>
 
       {/* Danger zone — only for the organization owner */}

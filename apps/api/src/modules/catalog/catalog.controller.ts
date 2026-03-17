@@ -165,6 +165,7 @@ export class CatalogController {
   /**
    * Retrieves all components from the catalog.
    * @param query - Query params including optional kindGroup and organizationId filters
+   * @param teamId - Optional team UUID to scope results to a specific team
    * @returns A paginated list of components
    */
   @Get("components")
@@ -182,12 +183,18 @@ export class CatalogController {
     required: false,
     description: "Filter components by organization UUID",
   })
+  @ApiQuery({
+    name: "teamId",
+    required: false,
+    description: "Filter components by team UUID",
+  })
   @ApiOkResponse({
     description: "Successfully retrieved component list.",
     type: PaginatedResponseDto,
   })
   async findAll(
     @Query() query: ListComponentsQueryDto,
+    @Query("teamId") teamId: string | undefined,
     @Req() req: RequestWithOrg,
   ): Promise<PaginatedResponseDto<Component>> {
     const [data, total] = await this.catalogService.findAll(
@@ -195,6 +202,7 @@ export class CatalogController {
       query.take,
       query.kindGroup,
       req.organizationId,
+      teamId,
     );
     return new PaginatedResponseDto(
       data,

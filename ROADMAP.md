@@ -620,27 +620,34 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ## Phase 6: Advanced Features `TODO`
 
-### FARM-E25: Multi-Tenant and RBAC `TODO`
+### FARM-E25: Multi-Tenant and RBAC `DONE`
 
 > Organization-level isolation and fine-grained permissions.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S84 | Story | Organization entity and tenant isolation | `TODO` |
-| FARM-S85 | Story | Fine-grained permission system (beyond admin/user roles) | `TODO` |
-| FARM-S86 | Story | Team-scoped data access (users see only their team data) | `TODO` |
-| FARM-S87 | Story | Organization settings and billing page | `TODO` |
-| FARM-S115 | Story | Per-user and per-role rate limiting | `TODO` |
+| FARM-S84 | Story | Organization entity, tenant isolation, and query scoping enforcement via `OrgContextInterceptor` + `X-Organization-Id` header | `DONE` |
+| FARM-S85 | Story | Fine-grained permission system — member management endpoints (`GET/POST/PATCH/DELETE /organizations/:id/members`) with role-hierarchy enforcement | `DONE` |
+| FARM-S86 | Story | Team-scoped catalog filtering — `?teamId=` filter on `GET /catalog` scopes components by owning team | `DONE` |
+| FARM-S87 | Story | Organization settings page — full member management UI (list, add, change role, remove) | `DONE` |
+| FARM-S115 | Story | Per-user rate limiting (`PerUserThrottlerGuard` global, stricter limits on auth endpoints) | `DONE` |
 
-### FARM-E26: Workflow and Pipeline UI `TODO`
+**Delivered in v0.9.11 (2026-03-17):**
+- `OrgContextInterceptor`: validates `X-Organization-Id` header, verifies `UserOrganization` membership, stamps `req.organizationId` globally.
+- Two-tier RBAC: global `RolesGuard` (admin/user from JWT) + org-level `OrgRolesGuard` (OWNER=3 / ADMIN=2 / MEMBER=1 hierarchy).
+- Catalog, Teams, Environments, AuditLog services scope queries by `organizationId` when the header is present.
+- Frontend `api-client.ts` automatically injects `X-Organization-Id` from `sessionStorage`.
+- `PerUserThrottlerGuard` globally registered; auth endpoints override with `5/min` login and `10/min` refresh limits.
+
+### FARM-E26: Workflow and Pipeline UI `PARTIAL`
 
 > Visual pipeline builder and execution monitoring.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S88 | Story | Pipeline definition CRUD (backend) | `TODO` |
+| FARM-S88 | Story | Pipeline definition CRUD (backend) — `Pipeline` + `PipelineRun` entities, full REST API | `DONE` |
 | FARM-S89 | Story | Visual pipeline builder (drag-and-drop stages) | `TODO` |
-| FARM-S90 | Story | Pipeline execution monitoring with real-time logs | `TODO` |
+| FARM-S90 | Story | Pipeline execution monitoring with real-time logs (BullMQ + WebSocket) | `TODO` |
 | FARM-S91 | Story | Pipeline history and run comparison | `TODO` |
 
 ### FARM-E27: Deep Observability Integration `DONE`
@@ -691,9 +698,45 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to per-route `__tests__/` subdirectories | `TODO` |
 | FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `TODO` |
 
----
+### FARM-E34: Authentication Modernization (Better Auth) `TODO`
 
-## Summary
+> Migrate the authentication layer from the current custom Passport.js/JWT stack to [Better Auth](https://better-auth.com), a TypeScript-first, framework-agnostic auth library with a rich plugin ecosystem.
+
+#### Background and Analysis (2026-03-17)
+
+A detailed gap analysis was produced comparing the current implementation against Better Auth. Summary of findings:
+
+**Current stack:**
+- Backend: NestJS + Passport.js (jwt / local / github / google strategies), custom JWT (1h) + opaque refresh tokens (bcrypt-hashed hex-40), `User` entity with `roles: string[]`, `oauthProvider`, `oauthProviderId`.
+- Frontend: manual `AuthContext` + `sessionStorage` token management, custom 401 retry/refresh logic in `api-client.ts`, `AuthGuard` component.
+
+**Better Auth capabilities that replace custom code:**
+- Native email/password, GitHub, and Google OAuth (no Passport needed).
+- Managed session rotation and refresh (removes ~60 lines of manual retry logic from `api-client.ts`).
+- `organization` plugin natively covers multi-tenant organization and role hierarchy (OWNER/ADMIN/MEMBER).
+- `createAuthClient()` React client with `useSession()` hook replaces `AuthContext`.
+- NestJS adapter via community package `@thallesp/nestjs-better-auth`.
+
+**Key risks identified:**
+- Login uses `username`, Better Auth defaults to `email`. Requires the `username` plugin.
+- NestJS integration is **community-maintained** (not official), introducing long-term maintenance risk.
+- Better Auth requires schema migration: new tables `session`, `account`, `verification` and removal of `User.refreshToken`, `User.oauthProvider`, `User.oauthProviderId`.
+- The Organization module delivered in FARM-E25 (v0.9.11) has a schema incompatible with Better Auth's `organization` plugin; a parallel migration plan is needed.
+- Full-stack migration `bodyParser: false` in `main.ts` is required, which may affect other middleware.
+
+**Recommended approach:** two-phase migration — frontend-only first (lower risk), then backend if the NestJS adapter matures.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S124 | Story | Frontend-only Better Auth client migration: replace `AuthContext`, `api-client.ts` auth logic, and `AuthGuard` with `createAuthClient()` and `useSession()` hook | `TODO` |
+| FARM-S125 | Story | Backend Better Auth integration: replace Passport strategies with Better Auth instance (`@thallesp/nestjs-better-auth`), disable body parser, migrate guards to `@AllowAnonymous()` pattern | `TODO` |
+| FARM-S126 | Story | Schema migration: add Better Auth tables (`session`, `account`, `verification`), migrate existing users and OAuth accounts, remove deprecated `User` columns | `TODO` |
+| FARM-S127 | Story | Username login plugin: configure Better Auth `username` plugin so existing username-based accounts continue to work without requiring email login | `TODO` |
+| FARM-S128 | Story | Organization module alignment: evaluate replacing FARM-E25 `OrgContextInterceptor` + `OrganizationModule` with Better Auth `organization` plugin, or maintaining both | `TODO` |
+
+---
 
 | Phase | Epics | Stories | Status |
 |-------|-------|---------|--------|
@@ -704,6 +747,6 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
-| Phase 6: Advanced Features | 5 | 24 | `TODO` |
+| Phase 6: Advanced Features | 6 | 29 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
-| **Total** | **34** | **123** | |
+| **Total** | **35** | **128** | |

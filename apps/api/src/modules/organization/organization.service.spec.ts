@@ -8,6 +8,7 @@ import {
 import { OrganizationService } from "./organization.service";
 import { Organization } from "./entities/organization.entity";
 import { UserOrganization } from "./entities/user-organization.entity";
+import { User } from "../auth/entities/user.entity";
 import { OrgRole } from "@farm/types";
 
 describe("OrganizationService", () => {
@@ -50,6 +51,10 @@ describe("OrganizationService", () => {
       save: jest.fn(),
     };
 
+    const userRepo = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationService,
@@ -57,6 +62,10 @@ describe("OrganizationService", () => {
         {
           provide: getRepositoryToken(UserOrganization),
           useValue: userOrgRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: userRepo,
         },
       ],
     }).compile();

@@ -70,6 +70,7 @@ describe("CatalogController", () => {
     const mockReq = { organizationId: undefined };
     const result = await controller.findAll(
       { skip: 0, take: 20 },
+      undefined,
       mockReq as never,
     );
     expect(result).toBeInstanceOf(PaginatedResponseDto);

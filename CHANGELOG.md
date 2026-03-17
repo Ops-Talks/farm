@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **org**: member management endpoints — `GET/POST /organizations/:id/members`, `PATCH .../members/:userId/role`, `DELETE .../members/:userId` with role-hierarchy enforcement (FARM-S85).
+- **org**: organization settings page now includes full member management UI — member list, add member form, inline role change, and remove with confirmation (FARM-S87).
+- **catalog**: `?teamId=` query parameter on `GET /catalog` to filter components by owning team (FARM-S86).
+- **web**: `organizations.members.{ list, add, updateRole, remove }` API client methods (FARM-S87).
+
 ## [0.9.11] - 2026-03-17
 
 ### Added

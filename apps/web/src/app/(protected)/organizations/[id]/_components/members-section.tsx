@@ -1,6 +1,12 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Trash2, Users } from "lucide-react";
+import { organizations as orgsApi, ApiError } from "@/lib/api-client";
+import type { MemberResponse } from "@/types/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -8,34 +14,434 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { toast } from "sonner";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type OrgRoleValue = "owner" | "admin" | "member";
+
+interface MembersSectionProps {
+  orgId: string;
+  /** The authenticated user's id — used to disable actions on the own row. */
+  currentUserId: string;
+  /**
+   * True when the authenticated user is known to be owner or admin before the
+   * member list loads (derived from org.ownerId in the parent).  The section
+   * also re-derives this from the loaded member list so that admins discovered
+   * after fetch also get management UI.
+   */
+  canManage: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Maps an org role to the appropriate Badge variant. */
+const ROLE_BADGE_VARIANT: Record<OrgRoleValue, "secondary" | "default" | "outline"> = {
+  owner: "secondary", // muted / gray
+  admin: "default",   // primary / blue
+  member: "outline",
+};
+
+/** Initials avatar built from Tailwind primitives (no external dependency). */
+function InitialsAvatar({ username }: { username: string }) {
+  return (
+    <div
+      className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium shrink-0 select-none"
+      aria-hidden
+    >
+      {username.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+/** Skeleton placeholder for a single member row while the list is loading. */
+function MemberRowSkeleton() {
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-36" />
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-14" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
+      <TableCell />
+    </TableRow>
+  );
+}
 
 /**
- * MembersSection — placeholder for future member management.
- *
- * The backend members API is not yet available; this section is rendered to
- * reserve the UI space and communicate the upcoming feature to users.
+ * Inline role <select> styled to match the rest of the form controls.
+ * Rendered only for rows where the current user may change the role.
  */
-export function MembersSection() {
+function RoleSelect({
+  value,
+  disabled,
+  ariaLabel,
+  onChange,
+}: {
+  value: string;
+  disabled: boolean;
+  ariaLabel: string;
+  onChange: (role: string) => void;
+}) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          Members
-        </CardTitle>
-        <CardDescription>
-          Manage who has access to this organization.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          <Users className="mx-auto mb-3 h-8 w-8 opacity-40" />
-          <p className="text-sm font-medium">Member management coming soon</p>
-          <p className="mt-1 text-xs">
-            Invite collaborators and manage roles in a future release.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <select
+      value={value}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={(e) => onChange(e.target.value)}
+      className="h-7 rounded-md border border-input bg-background px-2 py-0.5 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <option value="member">Member</option>
+      <option value="admin">Admin</option>
+    </select>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+export function MembersSection({
+  orgId,
+  currentUserId,
+  canManage,
+}: MembersSectionProps) {
+  const [members, setMembers] = useState<MemberResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Add-member form state
+  const [addUsername, setAddUsername] = useState("");
+  const [addRole, setAddRole] = useState<"admin" | "member">("member");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addPending, setAddPending] = useState(false);
+
+  // In-flight role-update tracker (keyed by userId)
+  const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
+
+  // Pending removal confirmation
+  const [pendingRemove, setPendingRemove] = useState<{
+    userId: string;
+    username: string;
+  } | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Data fetching
+  // ---------------------------------------------------------------------------
+
+  const loadMembers = useCallback(() => {
+    orgsApi.members
+      .list(orgId)
+      .then((res) => setMembers(res.data))
+      .catch(() => toast.error("Failed to load members."))
+      .finally(() => setLoading(false));
+  }, [orgId]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
+  // ---------------------------------------------------------------------------
+  // Derived state
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Re-derive canManage after the member list loads so that admins who were
+   * not identified as owner in the parent (org.ownerId check) also receive
+   * the management UI once their role is confirmed from the API.
+   */
+  const currentMember = members.find((m) => m.userId === currentUserId);
+  const effectiveCanManage =
+    canManage || currentMember?.role === "admin" || currentMember?.role === "owner";
+
+  // ---------------------------------------------------------------------------
+  // Handlers
+  // ---------------------------------------------------------------------------
+
+  function handleAddMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addUsername.trim()) return;
+    setAddError(null);
+    setAddPending(true);
+
+    orgsApi.members
+      .add(orgId, { username: addUsername.trim(), role: addRole })
+      .then(() => {
+        toast.success(`${addUsername.trim()} added to organization.`);
+        setAddUsername("");
+        setAddRole("member");
+        loadMembers();
+      })
+      .catch((err: unknown) => {
+        setAddError(
+          err instanceof ApiError ? err.message : "Failed to add member.",
+        );
+      })
+      .finally(() => setAddPending(false));
+  }
+
+  function handleRoleChange(userId: string, newRole: string) {
+    setUpdatingRoleFor(userId);
+    orgsApi.members
+      .updateRole(orgId, userId, { role: newRole })
+      .then(() => {
+        toast.success("Role updated.");
+        loadMembers();
+      })
+      .catch(() => toast.error("Failed to update role."))
+      .finally(() => setUpdatingRoleFor(null));
+  }
+
+  function handleRemoveConfirm() {
+    if (!pendingRemove) return;
+    const { userId, username } = pendingRemove;
+    setPendingRemove(null);
+
+    orgsApi.members
+      .remove(orgId, userId)
+      .then(() => {
+        toast.success(`${username} removed from organization.`);
+        loadMembers();
+      })
+      .catch(() => toast.error("Failed to remove member."));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render helpers
+  // ---------------------------------------------------------------------------
+
+  function renderRoleCell(member: MemberResponse) {
+    const isOwnerRole = member.role === "owner";
+    const isSelf = member.userId === currentUserId;
+    // Role changes are not permitted on owner entries or the current user's
+    // own row — they see a read-only badge.
+    const actionsFrozen = isOwnerRole || isSelf;
+
+    if (effectiveCanManage && !actionsFrozen) {
+      return (
+        <RoleSelect
+          value={member.role}
+          disabled={updatingRoleFor === member.userId}
+          ariaLabel={`Role for ${member.username}`}
+          onChange={(role) => handleRoleChange(member.userId, role)}
+        />
+      );
+    }
+
+    return (
+      <Badge variant={ROLE_BADGE_VARIANT[member.role as OrgRoleValue] ?? "outline"}>
+        {member.role}
+      </Badge>
+    );
+  }
+
+  function renderActionsCell(member: MemberResponse) {
+    if (!effectiveCanManage) return null;
+
+    const isOwnerRole = member.role === "owner";
+    const isSelf = member.userId === currentUserId;
+
+    // Remove is not permitted on owner entries or the current user's own row.
+    if (isOwnerRole || isSelf) {
+      return <TableCell />;
+    }
+
+    return (
+      <TableCell>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+          onClick={() =>
+            setPendingRemove({ userId: member.userId, username: member.username })
+          }
+          aria-label={`Remove ${member.username}`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </TableCell>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Table content
+  // ---------------------------------------------------------------------------
+
+  function renderTableContent() {
+    if (loading) {
+      return (
+        <TableBody>
+          {Array.from({ length: 3 }).map((_, i) => (
+            // Skeleton rows — key by index is fine for a static placeholder list
+            <MemberRowSkeleton key={i} />
+          ))}
+        </TableBody>
+      );
+    }
+
+    if (members.length === 0) {
+      return null; // Caller renders the empty state div instead
+    }
+
+    return (
+      <TableBody>
+        {members.map((member) => (
+          <TableRow key={member.userId} className="group">
+            <TableCell>
+              <div className="flex items-center gap-3">
+                <InitialsAvatar username={member.username} />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {member.username}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {member.email}
+                  </span>
+                </div>
+              </div>
+            </TableCell>
+
+            <TableCell>{renderRoleCell(member)}</TableCell>
+
+            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+              {new Date(member.joinedAt).toLocaleDateString()}
+            </TableCell>
+
+            {renderActionsCell(member)}
+          </TableRow>
+        ))}
+      </TableBody>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // JSX
+  // ---------------------------------------------------------------------------
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            Members
+          </CardTitle>
+          <CardDescription>
+            Manage who has access to this organization.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Add Member form — only rendered for admin / owner */}
+          {effectiveCanManage && (
+            <form
+              onSubmit={handleAddMember}
+              className="rounded-lg border bg-muted/20 p-4 space-y-3 animate-in slide-in-from-top-2 duration-300"
+              data-testid="add-member-form"
+            >
+              <p className="text-sm font-medium">Add Member</p>
+
+              <div className="flex gap-2 flex-col sm:flex-row">
+                <Input
+                  placeholder="Username"
+                  value={addUsername}
+                  onChange={(e) => setAddUsername(e.target.value)}
+                  disabled={addPending}
+                  className="flex-1"
+                  aria-label="Username"
+                  autoComplete="off"
+                />
+
+                {/* Native <select> — shadcn Select is not yet in the ui/ bundle. */}
+                <select
+                  value={addRole}
+                  onChange={(e) =>
+                    setAddRole(e.target.value as "admin" | "member")
+                  }
+                  disabled={addPending}
+                  aria-label="New member role"
+                  className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={addPending || !addUsername.trim()}
+                >
+                  Add Member
+                </Button>
+              </div>
+
+              {addError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {addError}
+                </p>
+              )}
+            </form>
+          )}
+
+          {/* Member table — skeleton while loading, empty state if no members */}
+          {!loading && members.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+              <Users className="mx-auto mb-3 h-8 w-8 opacity-40" />
+              <p className="text-sm font-medium">No members yet</p>
+              <p className="mt-1 text-xs">
+                Add members to grant them access to this organization.
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent uppercase text-[10px] font-bold tracking-wider">
+                  <TableHead>Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                  {effectiveCanManage && <TableHead className="w-12" />}
+                </TableRow>
+              </TableHeader>
+              {renderTableContent()}
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Removal confirmation dialog */}
+      <ConfirmDialog
+        open={!!pendingRemove}
+        onOpenChange={(open) => {
+          if (!open) setPendingRemove(null);
+        }}
+        title="Remove member"
+        description={`Are you sure you want to remove ${pendingRemove?.username ?? "this member"}?`}
+        confirmLabel="Remove"
+        onConfirm={handleRemoveConfirm}
+      />
+    </>
   );
 }

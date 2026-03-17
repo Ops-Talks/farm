@@ -16,6 +16,7 @@ import type {
   LokiLogsResponse,
   LoginRequest,
   LoginResponse,
+  MemberResponse,
   ObservabilitySummary,
   Organization,
   PaginatedResponse,
@@ -503,6 +504,49 @@ export const organizations = {
 
   delete(id: string): Promise<void> {
     return request(`/v1/organizations/${id}`, { method: "DELETE" });
+  },
+
+  /**
+   * Member sub-resource methods for /api/v1/organizations/:id/members.
+   * All methods require the caller to supply the parent org id explicitly so
+   * the namespace remains stateless and easy to mock in tests.
+   */
+  members: {
+    list(
+      orgId: string,
+      params?: { skip?: number; take?: number },
+    ): Promise<PaginatedResponse<MemberResponse>> {
+      return request(
+        `/v1/organizations/${orgId}/members${toQueryString(params ?? {})}`,
+      );
+    },
+
+    add(
+      orgId: string,
+      dto: { username: string; role?: string },
+    ): Promise<MemberResponse> {
+      return request(`/v1/organizations/${orgId}/members`, {
+        method: "POST",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    updateRole(
+      orgId: string,
+      userId: string,
+      dto: { role: string },
+    ): Promise<MemberResponse> {
+      return request(`/v1/organizations/${orgId}/members/${userId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    remove(orgId: string, userId: string): Promise<void> {
+      return request(`/v1/organizations/${orgId}/members/${userId}`, {
+        method: "DELETE",
+      });
+    },
   },
 };
 
