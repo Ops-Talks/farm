@@ -84,6 +84,7 @@ var PipelineRunStatus;
     PipelineRunStatus["SUCCEEDED"] = "succeeded";
     PipelineRunStatus["FAILED"] = "failed";
     PipelineRunStatus["CANCELLED"] = "cancelled";
+    PipelineRunStatus["WAITING_APPROVAL"] = "waiting_approval";
 })(PipelineRunStatus || (exports.PipelineRunStatus = PipelineRunStatus = {}));
 /**
  * Represents the role a user holds within an organization.

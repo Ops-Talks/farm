@@ -80,6 +80,7 @@ export enum PipelineRunStatus {
   SUCCEEDED = "succeeded",
   FAILED = "failed",
   CANCELLED = "cancelled",
+  WAITING_APPROVAL = "waiting_approval",
 }
 
 /**

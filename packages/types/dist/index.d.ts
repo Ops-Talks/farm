@@ -72,7 +72,8 @@ export declare enum PipelineRunStatus {
     RUNNING = "running",
     SUCCEEDED = "succeeded",
     FAILED = "failed",
-    CANCELLED = "cancelled"
+    CANCELLED = "cancelled",
+    WAITING_APPROVAL = "waiting_approval"
 }
 /**
  * Represents the role a user holds within an organization.
