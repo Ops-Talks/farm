@@ -5,34 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.13] - 2026-03-17
 
 ### Added
-- **org**: organization member management frontend UI — list, add, update role, and remove members (FARM-S87).
-- **catalog**: `teamId` query parameter filter on `GET /api/v1/catalog/components` for team-scoped component listing (FARM-S86).
-- **pipelines**: approve/reject/cancel run endpoints — `POST .../runs/:runId/approve`, `/reject`, `/cancel` with role-hierarchy enforcement (FARM-S90).
-- **pipelines**: `PipelineRunStatus.WAITING_APPROVAL` enum value added to `@farm/types` (FARM-S90).
-- **web**: run action buttons in run detail — Approve/Reject (waiting_approval), Cancel (running/queued), Retrigger (failed/cancelled) (FARM-S90).
-- **web**: approval banner in run detail showing stage name and Approve/Reject actions (FARM-S90).
-- **web**: `RecentPipelinesWidget` on dashboard showing last 5 pipelines with trigger actions (FARM-S90).
-- **web**: WebSocket toast notifications for terminal run status changes (SUCCEEDED, FAILED, CANCELLED) (FARM-S90).
-- **pipelines**: `api-client.ts` methods `approveRun`, `rejectRun`, `cancelRun`, `retrigger` (FARM-S90).
-- **pipelines**: typed `PipelineRunUpdatedPayload` and `PipelineLogPayload` interfaces in `events.interfaces.ts` (FARM-S90).
-- **docs**: Organizations API reference and user guide (FARM-E25).
-- **docs**: updated Pipelines API reference, user guide, and developer guide with approval/cancel/retrigger flows (FARM-E26).
-- **docs**: updated Catalog API reference with `teamId` filter documentation (FARM-S86).
+- **web**: pipeline run actions, dashboard widget, and WebSocket notifications (FARM-E26).
+- **pipelines**: add approve, reject, and cancel run endpoints (FARM-E26).
+- **types**: add WAITING_APPROVAL to PipelineRunStatus enum (FARM-E26).
 
-### Fixed
-- **pipelines**: processor now sets `run.status = WAITING_APPROVAL` correctly (previously only set on `stageResult`).
-- **pipelines**: `triggerRun` was using `user?.id` (undefined) instead of `user?.userId` — runs were created with `triggeredBy: "anonymous"`.
-- **pipelines**: processor aborts stage loop if run status is `CANCELLED` (race condition guard).
-- **types**: rebuilt `@farm/types` dist after adding `WAITING_APPROVAL` to `PipelineRunStatus` enum.
-
-### Tests
-- **api**: added `organization.controller.spec.ts` (42 tests) covering all member management endpoints — API branch coverage raised from 63.72% to 68.65%.
-- **api**: added `pipeline.processor.spec.ts` (20 tests) covering all processor execution paths including approval resume, cancel guard, and error handling.
-- **web**: added `notification-listener.test.tsx` (9 tests) and `run-detail.test.tsx` (10 tests) — web test suite raised from 181 to 200 tests.
-- **web**: installed `@vitest/coverage-v8` to enable `npm run test:coverage` for the web app.
+### Changed
+- **web**: add notification-listener and run-detail test coverage (FARM-E26).
+- **api**: add organization controller and pipeline processor specs (FARM-E25/E26).
+- add organizations guide, update pipelines and catalog docs (FARM-E25/E26).
+- update CHANGELOG and ROADMAP for FARM-E26 pipeline UI completion.
 
 ## [0.9.12] - 2026-03-17
 
