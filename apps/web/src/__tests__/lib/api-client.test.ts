@@ -130,6 +130,64 @@ describe("api-client", () => {
     });
   });
 
+  describe("X-Organization-Id header injection (FARM-E25)", () => {
+    beforeEach(() => {
+      setTokens("tok", "ref", "user");
+      mockFetch.mockReturnValue(jsonResponse([]));
+    });
+
+    afterEach(() => {
+      // Clean up the org key so other tests are not affected.
+      sessionStorage.removeItem("farm_current_org");
+    });
+
+    it("injects X-Organization-Id when an org id is stored in sessionStorage", async () => {
+      // OrganizationProvider stores the raw id string — not a JSON object.
+      sessionStorage.setItem("farm_current_org", "org-abc-123");
+      await auth.getUsers();
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ "X-Organization-Id": "org-abc-123" }),
+        }),
+      );
+    });
+
+    it("omits X-Organization-Id when no org is stored in sessionStorage", async () => {
+      // Ensure the key is absent (afterEach cleans up, but be explicit).
+      sessionStorage.removeItem("farm_current_org");
+      await auth.getUsers();
+      const [, callOptions] = mockFetch.mock.calls[0] as [string, { headers: Record<string, string> }];
+      expect(callOptions.headers).not.toHaveProperty("X-Organization-Id");
+    });
+
+    it("forwards the org header on the retry fetch after a successful token refresh", async () => {
+      sessionStorage.setItem("farm_current_org", "org-retry-456");
+      // First call returns 401 to trigger refresh; second returns 200.
+      mockFetch
+        .mockReturnValueOnce(jsonResponse(
+          { statusCode: 401, timestamp: "t", path: "/v1/auth/users", message: "Unauthorized" },
+          401,
+        ))
+        .mockReturnValueOnce(
+          // Simulated token-refresh response
+          Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ token: "new-tok", refreshToken: "new-ref" }),
+          }),
+        )
+        .mockReturnValueOnce(jsonResponse([]));
+
+      setTokens("old-tok", "ref", "user");
+      await auth.getUsers();
+
+      // The third fetch call is the retried original request.
+      const [, retryOptions] = mockFetch.mock.calls[2] as [string, { headers: Record<string, string> }];
+      expect(retryOptions.headers).toHaveProperty("X-Organization-Id", "org-retry-456");
+    });
+  });
+
   describe("catalog", () => {
     it("should list components with query params", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0, skip: 0, take: 20 }));

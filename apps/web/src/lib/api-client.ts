@@ -132,6 +132,24 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // FARM-E25: Inject X-Organization-Id for multi-tenant request scoping.
+  //
+  // OrganizationProvider persists the selected org's raw id string under
+  // "farm_current_org" in sessionStorage (NOT JSON — just the id string).
+  //
+  // We intentionally avoid importing ORG_STORAGE_KEY from
+  // organization-context to prevent a circular dependency:
+  //   api-client → organization-context → api-client
+  //
+  // The header is optional: when absent the backend falls back to
+  // non-scoped behaviour, so API calls are never blocked.
+  if (typeof window !== "undefined") {
+    const orgId = sessionStorage.getItem("farm_current_org");
+    if (orgId) {
+      headers["X-Organization-Id"] = orgId;
+    }
+  }
+
   let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   // Automatic token refresh on 401

@@ -12,7 +12,8 @@ import type { ReactNode } from "react";
 import type { Organization } from "@/types/api";
 import { organizations as orgsApi } from "@/lib/api-client";
 
-const STORAGE_KEY = "farm_current_org";
+/** Shared key used to persist the selected org id in sessionStorage. */
+export const ORG_STORAGE_KEY = "farm_current_org";
 
 interface OrganizationContextValue {
   /** All organizations the current user belongs to */
@@ -44,7 +45,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       // Restore persisted selection from sessionStorage
       const savedId =
         typeof window !== "undefined"
-          ? sessionStorage.getItem(STORAGE_KEY)
+          ? sessionStorage.getItem(ORG_STORAGE_KEY)
           : null;
 
       if (savedId) {
@@ -55,7 +56,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         const only = list[0];
         if (only) {
           setCurrentOrg(only);
-          sessionStorage.setItem(STORAGE_KEY, only.id);
+          sessionStorage.setItem(ORG_STORAGE_KEY, only.id);
         }
       }
     } catch {
@@ -74,7 +75,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const switchOrg = useCallback((org: Organization) => {
     setCurrentOrg(org);
     if (typeof window !== "undefined") {
-      sessionStorage.setItem(STORAGE_KEY, org.id);
+      sessionStorage.setItem(ORG_STORAGE_KEY, org.id);
     }
   }, []);
 
