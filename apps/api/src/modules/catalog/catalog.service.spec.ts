@@ -29,6 +29,7 @@ describe("CatalogService", () => {
     dependencies: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    organizationId: null as unknown as string,
   };
 
   const mockRepository = {

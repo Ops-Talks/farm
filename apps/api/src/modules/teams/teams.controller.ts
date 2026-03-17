@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -33,6 +34,7 @@ import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing organizational teams and their membership.
@@ -99,11 +101,12 @@ export class TeamsController {
   })
   async findAll(
     @Query() query: ListTeamsQueryDto,
+    @Req() req: RequestWithOrg,
   ): Promise<PaginatedResponseDto<Team>> {
     const [data, total] = await this.teamsService.findAll(
       query.skip,
       query.take,
-      query.organizationId,
+      req.organizationId,
     );
     return new PaginatedResponseDto(
       data,

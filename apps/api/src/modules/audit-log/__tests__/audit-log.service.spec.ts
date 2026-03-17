@@ -29,6 +29,7 @@ describe("AuditLogService", () => {
     actorUsername: "jane_doe",
     payload: { name: "my-service" },
     createdAt: new Date("2024-01-01T00:00:00Z"),
+    organizationId: null as unknown as string,
   };
 
   beforeEach(async () => {

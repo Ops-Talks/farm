@@ -38,6 +38,7 @@ import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
+import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 
 @Module({
@@ -80,6 +81,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             : undefined,
       }),
     }),
+    OrganizationModule,
     HealthModule,
     ObservabilityModule,
     CacheModule.registerAsync({
@@ -231,6 +233,10 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
     {
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: OrgContextInterceptor,
     },
   ],
 })

@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, HttpStatus } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  HttpStatus,
+  Req,
+} from "@nestjs/common";
 import {
   ApiTags,
   ApiOperation,
@@ -13,6 +20,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Query parameters accepted by the GET /audit-logs endpoint.
@@ -83,12 +91,16 @@ export class AuditLogController {
     description: "Successfully retrieved audit log entries.",
     type: [AuditLog],
   })
-  async findAll(@Query() query: AuditLogsQueryDto): Promise<AuditLog[]> {
+  async findAll(
+    @Query() query: AuditLogsQueryDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<AuditLog[]> {
     return await this.auditLogService.findAll({
       resourceType: query.resourceType,
       resourceId: query.resourceId,
       actorId: query.actorId,
       limit: query.limit ? Number(query.limit) : undefined,
+      organizationId: req.organizationId,
     });
   }
 }

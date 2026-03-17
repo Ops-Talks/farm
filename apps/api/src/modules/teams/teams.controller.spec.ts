@@ -78,7 +78,11 @@ describe("TeamsController", () => {
   });
 
   it("should return all teams with pagination", async () => {
-    const result = await controller.findAll({ skip: 0, take: 20 });
+    const mockReq = { organizationId: undefined };
+    const result = await controller.findAll(
+      { skip: 0, take: 20 },
+      mockReq as never,
+    );
     expect(result).toBeInstanceOf(PaginatedResponseDto);
     expect(result.data).toHaveLength(1);
     expect(result.total).toBe(1);

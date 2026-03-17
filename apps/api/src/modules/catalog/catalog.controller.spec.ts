@@ -67,7 +67,11 @@ describe("CatalogController", () => {
   it("should return all components with pagination", async () => {
     const items = [{ id: "1", name: "Test", type: "service" }];
     service.findAll.mockResolvedValue([items, 1]);
-    const result = await controller.findAll({ skip: 0, take: 20 });
+    const mockReq = { organizationId: undefined };
+    const result = await controller.findAll(
+      { skip: 0, take: 20 },
+      mockReq as never,
+    );
     expect(result).toBeInstanceOf(PaginatedResponseDto);
     expect(result.data).toEqual(items);
     expect(result.total).toBe(1);

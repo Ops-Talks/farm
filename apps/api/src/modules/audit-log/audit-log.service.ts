@@ -15,6 +15,7 @@ export interface FindAuditLogsOptions {
   resourceId?: string;
   actorId?: string;
   limit?: number;
+  organizationId?: string;
 }
 
 /**
@@ -58,7 +59,13 @@ export class AuditLogService {
    * @returns An array of matching audit log entries
    */
   async findAll(options: FindAuditLogsOptions = {}): Promise<AuditLog[]> {
-    const { resourceType, resourceId, actorId, limit = 100 } = options;
+    const {
+      resourceType,
+      resourceId,
+      actorId,
+      limit = 100,
+      organizationId,
+    } = options;
 
     const where: FindOptionsWhere<AuditLog> = {};
 
@@ -70,6 +77,9 @@ export class AuditLogService {
     }
     if (actorId !== undefined) {
       where.actorId = actorId;
+    }
+    if (organizationId !== undefined) {
+      where.organizationId = organizationId;
     }
 
     return await this.auditLogRepository.find({
