@@ -94,6 +94,7 @@ nav:
     - Backend:
       - developer-guide/backend/index.md
       - Architecture: developer-guide/backend/architecture.md
+      - Multi-Tenancy and RBAC: developer-guide/backend/multi-tenancy.md
       - Plugin System: developer-guide/backend/plugins.md
       - Testing: developer-guide/backend/testing.md
       - Observability: developer-guide/backend/observability.md

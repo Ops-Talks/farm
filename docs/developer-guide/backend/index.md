@@ -18,6 +18,7 @@ This section covers the NestJS backend of Farm, including its architecture, modu
 | Topic | Description |
 |-------|-------------|
 | [Architecture](architecture.md) | Module structure, request flow, data storage, and caching |
+| [Multi-Tenancy and RBAC](multi-tenancy.md) | Organizations, org roles, OrgContextInterceptor, and query scoping |
 | [Plugin System](plugins.md) | Extending Farm with metadata-driven plugins |
 | [Testing](testing.md) | Unit tests with Jest, E2E tests, coverage thresholds |
 | [Observability](observability.md) | Prometheus metrics, Grafana dashboards, OpenTelemetry tracing |
@@ -42,6 +43,7 @@ apps/api/src/
     environments/        # Environments and Deployments module
     teams/               # Teams and Ownership module
     audit-log/           # Audit log module
+    organization/        # Organization and multi-tenancy module
     plugin-manager/      # Plugin manager module
 apps/api/test/           # End-to-end tests
 ```

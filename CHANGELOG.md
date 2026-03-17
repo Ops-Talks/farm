@@ -5,14 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **FARM-E25**: Multi-tenant organization scoping enforcement — `OrgContextInterceptor` validates `X-Organization-Id` header and stamps `req.organizationId` on all authenticated requests. Catalog, Teams, Environments, and AuditLog services now scope queries by organization when the header is present.
+- **FARM-E25**: Two-tier RBAC — global `RolesGuard` (admin/user) and organization-level `OrgRolesGuard` (OWNER/ADMIN/MEMBER hierarchy) operating independently.
+- **FARM-E25**: `X-Organization-Id` header automatically injected by the web API client from the active organization stored in `sessionStorage`.
+- **docs**: Added `multi-tenancy.md` guide covering the organization model, role hierarchy, guard usage, and frontend integration.
+
 ## [0.9.10] - 2026-03-17
 
-### Changed
-- fix(versions: Os dependencies.
+### Security
+- **multer**: upgraded to `2.1.1` via `@nestjs/platform-express@11.1.17` — resolves ReDoS vulnerability (CVE-2025-47944).
+- **flatted**: upgraded to `3.4.1` — resolves prototype pollution vulnerability.
+- **file-type**: upgraded to `21.3.2` — resolves ReDoS vulnerability (CVE-2024-4067).
+- Migrated E2E test database driver from `sqlite3` (deprecated, 9 HIGH vulnerabilities) to `better-sqlite3@12` — reduces audit findings from 17 to 9, eliminates all HIGH severity issues in production dependencies.
 
 ### Fixed
-- **docker**: fix monorepo build and PostgreSQL migration compatibility...
+- **email**: Handlebars templates (`*.hbs`) were not copied to `dist/` during build, causing `EmailService` to silently fail in production and Docker. Added `assets` declaration to `nest-cli.json`.
 - **docker**: fix monorepo build and PostgreSQL migration compatibility.
+- **config**: added `"better-sqlite3"` to the Joi `DATABASE_TYPE` allowlist to prevent config validation errors in E2E test startup.
+
+### Changed
+- Dependency version alignment across workspace packages.
 
 ## [0.9.2] - 2026-03-16
 

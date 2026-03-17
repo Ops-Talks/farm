@@ -205,10 +205,81 @@ The Audit Log module records an immutable trail of significant system actions (c
 | `AuditLogService` | Business logic for recording and retrieving audit entries |
 | `AuditLog` entity | Audit entry data structure (actor, action, resource, timestamp) |
 
+### Organization Module
+
+The Organization module provides multi-tenant isolation and org-level role management. It is registered as the `core-organization` plugin at `apps/api/src/modules/organization/`.
+
+| Component | Purpose |
+|-----------|---------|
+| `OrganizationController` | REST endpoints for org CRUD and membership |
+| `OrganizationService` | Business logic: create org, manage members, assert roles |
+| `Organization` entity | Org data (name, slug, ownerId) |
+| `UserOrganization` entity | Join table: userId + organizationId + OrgRole |
+
+## Multi-Tenancy and RBAC
+
+Farm implements a two-tier RBAC model that combines global platform roles with per-organization roles. See the [Multi-Tenancy Guide](multi-tenancy.md) for full details and API examples.
+
+### Global Roles (Tier 1)
+
+Global roles are stored as a `string[]` on the `User` entity and included in the JWT payload. The `RolesGuard` enforces them using the `@Roles()` decorator.
+
+| Role | Description |
+|------|-------------|
+| `admin` | Full platform access; can manage users, organizations, and all resources |
+| `user` | Standard access; subject to org-level permissions for multi-tenant resources |
+
+### Org Roles (Tier 2)
+
+Org roles are stored in the `UserOrganization` join table and resolved at request time. The `OrgRolesGuard` enforces them using the `@OrgRoles()` decorator.
+
+| Role | Numeric Weight | Description |
+|------|---------------|-------------|
+| `OWNER` | 3 | Full control over the organization, including deletion and ownership transfer |
+| `ADMIN` | 2 | Can manage members and org resources |
+| `MEMBER` | 1 | Read and contribute access to org resources |
+
+Guards are combined on a controller method as follows:
+
+```typescript
+@UseGuards(JwtAuthGuard, OrgRolesGuard)
+@OrgRoles("admin")
+@Patch(':id')
+update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
+```
+
+### OrgContextInterceptor
+
+`OrgContextInterceptor` is registered globally as `APP_INTERCEPTOR`. It runs on every request and performs the following steps:
+
+1. Reads the `X-Organization-Id` request header.
+2. If the header is present and the user is authenticated, queries the `UserOrganization` repository to verify membership.
+3. If membership is confirmed, attaches `req.organizationId` for downstream controllers and services.
+4. If membership is not found, throws `ForbiddenException("Not a member of this organization")`.
+5. If the header is absent or the user is unauthenticated, sets `req.organizationId = undefined` (backward-compatible behavior).
+
+### Multi-Tenant Query Scoping
+
+The `organizationId` foreign key is nullable and indexed on the following entities: `Component`, `Team`, `Environment`, and `AuditLog`. Existing records without an organization affiliation remain accessible when no `X-Organization-Id` header is sent.
+
+When `req.organizationId` is set, each service's `findAll()` method scopes its query to that organization. Controllers read `organizationId` from `req.organizationId` (injected by the interceptor), not from query parameters.
+
+### Per-User Rate Limiting
+
+`PerUserThrottlerGuard` replaces the default IP-based throttler for authenticated requests. It uses `userId` as the throttle key, ensuring limits apply per user regardless of IP address. Two named buckets are active simultaneously:
+
+| Bucket | Limit |
+|--------|-------|
+| `short` | 5 requests per second |
+| `long` | 100 requests per minute |
+
+Auth endpoints apply stricter per-route overrides via `@Throttle()`.
+
 ## Request Flow
 
 1. **HTTP Request**: Client sends HTTP request to the NestJS application
 2. **Routing**: NestJS routes the request to the appropriate controller
+2.5. **Organization Context**: `OrgContextInterceptor` validates the `X-Organization-Id` header and stamps `req.organizationId`
 3. **YAML Processing**: If registering via YAML, the `CatalogService` uses `js-yaml` to parse and validate the `catalog-info.yaml` content.
 4. **Validation**: DTOs validate incoming request data
 5. **Controller**: Controller method handles the request
@@ -305,4 +376,3 @@ Farm includes integrated observability with Prometheus metrics and OpenTelemetry
 ## Future Architecture Considerations
 
 - **Event Bus**: Add event-driven communication between modules.
-- **Email Service**: Integrate nodemailer for transactional email notifications.
