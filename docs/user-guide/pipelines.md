@@ -29,8 +29,9 @@ Every time a pipeline is triggered, Farm creates a **Pipeline Run** — a record
 |--------|-------------|
 | `queued` | Run has been created and is waiting to be picked up |
 | `running` | Run is actively executing stages |
+| `waiting_approval` | Run is paused at an approval stage, waiting for a manual decision |
 | `succeeded` | All stages completed successfully |
-| `failed` | One or more stages encountered an error |
+| `failed` | One or more stages encountered an error, or approval was rejected |
 | `cancelled` | Run was cancelled before completion |
 
 ## Managing Pipelines
@@ -163,9 +164,55 @@ curl http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id> \
   -H "Authorization: Bearer <token>"
 ```
 
-## Best Practices
+## Managing Runs
 
-### Stage Design
+### Approving or Rejecting a Run
+
+When a pipeline includes an `approval` stage, the run pauses at that stage and enters `waiting_approval` status. An admin must approve or reject the run before execution can continue.
+
+**Via the web UI**: Open the pipeline run detail page. When a run is in `waiting_approval` status, an approval banner appears showing the approval stage name. Click **Approve** to continue execution or **Reject** to fail the run.
+
+**Via API:**
+
+```bash
+# Approve
+curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/approve \
+  -H "Authorization: Bearer <admin-token>"
+
+# Reject
+curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/reject \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+### Cancelling a Run
+
+You can cancel a run that is in `queued`, `running`, or `waiting_approval` status.
+
+**Via the web UI**: Open the run detail page and click **Cancel Run**.
+
+**Via API:**
+
+```bash
+curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/cancel \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+Cancellation takes effect at the next stage boundary. In-progress stage execution is not interrupted mid-command.
+
+### Retriggering a Run
+
+If a run has `failed` or `cancelled` status, you can trigger a fresh run of the same pipeline.
+
+**Via the web UI**: Open the run detail page and click **Retrigger**.
+
+**Via API** (creates a new run):
+
+```bash
+curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/trigger \
+  -H "Authorization: Bearer <token>"
+```
+
+## Best Practices
 
 - Keep stages focused on a single responsibility
 - Use `approval` stages before any destructive or irreversible operations (production deployments, database migrations)

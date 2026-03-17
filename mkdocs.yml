@@ -85,6 +85,7 @@ nav:
     - Pipelines: user-guide/pipelines.md
     - Observability: user-guide/observability.md
     - Authentication: user-guide/authentication.md
+    - Organizations: user-guide/organizations.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
     - developer-guide/index.md
@@ -101,6 +102,7 @@ nav:
       - WebSockets: developer-guide/backend/websockets.md
       - Queues: developer-guide/backend/queues.md
       - Email: developer-guide/backend/email.md
+      - Pipelines: developer-guide/backend/pipelines.md
     - Frontend:
       - developer-guide/frontend/index.md
       - Architecture: developer-guide/frontend/architecture.md
@@ -113,6 +115,7 @@ nav:
     - Environments API: api-reference/environments.md
     - Deployments API: api-reference/deployments.md
     - Teams API: api-reference/teams.md
+    - Organizations API: api-reference/organizations.md
     - Authentication API: api-reference/auth.md
     - Plugins API: api-reference/plugins.md
     - Pipelines API: api-reference/pipelines.md

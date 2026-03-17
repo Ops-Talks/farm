@@ -45,6 +45,14 @@ Learn about [user authentication](authentication.md) in Farm, including:
 - Refresh token rotation
 - User roles and rate limiting
 
+### Organizations
+
+Farm supports [multi-tenant organizations](organizations.md), providing isolated scopes for catalog components, teams, pipelines, and environments. Each organization has members with role-based access:
+
+- Create and manage organizations
+- Add or remove members and assign roles (owner, admin, member)
+- Scope resources to a specific organization using the `X-Organization-Id` request header
+
 ### Environments and Deployments
 
 Farm tracks deployment environments and component deployments, enabling:
@@ -77,4 +85,5 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 | [Catalog](catalog.md) | Manage software components |
 | [Documentation](documentation.md) | Create and manage documentation |
 | [Authentication](authentication.md) | User management and access |
+| [Organizations](organizations.md) | Multi-tenant isolation and member management |
 | [FAQ](faq.md) | Frequently asked questions |

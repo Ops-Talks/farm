@@ -39,6 +39,7 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Environments](environments.md) | `/api/v1/environments` | Deployment environments |
 | [Deployments](deployments.md) | `/api/v1/deployments` | Component deployment tracking |
 | [Teams](teams.md) | `/api/v1/teams` | Team ownership and membership |
+| [Organizations](organizations.md) | `/api/v1/organizations` | Organization and member management |
 | [Plugins](plugins.md) | `/api/v1/plugins` | Plugin registry |
 | [Audit Log](audit-log.md) | `/api/v1/audit-log` | Immutable audit trail for system actions |
 

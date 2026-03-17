@@ -35,7 +35,7 @@ All endpoints require a valid JWT bearer token. Include the `Authorization: Bear
 {
   "id": "run-uuid",
   "pipelineId": "pipeline-uuid",
-  "status": "succeeded",
+  "status": "succeeded | queued | running | waiting_approval | failed | cancelled",
   "triggeredBy": "user-uuid",
   "startedAt": "2026-03-16T00:00:00.000Z",
   "finishedAt": "2026-03-16T00:00:05.000Z",
@@ -166,6 +166,58 @@ Returns the last 50 runs for the pipeline, ordered by most recent first.
 
 ---
 
+## Run Actions
+
+### Approve Run
+
+`POST /api/v1/pipelines/:id/runs/:runId/approve`
+
+Approves a run that is paused at an `approval` stage. The run must be in `waiting_approval` status. Execution resumes from the next stage after the approval gate.
+
+- **Roles required**: `admin`
+- **Response** `200 OK` — the updated PipelineRun object with `status: "running"`.
+- **Error** `404 Not Found` — run does not exist or does not belong to this pipeline.
+- **Error** `400 Bad Request` — run is not in `waiting_approval` status.
+
+---
+
+### Reject Run
+
+`POST /api/v1/pipelines/:id/runs/:runId/reject`
+
+Rejects a run paused at an `approval` stage. Sets the run status to `failed`.
+
+- **Roles required**: `admin`
+- **Response** `200 OK` — the updated PipelineRun object with `status: "failed"`.
+- **Error** `400 Bad Request` — run is not in `waiting_approval` status.
+
+---
+
+### Cancel Run
+
+`POST /api/v1/pipelines/:id/runs/:runId/cancel`
+
+Cancels a run that is in `queued` or `running` status. The processor will abort before the next stage.
+
+- **Roles required**: `admin`
+- **Response** `200 OK` — the updated PipelineRun object with `status: "cancelled"`.
+- **Error** `400 Bad Request` — run cannot be cancelled (already in a terminal state).
+
+---
+
+## Run Status
+
+| Status | Description |
+|--------|-------------|
+| `queued` | Run created, waiting to start |
+| `running` | Actively executing stages |
+| `waiting_approval` | Paused at an approval stage, awaiting human action |
+| `succeeded` | All stages completed successfully |
+| `failed` | A stage failed or approval was rejected |
+| `cancelled` | Run was cancelled before completion |
+
+---
+
 ## WebSocket Events
 
 Pipeline execution emits real-time events on the `/events` Socket.IO namespace.
@@ -173,7 +225,7 @@ Pipeline execution emits real-time events on the `/events` Socket.IO namespace.
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `pipeline.log` | `{ runId, stage, message }` | A log line emitted during stage execution |
-| `pipeline.run.updated` | PipelineRun object | Emitted when a run changes status (completed, failed) |
+| `pipeline.run.updated` | PipelineRun object (full) | Emitted when a run changes status, including transitions to `waiting_approval`, `succeeded`, `failed`, and `cancelled` |
 
 See the [WebSocket documentation](../developer-guide/backend/websockets.md) for connection details.
 

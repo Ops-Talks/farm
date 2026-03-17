@@ -35,6 +35,23 @@ curl -H "Authorization: Bearer <token>" \
   http://localhost:3000/api/v1/catalog/components?kindGroup=infra
 ```
 
+## Filtering by Team
+
+The `GET /api/v1/catalog/components` endpoint accepts a `teamId` query parameter to return only components owned by the specified team.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `teamId` | UUID | Filter components by owning team ID |
+
+**Example:**
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:3000/api/v1/catalog/components?teamId=<team-uuid>"
+```
+
+The `teamId` filter can be combined with `kindGroup` and pagination parameters.
+
 ## Pagination
 
 All list endpoints return paginated responses. The following query parameters are supported:
