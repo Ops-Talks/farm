@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
   Optional,
 } from "@nestjs/common";
@@ -10,6 +11,7 @@ import { Repository } from "typeorm";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { EventsGateway } from "../../common/events/events.gateway";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { CreatePipelineDto } from "./dto/create-pipeline.dto";
@@ -30,6 +32,8 @@ export class PipelinesService {
     @Optional()
     @InjectQueue(QUEUE_NAMES.PIPELINE_EXECUTION)
     private readonly executionQueue?: Queue,
+    @Optional()
+    private readonly eventsGateway?: EventsGateway,
   ) {}
 
   /**
@@ -194,5 +198,184 @@ export class PipelinesService {
       );
     }
     return run;
+  }
+
+  /**
+   * Approves a run that is waiting for manual approval, resumes processing
+   * from the stage immediately after the approval stage.
+   *
+   * @param pipelineId - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param userId - UUID of the user granting approval
+   * @returns The updated PipelineRun
+   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws BadRequestException if the run is not in WAITING_APPROVAL status
+   */
+  async approveRun(
+    pipelineId: string,
+    runId: string,
+    userId: string,
+  ): Promise<PipelineRun> {
+    const run = await this.findRun(pipelineId, runId);
+
+    if (run.status !== PipelineRunStatus.WAITING_APPROVAL) {
+      throw new BadRequestException("Run is not waiting for approval");
+    }
+
+    // Determine which stage order to resume from.
+    const approvalStageResult = run.stageResults?.find(
+      (sr) => sr.status === "waiting_approval",
+    );
+
+    let resumeFromStageOrder = 0;
+
+    if (approvalStageResult) {
+      const pipeline = await this.pipelineRepository.findOne({
+        where: { id: pipelineId },
+      });
+      const approvalStage = pipeline?.stages.find(
+        (s) => s.id === approvalStageResult.stageId,
+      );
+      if (approvalStage !== undefined) {
+        resumeFromStageOrder = approvalStage.order + 1;
+      }
+
+      // Mark the approval stage result as approved.
+      run.stageResults = (run.stageResults ?? []).map((sr) =>
+        sr.stageId === approvalStageResult.stageId
+          ? { ...sr, status: "approved", finishedAt: new Date().toISOString() }
+          : sr,
+      );
+    }
+
+    run.status = PipelineRunStatus.RUNNING;
+    const savedRun = await this.runRepository.save(run);
+
+    this.eventsGateway?.emitPipelineRunUpdated({
+      id: savedRun.id,
+      pipelineId: savedRun.pipelineId,
+      status: savedRun.status,
+      triggeredBy: savedRun.triggeredBy,
+      startedAt: savedRun.startedAt,
+      finishedAt: savedRun.finishedAt,
+      durationMs: savedRun.durationMs,
+      timestamp: new Date().toISOString(),
+    });
+
+    await this.executionQueue?.add(QUEUE_NAMES.PIPELINE_EXECUTION, {
+      pipelineId,
+      runId,
+      triggeredBy: run.triggeredBy,
+      resumeFromStageOrder,
+    });
+
+    this.logger.log(
+      `Run ${runId} approved by ${userId}, resuming from stage order ${resumeFromStageOrder}`,
+    );
+    return savedRun;
+  }
+
+  /**
+   * Rejects a run that is waiting for manual approval, marking it as failed.
+   *
+   * @param pipelineId - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param userId - UUID of the user rejecting the run
+   * @returns The updated PipelineRun
+   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws BadRequestException if the run is not in WAITING_APPROVAL status
+   */
+  async rejectRun(
+    pipelineId: string,
+    runId: string,
+    userId: string,
+  ): Promise<PipelineRun> {
+    const run = await this.findRun(pipelineId, runId);
+
+    if (run.status !== PipelineRunStatus.WAITING_APPROVAL) {
+      throw new BadRequestException("Run is not waiting for approval");
+    }
+
+    run.status = PipelineRunStatus.FAILED;
+    run.finishedAt = new Date();
+    run.durationMs = run.startedAt
+      ? run.finishedAt.getTime() - run.startedAt.getTime()
+      : null;
+
+    const savedRun = await this.runRepository.save(run);
+
+    this.eventsGateway?.emitPipelineRunUpdated({
+      id: savedRun.id,
+      pipelineId: savedRun.pipelineId,
+      status: savedRun.status,
+      triggeredBy: savedRun.triggeredBy,
+      startedAt: savedRun.startedAt,
+      finishedAt: savedRun.finishedAt,
+      durationMs: savedRun.durationMs,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Run ${runId} rejected by ${userId}`);
+    return savedRun;
+  }
+
+  /**
+   * Cancels a run that is QUEUED, RUNNING, or WAITING_APPROVAL.
+   * Attempts to remove the BullMQ job if it is still queued; errors are
+   * silently ignored since the job may already be processing.
+   *
+   * @param pipelineId - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param userId - UUID of the user requesting cancellation
+   * @returns The updated PipelineRun
+   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws BadRequestException if the run is in a terminal status
+   */
+  async cancelRun(
+    pipelineId: string,
+    runId: string,
+    userId: string,
+  ): Promise<PipelineRun> {
+    const run = await this.findRun(pipelineId, runId);
+
+    const cancellableStatuses: PipelineRunStatus[] = [
+      PipelineRunStatus.QUEUED,
+      PipelineRunStatus.RUNNING,
+      PipelineRunStatus.WAITING_APPROVAL,
+    ];
+
+    if (!cancellableStatuses.includes(run.status)) {
+      throw new BadRequestException("Run cannot be cancelled");
+    }
+
+    run.status = PipelineRunStatus.CANCELLED;
+    run.finishedAt = new Date();
+    run.durationMs = run.startedAt
+      ? run.finishedAt.getTime() - run.startedAt.getTime()
+      : null;
+
+    const savedRun = await this.runRepository.save(run);
+
+    this.eventsGateway?.emitPipelineRunUpdated({
+      id: savedRun.id,
+      pipelineId: savedRun.pipelineId,
+      status: savedRun.status,
+      triggeredBy: savedRun.triggeredBy,
+      startedAt: savedRun.startedAt,
+      finishedAt: savedRun.finishedAt,
+      durationMs: savedRun.durationMs,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Best-effort removal of the BullMQ job if it has not started yet.
+    try {
+      const job = await this.executionQueue?.getJob(runId);
+      await job?.remove();
+    } catch {
+      // Ignore — the job may already be active or completed.
+    }
+
+    this.logger.log(`Run ${runId} cancelled by ${userId}`);
+    return savedRun;
   }
 }

@@ -1,17 +1,23 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { getQueueToken } from "@nestjs/bullmq";
-import { ConflictException, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
 import { PipelinesService } from "./pipelines.service";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { EventsGateway } from "../../common/events/events.gateway";
 
 describe("PipelinesService", () => {
   let service: PipelinesService;
   let pipelineRepo: Record<string, jest.Mock>;
   let runRepo: Record<string, jest.Mock>;
   let executionQueue: Record<string, jest.Mock>;
+  let eventsGateway: Record<string, jest.Mock>;
 
   const mockPipeline: Partial<Pipeline> = {
     id: "pipeline-uuid-1",
@@ -57,6 +63,12 @@ describe("PipelinesService", () => {
 
     executionQueue = {
       add: jest.fn().mockResolvedValue({ id: "job-1" }),
+      getJob: jest.fn().mockResolvedValue(null),
+    };
+
+    eventsGateway = {
+      emitPipelineRunUpdated: jest.fn(),
+      emitPipelineLog: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -68,6 +80,7 @@ describe("PipelinesService", () => {
           provide: getQueueToken(QUEUE_NAMES.PIPELINE_EXECUTION),
           useValue: executionQueue,
         },
+        { provide: EventsGateway, useValue: eventsGateway },
       ],
     }).compile();
 
@@ -278,6 +291,254 @@ describe("PipelinesService", () => {
 
       await expect(
         service.findRun("pipeline-uuid-1", "nonexistent"),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("approveRun", () => {
+    const waitingRun: Partial<PipelineRun> = {
+      ...mockRun,
+      status: PipelineRunStatus.WAITING_APPROVAL,
+      startedAt: new Date("2024-01-01T00:00:00Z"),
+      stageResults: [
+        {
+          stageId: "stage-approval-1",
+          status: "waiting_approval",
+          startedAt: "2024-01-01T00:00:00Z",
+          finishedAt: null,
+          output: null,
+        },
+      ],
+    };
+
+    it("should approve a waiting run and enqueue a resume job", async () => {
+      const savedRun = {
+        ...waitingRun,
+        status: PipelineRunStatus.RUNNING,
+      };
+      runRepo.findOne.mockResolvedValue(waitingRun);
+      pipelineRepo.findOne.mockResolvedValue({
+        ...mockPipeline,
+        stages: [
+          {
+            id: "stage-approval-1",
+            name: "Approval Gate",
+            type: "approval",
+            config: {},
+            order: 1,
+          },
+        ],
+      });
+      runRepo.save.mockResolvedValue(savedRun);
+
+      const result = await service.approveRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+
+      expect(result.status).toBe(PipelineRunStatus.RUNNING);
+      expect(runRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: PipelineRunStatus.RUNNING }),
+      );
+      expect(executionQueue.add).toHaveBeenCalledWith(
+        QUEUE_NAMES.PIPELINE_EXECUTION,
+        expect.objectContaining({
+          pipelineId: "pipeline-uuid-1",
+          runId: "run-uuid-1",
+          resumeFromStageOrder: 2,
+        }),
+      );
+      expect(eventsGateway.emitPipelineRunUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: savedRun.id }),
+      );
+    });
+
+    it("should throw BadRequestException when run is not waiting for approval", async () => {
+      runRepo.findOne.mockResolvedValue({
+        ...mockRun,
+        status: PipelineRunStatus.RUNNING,
+      });
+
+      await expect(
+        service.approveRun("pipeline-uuid-1", "run-uuid-1", "user-uuid-1"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw NotFoundException when run does not belong to pipeline", async () => {
+      runRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.approveRun("pipeline-uuid-1", "nonexistent", "user-uuid-1"),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("rejectRun", () => {
+    const waitingRun: Partial<PipelineRun> = {
+      ...mockRun,
+      status: PipelineRunStatus.WAITING_APPROVAL,
+      startedAt: new Date("2024-01-01T00:00:00Z"),
+      stageResults: null,
+    };
+
+    it("should reject a waiting run and mark it as FAILED", async () => {
+      const savedRun = {
+        ...waitingRun,
+        status: PipelineRunStatus.FAILED,
+        finishedAt: new Date(),
+        durationMs: 5000,
+      };
+      runRepo.findOne.mockResolvedValue(waitingRun);
+      runRepo.save.mockResolvedValue(savedRun);
+
+      const result = await service.rejectRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+
+      expect(result.status).toBe(PipelineRunStatus.FAILED);
+      expect(runRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: PipelineRunStatus.FAILED }),
+      );
+      expect(eventsGateway.emitPipelineRunUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: savedRun.id }),
+      );
+    });
+
+    it("should throw BadRequestException when run is not waiting for approval", async () => {
+      runRepo.findOne.mockResolvedValue({
+        ...mockRun,
+        status: PipelineRunStatus.SUCCEEDED,
+      });
+
+      await expect(
+        service.rejectRun("pipeline-uuid-1", "run-uuid-1", "user-uuid-1"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw NotFoundException when run does not belong to pipeline", async () => {
+      runRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.rejectRun("pipeline-uuid-1", "nonexistent", "user-uuid-1"),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe("cancelRun", () => {
+    it("should cancel a QUEUED run", async () => {
+      const queuedRun: Partial<PipelineRun> = {
+        ...mockRun,
+        status: PipelineRunStatus.QUEUED,
+        startedAt: null,
+      };
+      const savedRun = {
+        ...queuedRun,
+        status: PipelineRunStatus.CANCELLED,
+        finishedAt: new Date(),
+        durationMs: null,
+      };
+      runRepo.findOne.mockResolvedValue(queuedRun);
+      runRepo.save.mockResolvedValue(savedRun);
+
+      const result = await service.cancelRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+
+      expect(result.status).toBe(PipelineRunStatus.CANCELLED);
+      expect(runRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: PipelineRunStatus.CANCELLED }),
+      );
+      expect(eventsGateway.emitPipelineRunUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: savedRun.id }),
+      );
+    });
+
+    it("should cancel a RUNNING run and calculate durationMs", async () => {
+      const startedAt = new Date("2024-01-01T00:00:00Z");
+      const runningRun: Partial<PipelineRun> = {
+        ...mockRun,
+        status: PipelineRunStatus.RUNNING,
+        startedAt,
+      };
+      const savedRun = {
+        ...runningRun,
+        status: PipelineRunStatus.CANCELLED,
+        finishedAt: new Date(),
+        durationMs: 10000,
+      };
+      runRepo.findOne.mockResolvedValue(runningRun);
+      runRepo.save.mockResolvedValue(savedRun);
+
+      const result = await service.cancelRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+
+      expect(result.status).toBe(PipelineRunStatus.CANCELLED);
+      // durationMs is computed from startedAt so it must be a positive number.
+      const saveArg = (
+        runRepo.save.mock.calls as [Partial<PipelineRun>][][]
+      )[0][0];
+      expect(saveArg.durationMs).toBeGreaterThan(0);
+    });
+
+    it("should cancel a WAITING_APPROVAL run", async () => {
+      const waitingRun: Partial<PipelineRun> = {
+        ...mockRun,
+        status: PipelineRunStatus.WAITING_APPROVAL,
+        startedAt: new Date("2024-01-01T00:00:00Z"),
+      };
+      const savedRun = {
+        ...waitingRun,
+        status: PipelineRunStatus.CANCELLED,
+        finishedAt: new Date(),
+        durationMs: 5000,
+      };
+      runRepo.findOne.mockResolvedValue(waitingRun);
+      runRepo.save.mockResolvedValue(savedRun);
+
+      const result = await service.cancelRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+
+      expect(result.status).toBe(PipelineRunStatus.CANCELLED);
+    });
+
+    it("should throw BadRequestException when run is already completed", async () => {
+      runRepo.findOne.mockResolvedValue({
+        ...mockRun,
+        status: PipelineRunStatus.SUCCEEDED,
+      });
+
+      await expect(
+        service.cancelRun("pipeline-uuid-1", "run-uuid-1", "user-uuid-1"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when run has already failed", async () => {
+      runRepo.findOne.mockResolvedValue({
+        ...mockRun,
+        status: PipelineRunStatus.FAILED,
+      });
+
+      await expect(
+        service.cancelRun("pipeline-uuid-1", "run-uuid-1", "user-uuid-1"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw NotFoundException when run does not belong to pipeline", async () => {
+      runRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.cancelRun("pipeline-uuid-1", "nonexistent", "user-uuid-1"),
       ).rejects.toThrow(NotFoundException);
     });
   });

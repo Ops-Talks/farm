@@ -34,8 +34,8 @@ describe("PipelinesController", () => {
   };
 
   const mockRequest = {
-    user: { id: "user-uuid-1" },
-  } as unknown as import("express").Request;
+    user: { userId: "user-uuid-1" },
+  } as unknown as import("../../common/interfaces/request-with-org.interface").RequestWithOrg;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +52,18 @@ describe("PipelinesController", () => {
             triggerRun: jest.fn().mockResolvedValue(mockRun),
             findRuns: jest.fn().mockResolvedValue([mockRun]),
             findRun: jest.fn().mockResolvedValue(mockRun),
+            approveRun: jest.fn().mockResolvedValue({
+              ...mockRun,
+              status: PipelineRunStatus.RUNNING,
+            }),
+            rejectRun: jest.fn().mockResolvedValue({
+              ...mockRun,
+              status: PipelineRunStatus.FAILED,
+            }),
+            cancelRun: jest.fn().mockResolvedValue({
+              ...mockRun,
+              status: PipelineRunStatus.CANCELLED,
+            }),
           },
         },
       ],
@@ -148,6 +160,54 @@ describe("PipelinesController", () => {
       expect(service.findRun).toHaveBeenCalledWith(
         "pipeline-uuid-1",
         "run-uuid-1",
+      );
+    });
+  });
+
+  describe("approveRun", () => {
+    it("should approve a run and return the updated run", async () => {
+      const result = await controller.approveRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        mockRequest,
+      );
+      expect(result.status).toBe(PipelineRunStatus.RUNNING);
+      expect(service.approveRun).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+    });
+  });
+
+  describe("rejectRun", () => {
+    it("should reject a run and return the updated run", async () => {
+      const result = await controller.rejectRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        mockRequest,
+      );
+      expect(result.status).toBe(PipelineRunStatus.FAILED);
+      expect(service.rejectRun).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
+      );
+    });
+  });
+
+  describe("cancelRun", () => {
+    it("should cancel a run and return the updated run", async () => {
+      const result = await controller.cancelRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        mockRequest,
+      );
+      expect(result.status).toBe(PipelineRunStatus.CANCELLED);
+      expect(service.cancelRun).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        "user-uuid-1",
       );
     });
   });

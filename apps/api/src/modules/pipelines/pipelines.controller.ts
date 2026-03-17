@@ -24,7 +24,7 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
-import type { Request } from "express";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
@@ -83,10 +83,9 @@ export class PipelinesController {
   })
   async create(
     @Body() dto: CreatePipelineDto,
-    @Req() req: Request,
+    @Req() req: RequestWithOrg,
   ): Promise<Pipeline> {
-    const user = req.user as Record<string, string>;
-    return this.pipelinesService.create(dto, user?.id ?? "anonymous");
+    return this.pipelinesService.create(dto, req.user?.userId ?? "anonymous");
   }
 
   /**
@@ -205,10 +204,12 @@ export class PipelinesController {
   async trigger(
     @Param("id") id: string,
     @Body() _dto: TriggerPipelineDto,
-    @Req() req: Request,
+    @Req() req: RequestWithOrg,
   ): Promise<PipelineRun> {
-    const user = req.user as Record<string, string>;
-    return this.pipelinesService.triggerRun(id, user?.id ?? "anonymous");
+    return this.pipelinesService.triggerRun(
+      id,
+      req.user?.userId ?? "anonymous",
+    );
   }
 
   /**
@@ -253,5 +254,123 @@ export class PipelinesController {
     @Param("runId") runId: string,
   ): Promise<PipelineRun> {
     return this.pipelinesService.findRun(id, runId);
+  }
+
+  /**
+   * Approves a run that is waiting for manual approval and resumes execution
+   * from the stage immediately after the approval gate.
+   *
+   * @param id - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param req - Incoming HTTP request (used to extract the authenticated user)
+   * @returns The updated PipelineRun
+   */
+  @Post(":id/runs/:runId/approve")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Approve a pipeline run waiting for approval" })
+  @ApiParam({ name: "id", description: "Pipeline UUID" })
+  @ApiParam({ name: "runId", description: "PipelineRun UUID" })
+  @ApiOkResponse({
+    description: "Run approved and resumed.",
+    type: PipelineRun,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: "Run is not waiting for approval.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Run not found.",
+    type: ErrorResponseDto,
+  })
+  async approveRun(
+    @Param("id") id: string,
+    @Param("runId") runId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<PipelineRun> {
+    return this.pipelinesService.approveRun(
+      id,
+      runId,
+      req.user?.userId ?? "anonymous",
+    );
+  }
+
+  /**
+   * Rejects a run that is waiting for manual approval, marking it as failed.
+   *
+   * @param id - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param req - Incoming HTTP request (used to extract the authenticated user)
+   * @returns The updated PipelineRun
+   */
+  @Post(":id/runs/:runId/reject")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Reject a pipeline run waiting for approval" })
+  @ApiParam({ name: "id", description: "Pipeline UUID" })
+  @ApiParam({ name: "runId", description: "PipelineRun UUID" })
+  @ApiOkResponse({
+    description: "Run rejected and marked as failed.",
+    type: PipelineRun,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: "Run is not waiting for approval.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Run not found.",
+    type: ErrorResponseDto,
+  })
+  async rejectRun(
+    @Param("id") id: string,
+    @Param("runId") runId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<PipelineRun> {
+    return this.pipelinesService.rejectRun(
+      id,
+      runId,
+      req.user?.userId ?? "anonymous",
+    );
+  }
+
+  /**
+   * Cancels a QUEUED, RUNNING, or WAITING_APPROVAL run.
+   *
+   * @param id - Pipeline UUID
+   * @param runId - PipelineRun UUID
+   * @param req - Incoming HTTP request (used to extract the authenticated user)
+   * @returns The updated PipelineRun
+   */
+  @Post(":id/runs/:runId/cancel")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Cancel a pipeline run" })
+  @ApiParam({ name: "id", description: "Pipeline UUID" })
+  @ApiParam({ name: "runId", description: "PipelineRun UUID" })
+  @ApiOkResponse({
+    description: "Run cancelled.",
+    type: PipelineRun,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: "Run cannot be cancelled.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Run not found.",
+    type: ErrorResponseDto,
+  })
+  async cancelRun(
+    @Param("id") id: string,
+    @Param("runId") runId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<PipelineRun> {
+    return this.pipelinesService.cancelRun(
+      id,
+      runId,
+      req.user?.userId ?? "anonymous",
+    );
   }
 }

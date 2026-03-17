@@ -34,3 +34,27 @@ export interface DeploymentEventPayload {
   status: string;
   timestamp: string;
 }
+
+/**
+ * Payload structure for pipeline run status-change events.
+ */
+export interface PipelineRunUpdatedPayload {
+  id: string;
+  pipelineId: string;
+  status: string;
+  triggeredBy: string;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  durationMs: number | null;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for per-stage log-line events emitted during a run.
+ */
+export interface PipelineLogPayload {
+  runId: string;
+  stage: string;
+  message: string;
+  timestamp: string;
+}

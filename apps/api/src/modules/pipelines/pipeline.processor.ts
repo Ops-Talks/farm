@@ -20,6 +20,11 @@ export interface PipelineExecutionJobData {
   pipelineId: string;
   runId: string;
   triggeredBy: string;
+  /**
+   * When set, the processor skips all stages whose order is less than this
+   * value. Used when resuming a run after an approval stage is approved.
+   */
+  resumeFromStageOrder?: number;
 }
 
 /**
@@ -44,11 +49,18 @@ export class PipelineProcessor extends WorkerHost {
    * Processes a pipeline execution job.
    * Iterates through each stage in order, emits live log events, and
    * persists the final run status.
+   *
+   * When `job.data.resumeFromStageOrder` is present the processor skips
+   * the initial run-setup block (status reset, startedAt, stageResults
+   * clear) and only executes stages whose order is >= the provided value.
    */
   async process(job: Job<PipelineExecutionJobData>): Promise<void> {
-    const { pipelineId, runId } = job.data;
+    const { pipelineId, runId, resumeFromStageOrder } = job.data;
     this.logger.log(
-      `Processing pipeline run ${runId} for pipeline ${pipelineId}`,
+      `Processing pipeline run ${runId} for pipeline ${pipelineId}` +
+        (resumeFromStageOrder !== undefined
+          ? ` (resuming from stage order ${resumeFromStageOrder})`
+          : ""),
     );
 
     const run = await this.runRepository.findOne({ where: { id: runId } });
@@ -57,10 +69,20 @@ export class PipelineProcessor extends WorkerHost {
       return;
     }
 
-    run.status = PipelineRunStatus.RUNNING;
-    run.startedAt = new Date();
-    run.stageResults = [];
-    await this.runRepository.save(run);
+    // Guard against a cancellation that raced with the job being picked up.
+    if (run.status === PipelineRunStatus.CANCELLED) {
+      this.logger.warn(`Run ${runId} is already cancelled — aborting job`);
+      return;
+    }
+
+    const isResume = resumeFromStageOrder !== undefined;
+
+    if (!isResume) {
+      run.status = PipelineRunStatus.RUNNING;
+      run.startedAt = new Date();
+      run.stageResults = [];
+      await this.runRepository.save(run);
+    }
 
     const pipeline = await this.pipelineRepository.findOne({
       where: { id: pipelineId },
@@ -71,10 +93,24 @@ export class PipelineProcessor extends WorkerHost {
       return;
     }
 
-    const stages = [...pipeline.stages].sort((a, b) => a.order - b.order);
+    const allStages = [...pipeline.stages].sort((a, b) => a.order - b.order);
+    const stages = isResume
+      ? allStages.filter((s) => s.order >= resumeFromStageOrder)
+      : allStages;
 
     try {
       for (const stage of stages) {
+        // Check for cancellation before starting each stage.
+        const freshRun = await this.runRepository.findOne({
+          where: { id: runId },
+        });
+        if (freshRun?.status === PipelineRunStatus.CANCELLED) {
+          this.logger.warn(
+            `Run ${runId} was cancelled — stopping before stage "${stage.name}"`,
+          );
+          return;
+        }
+
         const stageResult: StageResult = {
           stageId: stage.id,
           status: "running",
@@ -96,6 +132,7 @@ export class PipelineProcessor extends WorkerHost {
           stageResult.status = "waiting_approval";
           stageResult.finishedAt = new Date().toISOString();
           run.stageResults = [...(run.stageResults ?? []), stageResult];
+          run.status = PipelineRunStatus.WAITING_APPROVAL;
           await this.runRepository.save(run);
 
           this.emitLog(
