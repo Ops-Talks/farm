@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.11] - 2026-03-17
 
 ### Added
-- **FARM-E25**: Multi-tenant organization scoping enforcement — `OrgContextInterceptor` validates `X-Organization-Id` header and stamps `req.organizationId` on all authenticated requests. Catalog, Teams, Environments, and AuditLog services now scope queries by organization when the header is present.
-- **FARM-E25**: Two-tier RBAC — global `RolesGuard` (admin/user) and organization-level `OrgRolesGuard` (OWNER/ADMIN/MEMBER hierarchy) operating independently.
-- **FARM-E25**: `X-Organization-Id` header automatically injected by the web API client from the active organization stored in `sessionStorage`.
-- **docs**: Added `multi-tenancy.md` guide covering the organization model, role hierarchy, guard usage, and frontend integration.
+- **web**: inject X-Organization-Id header in all API requests (FARM-E25).
+- **org**: enforce multi-tenant org scoping via X-Organization-Id header (FARM-E25).
+
+### Changed
+- add multi-tenancy guide and update architecture docs (FARM-E25).
 
 ## [0.9.10] - 2026-03-17
 
