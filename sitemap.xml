@@ -37,6 +37,10 @@
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/organizations/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/pipelines/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
@@ -142,6 +146,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/observability/</loc>
+         <lastmod>2026-03-17</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/organizations/</loc>
          <lastmod>2026-03-17</lastmod>
     </url>
     <url>
