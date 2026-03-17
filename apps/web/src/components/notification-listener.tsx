@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { subscribe } from "@/lib/ws-client";
-import { FarmEvent } from "@/types/api";
+import { FarmEvent, PipelineRunStatus } from "@/types/api";
 import type { PipelineRun, AuditLog } from "@/types/api";
 
 /**
@@ -25,15 +25,21 @@ export function NotificationListener() {
       },
     );
 
-    // S116: pipeline.run.updated → success/error based on status
+    // S116 / FARM-E26: pipeline.run.updated → toast for terminal statuses only.
+    // WAITING_APPROVAL and RUNNING/QUEUED are intentionally omitted — the run
+    // detail page handles those states with inline UI.
     const unsubPipeline = subscribe(
       FarmEvent.PIPELINE_RUN_UPDATED,
       (payload) => {
         const run = payload as unknown as PipelineRun;
-        if (run.status === "succeeded") {
-          toast.success("Pipeline run completed");
-        } else if (run.status === "failed") {
-          toast.error("Pipeline run failed");
+        const shortId = run.id.slice(0, 8);
+
+        if (run.status === PipelineRunStatus.SUCCEEDED) {
+          toast.success(`Pipeline run ${shortId} → SUCCEEDED`);
+        } else if (run.status === PipelineRunStatus.FAILED) {
+          toast.error(`Pipeline run ${shortId} → FAILED`);
+        } else if (run.status === PipelineRunStatus.CANCELLED) {
+          toast.info(`Pipeline run ${shortId} → CANCELLED`);
         }
       },
     );

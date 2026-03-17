@@ -658,6 +658,31 @@ export const pipelines = {
   getRun(id: string, runId: string): Promise<PipelineRun> {
     return request(`/v1/pipelines/${id}/runs/${runId}`);
   },
+
+  // -- Run lifecycle actions (FARM-E26) --
+
+  approveRun(pipelineId: string, runId: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${pipelineId}/runs/${runId}/approve`, {
+      method: "POST",
+    });
+  },
+
+  rejectRun(pipelineId: string, runId: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${pipelineId}/runs/${runId}/reject`, {
+      method: "POST",
+    });
+  },
+
+  cancelRun(pipelineId: string, runId: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${pipelineId}/runs/${runId}/cancel`, {
+      method: "POST",
+    });
+  },
+
+  // Retrigger is a clearly-named alias for trigger, used in retry UX contexts.
+  retrigger(pipelineId: string): Promise<PipelineRun> {
+    return request(`/v1/pipelines/${pipelineId}/trigger`, { method: "POST" });
+  },
 };
 
 // -- Alerting Rules API --

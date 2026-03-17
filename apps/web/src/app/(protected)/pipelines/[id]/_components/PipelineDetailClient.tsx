@@ -363,7 +363,7 @@ export function PipelineDetailClient() {
             onSelectRun={handleSelectRun}
           />
           {selectedRunId && id && (
-            <RunDetail pipelineId={id} runId={selectedRunId} />
+            <RunDetail pipelineId={id} runId={selectedRunId} pipeline={pipeline ?? undefined} />
           )}
         </div>
       )}

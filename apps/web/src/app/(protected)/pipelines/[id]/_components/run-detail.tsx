@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { pipelines as pipelinesApi } from "@/lib/api-client";
+import { toast } from "sonner";
+import { pipelines as pipelinesApi, ApiError } from "@/lib/api-client";
 import { subscribe } from "@/lib/ws-client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { PipelineRun, PipelineStageResult, PipelineLogPayload } from "@/types/api";
+import type { Pipeline, PipelineRun, PipelineStageResult, PipelineLogPayload } from "@/types/api";
 import { FarmEvent, PipelineRunStatus } from "@/types/api";
 
 function statusIcon(status: string): string {
@@ -20,7 +22,7 @@ function statusIcon(status: string): string {
     case PipelineRunStatus.RUNNING:
       return "⏳";
     case "waiting_approval":
-      return "🔒";
+      return "⏸";
     case "queued":
     case PipelineRunStatus.QUEUED:
       return "⏸";
@@ -50,19 +52,35 @@ function statusColor(status: string): string {
   }
 }
 
-function isActiveRun(status: PipelineRunStatus): boolean {
+// Returns true when WS subscriptions should be active (run is in-progress or
+// paused awaiting approval — any state where an external event can change it).
+function shouldSubscribe(status: PipelineRunStatus): boolean {
+  return (
+    status === PipelineRunStatus.RUNNING ||
+    status === PipelineRunStatus.QUEUED ||
+    status === PipelineRunStatus.WAITING_APPROVAL
+  );
+}
+
+// Returns true when the run is actively executing and producing live log lines.
+function isLiveLogging(status: PipelineRunStatus): boolean {
   return status === PipelineRunStatus.RUNNING || status === PipelineRunStatus.QUEUED;
 }
 
 interface RunDetailProps {
   pipelineId: string;
   runId: string;
+  // Optional pipeline definition — used to resolve stage names in the
+  // approval banner. If absent, the banner falls back to the stageId.
+  pipeline?: Pipeline;
 }
 
-export function RunDetail({ pipelineId, runId }: RunDetailProps) {
+export function RunDetail({ pipelineId, runId, pipeline }: RunDetailProps) {
   const [run, setRun] = useState<PipelineRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [logLines, setLogLines] = useState<string[]>([]);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   const fetchRun = useCallback(() => {
@@ -88,9 +106,11 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logLines]);
 
-  // Subscribe to real-time events when the run is active
+  // Subscribe to real-time events while the run can still change state.
+  // This includes WAITING_APPROVAL so we pick up approve/reject events from
+  // other users without requiring a manual page refresh.
   useEffect(() => {
-    if (!run || !isActiveRun(run.status)) return;
+    if (!run || !shouldSubscribe(run.status)) return;
 
     const unsubLog = subscribe(
       FarmEvent.PIPELINE_LOG,
@@ -107,8 +127,9 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
       ((payload: PipelineRun) => {
         if (payload.id !== runId) return;
         setRun(payload);
-        // If run finished, fetch final state to get complete logs
-        if (!isActiveRun(payload.status)) {
+        // Once the run reaches a terminal / no-longer-subscribable state,
+        // fetch the full record to get persisted logs and final results.
+        if (!shouldSubscribe(payload.status)) {
           fetchRun();
         }
       // The ws-client EventHandler type is a union; cast to satisfy it
@@ -120,6 +141,75 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
       unsubRunUpdated();
     };
   }, [run, runId, fetchRun]);
+
+  // -- Action error helper --
+
+  const handleActionError = useCallback((err: unknown) => {
+    const message =
+      err instanceof ApiError
+        ? Array.isArray(err.body.message)
+          ? err.body.message.join(", ")
+          : err.body.message
+        : "Action failed";
+    setActionError(message);
+    toast.error(message);
+  }, []);
+
+  // -- Run lifecycle action handlers --
+
+  const handleApprove = useCallback(() => {
+    if (!run) return;
+    setActionLoading(true);
+    setActionError(null);
+    pipelinesApi
+      .approveRun(pipelineId, run.id)
+      .then((updated) => {
+        setRun(updated);
+        toast.success("Run approved — continuing execution");
+      })
+      .catch(handleActionError)
+      .finally(() => setActionLoading(false));
+  }, [run, pipelineId, handleActionError]);
+
+  const handleReject = useCallback(() => {
+    if (!run) return;
+    setActionLoading(true);
+    setActionError(null);
+    pipelinesApi
+      .rejectRun(pipelineId, run.id)
+      .then((updated) => {
+        setRun(updated);
+        toast.success("Run rejected");
+      })
+      .catch(handleActionError)
+      .finally(() => setActionLoading(false));
+  }, [run, pipelineId, handleActionError]);
+
+  const handleCancel = useCallback(() => {
+    if (!run) return;
+    setActionLoading(true);
+    setActionError(null);
+    pipelinesApi
+      .cancelRun(pipelineId, run.id)
+      .then((updated) => {
+        setRun(updated);
+        toast.success("Run cancelled");
+      })
+      .catch(handleActionError)
+      .finally(() => setActionLoading(false));
+  }, [run, pipelineId, handleActionError]);
+
+  const handleRetrigger = useCallback(() => {
+    setActionLoading(true);
+    setActionError(null);
+    pipelinesApi
+      .retrigger(pipelineId)
+      .then((newRun) => {
+        toast.success(`New run triggered — ${newRun.id.slice(0, 8)}`);
+      })
+      .catch(handleActionError)
+      .finally(() => setActionLoading(false));
+  }, [pipelineId, handleActionError]);
 
   if (loading) {
     return (
@@ -139,9 +229,26 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
     );
   }
 
+  // Find the stage currently waiting for approval (used in the banner).
+  const waitingStageResult = run.stageResults?.find(
+    (sr) => sr.status === PipelineRunStatus.WAITING_APPROVAL || sr.status === "waiting",
+  );
+  const waitingStage = pipeline?.stages?.find(
+    (s) => s.id === waitingStageResult?.stageId,
+  );
+
+  // Determine which action button group to show.
+  const showApprovalActions = run.status === PipelineRunStatus.WAITING_APPROVAL;
+  const showCancelAction =
+    run.status === PipelineRunStatus.RUNNING || run.status === PipelineRunStatus.QUEUED;
+  const showRetriggerAction =
+    run.status === PipelineRunStatus.FAILED ||
+    run.status === PipelineRunStatus.CANCELLED ||
+    run.status === PipelineRunStatus.SUCCEEDED;
+
   return (
     <div className="flex flex-col gap-4 pt-4 animate-in fade-in duration-300">
-      {/* Run metadata */}
+      {/* Run metadata row with inline action buttons */}
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">
           {run.id.slice(0, 8)}
@@ -163,7 +270,85 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
               : `${(run.durationMs / 1000).toFixed(1)}s`}
           </span>
         )}
+
+        {/* Action buttons — contextual based on current run status */}
+        {(showCancelAction || showRetriggerAction) && (
+          <div className="ml-auto flex items-center gap-2">
+            {showCancelAction && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={actionLoading}
+                onClick={handleCancel}
+                aria-label="Cancel run"
+              >
+                {actionLoading ? "Cancelling..." : "Cancel"}
+              </Button>
+            )}
+            {showRetriggerAction && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={actionLoading}
+                onClick={handleRetrigger}
+                aria-label="Retrigger pipeline"
+              >
+                {actionLoading ? "Triggering..." : "Retrigger"}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Inline error message from a failed action */}
+      {actionError && (
+        <p className="text-sm text-destructive" role="alert">
+          {actionError}
+        </p>
+      )}
+
+      {/* Approval banner — shown when the run is waiting for a human decision */}
+      {showApprovalActions && (
+        <div
+          className="rounded-md border border-amber-300 bg-amber-50 p-4 flex flex-col gap-3 dark:bg-amber-950/20 dark:border-amber-800"
+          role="region"
+          aria-label="Approval required"
+        >
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              This run is waiting for manual approval to continue.
+            </p>
+            {(waitingStage ?? waitingStageResult) && (
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                Stage:{" "}
+                <span className="font-medium">
+                  &quot;{waitingStage?.name ?? waitingStageResult?.stageId}&quot;
+                </span>
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={actionLoading}
+              onClick={handleApprove}
+              aria-label="Approve and continue run"
+              className="bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+            >
+              {actionLoading ? "Processing..." : "Approve and Continue"}
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={actionLoading}
+              onClick={handleReject}
+              aria-label="Reject run"
+            >
+              Reject
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Stage results */}
       {run.stageResults && run.stageResults.length > 0 && (
@@ -202,7 +387,7 @@ export function RunDetail({ pipelineId, runId }: RunDetailProps) {
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-medium">Logs</h4>
-          {isActiveRun(run.status) && (
+          {isLiveLogging(run.status) && (
             <Badge variant="secondary" className="animate-pulse text-xs">
               Live
             </Badge>

@@ -13,6 +13,7 @@ import {
   health,
   observability,
   environments,
+  pipelines,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -375,6 +376,131 @@ describe("api-client", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ uptime: 1000 }));
       const result = await observability.summary();
       expect(result.uptime).toBe(1000);
+    });
+  });
+
+  describe("pipelines", () => {
+    const mockRun = {
+      id: "run-00000001",
+      pipelineId: "p1",
+      status: "queued",
+      triggeredBy: "alice",
+      createdAt: "2025-01-16T12:00:00Z",
+      updatedAt: "2025-01-16T12:00:00Z",
+    };
+
+    it("should list pipelines", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: [], total: 0, skip: 0, take: 20 }),
+      );
+      const result = await pipelines.list();
+      expect(result).toEqual([]);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/pipelines"),
+        expect.any(Object),
+      );
+    });
+
+    it("should trigger a pipeline run", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(mockRun));
+      const result = await pipelines.trigger("p1");
+      expect(result.id).toBe("run-00000001");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/trigger",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("should list runs for a pipeline", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([mockRun]));
+      const result = await pipelines.listRuns("p1");
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/runs",
+        expect.any(Object),
+      );
+    });
+
+    it("should get a single run", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(mockRun));
+      const result = await pipelines.getRun("p1", "run-00000001");
+      expect(result.id).toBe("run-00000001");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/runs/run-00000001",
+        expect.any(Object),
+      );
+    });
+
+    it("approveRun calls POST /runs/:runId/approve and returns updated run", async () => {
+      const approved = { ...mockRun, status: "running" };
+      mockFetch.mockReturnValueOnce(jsonResponse(approved));
+
+      const result = await pipelines.approveRun("p1", "run-00000001");
+
+      expect(result.status).toBe("running");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/runs/run-00000001/approve",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("rejectRun calls POST /runs/:runId/reject and returns updated run", async () => {
+      const rejected = { ...mockRun, status: "failed" };
+      mockFetch.mockReturnValueOnce(jsonResponse(rejected));
+
+      const result = await pipelines.rejectRun("p1", "run-00000001");
+
+      expect(result.status).toBe("failed");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/runs/run-00000001/reject",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("cancelRun calls POST /runs/:runId/cancel and returns updated run", async () => {
+      const cancelled = { ...mockRun, status: "cancelled" };
+      mockFetch.mockReturnValueOnce(jsonResponse(cancelled));
+
+      const result = await pipelines.cancelRun("p1", "run-00000001");
+
+      expect(result.status).toBe("cancelled");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/runs/run-00000001/cancel",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("retrigger calls POST /trigger (same endpoint as trigger) and returns a new run", async () => {
+      const newRun = { ...mockRun, id: "run-00000002" };
+      mockFetch.mockReturnValueOnce(jsonResponse(newRun));
+
+      const result = await pipelines.retrigger("p1");
+
+      expect(result.id).toBe("run-00000002");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/pipelines/p1/trigger",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("approveRun throws ApiError on non-ok response", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 409, timestamp: "t", path: "/test", message: "Not in approval state" },
+          409,
+        ),
+      );
+      await expect(pipelines.approveRun("p1", "run-00000001")).rejects.toThrow(ApiError);
+    });
+
+    it("cancelRun throws ApiError when run is already in terminal state", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 409, timestamp: "t", path: "/test", message: "Run already completed" },
+          409,
+        ),
+      );
+      await expect(pipelines.cancelRun("p1", "run-00000001")).rejects.toThrow(ApiError);
     });
   });
 });

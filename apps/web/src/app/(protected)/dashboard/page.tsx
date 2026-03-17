@@ -2,6 +2,7 @@ import { HealthPanel } from "@/components/dashboard/health-panel";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { QueuePanel } from "@/components/dashboard/queue-panel";
+import { RecentPipelinesWidget } from "./_components/recent-pipelines-widget";
 
 export default function DashboardPage() {
   return (
@@ -44,6 +45,14 @@ export default function DashboardPage() {
           <QueuePanel />
         </section>
       </div>
+
+      {/* Recent pipelines widget */}
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          Pipelines
+        </h2>
+        <RecentPipelinesWidget />
+      </section>
     </div>
   );
 }
