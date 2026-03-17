@@ -15,12 +15,12 @@ import { App } from "supertest/types";
 
 /**
  * Creates and initializes a NestJS application for E2E testing
- * with SQLite in-memory database, global pipes, and serialization.
+ * with a better-sqlite3 in-memory database, global pipes, and serialization.
  * Rate limiting uses high thresholds to avoid flaky test failures.
  */
 export async function createE2EApp(): Promise<INestApplication<App>> {
   process.env.NODE_ENV = "test";
-  process.env.DATABASE_TYPE = "sqlite";
+  process.env.DATABASE_TYPE = "better-sqlite3";
   process.env.DATABASE_NAME = ":memory:";
   process.env.DATABASE_SYNC = "true";
   process.env.JWT_SECRET = "e2e-test-secret-that-is-at-least-32-characters";

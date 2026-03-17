@@ -6,6 +6,9 @@
     "deleteOutDir": true,
     "plugins": [
       "@nestjs/swagger"
+    ],
+    "assets": [
+      "common/email/templates/**/*"
     ]
   }
 }

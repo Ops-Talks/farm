@@ -8,8 +8,8 @@ describe("AppController (e2e)", () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
-    // Force sqlite for E2E tests
-    process.env.DATABASE_TYPE = "sqlite";
+    // Force better-sqlite3 for E2E tests
+    process.env.DATABASE_TYPE = "better-sqlite3";
     process.env.DATABASE_NAME = ":memory:";
     process.env.DATABASE_SYNC = "true";
 
