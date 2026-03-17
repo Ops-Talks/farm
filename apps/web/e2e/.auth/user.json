@@ -1,0 +1,27 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3001",
+      "localStorage": [],
+      "sessionStorage": [
+        {
+          "name": "farm_token",
+          "value": "e2e-mock-access-token"
+        },
+        {
+          "name": "farm_refresh",
+          "value": "e2e-mock-refresh-token"
+        },
+        {
+          "name": "farm_username",
+          "value": "e2e-admin"
+        },
+        {
+          "name": "farm_user",
+          "value": "{\"id\":\"e2e-user-id\",\"username\":\"e2e-admin\",\"email\":\"e2e-admin@example.com\",\"displayName\":\"E2E Admin\",\"roles\":[\"admin\"],\"createdAt\":\"2026-03-17T01:03:39.698Z\",\"updatedAt\":\"2026-03-17T01:03:39.698Z\"}"
+        }
+      ]
+    }
+  ]
+}

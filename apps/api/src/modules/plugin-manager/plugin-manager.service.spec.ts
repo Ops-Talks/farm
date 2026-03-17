@@ -171,5 +171,31 @@ describe("PluginManagerService", () => {
       const manifests = service.scanDirectory("/plugins");
       expect(manifests).toHaveLength(0);
     });
+
+    it("should call register() for each valid manifest", () => {
+      (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
+        if (p === "/plugins") return true;
+        if (p === path.join("/plugins", "auto-plugin", "plugin.json"))
+          return true;
+        return false;
+      });
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        { name: "auto-plugin", isDirectory: () => true },
+      ]);
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        JSON.stringify({
+          name: "auto-plugin",
+          version: "3.0.0",
+          description: "Auto-discovered plugin",
+        }),
+      );
+
+      const registerSpy = jest.spyOn(service, "register");
+      service.scanDirectory("/plugins");
+
+      expect(registerSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "auto-plugin", version: "3.0.0" }),
+      );
+    });
   });
 });

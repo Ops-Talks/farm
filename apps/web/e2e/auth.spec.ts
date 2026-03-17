@@ -29,16 +29,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("user can log in with valid credentials and is redirected to dashboard", async ({
   page,
 }) => {
-  // Intercept the login endpoint with a success response
-  await page.route("**/api/v1/auth/login", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(MOCK_LOGIN_RESPONSE),
-    }),
-  );
-
-  // Stub any dashboard API calls that fire after redirect
+  // Stub any dashboard API calls that fire after redirect — registered FIRST
+  // so the specific login route (registered after) has higher LIFO priority.
   await page.route("**/api/v1/**", (route) =>
     route.fulfill({
       status: 200,
@@ -47,10 +39,19 @@ test("user can log in with valid credentials and is redirected to dashboard", as
     }),
   );
 
+  // Intercept the login endpoint with a success response (registered last = highest priority)
+  await page.route("**/api/v1/auth/login", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_LOGIN_RESPONSE),
+    }),
+  );
+
   await page.goto("/login");
 
-  // Verify the login page renders the expected elements
-  await expect(page.getByRole("heading", { name: "Farm" })).toBeVisible();
+  // CardTitle renders as a <div>, not a semantic heading — use text matcher
+  await expect(page.getByText("Farm").first()).toBeVisible();
   await expect(page.getByLabel("Username")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
 

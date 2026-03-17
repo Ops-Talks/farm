@@ -36,6 +36,7 @@ const navItems = [
   { href: "/observability", label: "Observability" },
   { href: "/organizations", label: "Organizations" },
   { href: "/teams", label: "Teams" },
+  { href: "/plugins", label: "Plugins" },
 ];
 
 function getInitials(name: string): string {
@@ -208,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="text-xs">
-                  {user ? getInitials(user.displayName) : "?"}
+                  {user ? getInitials(user.displayName ?? user.username) : "?"}
                 </AvatarFallback>
               </Avatar>
               <span className="hidden text-sm md:inline-block">

@@ -27,12 +27,11 @@ export function AuthGuard({ children, requiredRole }: AuthGuardProps) {
     }
   }, [isAuthenticated, isLoading, requiredRole, hasRole, router]);
 
+  // While the auth state is being read from sessionStorage (isLoading=true),
+  // render nothing.  This is also what the server renders, so there is no
+  // SSR/client hydration mismatch.
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return null;
   }
 
   if (!isAuthenticated) {

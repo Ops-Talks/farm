@@ -9,10 +9,11 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE } from "./global-setup";
+import { setupAuthStorage } from "./helpers/setup-auth-storage";
 
-// Load the pre-authenticated admin session
-test.use({ storageState: AUTH_FILE });
+test.beforeEach(async ({ page }) => {
+  await setupAuthStorage(page);
+});
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -42,35 +43,19 @@ async function mockTeamsRoutes(
   page: import("@playwright/test").Page,
   options: { includeCreation?: boolean } = {},
 ) {
-  // Team list
-  await page.route("**/api/v1/teams", (route) => {
-    if (route.request().method() === "GET") {
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_TEAM_LIST),
-      });
-    } else if (route.request().method() === "POST" && options.includeCreation) {
-      route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify(MOCK_TEAM),
-      });
-    } else {
-      route.continue();
-    }
-  });
-
-  // Individual team detail
-  await page.route(`**/api/v1/teams/${MOCK_TEAM.id}`, (route) =>
+  // Catch-all registered FIRST so specific routes (registered after) take
+  // priority. Playwright resolves routes in LIFO order — the last registered
+  // route wins — so the catch-all must be first to have the lowest priority.
+  await page.route("**/api/v1/**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(MOCK_TEAM),
+      body: JSON.stringify({ data: [], total: 0 }),
     }),
   );
 
-  // Team members
+  // Team members (more specific than the teams base route — register first
+  // among the specific routes so it is not shadowed by the teams base route)
   await page.route(`**/api/v1/teams/${MOCK_TEAM.id}/members`, (route) =>
     route.fulfill({
       status: 200,
@@ -88,14 +73,33 @@ async function mockTeamsRoutes(
     }),
   );
 
-  // Stub any remaining API calls (health, activity, etc.)
-  await page.route("**/api/v1/**", (route) =>
+  // Individual team detail
+  await page.route(`**/api/v1/teams/${MOCK_TEAM.id}`, (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: [], total: 0 }),
+      body: JSON.stringify(MOCK_TEAM),
     }),
   );
+
+  // Team list (registered last = highest priority for the /teams path)
+  await page.route("**/api/v1/teams", (route) => {
+    if (route.request().method() === "GET") {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_TEAM_LIST),
+      });
+    } else if (route.request().method() === "POST" && options.includeCreation) {
+      route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify(MOCK_TEAM),
+      });
+    } else {
+      route.continue();
+    }
+  });
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { BullBoardModule } from "@bull-board/nestjs";
 import { ExpressAdapter } from "@bull-board/express";
 import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { NotificationProcessor } from "./notification.processor";
+import { NotificationListenerService } from "./notification-listener.service";
 import { QueuesService } from "./queues.service";
 import { QueuesController } from "./queues.controller";
 import { QUEUE_NAMES } from "./queue-names";
@@ -21,7 +22,7 @@ export class QueuesModule {
         module: QueuesModule,
         global: true,
         controllers: [QueuesController],
-        providers: [QueuesService],
+        providers: [QueuesService, NotificationListenerService],
       };
     }
 
@@ -55,7 +56,11 @@ export class QueuesModule {
         ),
       ],
       controllers: [QueuesController],
-      providers: [NotificationProcessor, QueuesService],
+      providers: [
+        NotificationProcessor,
+        NotificationListenerService,
+        QueuesService,
+      ],
     };
   }
 }

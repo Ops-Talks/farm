@@ -79,9 +79,11 @@ export class PluginManagerService {
 
   /**
    * Scans a directory for plugin manifests (plugin.json files).
-   * Each subdirectory that contains a valid plugin.json is returned.
+   * Each subdirectory that contains a valid plugin.json is read, validated,
+   * and registered via register(). Errors in individual manifests are logged
+   * without interrupting the overall scan.
    * @param dir The directory to scan
-   * @returns Array of discovered plugin manifests
+   * @returns Array of discovered and registered plugin manifests
    */
   scanDirectory(dir: string): PluginManifest[] {
     const manifests: PluginManifest[] = [];
@@ -102,12 +104,19 @@ export class PluginManagerService {
         const raw = fs.readFileSync(manifestPath, "utf-8");
         const manifest = JSON.parse(raw) as PluginManifest;
 
-        if (!manifest.name || !manifest.version || !manifest.main) {
+        if (!manifest.name || !manifest.version || !manifest.description) {
           this.logger.warn(
-            `Invalid plugin manifest in ${entry.name}: missing required fields`,
+            `Invalid plugin manifest in ${entry.name}: missing required fields (name, version, description)`,
           );
           continue;
         }
+
+        this.register({
+          name: manifest.name,
+          version: manifest.version,
+          description: manifest.description,
+          author: manifest.author,
+        });
 
         manifests.push(manifest);
         this.logger.log(

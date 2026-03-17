@@ -19,7 +19,7 @@
 
 import path from "path";
 import fs from "fs";
-import { chromium, type FullConfig } from "@playwright/test";
+import { type FullConfig } from "@playwright/test";
 
 export const AUTH_FILE = path.join(__dirname, ".auth/user.json");
 
@@ -30,6 +30,8 @@ export const AUTH_FILE = path.join(__dirname, ".auth/user.json");
 export const MOCK_USER = {
   id: "e2e-user-id",
   username: "e2e-admin",
+  email: "e2e-admin@example.com",
+  displayName: "E2E Admin",
   roles: ["admin"],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -74,44 +76,33 @@ async function globalSetup(config: FullConfig): Promise<void> {
     );
   }
 
-  // 3. Launch a headless browser, navigate to the app origin, and inject
-  //    the sessionStorage values that the auth context reads on boot.
+  // 3. Write the auth state file directly.
+  //
+  //    Playwright's storageState() only captures localStorage — sessionStorage
+  //    is tab-scoped and intentionally excluded from the format.  Since the app
+  //    stores auth tokens in sessionStorage, we build the state file by hand so
+  //    that Playwright's storageState loader can restore the right values via
+  //    addInitScript before the page boots.
   const baseURL =
     config.projects[0]?.use?.baseURL ?? "http://localhost:3001";
 
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
+  const authState = {
+    cookies: [],
+    origins: [
+      {
+        origin: baseURL,
+        localStorage: [],
+        sessionStorage: [
+          { name: "farm_token", value: MOCK_TOKENS.token },
+          { name: "farm_refresh", value: MOCK_TOKENS.refreshToken },
+          { name: "farm_username", value: MOCK_USER.username },
+          { name: "farm_user", value: JSON.stringify(MOCK_USER) },
+        ],
+      },
+    ],
+  };
 
-  // Intercept all API calls so the global setup never depends on a live API
-  await page.route("**/api/**", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
-
-  // Navigate to the app origin so sessionStorage is scoped correctly
-  await page.goto(`${baseURL}/login`);
-
-  // Inject auth tokens and user object into sessionStorage, mirroring exactly
-  // what api-client.ts#setTokens() and auth-context.tsx#login() produce.
-  await page.evaluate(
-    ({ tokens, user }) => {
-      sessionStorage.setItem("farm_token", tokens.token);
-      sessionStorage.setItem("farm_refresh", tokens.refreshToken);
-      sessionStorage.setItem("farm_username", user.username);
-      sessionStorage.setItem("farm_user", JSON.stringify(user));
-    },
-    { tokens: MOCK_TOKENS, user: MOCK_USER },
-  );
-
-  // 4. Persist the session (includes sessionStorage) to disk
-  await context.storageState({ path: AUTH_FILE });
-
-  await context.close();
-  await browser.close();
+  fs.writeFileSync(AUTH_FILE, JSON.stringify(authState, null, 2));
 }
 
 export default globalSetup;

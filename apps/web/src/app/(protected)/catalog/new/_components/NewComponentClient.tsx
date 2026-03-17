@@ -35,6 +35,7 @@ export function NewComponentClient() {
     ComponentLifecycle.EXPERIMENTAL,
   );
   const [tagsInput, setTagsInput] = useState("");
+  const [repositoryUrl, setRepositoryUrl] = useState("");
 
   // YAML field
   const [yaml, setYaml] = useState("");
@@ -57,6 +58,7 @@ export function NewComponentClient() {
         owner,
         lifecycle,
         tags: tags.length > 0 ? tags : undefined,
+        repositoryUrl: repositoryUrl.trim() || undefined,
       });
 
       toast.success(`Component "${created.name}" registered`);
@@ -222,6 +224,22 @@ export function NewComponentClient() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description of the component's purpose"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="repositoryUrl" className="text-sm font-semibold">
+                  Repository URL
+                </label>
+                <Input
+                  id="repositoryUrl"
+                  type="url"
+                  value={repositoryUrl}
+                  onChange={(e) => setRepositoryUrl(e.target.value)}
+                  placeholder="e.g. https://github.com/org/repo"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional. Must be a valid URL (GitHub, GitLab, etc.).
+                </p>
               </div>
 
               <div className="space-y-2">

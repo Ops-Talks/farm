@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [0.9.1] - 2026-03-16
 
 ### Changed
@@ -13,14 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0] - 2026-03-16
 
 ### Added
-- FARM-S86-frontend, FARM-S87, FARM-E27 and FARM-E28.
-- ARM-S86-frontend, FARM-S87.
-- FARM-S113 - Include Playwrit tests.
+- FARM-S113: Playwright E2E test suite for frontend authentication, catalog, deployments, and teams flows.
+- FARM-S86 frontend: Complete frontend implementation with all pages and components.
+- FARM-S87: Social authentication with GitHub and Google OAuth providers.
+- FARM-E27: Validation improvements and release pipeline fixes.
+- FARM-E28: Integrations module foundation.
 
 ### Fixed
-- Make Release.
-- Make Release.
-- Tests.
+- Release pipeline configuration and Makefile targets.
+- Test suite stability across API and frontend.
+
 ## [0.8.6] - 2026-03-15
 
 ### Changed
@@ -40,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - use --increment instead of --release-version in make release target.
+
 ## [0.8.1] - 2026-03-15
 
 ### Fixed
@@ -49,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-03-15
 
- news here
+### Changed
+- Monorepo workspace setup and project structure consolidation.
 
 ## [0.7.0] - 2026-03-15
 

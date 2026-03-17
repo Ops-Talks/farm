@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check api-build release web-dev web-build web-lint web-test
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check api-build release web-dev web-build web-lint web-test web-e2e
 
 help:
 	@echo "Available Targets:"
@@ -31,6 +31,7 @@ help:
 	@echo "  make check-back  # Runs fmt, lint and all back-end tests"
 	@echo "  make check-front # Runs front-end lint, build and tests"
 	@echo "  make check      # Runs both check-back and check-front"
+	@echo "  make web-e2e    # Runs Playwright E2E tests (requires running dev server)"
 	@echo "  make seed       # Runs database seeds"
 	@echo "  make release TAG=0.8.3 # Creates a release with auto changelog generation"
 
@@ -119,3 +120,6 @@ web-lint:
 
 web-test:
 	npm run web:test
+
+web-e2e:
+	npm run test:e2e --prefix apps/web -- --project=chromium

@@ -31,12 +31,14 @@
     "@bull-board/express": "^6.20.3",
     "@bull-board/nestjs": "^6.20.3",
     "@keyv/redis": "^5.1.6",
+    "@kubernetes/client-node": "^1.4.0",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
@@ -53,6 +55,8 @@
     "@opentelemetry/resources": "^2.6.0",
     "@opentelemetry/sdk-node": "^0.213.0",
     "@opentelemetry/semantic-conventions": "^1.40.0",
+    "@types/passport-github2": "^1.2.9",
+    "@types/passport-google-oauth20": "^2.0.17",
     "@willsoto/nestjs-prometheus": "^6.0.2",
     "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
@@ -68,6 +72,8 @@
     "nest-winston": "^1.10.2",
     "nodemailer": "^8.0.1",
     "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
     "pg": "^8.20.0",
@@ -134,6 +140,9 @@
     "transformIgnorePatterns": [
       "node_modules/(?!marked)"
     ],
+    "moduleNameMapper": {
+      "^@kubernetes/client-node$": "<rootDir>/../test/__mocks__/kubernetes-client-node.ts"
+    },
     "reporters": [
       "default",
       [

@@ -8,6 +8,8 @@ import { AuthService } from "./auth.service";
 import { User } from "./entities/user.entity";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { GithubStrategy } from "./strategies/github.strategy";
+import { GoogleStrategy } from "./strategies/google.strategy";
 
 /**
  * Module for authentication and user management.
@@ -31,7 +33,13 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GithubStrategy,
+    GoogleStrategy,
+  ],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

@@ -36,7 +36,7 @@ function getSocket(): Socket {
   });
 
   socket.on("connect_error", (error) => {
-    console.error("[Farm WS] Connection error:", error.message);
+    console.warn("[Farm WS] Connection error:", error.message);
   });
 
   // Re-register all active listeners on new socket

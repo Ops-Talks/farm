@@ -22,6 +22,7 @@ import {
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { EventsGateway } from "../../common/events/events.gateway";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 /**
  * Interface representing the structure of a catalog-info.yaml file.
@@ -56,6 +57,7 @@ export class CatalogService {
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
     @Optional() private readonly eventsGateway?: EventsGateway,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   /**
@@ -189,6 +191,13 @@ export class CatalogService {
       kind: saved.kind,
       owner: saved.owner,
       timestamp: new Date().toISOString(),
+    });
+
+    this.eventEmitter?.emit("component.created", {
+      id: saved.id,
+      name: saved.name,
+      kind: saved.kind,
+      owner: saved.owner,
     });
 
     return saved;

@@ -36,7 +36,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const fetchOrgs = useCallback(async () => {
     try {
-      const list = await orgsApi.list();
+      const raw = await orgsApi.list();
+      // Guard against non-array responses (e.g. proxy error payloads)
+      const list = Array.isArray(raw) ? raw : [];
       setOrgList(list);
 
       // Restore persisted selection from sessionStorage

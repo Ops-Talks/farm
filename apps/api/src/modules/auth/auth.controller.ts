@@ -3,11 +3,23 @@ import {
   Post,
   Body,
   Get,
+  Req,
+  Res,
+  UseGuards,
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiHeader } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiHeader,
+  ApiExcludeEndpoint,
+} from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
+import { AuthGuard } from "@nestjs/passport";
+import { Request } from "express";
+import type { Response } from "express";
 import { AuthService } from "./auth.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -159,5 +171,88 @@ export class AuthController {
   })
   async findAll(): Promise<User[]> {
     return await this.authService.findAll();
+  }
+
+  /**
+   * Initiates GitHub OAuth2 authorization flow.
+   * Redirects the client to GitHub for authentication.
+   */
+  @Get("github")
+  @UseGuards(AuthGuard("github"))
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  githubAuth(): void {
+    // Guard handles the redirect to GitHub
+  }
+
+  /**
+   * GitHub OAuth2 callback endpoint.
+   * Exchanges the authorization code for a JWT and refresh token.
+   * @param req - Express request containing the authenticated user
+   * @param res - Express response used to return the token payload
+   */
+  @Get("github/callback")
+  @UseGuards(AuthGuard("github"))
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  async githubCallback(
+    @Req() req: Request & { user: User },
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.authService.findOrCreateOAuthUser(
+      "github",
+      req.user.oauthProviderId as string,
+      {
+        email: req.user.email,
+        displayName: req.user.displayName,
+        username: req.user.username,
+      },
+    );
+    res.json({
+      user: result.user,
+      token: result.token,
+      refreshToken: result.refreshToken,
+    });
+  }
+
+  /**
+   * Initiates Google OAuth2 authorization flow.
+   * Redirects the client to Google for authentication.
+   */
+  @Get("google")
+  @UseGuards(AuthGuard("google"))
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  googleAuth(): void {
+    // Guard handles the redirect to Google
+  }
+
+  /**
+   * Google OAuth2 callback endpoint.
+   * Exchanges the authorization code for a JWT and refresh token.
+   * @param req - Express request containing the authenticated user
+   * @param res - Express response used to return the token payload
+   */
+  @Get("google/callback")
+  @UseGuards(AuthGuard("google"))
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  async googleCallback(
+    @Req() req: Request & { user: User },
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.authService.findOrCreateOAuthUser(
+      "google",
+      req.user.oauthProviderId as string,
+      {
+        email: req.user.email,
+        displayName: req.user.displayName,
+      },
+    );
+    res.json({
+      user: result.user,
+      token: result.token,
+      refreshToken: result.refreshToken,
+    });
   }
 }

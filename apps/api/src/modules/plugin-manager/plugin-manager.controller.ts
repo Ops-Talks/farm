@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   UseGuards,
   HttpStatus,
   UseInterceptors,
@@ -12,11 +13,13 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { CacheInterceptor } from "@nestjs/cache-manager";
+import { ConfigService } from "@nestjs/config";
 import { PluginManagerService } from "./plugin-manager.service";
 import {
   PluginMetadata,
   PluginMenuItem,
   PluginRouteContribution,
+  PluginManifest,
 } from "./interfaces/plugin.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
@@ -38,7 +41,10 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
   type: ErrorResponseDto,
 })
 export class PluginManagerController {
-  constructor(private readonly pluginManagerService: PluginManagerService) {}
+  constructor(
+    private readonly pluginManagerService: PluginManagerService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Retrieves a list of all registered plugins
@@ -85,5 +91,24 @@ export class PluginManagerController {
   })
   getRoutes(): PluginRouteContribution[] {
     return this.pluginManagerService.getRoutes();
+  }
+
+  /**
+   * Re-scans the plugins directory and registers any newly discovered plugins.
+   * Requires admin role.
+   * @returns Array of manifests discovered during the reload scan
+   */
+  @Post("reload")
+  @Roles("admin")
+  @ApiOperation({ summary: "Reload plugins from the plugins directory" })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "Returns the list of manifests discovered after reload.",
+    type: [PluginManifest],
+  })
+  reloadPlugins(): PluginManifest[] {
+    const pluginsDir =
+      this.configService.get<string>("plugins.dir") || "./plugins";
+    return this.pluginManagerService.scanDirectory(pluginsDir);
   }
 }

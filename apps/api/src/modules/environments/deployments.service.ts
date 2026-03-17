@@ -22,6 +22,7 @@ import {
 import { CreateDeploymentDto } from "./dto/create-deployment.dto";
 import { UpdateDeploymentDto } from "./dto/update-deployment.dto";
 import { EventsGateway } from "../../common/events/events.gateway";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 /**
  * Service responsible for managing deployments of components to environments.
@@ -38,6 +39,7 @@ export class DeploymentsService {
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
     @Optional() private readonly eventsGateway?: EventsGateway,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   /**
@@ -179,6 +181,14 @@ export class DeploymentsService {
       version: saved.version,
       status: saved.status,
       timestamp: new Date().toISOString(),
+    });
+
+    this.eventEmitter?.emit("deployment.status.changed", {
+      id: saved.id,
+      name: saved.component?.name || saved.componentId,
+      status: saved.status,
+      environment: saved.environment?.name || saved.environmentId,
+      version: saved.version,
     });
 
     return saved;

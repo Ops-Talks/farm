@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -11,6 +12,7 @@ import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 /**
  * Service responsible for managing teams and team membership.
@@ -26,6 +28,7 @@ export class TeamsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   /**
@@ -150,6 +153,13 @@ export class TeamsService {
       team.members.push(user);
       await this.teamRepository.save(team);
       this.logger.log(`Added user ${user.username} to team ${team.name}`);
+      this.eventEmitter?.emit("teams.member.added", {
+        teamId: team.id,
+        teamName: team.name,
+        userId: user.id,
+        userEmail: user.email,
+        username: user.username,
+      });
     }
 
     return team;

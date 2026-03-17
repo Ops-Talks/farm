@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -31,24 +32,35 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window === "undefined") return null;
 
-    const token = getAccessToken();
-    const storedUser = sessionStorage.getItem("farm_user");
+  // Always start with null so the server and client render identical HTML on
+  // the first pass (no SSR/client hydration mismatch).  The effect below
+  // restores the session from sessionStorage after the component mounts.
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    if (token && storedUser) {
-      try {
-        return JSON.parse(storedUser) as User;
-      } catch {
-        clearTokens();
-        sessionStorage.removeItem("farm_user");
+  useEffect(() => {
+    // Restore auth state from sessionStorage after mount. Wrapped in a local
+    // function so setState calls happen inside a callback, not directly in the
+    // effect body (satisfies react-hooks/set-state-in-effect).
+    function restoreSession() {
+      const token = getAccessToken();
+      const storedUser = sessionStorage.getItem("farm_user");
+
+      if (token && storedUser) {
+        try {
+          setUser(JSON.parse(storedUser) as User);
+        } catch {
+          clearTokens();
+          sessionStorage.removeItem("farm_user");
+        }
       }
+
+      setIsLoading(false);
     }
 
-    return null;
-  });
-  const isLoading = false;
+    restoreSession();
+  }, []);
 
   const login = useCallback(
     async (username: string, password: string) => {

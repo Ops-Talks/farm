@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { catalog, deployments } from "@/lib/api-client";
 import type { CatalogComponent, Deployment } from "@/types/api";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 
 function lifecycleVariant(
   lifecycle: string,
@@ -45,6 +45,90 @@ function deploymentStatusVariant(
     default:
       return "outline";
   }
+}
+
+/** Detect repository provider from URL for labelling the link button */
+function detectProvider(url: string): { label: string; icon: React.ReactNode } {
+  if (url.includes("github.com")) {
+    return {
+      label: "View on GitHub",
+      icon: <Github className="h-4 w-4" />,
+    };
+  }
+  if (url.includes("gitlab.com") || url.includes("gitlab.")) {
+    return {
+      label: "View on GitLab",
+      icon: <GitBranch className="h-4 w-4" />,
+    };
+  }
+  return {
+    label: "View Repository",
+    icon: <ExternalLink className="h-4 w-4" />,
+  };
+}
+
+interface RepositoryCardProps {
+  repositoryUrl: string;
+}
+
+function RepositoryCard({ repositoryUrl }: RepositoryCardProps) {
+  const { label, icon } = detectProvider(repositoryUrl);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          Repository
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Repository link */}
+        <div className="space-y-1">
+          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+            Source
+          </span>
+          <a
+            href={repositoryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm text-primary hover:underline break-all"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            {repositoryUrl}
+          </a>
+        </div>
+
+        {/* Provider-aware action button */}
+        <a href={repositoryUrl} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" size="sm" className="w-full gap-2">
+            {icon}
+            {label}
+          </Button>
+        </a>
+
+        <Separator />
+
+        {/* Live data placeholders — shown when backend integration is not yet returning data */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">Last commit</span>
+            <span className="text-muted-foreground italic">—</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">Open PRs</span>
+            <span className="text-muted-foreground italic">—</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">Pipeline status</span>
+            <span className="text-muted-foreground italic">—</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground border border-dashed rounded-md px-3 py-2 text-center leading-snug">
+            Connect repository to see live data
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function ComponentDetailClient() {
@@ -275,6 +359,11 @@ export function ComponentDetailClient() {
 
         {/* Sidebar */}
         <div className="flex flex-col gap-6">
+          {/* Repository card — only shown when repositoryUrl is present */}
+          {component.repositoryUrl && (
+            <RepositoryCard repositoryUrl={component.repositoryUrl} />
+          )}
+
           {/* Dependencies */}
           <Card>
             <CardHeader className="pb-3">
@@ -333,3 +422,4 @@ export function ComponentDetailClient() {
     </div>
   );
 }
+

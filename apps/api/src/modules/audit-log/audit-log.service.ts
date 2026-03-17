@@ -5,6 +5,7 @@ import { AuditLog } from "./entities/audit-log.entity";
 import { CreateAuditLogDto } from "./dto/create-audit-log.dto";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { FarmEvent } from "../../common/events/events.interfaces";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 /**
  * Options for filtering audit log queries.
@@ -27,6 +28,7 @@ export class AuditLogService {
     @InjectRepository(AuditLog)
     private readonly auditLogRepository: Repository<AuditLog>,
     @Optional() private readonly eventsGateway?: EventsGateway,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
   /**
@@ -41,6 +43,11 @@ export class AuditLogService {
     );
     const saved = await this.auditLogRepository.save(auditLog);
     this.eventsGateway?.server?.emit(FarmEvent.AUDIT_LOG_CREATED, saved);
+    this.eventEmitter?.emit("audit.log.created", {
+      actor: entry.actorUsername,
+      action: entry.action,
+      resource: `${entry.resourceType}/${entry.resourceId}`,
+    });
     return saved;
   }
 

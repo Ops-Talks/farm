@@ -7,6 +7,9 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "transformIgnorePatterns": ["node_modules/(?!marked)"],
+  "moduleNameMapper": {
+    "^@kubernetes/client-node$": "<rootDir>/__mocks__/kubernetes-client-node.ts"
+  },
   "reporters": [
     "default",
     [

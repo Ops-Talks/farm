@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CacheModule } from "@nestjs/cache-manager";
+import { ConfigService } from "@nestjs/config";
 import { PluginManagerController } from "./plugin-manager.controller";
 import { PluginManagerService } from "./plugin-manager.service";
 
@@ -45,7 +46,12 @@ describe("PluginManagerController", () => {
             getPlugins: jest.fn().mockReturnValue(mockPlugins),
             getMenuItems: jest.fn().mockReturnValue(mockMenuItems),
             getRoutes: jest.fn().mockReturnValue(mockRoutes),
+            scanDirectory: jest.fn().mockReturnValue([]),
           },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue("./plugins") },
         },
       ],
     }).compile();
@@ -77,5 +83,11 @@ describe("PluginManagerController", () => {
     expect(result).toHaveLength(1);
     expect(result[0].method).toBe("GET");
     expect(service.getRoutes).toHaveBeenCalled();
+  });
+
+  it("should call scanDirectory on reload", () => {
+    const result = controller.reloadPlugins();
+    expect(result).toEqual([]);
+    expect(service.scanDirectory).toHaveBeenCalledWith("./plugins");
   });
 });

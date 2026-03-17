@@ -23,6 +23,7 @@ import type {
   Pipeline,
   PipelineRun,
   PipelineStage,
+  PluginMetadata,
   PrometheusRangeResponse,
   QueueInfo,
   RefreshTokenRequest,
@@ -624,5 +625,17 @@ export const alertingRules = {
 
   remove(id: string): Promise<void> {
     return request(`/v1/alerting-rules/${id}`, { method: "DELETE" });
+  },
+};
+
+// -- Plugins API --
+
+export const plugins = {
+  list(): Promise<PluginMetadata[]> {
+    return request("/v1/plugins");
+  },
+
+  reload(): Promise<{ scanned: number }> {
+    return request("/v1/plugins/reload", { method: "POST" });
   },
 };

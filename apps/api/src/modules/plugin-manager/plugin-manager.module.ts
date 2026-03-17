@@ -1,10 +1,12 @@
 import { DynamicModule, Module, Global, Provider } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { PluginManagerService } from "./plugin-manager.service";
 import { FarmPlugin } from "./interfaces/plugin.interface";
 import { PluginManagerController } from "./plugin-manager.controller";
 
 @Global()
 @Module({
+  imports: [ConfigModule],
   controllers: [PluginManagerController],
   providers: [PluginManagerService],
   exports: [PluginManagerService],

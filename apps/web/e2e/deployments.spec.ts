@@ -9,9 +9,11 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { AUTH_FILE } from "./global-setup";
+import { setupAuthStorage } from "./helpers/setup-auth-storage";
 
-test.use({ storageState: AUTH_FILE });
+test.beforeEach(async ({ page }) => {
+  await setupAuthStorage(page);
+});
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -48,16 +50,17 @@ async function mockDeploymentRoutes(
   page: import("@playwright/test").Page,
   matrixData: unknown[] = [],
 ) {
-  // Deployment matrix endpoint
-  await page.route("**/api/v1/deployments/matrix**", (route) =>
+  // Catch-all registered FIRST so specific routes (registered after) take
+  // priority. Playwright resolves routes in LIFO order — last registered wins.
+  await page.route("**/api/v1/**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(matrixData),
+      body: JSON.stringify({ data: [], total: 0 }),
     }),
   );
 
-  // Deployment history list (linked from the header button)
+  // Deployment history list (registered after catch-all → higher priority)
   await page.route("**/api/v1/deployments**", (route) =>
     route.fulfill({
       status: 200,
@@ -66,12 +69,12 @@ async function mockDeploymentRoutes(
     }),
   );
 
-  // Stub remaining API calls (health panel etc.)
-  await page.route("**/api/v1/**", (route) =>
+  // Deployment matrix endpoint (registered last → highest priority)
+  await page.route("**/api/v1/deployments/matrix**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: [], total: 0 }),
+      body: JSON.stringify(matrixData),
     }),
   );
 }

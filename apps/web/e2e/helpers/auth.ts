@@ -31,7 +31,18 @@ const MOCK_LOGIN_RESPONSE = {
  * });
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
-  // Intercept the login API call — must be registered BEFORE navigation
+  // Catch-all registered FIRST so the specific login route (registered after)
+  // takes priority in Playwright's LIFO route resolution. This catch-all
+  // handles non-login requests (e.g., dashboard API calls after redirect).
+  await page.route("**/api/v1/**", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], total: 0 }),
+    });
+  });
+
+  // Intercept the login API call (registered last = highest priority)
   await page.route("**/api/v1/auth/login", (route) =>
     route.fulfill({
       status: 200,
@@ -39,19 +50,6 @@ export async function loginAsAdmin(page: Page): Promise<void> {
       body: JSON.stringify(MOCK_LOGIN_RESPONSE),
     }),
   );
-
-  // Stub all other API calls that may fire after the redirect to /dashboard
-  // so that the page can finish rendering without a live backend.
-  await page.route("**/api/v1/**", (route) => {
-    // Already handled by the more-specific route above (registered last = higher
-    // priority in Playwright's LIFO route resolution), so this catch-all only
-    // fires for non-login requests.
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ data: [], total: 0 }),
-    });
-  });
 
   // Navigate, fill, submit
   await page.goto("/login");

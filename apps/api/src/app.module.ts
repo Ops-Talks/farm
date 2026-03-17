@@ -1,9 +1,15 @@
-import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
+import {
+  Module,
+  NestModule,
+  MiddlewareConsumer,
+  OnApplicationBootstrap,
+} from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { CacheModule } from "@nestjs/cache-manager";
-import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import {
   PrometheusModule,
   makeCounterProvider,
@@ -12,6 +18,7 @@ import {
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PluginManagerModule } from "./modules/plugin-manager/plugin-manager.module";
+import { PluginManagerService } from "./modules/plugin-manager/plugin-manager.service";
 import { CatalogModule } from "./modules/catalog/catalog.module";
 import { DocumentationModule } from "./modules/documentation/documentation.module";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -21,6 +28,8 @@ import { AuditLogModule } from "./modules/audit-log/audit-log.module";
 import { OrganizationModule } from "./modules/organization/organization.module";
 import { PipelinesModule } from "./modules/pipelines/pipelines.module";
 import { AlertingModule } from "./modules/alerting/alerting.module";
+import { IntegrationsModule } from "./modules/integrations/integrations.module";
+import { KubernetesModule } from "./modules/kubernetes/kubernetes.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -37,6 +46,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
       isGlobal: true,
       load: [configuration],
       validationSchema,
+    }),
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: ".",
+      newListener: false,
+      removeListener: false,
+      maxListeners: 20,
+      verboseMemoryLeak: false,
+      ignoreErrors: false,
     }),
     PrometheusModule.register({
       path: "/metrics",
@@ -174,6 +192,22 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
         },
         module: AlertingModule,
       },
+      {
+        metadata: {
+          name: "core-integrations",
+          version: "1.0.0",
+          description: "Slack and Teams webhook integrations",
+        },
+        module: IntegrationsModule,
+      },
+      {
+        metadata: {
+          name: "core-kubernetes",
+          version: "1.0.0",
+          description: "Kubernetes cluster discovery",
+        },
+        module: KubernetesModule,
+      },
     ]),
   ],
   controllers: [AppController],
@@ -200,7 +234,29 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
     },
   ],
 })
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnApplicationBootstrap {
+  constructor(
+    private readonly moduleRef: ModuleRef,
+    private readonly configService: ConfigService,
+  ) {}
+
+  /**
+   * Scans the plugins directory on application startup and registers
+   * any valid external plugin manifests found.
+   */
+  onApplicationBootstrap(): void {
+    try {
+      const pluginManagerService = this.moduleRef.get(PluginManagerService, {
+        strict: false,
+      });
+      const pluginsDir =
+        this.configService.get<string>("plugins.dir") || "./plugins";
+      pluginManagerService.scanDirectory(pluginsDir);
+    } catch {
+      // PluginManagerService may not be available in minimal test setups
+    }
+  }
+
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(RequestLoggerMiddleware)

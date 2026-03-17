@@ -46,6 +46,8 @@ export interface CatalogComponent {
   links?: ComponentLink[];
   metadata?: Record<string, unknown>;
   dependencies?: CatalogComponent[];
+  /** Optional URL pointing to the source repository (GitHub, GitLab, etc.) */
+  repositoryUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -454,4 +456,14 @@ export interface AuditLog {
   organizationId?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+}
+
+// -- Plugin system --
+
+export interface PluginMetadata {
+  name: string;
+  version: string;
+  description: string;
+  menuItems?: { label: string; path: string; icon?: string }[];
+  routes?: { path: string; module: string }[];
 }

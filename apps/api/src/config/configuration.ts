@@ -62,6 +62,32 @@ export const configuration = () => ({
   loki: {
     url: process.env.LOKI_URL || "http://localhost:3100",
   },
+  oauth: {
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+      callbackUrl:
+        process.env.GITHUB_CALLBACK_URL ||
+        "http://localhost:3000/api/v1/auth/github/callback",
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      callbackUrl:
+        process.env.GOOGLE_CALLBACK_URL ||
+        "http://localhost:3000/api/v1/auth/google/callback",
+    },
+  },
+  integrations: {
+    slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || "",
+    teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL || "",
+  },
+  kubernetes: {
+    kubeconfigPath: process.env.KUBECONFIG_PATH || "",
+  },
+  plugins: {
+    dir: process.env.PLUGINS_DIR || "./plugins",
+  },
 });
 
 /**
@@ -110,4 +136,18 @@ export const validationSchema = Joi.object({
   PROMETHEUS_URL: Joi.string().uri().default("http://localhost:9090"),
   JAEGER_URL: Joi.string().uri().default("http://localhost:16686"),
   LOKI_URL: Joi.string().uri().default("http://localhost:3100"),
+  // OAuth providers (all optional)
+  GITHUB_CLIENT_ID: Joi.string().allow("").default(""),
+  GITHUB_CLIENT_SECRET: Joi.string().allow("").default(""),
+  GITHUB_CALLBACK_URL: Joi.string().allow("").default(""),
+  GOOGLE_CLIENT_ID: Joi.string().allow("").default(""),
+  GOOGLE_CLIENT_SECRET: Joi.string().allow("").default(""),
+  GOOGLE_CALLBACK_URL: Joi.string().allow("").default(""),
+  // Webhook integrations (optional)
+  SLACK_WEBHOOK_URL: Joi.string().allow("").default(""),
+  TEAMS_WEBHOOK_URL: Joi.string().allow("").default(""),
+  // Kubernetes (optional)
+  KUBECONFIG_PATH: Joi.string().allow("").default(""),
+  // Plugin directory
+  PLUGINS_DIR: Joi.string().default("./plugins"),
 });

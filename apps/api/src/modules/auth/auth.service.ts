@@ -156,4 +156,95 @@ export class AuthService {
   async findAll(): Promise<User[]> {
     return await this.userRepository.find();
   }
+
+  /**
+   * Finds an existing OAuth user or creates a new one.
+   * Used by OAuth2 social login strategies (GitHub, Google).
+   * @param provider - OAuth provider name (e.g. "github", "google")
+   * @param providerId - Unique user ID from the OAuth provider
+   * @param profile - Profile data from the OAuth provider
+   * @returns The matched or newly created user along with JWT tokens
+   */
+  async findOrCreateOAuthUser(
+    provider: string,
+    providerId: string,
+    profile: { email: string; displayName: string; username?: string },
+  ): Promise<{ user: User; token: string; refreshToken: string }> {
+    let user = await this.userRepository.findOne({
+      where: { oauthProvider: provider, oauthProviderId: providerId },
+    });
+
+    if (!user) {
+      // Fall back to finding by email if user registered normally before
+      if (profile.email) {
+        user = await this.userRepository.findOne({
+          where: { email: profile.email },
+        });
+      }
+
+      if (user) {
+        // Link the existing account to the OAuth provider
+        await this.userRepository.update(user.id, {
+          oauthProvider: provider,
+          oauthProviderId: providerId,
+        });
+        user.oauthProvider = provider;
+        user.oauthProviderId = providerId;
+      } else {
+        // Create a brand-new user with a random secure password (local login disabled)
+        const username =
+          profile.username ||
+          `${provider}_${providerId}`.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        const safeUsername = await this.ensureUniqueUsername(username);
+        const randomPassword = randomBytes(32).toString("hex");
+
+        const newUser = this.userRepository.create({
+          username: safeUsername,
+          email: profile.email || `${safeUsername}@${provider}.oauth`,
+          displayName: profile.displayName || safeUsername,
+          password: randomPassword,
+          roles: ["user"],
+          oauthProvider: provider,
+          oauthProviderId: providerId,
+        });
+
+        user = await this.userRepository.save(newUser);
+      }
+    }
+
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      roles: user.roles,
+    };
+
+    const refreshToken = randomBytes(40).toString("hex");
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.userRepository.update(user.id, {
+      refreshToken: hashedRefreshToken,
+    });
+
+    return {
+      user,
+      token: this.jwtService.sign(payload),
+      refreshToken,
+    };
+  }
+
+  /**
+   * Ensures the given username is unique by appending a suffix if needed.
+   * @param base - The base username to check
+   * @returns A unique username string
+   */
+  private async ensureUniqueUsername(base: string): Promise<string> {
+    let candidate = base;
+    let attempt = 0;
+    while (
+      await this.userRepository.findOne({ where: { username: candidate } })
+    ) {
+      attempt++;
+      candidate = `${base}_${attempt}`;
+    }
+    return candidate;
+  }
 }

@@ -10,13 +10,16 @@
  */
 
 import { test, expect } from "@playwright/test";
-import path from "path";
-import { AUTH_FILE } from "./global-setup";
+import { setupAuthStorage } from "./helpers/setup-auth-storage";
 
 // ---------------------------------------------------------------------------
-// Load the pre-authenticated session produced by global-setup.ts
+// Inject mock auth tokens into sessionStorage before each test page load.
+// storageState cannot restore sessionStorage (per-tab only), so addInitScript
+// is used to seed the values before React hydrates.
 // ---------------------------------------------------------------------------
-test.use({ storageState: AUTH_FILE });
+test.beforeEach(async ({ page }) => {
+  await setupAuthStorage(page);
+});
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -46,16 +49,37 @@ async function mockCatalogRoutes(
   page: import("@playwright/test").Page,
   options: { includeCreation?: boolean } = {},
 ) {
-  // Catalog list
-  await page.route("**/api/v1/catalog/components?**", (route) =>
+  // Catch-all registered FIRST so specific routes (registered after) take
+  // priority. Playwright resolves routes in LIFO order — last registered wins.
+  await page.route("**/api/v1/**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(MOCK_COMPONENT_LIST),
+      body: JSON.stringify({ data: [], total: 0 }),
     }),
   );
 
-  // Component creation (POST)
+  // Deployments for this component (detail page sidebar)
+  await page.route(
+    `**/api/v1/deployments/latest?componentId=${MOCK_COMPONENT.id}`,
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      }),
+  );
+
+  // Individual component detail
+  await page.route(`**/api/v1/catalog/components/${MOCK_COMPONENT.id}`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(MOCK_COMPONENT),
+    }),
+  );
+
+  // Component creation (POST) or list without query params
   if (options.includeCreation) {
     await page.route("**/api/v1/catalog/components", (route) => {
       if (route.request().method() === "POST") {
@@ -82,32 +106,12 @@ async function mockCatalogRoutes(
     );
   }
 
-  // Individual component detail
-  await page.route(`**/api/v1/catalog/components/${MOCK_COMPONENT.id}`, (route) =>
+  // Catalog list with query params (registered last → highest priority)
+  await page.route("**/api/v1/catalog/components?**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(MOCK_COMPONENT),
-    }),
-  );
-
-  // Deployments for this component (detail page sidebar)
-  await page.route(
-    `**/api/v1/deployments/latest?componentId=${MOCK_COMPONENT.id}`,
-    (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      }),
-  );
-
-  // Stub health + dashboard calls that fire inside the AppShell
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ data: [], total: 0 }),
+      body: JSON.stringify(MOCK_COMPONENT_LIST),
     }),
   );
 }

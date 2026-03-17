@@ -606,15 +606,15 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
-## Phase 5.6: E2E Testing `TODO`
+## Phase 5.6: E2E Testing `DONE`
 
-### FARM-E33: End-to-End Test Suite `TODO`
+### FARM-E33: End-to-End Test Suite `DONE`
 
 > Playwright-based E2E coverage for critical user flows.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S113 | Story | Playwright E2E test suite for critical user flows | `TODO` |
+| FARM-S113 | Story | Playwright E2E test suite for critical user flows | `DONE` |
 
 ---
 
@@ -643,30 +643,31 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S90 | Story | Pipeline execution monitoring with real-time logs | `TODO` |
 | FARM-S91 | Story | Pipeline history and run comparison | `TODO` |
 
-### FARM-E27: Deep Observability Integration `TODO`
+### FARM-E27: Deep Observability Integration `DONE`
 
 > Native metrics rendering and alerting within the portal.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S92 | Story | Per-component metrics dashboards (PromQL-powered) | `TODO` |
-| FARM-S93 | Story | Alerting rules configuration UI | `TODO` |
-| FARM-S94 | Story | Trace waterfall visualization (native, not Grafana iframe) | `TODO` |
-| FARM-S95 | Story | Log aggregation viewer with search and filtering | `TODO` |
-| FARM-S116 | Story | WebSocket real-time notification broadcasting | `TODO` |
+| FARM-S92 | Story | Per-component metrics dashboards (PromQL-powered) | `DONE` |
+| FARM-S93 | Story | Alerting rules configuration UI | `DONE` |
+| FARM-S94 | Story | Trace waterfall visualization (native, not Grafana iframe) | `DONE` |
+| FARM-S95 | Story | Log aggregation viewer with search and filtering | `DONE` |
+| FARM-S116 | Story | WebSocket real-time notification broadcasting | `DONE` |
+| FARM-S118 | Story | OpenTelemetry Web instrumentation (browser spans + trace propagation) | `TODO` |
 
-### FARM-E28: Integrations and Extensibility `TODO`
+### FARM-E28: Integrations and Extensibility `DONE`
 
 > Third-party integrations and plugin marketplace.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S96 | Story | GitHub/GitLab repository integration | `TODO` |
-| FARM-S114 | Story | OAuth2 social login (GitHub, Google) | `TODO` |
-| FARM-S97 | Story | Slack/Teams notification channels | `TODO` |
-| FARM-S117 | Story | Email domain event wiring to system events | `TODO` |
-| FARM-S98 | Story | Kubernetes cluster discovery and status | `TODO` |
-| FARM-S99 | Story | Plugin marketplace UI (install/uninstall/configure) | `TODO` |
+| FARM-S96 | Story | GitHub/GitLab repository integration | `DONE` |
+| FARM-S114 | Story | OAuth2 social login (GitHub, Google) | `DONE` |
+| FARM-S97 | Story | Slack/Teams notification channels | `DONE` |
+| FARM-S117 | Story | Email domain event wiring to system events | `DONE` |
+| FARM-S98 | Story | Kubernetes cluster discovery and status | `DONE` |
+| FARM-S99 | Story | Plugin marketplace UI (install/uninstall/configure) | `DONE` |
 
 ### FARM-E29: Data and Analytics `TODO`
 
@@ -677,6 +678,18 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S100 | Story | Service catalog analytics (ownership coverage, lifecycle distribution) | `TODO` |
 | FARM-S101 | Story | Deployment frequency and lead time metrics (DORA) | `TODO` |
 | FARM-S102 | Story | Platform usage reports (API calls, active users, popular components) | `TODO` |
+
+### FARM-E31: Frontend Architecture Hardening `TODO`
+
+> Align `apps/web` with Bulletproof React principles for scalability and maintainability.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S119 | Story | Adopt React Hook Form for all forms (login, create component, team member, pipeline stages) | `TODO` |
+| FARM-S120 | Story | Adopt TanStack Query (React Query) for server state — replace manual useState + refetch with query/mutation hooks | `TODO` |
+| FARM-S121 | Story | Add React Error Boundary components at feature level (catalog, teams, deployments, observability) | `TODO` |
+| FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to per-route `__tests__/` subdirectories | `TODO` |
+| FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `TODO` |
 
 ---
 
@@ -690,6 +703,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
-| Phase 5.6: E2E Testing | 1 | 1 | `TODO` |
+| Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
 | Phase 6: Advanced Features | 5 | 24 | `TODO` |
-| **Total** | **33** | **117** | |
+| Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
+| **Total** | **34** | **123** | |

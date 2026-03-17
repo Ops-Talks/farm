@@ -152,7 +152,7 @@ function replaceOrInsertUnreleasedSection(changelogContent, unreleasedSection) {
   if (changelogContent.includes(changelogHeading)) {
     return changelogContent.replace(
       /## \[Unreleased\][\s\S]*?(?=\n## \[|$)/,
-      unreleasedSection,
+      `${unreleasedSection}\n`,
     );
   }
 

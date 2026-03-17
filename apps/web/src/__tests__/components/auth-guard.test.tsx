@@ -36,12 +36,12 @@ describe("AuthGuard", () => {
     expect(screen.queryByText("Protected")).not.toBeInTheDocument();
   });
 
-  it("should show loading state", () => {
+  it("should render nothing while loading", () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: false, isLoading: true, hasRole: () => false,
     });
-    render(<AuthGuard><div>Protected</div></AuthGuard>);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    const { container } = render(<AuthGuard><div>Protected</div></AuthGuard>);
+    expect(container.firstChild).toBeNull();
   });
 
   it("should redirect to dashboard when role is insufficient", () => {

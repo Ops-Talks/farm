@@ -56,6 +56,22 @@ export class User {
   refreshToken: string;
 
   @ApiProperty({
+    example: "github",
+    description: "OAuth provider name (github, google)",
+    required: false,
+  })
+  @Column({ nullable: true, type: "varchar" })
+  oauthProvider: string | null;
+
+  @ApiProperty({
+    example: "12345678",
+    description: "OAuth provider user ID",
+    required: false,
+  })
+  @Column({ nullable: true, type: "varchar" })
+  oauthProviderId: string | null;
+
+  @ApiProperty({
     example: "2023-01-01T00:00:00Z",
     description: "The creation date",
   })
