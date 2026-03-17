@@ -646,8 +646,8 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
 | FARM-S88 | Story | Pipeline definition CRUD (backend) — `Pipeline` + `PipelineRun` entities, full REST API | `DONE` |
-| FARM-S89 | Story | Visual pipeline builder (drag-and-drop stages) | `TODO` |
-| FARM-S90 | Story | Pipeline execution monitoring with real-time logs (BullMQ + WebSocket) | `TODO` |
+| FARM-S89 | Story | Visual pipeline builder (drag-and-drop stages) — `stage-builder.tsx` with HTML5 drag-and-drop, all four stage types | `DONE` |
+| FARM-S90 | Story | Pipeline execution monitoring with real-time logs (BullMQ + WebSocket) — live log viewer, approval/cancel/retrigger actions, dashboard widget, WebSocket toast notifications | `DONE` |
 | FARM-S91 | Story | Pipeline history and run comparison | `TODO` |
 
 ### FARM-E27: Deep Observability Integration `DONE`
@@ -736,9 +736,226 @@ A detailed gap analysis was produced comparing the current implementation agains
 | FARM-S127 | Story | Username login plugin: configure Better Auth `username` plugin so existing username-based accounts continue to work without requiring email login | `TODO` |
 | FARM-S128 | Story | Organization module alignment: evaluate replacing FARM-E25 `OrgContextInterceptor` + `OrganizationModule` with Better Auth `organization` plugin, or maintaining both | `TODO` |
 
+### FARM-E35: CI/CD External Integrations `TODO`
+
+> Integrate Farm with external CI/CD platforms so teams can monitor builds, trigger pipelines, and view deployment status directly from the developer portal — without switching context between tools.
+
+#### Background
+
+Farm already has GitHub/GitLab VCS integration (FARM-S96) and Kubernetes cluster discovery (FARM-S98). This epic extends that foundation to cover two of the most common CI/CD platforms: **ArgoCD** (GitOps CD for Kubernetes) and **CircleCI** (hosted CI/CD).
+
+Integration credentials (API tokens, instance URLs) are stored per-organization in the database — encrypted — following the same pattern already used for GitHub and Slack tokens. No secrets in environment variables.
+
+Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its REST API. CircleCI uses its v2 API and webhook push model.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S129 | Story | ArgoCD: connect to ArgoCD instance (URL + token per org), list Applications and display health/sync status in the Environments module | `TODO` |
+| FARM-S130 | Story | ArgoCD: trigger Application sync from Farm UI; display manifest diff and sync history per deployment | `TODO` |
+| FARM-S131 | Story | CircleCI: connect to CircleCI (API token per org), list pipeline runs per Component (matched by `vcsUrl`), display build status | `TODO` |
+| FARM-S132 | Story | CircleCI: trigger pipeline from Farm UI; receive status webhooks (`POST /api/v1/webhooks/circleci`) and push real-time updates via WebSocket | `TODO` |
+| FARM-S133 | Story | Jenkins: connect to Jenkins instance (URL + user + API token per org), list jobs and build history per Component (matched by `vcsUrl` or job name) | `TODO` |
+| FARM-S134 | Story | Jenkins: trigger build from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/jenkins`) and push real-time status updates via WebSocket | `TODO` |
+| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins builds + ArgoCD Application status in one view | `TODO` |
+
+#### Implementation Notes
+
+- **ArgoCD**: REST API at `{argocd-url}/api/v1/applications`. Auth via `Authorization: Bearer <token>`. Existing `KubernetesModule` provides cluster context but ArgoCD connects independently via HTTP.
+- **CircleCI**: v2 API at `https://circleci.com/api/v2`. Pipeline trigger: `POST /project/{slug}/pipeline`. Webhooks: Farm registers a `POST /api/v1/webhooks/circleci` receiver endpoint.
+- **Component link**: `Component.vcsUrl` field already exists — used to match CircleCI projects. A new nullable `argocdApp` field on `Component` links to an ArgoCD Application name.
+- **Jenkins**: REST API at `{jenkins-url}/api/json`. Auth via HTTP Basic (`user:api-token`). Job trigger: `POST /job/{jobName}/build`. Webhooks: Farm registers `POST /api/v1/webhooks/jenkins` (Generic Webhook Trigger plugin on Jenkins side).
+- **Credential storage**: New `IntegrationCredential` entity (org-scoped, type enum: `argocd | circleci | jenkins | github | slack`, encrypted value column).
+
 ---
 
-| Phase | Epics | Stories | Status |
+### FARM-E36: Helm Integration `TODO`
+
+> Track Helm chart metadata per component, import live Helm releases as deployments, and execute real `helm upgrade` operations from Farm pipelines.
+
+#### Background
+
+Farm already has Kubernetes cluster discovery (FARM-S98), an Environments/Deployments module, and a Pipeline engine with a `deploy` stage type (currently simulated). Helm is the dominant Kubernetes package manager — integrating it closes the loop between the component catalog and what is actually running in each cluster.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S136 | Story | Add `helmChart` metadata to `Component` entity (`repo`, `chart`, `version`, `valuesRef`); expose field in catalog UI and `catalog-info.yaml` discovery | `TODO` |
+| FARM-S137 | Story | Helm release discovery: query `helm list` (via Kubernetes Secrets — Helm stores releases as Secrets) for connected clusters and import matching releases as `Deployment` records with `revision`, `chart version`, `app version`, `status` | `TODO` |
+| FARM-S138 | Story | Pipeline `deploy` stage real executor: when `config.engine = "helm"`, run `helm upgrade --install` against the target cluster using the configured chart, release name, and values file | `TODO` |
+
+#### Implementation Notes
+
+- **Helm release storage**: Helm 3 stores release state as Kubernetes Secrets in the release namespace (`type: helm.sh/release.v1`). Farm reads them via the existing `@kubernetes/client-node` integration — no Helm CLI required on the server.
+- **Values files**: Referenced by URL or stored inline in the stage config. Secrets (passwords, tokens) should reference Kubernetes Secrets by name rather than embedding values.
+- **Pipeline executor**: The `PipelineProcessor` stage dispatcher checks `config.engine` and delegates to a `HelmDeployExecutor` service that wraps `@kubernetes/client-node` exec or calls the Helm REST API if a Helm Controller (e.g., Flux HelmRelease) is present.
+
+---
+
+### FARM-E37: Kubernetes Operator and CRD Discovery `TODO`
+
+> Ship a Farm Kubernetes Operator for auto-registering components via pod annotations, and enable discovery of resources managed by popular in-cluster Operators (Prometheus, Cert-Manager, Argo Rollouts, Strimzi).
+
+#### Background
+
+Farm already syncs `catalog-info.yaml` files from URLs (Backstage-compatible discovery). A Farm Operator extends this by watching Kubernetes workload annotations in real time — no YAML file needed. Additionally, clusters often run Operators (Prometheus Operator, Cert-Manager, Strimzi) whose Custom Resources contain valuable context that developers need — Farm surfaces these alongside the component that owns them.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S139 | Story | Farm Operator: Kubernetes controller (Go or operator-sdk) that watches `Deployment`/`StatefulSet`/`Service` annotations (`farm.io/component`, `farm.io/owner`, `farm.io/catalog-url`) and auto-registers or updates Components in the Farm Catalog via the internal API | `TODO` |
+| FARM-S140 | Story | CRD discovery: detect installed Operators in connected clusters and display their Custom Resources in the Component detail page (e.g., `ServiceMonitor`, `Certificate`, `KafkaTopic` scoped to the component's namespace/labels) | `TODO` |
+| FARM-S141 | Story | Argo Rollouts integration: display `Rollout` resource status (canary weight, bluegreen active/preview revision, analysis run results) in the Environments/Deployments view per component | `TODO` |
+
+#### Implementation Notes
+
+- **Farm Operator runtime**: Deployed as a separate container in the target cluster. Uses `controller-runtime` (Go) or `operator-sdk`. Communicates with Farm API using a long-lived service account token stored as a cluster Secret.
+- **Annotation contract**:
+  ```yaml
+  metadata:
+    annotations:
+      farm.io/component: "my-service"         # Component name in Farm
+      farm.io/owner: "platform-team"          # Team slug
+      farm.io/catalog-url: "https://..."      # Optional — link to catalog-info.yaml
+      farm.io/environment: "production"       # Environment slug in Farm
+  ```
+- **CRD discovery**: Uses `apiextensions.k8s.io/v1` CRD list + label-based resource fetching. Farm maintains a mapping of well-known Operator CRD groups to display templates.
+- **Argo Rollouts**: Uses the `argoproj.io/v1alpha1` API group. Rollout status is polled (30s interval) and cached; WebSocket push on status change.
+
+---
+
+### FARM-E38: Cloud Provider Integrations `TODO`
+
+> Connect Farm to AWS, GCP, and Azure to discover infrastructure resources, display cost visibility per environment, execute real cloud deploy stages in pipelines, and resolve secrets from managed secret stores.
+
+#### Background
+
+Farm's Environments module tracks deployments and Kubernetes clusters. Cloud providers extend this to managed services (RDS, Lambda, Cloud Run, Azure Container Apps) and give platform teams cost attribution and secret management without embedding credentials in pipeline configs.
+
+Credentials are stored per-organization using the `IntegrationCredential` entity introduced in FARM-E35 — extended here to support cloud provider credential types (`aws-iam-role`, `gcp-service-account`, `azure-service-principal`).
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S142 | Story | AWS: connect account (IAM role via assume-role or access key per org), discover tagged resources (ECS, Lambda, RDS, S3, SQS) and register them in the Catalog as `kind: Infrastructure` linked to the owning Component | `TODO` |
+| FARM-S143 | Story | GCP: connect project (service account JSON per org), discover resources via Cloud Asset API (Cloud Run, Cloud SQL, Pub/Sub, GCS) and register as `kind: Infrastructure` | `TODO` |
+| FARM-S144 | Story | Azure: connect subscription (service principal per org), discover resources via Resource Manager API (Container Apps, Azure SQL, Service Bus, Blob) and register as `kind: Infrastructure` | `TODO` |
+| FARM-S145 | Story | Cost visibility: dashboard widget showing monthly spend per environment, sourced from AWS Cost Explorer, GCP Billing API, or Azure Cost Management; drill-down by component and team | `TODO` |
+| FARM-S146 | Story | Pipeline `deploy` stage real executors: `aws-ecs` (update service image), `aws-lambda` (publish function version), `gcp-cloud-run` (deploy revision), `azure-container-apps` (update container app) | `TODO` |
+| FARM-S147 | Story | Secrets resolver: reference AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault secrets by ARN/path in pipeline stage configs — resolved at execution time, never stored in Farm database | `TODO` |
+
+#### Implementation Notes
+
+- **AWS auth**: Prefer IAM roles with `sts:AssumeRole` over long-lived access keys. Farm stores the role ARN; assumes it at request time via AWS SDK v3 `STSClient`.
+- **GCP auth**: Service account JSON stored encrypted in `IntegrationCredential`. Used via `google-auth-library`.
+- **Azure auth**: Service principal (`clientId`, `clientSecret`, `tenantId`) stored encrypted. Used via `@azure/identity` `ClientSecretCredential`.
+- **Resource tagging**: Discovery queries filter by tag `farm:component` or `farm.io/component` — same annotation contract as the Kubernetes Operator (FARM-E37).
+- **Cost granularity**: Cost Explorer / Billing API returns cost grouped by tag. Requires `farm:environment` tag on all cloud resources for accurate attribution.
+- **Pipeline executors**: Each executor is a strategy class implementing `DeployExecutor` interface, registered in a `DeployExecutorRegistry`. The `PipelineProcessor` dispatches by `config.engine`.
+
+---
+
+### FARM-E39: Resource Tagging Governance `TODO`
+
+> Define mandatory tag/label policies per organization and automatically audit cloud resources and Kubernetes workloads for compliance — surfacing gaps directly in Farm's UI.
+
+#### Background
+
+As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37), it accumulates enough inventory to enforce tagging standards. This epic closes the governance loop: teams can define which tags are required, Farm checks compliance on a schedule, and engineers see violations in their component and environment views.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S148 | Story | Tag policy engine: allow org admins to define required tag keys per resource type (e.g., `team`, `component`, `environment` required on all ECS services and K8s Deployments); store policies in DB | `TODO` |
+| FARM-S149 | Story | Compliance audit job: scheduled BullMQ job that evaluates all discovered resources against active policies, records violations (`ResourceViolation` entity), and emits a WebSocket event when the report completes | `TODO` |
+| FARM-S150 | Story | Compliance dashboard: org-level view showing compliance percentage by provider, team, and resource type; per-component violation list with remediation hints (suggested tag values based on Component ownership) | `TODO` |
+
+#### Implementation Notes
+
+- **Policy storage**: `TagPolicy` entity (orgId, resourceType enum, requiredKeys string[], severity: warning/error).
+- **Violation storage**: `ResourceViolation` entity (orgId, resourceId, resourceType, provider, missingKeys, detectedAt, resolvedAt nullable).
+- **Remediation hints**: Farm knows `Component.owner`, `Component.teamId`, `Component.organizationId` — pre-fills suggested values for `team`, `component`, `environment` tags in the violation detail UI.
+- **Scheduling**: Uses existing BullMQ infrastructure. Default cadence: every 6 hours, configurable per org.
+
+---
+
+### FARM-E40: Kyverno Policy Integration `TODO`
+
+> Consume Kyverno `PolicyReport` CRDs to surface policy violations per component, and export Farm tag policies as ready-to-apply `ClusterPolicy` manifests — closing the governance loop between the portal and cluster enforcement.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S151 | Story | PolicyReport reader: watch `PolicyReport` and `ClusterPolicyReport` CRDs in connected clusters; map violations to Farm Components by namespace/labels and display them in the Component detail page alongside FARM-E39 violations | `TODO` |
+| FARM-S152 | Story | ClusterPolicy export: allow org admins to export a Farm Tag Policy (FARM-E39) as a Kyverno `ClusterPolicy` YAML — downloadable from the compliance dashboard and optionally auto-applied to connected clusters | `TODO` |
+
+#### Implementation Notes
+
+- `PolicyReport` is in the `wgpolicyk8s.io/v1alpha2` API group. Farm reads them via `@kubernetes/client-node` custom objects API, same pattern as CRD discovery in FARM-E37.
+- Violation deduplication: Farm checks if a Kyverno violation already exists as a `ResourceViolation` (FARM-E39) to avoid duplicates in the compliance view.
+- ClusterPolicy export is read-only from Farm's perspective — it generates YAML, the admin applies it. Auto-apply requires cluster write permissions and an explicit opt-in toggle per org.
+
+---
+
+### FARM-E41: Keycloak / Enterprise SSO `TODO`
+
+> Integrate Keycloak as an enterprise identity provider for Farm — enabling SSO login, automatic sync of Keycloak groups to Farm organizations and teams, and Keycloak client credentials as a secret source in pipeline configs.
+
+#### Background
+
+Farm's FARM-E34 evaluates Better Auth as a general auth modernization. Keycloak integration is a separate concern: many enterprises already run Keycloak (or another OIDC provider) and need Farm to federate into it rather than maintain a separate identity silo. These two tracks are complementary — Better Auth can act as the OIDC consumer while Keycloak is the provider.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S153 | Story | Keycloak OIDC login: add Keycloak as a configurable OIDC identity provider (per-org, via `KEYCLOAK_URL` + realm + client ID/secret); users authenticate via Keycloak SSO instead of creating Farm-local accounts | `TODO` |
+| FARM-S154 | Story | Group sync: periodically sync Keycloak Groups/Roles to Farm Organizations and Teams via the Keycloak Admin REST API; support bidirectional role mapping (`keycloak-group → Farm Team`, `keycloak-role → OrgRole`) | `TODO` |
+| FARM-S155 | Story | Client credentials resolver: allow pipeline stage configs to reference Keycloak service account tokens (`keycloak://realm/client`) as a secret source — token is fetched via `client_credentials` grant at execution time | `TODO` |
+
+#### Implementation Notes
+
+- **OIDC config**: Stored per-org in `IntegrationCredential` (type `keycloak`). Discovery via `{keycloak-url}/realms/{realm}/.well-known/openid-configuration`.
+- **Group sync**: Scheduled BullMQ job (configurable interval, default 1h). Uses `GET /admin/realms/{realm}/groups` + `GET /admin/realms/{realm}/users/{id}/role-mappings`.
+- **Conflict resolution**: If a user exists in Farm by email and also in Keycloak, accounts are merged on first SSO login.
+- **Priority over FARM-E34**: Keycloak OIDC (S153) can be implemented without Better Auth migration — it is an additional Passport.js strategy (`passport-openidconnect`).
+
+---
+
+### FARM-E42: Istio Service Mesh Integration `TODO`
+
+> Surface Istio traffic metrics, service topology, and security posture (mTLS, AuthorizationPolicy) in Farm's component and environment views — using data Istio already generates, with no additional instrumentation required.
+
+#### Background
+
+Farm already has Prometheus-powered metrics dashboards (FARM-S92) and distributed trace visualization (FARM-S94). Istio enriches both: it produces per-service HTTP traffic metrics (`istio_requests_total`, `istio_request_duration_milliseconds`) that Farm can query via the existing PromQL integration, and it generates a real-time service dependency graph that can auto-populate `Component.dependencies` in the Catalog.
+
+All stories degrade gracefully — if Istio is not installed in the connected cluster, the relevant UI sections are hidden.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S156 | Story | Traffic metrics per component: pre-built PromQL panels for Istio metrics (RPS, error rate, P50/P95/P99 latency) on the Component detail page — sourced from the existing Prometheus integration | `TODO` |
+| FARM-S157 | Story | Service topology auto-discovery: query Istio `VirtualService` and traffic metrics to build a dependency graph; auto-update `Component.dependencies` with observed upstream/downstream services | `TODO` |
+| FARM-S158 | Story | Security posture view: display `PeerAuthentication` mTLS mode and active `AuthorizationPolicy` rules per component/namespace; flag services with no authorization policy as a security warning | `TODO` |
+| FARM-S159 | Story | Canary traffic control: display active `VirtualService` weight split (canary %) per environment; allow pipeline `deploy` stages to adjust weights via Istio API — complements Argo Rollouts (FARM-S141) | `TODO` |
+
+#### Implementation Notes
+
+- **Istio detection**: Farm checks for `networking.istio.io/v1alpha3` CRD group on cluster connect; sets a per-cluster `istioEnabled` flag that gates all Istio UI sections.
+- **Metrics**: Reuses the `PrometheusService` from FARM-E27 — Istio metrics are just additional PromQL queries with `destination_workload` label selectors.
+- **Topology**: `VirtualService.spec.http[].route[].destination.host` maps to service names. Cross-referenced with Farm Component names via `Component.vcsUrl` or explicit annotation.
+- **mTLS / AuthorizationPolicy**: Read via `@kubernetes/client-node` custom objects API (`security.istio.io/v1beta1`).
+- **Canary control**: Patch `VirtualService.spec.http[].route[].weight` via Kubernetes API. Requires cluster write permission — gated behind `OrgRole.ADMIN`.
+
+---
 |-------|-------|---------|--------|
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
@@ -747,6 +964,6 @@ A detailed gap analysis was produced comparing the current implementation agains
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
-| Phase 6: Advanced Features | 6 | 29 | `PARTIAL` |
+| Phase 6: Advanced Features | 14 | 59 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
-| **Total** | **35** | **128** | |
+| **Total** | **43** | **158** | |

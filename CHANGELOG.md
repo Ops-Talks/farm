@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **pipelines**: approve/reject/cancel run endpoints — `POST .../runs/:runId/approve`, `/reject`, `/cancel` with role-hierarchy enforcement (FARM-S90).
+- **pipelines**: `PipelineRunStatus.WAITING_APPROVAL` enum value added to `@farm/types` (FARM-S90).
+- **web**: run action buttons in run detail — Approve/Reject (waiting_approval), Cancel (running/queued), Retrigger (failed/cancelled) (FARM-S90).
+- **web**: approval banner in run detail showing stage name and Approve/Reject actions (FARM-S90).
+- **web**: `RecentPipelinesWidget` on dashboard showing last 5 pipelines with trigger actions (FARM-S90).
+- **web**: WebSocket toast notifications for terminal run status changes (SUCCEEDED, FAILED, CANCELLED) (FARM-S90).
+- **pipelines**: `api-client.ts` methods `approveRun`, `rejectRun`, `cancelRun`, `retrigger` (FARM-S90).
+- **pipelines**: typed `PipelineRunUpdatedPayload` and `PipelineLogPayload` interfaces in `events.interfaces.ts` (FARM-S90).
+
+### Fixed
+- **pipelines**: processor now sets `run.status = WAITING_APPROVAL` correctly (previously only set on `stageResult`).
+- **pipelines**: `triggerRun` was using `user?.id` (undefined) instead of `user?.userId` — runs were created with `triggeredBy: "anonymous"`.
+- **pipelines**: processor aborts stage loop if run status is `CANCELLED` (race condition guard).
+- **types**: rebuilt `@farm/types` dist after adding `WAITING_APPROVAL` to `PipelineRunStatus` enum.
+
 ## [0.9.12] - 2026-03-17
 
 ### Changed
