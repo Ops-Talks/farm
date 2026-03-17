@@ -457,7 +457,9 @@ export const health = {
 
 export const organizations = {
   list(): Promise<Organization[]> {
-    return request("/v1/organizations");
+    return request<PaginatedResponse<Organization>>("/v1/organizations").then(
+      (r) => r.data,
+    );
   },
 
   create(data: { name: string; description?: string }): Promise<Organization> {
@@ -545,7 +547,9 @@ export const observability = {
 
 export const pipelines = {
   list(params?: { organizationId?: string }): Promise<Pipeline[]> {
-    return request(`/v1/pipelines${toQueryString(params ?? {})}`);
+    return request<PaginatedResponse<Pipeline>>(
+      `/v1/pipelines${toQueryString(params ?? {})}`,
+    ).then((r) => r.data);
   },
 
   create(data: {
@@ -602,7 +606,9 @@ export const alertingRules = {
     severity?: string;
     organizationId?: string;
   }): Promise<AlertingRule[]> {
-    return request(`/v1/alerting-rules${toQueryString(params ?? {})}`);
+    return request<PaginatedResponse<AlertingRule>>(
+      `/v1/alerting-rules${toQueryString(params ?? {})}`,
+    ).then((r) => r.data);
   },
 
   create(data: Omit<AlertingRule, "id" | "createdAt" | "updatedAt">): Promise<AlertingRule> {
