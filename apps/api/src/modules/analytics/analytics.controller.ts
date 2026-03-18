@@ -13,7 +13,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { Response } from "express";
+import type { Response } from "express";
 import { AnalyticsService } from "./analytics.service";
 import { CatalogAnalyticsDto } from "./dto/catalog-analytics.dto";
 import { DoraAnalyticsDto } from "./dto/dora-analytics.dto";
