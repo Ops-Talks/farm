@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
+import { TracingInit } from "@/components/tracing-init";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          {/* TracingInit bootstraps the OTel browser SDK once on first render.
+              It renders null — no DOM impact. */}
+          <TracingInit />
           {children}
           <Toaster />
         </Providers>
