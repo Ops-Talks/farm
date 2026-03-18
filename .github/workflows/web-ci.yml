@@ -44,8 +44,18 @@ jobs:
         run: npm run web:lint
 
       # ── 6. Unit tests ────────────────────────────────────────────────────────
-      - name: Unit tests (apps/web)
-        run: npm run web:test
+      - name: Unit tests with coverage (apps/web)
+        run: npx vitest run --coverage
+        working-directory: apps/web
+
+      # ── 6a. Upload coverage to Codecov ───────────────────────────────────────
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: ./apps/web/coverage/lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
       # ── 7. Build ─────────────────────────────────────────────────────────────
       - name: Build (apps/web)
