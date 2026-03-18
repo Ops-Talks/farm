@@ -86,6 +86,8 @@ nav:
     - Observability: user-guide/observability.md
     - Authentication: user-guide/authentication.md
     - Organizations: user-guide/organizations.md
+    - Helm Integration: user-guide/helm-integration.md
+    - Kubernetes Operator: user-guide/kubernetes-operator.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
     - developer-guide/index.md
@@ -121,6 +123,9 @@ nav:
     - Pipelines API: api-reference/pipelines.md
     - Observability API: api-reference/observability.md
     - Analytics API: api-reference/analytics.md
+    - Audit Log API: api-reference/audit-log.md
+    - Helm API: api-reference/helm.md
+    - Kubernetes API: api-reference/kubernetes.md
 
 extra_css:
   - stylesheets/extra.css
