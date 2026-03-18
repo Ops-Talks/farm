@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-03-17
+
+### Added
+- **web**: FARM-S120 replace useState data fetching with TanStack Query v5   QueryProvider (makeQueryClient, staleTime 60s, retry 1) wraps the   protected layout. Client components migrated from useState+useEffect   to useQuery/useMutation. Eliminates react-hooks/set-state-in-effect   lint warnings permanently. Deps: @tanstack/react-query.
+- **web**: FARM-S123 lazy-load heavy components with next/dynamic.
+- **web**: FARM-S121 error boundaries for all protected feature routes.
+- **web**: FARM-S118 OpenTelemetry client-side instrumentation.
+- **api**: FARM-S118 OTLP ingest proxy for browser traces.
+- **web**: FARM-S91 run list pagination, stats panel, and run comparison.
+- **api**: FARM-S91 paginated pipeline run history with stats and comparison.
+
+### Changed
+- mark FARM-E31 DONE and update NEXT_STEPS for v0.9.3.
+- **web**: FARM-S122 colocate test files with source components   All 32 test files moved from src/__tests__/ flat mirror to alongside their source files (*.test.tsx colocated with *.tsx). Zero import changes needed — all tests use @/ alias. vitest.config.ts: setup. Files updated to src/test/setup.ts. 309/309 tests pass.
+- update ROADMAP and NEXT_STEPS for v0.9.3 deliveries.
+
+### Fixed
+- **api**: FARM-T59 fix deployments matrix 500 on PostgreSQL     TypeORM getMatrix() used raw string concatenation for correlated     subquery, producing 'd.createdAt = SELECT MAX(...)' which PostgreSQL     rejects. Replaced with .subQuery() so TypeORM wraps it in parentheses.     SQLite tolerated the invalid syntax; PostgreSQL does not.
+
 ## [0.9.13] - 2026-03-17
 
 ### Added
