@@ -618,6 +618,24 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
+## Phase 5.7: Backend Bug Fixes `DONE`
+
+### FARM-E34: Known Backend Issues `DONE`
+
+> Bugs identified in production-like environments after feature completion.
+
+#### FARM-S114: Deployments API Bugs `DONE`
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T59 | Task | Fix `GET /api/v1/deployments/matrix` returning HTTP 500 on PostgreSQL | `DONE` |
+| FARM-ST199 | Sub-task | Investigate `QueryFailedError: syntax error at or near "SELECT"` in `DeploymentsService.getMatrix()` raw SQL query | `DONE` |
+| FARM-ST200 | Sub-task | Rewrite or fix the raw SQL in `getMatrix()` to be PostgreSQL-compatible and add E2E test coverage | `DONE` |
+
+**Fixed in 2026-03-17:** Replaced raw string-concatenated subquery with TypeORM `.subQuery()` in `DeploymentsService.getMatrix()`. The old pattern produced `d.createdAt = SELECT MAX(...)` (invalid on PostgreSQL); `.subQuery()` emits `(SELECT MAX(...))` with required parentheses. 41 tests passing.
+
+---
+
 ## Phase 6: Advanced Features `TODO`
 
 ### FARM-E25: Multi-Tenant and RBAC `DONE`
@@ -639,7 +657,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 - Frontend `api-client.ts` automatically injects `X-Organization-Id` from `sessionStorage`.
 - `PerUserThrottlerGuard` globally registered; auth endpoints override with `5/min` login and `10/min` refresh limits.
 
-### FARM-E26: Workflow and Pipeline UI `PARTIAL`
+### FARM-E26: Workflow and Pipeline UI `DONE`
 
 > Visual pipeline builder and execution monitoring.
 
@@ -648,7 +666,13 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S88 | Story | Pipeline definition CRUD (backend) — `Pipeline` + `PipelineRun` entities, full REST API | `DONE` |
 | FARM-S89 | Story | Visual pipeline builder (drag-and-drop stages) — `stage-builder.tsx` with HTML5 drag-and-drop, all four stage types | `DONE` |
 | FARM-S90 | Story | Pipeline execution monitoring with real-time logs (BullMQ + WebSocket) — live log viewer, approval/cancel/retrigger actions, dashboard widget, WebSocket toast notifications | `DONE` |
-| FARM-S91 | Story | Pipeline history and run comparison | `TODO` |
+| FARM-S91 | Story | Pipeline history and run comparison | `DONE` |
+
+**Delivered in 2026-03-17 (FARM-S91):**
+- `GET /api/v1/pipelines/:id/runs` now paginated with `skip/take/status` query params, returns `{ data, total, skip, take }`.
+- `GET /api/v1/pipelines/:id/runs/stats` — aggregate stats: total, byStatus, successRate, avgDurationMs, lastRunAt.
+- `GET /api/v1/pipelines/:id/runs/compare?a=:runIdA&b=:runIdB` — diff of two runs with per-stage status, duration, delta, and `changed` flag.
+- Frontend: `RunStatsPanel` (4 stat cards), pagination + status filter in `RunList`, `RunComparison` Sheet with side-by-side stage diff.
 
 ### FARM-E27: Deep Observability Integration `DONE`
 
@@ -661,7 +685,13 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S94 | Story | Trace waterfall visualization (native, not Grafana iframe) | `DONE` |
 | FARM-S95 | Story | Log aggregation viewer with search and filtering | `DONE` |
 | FARM-S116 | Story | WebSocket real-time notification broadcasting | `DONE` |
-| FARM-S118 | Story | OpenTelemetry Web instrumentation (browser spans + trace propagation) | `TODO` |
+| FARM-S118 | Story | OpenTelemetry Web instrumentation (browser spans + trace propagation) | `DONE` |
+
+**Delivered in 2026-03-17 (FARM-S118):**
+- `src/lib/tracing.ts`: `initTracing()` with `WebTracerProvider`, `BatchSpanProcessor`, `OTLPTraceExporter`, `ZoneContextManager`, auto-instrumentations for fetch/XHR/document-load; `traceparent` header injected in all requests.
+- `src/components/tracing-init.tsx`: `'use client'` component rendered in root layout, calls `initTracing()` on mount.
+- `src/instrumentation.ts`: Next.js native hook (server no-op — backend handles server tracing).
+- `apps/api/src/common/observability/traces-ingest.controller.ts`: `POST /api/v1/traces/ingest` OTLP proxy forwarding browser spans to Tempo. 6 tests covering proxy, env override, 502 fallback.
 
 ### FARM-E28: Integrations and Extensibility `DONE`
 
@@ -758,7 +788,11 @@ Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its
 | FARM-S132 | Story | CircleCI: trigger pipeline from Farm UI; receive status webhooks (`POST /api/v1/webhooks/circleci`) and push real-time updates via WebSocket | `TODO` |
 | FARM-S133 | Story | Jenkins: connect to Jenkins instance (URL + user + API token per org), list jobs and build history per Component (matched by `vcsUrl` or job name) | `TODO` |
 | FARM-S134 | Story | Jenkins: trigger build from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/jenkins`) and push real-time status updates via WebSocket | `TODO` |
-| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins builds + ArgoCD Application status in one view | `TODO` |
+| FARM-S162 | Story | Travis CI: connect to Travis CI (API token per org, supports travis.com and self-hosted), list builds per Component (matched by `vcsUrl`), display build status and logs | `TODO` |
+| FARM-S163 | Story | Travis CI: trigger build restart from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/travisci`) and push real-time status updates via WebSocket | `TODO` |
+| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins + Travis CI builds + ArgoCD Application status in one view | `TODO` |
+| FARM-S160 | Story | Pipeline `build` stage type: add `"build"` to `PipelineStage.type`; implement executor that builds OCI images using `config.engine` (`docker` \| `buildah` \| `podman`) with configurable `dockerfile`, `context`, `tag`, and `push` options | `TODO` |
+| FARM-S161 | Story | Build stage UI: add `build` stage card to the visual pipeline builder (`stage-builder.tsx`) with fields for engine selection, Dockerfile path, image tag template (supports `{{version}}` and `{{commitSha}}`), and registry push toggle | `TODO` |
 
 #### Implementation Notes
 
@@ -766,7 +800,10 @@ Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its
 - **CircleCI**: v2 API at `https://circleci.com/api/v2`. Pipeline trigger: `POST /project/{slug}/pipeline`. Webhooks: Farm registers a `POST /api/v1/webhooks/circleci` receiver endpoint.
 - **Component link**: `Component.vcsUrl` field already exists — used to match CircleCI projects. A new nullable `argocdApp` field on `Component` links to an ArgoCD Application name.
 - **Jenkins**: REST API at `{jenkins-url}/api/json`. Auth via HTTP Basic (`user:api-token`). Job trigger: `POST /job/{jobName}/build`. Webhooks: Farm registers `POST /api/v1/webhooks/jenkins` (Generic Webhook Trigger plugin on Jenkins side).
-- **Credential storage**: New `IntegrationCredential` entity (org-scoped, type enum: `argocd | circleci | jenkins | github | slack`, encrypted value column).
+- **Travis CI**: REST API v3 at `https://api.travis-ci.com` (cloud) or `{travis-url}/api` (self-hosted Enterprise). Auth via `Authorization: token <api-token>`. Builds listed via `GET /repo/{slug}/builds`. Restart trigger: `POST /build/{id}/restart`. Webhooks: Travis CI sends `POST` to a configurable URL — Farm registers `POST /api/v1/webhooks/travisci`. `IntegrationCredential` type enum extended with `travisci`.
+- **Credential storage**: New `IntegrationCredential` entity (org-scoped, type enum: `argocd | circleci | jenkins | travisci | github | slack`, encrypted value column).
+- **Build stage engines**: `docker` requires a Docker daemon socket (suitable for VMs and local dev). `buildah` and `podman` run daemonless and rootless — preferred when Farm executes inside a Kubernetes pod. Engine is selected per-stage via `config.engine`; defaults to `docker` if omitted. `containerd` is intentionally excluded — it is the cluster runtime (managed by Kubernetes) and not a build tool; Farm reaches it indirectly through the existing `KubernetesModule`.
+- **Image tag templates**: `{{version}}` resolves to the Pipeline trigger version; `{{commitSha}}` resolves to the short Git SHA from `Component.vcsUrl`. Rendered at execution time by the `BuildStageExecutor`.
 
 ---
 
@@ -964,6 +1001,7 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
-| Phase 6: Advanced Features | 14 | 59 | `PARTIAL` |
+| Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
+| Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
-| **Total** | **43** | **158** | |
+| **Total** | **44** | **164** | |
