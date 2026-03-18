@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { pipelines as pipelinesApi, ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,41 +22,39 @@ import type { Pipeline } from "@/types/api";
 import { GitBranch } from "lucide-react";
 
 export function PipelinesClient() {
-  const [pipelineList, setPipelineList] = useState<Pipeline[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [triggeringId, setTriggeringId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchPipelines = useCallback(() => {
-    pipelinesApi
-      .list()
-      .then(setPipelineList)
-      .catch(() => setPipelineList([]))
-      .finally(() => setLoading(false));
-  }, []);
+  // Fetch all pipelines — TanStack Query caches the result and keeps it fresh.
+  const { data: pipelineList = [], isLoading } = useQuery<Pipeline[]>({
+    queryKey: ["pipelines"],
+    queryFn: () => pipelinesApi.list(),
+  });
 
-  useEffect(() => {
-    fetchPipelines();
-  }, [fetchPipelines]);
+  // useMutation for triggering a pipeline run.
+  // On success we show a toast; the run itself is visible in the detail page.
+  const triggerMutation = useMutation({
+    mutationFn: ({ id }: { id: string; name: string }) =>
+      pipelinesApi.trigger(id),
+    onSuccess: (run, { name }) => {
+      toast.success(`Pipeline "${name}" triggered — Run ${run.id.slice(0, 8)}`);
+      // Invalidate the pipelines list so any run-count metadata stays fresh.
+      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+    },
+    onError: (err) => {
+      if (err instanceof ApiError) {
+        const msg = err.body.message;
+        toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
+      } else {
+        toast.error("Failed to trigger pipeline");
+      }
+    },
+  });
 
   const handleTrigger = (id: string, name: string) => {
-    setTriggeringId(id);
-    pipelinesApi
-      .trigger(id)
-      .then((run) => {
-        toast.success(`Pipeline "${name}" triggered — Run ${run.id.slice(0, 8)}`);
-      })
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          const msg = err.body.message;
-          toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
-        } else {
-          toast.error("Failed to trigger pipeline");
-        }
-      })
-      .finally(() => setTriggeringId(null));
+    triggerMutation.mutate({ id, name });
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
@@ -77,7 +76,8 @@ export function PipelinesClient() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <ErrorBoundary>
+      <div className="flex flex-col gap-6">
       <PageHeader
         title="Pipelines"
         description={`${pipelineList.length} pipeline${pipelineList.length !== 1 ? "s" : ""} configured`}
@@ -143,10 +143,17 @@ export function PipelinesClient() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleTrigger(pipeline.id, pipeline.name)}
-                        disabled={triggeringId === pipeline.id}
+                        // Disable the specific row's button while its mutation is in flight
+                        disabled={
+                          triggerMutation.isPending &&
+                          triggerMutation.variables?.id === pipeline.id
+                        }
                         aria-label={`Trigger pipeline ${pipeline.name}`}
                       >
-                        {triggeringId === pipeline.id ? "Triggering…" : "Trigger"}
+                        {triggerMutation.isPending &&
+                        triggerMutation.variables?.id === pipeline.id
+                          ? "Triggering…"
+                          : "Trigger"}
                       </Button>
                       <Link href={`/pipelines/${pipeline.id}`}>
                         <Button size="sm" variant="ghost">
@@ -162,5 +169,6 @@ export function PipelinesClient() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

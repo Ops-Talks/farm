@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -51,45 +53,41 @@ function lifecycleVariant(
 }
 
 export function CatalogClient() {
-  const [components, setComponents] = useState<CatalogComponent[]>([]);
-  const [total, setTotal] = useState(0);
+  const queryClient = useQueryClient();
+
   const [page, setPage] = useState(0);
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const fetchComponents = useCallback(() => {
-    const kindGroup = activeTab === "all" ? undefined : activeTab;
-    catalog
-      .listComponents({
+  // Fetch components — TanStack Query handles loading/error state and caching.
+  const { data, isLoading } = useQuery({
+    queryKey: ["catalog-components", page, activeTab],
+    queryFn: () => {
+      const kindGroup = activeTab === "all" ? undefined : activeTab;
+      return catalog.listComponents({
         skip: page * PAGE_SIZE,
         take: PAGE_SIZE,
         kindGroup,
-      })
-      .then((res) => {
-        setComponents(res.data);
-        setTotal(res.total);
-      })
-      .catch(() => {
-        setComponents([]);
-        setTotal(0);
-      })
-      .finally(() => setLoading(false));
-  }, [page, activeTab]);
+      });
+    },
+  });
 
-  useEffect(() => {
-    fetchComponents();
-  }, [fetchComponents]);
+  const components: CatalogComponent[] = data?.data ?? [];
+  const total: number = data?.total ?? 0;
 
-  // WebSocket: refresh on component changes
+  // WebSocket: invalidate the catalog query when components change so the
+  // table stays in sync without a manual page refresh.
   useEffect(() => {
+    const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: ["catalog-components"] });
+
     const unsubs = [
-      subscribe(FarmEvent.COMPONENT_CREATED, () => fetchComponents()),
-      subscribe(FarmEvent.COMPONENT_UPDATED, () => fetchComponents()),
-      subscribe(FarmEvent.COMPONENT_DELETED, () => fetchComponents()),
+      subscribe(FarmEvent.COMPONENT_CREATED, invalidate),
+      subscribe(FarmEvent.COMPONENT_UPDATED, invalidate),
+      subscribe(FarmEvent.COMPONENT_DELETED, invalidate),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [fetchComponents]);
+  }, [queryClient]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -101,7 +99,8 @@ export function CatalogClient() {
     : components;
 
   return (
-    <div className="flex flex-col gap-6">
+    <ErrorBoundary>
+      <div className="flex flex-col gap-6">
       <PageHeader
         title="Software Catalog"
         description={`${total} component${total !== 1 ? "s" : ""} registered`}
@@ -145,7 +144,7 @@ export function CatalogClient() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   {Array.from({ length: 6 }).map((__, j) => (
@@ -245,5 +244,6 @@ export function CatalogClient() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

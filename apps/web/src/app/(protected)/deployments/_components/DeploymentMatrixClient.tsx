@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,7 +89,8 @@ export function DeploymentMatrixClient() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <ErrorBoundary>
+      <div className="flex flex-col gap-6">
       <PageHeader
         title="Deployment Matrix"
         description="Latest deployment status per component and environment"
@@ -202,5 +204,6 @@ export function DeploymentMatrixClient() {
         </Badge>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { teams } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import type { Team } from "@/types/api";
@@ -43,22 +45,17 @@ const TYPE_FILTERS = [
 
 export function TeamsClient() {
   const { hasRole } = useAuth();
-  const [allTeams, setAllTeams] = useState<Team[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const fetchTeams = useCallback(() => {
-    teams
-      .list()
-      .then((res) => setAllTeams(res.data))
-      .catch(() => setAllTeams([]))
-      .finally(() => setLoading(false));
-  }, []);
+  // useQuery replaces the useCallback+useEffect fetch pattern.
+  // TanStack Query handles deduplication, caching, and background revalidation.
+  const { data, isLoading } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => teams.list(),
+  });
 
-  useEffect(() => {
-    fetchTeams();
-  }, [fetchTeams]);
+  const allTeams: Team[] = data?.data ?? [];
 
   const filtered = allTeams.filter((t) => {
     if (activeTab !== "all" && t.type !== activeTab) return false;
@@ -74,7 +71,8 @@ export function TeamsClient() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <ErrorBoundary>
+      <div className="flex flex-col gap-6">
       <PageHeader
         title="Teams"
         description={`${allTeams.length} team${allTeams.length !== 1 ? "s" : ""} registered`}
@@ -102,7 +100,7 @@ export function TeamsClient() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
@@ -160,5 +158,6 @@ export function TeamsClient() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }
