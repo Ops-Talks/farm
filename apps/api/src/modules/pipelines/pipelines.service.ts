@@ -16,6 +16,34 @@ import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { CreatePipelineDto } from "./dto/create-pipeline.dto";
 import { UpdatePipelineDto } from "./dto/update-pipeline.dto";
+import { ListRunsQueryDto } from "./dto/list-runs-query.dto";
+
+/**
+ * Snapshot of a pipeline run used for side-by-side comparison.
+ */
+export interface CompareRunSnapshot {
+  id: string;
+  status: PipelineRunStatus;
+  triggeredBy: string;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  durationMs: number | null;
+}
+
+/**
+ * Describes the diff for a single stage between two pipeline runs.
+ */
+export interface StageDiffEntry {
+  stageId: string;
+  statusA: string | null;
+  statusB: string | null;
+  durationMsA: number | null;
+  durationMsB: number | null;
+  /** durationMsB - durationMsA; null if either value is unavailable. */
+  durationDeltaMs: number | null;
+  /** True when statusA and statusB differ. */
+  changed: boolean;
+}
 
 /**
  * Service responsible for pipeline CRUD and execution management.
@@ -169,16 +197,159 @@ export class PipelinesService {
   }
 
   /**
-   * Returns the last 50 runs for a given pipeline, ordered newest first.
+   * Returns a paginated list of runs for a given pipeline, ordered newest first.
+   * Optionally filtered by status.
+   *
    * @param pipelineId - Pipeline UUID
-   * @returns Array of pipeline runs
+   * @param query - Pagination and optional status filter
+   * @returns A tuple of [runs, total count]
    */
-  async findRuns(pipelineId: string): Promise<PipelineRun[]> {
-    return this.runRepository.find({
-      where: { pipelineId },
+  async findRuns(
+    pipelineId: string,
+    query: ListRunsQueryDto,
+  ): Promise<[PipelineRun[], number]> {
+    const { skip = 0, take = 20, status } = query;
+    return this.runRepository.findAndCount({
+      where: { pipelineId, ...(status && { status }) },
       order: { createdAt: "DESC" },
-      take: 50,
+      skip,
+      take,
     });
+  }
+
+  /**
+   * Returns aggregate statistics for all runs belonging to a pipeline.
+   *
+   * @param pipelineId - Pipeline UUID
+   * @returns Stats object containing totals, per-status counts, success rate,
+   *   average duration of succeeded runs, and the timestamp of the most recent run
+   */
+  async getRunStats(pipelineId: string): Promise<{
+    total: number;
+    byStatus: Record<PipelineRunStatus, number>;
+    successRate: number;
+    avgDurationMs: number | null;
+    lastRunAt: Date | null;
+  }> {
+    const runs = await this.runRepository.find({
+      where: { pipelineId },
+      select: ["status", "durationMs", "createdAt"],
+      order: { createdAt: "DESC" },
+    });
+
+    const total = runs.length;
+
+    const byStatus = Object.values(PipelineRunStatus).reduce(
+      (acc, s) => ({ ...acc, [s]: 0 }),
+      {} as Record<PipelineRunStatus, number>,
+    );
+
+    for (const run of runs) {
+      byStatus[run.status] = (byStatus[run.status] ?? 0) + 1;
+    }
+
+    const succeededCount = byStatus[PipelineRunStatus.SUCCEEDED];
+    const successRate =
+      total === 0 ? 0 : Math.round((succeededCount / total) * 1000) / 10;
+
+    const succeededDurations = runs
+      .filter(
+        (r) =>
+          r.status === PipelineRunStatus.SUCCEEDED && r.durationMs !== null,
+      )
+      .map((r) => r.durationMs as number);
+
+    const avgDurationMs =
+      succeededDurations.length === 0
+        ? null
+        : succeededDurations.reduce((sum, d) => sum + d, 0) /
+          succeededDurations.length;
+
+    const lastRunAt = total === 0 ? null : runs[0].createdAt;
+
+    return { total, byStatus, successRate, avgDurationMs, lastRunAt };
+  }
+
+  /**
+   * Compares two pipeline runs side-by-side, producing per-stage diff entries.
+   *
+   * @param pipelineId - Pipeline UUID
+   * @param runIdA - UUID of the first run (baseline)
+   * @param runIdB - UUID of the second run (comparison target)
+   * @returns Snapshots of both runs and a list of per-stage diff entries
+   * @throws NotFoundException if either run does not belong to the pipeline
+   */
+  async compareRuns(
+    pipelineId: string,
+    runIdA: string,
+    runIdB: string,
+  ): Promise<{
+    runA: CompareRunSnapshot;
+    runB: CompareRunSnapshot;
+    stageDiff: StageDiffEntry[];
+  }> {
+    const [runA, runB] = await Promise.all([
+      this.findRun(pipelineId, runIdA),
+      this.findRun(pipelineId, runIdB),
+    ]);
+
+    const toSnapshot = (run: PipelineRun): CompareRunSnapshot => ({
+      id: run.id,
+      status: run.status,
+      triggeredBy: run.triggeredBy,
+      startedAt: run.startedAt,
+      finishedAt: run.finishedAt,
+      durationMs: run.durationMs,
+    });
+
+    const stagesA = runA.stageResults ?? [];
+    const stagesB = runB.stageResults ?? [];
+
+    const stageMapA = new Map(stagesA.map((s) => [s.stageId, s]));
+    const stageMapB = new Map(stagesB.map((s) => [s.stageId, s]));
+
+    const allStageIds = Array.from(
+      new Set([...stageMapA.keys(), ...stageMapB.keys()]),
+    );
+
+    const computeStageDuration = (
+      stage: import("./entities/pipeline-run.entity").StageResult | undefined,
+    ): number | null => {
+      if (!stage?.startedAt || !stage.finishedAt) return null;
+      const start = new Date(stage.startedAt).getTime();
+      const end = new Date(stage.finishedAt).getTime();
+      if (isNaN(start) || isNaN(end)) return null;
+      return end - start;
+    };
+
+    const stageDiff: StageDiffEntry[] = allStageIds.map((stageId) => {
+      const a = stageMapA.get(stageId);
+      const b = stageMapB.get(stageId);
+      const statusA = a?.status ?? null;
+      const statusB = b?.status ?? null;
+      const durationMsA = computeStageDuration(a);
+      const durationMsB = computeStageDuration(b);
+      const durationDeltaMs =
+        durationMsA !== null && durationMsB !== null
+          ? durationMsB - durationMsA
+          : null;
+
+      return {
+        stageId,
+        statusA,
+        statusB,
+        durationMsA,
+        durationMsB,
+        durationDeltaMs,
+        changed: statusA !== statusB,
+      };
+    });
+
+    return {
+      runA: toSnapshot(runA),
+      runB: toSnapshot(runB),
+      stageDiff,
+    };
   }
 
   /**

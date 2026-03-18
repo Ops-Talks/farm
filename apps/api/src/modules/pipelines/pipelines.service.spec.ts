@@ -57,6 +57,7 @@ describe("PipelinesService", () => {
     runRepo = {
       findOne: jest.fn(),
       find: jest.fn(),
+      findAndCount: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
     };
@@ -261,15 +262,17 @@ describe("PipelinesService", () => {
 
   describe("findRuns", () => {
     it("should return runs for a pipeline ordered by createdAt DESC", async () => {
-      runRepo.find.mockResolvedValue([mockRun]);
+      runRepo.findAndCount.mockResolvedValue([[mockRun], 1]);
 
-      const result = await service.findRuns("pipeline-uuid-1");
+      const [runs, total] = await service.findRuns("pipeline-uuid-1", {});
 
-      expect(result).toHaveLength(1);
-      expect(runRepo.find).toHaveBeenCalledWith({
+      expect(runs).toHaveLength(1);
+      expect(total).toBe(1);
+      expect(runRepo.findAndCount).toHaveBeenCalledWith({
         where: { pipelineId: "pipeline-uuid-1" },
         order: { createdAt: "DESC" },
-        take: 50,
+        skip: 0,
+        take: 20,
       });
     });
   });

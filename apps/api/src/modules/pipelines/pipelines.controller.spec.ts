@@ -50,7 +50,7 @@ describe("PipelinesController", () => {
             update: jest.fn().mockResolvedValue(mockPipeline),
             remove: jest.fn().mockResolvedValue(undefined),
             triggerRun: jest.fn().mockResolvedValue(mockRun),
-            findRuns: jest.fn().mockResolvedValue([mockRun]),
+            findRuns: jest.fn().mockResolvedValue([[mockRun], 1]),
             findRun: jest.fn().mockResolvedValue(mockRun),
             approveRun: jest.fn().mockResolvedValue({
               ...mockRun,
@@ -146,10 +146,14 @@ describe("PipelinesController", () => {
   });
 
   describe("findRuns", () => {
-    it("should return pipeline runs", async () => {
-      const result = await controller.findRuns("pipeline-uuid-1");
-      expect(result).toHaveLength(1);
-      expect(service.findRuns).toHaveBeenCalledWith("pipeline-uuid-1");
+    it("should return paginated pipeline runs", async () => {
+      const query = { skip: 0, take: 20 };
+      const result = await controller.findRuns("pipeline-uuid-1", query);
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
+      expect(service.findRuns).toHaveBeenCalledWith("pipeline-uuid-1", query);
     });
   });
 

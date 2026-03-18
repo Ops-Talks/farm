@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   Req,
+  BadRequestException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -23,6 +24,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from "@nestjs/swagger";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -33,6 +35,7 @@ import { CreatePipelineDto } from "./dto/create-pipeline.dto";
 import { UpdatePipelineDto } from "./dto/update-pipeline.dto";
 import { TriggerPipelineDto } from "./dto/trigger-pipeline.dto";
 import { ListPipelinesQueryDto } from "./dto/list-pipelines-query.dto";
+import { ListRunsQueryDto } from "./dto/list-runs-query.dto";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 
@@ -213,24 +216,102 @@ export class PipelinesController {
   }
 
   /**
-   * Returns the run history for a pipeline (last 50, newest first).
+   * Returns a paginated list of runs for a pipeline, ordered newest first.
+   * Supports optional status filtering.
+   *
    * @param id - Pipeline UUID
-   * @returns Array of pipeline runs
+   * @param query - Pagination and status filter parameters
+   * @returns Paginated run list with metadata
    */
   @Get(":id/runs")
   @ApiOperation({ summary: "List runs for a pipeline" })
   @ApiParam({ name: "id", description: "Pipeline UUID" })
   @ApiOkResponse({
     description: "Successfully retrieved run list.",
-    type: [PipelineRun],
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Pipeline not found.",
     type: ErrorResponseDto,
   })
-  async findRuns(@Param("id") id: string): Promise<PipelineRun[]> {
-    return this.pipelinesService.findRuns(id);
+  async findRuns(
+    @Param("id") id: string,
+    @Query() query: ListRunsQueryDto,
+  ): Promise<{
+    data: PipelineRun[];
+    total: number;
+    skip: number;
+    take: number;
+  }> {
+    const [data, total] = await this.pipelinesService.findRuns(id, query);
+    return { data, total, skip: query.skip ?? 0, take: query.take ?? 20 };
+  }
+
+  /**
+   * Returns aggregate statistics for all runs of a pipeline.
+   *
+   * @param id - Pipeline UUID
+   * @returns Stats including totals, per-status counts, success rate,
+   *   average duration of succeeded runs, and last run timestamp
+   */
+  @Get(":id/runs/stats")
+  @ApiOperation({ summary: "Get run statistics for a pipeline" })
+  @ApiParam({ name: "id", description: "Pipeline UUID" })
+  @ApiOkResponse({
+    description: "Successfully retrieved run statistics.",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Pipeline not found.",
+    type: ErrorResponseDto,
+  })
+  async getRunStats(@Param("id") id: string) {
+    return this.pipelinesService.getRunStats(id);
+  }
+
+  /**
+   * Compares two pipeline runs side-by-side, including a per-stage diff.
+   *
+   * @param id - Pipeline UUID
+   * @param runIdA - UUID of the baseline run (query param "a")
+   * @param runIdB - UUID of the comparison run (query param "b")
+   * @returns Snapshots of both runs and a list of per-stage diff entries
+   */
+  @Get(":id/runs/compare")
+  @ApiOperation({ summary: "Compare two pipeline runs" })
+  @ApiParam({ name: "id", description: "Pipeline UUID" })
+  @ApiQuery({
+    name: "a",
+    description: "UUID of the baseline run",
+    required: true,
+  })
+  @ApiQuery({
+    name: "b",
+    description: "UUID of the comparison run",
+    required: true,
+  })
+  @ApiOkResponse({
+    description: "Successfully compared the two runs.",
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Query params "a" and "b" are required.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "One or both runs not found.",
+    type: ErrorResponseDto,
+  })
+  async compareRuns(
+    @Param("id") id: string,
+    @Query("a") runIdA: string,
+    @Query("b") runIdB: string,
+  ) {
+    if (!runIdA || !runIdB) {
+      throw new BadRequestException('Query params "a" and "b" are required');
+    }
+    return this.pipelinesService.compareRuns(id, runIdA, runIdB);
   }
 
   /**
