@@ -7,11 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- feat:(web) FARM-E29 done.
-
-## [0.10.1] - 2026-03-18
-
 ### Added
 - **api**: FARM-E29 analytics module (`core-analytics` plugin) with four endpoints:
   - `GET /api/v1/analytics/catalog` — ownership coverage, lifecycle distribution, kind distribution, unowned components list (S100)
@@ -29,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mkdocs.yml` — Analytics API entry added to the API Reference navigation section
 - `ROADMAP.md` / `NEXT_STEPS.md` — FARM-E29 marked `DONE`
 
-
+## [0.10.0] - 2026-03-17
 
 ### Added
 - **web**: FARM-S120 replace useState data fetching with TanStack Query v5   QueryProvider (makeQueryClient, staleTime 60s, retry 1) wraps the   protected layout. Client components migrated from useState+useEffect   to useQuery/useMutation. Eliminates react-hooks/set-state-in-effect   lint warnings permanently. Deps: @tanstack/react-query.
