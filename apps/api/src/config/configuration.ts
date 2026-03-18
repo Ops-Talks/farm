@@ -88,6 +88,10 @@ export const configuration = () => ({
   plugins: {
     dir: process.env.PLUGINS_DIR || "./plugins",
   },
+  swagger: {
+    user: process.env.SWAGGER_USER || "farm",
+    password: process.env.SWAGGER_PASSWORD || "farm",
+  },
 });
 
 /**
@@ -152,4 +156,7 @@ export const validationSchema = Joi.object({
   KUBECONFIG_PATH: Joi.string().allow("").default(""),
   // Plugin directory
   PLUGINS_DIR: Joi.string().default("./plugins"),
+  // Swagger Basic Auth
+  SWAGGER_USER: Joi.string().default("farm"),
+  SWAGGER_PASSWORD: Joi.string().default("farm"),
 });

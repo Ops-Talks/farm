@@ -64,7 +64,7 @@ This builds all images and starts all containers. Access points:
 |---------|-----|
 | Web UI | [http://localhost:3001](http://localhost:3001) |
 | API | [http://localhost:3000/api](http://localhost:3000/api) |
-| Swagger UI | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) |
+| Swagger UI | [http://localhost:3000/api/docs](http://localhost:3000/api/docs) (Basic Auth: `farm` / `farm`) |
 | Grafana | [http://localhost:3002](http://localhost:3002) |
 | Prometheus | [http://localhost:9090](http://localhost:9090) |
 | MkDocs | [http://localhost:8000](http://localhost:8000) |
@@ -287,6 +287,8 @@ npm run start:debug
 | `JWT_SECRET` | (auto-generated in dev) | Secret key for JWT signing (min 32 chars in production) |
 | `JWT_EXPIRATION` | `3600s` | JWT token expiration time |
 | `ALLOWED_ORIGINS` | `*` | CORS allowed origins |
+| `SWAGGER_USER` | `farm` | HTTP Basic Auth username for `/api/docs` |
+| `SWAGGER_PASSWORD` | `farm` | HTTP Basic Auth password for `/api/docs` |
 | `THROTTLE_TTL` | `60000` | Rate limit time window (ms) |
 | `THROTTLE_LIMIT` | `10` | Maximum requests per TTL window |
 | `REDIS_HOST` | *(empty)* | Redis hostname (empty for in-memory cache) |

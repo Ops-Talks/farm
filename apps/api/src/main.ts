@@ -70,6 +70,31 @@ async function bootstrap() {
     .addTag("farm")
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
+
+  const swaggerUser = configService.get<string>("swagger.user") || "farm";
+  const swaggerPass = configService.get<string>("swagger.password") || "farm";
+
+  // Protect Swagger UI and JSON spec with HTTP Basic Auth.
+  // In production set SWAGGER_USER and SWAGGER_PASSWORD env vars.
+  app.use(
+    ["/api/docs", "/api/docs-json", "/api/docs/swagger-ui-bundle.js", "/api/docs/swagger-ui-init.js", "/api/docs/swagger-ui.css"],
+    (req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+      const authorization = req.headers["authorization"];
+      if (authorization) {
+        const [scheme, encoded] = authorization.split(" ");
+        if (scheme?.toLowerCase() === "basic" && encoded) {
+          const decoded = Buffer.from(encoded, "base64").toString("utf8");
+          const [user, pass] = decoded.split(":");
+          if (user === swaggerUser && pass === swaggerPass) {
+            return next();
+          }
+        }
+      }
+      res.setHeader("WWW-Authenticate", 'Basic realm="Farm API Docs"');
+      res.status(401).send("Unauthorized");
+    },
+  );
+
   SwaggerModule.setup("api/docs", app, documentFactory);
 
   const port = configService.get<number>("port") || 3000;

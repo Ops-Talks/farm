@@ -28,6 +28,9 @@ import { LoginResponseDto } from "./dto/login-response.dto";
 import { RefreshResponseDto } from "./dto/refresh-response.dto";
 import { User } from "./entities/user.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
+import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
 
 /**
  * Controller for authentication and user management operations.
@@ -159,11 +162,13 @@ export class AuthController {
   }
 
   /**
-   * Retrieves all registered users.
+   * Retrieves all registered users. Requires admin role.
    * @returns An array of all user profiles
    */
   @Get("users")
-  @ApiOperation({ summary: "Get all users" })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @ApiOperation({ summary: "Get all users (admin only)" })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Return all users.",

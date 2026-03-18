@@ -119,10 +119,11 @@ The refresh token is rotated on each use. The old refresh token is immediately i
 
 ### Listing Users
 
-To retrieve all registered users:
+Retrieving all registered users requires a valid JWT with the `admin` role:
 
 ```bash
-curl http://localhost:3000/api/v1/auth/users
+curl http://localhost:3000/api/v1/auth/users \
+  -H "Authorization: Bearer <your-admin-token>"
 ```
 
 ## Error Handling

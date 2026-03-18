@@ -18,6 +18,8 @@ Farm provides an interactive API documentation interface using Swagger UI. This 
 
 **Swagger UI Endpoint**: `http://localhost:3000/api/docs`
 
+Access requires HTTP Basic Auth credentials. The defaults for local development are `farm` / `farm`. Set `SWAGGER_USER` and `SWAGGER_PASSWORD` environment variables to change them in production.
+
 ## Authentication
 
 All endpoints are protected with JWT-based authentication. Include a Bearer token in the `Authorization` header:
@@ -42,6 +44,7 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Organizations](organizations.md) | `/api/v1/organizations` | Organization and member management |
 | [Plugins](plugins.md) | `/api/v1/plugins` | Plugin registry |
 | [Audit Log](audit-log.md) | `/api/v1/audit-log` | Immutable audit trail for system actions |
+| [Analytics](analytics.md) | `/api/v1/analytics` | Catalog health, DORA metrics, usage reports |
 
 ## Response Format
 
