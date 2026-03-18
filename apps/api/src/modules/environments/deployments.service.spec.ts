@@ -44,28 +44,46 @@ describe("DeploymentsService", () => {
     updatedAt: new Date(),
   };
 
-  // Reusable mock QueryBuilder that chains properly
+  // Reusable mock QueryBuilder that chains properly.
+  // andWhere is handled separately so that callbacks are actually invoked,
+  // allowing tests to assert on subQuery() and related chain calls.
   const createMockQueryBuilder = (result: unknown[] = []) => {
     const qb: Record<string, jest.Mock> = {};
     const chainMethods = [
       "select",
       "addSelect",
       "where",
-      "andWhere",
       "groupBy",
       "orderBy",
       "innerJoin",
       "leftJoinAndSelect",
       "setParameters",
       "setParameter",
+      "from",
     ];
     for (const method of chainMethods) {
       qb[method] = jest.fn().mockReturnValue(qb);
     }
-    qb.getQuery = jest.fn().mockReturnValue("SUBQUERY");
+    // Invoke the callback when andWhere receives one so that subQuery() chains
+    // inside the callback are executed and can be asserted upon.
+    qb.andWhere = jest.fn().mockImplementation((conditionOrCallback) => {
+      if (typeof conditionOrCallback === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        conditionOrCallback(qb);
+      }
+      return qb;
+    });
+    qb.getQuery = jest
+      .fn()
+      .mockReturnValue(
+        "(SELECT MAX(sub2.createdAt) FROM deployment sub2 WHERE ...)",
+      );
     qb.getParameters = jest.fn().mockReturnValue({});
     qb.getMany = jest.fn().mockResolvedValue(result);
     qb.getRawMany = jest.fn().mockResolvedValue(result);
+    // subQuery() returns the same chainable mock, mirroring TypeORM's behaviour
+    // of wrapping the inner SELECT in parentheses.
+    qb.subQuery = jest.fn().mockReturnValue(qb);
     return qb;
   };
 
@@ -337,6 +355,78 @@ describe("DeploymentsService", () => {
       expect(componentQb.andWhere).toHaveBeenCalledWith(
         "c.kind IN (:...kinds)",
         expect.objectContaining({ kinds: expect.any(Array) as unknown }),
+      );
+    });
+
+    it("should use subQuery() for the correlated MAX subquery, not raw string concatenation", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([mockEnvironment as Environment]);
+
+      const deployQb = createMockQueryBuilder([]);
+      deploymentRepo.createQueryBuilder.mockReturnValue(deployQb);
+
+      await service.getMatrix();
+
+      // subQuery() must have been called on the deployment QueryBuilder,
+      // proving that TypeORM's parenthesised subquery path is used instead
+      // of the broken raw-string concatenation that fails on PostgreSQL.
+      expect(deployQb.subQuery).toHaveBeenCalled();
+    });
+
+    it("should pass subStatus parameter with DeploymentStatus.SUCCEEDED", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([mockEnvironment as Environment]);
+
+      const deployQb = createMockQueryBuilder([]);
+      deploymentRepo.createQueryBuilder.mockReturnValue(deployQb);
+
+      await service.getMatrix();
+
+      expect(deployQb.setParameter).toHaveBeenCalledWith(
+        "subStatus",
+        DeploymentStatus.SUCCEEDED,
+      );
+    });
+
+    it("should return components with empty environments when no environments exist", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([]);
+
+      const result = await service.getMatrix();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(mockComponent.id);
+      expect(result[0].name).toBe(mockComponent.name);
+      expect(result[0].environments).toEqual([]);
+      // Deployments must not be queried when there are no environments.
+      expect(deploymentRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("should apply owner filter at query level", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([]);
+
+      await service.getMatrix({ owner: "platform-team" });
+
+      expect(componentQb.andWhere).toHaveBeenCalledWith("c.owner = :owner", {
+        owner: "platform-team",
+      });
+    });
+
+    it("should apply lifecycle filter at query level", async () => {
+      const componentQb = createMockQueryBuilder([mockComponent]);
+      componentRepo.createQueryBuilder.mockReturnValue(componentQb);
+      environmentRepo.find.mockResolvedValue([]);
+
+      await service.getMatrix({ lifecycle: ComponentLifecycle.PRODUCTION });
+
+      expect(componentQb.andWhere).toHaveBeenCalledWith(
+        "c.lifecycle = :lifecycle",
+        { lifecycle: ComponentLifecycle.PRODUCTION },
       );
     });
   });

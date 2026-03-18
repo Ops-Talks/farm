@@ -318,16 +318,19 @@ export class DeploymentsService {
       .andWhere("d.status = :status", {
         status: DeploymentStatus.SUCCEEDED,
       })
-      .andWhere(
-        "d.createdAt = " +
-          this.deploymentRepository
-            .createQueryBuilder("sub")
-            .select("MAX(sub.createdAt)")
-            .where("sub.componentId = d.componentId")
-            .andWhere("sub.environmentId = d.environmentId")
-            .andWhere("sub.status = :subStatus")
-            .getQuery(),
-      )
+      .andWhere((qb) => {
+        // Wrap the correlated subquery in parentheses, which is required by
+        // PostgreSQL. TypeORM's subQuery() handles this automatically.
+        const sub = qb
+          .subQuery()
+          .select("MAX(sub2.createdAt)")
+          .from(Deployment, "sub2")
+          .where("sub2.componentId = d.componentId")
+          .andWhere("sub2.environmentId = d.environmentId")
+          .andWhere("sub2.status = :subStatus")
+          .getQuery();
+        return `d.createdAt = ${sub}`;
+      })
       .setParameter("subStatus", DeploymentStatus.SUCCEEDED)
       .getRawMany<{
         componentId: string;
