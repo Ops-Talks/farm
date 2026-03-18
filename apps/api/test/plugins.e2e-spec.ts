@@ -31,6 +31,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-alerting",
     "core-integrations",
     "core-kubernetes",
+    "core-analytics",
   ];
 
   describe("GET /api/plugins", () => {
@@ -47,7 +48,7 @@ describe("Plugin Manager (e2e)", () => {
       }[];
 
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins).toHaveLength(11);
+      expect(plugins).toHaveLength(12);
 
       for (const plugin of plugins) {
         expect(plugin.name).toBeDefined();

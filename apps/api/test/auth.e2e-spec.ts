@@ -1,7 +1,10 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { Repository } from "typeorm";
+import { getRepositoryToken } from "@nestjs/typeorm";
 import { createE2EApp } from "./helpers/e2e-setup";
+import { User } from "../src/modules/auth/entities/user.entity";
 
 interface UserResponse {
   id: string;
@@ -64,9 +67,21 @@ describe("Auth Lifecycle (e2e)", () => {
 
     const token = loginBody.token;
 
-    // Step 3: Use JWT token to access a protected endpoint (list users)
+    // Promote user to admin so GET /auth/users is accessible
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await userRepo.update({ username: userData.username }, { roles: ["admin"] });
+
+    // Re-login to get a token with the updated admin role
+    const adminLoginRes = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: userData.username, password: userData.password })
+      .expect(200);
+    const adminToken = (adminLoginRes.body as LoginResponse).token;
+
+    // Step 3: Use admin JWT token to access the users list (admin only)
     const usersRes = await request(app.getHttpServer())
       .get("/api/v1/auth/users")
+      .set("Authorization", `Bearer ${adminToken}`)
       .expect(200);
 
     const users = usersRes.body as UserResponse[];
