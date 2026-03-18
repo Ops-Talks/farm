@@ -189,14 +189,10 @@ describe("HelmService", () => {
 
       const releases = await service.listReleases("staging");
 
-      expect(mockCoreV1Api.listNamespacedSecret).toHaveBeenCalledWith(
-        "staging",
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        "owner=helm",
-      );
+      expect(mockCoreV1Api.listNamespacedSecret).toHaveBeenCalledWith({
+        namespace: "staging",
+        labelSelector: "owner=helm",
+      });
       expect(releases).toHaveLength(1);
     });
 

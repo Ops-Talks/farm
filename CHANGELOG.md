@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
+- feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
 - Update README.
 
 ## [0.10.4] - 2026-03-18
