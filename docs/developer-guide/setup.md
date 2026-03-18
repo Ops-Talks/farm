@@ -303,6 +303,19 @@ npm run start:debug
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry trace export |
 | `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint |
 | `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
+| `GRAFANA_URL` | *(empty)* | Grafana base URL (leave empty to disable Grafana links) |
+| `PROMETHEUS_URL` | `http://localhost:9090` | Prometheus endpoint for metrics proxy |
+| `JAEGER_URL` | `http://localhost:16686` | Jaeger UI endpoint for traces proxy |
+| `LOKI_URL` | `http://localhost:3100` | Loki endpoint for log aggregation proxy |
+| `GITHUB_CLIENT_ID` | *(empty)* | GitHub OAuth application client ID |
+| `GITHUB_CLIENT_SECRET` | *(empty)* | GitHub OAuth application client secret |
+| `GITHUB_CALLBACK_URL` | `http://localhost:3000/api/v1/auth/github/callback` | GitHub OAuth redirect URI |
+| `GOOGLE_CLIENT_ID` | *(empty)* | Google OAuth application client ID |
+| `GOOGLE_CLIENT_SECRET` | *(empty)* | Google OAuth application client secret |
+| `GOOGLE_CALLBACK_URL` | `http://localhost:3000/api/v1/auth/google/callback` | Google OAuth redirect URI |
+| `SLACK_WEBHOOK_URL` | *(empty)* | Slack incoming webhook URL for notifications (leave empty to disable) |
+| `TEAMS_WEBHOOK_URL` | *(empty)* | Microsoft Teams webhook URL for notifications (leave empty to disable) |
+| `PLUGINS_DIR` | `./plugins` | Directory for external runtime plugins |
 | `KUBECONFIG_PATH` | *(empty)* | Path to a kubeconfig file; leave empty to use in-cluster config (Kubernetes, Helm, and CRD features) |
 
 ### Frontend

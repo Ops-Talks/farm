@@ -69,6 +69,14 @@ Organize your organization with team management:
 - Assign members to teams
 - Link catalog components to team ownership
 
+### Helm Integration
+
+Farm discovers Helm releases from Kubernetes Secrets and provides a dedicated UI card on the component detail page for components with a `helmChart` field in their `catalog-info.yaml`. See the [Helm Integration](helm-integration.md) guide for full details.
+
+### Kubernetes Operator
+
+Farm connects to a Kubernetes cluster to discover running workloads, Custom Resource Definitions (CRDs), and Argo Rollout statuses. Components annotated with `farm.io/kubernetes-name` are automatically linked to their cluster workloads. See the [Kubernetes Operator](kubernetes-operator.md) guide for full details.
+
 ### System Discovery
 
 Farm provides a [discovery mechanism](system-discovery.md) to see which features and modules are currently active in your organization's portal. This allows users to:
@@ -86,4 +94,6 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 | [Documentation](documentation.md) | Create and manage documentation |
 | [Authentication](authentication.md) | User management and access |
 | [Organizations](organizations.md) | Multi-tenant isolation and member management |
+| [Helm Integration](helm-integration.md) | Helm release discovery and chart metadata |
+| [Kubernetes Operator](kubernetes-operator.md) | Workload, CRD, and Argo Rollouts discovery |
 | [FAQ](faq.md) | Frequently asked questions |
