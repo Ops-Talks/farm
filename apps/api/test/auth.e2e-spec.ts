@@ -69,7 +69,10 @@ describe("Auth Lifecycle (e2e)", () => {
 
     // Promote user to admin so GET /auth/users is accessible
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
-    await userRepo.update({ username: userData.username }, { roles: ["admin"] });
+    await userRepo.update(
+      { username: userData.username },
+      { roles: ["admin"] },
+    );
 
     // Re-login to get a token with the updated admin role
     const adminLoginRes = await request(app.getHttpServer())
