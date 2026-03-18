@@ -83,20 +83,8 @@ export class HelmService {
       const labelSelector = "owner=helm";
 
       const response = namespace
-        ? await coreV1Api.listNamespacedSecret(
-            namespace,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            labelSelector,
-          )
-        : await coreV1Api.listSecretForAllNamespaces(
-            undefined,
-            undefined,
-            undefined,
-            labelSelector,
-          );
+        ? await coreV1Api.listNamespacedSecret({ namespace, labelSelector })
+        : await coreV1Api.listSecretForAllNamespaces({ labelSelector });
 
       const secrets = response.items ?? [];
       const releases: HelmRelease[] = [];

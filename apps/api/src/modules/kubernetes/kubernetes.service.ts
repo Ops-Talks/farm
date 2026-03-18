@@ -429,18 +429,18 @@ export class KubernetesService {
       let response: RawRolloutList;
 
       if (namespace) {
-        response = (await this.customObjectsApi.listNamespacedCustomObject(
+        response = (await this.customObjectsApi.listNamespacedCustomObject({
           group,
           version,
           namespace,
           plural,
-        )) as RawRolloutList;
+        })) as RawRolloutList;
       } else {
-        response = (await this.customObjectsApi.listClusterCustomObject(
+        response = (await this.customObjectsApi.listClusterCustomObject({
           group,
           version,
           plural,
-        )) as RawRolloutList;
+        })) as RawRolloutList;
       }
 
       const items: RawArgoRollout[] = response.items ?? [];
