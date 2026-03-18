@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,37 +105,35 @@ function PluginCard({ plugin }: PluginCardProps) {
 export function PluginsClient() {
   const { hasRole } = useAuth();
   const isAdmin = hasRole("admin");
+  const queryClient = useQueryClient();
 
-  const [pluginList, setPluginList] = useState<PluginMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [reloading, setReloading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const fetchPlugins = useCallback(() => {
-    setLoading(true);
-    pluginsApi
-      .list()
-      .then((data) => setPluginList(data))
-      .catch(() => setPluginList([]))
-      .finally(() => setLoading(false));
-  }, []);
+  // Fetch the installed plugin list — cached for 60 s by the global QueryClient.
+  const { data: pluginList = [], isLoading } = useQuery<PluginMetadata[]>({
+    queryKey: ["plugins"],
+    queryFn: () => pluginsApi.list(),
+  });
 
-  useEffect(() => {
-    fetchPlugins();
-  }, [fetchPlugins]);
+  // Mutation for the admin "Reload Plugins" action.
+  // On success we invalidate the plugins query so the list refreshes
+  // automatically — no manual fetchPlugins() call needed.
+  const reloadMutation = useMutation({
+    mutationFn: () => pluginsApi.reload(),
+    onSuccess: (result) => {
+      toast.success(
+        `Plugin scan complete — ${result.scanned} plugin${result.scanned === 1 ? "" : "s"} found`,
+      );
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+    },
+    onError: () => {
+      toast.error("Failed to reload plugins. Check server logs.");
+    },
+  });
 
   async function handleReload() {
-    setReloading(true);
-    try {
-      const result = await pluginsApi.reload();
-      toast.success(`Plugin scan complete — ${result.scanned} plugin${result.scanned === 1 ? "" : "s"} found`);
-      // Refresh the list after reload
-      fetchPlugins();
-    } catch {
-      toast.error("Failed to reload plugins. Check server logs.");
-    } finally {
-      setReloading(false);
-    }
+    setConfirmOpen(false);
+    reloadMutation.mutate();
   }
 
   return (
@@ -149,17 +148,17 @@ export function PluginsClient() {
             variant="outline"
             size="sm"
             onClick={() => setConfirmOpen(true)}
-            disabled={reloading}
+            disabled={reloadMutation.isPending}
             className="gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${reloading ? "animate-spin" : ""}`} />
-            {reloading ? "Reloading..." : "Reload Plugins"}
+            <RefreshCw className={`h-4 w-4 ${reloadMutation.isPending ? "animate-spin" : ""}`} />
+            {reloadMutation.isPending ? "Reloading..." : "Reload Plugins"}
           </Button>
         )}
       </PageHeader>
 
       {/* Plugin grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <PluginCardSkeleton />
           <PluginCardSkeleton />
