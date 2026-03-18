@@ -13,6 +13,10 @@
          <lastmod>2026-03-18</lastmod>
     </url>
     <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/audit-log/</loc>
+         <lastmod>2026-03-18</lastmod>
+    </url>
+    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/auth/</loc>
          <lastmod>2026-03-18</lastmod>
     </url>
@@ -34,6 +38,14 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/health/</loc>
+         <lastmod>2026-03-18</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/helm/</loc>
+         <lastmod>2026-03-18</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/kubernetes/</loc>
          <lastmod>2026-03-18</lastmod>
     </url>
     <url>
