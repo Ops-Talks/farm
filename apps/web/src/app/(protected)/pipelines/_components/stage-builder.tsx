@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,11 +36,16 @@ function getConfigSummary(stage: PipelineStage): string {
   return value ? String(value) : "";
 }
 
-interface AddStageForm {
-  name: string;
-  type: StageType;
-  configValue: string;
-}
+// ---------------------------------------------------------------------------
+// Schema for the inline "add stage" form
+// ---------------------------------------------------------------------------
+const addStageSchema = z.object({
+  name: z.string().min(1, "Stage name is required"),
+  type: z.enum(STAGE_TYPES),
+  configValue: z.string().optional(),
+});
+
+type AddStageFormValues = z.infer<typeof addStageSchema>;
 
 interface StageBuilderProps {
   stages: PipelineStage[];
@@ -47,11 +55,22 @@ interface StageBuilderProps {
 
 export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilderProps) {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState<AddStageForm>({
-    name: "",
-    type: "script",
-    configValue: "",
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<AddStageFormValues>({
+    resolver: zodResolver(addStageSchema),
+    defaultValues: { name: "", type: "script", configValue: "" },
   });
+
+  // Watch type to derive the correct config field label/placeholder
+  const currentType = watch("type");
+  const configField = CONFIG_FIELD[currentType];
 
   // HTML5 Drag-and-Drop state
   const dragIndexRef = useRef<number | null>(null);
@@ -90,28 +109,26 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     setDragOverIndex(null);
   }
 
-  function handleAddStage() {
-    if (!addForm.name.trim()) return;
-    const field = CONFIG_FIELD[addForm.type];
+  const onAddStage = (values: AddStageFormValues) => {
+    const field = CONFIG_FIELD[values.type];
     const newStage: PipelineStage = {
       id: crypto.randomUUID(),
-      name: addForm.name.trim(),
-      type: addForm.type,
+      name: values.name.trim(),
+      type: values.type,
       order: stages.length,
-      config: addForm.configValue ? { [field.key]: addForm.configValue } : {},
+      config: values.configValue ? { [field.key]: values.configValue } : {},
     };
     onChange([...stages, newStage]);
-    setAddForm({ name: "", type: "script", configValue: "" });
+    // Reset the form and close the panel
+    reset({ name: "", type: "script", configValue: "" });
     setShowAddForm(false);
-  }
+  };
 
   function handleRemoveStage(id: string) {
     const filtered = stages.filter((s) => s.id !== id);
     const updated = filtered.map((s, i) => ({ ...s, order: i }));
     onChange(updated);
   }
-
-  const configField = CONFIG_FIELD[addForm.type];
 
   return (
     <div className="flex flex-col gap-3">
@@ -194,7 +211,10 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
       {!readOnly && (
         <>
           {showAddForm ? (
-            <div className="rounded-lg border p-4 flex flex-col gap-3 bg-muted/20">
+            <form
+              onSubmit={handleSubmit(onAddStage)}
+              className="rounded-lg border p-4 flex flex-col gap-3 bg-muted/20"
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label htmlFor="stage-name" className="text-sm font-medium">
@@ -203,9 +223,11 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                   <Input
                     id="stage-name"
                     placeholder="e.g. Build"
-                    value={addForm.name}
-                    onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                    {...register("name")}
                   />
+                  {errors.name?.message && (
+                    <p className="text-xs text-destructive">{errors.name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="stage-type" className="text-sm font-medium">
@@ -214,10 +236,12 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                   <select
                     id="stage-type"
                     className="w-full rounded-md border px-3 py-2 text-sm bg-background"
-                    value={addForm.type}
-                    onChange={(e) =>
-                      setAddForm({ ...addForm, type: e.target.value as StageType, configValue: "" })
-                    }
+                    {...register("type", {
+                      onChange: () => {
+                        // Reset the config value when the type changes
+                        setValue("configValue", "");
+                      },
+                    })}
                   >
                     {STAGE_TYPES.map((t) => (
                       <option key={t} value={t}>
@@ -234,8 +258,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                 <Input
                   id="stage-config"
                   placeholder={configField.placeholder}
-                  value={addForm.configValue}
-                  onChange={(e) => setAddForm({ ...addForm, configValue: e.target.value })}
+                  {...register("configValue")}
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -245,21 +268,16 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                   size="sm"
                   onClick={() => {
                     setShowAddForm(false);
-                    setAddForm({ name: "", type: "script", configValue: "" });
+                    reset({ name: "", type: "script", configValue: "" });
                   }}
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleAddStage}
-                  disabled={!addForm.name.trim()}
-                >
+                <Button type="submit" size="sm">
                   Add Stage
                 </Button>
               </div>
-            </div>
+            </form>
           ) : (
             <Button
               type="button"

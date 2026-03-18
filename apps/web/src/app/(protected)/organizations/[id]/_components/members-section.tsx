@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useState, useEffect, useCallback } from "react";
 import { Trash2, Users } from "lucide-react";
 import { organizations as orgsApi, ApiError } from "@/lib/api-client";
@@ -44,6 +47,16 @@ interface MembersSectionProps {
    */
   canManage: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Add-member schema
+// ---------------------------------------------------------------------------
+const addMemberSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  role: z.enum(["member", "admin"] as const),
+});
+
+type AddMemberFormValues = z.infer<typeof addMemberSchema>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,12 +146,6 @@ export function MembersSection({
   const [members, setMembers] = useState<MemberResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add-member form state
-  const [addUsername, setAddUsername] = useState("");
-  const [addRole, setAddRole] = useState<"admin" | "member">("member");
-  const [addError, setAddError] = useState<string | null>(null);
-  const [addPending, setAddPending] = useState(false);
-
   // In-flight role-update tracker (keyed by userId)
   const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
 
@@ -147,6 +154,20 @@ export function MembersSection({
     userId: string;
     username: string;
   } | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Add-member form (React Hook Form + Zod)
+  // ---------------------------------------------------------------------------
+  const {
+    register,
+    handleSubmit,
+    reset: resetAddForm,
+    setError: setAddError,
+    formState: { errors: addErrors, isSubmitting: addPending },
+  } = useForm<AddMemberFormValues>({
+    resolver: zodResolver(addMemberSchema),
+    defaultValues: { username: "", role: "member" },
+  });
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -181,27 +202,21 @@ export function MembersSection({
   // Handlers
   // ---------------------------------------------------------------------------
 
-  function handleAddMember(e: React.FormEvent) {
-    e.preventDefault();
-    if (!addUsername.trim()) return;
-    setAddError(null);
-    setAddPending(true);
-
-    orgsApi.members
-      .add(orgId, { username: addUsername.trim(), role: addRole })
-      .then(() => {
-        toast.success(`${addUsername.trim()} added to organization.`);
-        setAddUsername("");
-        setAddRole("member");
-        loadMembers();
-      })
-      .catch((err: unknown) => {
-        setAddError(
-          err instanceof ApiError ? err.message : "Failed to add member.",
-        );
-      })
-      .finally(() => setAddPending(false));
-  }
+  const handleAddMember = async (values: AddMemberFormValues) => {
+    try {
+      await orgsApi.members.add(orgId, {
+        username: values.username.trim(),
+        role: values.role,
+      });
+      toast.success(`${values.username.trim()} added to organization.`);
+      resetAddForm();
+      loadMembers();
+    } catch (err: unknown) {
+      setAddError("root", {
+        message: err instanceof ApiError ? err.message : "Failed to add member.",
+      });
+    }
+  };
 
   function handleRoleChange(userId: string, newRole: string) {
     setUpdatingRoleFor(userId);
@@ -358,32 +373,29 @@ export function MembersSection({
           {/* Add Member form — only rendered for admin / owner */}
           {effectiveCanManage && (
             <form
-              onSubmit={handleAddMember}
+              onSubmit={handleSubmit(handleAddMember)}
               className="rounded-lg border bg-muted/20 p-4 space-y-3 animate-in slide-in-from-top-2 duration-300"
               data-testid="add-member-form"
             >
               <p className="text-sm font-medium">Add Member</p>
 
               <div className="flex gap-2 flex-col sm:flex-row">
+                {/* aria-label preserved so existing tests can query by role/name */}
                 <Input
+                  aria-label="Username"
                   placeholder="Username"
-                  value={addUsername}
-                  onChange={(e) => setAddUsername(e.target.value)}
                   disabled={addPending}
                   className="flex-1"
-                  aria-label="Username"
                   autoComplete="off"
+                  {...register("username")}
                 />
 
                 {/* Native <select> — shadcn Select is not yet in the ui/ bundle. */}
                 <select
-                  value={addRole}
-                  onChange={(e) =>
-                    setAddRole(e.target.value as "admin" | "member")
-                  }
-                  disabled={addPending}
                   aria-label="New member role"
+                  disabled={addPending}
                   className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  {...register("role")}
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -392,15 +404,20 @@ export function MembersSection({
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={addPending || !addUsername.trim()}
+                  disabled={addPending}
                 >
                   Add Member
                 </Button>
               </div>
 
-              {addError && (
+              {addErrors.root?.message && (
                 <p className="text-sm text-destructive" role="alert">
-                  {addError}
+                  {addErrors.root.message}
+                </p>
+              )}
+              {addErrors.username?.message && (
+                <p className="text-sm text-destructive" role="alert">
+                  {addErrors.username.message}
                 </p>
               )}
             </form>

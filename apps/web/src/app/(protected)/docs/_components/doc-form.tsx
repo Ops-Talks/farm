@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import type { CatalogComponent, DocumentationEntry, DocumentationTreeNode } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +13,23 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+const docFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  sourceUrl: z.string().url("Must be a valid URL"),
+  componentId: z.string().min(1, "Component is required"),
+  author: z.string().min(1, "Author is required"),
+  version: z.string().optional(),
+  parentId: z.string().optional(),
+  // Use z.number() (not coerce) — RHF's valueAsNumber option does the
+  // string→number conversion before Zod receives the value.
+  order: z.number().int().min(0),
+});
+
+type DocFormValues = z.infer<typeof docFormSchema>;
 
 export function DocForm({
   components,
@@ -25,14 +44,21 @@ export function DocForm({
   onSave: (data: Partial<DocumentationEntry>) => void;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState({
-    title: initial?.title ?? "",
-    sourceUrl: initial?.sourceUrl ?? "",
-    componentId: initial?.componentId ?? "",
-    author: initial?.author ?? "",
-    version: initial?.version ?? "1.0.0",
-    parentId: initial?.parentId ?? "",
-    order: initial?.order ?? 0,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<DocFormValues>({
+    resolver: zodResolver(docFormSchema),
+    defaultValues: {
+      title: initial?.title ?? "",
+      sourceUrl: initial?.sourceUrl ?? "",
+      componentId: initial?.componentId ?? "",
+      author: initial?.author ?? "",
+      version: initial?.version ?? "1.0.0",
+      parentId: initial?.parentId ?? "",
+      order: initial?.order ?? 0,
+    },
   });
 
   function flattenTree(
@@ -49,16 +75,15 @@ export function DocForm({
 
   const flatNodes = flattenTree(treeNodes);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (values: DocFormValues) => {
     onSave({
-      title: form.title,
-      sourceUrl: form.sourceUrl,
-      componentId: form.componentId || undefined,
-      author: form.author,
-      version: form.version,
-      parentId: form.parentId || undefined,
-      order: form.order,
+      title: values.title,
+      sourceUrl: values.sourceUrl,
+      componentId: values.componentId || undefined,
+      author: values.author,
+      version: values.version,
+      parentId: values.parentId || undefined,
+      order: values.order,
     });
   };
 
@@ -73,44 +98,46 @@ export function DocForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">
+              <label htmlFor="doc-title" className="text-sm font-medium">
                 Title <span className="text-destructive">*</span>
               </label>
               <Input
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                required
+                id="doc-title"
+                {...register("title")}
               />
+              {errors.title?.message && (
+                <p className="text-xs text-destructive">{errors.title.message}</p>
+              )}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">
+              <label htmlFor="doc-source-url" className="text-sm font-medium">
                 Source URL <span className="text-destructive">*</span>
               </label>
+              {/* type="text" — Zod .url() handles validation; jsdom quirks with type="url" */}
               <Input
-                type="url"
+                id="doc-source-url"
+                type="text"
                 placeholder="https://raw.githubusercontent.com/.../README.md"
-                value={form.sourceUrl}
-                onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
-                required
+                {...register("sourceUrl")}
               />
+              {errors.sourceUrl?.message && (
+                <p className="text-xs text-destructive">{errors.sourceUrl.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="text-sm font-medium">
+              <label htmlFor="doc-component" className="text-sm font-medium">
                 Component <span className="text-destructive">*</span>
               </label>
               <select
+                id="doc-component"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background"
-                value={form.componentId}
-                onChange={(e) =>
-                  setForm({ ...form, componentId: e.target.value })
-                }
-                required
+                {...register("componentId")}
               >
                 <option value="">Select component...</option>
                 {components.map((c) => (
@@ -119,15 +146,16 @@ export function DocForm({
                   </option>
                 ))}
               </select>
+              {errors.componentId?.message && (
+                <p className="text-xs text-destructive">{errors.componentId.message}</p>
+              )}
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Parent Document</label>
+              <label htmlFor="doc-parent" className="text-sm font-medium">Parent Document</label>
               <select
+                id="doc-parent"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background"
-                value={form.parentId}
-                onChange={(e) =>
-                  setForm({ ...form, parentId: e.target.value })
-                }
+                {...register("parentId")}
               >
                 <option value="">(Root level)</option>
                 {flatNodes.map((n) => (
@@ -141,31 +169,32 @@ export function DocForm({
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
-              <label className="text-sm font-medium">
+              <label htmlFor="doc-author" className="text-sm font-medium">
                 Author <span className="text-destructive">*</span>
               </label>
               <Input
-                value={form.author}
-                onChange={(e) => setForm({ ...form, author: e.target.value })}
-                required
+                id="doc-author"
+                {...register("author")}
+              />
+              {errors.author?.message && (
+                <p className="text-xs text-destructive">{errors.author.message}</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="doc-version" className="text-sm font-medium">Version</label>
+              <Input
+                id="doc-version"
+                {...register("version")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Version</label>
+              <label htmlFor="doc-order" className="text-sm font-medium">Sort Order</label>
+              {/* valueAsNumber tells RHF to convert the HTML string value to a number */}
               <Input
-                value={form.version}
-                onChange={(e) => setForm({ ...form, version: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Sort Order</label>
-              <Input
+                id="doc-order"
                 type="number"
                 min={0}
-                value={form.order}
-                onChange={(e) =>
-                  setForm({ ...form, order: parseInt(e.target.value, 10) || 0 })
-                }
+                {...register("order", { valueAsNumber: true })}
               />
             </div>
           </div>

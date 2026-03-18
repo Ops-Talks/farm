@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { teams, ApiError } from "@/lib/api-client";
@@ -16,54 +18,67 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+const newTeamSchema = z.object({
+  name: z.string().min(1, "Name (slug) is required"),
+  displayName: z.string().min(1, "Display Name is required"),
+  description: z.string().optional(),
+  type: z.nativeEnum(TeamType),
+  // Refine keeps a plain string type — empty string is allowed (becomes undefined
+  // in the API payload), non-empty strings must be valid email addresses.
+  contactEmail: z.string().refine(
+    (v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    { message: "Invalid email address" },
+  ),
+  slackChannel: z.string().optional(),
+});
+
+type NewTeamFormValues = z.infer<typeof newTeamSchema>;
+
 const TEAM_TYPES = Object.values(TeamType);
 
 export function NewTeamClient() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    name: "",
-    displayName: "",
-    description: "",
-    type: TeamType.DEV as TeamType,
-    contactEmail: "",
-    slackChannel: "",
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<NewTeamFormValues>({
+    resolver: zodResolver(newTeamSchema),
+    defaultValues: {
+      name: "",
+      displayName: "",
+      description: "",
+      type: TeamType.DEV,
+      contactEmail: "",
+      slackChannel: "",
+    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!form.name.trim() || !form.displayName.trim()) {
-      setError("Name and Display Name are required.");
-      return;
+  const onSubmit = async (values: NewTeamFormValues) => {
+    try {
+      const created = await teams.create({
+        name: values.name.trim(),
+        displayName: values.displayName.trim(),
+        description: values.description?.trim() || undefined,
+        type: values.type,
+        contactEmail: values.contactEmail?.trim() || undefined,
+        slackChannel: values.slackChannel?.trim() || undefined,
+      });
+      toast.success(`Team "${created.displayName}" created`);
+      router.push(`/teams/${created.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const msg = err.body.message;
+        setError("root", { message: Array.isArray(msg) ? msg.join(", ") : msg });
+      } else {
+        setError("root", { message: "An unexpected error occurred." });
+      }
     }
-
-    setSaving(true);
-    teams
-      .create({
-        name: form.name.trim(),
-        displayName: form.displayName.trim(),
-        description: form.description.trim() || undefined,
-        type: form.type,
-        contactEmail: form.contactEmail.trim() || undefined,
-        slackChannel: form.slackChannel.trim() || undefined,
-      })
-      .then((created) => {
-        toast.success(`Team "${created.displayName}" created`);
-        router.push(`/teams/${created.id}`);
-      })
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          const msg = err.body.message;
-          setError(Array.isArray(msg) ? msg.join(", ") : msg);
-        } else {
-          setError("An unexpected error occurred.");
-        }
-      })
-      .finally(() => setSaving(false));
   };
 
   return (
@@ -89,51 +104,51 @@ export function NewTeamClient() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {errors.root?.message && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {errors.root.message}
               </div>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-sm font-medium">
+                <label htmlFor="team-name" className="text-sm font-medium">
                   Name (slug) <span className="text-destructive">*</span>
                 </label>
                 <Input
+                  id="team-name"
                   placeholder="e.g. platform-core"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
+                  {...register("name")}
                 />
                 <p className="text-xs text-muted-foreground">
                   Unique identifier, lowercase with hyphens
                 </p>
+                {errors.name?.message && (
+                  <p className="text-xs text-destructive">{errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">
+                <label htmlFor="team-display-name" className="text-sm font-medium">
                   Display Name <span className="text-destructive">*</span>
                 </label>
                 <Input
+                  id="team-display-name"
                   placeholder="e.g. Platform Core Team"
-                  value={form.displayName}
-                  onChange={(e) =>
-                    setForm({ ...form, displayName: e.target.value })
-                  }
-                  required
+                  {...register("displayName")}
                 />
+                {errors.displayName?.message && (
+                  <p className="text-xs text-destructive">{errors.displayName.message}</p>
+                )}
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Type</label>
+              <label htmlFor="team-type" className="text-sm font-medium">Type</label>
               <select
+                id="team-type"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background"
-                value={form.type}
-                onChange={(e) =>
-                  setForm({ ...form, type: e.target.value as TeamType })
-                }
+                {...register("type")}
               >
                 {TEAM_TYPES.map((t) => (
                   <option key={t} value={t}>
@@ -144,37 +159,36 @@ export function NewTeamClient() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Description</label>
+              <label htmlFor="team-description" className="text-sm font-medium">Description</label>
               <textarea
+                id="team-description"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background min-h-[80px]"
                 placeholder="Brief description of the team's responsibilities"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                {...register("description")}
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-sm font-medium">Contact Email</label>
+                <label htmlFor="team-contact-email" className="text-sm font-medium">Contact Email</label>
+                {/* type="text" — Zod .refine() validates the email format; avoids
+                    jsdom/userEvent quirks specific to type="email" inputs */}
                 <Input
-                  type="email"
+                  id="team-contact-email"
+                  type="text"
                   placeholder="team@company.com"
-                  value={form.contactEmail}
-                  onChange={(e) =>
-                    setForm({ ...form, contactEmail: e.target.value })
-                  }
+                  {...register("contactEmail")}
                 />
+                {errors.contactEmail?.message && (
+                  <p className="text-xs text-destructive">{errors.contactEmail.message}</p>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Slack Channel</label>
+                <label htmlFor="team-slack" className="text-sm font-medium">Slack Channel</label>
                 <Input
+                  id="team-slack"
                   placeholder="team-channel"
-                  value={form.slackChannel}
-                  onChange={(e) =>
-                    setForm({ ...form, slackChannel: e.target.value })
-                  }
+                  {...register("slackChannel")}
                 />
               </div>
             </div>
@@ -185,8 +199,8 @@ export function NewTeamClient() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={saving}>
-                {saving ? "Creating..." : "Create Team"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Team"}
               </Button>
             </div>
           </form>

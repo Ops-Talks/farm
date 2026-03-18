@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { organizations as orgsApi, ApiError } from "@/lib/api-client";
@@ -16,6 +18,16 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+const newOrgSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+});
+
+type NewOrgFormValues = z.infer<typeof newOrgSchema>;
+
 /** Converts a free-text name into a URL-safe slug (lowercase, hyphenated). */
 function toSlug(name: string): string {
   return name
@@ -29,44 +41,40 @@ export function NewOrgClient() {
   const router = useRouter();
   const { refreshOrgs, switchOrg } = useOrganization();
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<NewOrgFormValues>({
+    resolver: zodResolver(newOrgSchema),
+    defaultValues: { name: "", description: "" },
+  });
 
-  const slug = toSlug(name);
+  // Derive the slug preview from the watched name field
+  const nameValue = watch("name");
+  const slug = toSlug(nameValue ?? "");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!name.trim()) {
-      setError("Name is required.");
-      return;
+  const onSubmit = async (values: NewOrgFormValues) => {
+    try {
+      const created = await orgsApi.create({
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
+      });
+      toast.success(`Organization "${created.name}" created`);
+      // Refresh the org list in context and switch to the newly created org
+      await refreshOrgs();
+      switchOrg(created);
+      router.push(`/organizations/${created.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const msg = err.body.message;
+        setError("root", { message: Array.isArray(msg) ? msg.join(", ") : msg });
+      } else {
+        setError("root", { message: "An unexpected error occurred. Please try again." });
+      }
     }
-
-    setSaving(true);
-    orgsApi
-      .create({
-        name: name.trim(),
-        description: description.trim() || undefined,
-      })
-      .then(async (created) => {
-        toast.success(`Organization "${created.name}" created`);
-        // Refresh the org list in context and switch to the newly created org
-        await refreshOrgs();
-        switchOrg(created);
-        router.push(`/organizations/${created.id}`);
-      })
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          const msg = err.body.message;
-          setError(Array.isArray(msg) ? msg.join(", ") : msg);
-        } else {
-          setError("An unexpected error occurred. Please try again.");
-        }
-      })
-      .finally(() => setSaving(false));
   };
 
   return (
@@ -94,10 +102,10 @@ export function NewOrgClient() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {errors.root?.message && (
               <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {errors.root.message}
               </div>
             )}
 
@@ -112,14 +120,15 @@ export function NewOrgClient() {
               <Input
                 id="org-name"
                 placeholder="e.g. Acme Engineering"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
                 autoFocus
+                {...register("name")}
               />
+              {errors.name?.message && (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              )}
             </div>
 
-            {/* Slug preview (read-only) */}
+            {/* Slug preview (read-only, derived from name) */}
             <div className="space-y-1.5">
               <label
                 htmlFor="org-slug"
@@ -158,8 +167,7 @@ export function NewOrgClient() {
                 id="org-description"
                 className="min-h-[80px] w-full rounded-md border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 placeholder="Brief description of what this organization does"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register("description")}
               />
             </div>
 
@@ -169,8 +177,9 @@ export function NewOrgClient() {
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" disabled={saving || !name.trim()}>
-                {saving ? "Creating…" : "Create Organization"}
+              {/* isSubmitting disables the button while the API call is in flight */}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating…" : "Create Organization"}
               </Button>
             </div>
           </form>

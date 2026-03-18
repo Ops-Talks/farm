@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,30 +11,39 @@ import { useAuth } from "@/contexts/auth-context";
 import { ApiError } from "@/lib/api-client";
 import { Github } from "lucide-react";
 
+// ---------------------------------------------------------------------------
+// Zod schema — both fields are required
+// ---------------------------------------------------------------------------
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 export default function LoginPage() {
   const { login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
 
+  const onSubmit = async (values: LoginFormValues) => {
     try {
-      await login(username, password);
+      await login(values.username, values.password);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        setError("root", { message: err.message });
       } else {
-        setError("An unexpected error occurred");
+        setError("root", { message: "An unexpected error occurred" });
       }
-    } finally {
-      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -42,10 +53,11 @@ export default function LoginPage() {
           <CardDescription>Sign in to the developer portal</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && (
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            {/* Root-level error from the API */}
+            {errors.root?.message && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {errors.root.message}
               </div>
             )}
             <div className="flex flex-col gap-2">
@@ -55,12 +67,13 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
-                required
                 autoFocus
+                {...register("username")}
               />
+              {errors.username?.message && (
+                <p className="text-xs text-destructive">{errors.username.message}</p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="password" className="text-sm font-medium">
@@ -69,14 +82,16 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                required
+                {...register("password")}
               />
+              {errors.password?.message && (
+                <p className="text-xs text-destructive">{errors.password.message}</p>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            {/* isSubmitting drives both disabled state and button label */}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 

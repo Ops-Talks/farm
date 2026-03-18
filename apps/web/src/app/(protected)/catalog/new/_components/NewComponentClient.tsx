@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -20,87 +23,122 @@ type FormTab = "form" | "yaml";
 const KIND_OPTIONS = Object.values(ComponentKind);
 const LIFECYCLE_OPTIONS = Object.values(ComponentLifecycle);
 
+// ---------------------------------------------------------------------------
+// Schemas
+// ---------------------------------------------------------------------------
+const componentFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  owner: z.string().min(1, "Owner is required"),
+  kind: z.nativeEnum(ComponentKind),
+  lifecycle: z.nativeEnum(ComponentLifecycle),
+  description: z.string().optional(),
+  // Refine keeps a plain string type — empty value is allowed, non-empty must
+  // be a valid URL.  Avoids ZodUnion edge-cases with @hookform/resolvers.
+  repositoryUrl: z.string().refine(
+    (v) => !v || (() => { try { new URL(v); return true; } catch { return false; } })(),
+    { message: "Must be a valid URL" },
+  ),
+  tagsInput: z.string().optional(),
+});
+
+const yamlFormSchema = z.object({
+  yaml: z.string().min(1, "YAML content is required"),
+});
+
+type ComponentFormValues = z.infer<typeof componentFormSchema>;
+type YamlFormValues = z.infer<typeof yamlFormSchema>;
+
 export function NewComponentClient() {
   const router = useRouter();
   const [tab, setTab] = useState<FormTab>("form");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Form fields
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<ComponentKind>(ComponentKind.SERVICE);
-  const [description, setDescription] = useState("");
-  const [owner, setOwner] = useState("");
-  const [lifecycle, setLifecycle] = useState<ComponentLifecycle>(
-    ComponentLifecycle.EXPERIMENTAL,
-  );
-  const [tagsInput, setTagsInput] = useState("");
-  const [repositoryUrl, setRepositoryUrl] = useState("");
+  // --- Interactive form ---
+  const {
+    register: registerForm,
+    handleSubmit: handleFormSubmit,
+    watch: watchForm,
+    setError: setFormError,
+    formState: { errors: formErrors, isSubmitting: formSubmitting },
+  } = useForm<ComponentFormValues>({
+    resolver: zodResolver(componentFormSchema),
+    defaultValues: {
+      name: "",
+      owner: "",
+      kind: ComponentKind.SERVICE,
+      lifecycle: ComponentLifecycle.EXPERIMENTAL,
+      description: "",
+      repositoryUrl: "",
+      tagsInput: "",
+    },
+  });
 
-  // YAML field
-  const [yaml, setYaml] = useState("");
+  // Watch tagsInput to render live badge preview
+  const tagsInputValue = watchForm("tagsInput") ?? "";
 
-  async function handleFormSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  // --- YAML form ---
+  const {
+    register: registerYaml,
+    handleSubmit: handleYamlSubmit,
+    setError: setYamlError,
+    formState: { errors: yamlErrors, isSubmitting: yamlSubmitting },
+  } = useForm<YamlFormValues>({
+    resolver: zodResolver(yamlFormSchema),
+    defaultValues: { yaml: "" },
+  });
 
+  const onFormSubmit = async (values: ComponentFormValues) => {
     try {
-      const tags = tagsInput
+      const tags = (values.tagsInput ?? "")
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
 
       const created = await catalog.createComponent({
-        name,
-        kind,
-        description: description || undefined,
-        owner,
-        lifecycle,
+        name: values.name,
+        kind: values.kind,
+        description: values.description || undefined,
+        owner: values.owner,
+        lifecycle: values.lifecycle,
         tags: tags.length > 0 ? tags : undefined,
-        repositoryUrl: repositoryUrl.trim() || undefined,
+        repositoryUrl: values.repositoryUrl?.trim() || undefined,
       });
 
       toast.success(`Component "${created.name}" registered`);
       router.push(`/catalog/${created.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(
-          Array.isArray(err.body.message)
+        setFormError("root", {
+          message: Array.isArray(err.body.message)
             ? err.body.message.join(", ")
             : err.body.message,
-        );
+        });
       } else {
-        setError("An unexpected error occurred");
+        setFormError("root", { message: "An unexpected error occurred" });
       }
-    } finally {
-      setLoading(false);
     }
-  }
+  };
 
-  async function handleYamlSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
+  const onYamlSubmit = async (values: YamlFormValues) => {
     try {
-      const created = await catalog.registerYaml(yaml);
+      const created = await catalog.registerYaml(values.yaml);
       toast.success(`Component "${created.name}" registered from YAML`);
       router.push(`/catalog/${created.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(
-          Array.isArray(err.body.message)
+        setYamlError("root", {
+          message: Array.isArray(err.body.message)
             ? err.body.message.join(", ")
             : err.body.message,
-        );
+        });
       } else {
-        setError("An unexpected error occurred");
+        setYamlError("root", { message: "An unexpected error occurred" });
       }
-    } finally {
-      setLoading(false);
     }
-  }
+  };
+
+  // Unified loading / error for the currently visible tab
+  const loading = tab === "form" ? formSubmitting : yamlSubmitting;
+  const rootError = tab === "form" ? formErrors.root?.message : yamlErrors.root?.message;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
@@ -133,9 +171,9 @@ export function NewComponentClient() {
         </Button>
       </div>
 
-      {error && (
+      {rootError && (
         <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive flex items-center gap-2">
-          <span className="font-bold">Error:</span> {error}
+          <span className="font-bold">Error:</span> {rootError}
         </div>
       )}
 
@@ -147,43 +185,44 @@ export function NewComponentClient() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleFormSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleFormSubmit(onFormSubmit)} className="flex flex-col gap-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-semibold">
+                  <label htmlFor="comp-name" className="text-sm font-semibold">
                     Name <span className="text-destructive">*</span>
                   </label>
                   <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    id="comp-name"
                     placeholder="e.g. user-service"
-                    required
+                    {...registerForm("name")}
                   />
+                  {formErrors.name?.message && (
+                    <p className="text-xs text-destructive">{formErrors.name.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="owner" className="text-sm font-semibold">
+                  <label htmlFor="comp-owner" className="text-sm font-semibold">
                     Owner <span className="text-destructive">*</span>
                   </label>
                   <Input
-                    id="owner"
-                    value={owner}
-                    onChange={(e) => setOwner(e.target.value)}
+                    id="comp-owner"
                     placeholder="e.g. platform-team"
-                    required
+                    {...registerForm("owner")}
                   />
+                  {formErrors.owner?.message && (
+                    <p className="text-xs text-destructive">{formErrors.owner.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="kind" className="text-sm font-semibold">
+                  <label htmlFor="comp-kind" className="text-sm font-semibold">
                     Kind
                   </label>
                   <select
-                    id="kind"
-                    value={kind}
-                    onChange={(e) => setKind(e.target.value as ComponentKind)}
+                    id="comp-kind"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...registerForm("kind")}
                   >
                     {KIND_OPTIONS.map((k) => (
                       <option key={k} value={k}>
@@ -194,16 +233,13 @@ export function NewComponentClient() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="lifecycle" className="text-sm font-semibold">
+                  <label htmlFor="comp-lifecycle" className="text-sm font-semibold">
                     Lifecycle
                   </label>
                   <select
-                    id="lifecycle"
-                    value={lifecycle}
-                    onChange={(e) =>
-                      setLifecycle(e.target.value as ComponentLifecycle)
-                    }
+                    id="comp-lifecycle"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    {...registerForm("lifecycle")}
                   >
                     {LIFECYCLE_OPTIONS.map((l) => (
                       <option key={l} value={l}>
@@ -215,46 +251,48 @@ export function NewComponentClient() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-semibold">
+                <label htmlFor="comp-description" className="text-sm font-semibold">
                   Description
                 </label>
                 <Input
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  id="comp-description"
                   placeholder="Brief description of the component's purpose"
+                  {...registerForm("description")}
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="repositoryUrl" className="text-sm font-semibold">
+                <label htmlFor="comp-repo-url" className="text-sm font-semibold">
                   Repository URL
                 </label>
+                {/* type="text" — Zod .refine() validates the URL; avoids jsdom/userEvent
+                    quirks specific to type="url" inputs in tests */}
                 <Input
-                  id="repositoryUrl"
-                  type="url"
-                  value={repositoryUrl}
-                  onChange={(e) => setRepositoryUrl(e.target.value)}
+                  id="comp-repo-url"
+                  type="text"
                   placeholder="e.g. https://github.com/org/repo"
+                  {...registerForm("repositoryUrl")}
                 />
+                {formErrors.repositoryUrl?.message && (
+                  <p className="text-xs text-destructive">{formErrors.repositoryUrl.message}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Optional. Must be a valid URL (GitHub, GitLab, etc.).
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="tags" className="text-sm font-semibold">
+                <label htmlFor="comp-tags" className="text-sm font-semibold">
                   Tags
                 </label>
                 <Input
-                  id="tags"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
+                  id="comp-tags"
                   placeholder="Comma-separated values, e.g. production, critical, internal"
+                  {...registerForm("tagsInput")}
                 />
-                {tagsInput && (
+                {tagsInputValue && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {tagsInput
+                    {tagsInputValue
                       .split(",")
                       .map((t) => t.trim())
                       .filter(Boolean)
@@ -287,16 +325,13 @@ export function NewComponentClient() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleYamlSubmit} className="flex flex-col gap-6">
+            <form onSubmit={handleYamlSubmit(onYamlSubmit)} className="flex flex-col gap-6">
               <div className="space-y-2">
-                <label htmlFor="yaml" className="text-sm font-semibold">
+                <label htmlFor="comp-yaml" className="text-sm font-semibold">
                   Catalog YAML <span className="text-destructive">*</span>
                 </label>
                 <textarea
-                  id="yaml"
-                  value={yaml}
-                  onChange={(e) => setYaml(e.target.value)}
-                  required
+                  id="comp-yaml"
                   rows={14}
                   className="flex w-full rounded-md border border-input bg-muted/30 px-3 py-3 font-mono text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   placeholder={`apiVersion: farm.io/v1alpha1
@@ -311,11 +346,15 @@ spec:
   type: service
   owner: platform-team
   lifecycle: production`}
+                  {...registerYaml("yaml")}
                 />
+                {yamlErrors.yaml?.message && (
+                  <p className="text-xs text-destructive">{yamlErrors.yaml.message}</p>
+                )}
               </div>
 
               <div className="pt-4 border-t">
-                <Button type="submit" className="w-full sm:w-auto" disabled={loading || !yaml.trim()}>
+                <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
                   {loading ? "Importing..." : "Import from YAML"}
                 </Button>
               </div>

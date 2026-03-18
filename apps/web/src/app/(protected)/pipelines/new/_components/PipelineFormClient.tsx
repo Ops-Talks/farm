@@ -1,5 +1,8 @@
 "use client";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -17,43 +20,49 @@ import {
 import { StageBuilder } from "@/app/(protected)/pipelines/_components/stage-builder";
 import type { PipelineStage } from "@/types/api";
 
+// ---------------------------------------------------------------------------
+// Schema — stages are managed via StageBuilder (not a form field)
+// ---------------------------------------------------------------------------
+const pipelineFormSchema = z.object({
+  name: z.string().min(1, "Pipeline name is required"),
+  description: z.string().optional(),
+});
+
+type PipelineFormValues = z.infer<typeof pipelineFormSchema>;
+
 export function PipelineFormClient() {
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  // stages are controlled outside RHF because StageBuilder has its own
+  // drag-and-drop logic; they are passed directly to the API on submit.
   const [stages, setStages] = useState<PipelineStage[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<PipelineFormValues>({
+    resolver: zodResolver(pipelineFormSchema),
+    defaultValues: { name: "", description: "" },
+  });
 
-    if (!name.trim()) {
-      setError("Pipeline name is required.");
-      return;
-    }
-
-    setSaving(true);
-    pipelinesApi
-      .create({
-        name: name.trim(),
-        description: description.trim() || undefined,
+  const onSubmit = async (values: PipelineFormValues) => {
+    try {
+      const created = await pipelinesApi.create({
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
         stages,
-      })
-      .then((created) => {
-        toast.success(`Pipeline "${created.name}" created`);
-        router.push(`/pipelines/${created.id}`);
-      })
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          const msg = err.body.message;
-          setError(Array.isArray(msg) ? msg.join(", ") : msg);
-        } else {
-          setError("An unexpected error occurred.");
-        }
-      })
-      .finally(() => setSaving(false));
+      });
+      toast.success(`Pipeline "${created.name}" created`);
+      router.push(`/pipelines/${created.id}`);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const msg = err.body.message;
+        setError("root", { message: Array.isArray(msg) ? msg.join(", ") : msg });
+      } else {
+        setError("root", { message: "An unexpected error occurred." });
+      }
+    }
   };
 
   return (
@@ -72,10 +81,10 @@ export function PipelineFormClient() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {error && (
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {errors.root?.message && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            {errors.root.message}
           </div>
         )}
 
@@ -94,10 +103,11 @@ export function PipelineFormClient() {
               <Input
                 id="pipeline-name"
                 placeholder="e.g. deploy-production"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                {...register("name")}
               />
+              {errors.name?.message && (
+                <p className="text-xs text-destructive">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-1">
               <label htmlFor="pipeline-description" className="text-sm font-medium">
@@ -107,8 +117,7 @@ export function PipelineFormClient() {
                 id="pipeline-description"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background min-h-[80px]"
                 placeholder="Brief description of what this pipeline does"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register("description")}
               />
             </div>
           </CardContent>
@@ -132,8 +141,8 @@ export function PipelineFormClient() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={saving}>
-            {saving ? "Creating…" : "Create Pipeline"}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating…" : "Create Pipeline"}
           </Button>
         </div>
       </form>
