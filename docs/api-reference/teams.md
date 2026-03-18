@@ -10,15 +10,15 @@ The Teams API manages team ownership and membership within the Farm platform.
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `POST` | `/teams` | Create a new team | Admin |
-| `GET` | `/teams` | List all teams | User |
-| `GET` | `/teams/:id` | Get team by ID | User |
-| `PATCH` | `/teams/:id` | Update a team | Admin |
-| `DELETE` | `/teams/:id` | Delete a team | Admin |
-| `POST` | `/teams/:id/members/:userId` | Add member to team | Admin |
-| `DELETE` | `/teams/:id/members/:userId` | Remove member from team | Admin |
-| `GET` | `/teams/:id/members` | List team members | User |
-| `GET` | `/teams/:id/components` | List team's components | User |
+| `POST` | `/api/v1/teams` | Create a new team | Admin |
+| `GET` | `/api/v1/teams` | List all teams | User |
+| `GET` | `/api/v1/teams/:id` | Get team by ID | User |
+| `PATCH` | `/api/v1/teams/:id` | Update a team | Admin |
+| `DELETE` | `/api/v1/teams/:id` | Delete a team | Admin |
+| `POST` | `/api/v1/teams/:id/members/:userId` | Add member to team | Admin |
+| `DELETE` | `/api/v1/teams/:id/members/:userId` | Remove member from team | Admin |
+| `GET` | `/api/v1/teams/:id/members` | List team members | User |
+| `GET` | `/api/v1/teams/:id/components` | List team's components | User |
 
 ## Team Types
 
