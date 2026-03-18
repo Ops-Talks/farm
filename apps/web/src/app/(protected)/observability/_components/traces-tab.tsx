@@ -7,7 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { JaegerTrace } from "@/types/api";
-import { TraceWaterfall } from "./trace-waterfall";
+// TraceWaterfall: 221 lines of SVG-based span-tree rendering — only mounted
+// when the user expands an individual trace row, so we defer its bundle.
+import dynamic from "next/dynamic";
+
+const TraceWaterfall = dynamic(
+  () =>
+    import("./trace-waterfall").then((m) => ({ default: m.TraceWaterfall })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md mt-2" />
+    ),
+  },
+);
 
 const TIME_RANGES = [
   { label: "15m", value: "1000" },
