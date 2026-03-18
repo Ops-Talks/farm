@@ -31,6 +31,7 @@ import { AlertingModule } from "./modules/alerting/alerting.module";
 import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { KubernetesModule } from "./modules/kubernetes/kubernetes.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
+import { HelmModule } from "./modules/helm/helm.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -218,6 +219,14 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Catalog analytics, DORA metrics, and usage reports",
         },
         module: AnalyticsModule,
+      },
+      {
+        metadata: {
+          name: "core-helm",
+          version: "1.0.0",
+          description: "Helm chart integration and release discovery",
+        },
+        module: HelmModule,
       },
     ]),
   ],

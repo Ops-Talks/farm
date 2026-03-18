@@ -39,6 +39,14 @@ const componentFormSchema = z.object({
     { message: "Must be a valid URL" },
   ),
   tagsInput: z.string().optional(),
+  // Optional Helm chart configuration (FARM-E36).
+  // All sub-fields are optional; the entire block is omitted when repo is empty.
+  helmChart: z.object({
+    repo: z.string().optional(),
+    chart: z.string().optional(),
+    version: z.string().optional(),
+    valuesRef: z.string().optional(),
+  }).optional(),
 });
 
 const yamlFormSchema = z.object({
@@ -69,6 +77,12 @@ export function NewComponentClient() {
       description: "",
       repositoryUrl: "",
       tagsInput: "",
+      helmChart: {
+        repo: "",
+        chart: "",
+        version: "",
+        valuesRef: "",
+      },
     },
   });
 
@@ -93,6 +107,17 @@ export function NewComponentClient() {
         .map((t) => t.trim())
         .filter(Boolean);
 
+      // Only include helmChart when at least the repo is provided.
+      const helmChart =
+        values.helmChart?.repo?.trim()
+          ? {
+              repo: values.helmChart.repo.trim(),
+              chart: values.helmChart.chart?.trim() || "",
+              version: values.helmChart.version?.trim() || undefined,
+              valuesRef: values.helmChart.valuesRef?.trim() || undefined,
+            }
+          : undefined;
+
       const created = await catalog.createComponent({
         name: values.name,
         kind: values.kind,
@@ -101,6 +126,7 @@ export function NewComponentClient() {
         lifecycle: values.lifecycle,
         tags: tags.length > 0 ? tags : undefined,
         repositoryUrl: values.repositoryUrl?.trim() || undefined,
+        helmChart,
       });
 
       toast.success(`Component "${created.name}" registered`);
@@ -307,6 +333,61 @@ export function NewComponentClient() {
                       ))}
                   </div>
                 )}
+              </div>
+
+              {/* ── Helm Chart section (optional, FARM-E36) ─────────────── */}
+              <div className="pt-4 border-t space-y-4">
+                <div>
+                  <p className="text-sm font-semibold">Helm Chart</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Optional. Fill in Repo and Chart to attach a Helm chart configuration.
+                  </p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="helm-repo" className="text-sm font-medium">
+                      Helm Repo URL
+                    </label>
+                    <Input
+                      id="helm-repo"
+                      placeholder="e.g. https://charts.bitnami.com/bitnami"
+                      {...registerForm("helmChart.repo")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="helm-chart" className="text-sm font-medium">
+                      Chart Name
+                    </label>
+                    <Input
+                      id="helm-chart"
+                      placeholder="e.g. nginx"
+                      {...registerForm("helmChart.chart")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="helm-version" className="text-sm font-medium">
+                      Chart Version
+                    </label>
+                    <Input
+                      id="helm-version"
+                      placeholder="e.g. 15.1.0"
+                      {...registerForm("helmChart.version")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="helm-values-ref" className="text-sm font-medium">
+                      Values Ref
+                    </label>
+                    <Input
+                      id="helm-values-ref"
+                      placeholder="e.g. configmap/nginx-values"
+                      {...registerForm("helmChart.valuesRef")}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="pt-4 border-t">

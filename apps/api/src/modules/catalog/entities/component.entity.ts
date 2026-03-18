@@ -98,6 +98,21 @@ export enum ComponentLifecycle {
 }
 
 /**
+ * Helm chart metadata attached to a catalog component.
+ * Used to associate a component with its Helm chart deployment artifact.
+ */
+export interface HelmChartMetadata {
+  /** Helm repository URL, e.g. "https://charts.bitnami.com/bitnami" */
+  repo?: string;
+  /** Chart name, e.g. "postgresql" */
+  chart?: string;
+  /** Pinned chart version, e.g. "12.1.0" */
+  version?: string;
+  /** URL or Kubernetes Secret name referencing the values file */
+  valuesRef?: string;
+}
+
+/**
  * Represents an external link associated with a component.
  */
 export class ComponentLink {
@@ -199,6 +214,19 @@ export class Component {
   })
   @Column("simple-json", { nullable: true })
   metadata: Record<string, unknown>;
+
+  @ApiProperty({
+    example: {
+      repo: "https://charts.bitnami.com/bitnami",
+      chart: "postgresql",
+      version: "12.1.0",
+    },
+    description: "Helm chart metadata for this component",
+    required: false,
+    nullable: true,
+  })
+  @Column("simple-json", { nullable: true })
+  helmChart: HelmChartMetadata | null;
 
   @ApiProperty({
     type: () => [Component],

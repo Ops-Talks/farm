@@ -8,6 +8,7 @@ import {
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { Pipeline, PipelineStage } from "./entities/pipeline.entity";
 import { EventsGateway } from "../../common/events/events.gateway";
+import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
 
 /**
  * Helper that builds a minimal PipelineRun object for test fixtures.
@@ -542,4 +543,164 @@ describe("PipelineProcessor", () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Scenario 9 — Helm deploy stage dispatch (FARM-S138)
+  // ---------------------------------------------------------------------------
+
+  describe("Helm deploy stage dispatch", () => {
+    let mockHelmDeployExecutor: jest.Mocked<HelmDeployExecutor>;
+
+    const helmDeployStage: PipelineStage = {
+      id: "stage-helm-1",
+      name: "Helm Deploy",
+      type: "deploy",
+      config: {
+        engine: "helm",
+        releaseName: "my-app",
+        chart: "bitnami/postgresql",
+        namespace: "production",
+      } as unknown as Record<string, unknown>,
+      order: 1,
+    };
+
+    beforeEach(async () => {
+      mockHelmDeployExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "deployed" }),
+        isHelmAvailable: jest.fn().mockResolvedValue(true),
+        buildCommand: jest.fn().mockReturnValue("helm upgrade --install ..."),
+      } as unknown as jest.Mocked<HelmDeployExecutor>;
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: HelmDeployExecutor, useValue: mockHelmDeployExecutor },
+        ],
+      }).compile();
+
+      processor = module.get<PipelineProcessor>(PipelineProcessor);
+    });
+
+    it("should dispatch deploy stage with engine=helm to HelmDeployExecutor", async () => {
+      const run = buildRun();
+      const pipeline = buildPipeline([helmDeployStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const job = buildJob({
+        pipelineId: "pipeline-uuid-1",
+        runId: "run-uuid-1",
+        triggeredBy: "user-uuid-1",
+      });
+
+      await processor.process(job);
+
+      expect(mockHelmDeployExecutor.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ engine: "helm", releaseName: "my-app" }),
+        expect.any(Function),
+      );
+    });
+
+    it("should mark stage as succeeded when HelmDeployExecutor returns success=true", async () => {
+      mockHelmDeployExecutor.execute.mockResolvedValue({
+        success: true,
+        output: "Release my-app deployed",
+      });
+
+      const run = buildRun();
+      const pipeline = buildPipeline([helmDeployStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await processor.process(job(run));
+
+      const saveCalls = mockRunRepo.save.mock.calls as [PipelineRun][][];
+      const savedRun = saveCalls.find(
+        (call) => call[0].status === PipelineRunStatus.SUCCEEDED,
+      )?.[0] as PipelineRun | undefined;
+      expect(savedRun?.stageResults?.[0]?.status).toBe("succeeded");
+    });
+
+    it("should mark stage as failed when HelmDeployExecutor returns success=false", async () => {
+      mockHelmDeployExecutor.execute.mockResolvedValue({
+        success: false,
+        output: "Error: chart not found",
+      });
+
+      const run = buildRun();
+      const pipeline = buildPipeline([helmDeployStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await processor.process(job(run));
+
+      // Run should be FAILED because a stage failed.
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((call) => call[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+    });
+
+    it("should fall back to simulation when HelmDeployExecutor is not provided", async () => {
+      // Rebuild processor WITHOUT the HelmDeployExecutor provider.
+      const moduleNoHelm: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const processorNoHelm =
+        moduleNoHelm.get<PipelineProcessor>(PipelineProcessor);
+
+      const run = buildRun();
+      const pipeline = buildPipeline([helmDeployStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = processorNoHelm.process(job(run));
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      // Should succeed via simulation path.
+      const succeededSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((call) => call[0].status === PipelineRunStatus.SUCCEEDED);
+      expect(succeededSave).toBeDefined();
+    });
+  });
 });
+
+/**
+ * Builds a minimal Job fixture bound to a given run.
+ */
+function job(run: PipelineRun): Job<PipelineExecutionJobData> {
+  return buildJob({
+    pipelineId: run.pipelineId,
+    runId: run.id,
+    triggeredBy: run.triggeredBy,
+  });
+}

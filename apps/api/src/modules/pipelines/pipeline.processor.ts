@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
-import { Logger } from "@nestjs/common";
+import { Logger, Optional } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Job } from "bullmq";
@@ -12,6 +12,10 @@ import {
   StageResult,
 } from "./entities/pipeline-run.entity";
 import { Pipeline } from "./entities/pipeline.entity";
+import {
+  HelmDeployExecutor,
+  HelmDeployConfig,
+} from "../helm/helm-deploy.executor";
 
 /**
  * Job payload for a pipeline execution task.
@@ -41,6 +45,7 @@ export class PipelineProcessor extends WorkerHost {
     @InjectRepository(Pipeline)
     private readonly pipelineRepository: Repository<Pipeline>,
     private readonly eventsGateway: EventsGateway,
+    @Optional() private readonly helmDeployExecutor?: HelmDeployExecutor,
   ) {
     super();
   }
@@ -125,9 +130,6 @@ export class PipelineProcessor extends WorkerHost {
           `Starting stage "${stage.name}" (type: ${stage.type})`,
         );
 
-        // Simulate work
-        await new Promise<void>((resolve) => setTimeout(resolve, 500));
-
         if (stage.type === "approval") {
           stageResult.status = "waiting_approval";
           stageResult.finishedAt = new Date().toISOString();
@@ -147,13 +149,43 @@ export class PipelineProcessor extends WorkerHost {
           return;
         }
 
-        stageResult.status = "succeeded";
-        stageResult.finishedAt = new Date().toISOString();
-        stageResult.output = `Stage "${stage.name}" completed successfully`;
+        // Dispatch deploy stages with engine=helm to the HelmDeployExecutor.
+        if (
+          stage.type === "deploy" &&
+          stage.config?.engine === "helm" &&
+          this.helmDeployExecutor
+        ) {
+          const helmConfig = stage.config as unknown as HelmDeployConfig;
+          const result = await this.helmDeployExecutor.execute(
+            helmConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else {
+          // Simulate work for all other stage types.
+          await new Promise<void>((resolve) => setTimeout(resolve, 500));
+          stageResult.status = "succeeded";
+          stageResult.output = `Stage "${stage.name}" completed successfully`;
+        }
 
+        stageResult.finishedAt = new Date().toISOString();
         run.stageResults = [...(run.stageResults ?? []), stageResult];
 
-        this.emitLog(runId, stage.name, `Stage "${stage.name}" succeeded`);
+        this.emitLog(
+          runId,
+          stage.name,
+          `Stage "${stage.name}" ${stageResult.status}`,
+        );
+
+        // Abort the run immediately if any non-approval stage has failed.
+        if (stageResult.status === "failed") {
+          await this.failRun(
+            run,
+            `Stage "${stage.name}" failed: ${stageResult.output ?? "unknown error"}`,
+          );
+          return;
+        }
       }
 
       run.status = PipelineRunStatus.SUCCEEDED;

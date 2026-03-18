@@ -6,12 +6,56 @@ import {
   IsUUID,
   IsArray,
   IsObject,
+  ValidateNested,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 import {
   ComponentKind,
   ComponentLifecycle,
+  HelmChartMetadata,
 } from "../entities/component.entity";
+
+/**
+ * Data Transfer Object for the optional Helm chart metadata nested in a component.
+ */
+export class HelmChartMetadataDto implements HelmChartMetadata {
+  @ApiProperty({
+    example: "https://charts.bitnami.com/bitnami",
+    description: "Helm repository URL",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  repo?: string;
+
+  @ApiProperty({
+    example: "postgresql",
+    description: "Helm chart name",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  chart?: string;
+
+  @ApiProperty({
+    example: "12.1.0",
+    description: "Pinned chart version",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  version?: string;
+
+  @ApiProperty({
+    example: "my-values-secret",
+    description: "URL or Kubernetes Secret name referencing a values file",
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  valuesRef?: string;
+}
 
 /**
  * Data Transfer Object for creating a new component in the catalog.
@@ -84,6 +128,18 @@ export class CreateComponentDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  @ApiProperty({
+    type: HelmChartMetadataDto,
+    description: "Helm chart metadata for this component",
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => HelmChartMetadataDto)
+  helmChart?: HelmChartMetadata | null;
 
   @ApiProperty({
     example: ["550e8400-e29b-41d4-a716-446655440001"],

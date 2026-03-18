@@ -10,6 +10,7 @@ export enum FarmEvent {
   PIPELINE_RUN_UPDATED = "pipeline.run.updated",
   PIPELINE_LOG = "pipeline.log",
   AUDIT_LOG_CREATED = "audit-log.created",
+  ROLLOUT_UPDATED = "rollout.updated",
 }
 
 /**

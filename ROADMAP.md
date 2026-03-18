@@ -809,7 +809,7 @@ Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its
 
 ---
 
-### FARM-E36: Helm Integration `TODO`
+### FARM-E36: Helm Integration `DONE`
 
 > Track Helm chart metadata per component, import live Helm releases as deployments, and execute real `helm upgrade` operations from Farm pipelines.
 
@@ -821,9 +821,9 @@ Farm already has Kubernetes cluster discovery (FARM-S98), an Environments/Deploy
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S136 | Story | Add `helmChart` metadata to `Component` entity (`repo`, `chart`, `version`, `valuesRef`); expose field in catalog UI and `catalog-info.yaml` discovery | `TODO` |
-| FARM-S137 | Story | Helm release discovery: query `helm list` (via Kubernetes Secrets — Helm stores releases as Secrets) for connected clusters and import matching releases as `Deployment` records with `revision`, `chart version`, `app version`, `status` | `TODO` |
-| FARM-S138 | Story | Pipeline `deploy` stage real executor: when `config.engine = "helm"`, run `helm upgrade --install` against the target cluster using the configured chart, release name, and values file | `TODO` |
+| FARM-S136 | Story | Add `helmChart` metadata to `Component` entity (`repo`, `chart`, `version`, `valuesRef`); expose field in catalog UI and `catalog-info.yaml` discovery | `DONE` |
+| FARM-S137 | Story | Helm release discovery: query helm releases via Kubernetes Secrets and import as Deployment records | `DONE` |
+| FARM-S138 | Story | Pipeline `deploy` stage real executor: when `config.engine = "helm"`, run `helm upgrade --install` | `DONE` |
 
 #### Implementation Notes
 
@@ -833,7 +833,7 @@ Farm already has Kubernetes cluster discovery (FARM-S98), an Environments/Deploy
 
 ---
 
-### FARM-E37: Kubernetes Operator and CRD Discovery `TODO`
+### FARM-E37: Kubernetes Operator and CRD Discovery `DONE`
 
 > Ship a Farm Kubernetes Operator for auto-registering components via pod annotations, and enable discovery of resources managed by popular in-cluster Operators (Prometheus, Cert-Manager, Argo Rollouts, Strimzi).
 
@@ -845,9 +845,9 @@ Farm already syncs `catalog-info.yaml` files from URLs (Backstage-compatible dis
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S139 | Story | Farm Operator: Kubernetes controller (Go or operator-sdk) that watches `Deployment`/`StatefulSet`/`Service` annotations (`farm.io/component`, `farm.io/owner`, `farm.io/catalog-url`) and auto-registers or updates Components in the Farm Catalog via the internal API | `TODO` |
-| FARM-S140 | Story | CRD discovery: detect installed Operators in connected clusters and display their Custom Resources in the Component detail page (e.g., `ServiceMonitor`, `Certificate`, `KafkaTopic` scoped to the component's namespace/labels) | `TODO` |
-| FARM-S141 | Story | Argo Rollouts integration: display `Rollout` resource status (canary weight, bluegreen active/preview revision, analysis run results) in the Environments/Deployments view per component | `TODO` |
+| FARM-S139 | Story | Annotation auto-registration: watches Deployments/StatefulSets/Services for farm.io/* annotations and syncs to Farm catalog | `DONE` |
+| FARM-S140 | Story | CRD discovery: detect installed Operators in connected clusters and display Custom Resources in component detail | `DONE` |
+| FARM-S141 | Story | Argo Rollouts integration: display Rollout resource status (canary weight, bluegreen revisions, analysis runs) | `DONE` |
 
 #### Implementation Notes
 

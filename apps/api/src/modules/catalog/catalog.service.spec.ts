@@ -26,6 +26,7 @@ describe("CatalogService", () => {
     tags: ["test"],
     links: [],
     metadata: {},
+    helmChart: null,
     dependencies: [],
     createdAt: new Date(),
     updatedAt: new Date(),

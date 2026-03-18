@@ -41,6 +41,13 @@ interface CatalogInfoYaml {
     owner: string;
     lifecycle?: string;
     dependsOn?: string[];
+    /** Optional inline Helm chart configuration discovered from spec.helm */
+    helm?: {
+      repo?: string;
+      chart?: string;
+      version?: string;
+      valuesRef?: string;
+    };
     [key: string]: unknown;
   };
 }
@@ -152,6 +159,14 @@ export class CatalogService {
           (parsed.spec?.lifecycle as ComponentLifecycle) ||
           ComponentLifecycle.EXPERIMENTAL,
         metadata: (parsed.metadata as Record<string, unknown>) || {},
+        helmChart: parsed.spec?.helm
+          ? {
+              repo: parsed.spec.helm.repo,
+              chart: parsed.spec.helm.chart,
+              version: parsed.spec.helm.version,
+              valuesRef: parsed.spec.helm.valuesRef,
+            }
+          : null,
       };
 
       if (!dto.name || !dto.owner) {

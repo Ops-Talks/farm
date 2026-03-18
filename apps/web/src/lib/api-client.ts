@@ -9,9 +9,13 @@ import type {
   Environment,
   ErrorResponse,
   HealthStatus,
+  HelmRelease,
+  HelmSyncResult,
   JaegerTrace,
   JaegerTracesResponse,
   JobInfo,
+  KubernetesCRD,
+  KubernetesRollout,
   LokiLabelsResponse,
   LokiLogsResponse,
   LoginRequest,
@@ -883,5 +887,54 @@ export const analytics = {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(objectUrl);
+  },
+};
+
+// -- Helm API (FARM-E36) --
+
+export const helm = {
+  /**
+   * List Helm releases discovered from the cluster.
+   * Optionally filtered by Kubernetes namespace.
+   */
+  listReleases(namespace?: string): Promise<HelmRelease[]> {
+    return request<HelmRelease[]>(
+      `/v1/helm/releases${toQueryString(namespace ? { namespace } : {})}`,
+    );
+  },
+
+  /**
+   * Trigger a sync of Helm releases from the cluster.
+   * Returns a count of synced releases and any errors encountered.
+   */
+  syncReleases(): Promise<HelmSyncResult> {
+    return request<HelmSyncResult>("/v1/helm/releases/sync", { method: "POST" });
+  },
+};
+
+// -- Kubernetes API (FARM-E37) --
+
+export const kubernetes = {
+  /**
+   * List Custom Resource Definitions discovered in the cluster.
+   * Optionally filtered by API group.
+   */
+  listCRDs(group?: string): Promise<KubernetesCRD[]> {
+    return request<KubernetesCRD[]>(
+      group ? `/v1/kubernetes/crds/${encodeURIComponent(group)}` : "/v1/kubernetes/crds",
+    );
+  },
+
+  /**
+   * List Argo Rollout resources from the cluster.
+   * Optionally filtered by namespace and/or component ID.
+   */
+  listRollouts(params?: {
+    namespace?: string;
+    componentId?: string;
+  }): Promise<KubernetesRollout[]> {
+    return request<KubernetesRollout[]>(
+      `/v1/kubernetes/rollouts${toQueryString(params ?? {})}`,
+    );
   },
 };

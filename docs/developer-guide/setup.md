@@ -303,6 +303,7 @@ npm run start:debug
 | `OTEL_ENABLED` | `false` | Enable OpenTelemetry trace export |
 | `OTEL_EXPORTER_ENDPOINT` | `http://localhost:4318/v1/traces` | OTLP HTTP endpoint |
 | `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
+| `KUBECONFIG_PATH` | *(empty)* | Path to a kubeconfig file; leave empty to use in-cluster config (Kubernetes, Helm, and CRD features) |
 
 ### Frontend
 

@@ -33,6 +33,19 @@ export interface ComponentLink {
   icon?: string;
 }
 
+// -- Helm Chart configuration attached to a catalog component --
+
+export interface HelmChart {
+  /** Helm repository URL (e.g. https://charts.bitnami.com/bitnami) */
+  repo: string;
+  /** Chart name within the repository */
+  chart: string;
+  /** Pinned chart version (semver) */
+  version?: string;
+  /** Reference to a values file or ConfigMap containing chart overrides */
+  valuesRef?: string;
+}
+
 export interface CatalogComponent {
   id: string;
   name: string;
@@ -48,6 +61,8 @@ export interface CatalogComponent {
   dependencies?: CatalogComponent[];
   /** Optional URL pointing to the source repository (GitHub, GitLab, etc.) */
   repositoryUrl?: string;
+  /** Optional Helm chart configuration (FARM-E36) */
+  helmChart?: HelmChart;
   createdAt: string;
   updatedAt: string;
 }
@@ -480,4 +495,57 @@ export interface PluginMetadata {
   description: string;
   menuItems?: { label: string; path: string; icon?: string }[];
   routes?: { path: string; module: string }[];
+}
+
+// -- Helm Releases (FARM-E36) --
+
+/** A deployed Helm release discovered from the cluster. */
+export interface HelmRelease {
+  name: string;
+  namespace: string;
+  /** Chart name + version string as returned by Helm (e.g. "nginx-15.1.0") */
+  chart: string;
+  chartVersion: string;
+  appVersion: string;
+  /** Release status: "deployed", "failed", "pending-install", etc. */
+  status: string;
+  revision: number;
+  updatedAt: string;
+}
+
+/** Response from POST /api/v1/helm/releases/sync */
+export interface HelmSyncResult {
+  synced: number;
+  errors: string[];
+}
+
+// -- Kubernetes CRDs (FARM-E37) --
+
+/** A Custom Resource Definition discovered in the cluster. */
+export interface KubernetesCRD {
+  name: string;
+  group: string;
+  version: string;
+  scope: string;
+  kind: string;
+  /** Operator / display group name derived from group prefix */
+  displayTemplate: string;
+}
+
+/** An Argo Rollout resource discovered in the cluster. */
+export interface KubernetesRollout {
+  name: string;
+  namespace: string;
+  /** e.g. "Healthy", "Degraded", "Progressing", "Paused" */
+  phase: string;
+  message?: string;
+  /** Current canary traffic weight (0-100), present for canary rollouts */
+  canaryWeight?: number;
+  /** Active revision ref for blue-green rollouts */
+  blueGreenActive?: string;
+  /** Preview revision ref for blue-green rollouts */
+  blueGreenPreview?: string;
+  /** Analysis run results attached to this rollout */
+  analysisRunResults?: { name: string; phase: string }[];
+  updatedAt: string;
 }
