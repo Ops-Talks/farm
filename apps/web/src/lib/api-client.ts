@@ -605,6 +605,46 @@ export const observability = {
   },
 };
 
+// -- Pipeline run types --
+
+export interface RunStats {
+  total: number;
+  byStatus: Record<string, number>;
+  successRate: number;
+  avgDurationMs: number | null;
+  lastRunAt: string | null;
+}
+
+export interface StageDiffEntry {
+  stageId: string;
+  statusA: string | null;
+  statusB: string | null;
+  durationMsA: number | null;
+  durationMsB: number | null;
+  durationDeltaMs: number | null;
+  changed: boolean;
+}
+
+export interface RunComparison {
+  runA: {
+    id: string;
+    status: string;
+    triggeredBy: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    durationMs: number | null;
+  };
+  runB: {
+    id: string;
+    status: string;
+    triggeredBy: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    durationMs: number | null;
+  };
+  stageDiff: StageDiffEntry[];
+}
+
 // -- Pipelines API --
 
 export const pipelines = {
@@ -682,6 +722,44 @@ export const pipelines = {
   // Retrigger is a clearly-named alias for trigger, used in retry UX contexts.
   retrigger(pipelineId: string): Promise<PipelineRun> {
     return request(`/v1/pipelines/${pipelineId}/trigger`, { method: "POST" });
+  },
+
+  // -- Run sub-namespace (paginated list, stats, compare) --
+
+  runs: {
+    /**
+     * List runs for a pipeline with optional pagination and status filtering.
+     * Returns a paginated envelope: { data, total, skip, take }.
+     */
+    list(
+      pipelineId: string,
+      params?: { skip?: number; take?: number; status?: string },
+    ): Promise<{ data: PipelineRun[]; total: number; skip: number; take: number }> {
+      return request(
+        `/v1/pipelines/${pipelineId}/runs${toQueryString(params ?? {})}`,
+      );
+    },
+
+    /** Fetch a single run record. */
+    get(pipelineId: string, runId: string): Promise<PipelineRun> {
+      return request(`/v1/pipelines/${pipelineId}/runs/${runId}`);
+    },
+
+    /** Aggregate stats for all runs of a pipeline. */
+    stats(pipelineId: string): Promise<RunStats> {
+      return request(`/v1/pipelines/${pipelineId}/runs/stats`);
+    },
+
+    /** Compare two runs side-by-side with a per-stage diff. */
+    compare(
+      pipelineId: string,
+      runIdA: string,
+      runIdB: string,
+    ): Promise<RunComparison> {
+      return request(
+        `/v1/pipelines/${pipelineId}/runs/compare${toQueryString({ a: runIdA, b: runIdB })}`,
+      );
+    },
   },
 };
 

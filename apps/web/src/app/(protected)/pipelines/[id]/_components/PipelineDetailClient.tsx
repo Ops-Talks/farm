@@ -12,10 +12,39 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FilterTabs } from "@/components/shared/filter-tabs";
+import dynamic from "next/dynamic";
 import { StageBuilder } from "@/app/(protected)/pipelines/_components/stage-builder";
 import { RunList } from "./run-list";
 import { RunDetail } from "./run-detail";
-import type { Pipeline, PipelineRun, PipelineStage } from "@/types/api";
+
+// --- Dynamically imported heavy sub-components ---
+// RunStatsPanel and RunComparison are only rendered inside the "Runs" tab,
+// and both contain significant rendering logic (134 and 262 lines respectively).
+// Deferring them keeps the initial pipeline-detail bundle lighter.
+
+/** RunStatsPanel: 134 lines — aggregate run metrics cards */
+const RunStatsPanel = dynamic(
+  () => import("./run-stats").then((m) => ({ default: m.RunStatsPanel })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-24 bg-muted rounded-md" />
+    ),
+  },
+);
+
+/** RunComparison: 262 lines — wide Sheet with stage-diff table */
+const RunComparison = dynamic(
+  () =>
+    import("./run-comparison").then((m) => ({ default: m.RunComparison })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md" />
+    ),
+  },
+);
+import type { Pipeline, PipelineStage } from "@/types/api";
 import { ChevronLeft } from "lucide-react";
 import {
   Card,
@@ -37,7 +66,6 @@ export function PipelineDetailClient() {
   const router = useRouter();
 
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
-  const [runs, setRuns] = useState<PipelineRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("definition");
@@ -46,6 +74,14 @@ export function PipelineDetailClient() {
   const [triggering, setTriggering] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+
+  // RunList uses this key to force a refetch (e.g. after triggering a new run)
+  const [runsRefreshKey, setRunsRefreshKey] = useState(0);
+
+  // Run comparison state — set when the user picks two runs to compare
+  const [compareRunA, setCompareRunA] = useState<string | null>(null);
+  const [compareRunB, setCompareRunB] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   // Edit form state
   const [editName, setEditName] = useState("");
@@ -66,24 +102,9 @@ export function PipelineDetailClient() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const fetchRuns = useCallback(() => {
-    if (!id) return;
-    pipelinesApi
-      .listRuns(id)
-      .then(setRuns)
-      .catch(() => setRuns([]));
-  }, [id]);
-
   useEffect(() => {
     fetchPipeline();
   }, [fetchPipeline]);
-
-  // Fetch runs when the Runs tab is activated
-  useEffect(() => {
-    if (activeTab === "runs") {
-      fetchRuns();
-    }
-  }, [activeTab, fetchRuns]);
 
   const handleTrigger = () => {
     if (!id) return;
@@ -92,9 +113,9 @@ export function PipelineDetailClient() {
       .trigger(id)
       .then((run) => {
         toast.success(`Pipeline triggered — Run ${run.id.slice(0, 8)}`);
-        // Switch to runs tab and auto-select the new run
+        // Switch to the Runs tab and bump the refresh key so RunList re-fetches
         setActiveTab("runs");
-        fetchRuns();
+        setRunsRefreshKey((k) => k + 1);
         setSelectedRunId(run.id);
       })
       .catch((err) => {
@@ -153,6 +174,12 @@ export function PipelineDetailClient() {
 
   const handleSelectRun = (runId: string) => {
     setSelectedRunId((prev) => (prev === runId ? null : runId));
+  };
+
+  const handleCompare = (runIdA: string, runIdB: string) => {
+    setCompareRunA(runIdA);
+    setCompareRunB(runIdB);
+    setShowComparison(true);
   };
 
   if (loading) {
@@ -349,21 +376,51 @@ export function PipelineDetailClient() {
       {/* Runs Tab */}
       {activeTab === "runs" && (
         <div className="flex flex-col gap-4">
+          {/* Stats panel — aggregate metrics above the run table */}
+          <RunStatsPanel pipelineId={pipeline.id} />
+
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-muted-foreground">
-              Last {runs.length} run{runs.length !== 1 ? "s" : ""}
+              Run History
             </h2>
-            <Button size="sm" variant="outline" onClick={fetchRuns}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setRunsRefreshKey((k) => k + 1)}
+            >
               Refresh
             </Button>
           </div>
+
+          {/* RunList is self-contained: it fetches and paginates its own data */}
           <RunList
-            runs={runs}
+            pipelineId={pipeline.id}
             selectedRunId={selectedRunId}
             onSelectRun={handleSelectRun}
+            onCompare={handleCompare}
+            refreshKey={runsRefreshKey}
           />
+
           {selectedRunId && id && (
-            <RunDetail pipelineId={id} runId={selectedRunId} pipeline={pipeline ?? undefined} />
+            <RunDetail
+              pipelineId={id}
+              runId={selectedRunId}
+              pipeline={pipeline ?? undefined}
+            />
+          )}
+
+          {/* Run comparison sheet — rendered when IDs are selected.
+              The `open` prop drives both Sheet visibility and useQuery
+              `enabled`, so no unnecessary network request is made until
+              the user actually opens the comparison panel. */}
+          {compareRunA && compareRunB && (
+            <RunComparison
+              pipelineId={pipeline.id}
+              runIdA={compareRunA}
+              runIdB={compareRunB}
+              open={showComparison}
+              onClose={() => setShowComparison(false)}
+            />
           )}
         </div>
       )}
