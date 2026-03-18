@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.2] - 2026-03-18
+
+### Changed
+- - GET /api/v1/auth/users now requires JWT + admin role (was unauthenticated)    - POST /api/v1/traces/ingest now requires JWT (was unauthenticated)    - /api/docs protected with HTTP Basic Auth middleware; credentials      configurable via SWAGGER_USER / SWAGGER_PASSWORD (default: farm/farm)    - Add swagger.user and swagger.password to configuration.ts and Joi schema    - Document SWAGGER_USER and SWAGGER_PASSWORD in .env.example.
+
 ## [0.10.1] - 2026-03-18
 
 ### Changed

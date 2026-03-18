@@ -77,8 +77,18 @@ async function bootstrap() {
   // Protect Swagger UI and JSON spec with HTTP Basic Auth.
   // In production set SWAGGER_USER and SWAGGER_PASSWORD env vars.
   app.use(
-    ["/api/docs", "/api/docs-json", "/api/docs/swagger-ui-bundle.js", "/api/docs/swagger-ui-init.js", "/api/docs/swagger-ui.css"],
-    (req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+    [
+      "/api/docs",
+      "/api/docs-json",
+      "/api/docs/swagger-ui-bundle.js",
+      "/api/docs/swagger-ui-init.js",
+      "/api/docs/swagger-ui.css",
+    ],
+    (
+      req: import("express").Request,
+      res: import("express").Response,
+      next: import("express").NextFunction,
+    ) => {
       const authorization = req.headers["authorization"];
       if (authorization) {
         const [scheme, encoded] = authorization.split(" ");
