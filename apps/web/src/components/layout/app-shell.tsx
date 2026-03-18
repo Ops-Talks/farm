@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type ElementType } from "react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, BarChart2 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
 const navItems = [
@@ -34,10 +34,11 @@ const navItems = [
   { href: "/docs", label: "Docs" },
   { href: "/queues", label: "Queues" },
   { href: "/observability", label: "Observability" },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/organizations", label: "Organizations" },
   { href: "/teams", label: "Teams" },
   { href: "/plugins", label: "Plugins" },
-];
+] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {
   return name
@@ -126,9 +127,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {/* ST183 – aria-current marks the active page for screen readers */}
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start"
+                  className="w-full justify-start gap-2"
                   aria-current={isActive ? "page" : undefined}
                 >
+                  {item.icon && <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
                   {item.label}
                 </Button>
               </Link>
@@ -178,9 +180,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                       >
                         <Button
                           variant={isActive ? "secondary" : "ghost"}
-                          className="w-full justify-start"
+                          className="w-full justify-start gap-2"
                           aria-current={isActive ? "page" : undefined}
                         >
+                          {item.icon && <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
                           {item.label}
                         </Button>
                       </Link>

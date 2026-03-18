@@ -706,15 +706,16 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S98 | Story | Kubernetes cluster discovery and status | `DONE` |
 | FARM-S99 | Story | Plugin marketplace UI (install/uninstall/configure) | `DONE` |
 
-### FARM-E29: Data and Analytics `TODO`
+### FARM-E29: Data and Analytics `DONE`
 
 > Platform usage analytics and reporting.
+> Delivered 2026-03-18: all 3 stories complete — 519 API tests, 333 web tests, 0 lint errors.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S100 | Story | Service catalog analytics (ownership coverage, lifecycle distribution) | `TODO` |
-| FARM-S101 | Story | Deployment frequency and lead time metrics (DORA) | `TODO` |
-| FARM-S102 | Story | Platform usage reports (API calls, active users, popular components) | `TODO` |
+| FARM-S100 | Story | Service catalog analytics (ownership coverage, lifecycle distribution) | `DONE` |
+| FARM-S101 | Story | Deployment frequency and lead time metrics (DORA) | `DONE` |
+| FARM-S102 | Story | Platform usage reports (API calls, active users, popular components) | `DONE` |
 
 ### FARM-E31: Frontend Architecture Hardening `DONE`
 

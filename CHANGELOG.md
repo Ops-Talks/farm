@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.0] - 2026-03-17
+## [0.10.1] - 2026-03-18
+
+### Added
+- **api**: FARM-E29 analytics module (`core-analytics` plugin) with four endpoints:
+  - `GET /api/v1/analytics/catalog` — ownership coverage, lifecycle distribution, kind distribution, unowned components list (S100)
+  - `GET /api/v1/analytics/dora` — deployment frequency, change failure rate, mean time to recovery, lead time for changes; filterable by `days`, `componentId`, `environmentId` (S101)
+  - `GET /api/v1/analytics/usage` — active users, top components, action breakdown derived from audit logs (S102)
+  - `GET /api/v1/analytics/export` — CSV export for all three reports with no external library dependency (S102)
+- **web**: FARM-E29 `/analytics` page with three lazy-loaded tabs (S100/S101/S102):
+  - **Catalog tab** — ownership coverage card with progress bar, lifecycle and kind distribution tables with inline percentage bars, unowned components table with catalog links
+  - **DORA tab** — four metric cards with period selector (7/30/90 days); change failure rate colour-coded green (<5%), yellow (5–15%), red (>15%)
+  - **Usage tab** — active users and top components tables, Export CSV button
+- **web**: Analytics link (`BarChart2` icon) added to app-shell sidebar navigation
+- **docs**: `docs/api-reference/analytics.md` — full endpoint reference for all analytics routes
+
+### Changed
+- `mkdocs.yml` — Analytics API entry added to the API Reference navigation section
+- `ROADMAP.md` / `NEXT_STEPS.md` — FARM-E29 marked `DONE`
+
+
 
 ### Added
 - **web**: FARM-S120 replace useState data fetching with TanStack Query v5   QueryProvider (makeQueryClient, staleTime 60s, retry 1) wraps the   protected layout. Client components migrated from useState+useEffect   to useQuery/useMutation. Eliminates react-hooks/set-state-in-effect   lint warnings permanently. Deps: @tanstack/react-query.

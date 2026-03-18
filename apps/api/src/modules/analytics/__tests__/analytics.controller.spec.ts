@@ -1,0 +1,264 @@
+import { Test, TestingModule } from "@nestjs/testing";
+import { HttpStatus } from "@nestjs/common";
+import { AnalyticsController } from "../analytics.controller";
+import { AnalyticsService } from "../analytics.service";
+import { CatalogAnalyticsDto } from "../dto/catalog-analytics.dto";
+import { DoraAnalyticsDto } from "../dto/dora-analytics.dto";
+import { UsageAnalyticsDto } from "../dto/usage-analytics.dto";
+
+const mockCatalogData: CatalogAnalyticsDto = {
+  ownershipCoverage: {
+    total: 10,
+    withOwner: 8,
+    withoutOwner: 2,
+    coveragePercent: 80.0,
+  },
+  lifecycleDistribution: [
+    { lifecycle: "production", count: 5 },
+    { lifecycle: "experimental", count: 3 },
+  ],
+  kindDistribution: [
+    { kind: "service", count: 4 },
+    { kind: "library", count: 2 },
+  ],
+  unownedComponents: [{ id: "uuid-1", name: "svc-a", kind: "service" }],
+};
+
+const mockDoraData: DoraAnalyticsDto = {
+  periodDays: 30,
+  deploymentFrequency: { deploymentsPerDay: 3.33, total: 100, periodDays: 30 },
+  changeFailureRate: { rate: 5.0, failed: 5, total: 100 },
+  meanTimeToRecovery: { avgHours: 2.0, samples: 5 },
+  leadTimeForChanges: { avgHours: 0.5, samples: 80 },
+};
+
+const mockUsageData: UsageAnalyticsDto = {
+  periodDays: 30,
+  totalAuditEvents: 500,
+  topComponents: [
+    {
+      componentId: "comp-1",
+      componentName: "payment-service",
+      accessCount: 120,
+    },
+  ],
+  activeUsers: [{ actorId: "user-1", actorUsername: "alice", actionCount: 60 }],
+  actionBreakdown: [
+    { action: "CREATE", count: 200 },
+    { action: "DELETE", count: 50 },
+  ],
+};
+
+describe("AnalyticsController", () => {
+  let controller: AnalyticsController;
+
+  const mockService = {
+    getCatalogAnalytics: jest.fn().mockResolvedValue(mockCatalogData),
+    getDoraMetrics: jest.fn().mockResolvedValue(mockDoraData),
+    getUsageAnalytics: jest.fn().mockResolvedValue(mockUsageData),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AnalyticsController],
+      providers: [{ provide: AnalyticsService, useValue: mockService }],
+    }).compile();
+
+    controller = module.get<AnalyticsController>(AnalyticsController);
+    jest.clearAllMocks();
+    mockService.getCatalogAnalytics.mockResolvedValue(mockCatalogData);
+    mockService.getDoraMetrics.mockResolvedValue(mockDoraData);
+    mockService.getUsageAnalytics.mockResolvedValue(mockUsageData);
+  });
+
+  it("should be defined", () => {
+    expect(controller).toBeDefined();
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /analytics/catalog
+  // ---------------------------------------------------------------------------
+
+  describe("getCatalogAnalytics", () => {
+    it("returns catalog analytics data from the service", async () => {
+      const result = await controller.getCatalogAnalytics();
+
+      expect(mockService.getCatalogAnalytics).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(mockCatalogData);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /analytics/dora
+  // ---------------------------------------------------------------------------
+
+  describe("getDoraMetrics", () => {
+    it("returns DORA metrics with default period of 30 days", async () => {
+      const result = await controller.getDoraMetrics(30);
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        30,
+        undefined,
+        undefined,
+      );
+      expect(result).toEqual(mockDoraData);
+    });
+
+    it("passes componentId and environmentId filters to the service", async () => {
+      const result = await controller.getDoraMetrics(
+        7,
+        "comp-uuid-1",
+        "env-uuid-1",
+      );
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        7,
+        "comp-uuid-1",
+        "env-uuid-1",
+      );
+      expect(result).toEqual(mockDoraData);
+    });
+
+    it("coerces string query param to number", async () => {
+      // Query params arrive as strings from HTTP layer; the controller does Number(days)
+      const result = await controller.getDoraMetrics("14" as unknown as number);
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        14,
+        undefined,
+        undefined,
+      );
+      expect(result).toEqual(mockDoraData);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /analytics/usage
+  // ---------------------------------------------------------------------------
+
+  describe("getUsageAnalytics", () => {
+    it("returns usage analytics with default period of 30 days", async () => {
+      const result = await controller.getUsageAnalytics(30);
+
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      expect(result).toEqual(mockUsageData);
+    });
+
+    it("forwards custom days parameter to the service", async () => {
+      await controller.getUsageAnalytics(7);
+
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(7);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /analytics/export
+  // ---------------------------------------------------------------------------
+
+  describe("exportReport", () => {
+    /**
+     * Builds a minimal mock express Response object that captures the calls
+     * made by the controller.
+     */
+    function buildMockRes() {
+      const headers: Record<string, string> = {};
+      let statusCode = 0;
+      let body: unknown;
+
+      const res = {
+        setHeader: jest.fn((key: string, value: string) => {
+          headers[key] = value;
+        }),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn((data: unknown) => {
+          body = data;
+        }),
+        _headers: headers,
+        _statusCode: () => statusCode,
+        _body: () => body,
+      };
+
+      // status().send() chain
+      res.status.mockImplementation((code: number) => {
+        statusCode = code;
+        return res;
+      });
+
+      return res;
+    }
+
+    it("sets Content-Type to text/csv for catalog report", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("catalog", 30, res as unknown as any);
+
+      expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/csv");
+    });
+
+    it("sets Content-Disposition with filename for catalog report", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("catalog", 30, res as unknown as any);
+
+      const dispositionCall = res.setHeader.mock.calls.find(
+        (c: string[]) => c[0] === "Content-Disposition",
+      );
+      expect(dispositionCall).toBeDefined();
+      expect(dispositionCall![1]).toMatch(
+        /^attachment; filename="farm-catalog-.+\.csv"$/,
+      );
+    });
+
+    it("responds with HTTP 200 for a valid export", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("catalog", 30, res as unknown as any);
+
+      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(res.send).toHaveBeenCalled();
+    });
+
+    it("generates CSV content for catalog report with expected sections", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("catalog", 30, res as unknown as any);
+
+      const csvBody = res.send.mock.calls[0][0] as string;
+      expect(csvBody).toContain("Ownership");
+      expect(csvBody).toContain("Lifecycle");
+      expect(csvBody).toContain("Kind");
+    });
+
+    it("generates CSV content for dora report", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("dora", 30, res as unknown as any);
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);
+      const csvBody = res.send.mock.calls[0][0] as string;
+      expect(csvBody).toContain("Deployment Frequency");
+    });
+
+    it("generates CSV content for usage report", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport("usage", 30, res as unknown as any);
+
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      const csvBody = res.send.mock.calls[0][0] as string;
+      expect(csvBody).toContain("Top Components");
+    });
+
+    it("includes the report type and date in the filename", async () => {
+      const res = buildMockRes();
+      const today = new Date().toISOString().split("T")[0];
+
+      await controller.exportReport("dora", 30, res as unknown as any);
+
+      const dispositionCall = res.setHeader.mock.calls.find(
+        (c: string[]) => c[0] === "Content-Disposition",
+      );
+      expect(dispositionCall![1]).toContain(`farm-dora-${today}`);
+    });
+  });
+});

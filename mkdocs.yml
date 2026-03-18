@@ -120,6 +120,7 @@ nav:
     - Plugins API: api-reference/plugins.md
     - Pipelines API: api-reference/pipelines.md
     - Observability API: api-reference/observability.md
+    - Analytics API: api-reference/analytics.md
 
 extra_css:
   - stylesheets/extra.css

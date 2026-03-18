@@ -810,3 +810,78 @@ export const plugins = {
     return request("/v1/plugins/reload", { method: "POST" });
   },
 };
+
+// ─── Analytics types ──────────────────────────────────────────────────────────
+
+export interface CatalogAnalytics {
+  ownershipCoverage: {
+    total: number;
+    withOwner: number;
+    withoutOwner: number;
+    coveragePercent: number;
+  };
+  lifecycleDistribution: { lifecycle: string; count: number }[];
+  kindDistribution: { kind: string; count: number }[];
+  unownedComponents: { id: string; name: string; kind: string }[];
+}
+
+export interface DoraAnalytics {
+  periodDays: number;
+  deploymentFrequency: { deploymentsPerDay: number; total: number; periodDays: number };
+  changeFailureRate: { rate: number; failed: number; total: number };
+  meanTimeToRecovery: { avgHours: number; samples: number };
+  leadTimeForChanges: { avgHours: number; samples: number };
+}
+
+export interface UsageAnalytics {
+  periodDays: number;
+  totalAuditEvents: number;
+  topComponents: { componentId: string; componentName: string; accessCount: number }[];
+  activeUsers: { actorId: string; actorUsername: string; actionCount: number }[];
+  actionBreakdown: { action: string; count: number }[];
+}
+
+// ─── Analytics API ────────────────────────────────────────────────────────────
+
+export const analytics = {
+  getCatalog(): Promise<CatalogAnalytics> {
+    return request<CatalogAnalytics>("/v1/analytics/catalog");
+  },
+
+  getDora(
+    params?: { days?: number; componentId?: string; environmentId?: string },
+  ): Promise<DoraAnalytics> {
+    return request<DoraAnalytics>(`/v1/analytics/dora${toQueryString(params ?? {})}`);
+  },
+
+  getUsage(params?: { days?: number }): Promise<UsageAnalytics> {
+    return request<UsageAnalytics>(`/v1/analytics/usage${toQueryString(params ?? {})}`);
+  },
+
+  /**
+   * Trigger a CSV download in the browser.
+   * Bypasses the `request()` helper so we can handle a binary (Blob) response
+   * directly and create a temporary anchor element for the download.
+   */
+  async exportReport(report: "catalog" | "dora" | "usage", days = 30): Promise<void> {
+    const token = getAccessToken();
+    // Use the Next.js rewrite proxy so auth cookies / CORS are handled
+    // consistently with the rest of the API calls.
+    const url = `${API_BASE}/v1/analytics/export?report=${report}&days=${days}`;
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      throw new Error(`Export failed: ${res.status}`);
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = `farm-${report}-analytics.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  },
+};

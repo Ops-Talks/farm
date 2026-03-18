@@ -30,6 +30,7 @@ import { PipelinesModule } from "./modules/pipelines/pipelines.module";
 import { AlertingModule } from "./modules/alerting/alerting.module";
 import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { KubernetesModule } from "./modules/kubernetes/kubernetes.module";
+import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -209,6 +210,14 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Kubernetes cluster discovery",
         },
         module: KubernetesModule,
+      },
+      {
+        metadata: {
+          name: "core-analytics",
+          version: "1.0.0",
+          description: "Catalog analytics, DORA metrics, and usage reports",
+        },
+        module: AnalyticsModule,
       },
     ]),
   ],
