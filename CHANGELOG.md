@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.6] - 2026-03-18
+
+### Changed
+- DOC-3: add Helm and Kubernetes rows to docs/api-reference/index.md    DOC-4: add 13 missing env vars to docs/developer-guide/setup.md           (observability, OAuth, integrations, plugins)    DOC-5: add observability, OAuth, integrations, and plugin sections           to .env.example    DOC-6: fix docs/api-reference/teams.md endpoint table to use full           paths (/api/v1/teams/...) consistent with all other API docs    DOC-7: add Helm Integration and Kubernetes Operator to           docs/user-guide/index.md Core Features and Quick Links.
+- DOC-2: create docs/api-reference/audit-log.md, helm.md, kubernetes.md.
+- DOC-1: add Helm Integration, Kubernetes Operator to User Guide nav and Audit Log, Helm, Kubernetes APIs to API Reference nav in mkdocs.yml.
+
 ## [0.10.5] - 2026-03-18
 
 ### Changed
