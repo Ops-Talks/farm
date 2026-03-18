@@ -716,17 +716,18 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S101 | Story | Deployment frequency and lead time metrics (DORA) | `TODO` |
 | FARM-S102 | Story | Platform usage reports (API calls, active users, popular components) | `TODO` |
 
-### FARM-E31: Frontend Architecture Hardening `TODO`
+### FARM-E31: Frontend Architecture Hardening `DONE`
 
 > Align `apps/web` with Bulletproof React principles for scalability and maintainability.
+> Delivered 2026-03-18: all 5 stories complete — 309 tests, 0 lint errors.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S119 | Story | Adopt React Hook Form for all forms (login, create component, team member, pipeline stages) | `TODO` |
-| FARM-S120 | Story | Adopt TanStack Query (React Query) for server state — replace manual useState + refetch with query/mutation hooks | `TODO` |
-| FARM-S121 | Story | Add React Error Boundary components at feature level (catalog, teams, deployments, observability) | `TODO` |
-| FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to per-route `__tests__/` subdirectories | `TODO` |
-| FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `TODO` |
+| FARM-S119 | Story | Adopt React Hook Form for all forms (login, create component, team member, pipeline stages) | `DONE` |
+| FARM-S120 | Story | Adopt TanStack Query (React Query) for server state — replace manual useState + refetch with query/mutation hooks | `DONE` |
+| FARM-S121 | Story | Add React Error Boundary components at feature level (catalog, teams, deployments, observability) | `DONE` |
+| FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to colocated `*.test.tsx` alongside source files | `DONE` |
+| FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `DONE` |
 
 ### FARM-E34: Authentication Modernization (Better Auth) `TODO`
 
