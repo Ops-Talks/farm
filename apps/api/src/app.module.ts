@@ -15,6 +15,7 @@ import {
   makeCounterProvider,
   makeHistogramProvider,
 } from "@willsoto/nestjs-prometheus";
+import { BusinessMetricsModule } from "./common/metrics/business-metrics.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PluginManagerModule } from "./modules/plugin-manager/plugin-manager.module";
@@ -84,6 +85,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
       }),
     }),
     OrganizationModule,
+    BusinessMetricsModule,
     HealthModule,
     ObservabilityModule,
     CacheModule.registerAsync({

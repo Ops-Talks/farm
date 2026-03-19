@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { CatalogService } from "./catalog.service";
 import { EventsGateway } from "../../common/events/events.gateway";
 import * as fs from "fs/promises";
@@ -13,6 +14,8 @@ jest.mock("fs/promises");
 
 describe("CatalogService", () => {
   let service: CatalogService;
+
+  const mockComponentOperationsCounter = { inc: jest.fn() };
 
   const mockComponent: Component = {
     id: "550e8400-e29b-41d4-a716-446655440001",
@@ -75,6 +78,10 @@ describe("CatalogService", () => {
         {
           provide: EventsGateway,
           useValue: mockEventsGateway,
+        },
+        {
+          provide: getToken("component_operations_total"),
+          useValue: mockComponentOperationsCounter,
         },
       ],
     }).compile();
@@ -147,6 +154,18 @@ spec:
       expect(mockRepository.findBy).toHaveBeenCalled();
       expect(mockRepository.save).toHaveBeenCalled();
     });
+
+    it("should increment component_operations_total with operation=create", async () => {
+      mockComponentOperationsCounter.inc.mockClear();
+      await service.create({
+        name: "new-service",
+        kind: ComponentKind.SERVICE,
+        owner: "team-a",
+      });
+      expect(mockComponentOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "create",
+      });
+    });
   });
 
   describe("findAll", () => {
@@ -177,6 +196,29 @@ spec:
       await service.update(mockComponent.id, dto);
       expect(mockRepository.findBy).toHaveBeenCalled();
       expect(mockRepository.save).toHaveBeenCalled();
+    });
+
+    it("should increment component_operations_total with operation=update", async () => {
+      mockComponentOperationsCounter.inc.mockClear();
+      await service.update(mockComponent.id, { description: "Updated" });
+      expect(mockComponentOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "update",
+      });
+    });
+  });
+
+  describe("remove", () => {
+    it("should remove a component by ID", async () => {
+      await service.remove(mockComponent.id);
+      expect(mockRepository.remove).toHaveBeenCalledWith(mockComponent);
+    });
+
+    it("should increment component_operations_total with operation=delete", async () => {
+      mockComponentOperationsCounter.inc.mockClear();
+      await service.remove(mockComponent.id);
+      expect(mockComponentOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "delete",
+      });
     });
   });
 });

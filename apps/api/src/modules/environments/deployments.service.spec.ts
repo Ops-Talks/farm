@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { DeploymentsService } from "./deployments.service";
 import { Deployment, DeploymentStatus } from "./entities/deployment.entity";
 import { Environment, EnvironmentType } from "./entities/environment.entity";
@@ -16,6 +17,8 @@ describe("DeploymentsService", () => {
   let deploymentRepo: Record<string, jest.Mock>;
   let environmentRepo: Record<string, jest.Mock>;
   let componentRepo: Record<string, jest.Mock>;
+
+  const mockDeploymentOperationsCounter = { inc: jest.fn() };
 
   const mockComponent: Partial<Component> = {
     id: "comp-uuid-1",
@@ -136,6 +139,10 @@ describe("DeploymentsService", () => {
           provide: EventsGateway,
           useValue: mockEventsGateway,
         },
+        {
+          provide: getToken("deployment_operations_total"),
+          useValue: mockDeploymentOperationsCounter,
+        },
       ],
     }).compile();
 
@@ -161,6 +168,25 @@ describe("DeploymentsService", () => {
       });
 
       expect(result).toEqual(mockDeployment);
+    });
+
+    it("should increment deployment_operations_total with operation=create", async () => {
+      mockDeploymentOperationsCounter.inc.mockClear();
+      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+      environmentRepo.findOne.mockResolvedValue(mockEnvironment as Environment);
+      deploymentRepo.create.mockReturnValue(mockDeployment as Deployment);
+      deploymentRepo.save.mockResolvedValue(mockDeployment as Deployment);
+
+      await service.create({
+        componentId: "comp-uuid-1",
+        environmentId: "env-uuid-1",
+        version: "v1.0.0",
+      });
+
+      expect(mockDeploymentOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "create",
+        status: mockDeployment.status,
+      });
     });
 
     it("should throw NotFoundException if component not found", async () => {
@@ -254,6 +280,31 @@ describe("DeploymentsService", () => {
       });
 
       expect(result.status).toBe(DeploymentStatus.IN_PROGRESS);
+    });
+
+    it("should increment deployment_operations_total with operation=update", async () => {
+      mockDeploymentOperationsCounter.inc.mockClear();
+      const pendingDeployment = {
+        ...mockDeployment,
+        status: DeploymentStatus.PENDING,
+      };
+      const updatedDeployment = {
+        ...mockDeployment,
+        status: DeploymentStatus.IN_PROGRESS,
+      };
+
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
+      deploymentRepo.merge.mockReturnValue(updatedDeployment as Deployment);
+      deploymentRepo.save.mockResolvedValue(updatedDeployment as Deployment);
+
+      await service.update("deploy-uuid-1", {
+        status: DeploymentStatus.IN_PROGRESS,
+      });
+
+      expect(mockDeploymentOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "update",
+        status: DeploymentStatus.IN_PROGRESS,
+      });
     });
 
     it("should throw BadRequestException for invalid status transition", async () => {

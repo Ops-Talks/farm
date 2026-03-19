@@ -6,16 +6,9 @@ import {
   Req,
   Res,
   Logger,
-  UseGuards,
 } from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiOkResponse,
-  ApiBearerAuth,
-} from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiOkResponse } from "@nestjs/swagger";
 import type { Request, Response } from "express";
-import { JwtAuthGuard } from "../guards/jwt-auth.guard";
 
 /**
  * TracesIngestController — lightweight OTLP proxy for browser spans.
@@ -38,8 +31,6 @@ import { JwtAuthGuard } from "../guards/jwt-auth.guard";
  * load-balancer / ingress level.
  */
 @ApiTags("Traces")
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("traces")
 export class TracesIngestController {
   private readonly logger = new Logger(TracesIngestController.name);

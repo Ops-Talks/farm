@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConflictException, NotFoundException } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { TeamsService } from "./teams.service";
 import { Team, TeamType } from "./entities/team.entity";
 import { User } from "../auth/entities/user.entity";
@@ -11,6 +12,8 @@ describe("TeamsService", () => {
   let teamRepo: Record<string, jest.Mock>;
   let userRepo: Record<string, jest.Mock>;
   let componentRepo: Record<string, jest.Mock>;
+
+  const mockTeamOperationsCounter = { inc: jest.fn() };
 
   const mockTeam: Partial<Team> = {
     id: "team-uuid-1",
@@ -66,6 +69,10 @@ describe("TeamsService", () => {
         { provide: getRepositoryToken(Team), useValue: teamRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(Component), useValue: componentRepo },
+        {
+          provide: getToken("team_operations_total"),
+          useValue: mockTeamOperationsCounter,
+        },
       ],
     }).compile();
 
@@ -90,6 +97,23 @@ describe("TeamsService", () => {
 
       expect(result).toEqual(mockTeam);
       expect(teamRepo.create).toHaveBeenCalled();
+    });
+
+    it("should increment team_operations_total with operation=create", async () => {
+      mockTeamOperationsCounter.inc.mockClear();
+      teamRepo.findOne.mockResolvedValue(null);
+      teamRepo.create.mockReturnValue(mockTeam);
+      teamRepo.save.mockResolvedValue(mockTeam);
+
+      await service.create({
+        name: "platform-team",
+        displayName: "Platform Engineering",
+        type: TeamType.PLATFORM,
+      });
+
+      expect(mockTeamOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "create",
+      });
     });
 
     it("should throw ConflictException if team name exists", async () => {
@@ -149,6 +173,20 @@ describe("TeamsService", () => {
       expect(result.displayName).toBe("Updated Name");
     });
 
+    it("should increment team_operations_total with operation=update", async () => {
+      mockTeamOperationsCounter.inc.mockClear();
+      const updated = { ...mockTeam, displayName: "Updated Name" };
+      teamRepo.findOne.mockResolvedValue(mockTeam);
+      teamRepo.merge.mockReturnValue(updated);
+      teamRepo.save.mockResolvedValue(updated);
+
+      await service.update("team-uuid-1", { displayName: "Updated Name" });
+
+      expect(mockTeamOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "update",
+      });
+    });
+
     it("should throw ConflictException on duplicate name", async () => {
       teamRepo.findOne.mockResolvedValueOnce(mockTeam).mockResolvedValueOnce({
         ...mockTeam,
@@ -169,6 +207,18 @@ describe("TeamsService", () => {
 
       await service.remove("team-uuid-1");
       expect(teamRepo.remove).toHaveBeenCalledWith(mockTeam);
+    });
+
+    it("should increment team_operations_total with operation=delete", async () => {
+      mockTeamOperationsCounter.inc.mockClear();
+      teamRepo.findOne.mockResolvedValue(mockTeam);
+      teamRepo.remove.mockResolvedValue(mockTeam);
+
+      await service.remove("team-uuid-1");
+
+      expect(mockTeamOperationsCounter.inc).toHaveBeenCalledWith({
+        operation: "delete",
+      });
     });
   });
 

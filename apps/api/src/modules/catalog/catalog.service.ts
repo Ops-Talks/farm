@@ -12,6 +12,8 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { randomUUID } from "crypto";
 import { spawn } from "child_process";
+import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Counter } from "prom-client";
 import {
   Component,
   ComponentKind,
@@ -65,6 +67,9 @@ export class CatalogService {
     private readonly componentRepository: Repository<Component>,
     @Optional() private readonly eventsGateway?: EventsGateway,
     @Optional() private readonly eventEmitter?: EventEmitter2,
+    @Optional()
+    @InjectMetric("component_operations_total")
+    private readonly componentOperationsTotal?: Counter<string>,
   ) {}
 
   /**
@@ -215,6 +220,7 @@ export class CatalogService {
       owner: saved.owner,
     });
 
+    this.componentOperationsTotal?.inc({ operation: "create" });
     return saved;
   }
 
@@ -311,6 +317,7 @@ export class CatalogService {
       timestamp: new Date().toISOString(),
     });
 
+    this.componentOperationsTotal?.inc({ operation: "update" });
     return saved;
   }
 
@@ -328,5 +335,7 @@ export class CatalogService {
       name: component.name,
       timestamp: new Date().toISOString(),
     });
+
+    this.componentOperationsTotal?.inc({ operation: "delete" });
   }
 }

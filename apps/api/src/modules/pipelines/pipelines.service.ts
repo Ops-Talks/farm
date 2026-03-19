@@ -10,6 +10,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Counter } from "prom-client";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { Pipeline } from "./entities/pipeline.entity";
@@ -62,6 +64,9 @@ export class PipelinesService {
     private readonly executionQueue?: Queue,
     @Optional()
     private readonly eventsGateway?: EventsGateway,
+    @Optional()
+    @InjectMetric("pipeline_executions_total")
+    private readonly pipelineExecutionsTotal?: Counter<string>,
   ) {}
 
   /**
@@ -487,6 +492,10 @@ export class PipelinesService {
     });
 
     this.logger.log(`Run ${runId} rejected by ${userId}`);
+    this.pipelineExecutionsTotal?.inc({
+      status: "failure",
+      pipeline_id: pipelineId,
+    });
     return savedRun;
   }
 
@@ -547,6 +556,10 @@ export class PipelinesService {
     }
 
     this.logger.log(`Run ${runId} cancelled by ${userId}`);
+    this.pipelineExecutionsTotal?.inc({
+      status: "cancelled",
+      pipeline_id: pipelineId,
+    });
     return savedRun;
   }
 }

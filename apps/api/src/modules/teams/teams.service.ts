@@ -7,6 +7,8 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Counter } from "prom-client";
 import { Team } from "./entities/team.entity";
 import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
@@ -29,6 +31,9 @@ export class TeamsService {
     @InjectRepository(Component)
     private readonly componentRepository: Repository<Component>,
     @Optional() private readonly eventEmitter?: EventEmitter2,
+    @Optional()
+    @InjectMetric("team_operations_total")
+    private readonly teamOperationsTotal?: Counter<string>,
   ) {}
 
   /**
@@ -49,7 +54,9 @@ export class TeamsService {
 
     const team = this.teamRepository.create(createTeamDto);
     this.logger.log(`Creating team: ${createTeamDto.name}`);
-    return await this.teamRepository.save(team);
+    const saved = await this.teamRepository.save(team);
+    this.teamOperationsTotal?.inc({ operation: "create" });
+    return saved;
   }
 
   /**
@@ -111,7 +118,9 @@ export class TeamsService {
     }
 
     const updated = this.teamRepository.merge(team, updateTeamDto);
-    return await this.teamRepository.save(updated);
+    const saved = await this.teamRepository.save(updated);
+    this.teamOperationsTotal?.inc({ operation: "update" });
+    return saved;
   }
 
   /**
@@ -123,6 +132,7 @@ export class TeamsService {
     const team = await this.findOne(id);
     await this.teamRepository.remove(team);
     this.logger.log(`Removed team: ${team.name}`);
+    this.teamOperationsTotal?.inc({ operation: "delete" });
   }
 
   /**

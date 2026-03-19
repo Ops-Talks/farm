@@ -6,6 +6,7 @@ import {
   ConflictException,
   NotFoundException,
 } from "@nestjs/common";
+import { getToken } from "@willsoto/nestjs-prometheus";
 import { PipelinesService } from "./pipelines.service";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
@@ -18,6 +19,7 @@ describe("PipelinesService", () => {
   let runRepo: Record<string, jest.Mock>;
   let executionQueue: Record<string, jest.Mock>;
   let eventsGateway: Record<string, jest.Mock>;
+  let mockPipelineExecutionsCounter: { inc: jest.Mock };
 
   const mockPipeline: Partial<Pipeline> = {
     id: "pipeline-uuid-1",
@@ -72,6 +74,8 @@ describe("PipelinesService", () => {
       emitPipelineLog: jest.fn(),
     };
 
+    mockPipelineExecutionsCounter = { inc: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PipelinesService,
@@ -82,6 +86,10 @@ describe("PipelinesService", () => {
           useValue: executionQueue,
         },
         { provide: EventsGateway, useValue: eventsGateway },
+        {
+          provide: getToken("pipeline_executions_total"),
+          useValue: mockPipelineExecutionsCounter,
+        },
       ],
     }).compile();
 
@@ -408,6 +416,10 @@ describe("PipelinesService", () => {
       expect(eventsGateway.emitPipelineRunUpdated).toHaveBeenCalledWith(
         expect.objectContaining({ id: savedRun.id }),
       );
+      expect(mockPipelineExecutionsCounter.inc).toHaveBeenCalledWith({
+        status: "failure",
+        pipeline_id: "pipeline-uuid-1",
+      });
     });
 
     it("should throw BadRequestException when run is not waiting for approval", async () => {
@@ -459,6 +471,10 @@ describe("PipelinesService", () => {
       expect(eventsGateway.emitPipelineRunUpdated).toHaveBeenCalledWith(
         expect.objectContaining({ id: savedRun.id }),
       );
+      expect(mockPipelineExecutionsCounter.inc).toHaveBeenCalledWith({
+        status: "cancelled",
+        pipeline_id: "pipeline-uuid-1",
+      });
     });
 
     it("should cancel a RUNNING run and calculate durationMs", async () => {

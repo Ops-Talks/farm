@@ -7,6 +7,8 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { InjectMetric } from "@willsoto/nestjs-prometheus";
+import { Counter } from "prom-client";
 import {
   Deployment,
   DeploymentStatus,
@@ -40,6 +42,9 @@ export class DeploymentsService {
     private readonly componentRepository: Repository<Component>,
     @Optional() private readonly eventsGateway?: EventsGateway,
     @Optional() private readonly eventEmitter?: EventEmitter2,
+    @Optional()
+    @InjectMetric("deployment_operations_total")
+    private readonly deploymentOperationsTotal?: Counter<string>,
   ) {}
 
   /**
@@ -87,6 +92,10 @@ export class DeploymentsService {
       timestamp: new Date().toISOString(),
     });
 
+    this.deploymentOperationsTotal?.inc({
+      operation: "create",
+      status: saved.status,
+    });
     return saved;
   }
 
@@ -191,6 +200,10 @@ export class DeploymentsService {
       version: saved.version,
     });
 
+    this.deploymentOperationsTotal?.inc({
+      operation: "update",
+      status: saved.status,
+    });
     return saved;
   }
 
