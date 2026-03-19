@@ -5,9 +5,13 @@ import {
   Get,
   Req,
   Res,
+  Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Next,
+  Optional,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -18,9 +22,13 @@ import {
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "@nestjs/passport";
-import { Request } from "express";
+import type { Request, NextFunction } from "express";
 import type { Response } from "express";
+import * as passport from "passport";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 import { AuthService } from "./auth.service";
+import { KeycloakOidcService } from "./keycloak-oidc.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
@@ -31,6 +39,8 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { KeycloakSyncJobData } from "./keycloak-sync.service";
 
 /**
  * Controller for authentication and user management operations.
@@ -48,7 +58,13 @@ import { Roles } from "../../common/decorators/roles.decorator";
   type: ErrorResponseDto,
 })
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly keycloakOidcService: KeycloakOidcService,
+    @Optional()
+    @InjectQueue(QUEUE_NAMES.KEYCLOAK_SYNC)
+    private readonly keycloakSyncQueue: Queue<KeycloakSyncJobData> | null,
+  ) {}
 
   /**
    * Registers a new user account.
@@ -259,5 +275,123 @@ export class AuthController {
       token: result.token,
       refreshToken: result.refreshToken,
     });
+  }
+
+  /**
+   * Initiates Keycloak OIDC authorization flow for the given organization.
+   * Dynamically builds a strategy from the org's stored Keycloak credential.
+   * Redirects to the frontend with an error query parameter when not configured.
+   *
+   * @param orgId - UUID of the organization requesting Keycloak login
+   * @param req - Express request object
+   * @param res - Express response object
+   * @param next - Express next function
+   */
+  @Get("keycloak")
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  async keycloakAuth(
+    @Query("orgId") orgId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ): Promise<void> {
+    if (!orgId) {
+      res.redirect("/?error=keycloak_not_configured");
+      return;
+    }
+
+    const strategy = await this.keycloakOidcService.getStrategyForOrg(orgId);
+
+    if (!strategy) {
+      res.redirect("/?error=keycloak_not_configured");
+      return;
+    }
+
+    // Store orgId in the session so the callback can retrieve it.
+    (req as Request & { session: Record<string, unknown> }).session[
+      "keycloakOrgId"
+    ] = orgId;
+
+    passport.use("keycloak-dynamic", strategy);
+
+    (
+      passport.authenticate("keycloak-dynamic", {
+        scope: ["openid", "email", "profile"],
+      }) as (req: Request, res: Response, next: NextFunction) => void
+    )(req, res, next);
+  }
+
+  /**
+   * Keycloak OIDC callback endpoint.
+   * Completes authentication and returns a JWT to the caller.
+   *
+   * @param req - Express request carrying the authenticated user
+   * @param res - Express response object
+   * @param next - Express next function
+   */
+  @Get("keycloak/callback")
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async keycloakCallback(
+    @Req() req: Request & { user?: User },
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ): Promise<void> {
+    (
+      passport.authenticate(
+        "keycloak-dynamic",
+        { session: false },
+        (err: unknown, user: User | false | undefined) => {
+          if (err || !user) {
+            res.redirect("/?error=keycloak_auth_failed");
+            return;
+          }
+
+          this.authService
+            .findOrCreateOAuthUser("keycloak", user.oauthProviderId as string, {
+              email: user.email,
+              displayName: user.displayName,
+            })
+            .then((result) => {
+              res.json({
+                user: result.user,
+                token: result.token,
+                refreshToken: result.refreshToken,
+              });
+            })
+            .catch(next);
+        },
+      ) as (req: Request, res: Response, next: NextFunction) => void
+    )(req, res, next);
+  }
+
+  /**
+   * Manually triggers a Keycloak group sync job for the specified organization.
+   * Requires admin role.
+   *
+   * @param orgId - UUID of the organization to sync
+   * @returns Whether the job was successfully enqueued
+   */
+  @Post("keycloak/sync/:orgId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("admin")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Trigger Keycloak group sync for an org (admin)" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Sync job enqueued.",
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Unauthorized.",
+    type: ErrorResponseDto,
+  })
+  async triggerKeycloakSync(
+    @Param("orgId") orgId: string,
+  ): Promise<{ queued: boolean }> {
+    await this.keycloakSyncQueue?.add("sync-org", { orgId });
+    return { queued: true };
   }
 }

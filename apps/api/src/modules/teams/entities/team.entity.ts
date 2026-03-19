@@ -108,6 +108,16 @@ export class Team {
   organizationId: string;
 
   @ApiProperty({
+    example: "keycloak-group-uuid-1234",
+    description:
+      "External system identifier for this team (e.g. Keycloak group ID)",
+    required: false,
+    nullable: true,
+  })
+  @Column({ nullable: true, type: "varchar" })
+  externalId: string | null;
+
+  @ApiProperty({
     example: "2023-01-01T00:00:00Z",
     description: "The creation date",
   })
