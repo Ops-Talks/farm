@@ -138,7 +138,7 @@ interface RolloutStatusCardProps {
 }
 
 export function RolloutStatusCard({ componentId, namespace }: RolloutStatusCardProps) {
-  const { data: rollouts = [], isPending } = useQuery({
+  const { data: rollouts = [], isLoading: isPending } = useQuery({
     queryKey: ["rollouts", componentId, namespace],
     queryFn: () => kubernetes.listRollouts({ componentId, namespace }),
     // Poll every 30 seconds to keep rollout status current.

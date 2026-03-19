@@ -189,7 +189,7 @@ function ArgoCDSection({
 }) {
   const queryClient = useQueryClient();
 
-  const { data: apps = [], isPending } = useQuery({
+  const { data: apps = [], isLoading: isPending } = useQuery({
     queryKey: ["argocd-applications", argocdApp],
     queryFn: () => argocd.listApplications(),
   });
@@ -261,7 +261,7 @@ function ArgoCDSection({
 // ---------------------------------------------------------------------------
 
 function CircleCISection({ vcsUrl }: { vcsUrl?: string }) {
-  const { data: pipelines = [], isPending } = useQuery({
+  const { data: pipelines = [], isLoading: isPending } = useQuery({
     queryKey: ["circleci-pipelines", vcsUrl],
     queryFn: () => circleci.listPipelines(vcsUrl),
   });
@@ -308,7 +308,7 @@ function CircleCISection({ vcsUrl }: { vcsUrl?: string }) {
 // ---------------------------------------------------------------------------
 
 function JenkinsSection() {
-  const { data: jobs = [], isPending } = useQuery({
+  const { data: jobs = [], isLoading: isPending } = useQuery({
     queryKey: ["jenkins-jobs"],
     queryFn: () => jenkins.listJobs(),
   });
@@ -357,7 +357,7 @@ function JenkinsSection() {
 // ---------------------------------------------------------------------------
 
 function TravisCISection({ vcsUrl }: { vcsUrl?: string }) {
-  const { data: builds = [], isPending } = useQuery({
+  const { data: builds = [], isLoading: isPending } = useQuery({
     queryKey: ["travisci-builds", vcsUrl],
     queryFn: () => travisci.listBuilds(vcsUrl),
   });

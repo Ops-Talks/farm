@@ -70,7 +70,7 @@ function ReleaseRow({ release }: { release: HelmRelease }) {
 export function HelmReleasesPanel() {
   const queryClient = useQueryClient();
 
-  const { data: releases = [], isPending } = useQuery({
+  const { data: releases = [], isLoading: isPending } = useQuery({
     queryKey: ["helm-releases"],
     queryFn: () => helm.listReleases(),
   });

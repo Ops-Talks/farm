@@ -42,7 +42,7 @@ function groupByOperator(crds: KubernetesCRD[]): Map<string, KubernetesCRD[]> {
 export function CRDResourcesTab() {
   const [filter, setFilter] = useState("");
 
-  const { data: crds = [], isPending } = useQuery({
+  const { data: crds = [], isLoading: isPending } = useQuery({
     queryKey: ["kubernetes-crds"],
     queryFn: () => kubernetes.listCRDs(),
   });
