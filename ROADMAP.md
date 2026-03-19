@@ -995,6 +995,45 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 - **Canary control**: Patch `VirtualService.spec.http[].route[].weight` via Kubernetes API. Requires cluster write permission — gated behind `OrgRole.ADMIN`.
 
 ---
+
+## Phase 8: Frontend Visual Refresh `TODO`
+
+### FARM-E43: Frontend Visual Redesign `TODO`
+
+> Give Farm a polished, opinionated visual identity by replacing the default shadcn/ui theme with a custom design system generated via [tweakcn.com](https://tweakcn.com/) — a visual theme editor for shadcn/ui that exports production-ready CSS variable overrides.
+
+#### Background
+
+Farm's current UI uses the default shadcn/ui Zinc palette with minimal customization. While functional, it lacks visual distinctiveness. tweakcn.com enables zero-dependency theme customization: you pick colors, border radius, typography scale, and shadow intensity visually, then export a drop-in `globals.css` replacement. No component rewrites required — only CSS variable tokens change.
+
+#### Goals
+
+- A distinctive, branded color palette (primary, accent, destructive, muted) for both light and dark modes.
+- Consistent border radius, shadow system, and spacing tokens applied across every page.
+- Improved typography hierarchy: larger headings, tighter line heights, proper font weight contrast.
+- Full dark mode fidelity — no washed-out backgrounds or invisible borders in dark theme.
+- Polished page layouts: login, dashboard, catalog, environments, teams, pipelines.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S164 | Story | Theme definition: use tweakcn.com to design Farm's custom token set (primary/accent/destructive/muted HSL values, radius scale, shadow levels); export and apply to `apps/web/src/app/globals.css`; verify Storybook / visual regression passes | `TODO` |
+| FARM-S165 | Story | Login and marketing pages redesign: hero layout, gradient accent on the login card, improved form spacing and focus rings; ensure social login buttons are visually distinct from the primary CTA | `TODO` |
+| FARM-S166 | Story | Dashboard and navigation refresh: sidebar icon alignment, active-item highlight using new primary token, breadcrumb polish, top bar spacing; update `AppSidebar`, `OrgSwitcher`, and `Breadcrumb` components | `TODO` |
+| FARM-S167 | Story | Catalog and detail pages polish: component cards with hover elevation, status badge color consistency, timeline/history layout improvements, dependency graph node styling | `TODO` |
+| FARM-S168 | Story | Environments, Teams, and Pipelines visual pass: deployment status chips aligned to new token palette, pipeline stage cards with type-specific accent colors, team avatar grid and member list spacing | `TODO` |
+
+#### Implementation Notes
+
+- **tweakcn.com workflow**: Open the editor, select `shadcn/ui` target, tweak HSL values for `--primary`, `--secondary`, `--accent`, `--muted`, `--destructive`, `--background`, `--foreground` and their `-foreground` pairs. Export the `:root` / `.dark` block and replace the relevant section of `globals.css`. No component changes required unless overrides are needed.
+- **Token scope**: Only `apps/web/src/app/globals.css` holds the design tokens. All shadcn/ui components consume them via Tailwind utilities (`bg-primary`, `text-muted-foreground`, etc.). Changing the tokens propagates everywhere automatically.
+- **Dark mode**: Farm uses `next-themes` with the `class` strategy. Both `:root` and `.dark` blocks must be exported from tweakcn.com and applied.
+- **No breaking changes**: All component APIs remain unchanged. This is a pure CSS-variable swap + layout micro-adjustments. Existing tests remain valid; add a smoke test that renders each major page and asserts no `undefined` class names.
+- **Radius and shadow**: Define three levels — `--radius-sm`, `--radius-md` (default), `--radius-lg` — and three shadow levels. Use them consistently: cards get `shadow-sm`, modals get `shadow-lg`, dropdowns get `shadow-md`.
+
+---
+
 |-------|-------|---------|--------|
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
@@ -1006,4 +1045,5 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 | Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
 | Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
-| **Total** | **44** | **164** | |
+| Phase 8: Frontend Visual Refresh | 1 | 5 | `TODO` |
+| **Total** | **45** | **169** | |
