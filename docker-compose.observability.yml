@@ -4,9 +4,59 @@ services:
       OTEL_ENABLED: "true"
       OTEL_EXPORTER_ENDPOINT: "http://tempo:4318/v1/traces"
       OTEL_SERVICE_NAME: "farm-api"
+      LOKI_URL: "http://loki:3100"
     depends_on:
       tempo:
         condition: service_started
+      loki:
+        condition: service_healthy
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: farm-loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki.yml:/etc/loki/config.yaml:ro
+      - loki-data:/var/loki
+    command: -config.file=/etc/loki/config.yaml
+    user: "0"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: farm-promtail
+    restart: always
+    volumes:
+      - ./observability/promtail.yml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    container_name: farm-node-exporter
+    restart: always
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
 
   prometheus:
     image: prom/prometheus:v3.3.1
@@ -19,6 +69,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      node-exporter:
+        condition: service_started
 
   tempo:
     image: grafana/tempo:2.7.2
@@ -48,3 +100,8 @@ services:
         condition: service_started
       tempo:
         condition: service_started
+      loki:
+        condition: service_healthy
+
+volumes:
+  loki-data:

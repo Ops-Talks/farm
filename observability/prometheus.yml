@@ -9,3 +9,10 @@ scrape_configs:
       - targets: ["farm-api:3000"]
         labels:
           service: "farm-api"
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "node-exporter"
+          instance: "farm-host"

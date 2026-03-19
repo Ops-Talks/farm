@@ -8,6 +8,19 @@ datasources:
     isDefault: true
     editable: false
 
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      derivedFields:
+        - name: TraceID
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: "$${__value.raw}"
+          datasourceUid: tempo
+
   - name: Tempo
     type: tempo
     uid: tempo
@@ -20,3 +33,10 @@ datasources:
         tags:
           - key: "service.name"
             value: "service"
+      tracesToLogs:
+        datasourceUid: loki
+        tags:
+          - key: "service.name"
+            value: "container"
+        filterByTraceID: true
+        filterBySpanID: false
