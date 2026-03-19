@@ -51,6 +51,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       if (savedId) {
         const found = list.find((o) => o.id === savedId) ?? null;
         setCurrentOrg(found);
+        if (!found) {
+          // Stale org ID — user is no longer a member of that org
+          sessionStorage.removeItem(ORG_STORAGE_KEY);
+        }
       } else if (list.length === 1) {
         // Auto-select when the user only belongs to one org
         const only = list[0];
