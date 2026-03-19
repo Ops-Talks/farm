@@ -13,6 +13,7 @@ export enum FarmEvent {
   ROLLOUT_UPDATED = "rollout.updated",
   CI_BUILD_UPDATED = "ci.build.updated",
   ARGOCD_SYNC_UPDATED = "argocd.sync.updated",
+  COMPLIANCE_AUDIT_COMPLETED = "compliance.audit.completed",
 }
 
 /**
