@@ -1,4 +1,4 @@
-COMPOSE_FILE := docker-compose.docs.yml
+COMPOSE_FILE := docker-compose.yml
 DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
@@ -38,16 +38,16 @@ help:
 docs: docs-up
 
 docs-up:
-	docker compose -f $(COMPOSE_FILE) up
+	docker compose --profile docs up -d docs
 
 docs-down:
-	docker compose -f $(COMPOSE_FILE) down
+	docker compose --profile docs down docs
 
 docs-build:
-	docker compose -f $(COMPOSE_FILE) run --rm $(DOCS_SERVICE) build
+	docker compose --profile docs run --rm $(DOCS_SERVICE) build
 
 docs-logs:
-	docker compose -f $(COMPOSE_FILE) logs -f $(DOCS_SERVICE)
+	docker compose --profile docs logs -f $(DOCS_SERVICE)
 
 test-docker:
 	docker build --target test -t $(TEST_IMAGE) .
@@ -69,12 +69,10 @@ down-observability:
 	docker compose -f docker-compose.yml -f docker-compose.observability.yml down
 
 up-all:
-	docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d --build
-	docker compose -f $(COMPOSE_FILE) up -d
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml --profile docs up -d --build
 
 down-all:
-	docker compose -f $(COMPOSE_FILE) down
-	docker compose -f docker-compose.yml -f docker-compose.observability.yml down
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml --profile docs down
 
 healthcheck:
 	curl -fsS http://localhost:3000/api/health

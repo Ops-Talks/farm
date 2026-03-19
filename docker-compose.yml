@@ -80,3 +80,15 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  docs:
+    image: squidfunk/mkdocs-material:9
+    container_name: farm-docs
+    profiles:
+      - docs
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/docs
+    stdin_open: true
+    tty: true
