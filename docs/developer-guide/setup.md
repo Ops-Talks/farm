@@ -117,8 +117,13 @@ cd web && npm run dev
 
 #### Running Documentation Server
 
+The documentation server is part of the main `docker-compose.yml` under the `docs` profile:
+
 ```bash
-make docs-up
+make docs-up        # Start MkDocs at http://localhost:8000
+make docs-down      # Stop
+make docs-build     # Build static site into ./site
+make docs-logs      # Follow container logs
 ```
 
 ## Project Structure
@@ -326,6 +331,58 @@ npm run start:debug
 | `API_INTERNAL_URL` | `http://api:3000/api` | Internal Docker API URL (build-time) |
 | `NEXT_PUBLIC_WS_URL` | `http://localhost:3000` | WebSocket server URL |
 | `NEXT_TELEMETRY_DISABLED` | `1` | Disable Next.js anonymous telemetry (set in `apps/web/.env.local`) |
+
+## OAuth Social Login
+
+Farm supports login via GitHub and Google using OAuth 2.0. Both providers are optional — if the credentials are not configured, the buttons are still rendered in the UI but will fail at the GitHub/Google authorization page. Leave all six variables empty to disable social login entirely.
+
+### GitHub OAuth
+
+1. Go to **github.com → Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Fill in the fields:
+
+   | Field | Value |
+   |-------|-------|
+   | Application name | Farm |
+   | Homepage URL | `http://localhost:3000` (or your production domain) |
+   | Authorization callback URL | `http://localhost:3000/api/v1/auth/github/callback` |
+
+3. After creating the app, copy the **Client ID** and generate a **Client Secret**.
+4. Add to `apps/api/.env`:
+
+```env
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
+GITHUB_CALLBACK_URL=http://localhost:3000/api/v1/auth/github/callback
+```
+
+### Google OAuth
+
+1. Go to **console.cloud.google.com → APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**.
+2. Set application type to **Web application**.
+3. Add an authorized redirect URI: `http://localhost:3000/api/v1/auth/google/callback`
+4. Copy the **Client ID** and **Client Secret**.
+5. Add to `apps/api/.env`:
+
+```env
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/v1/auth/google/callback
+```
+
+### Production
+
+Replace `http://localhost:3000` with your public domain in all callback URLs. Update the registered callback URL in the GitHub/Google developer console to match.
+
+When running via Docker Compose, add the variables to the `api` service environment in `docker-compose.yml` or pass them via a `.env` file at the repository root.
+
+### How it works
+
+1. User clicks "Continue with GitHub" or "Continue with Google" on the login page.
+2. The browser navigates to `GET /api/v1/auth/github` (or `/google`), which redirects to the provider's authorization page.
+3. After the user authorizes, the provider redirects back to the callback URL.
+4. The API finds or creates the user account, then returns a JWT access token and refresh token.
+5. The browser is redirected to the Farm dashboard with the session established.
 
 ## Troubleshooting
 

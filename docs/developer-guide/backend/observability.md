@@ -6,8 +6,10 @@ Farm includes a fully integrated observability stack for monitoring API performa
 
 ```mermaid
 graph LR
-    A[Farm API] -->|/api/metrics| P[Prometheus]
+    A[Farm API] -->|/api/v1/metrics| P[Prometheus]
     A -->|OTLP HTTP| T[Tempo]
+    W[Farm Web] -->|/api/v1/traces/ingest proxy| A
+    A --> T
     P --> G[Grafana]
     T --> G
 ```
@@ -73,16 +75,33 @@ The stack ships with a **Farm API Overview** dashboard that is provisioned autom
 
 ### Traces
 
-- **Recent traces table** from Tempo, showing the latest 20 traces for the `farm-api` service. Click a trace ID to view the full span waterfall.
+- **Recent traces table** from Tempo, showing the latest 20 traces for `farm-api` and `farm-web` services. Click a trace ID to view the full span waterfall.
+
+### Business Metrics
+
+- **Pipeline Executions Rate** — `pipeline_executions_total` by status (success / failure / cancelled)
+- **Component Operations Rate** — `component_operations_total` by operation (create / update / delete)
+- **Deployment Operations Total** — `deployment_operations_total` stat panel by operation and status
 
 ## Metrics Reference
 
-The API exposes these custom Prometheus metrics at `GET /api/metrics`:
+The API exposes these custom Prometheus metrics at `GET /api/v1/metrics`:
+
+### HTTP Metrics (auto-instrumented)
 
 | Metric                             | Type      | Labels                         | Description                              |
 |------------------------------------|-----------|--------------------------------|------------------------------------------|
 | `http_requests_total`              | Counter   | `method`, `route`, `status_code` | Total HTTP requests received             |
 | `http_request_duration_seconds`    | Histogram | `method`, `route`, `status_code` | Request duration in seconds              |
+
+### Business Metrics
+
+| Metric                          | Type    | Labels                         | Description                                 |
+|---------------------------------|---------|--------------------------------|---------------------------------------------|
+| `pipeline_executions_total`     | Counter | `status`, `pipeline_id`        | Pipeline runs completed (success/failure/cancelled) |
+| `component_operations_total`    | Counter | `operation`                    | Component create/update/delete operations   |
+| `deployment_operations_total`   | Counter | `operation`, `status`          | Deployment create/update operations         |
+| `team_operations_total`         | Counter | `operation`                    | Team create/update/delete operations        |
 
 In addition, all default Node.js process metrics are exposed (CPU, memory, event loop lag, GC).
 
@@ -101,6 +120,16 @@ histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_
 **Error rate as a percentage:**
 ```promql
 sum(rate(http_requests_total{job="farm-api", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{job="farm-api"}[5m]))
+```
+
+**Pipeline failure rate:**
+```promql
+sum(rate(pipeline_executions_total{status="failure"}[5m]))
+```
+
+**Component operations per minute:**
+```promql
+sum by (operation) (rate(component_operations_total[5m])) * 60
 ```
 
 ## Tracing
@@ -135,7 +164,63 @@ services:
 | `OTEL_EXPORTER_ENDPOINT`    | `http://localhost:4318/v1/traces`          | OTLP HTTP endpoint for traces            |
 | `OTEL_SERVICE_NAME`         | `farm-api`                                | Service name in trace metadata           |
 
-## Extending the Stack
+## Frontend Tracing
+
+The Next.js frontend (`farm-web`) ships with a complete browser-side OpenTelemetry setup.
+
+### Browser SDK
+
+`apps/web/src/lib/tracing.ts` bootstraps the `@opentelemetry/sdk-trace-web` SDK on first page load via the `<TracingInit />` component placed in the root layout. It registers auto-instrumentations for:
+
+- **Fetch / XHR** — automatically injects `traceparent` headers into all outgoing API calls, linking browser spans to backend spans in Tempo
+- **Document load** — captures navigation timing as a root span
+
+Spans are exported via OTLP HTTP to `POST /api/v1/traces/ingest`, a lightweight NestJS proxy that forwards them to Tempo. This avoids CORS issues since the browser posts to the same origin as the API.
+
+### Web Vitals
+
+`apps/web/src/lib/web-vitals.ts` reports the five Core Web Vitals as OTel spans:
+
+| Span name        | Metric | Attributes                          |
+|------------------|--------|-------------------------------------|
+| `web_vitals.lcp` | LCP    | `web_vital.value`, `web_vital.rating` |
+| `web_vitals.cls` | CLS    | `web_vital.value`, `web_vital.rating` |
+| `web_vitals.fid` | FID    | `web_vital.value`, `web_vital.rating` |
+| `web_vitals.ttfb`| TTFB   | `web_vital.value`, `web_vital.rating` |
+| `web_vitals.inp` | INP    | `web_vital.value`, `web_vital.rating` |
+
+### Manual Spans
+
+`apps/web/src/lib/otel-spans.ts` provides two typed helpers used throughout the frontend:
+
+- **`startSpan(name, attributes?)`** — returns a `Span` for manual lifecycle control
+- **`recordSpan<T>(name, fn, attributes?)`** — wraps a sync/async function, auto-sets `SpanStatusCode.OK/ERROR`, and always ends the span
+
+Key spans currently instrumented:
+
+| Span name                  | Triggered by                            | Attributes                          |
+|----------------------------|-----------------------------------------|-------------------------------------|
+| `auth.login`               | Login form submission                   | `auth.method`, `result`, `error.message` |
+| `catalog.search`           | Search term change in catalog           | `search.query`, `search.results_count` |
+| `catalog.component.view`   | Component detail page load              | `component.id`, `component.kind`    |
+| `pipeline.run.trigger`     | Trigger run button click                | `pipeline.id`                       |
+| `org.switch`               | Organization switcher selection         | `org.id`, `org.name`                |
+
+### User Context
+
+`apps/web/src/lib/otel-context.ts` stores the authenticated user identity and sets it as span attributes:
+
+```typescript
+// Called after successful login or org switch
+setUserContext(userId, username, orgId?)
+
+// Called on logout
+clearUserContext()
+```
+
+This links all browser spans to the authenticated user, enabling filtering by user in Grafana/Tempo.
+
+
 
 ### Adding Custom Dashboards
 
@@ -147,12 +232,12 @@ Create a `observability/grafana/provisioning/alerting/` directory and add alert 
 
 ### Using External Prometheus
 
-If you already have a Prometheus instance, point it at `http://<farm-host>:3000/api/metrics` with a scrape config:
+If you already have a Prometheus instance, point it at `http://<farm-host>:3000/api/v1/metrics` with a scrape config:
 
 ```yaml
 scrape_configs:
   - job_name: "farm-api"
-    metrics_path: "/api/metrics"
+    metrics_path: "/api/v1/metrics"
     static_configs:
       - targets: ["<farm-host>:3000"]
 ```

@@ -88,6 +88,7 @@ nav:
     - Organizations: user-guide/organizations.md
     - Helm Integration: user-guide/helm-integration.md
     - Kubernetes Operator: user-guide/kubernetes-operator.md
+    - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
     - developer-guide/index.md
