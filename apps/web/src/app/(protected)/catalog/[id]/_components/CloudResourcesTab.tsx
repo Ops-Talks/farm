@@ -146,7 +146,7 @@ export function CloudResourcesTab({ componentId, componentName }: CloudResources
   const { currentOrg } = useOrganization();
   const orgId = currentOrg?.id ?? '';
 
-  const { data: allResources = [], isPending } = useQuery({
+  const { data: allResources = [], isLoading: isPending } = useQuery({
     queryKey: ['cloud-resources', orgId, componentId],
     queryFn: () => cloudApi.discoverResources(orgId),
     enabled: isAuthenticated && !!orgId,

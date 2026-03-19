@@ -40,6 +40,9 @@ const navItems = [
   { href: "/plugins", label: "Plugins" },
   { href: "/integrations/settings", label: "Integrations" },
   { href: "/integrations/cloud", label: "Cloud Providers" },
+  { href: "/integrations/keycloak", label: "Keycloak SSO" },
+  { href: "/compliance", label: "Compliance" },
+  { href: "/compliance/policies", label: "Tag Policies" },
 ] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {

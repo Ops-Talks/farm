@@ -464,7 +464,7 @@ export function CloudProvidersClient() {
   const [modalProvider, setModalProvider] = useState<CloudProvider | null>(null);
 
   // Fetch current provider connection status
-  const { data: providerStatuses = [], isPending: isLoadingStatuses } = useQuery({
+  const { data: providerStatuses = [], isLoading: isLoadingStatuses } = useQuery({
     queryKey: ['cloud-providers', orgId],
     queryFn: () => cloudApi.getProviders(orgId),
     enabled: isAuthenticated && !!orgId,

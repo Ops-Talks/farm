@@ -19,6 +19,8 @@ import { HelmChartCard } from "./HelmChartCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
 import { CICDTab } from "./CICDTab";
 import { CloudResourcesTab } from "./CloudResourcesTab";
+import { ViolationsTab } from "./ViolationsTab";
+import { KyvernoPolicyTab } from "./KyvernoPolicyTab";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -250,6 +252,8 @@ export function ComponentDetailClient() {
           <TabsTrigger value="crds">CRDs</TabsTrigger>
           <TabsTrigger value="cicd">CI/CD</TabsTrigger>
           <TabsTrigger value="cloud">Cloud</TabsTrigger>
+          <TabsTrigger value="violations">Violations</TabsTrigger>
+          <TabsTrigger value="kyverno">Kyverno</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -493,6 +497,20 @@ export function ComponentDetailClient() {
               componentId={component.id}
               componentName={component.name}
             />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Violations tab ────────────────────────────────────────────── */}
+        <TabsContent value="violations">
+          <ErrorBoundary>
+            <ViolationsTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Kyverno tab ───────────────────────────────────────────────── */}
+        <TabsContent value="kyverno">
+          <ErrorBoundary>
+            <KyvernoPolicyTab component={component} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

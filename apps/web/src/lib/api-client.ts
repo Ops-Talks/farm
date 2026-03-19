@@ -3,6 +3,7 @@ import type {
   ArgoCDApplication,
   CatalogComponent,
   CircleCIPipeline,
+  ComplianceSummary,
   Deployment,
   DeploymentMatrixRow,
   DocumentationEntry,
@@ -18,8 +19,10 @@ import type {
   JaegerTracesResponse,
   JenkinsJob,
   JobInfo,
+  KeycloakCredential,
   KubernetesCRD,
   KubernetesRollout,
+  KyvernoPolicyReportResult,
   LokiLabelsResponse,
   LokiLogsResponse,
   LoginRequest,
@@ -37,6 +40,8 @@ import type {
   QueueInfo,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  ResourceViolation,
+  TagPolicy,
   Team,
   TravisBuild,
   User,
@@ -239,6 +244,27 @@ export const auth = {
 
   getUsers(): Promise<User[]> {
     return request("/v1/auth/users");
+  },
+
+  /**
+   * Redirect the browser to the Keycloak OIDC login flow for an organisation.
+   * This is a full-page navigation (not a fetch) — the backend handles the
+   * OIDC redirect and issues a JWT on callback.
+   */
+  keycloakLogin(orgId: string): void {
+    if (typeof window !== "undefined") {
+      window.location.href = `/api/v1/auth/keycloak?orgId=${encodeURIComponent(orgId)}`;
+    }
+  },
+
+  /**
+   * Enqueue a Keycloak group-sync job for the given organisation (admin only).
+   * Returns `{ queued: true }` when the job is accepted.
+   */
+  keycloakSync(orgId: string): Promise<{ queued: boolean }> {
+    return request<{ queued: boolean }>(`/v1/auth/keycloak/sync/${encodeURIComponent(orgId)}`, {
+      method: "POST",
+    });
   },
 };
 
@@ -1101,6 +1127,168 @@ export const cloud = {
     return request<{ value: string }>("/v1/cloud/secrets/resolve", {
       method: "POST",
       body: JSON.stringify({ ref, orgId }),
+    });
+  },
+};
+
+// -- Tag Policy types (FARM-E39) --
+
+export interface CreateTagPolicyInput {
+  orgId: string;
+  resourceType: string;
+  requiredKeys: string[];
+  severity: 'warning' | 'error';
+}
+
+export interface ListViolationsParams {
+  orgId: string;
+  provider?: string;
+  resourceType?: string;
+  resolved?: boolean;
+  skip?: number;
+  take?: number;
+}
+
+// -- Tag Policies API (FARM-E39) --
+
+export const tagPolicies = {
+  /** List all tag policies for an organisation. */
+  list(orgId: string): Promise<TagPolicy[]> {
+    return request<TagPolicy[]>(`/v1/tag-policies?orgId=${encodeURIComponent(orgId)}`);
+  },
+
+  /** Create a new tag policy (admin only). */
+  create(data: CreateTagPolicyInput): Promise<TagPolicy> {
+    return request<TagPolicy>('/v1/tag-policies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Update a tag policy (admin only). */
+  update(id: string, data: Partial<CreateTagPolicyInput>): Promise<TagPolicy> {
+    return request<TagPolicy>(`/v1/tag-policies/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Delete a tag policy (admin only). */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/tag-policies/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /** List resource violations with optional filters. */
+  listViolations(params: ListViolationsParams): Promise<{ data: ResourceViolation[]; total: number; skip: number; take: number }> {
+    const qs = toQueryString({
+      orgId: params.orgId,
+      ...(params.provider !== undefined && { provider: params.provider }),
+      ...(params.resourceType !== undefined && { resourceType: params.resourceType }),
+      ...(params.resolved !== undefined && { resolved: String(params.resolved) }),
+      ...(params.skip !== undefined && { skip: String(params.skip) }),
+      ...(params.take !== undefined && { take: String(params.take) }),
+    });
+    return request<{ data: ResourceViolation[]; total: number; skip: number; take: number }>(
+      `/v1/tag-policies/violations${qs}`,
+    );
+  },
+
+  /** Mark a violation as resolved. */
+  resolveViolation(id: string): Promise<ResourceViolation> {
+    return request<ResourceViolation>(
+      `/v1/tag-policies/violations/${encodeURIComponent(id)}/resolve`,
+      { method: 'PATCH' },
+    );
+  },
+
+  /** Get compliance summary for an organisation. */
+  getComplianceSummary(orgId: string): Promise<ComplianceSummary> {
+    return request<ComplianceSummary>(
+      `/v1/tag-policies/compliance-summary?orgId=${encodeURIComponent(orgId)}`,
+    );
+  },
+
+  /** Trigger a tag-audit job for an organisation. */
+  triggerAudit(orgId: string): Promise<{ queued: boolean }> {
+    return request<{ queued: boolean }>(
+      `/v1/tag-policies/audit?orgId=${encodeURIComponent(orgId)}`,
+      { method: 'POST' },
+    );
+  },
+
+  /** Export a tag policy as a Kyverno ClusterPolicy YAML (admin only). */
+  exportKyverno(id: string): Promise<{ yaml: string; filename: string }> {
+    return request<{ yaml: string; filename: string }>(
+      `/v1/tag-policies/${encodeURIComponent(id)}/export/kyverno`,
+    );
+  },
+};
+
+// -- Kyverno Policy Reports API (FARM-E40) --
+
+export const kyverno = {
+  /** List namespaced PolicyReport results, optionally filtered by namespace. */
+  listPolicyReports(namespace?: string): Promise<KyvernoPolicyReportResult[]> {
+    const url = namespace
+      ? `/v1/kubernetes/policy-reports?namespace=${encodeURIComponent(namespace)}`
+      : '/v1/kubernetes/policy-reports';
+    return request<KyvernoPolicyReportResult[]>(url);
+  },
+
+  /** List cluster-scoped ClusterPolicyReport results. */
+  listClusterPolicyReports(): Promise<KyvernoPolicyReportResult[]> {
+    return request<KyvernoPolicyReportResult[]>('/v1/kubernetes/cluster-policy-reports');
+  },
+};
+
+// -- Keycloak / Enterprise SSO API (FARM-E41) --
+
+export const keycloakCredentials = {
+  /**
+   * List Keycloak OIDC credentials for an organisation.
+   * Delegates to the shared integrations/credentials endpoint filtered by type.
+   */
+  list(orgId: string): Promise<KeycloakCredential[]> {
+    return request<KeycloakCredential[]>(
+      `/v1/integrations/credentials?orgId=${encodeURIComponent(orgId)}&type=keycloak`,
+    );
+  },
+
+  /**
+   * Create a new Keycloak OIDC credential for an organisation.
+   * The `keycloakUrl`, `realm`, `clientId`, and `clientSecret` are stored
+   * encrypted via `encryptedValue` in the integrations module.
+   */
+  create(data: {
+    orgId: string;
+    name: string;
+    keycloakUrl: string;
+    realm: string;
+    clientId: string;
+    clientSecret: string;
+  }): Promise<KeycloakCredential> {
+    return request<KeycloakCredential>('/v1/integrations/credentials', {
+      method: 'POST',
+      body: JSON.stringify({
+        orgId: data.orgId,
+        type: 'keycloak',
+        name: data.name,
+        encryptedValue: JSON.stringify({
+          keycloakUrl: data.keycloakUrl,
+          realm: data.realm,
+          clientId: data.clientId,
+          clientSecret: data.clientSecret,
+        }),
+      }),
+    });
+  },
+
+  /** Delete a Keycloak credential by id. */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/integrations/credentials/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
     });
   },
 };

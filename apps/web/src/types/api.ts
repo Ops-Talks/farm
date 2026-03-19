@@ -608,6 +608,47 @@ export interface TravisBuild {
   };
 }
 
+// -- Resource Tagging Governance (FARM-E39) --
+
+/** A tag policy that mandates required keys on a given resource type. */
+export interface TagPolicy {
+  id: string;
+  orgId: string;
+  /** Resource type to which this policy applies; use "*" for all types. */
+  resourceType: string;
+  /** Keys that must be present on every matching cloud resource. */
+  requiredKeys: string[];
+  /** How violations are classified. */
+  severity: 'warning' | 'error';
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A cloud resource that violates one or more tag policies. */
+export interface ResourceViolation {
+  id: string;
+  orgId: string;
+  resourceId: string;
+  resourceType: string;
+  provider: string;
+  /** Tag keys that are missing on the resource. */
+  missingKeys: string[];
+  /** Component UUID this resource is linked to (if any). */
+  linkedComponentId?: string;
+  detectedAt: string;
+  resolvedAt?: string;
+}
+
+/** Aggregated compliance data for an organisation. */
+export interface ComplianceSummary {
+  totalResources: number;
+  totalViolations: number;
+  /** 0–100 percentage of compliant resources. */
+  complianceRate: number;
+  byProvider: Record<string, { total: number; violations: number }>;
+  byResourceType: Record<string, { total: number; violations: number }>;
+}
+
 // -- Kubernetes CRDs (FARM-E37) --
 
 /** A Custom Resource Definition discovered in the cluster. */
@@ -637,4 +678,36 @@ export interface KubernetesRollout {
   /** Analysis run results attached to this rollout */
   analysisRunResults?: { name: string; phase: string }[];
   updatedAt: string;
+}
+
+// -- Keycloak / Enterprise SSO (FARM-E41) --
+
+/** A stored Keycloak OIDC credential for an organisation. */
+export interface KeycloakCredential {
+  id: string;
+  orgId: string;
+  name: string;
+  type: 'keycloak';
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Kyverno Policy Reports (FARM-E40) --
+
+/** A Kyverno PolicyReport (or ClusterPolicyReport) result returned by the backend. */
+export interface KyvernoPolicyReportResult {
+  name: string;
+  namespace?: string;
+  resourceId: string;
+  resourceType: string;
+  /** Farm component ID if the k8s resource carries a farm component label. */
+  linkedComponentId?: string;
+  results: Array<{
+    policy: string;
+    rule: string;
+    status: 'pass' | 'fail' | 'warn' | 'error' | 'skip';
+    message: string;
+    category?: string;
+    severity?: string;
+  }>;
 }

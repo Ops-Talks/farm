@@ -161,7 +161,7 @@ export function CloudCostWidget() {
   const { currentOrg } = useOrganization();
   const orgId = currentOrg?.id ?? '';
 
-  const { data: costData = [], isPending } = useQuery({
+  const { data: costData = [], isLoading: isPending } = useQuery({
     queryKey: ['cloud-cost', orgId],
     queryFn: () => cloudApi.getCost(orgId, 30),
     enabled: isAuthenticated && !!orgId,
