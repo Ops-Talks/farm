@@ -9,6 +9,7 @@ import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
 import { BuildStageExecutor } from "./build-stage.executor";
+import { CloudModule } from "../cloud/cloud.module";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -23,6 +24,7 @@ const isTest = process.env.NODE_ENV === "test";
     ...(isTest
       ? []
       : [BullModule.registerQueue({ name: QUEUE_NAMES.PIPELINE_EXECUTION })]),
+    CloudModule,
   ],
   controllers: [PipelinesController],
   providers: [

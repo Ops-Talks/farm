@@ -17,6 +17,23 @@ import {
   HelmDeployConfig,
 } from "../helm/helm-deploy.executor";
 import { BuildStageExecutor } from "./build-stage.executor";
+import {
+  AwsEcsExecutor,
+  AwsEcsDeployConfig,
+} from "../cloud/executors/aws-ecs.executor";
+import {
+  AwsLambdaExecutor,
+  AwsLambdaDeployConfig,
+} from "../cloud/executors/aws-lambda.executor";
+import {
+  GcpCloudRunExecutor,
+  GcpCloudRunDeployConfig,
+} from "../cloud/executors/gcp-cloud-run.executor";
+import {
+  AzureContainerAppsExecutor,
+  AzureContainerAppsDeployConfig,
+} from "../cloud/executors/azure-container-apps.executor";
+import { CloudSecretsService } from "../cloud/cloud-secrets.service";
 
 /**
  * Job payload for a pipeline execution task.
@@ -48,6 +65,12 @@ export class PipelineProcessor extends WorkerHost {
     private readonly eventsGateway: EventsGateway,
     @Optional() private readonly helmDeployExecutor?: HelmDeployExecutor,
     @Optional() private readonly buildStageExecutor?: BuildStageExecutor,
+    @Optional() private readonly awsEcsExecutor?: AwsEcsExecutor,
+    @Optional() private readonly awsLambdaExecutor?: AwsLambdaExecutor,
+    @Optional() private readonly gcpCloudRunExecutor?: GcpCloudRunExecutor,
+    @Optional()
+    private readonly azureContainerAppsExecutor?: AzureContainerAppsExecutor,
+    @Optional() private readonly cloudSecretsService?: CloudSecretsService,
   ) {
     super();
   }
@@ -160,6 +183,75 @@ export class PipelineProcessor extends WorkerHost {
           const helmConfig = stage.config as unknown as HelmDeployConfig;
           const result = await this.helmDeployExecutor.execute(
             helmConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else if (
+          stage.type === "deploy" &&
+          stage.config?.engine === "aws-ecs" &&
+          this.awsEcsExecutor
+        ) {
+          // Resolve any secret refs in the stage config before executing.
+          const resolvedConfig = this.cloudSecretsService
+            ? await this.cloudSecretsService.resolveConfigSecrets(
+                stage.config as unknown as Record<string, unknown>,
+                (stage.config as unknown as { orgId?: string }).orgId ?? "",
+              )
+            : (stage.config as unknown as Record<string, unknown>);
+          const result = await this.awsEcsExecutor.execute(
+            resolvedConfig as unknown as AwsEcsDeployConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else if (
+          stage.type === "deploy" &&
+          stage.config?.engine === "aws-lambda" &&
+          this.awsLambdaExecutor
+        ) {
+          const resolvedConfig = this.cloudSecretsService
+            ? await this.cloudSecretsService.resolveConfigSecrets(
+                stage.config as unknown as Record<string, unknown>,
+                (stage.config as unknown as { orgId?: string }).orgId ?? "",
+              )
+            : (stage.config as unknown as Record<string, unknown>);
+          const result = await this.awsLambdaExecutor.execute(
+            resolvedConfig as unknown as AwsLambdaDeployConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else if (
+          stage.type === "deploy" &&
+          stage.config?.engine === "gcp-cloud-run" &&
+          this.gcpCloudRunExecutor
+        ) {
+          const resolvedConfig = this.cloudSecretsService
+            ? await this.cloudSecretsService.resolveConfigSecrets(
+                stage.config as unknown as Record<string, unknown>,
+                (stage.config as unknown as { orgId?: string }).orgId ?? "",
+              )
+            : (stage.config as unknown as Record<string, unknown>);
+          const result = await this.gcpCloudRunExecutor.execute(
+            resolvedConfig as unknown as GcpCloudRunDeployConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else if (
+          stage.type === "deploy" &&
+          stage.config?.engine === "azure-container-apps" &&
+          this.azureContainerAppsExecutor
+        ) {
+          const resolvedConfig = this.cloudSecretsService
+            ? await this.cloudSecretsService.resolveConfigSecrets(
+                stage.config as unknown as Record<string, unknown>,
+                (stage.config as unknown as { orgId?: string }).orgId ?? "",
+              )
+            : (stage.config as unknown as Record<string, unknown>);
+          const result = await this.azureContainerAppsExecutor.execute(
+            resolvedConfig as unknown as AzureContainerAppsDeployConfig,
             (msg) => this.emitLog(runId, stage.name, msg),
           );
           stageResult.status = result.success ? "succeeded" : "failed";

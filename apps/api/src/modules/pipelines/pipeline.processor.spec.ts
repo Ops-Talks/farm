@@ -9,6 +9,11 @@ import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { Pipeline, PipelineStage } from "./entities/pipeline.entity";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
+import { AwsEcsExecutor } from "../cloud/executors/aws-ecs.executor";
+import { AwsLambdaExecutor } from "../cloud/executors/aws-lambda.executor";
+import { GcpCloudRunExecutor } from "../cloud/executors/gcp-cloud-run.executor";
+import { AzureContainerAppsExecutor } from "../cloud/executors/azure-container-apps.executor";
+import { CloudSecretsService } from "../cloud/cloud-secrets.service";
 
 /**
  * Helper that builds a minimal PipelineRun object for test fixtures.
@@ -690,6 +695,258 @@ describe("PipelineProcessor", () => {
         mockRunRepo.save.mock.calls as [PipelineRun][][]
       ).find((call) => call[0].status === PipelineRunStatus.SUCCEEDED);
       expect(succeededSave).toBeDefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Cloud executor dispatch — aws-ecs
+  // ---------------------------------------------------------------------------
+  describe("cloud executor dispatch — aws-ecs", () => {
+    const awsEcsStage: PipelineStage = {
+      id: "stage-ecs-1",
+      name: "ECS Deploy",
+      type: "deploy",
+      config: {
+        engine: "aws-ecs",
+        orgId: "org-uuid-1",
+        cluster: "my-cluster",
+        service: "my-service",
+        image: "my-image:latest",
+      } as unknown as Record<string, unknown>,
+      order: 1,
+    };
+
+    it("should dispatch aws-ecs stages to AwsEcsExecutor", async () => {
+      const mockAwsEcsExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "ECS deployed" }),
+      };
+      const mockSecretsService = {
+        resolveConfigSecrets: jest
+          .fn()
+          .mockImplementation((cfg: Record<string, unknown>) =>
+            Promise.resolve(cfg),
+          ),
+        isSecretRef: jest.fn().mockReturnValue(false),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsEcsExecutor, useValue: mockAwsEcsExecutor },
+          { provide: CloudSecretsService, useValue: mockSecretsService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([awsEcsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockAwsEcsExecutor.execute).toHaveBeenCalled();
+      const succeeded = (mockRunRepo.save.mock.calls as [PipelineRun][][]).find(
+        (c) => c[0].status === PipelineRunStatus.SUCCEEDED,
+      );
+      expect(succeeded).toBeDefined();
+    });
+
+    it("should mark run as failed when AwsEcsExecutor returns success=false", async () => {
+      const mockAwsEcsExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: false, output: "Cluster not found" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsEcsExecutor, useValue: mockAwsEcsExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([awsEcsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const failed = (mockRunRepo.save.mock.calls as [PipelineRun][][]).find(
+        (c) => c[0].status === PipelineRunStatus.FAILED,
+      );
+      expect(failed).toBeDefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Cloud executor dispatch — aws-lambda
+  // ---------------------------------------------------------------------------
+  describe("cloud executor dispatch — aws-lambda", () => {
+    const awsLambdaStage: PipelineStage = {
+      id: "stage-lambda-1",
+      name: "Lambda Deploy",
+      type: "deploy",
+      config: {
+        engine: "aws-lambda",
+        orgId: "org-uuid-1",
+        functionName: "my-fn",
+        imageUri: "123.dkr.ecr.us-east-1.amazonaws.com/my-image:latest",
+      } as unknown as Record<string, unknown>,
+      order: 1,
+    };
+
+    it("should dispatch aws-lambda stages to AwsLambdaExecutor", async () => {
+      const mockAwsLambdaExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "Lambda updated" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsLambdaExecutor, useValue: mockAwsLambdaExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([awsLambdaStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockAwsLambdaExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Cloud executor dispatch — gcp-cloud-run
+  // ---------------------------------------------------------------------------
+  describe("cloud executor dispatch — gcp-cloud-run", () => {
+    const gcpStage: PipelineStage = {
+      id: "stage-cloudrun-1",
+      name: "Cloud Run Deploy",
+      type: "deploy",
+      config: {
+        engine: "gcp-cloud-run",
+        orgId: "org-uuid-1",
+        service: "my-service",
+        region: "us-central1",
+        image: "gcr.io/my-project/my-image:latest",
+      } as unknown as Record<string, unknown>,
+      order: 1,
+    };
+
+    it("should dispatch gcp-cloud-run stages to GcpCloudRunExecutor", async () => {
+      const mockGcpExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "Cloud Run updated" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([gcpStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockGcpExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Cloud executor dispatch — azure-container-apps
+  // ---------------------------------------------------------------------------
+  describe("cloud executor dispatch — azure-container-apps", () => {
+    const azureStage: PipelineStage = {
+      id: "stage-aca-1",
+      name: "Container Apps Deploy",
+      type: "deploy",
+      config: {
+        engine: "azure-container-apps",
+        orgId: "org-uuid-1",
+        resourceGroup: "my-rg",
+        appName: "my-app",
+        image: "my-registry.azurecr.io/my-image:latest",
+      } as unknown as Record<string, unknown>,
+      order: 1,
+    };
+
+    it("should dispatch azure-container-apps stages to AzureContainerAppsExecutor", async () => {
+      const mockAzureExecutor = {
+        execute: jest.fn().mockResolvedValue({
+          success: true,
+          output: "Container App updated",
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([azureStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockAzureExecutor.execute).toHaveBeenCalled();
     });
   });
 });

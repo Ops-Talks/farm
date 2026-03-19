@@ -33,10 +33,11 @@ describe("Plugin Manager (e2e)", () => {
     "core-kubernetes",
     "core-analytics",
     "core-helm",
+    "cloud",
   ];
 
   describe("GET /api/plugins", () => {
-    it("should return all 13 core plugins with name, version, and description", async () => {
+    it("should return all 14 core plugins with name, version, and description", async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
@@ -49,7 +50,7 @@ describe("Plugin Manager (e2e)", () => {
       }[];
 
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins).toHaveLength(13);
+      expect(plugins).toHaveLength(14);
 
       for (const plugin of plugins) {
         expect(plugin.name).toBeDefined();

@@ -33,6 +33,7 @@ import { IntegrationsModule } from "./modules/integrations/integrations.module";
 import { KubernetesModule } from "./modules/kubernetes/kubernetes.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { HelmModule } from "./modules/helm/helm.module";
+import { CloudModule } from "./modules/cloud/cloud.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -229,6 +230,14 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Helm chart integration and release discovery",
         },
         module: HelmModule,
+      },
+      {
+        metadata: {
+          name: "cloud",
+          version: "1.0.0",
+          description: "Cloud provider integrations (AWS, GCP, Azure)",
+        },
+        module: CloudModule,
       },
     ]),
   ],
