@@ -88,6 +88,7 @@ nav:
     - Organizations: user-guide/organizations.md
     - Helm Integration: user-guide/helm-integration.md
     - Kubernetes Operator: user-guide/kubernetes-operator.md
+    - Cloud Providers: user-guide/cloud-providers.md
     - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -128,6 +129,7 @@ nav:
     - Helm API: api-reference/helm.md
     - Kubernetes API: api-reference/kubernetes.md
     - CI/CD Integrations API: api-reference/cicd.md
+    - Cloud Integrations API: api-reference/cloud.md
 
 extra_css:
   - stylesheets/extra.css

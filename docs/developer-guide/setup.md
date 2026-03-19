@@ -322,6 +322,11 @@ npm run start:debug
 | `TEAMS_WEBHOOK_URL` | *(empty)* | Microsoft Teams webhook URL for notifications (leave empty to disable) |
 | `PLUGINS_DIR` | `./plugins` | Directory for external runtime plugins |
 | `KUBECONFIG_PATH` | *(empty)* | Path to a kubeconfig file; leave empty to use in-cluster config (Kubernetes, Helm, and CRD features) |
+| `AWS_ACCESS_KEY_ID` | *(empty)* | AWS IAM access key ID — only needed when using a single global AWS credential instead of per-org credentials |
+| `AWS_SECRET_ACCESS_KEY` | *(empty)* | AWS IAM secret access key — paired with `AWS_ACCESS_KEY_ID` |
+| `AWS_REGION` | `us-east-1` | Default AWS region for cloud discovery and deployments |
+| `GCP_PROJECT_ID` | *(empty)* | Default GCP project ID — only needed for global GCP credential fallback |
+| `AZURE_SUBSCRIPTION_ID` | *(empty)* | Default Azure subscription ID — only needed for global Azure credential fallback |
 
 ### Frontend
 
