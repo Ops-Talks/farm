@@ -1,6 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { getQueueToken } from "@nestjs/bullmq";
 import { AuthController } from "../auth.controller";
 import { AuthService } from "../auth.service";
+import { KeycloakOidcService } from "../keycloak-oidc.service";
+import { QUEUE_NAMES } from "../../../common/queues/queue-names";
 import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
 
@@ -11,6 +14,14 @@ const mockAuthService = {
   findAll: jest.fn(),
 };
 
+const mockKeycloakOidcService = {
+  getStrategyForOrg: jest.fn(),
+};
+
+const mockKeycloakSyncQueue = {
+  add: jest.fn(),
+};
+
 describe("AuthController", () => {
   let controller: AuthController;
   let service: typeof mockAuthService;
@@ -18,7 +29,17 @@ describe("AuthController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: mockAuthService }],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        {
+          provide: KeycloakOidcService,
+          useValue: mockKeycloakOidcService,
+        },
+        {
+          provide: getQueueToken(QUEUE_NAMES.KEYCLOAK_SYNC),
+          useValue: mockKeycloakSyncQueue,
+        },
+      ],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);

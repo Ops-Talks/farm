@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.10] - 2026-03-19
+
+### Added
+- **observability**: add Loki, Promtail, Node Exporter and new Grafana dashboards.
+- **web**: add Keycloak SSO login and integration management UI (FARM-E41).
+- **api**: add Keycloak enterprise SSO integration (FARM-E41).
+- **web**: add Kyverno policy violations tab and ClusterPolicy YAML export (FARM-E40).
+- **api**: add Kyverno PolicyReport reader and ClusterPolicy export (FARM-E40).
+- **web**: add compliance dashboard and tag governance UI (FARM-E39).
+- **api**: add resource tag governance module (FARM-E39).
+- **web**: add cloud provider integrations UI (FARM-E38).
+- **api**: add cloud provider integrations module (FARM-E38).
+
+### Changed
+- **observability**: update observability guides for Loki, Promtail, and Node Exporter.
+- add Keycloak SSO documentation (FARM-E41).
+- add tag governance and Kyverno integration documentation (FARM-E39/E40).
+- add cloud provider integrations documentation (FARM-E38).
+
+### Fixed
+- **api**: read app version from package.json instead of hardcoded fallback.
+- **api**: use COUNT(*) in ORDER BY for usage analytics queries.
+- **web**: replace isPending with isLoading for disabled useQuery skeletons.
+- allow all authenticated users to list plugins; fix catalog e2e locators.
+
 ## [0.10.9] - 2026-03-19
 
 ### Added
