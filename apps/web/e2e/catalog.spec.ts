@@ -155,11 +155,11 @@ test("authenticated user can open the create component form", async ({
     page.getByRole("heading", { name: "Register Component" }),
   ).toBeVisible();
 
-  // The form inputs should be present, identified by their labels (htmlFor)
-  await expect(page.getByLabel("Name")).toBeVisible();
-  await expect(page.getByLabel("Owner")).toBeVisible();
-  await expect(page.getByLabel("Kind")).toBeVisible();
-  await expect(page.getByLabel("Lifecycle")).toBeVisible();
+  // The form inputs should be present, identified by their IDs
+  await expect(page.locator("#comp-name")).toBeVisible();
+  await expect(page.locator("#comp-owner")).toBeVisible();
+  await expect(page.locator("#comp-kind")).toBeVisible();
+  await expect(page.locator("#comp-lifecycle")).toBeVisible();
 });
 
 test("authenticated user can create a component and see it in the list", async ({
@@ -170,11 +170,11 @@ test("authenticated user can create a component and see it in the list", async (
   await page.goto("/catalog/new");
 
   // Fill in the required form fields
-  await page.getByLabel("Name").fill(MOCK_COMPONENT.name);
-  await page.getByLabel("Owner").fill(MOCK_COMPONENT.owner);
+  await page.locator("#comp-name").fill(MOCK_COMPONENT.name);
+  await page.locator("#comp-owner").fill(MOCK_COMPONENT.owner);
 
   // Select kind = service (the default, but set it explicitly)
-  await page.getByLabel("Kind").selectOption("service");
+  await page.locator("#comp-kind").selectOption("service");
 
   // Submit the form
   await page.getByRole("button", { name: "Register Component" }).click();

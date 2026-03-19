@@ -50,7 +50,6 @@ export class PluginManagerController {
    * Retrieves a list of all registered plugins
    */
   @Get()
-  @Roles("admin")
   @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get all registered plugins" })
   @ApiResponse({

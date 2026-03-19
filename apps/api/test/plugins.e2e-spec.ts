@@ -34,6 +34,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-analytics",
     "core-helm",
     "cloud",
+    "core-tag-governance",
   ];
 
   describe("GET /api/plugins", () => {
@@ -50,7 +51,7 @@ describe("Plugin Manager (e2e)", () => {
       }[];
 
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins).toHaveLength(14);
+      expect(plugins).toHaveLength(15);
 
       for (const plugin of plugins) {
         expect(plugin.name).toBeDefined();
@@ -84,7 +85,7 @@ describe("Plugin Manager (e2e)", () => {
       await request(app.getHttpServer()).get("/api/v1/plugins").expect(401);
     });
 
-    it("should reject non-admin users", async () => {
+    it("should allow any authenticated user to list plugins", async () => {
       await registerAndLogin(app, {
         username: "plugin_viewer",
         email: "plugin_viewer@test.com",
@@ -110,7 +111,7 @@ describe("Plugin Manager (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${viewerToken}`)
-        .expect(403);
+        .expect(200);
     });
   });
 
