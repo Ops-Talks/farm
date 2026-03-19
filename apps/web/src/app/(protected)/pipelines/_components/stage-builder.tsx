@@ -9,11 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { PipelineStage } from "@/types/api";
 import { BuildStageCard, type BuildStageFormValues } from "./BuildStageCard";
+import {
+  CloudDeployStageCard,
+  CLOUD_DEPLOY_ENGINES,
+  type CloudDeployEngine,
+  type CloudDeployConfig,
+} from "./CloudDeployStageCard";
 
-const STAGE_TYPES = ["script", "approval", "deploy", "notify", "build"] as const;
+const STAGE_TYPES = ["script", "approval", "deploy", "notify", "build", "aws-ecs", "aws-lambda", "gcp-cloud-run", "azure-container-apps"] as const;
 type StageType = (typeof STAGE_TYPES)[number];
 
-const CONFIG_FIELD: Record<StageType, { key: string; label: string; placeholder: string }> = {
+// Cloud deploy types are handled by CloudDeployStageCard; generic types use CONFIG_FIELD
+const CLOUD_DEPLOY_TYPES = new Set<string>(["aws-ecs", "aws-lambda", "gcp-cloud-run", "azure-container-apps"]);
+
+const CONFIG_FIELD: Record<string, { key: string; label: string; placeholder: string }> = {
   script: { key: "command", label: "Command", placeholder: "e.g. npm run build" },
   approval: { key: "message", label: "Message", placeholder: "Approval required" },
   deploy: { key: "componentId", label: "Component ID", placeholder: "UUID of component" },
@@ -22,7 +31,7 @@ const CONFIG_FIELD: Record<StageType, { key: string; label: string; placeholder:
 };
 
 const TYPE_BADGE_VARIANT: Record<
-  StageType,
+  string,
   "default" | "secondary" | "outline" | "destructive"
 > = {
   script: "secondary",
@@ -30,9 +39,19 @@ const TYPE_BADGE_VARIANT: Record<
   deploy: "default",
   notify: "secondary",
   build: "outline",
+  "aws-ecs": "default",
+  "aws-lambda": "default",
+  "gcp-cloud-run": "default",
+  "azure-container-apps": "default",
 };
 
 function getConfigSummary(stage: PipelineStage): string {
+  if (CLOUD_DEPLOY_TYPES.has(stage.type)) {
+    // For cloud deploy stages, show the key config value
+    const config = stage.config as Record<string, unknown>;
+    const summary = config["service"] ?? config["functionName"] ?? config["appName"] ?? config["cluster"];
+    return summary ? String(summary) : "";
+  }
   const field = CONFIG_FIELD[stage.type as StageType];
   if (!field) return "";
   const value = stage.config[field.key];
@@ -73,7 +92,9 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
 
   // Watch type to derive the correct config field label/placeholder
   const currentType = watch("type");
-  const configField = CONFIG_FIELD[currentType];
+  // Cloud deploy types use CloudDeployStageCard, so fall back to a safe default
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const configField = (CONFIG_FIELD[currentType] ?? CONFIG_FIELD["script"])!;
 
   // HTML5 Drag-and-Drop state
   const dragIndexRef = useRef<number | null>(null);
@@ -119,7 +140,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
       name: values.name.trim(),
       type: values.type,
       order: stages.length,
-      config: values.configValue ? { [field.key]: values.configValue } : {},
+      config: values.configValue && field ? { [field.key]: values.configValue } : {},
     };
     onChange([...stages, newStage]);
     // Reset the form and close the panel
@@ -141,6 +162,23 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
       type: "build",
       order: stages.length,
       config: buildConfig as unknown as Record<string, unknown>,
+    };
+    onChange([...stages, newStage]);
+    reset({ name: "", type: "script", configValue: "" });
+    setShowAddForm(false);
+  }
+
+  // Handler for cloud deploy stages — called from CloudDeployStageCard
+  function onAddCloudDeployStage(deployConfig: CloudDeployConfig) {
+    const name = watch("name");
+    const stageName = name.trim() || (CLOUD_DEPLOY_ENGINES.find((e) => e.value === deployConfig.engine)?.label ?? deployConfig.engine);
+    const { engine, ...config } = deployConfig;
+    const newStage: PipelineStage = {
+      id: crypto.randomUUID(),
+      name: stageName,
+      type: engine,
+      order: stages.length,
+      config: config as unknown as Record<string, unknown>,
     };
     onChange([...stages, newStage]);
     reset({ name: "", type: "script", configValue: "" });
@@ -266,11 +304,18 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                       },
                     })}
                   >
-                    {STAGE_TYPES.map((t) => (
+                    {STAGE_TYPES.filter((t) => !CLOUD_DEPLOY_TYPES.has(t)).map((t) => (
                       <option key={t} value={t}>
                         {t}
                       </option>
                     ))}
+                    <optgroup label="Cloud Deploy">
+                      {CLOUD_DEPLOY_ENGINES.map((e) => (
+                        <option key={e.value} value={e.value}>
+                          {e.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
               </div>
@@ -279,6 +324,16 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
               {currentType === "build" ? (
                 <BuildStageCard
                   onSave={onAddBuildStage}
+                  onCancel={() => {
+                    setShowAddForm(false);
+                    reset({ name: "", type: "script", configValue: "" });
+                  }}
+                />
+              ) : CLOUD_DEPLOY_TYPES.has(currentType) ? (
+                /* For cloud deploy types: render CloudDeployStageCard */
+                <CloudDeployStageCard
+                  engine={currentType as CloudDeployEngine}
+                  onSave={onAddCloudDeployStage}
                   onCancel={() => {
                     setShowAddForm(false);
                     reset({ name: "", type: "script", configValue: "" });

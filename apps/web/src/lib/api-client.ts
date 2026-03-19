@@ -1051,3 +1051,56 @@ export const travisci = {
     );
   },
 };
+
+// -- Cloud Provider types (FARM-E38) --
+
+export interface CloudResource {
+  provider: "aws" | "gcp" | "azure";
+  resourceId: string;
+  /** e.g. "ecs-service", "cloud-run", "container-app", "rds", "cloud-sql" */
+  resourceType: string;
+  name: string;
+  region: string;
+  tags: Record<string, string>;
+  linkedComponentId?: string;
+}
+
+export interface CloudCostEntry {
+  environment: string;
+  component?: string;
+  cost: number;
+  currency: string;
+}
+
+// -- Cloud Provider API (FARM-E38) --
+
+export const cloud = {
+  /** List connected cloud providers and their connection status for an org. */
+  getProviders(orgId: string): Promise<{ provider: string; connected: boolean; name: string }[]> {
+    return request<{ provider: string; connected: boolean; name: string }[]>(
+      `/v1/cloud/providers/${encodeURIComponent(orgId)}`,
+    );
+  },
+
+  /** Discover cloud resources for an org, optionally filtered by provider. */
+  discoverResources(orgId: string, provider?: string): Promise<CloudResource[]> {
+    return request<CloudResource[]>(
+      `/v1/cloud/resources?orgId=${encodeURIComponent(orgId)}${provider ? `&provider=${encodeURIComponent(provider)}` : ""}`,
+    );
+  },
+
+  /** Fetch cloud cost breakdown for the last N days for an org. */
+  getCost(orgId: string, days = 30): Promise<{ provider: string; entries: CloudCostEntry[] }[]> {
+    return request<{ provider: string; entries: CloudCostEntry[] }[]>(
+      `/v1/cloud/cost?orgId=${encodeURIComponent(orgId)}&days=${days}`,
+    );
+  },
+
+  /** Resolve a cloud secret reference to its plain-text value. */
+  resolveSecret(ref: string, orgId: string): Promise<{ value: string }> {
+    return request<{ value: string }>("/v1/cloud/secrets/resolve", {
+      method: "POST",
+      body: JSON.stringify({ ref, orgId }),
+    });
+  },
+};

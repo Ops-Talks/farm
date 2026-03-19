@@ -339,7 +339,16 @@ export interface DocumentationSearchResult {
 export interface PipelineStage {
   id: string;
   name: string;
-  type: "script" | "approval" | "deploy" | "notify" | "build";
+  type:
+    | "script"
+    | "approval"
+    | "deploy"
+    | "notify"
+    | "build"
+    | "aws-ecs"
+    | "aws-lambda"
+    | "gcp-cloud-run"
+    | "azure-container-apps";
   order: number;
   config: Record<string, unknown>;
 }

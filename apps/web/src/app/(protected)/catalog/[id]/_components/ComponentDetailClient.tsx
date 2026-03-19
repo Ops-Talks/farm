@@ -18,6 +18,7 @@ import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
 import { CICDTab } from "./CICDTab";
+import { CloudResourcesTab } from "./CloudResourcesTab";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -248,6 +249,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="helm">Helm</TabsTrigger>
           <TabsTrigger value="crds">CRDs</TabsTrigger>
           <TabsTrigger value="cicd">CI/CD</TabsTrigger>
+          <TabsTrigger value="cloud">Cloud</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -481,6 +483,16 @@ export function ComponentDetailClient() {
         <TabsContent value="cicd">
           <ErrorBoundary>
             <CICDTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Cloud tab ─────────────────────────────────────────────────── */}
+        <TabsContent value="cloud">
+          <ErrorBoundary>
+            <CloudResourcesTab
+              componentId={component.id}
+              componentName={component.name}
+            />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

@@ -7,6 +7,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { HelmReleasesPanel } from "./HelmReleasesPanel";
 import { RolloutStatusCard } from "./RolloutStatusCard";
 import { ArgoCDStatusCard } from "./ArgoCDStatusCard";
+import { CloudCostWidget } from "./CloudCostWidget";
 
 export function EnvironmentsClient() {
   return (
@@ -17,6 +18,10 @@ export function EnvironmentsClient() {
           Monitor Helm releases, Argo Rollout status, and ArgoCD applications across all cluster namespaces.
         </p>
       </div>
+
+      <ErrorBoundary>
+        <CloudCostWidget />
+      </ErrorBoundary>
 
       <ErrorBoundary>
         <HelmReleasesPanel />

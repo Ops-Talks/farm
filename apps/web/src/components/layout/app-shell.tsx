@@ -38,6 +38,8 @@ const navItems = [
   { href: "/organizations", label: "Organizations" },
   { href: "/teams", label: "Teams" },
   { href: "/plugins", label: "Plugins" },
+  { href: "/integrations/settings", label: "Integrations" },
+  { href: "/integrations/cloud", label: "Cloud Providers" },
 ] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {
