@@ -310,7 +310,7 @@ export class AnalyticsService {
         resourceType: "Component",
       })
       .groupBy("al.resourceId")
-      .orderBy("accessCount", "DESC")
+      .orderBy("COUNT(*)", "DESC")
       .limit(10)
       .getRawMany();
 
@@ -348,7 +348,7 @@ export class AnalyticsService {
       .where("al.createdAt >= :since", { since })
       .groupBy("al.actorId")
       .addGroupBy("al.actorUsername")
-      .orderBy("actionCount", "DESC")
+      .orderBy("COUNT(*)", "DESC")
       .limit(10)
       .getRawMany();
 
@@ -368,7 +368,7 @@ export class AnalyticsService {
       .addSelect("COUNT(*)", "count")
       .where("al.createdAt >= :since", { since })
       .groupBy("al.action")
-      .orderBy("count", "DESC")
+      .orderBy("COUNT(*)", "DESC")
       .getRawMany();
 
     const actionBreakdown: ActionBreakdownDto[] = actionBreakdownRows.map(
