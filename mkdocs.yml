@@ -89,6 +89,9 @@ nav:
     - Helm Integration: user-guide/helm-integration.md
     - Kubernetes Operator: user-guide/kubernetes-operator.md
     - Cloud Providers: user-guide/cloud-providers.md
+    - Tag Governance: user-guide/tag-governance.md
+    - Kyverno Integration: user-guide/kyverno-integration.md
+    - Keycloak SSO: user-guide/keycloak-sso.md
     - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -130,6 +133,9 @@ nav:
     - Kubernetes API: api-reference/kubernetes.md
     - CI/CD Integrations API: api-reference/cicd.md
     - Cloud Integrations API: api-reference/cloud.md
+    - Tag Governance API: api-reference/tag-governance.md
+    - Kyverno API: api-reference/kyverno.md
+    - Keycloak SSO API: api-reference/keycloak-sso.md
 
 extra_css:
   - stylesheets/extra.css
