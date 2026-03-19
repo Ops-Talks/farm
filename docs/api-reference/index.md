@@ -47,6 +47,7 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Analytics](analytics.md) | `/api/v1/analytics` | Catalog health, DORA metrics, usage reports |
 | [Helm](helm.md) | `/api/v1/helm` | Helm release discovery and sync |
 | [Kubernetes](kubernetes.md) | `/api/v1/kubernetes` | Kubernetes workload and CRD discovery |
+| [CI/CD Integrations](cicd.md) | `/api/v1/argocd`, `/api/v1/circleci`, `/api/v1/jenkins`, `/api/v1/travisci` | External CI/CD platform integrations |
 
 ## Response Format
 

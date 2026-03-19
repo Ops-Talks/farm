@@ -17,6 +17,7 @@ import type { CatalogComponent, Deployment } from "@/types/api";
 import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
+import { CICDTab } from "./CICDTab";
 
 function lifecycleVariant(
   lifecycle: string,
@@ -230,6 +231,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="helm">Helm</TabsTrigger>
           <TabsTrigger value="crds">CRDs</TabsTrigger>
+          <TabsTrigger value="cicd">CI/CD</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -456,6 +458,13 @@ export function ComponentDetailClient() {
         <TabsContent value="crds">
           <ErrorBoundary>
             <CRDResourcesTab />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── CI/CD tab ─────────────────────────────────────────────────── */}
+        <TabsContent value="cicd">
+          <ErrorBoundary>
+            <CICDTab component={component} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

@@ -8,6 +8,7 @@ import { PipelineProcessor } from "./pipeline.processor";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
+import { BuildStageExecutor } from "./build-stage.executor";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -27,6 +28,7 @@ const isTest = process.env.NODE_ENV === "test";
   providers: [
     PipelinesService,
     HelmDeployExecutor,
+    BuildStageExecutor,
     ...(isTest ? [] : [PipelineProcessor]),
   ],
   exports: [PipelinesService],

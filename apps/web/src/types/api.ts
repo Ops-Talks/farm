@@ -61,6 +61,10 @@ export interface CatalogComponent {
   dependencies?: CatalogComponent[];
   /** Optional URL pointing to the source repository (GitHub, GitLab, etc.) */
   repositoryUrl?: string;
+  /** Optional ArgoCD application name linked to this component (FARM-E35) */
+  argocdApp?: string;
+  /** Optional VCS URL used to filter CI pipelines (FARM-E35) */
+  vcsUrl?: string;
   /** Optional Helm chart configuration (FARM-E36) */
   helmChart?: HelmChart;
   createdAt: string;
@@ -335,7 +339,7 @@ export interface DocumentationSearchResult {
 export interface PipelineStage {
   id: string;
   name: string;
-  type: "script" | "approval" | "deploy" | "notify";
+  type: "script" | "approval" | "deploy" | "notify" | "build";
   order: number;
   config: Record<string, unknown>;
 }
@@ -517,6 +521,82 @@ export interface HelmRelease {
 export interface HelmSyncResult {
   synced: number;
   errors: string[];
+}
+
+// -- CI/CD External Integrations (FARM-E35) --
+
+/** A stored credential for an external CI/CD integration. */
+export interface IntegrationCredential {
+  id: string;
+  orgId: string;
+  type: "argocd" | "circleci" | "jenkins" | "travisci";
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** An ArgoCD Application resource returned from the cluster. */
+export interface ArgoCDApplication {
+  name: string;
+  namespace: string;
+  status: {
+    health: {
+      status: string; // e.g. "Healthy", "Degraded", "Progressing", "Unknown"
+    };
+    sync: {
+      status: string; // e.g. "Synced", "OutOfSync", "Unknown"
+    };
+    operationState?: {
+      startedAt?: string;
+      finishedAt?: string;
+    };
+  };
+  spec: {
+    source: {
+      repoURL: string;
+      targetRevision: string;
+    };
+  };
+}
+
+/** A CircleCI pipeline object. */
+export interface CircleCIPipeline {
+  id: string;
+  number: number;
+  project_slug: string;
+  state: string; // e.g. "created", "errored", "setup-pending", "setup", "pending"
+  trigger: {
+    type: string; // e.g. "webhook", "schedule", "api"
+  };
+  updated_at: string;
+}
+
+/** A Jenkins job object. */
+export interface JenkinsJob {
+  name: string;
+  url: string;
+  color: string; // e.g. "blue" (SUCCESS), "red" (FAILURE), "yellow" (UNSTABLE), "notbuilt"
+  lastBuild?: {
+    number: number;
+    result: string | null; // "SUCCESS" | "FAILURE" | "UNSTABLE" | "ABORTED" | null
+    timestamp: number;
+    duration: number;
+  };
+}
+
+/** A Travis CI build object. */
+export interface TravisBuild {
+  id: number;
+  number: string;
+  state: string; // e.g. "passed", "failed", "errored", "canceled", "created", "started"
+  started_at: string | null;
+  finished_at: string | null;
+  branch: {
+    name: string;
+  };
+  repository: {
+    slug: string;
+  };
 }
 
 // -- Kubernetes CRDs (FARM-E37) --

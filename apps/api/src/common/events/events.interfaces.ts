@@ -11,6 +11,8 @@ export enum FarmEvent {
   PIPELINE_LOG = "pipeline.log",
   AUDIT_LOG_CREATED = "audit-log.created",
   ROLLOUT_UPDATED = "rollout.updated",
+  CI_BUILD_UPDATED = "ci.build.updated",
+  ARGOCD_SYNC_UPDATED = "argocd.sync.updated",
 }
 
 /**

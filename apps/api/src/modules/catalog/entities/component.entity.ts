@@ -229,6 +229,15 @@ export class Component {
   helmChart: HelmChartMetadata | null;
 
   @ApiProperty({
+    example: "my-app",
+    description: "ArgoCD application name associated with this component",
+    required: false,
+    nullable: true,
+  })
+  @Column({ nullable: true, type: "varchar" })
+  argocdApp: string | null;
+
+  @ApiProperty({
     type: () => [Component],
     description: "Components that this component depends on",
     required: false,

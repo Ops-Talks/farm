@@ -1,6 +1,8 @@
 import type {
   AlertingRule,
+  ArgoCDApplication,
   CatalogComponent,
+  CircleCIPipeline,
   Deployment,
   DeploymentMatrixRow,
   DocumentationEntry,
@@ -11,8 +13,10 @@ import type {
   HealthStatus,
   HelmRelease,
   HelmSyncResult,
+  IntegrationCredential,
   JaegerTrace,
   JaegerTracesResponse,
+  JenkinsJob,
   JobInfo,
   KubernetesCRD,
   KubernetesRollout,
@@ -34,6 +38,7 @@ import type {
   RefreshTokenRequest,
   RefreshTokenResponse,
   Team,
+  TravisBuild,
   User,
 } from "@/types/api";
 
@@ -935,6 +940,114 @@ export const kubernetes = {
   }): Promise<KubernetesRollout[]> {
     return request<KubernetesRollout[]>(
       `/v1/kubernetes/rollouts${toQueryString(params ?? {})}`,
+    );
+  },
+};
+
+// -- Integration Credentials API (FARM-E35) --
+
+export const integrations = {
+  credentials: {
+    /** List all stored integration credentials, optionally filtered by type. */
+    list(type?: string): Promise<IntegrationCredential[]> {
+      return request<IntegrationCredential[]>(
+        `/v1/integrations/credentials${toQueryString(type ? { type } : {})}`,
+      );
+    },
+
+    /** Create a new integration credential. */
+    create(dto: Record<string, unknown>): Promise<IntegrationCredential> {
+      return request<IntegrationCredential>("/v1/integrations/credentials", {
+        method: "POST",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    /** Update an existing integration credential by id. */
+    update(id: string, dto: Record<string, unknown>): Promise<IntegrationCredential> {
+      return request<IntegrationCredential>(`/v1/integrations/credentials/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    /** Delete an integration credential by id. */
+    remove(id: string): Promise<void> {
+      return request<void>(`/v1/integrations/credentials/${id}`, {
+        method: "DELETE",
+      });
+    },
+  },
+};
+
+// -- ArgoCD API (FARM-E35) --
+
+export const argocd = {
+  /** List ArgoCD applications from the connected ArgoCD instance. */
+  listApplications(): Promise<ArgoCDApplication[]> {
+    return request<ArgoCDApplication[]>("/v1/argocd/applications");
+  },
+
+  /** Trigger an ArgoCD sync for the given application name. */
+  syncApplication(name: string): Promise<{ message: string }> {
+    return request<{ message: string }>(
+      `/v1/argocd/applications/${encodeURIComponent(name)}/sync`,
+      { method: "POST" },
+    );
+  },
+};
+
+// -- CircleCI API (FARM-E35) --
+
+export const circleci = {
+  /** List CircleCI pipelines, optionally filtered by VCS URL. */
+  listPipelines(vcsUrl?: string): Promise<CircleCIPipeline[]> {
+    return request<CircleCIPipeline[]>(
+      `/v1/circleci/pipelines${toQueryString(vcsUrl ? { vcsUrl } : {})}`,
+    );
+  },
+
+  /** Trigger a CircleCI pipeline by project slug. */
+  triggerPipeline(slug: string): Promise<{ id: string; number: number }> {
+    return request<{ id: string; number: number }>(
+      `/v1/circleci/pipelines/${encodeURIComponent(slug)}/trigger`,
+      { method: "POST" },
+    );
+  },
+};
+
+// -- Jenkins API (FARM-E35) --
+
+export const jenkins = {
+  /** List Jenkins jobs from the connected Jenkins instance. */
+  listJobs(): Promise<JenkinsJob[]> {
+    return request<JenkinsJob[]>("/v1/jenkins/jobs");
+  },
+
+  /** Trigger a Jenkins build for the given job name. */
+  triggerBuild(name: string): Promise<void> {
+    return request<void>(
+      `/v1/jenkins/jobs/${encodeURIComponent(name)}/build`,
+      { method: "POST" },
+    );
+  },
+};
+
+// -- Travis CI API (FARM-E35) --
+
+export const travisci = {
+  /** List Travis CI builds, optionally filtered by repository slug. */
+  listBuilds(repoSlug?: string): Promise<TravisBuild[]> {
+    return request<TravisBuild[]>(
+      `/v1/travisci/builds${toQueryString(repoSlug ? { repoSlug } : {})}`,
+    );
+  },
+
+  /** Restart a Travis CI build by id. */
+  restartBuild(id: number | string): Promise<{ message: string }> {
+    return request<{ message: string }>(
+      `/v1/travisci/builds/${encodeURIComponent(String(id))}/restart`,
+      { method: "POST" },
     );
   },
 };

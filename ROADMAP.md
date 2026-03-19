@@ -768,7 +768,7 @@ A detailed gap analysis was produced comparing the current implementation agains
 | FARM-S127 | Story | Username login plugin: configure Better Auth `username` plugin so existing username-based accounts continue to work without requiring email login | `TODO` |
 | FARM-S128 | Story | Organization module alignment: evaluate replacing FARM-E25 `OrgContextInterceptor` + `OrganizationModule` with Better Auth `organization` plugin, or maintaining both | `TODO` |
 
-### FARM-E35: CI/CD External Integrations `TODO`
+### FARM-E35: CI/CD External Integrations `DONE`
 
 > Integrate Farm with external CI/CD platforms so teams can monitor builds, trigger pipelines, and view deployment status directly from the developer portal — without switching context between tools.
 
@@ -784,17 +784,17 @@ Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S129 | Story | ArgoCD: connect to ArgoCD instance (URL + token per org), list Applications and display health/sync status in the Environments module | `TODO` |
-| FARM-S130 | Story | ArgoCD: trigger Application sync from Farm UI; display manifest diff and sync history per deployment | `TODO` |
-| FARM-S131 | Story | CircleCI: connect to CircleCI (API token per org), list pipeline runs per Component (matched by `vcsUrl`), display build status | `TODO` |
-| FARM-S132 | Story | CircleCI: trigger pipeline from Farm UI; receive status webhooks (`POST /api/v1/webhooks/circleci`) and push real-time updates via WebSocket | `TODO` |
-| FARM-S133 | Story | Jenkins: connect to Jenkins instance (URL + user + API token per org), list jobs and build history per Component (matched by `vcsUrl` or job name) | `TODO` |
-| FARM-S134 | Story | Jenkins: trigger build from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/jenkins`) and push real-time status updates via WebSocket | `TODO` |
-| FARM-S162 | Story | Travis CI: connect to Travis CI (API token per org, supports travis.com and self-hosted), list builds per Component (matched by `vcsUrl`), display build status and logs | `TODO` |
-| FARM-S163 | Story | Travis CI: trigger build restart from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/travisci`) and push real-time status updates via WebSocket | `TODO` |
-| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins + Travis CI builds + ArgoCD Application status in one view | `TODO` |
-| FARM-S160 | Story | Pipeline `build` stage type: add `"build"` to `PipelineStage.type`; implement executor that builds OCI images using `config.engine` (`docker` \| `buildah` \| `podman`) with configurable `dockerfile`, `context`, `tag`, and `push` options | `TODO` |
-| FARM-S161 | Story | Build stage UI: add `build` stage card to the visual pipeline builder (`stage-builder.tsx`) with fields for engine selection, Dockerfile path, image tag template (supports `{{version}}` and `{{commitSha}}`), and registry push toggle | `TODO` |
+| FARM-S129 | Story | ArgoCD: connect to ArgoCD instance (URL + token per org), list Applications and display health/sync status in the Environments module | `DONE` |
+| FARM-S130 | Story | ArgoCD: trigger Application sync from Farm UI; display manifest diff and sync history per deployment | `DONE` |
+| FARM-S131 | Story | CircleCI: connect to CircleCI (API token per org), list pipeline runs per Component (matched by `vcsUrl`), display build status | `DONE` |
+| FARM-S132 | Story | CircleCI: trigger pipeline from Farm UI; receive status webhooks (`POST /api/v1/webhooks/circleci`) and push real-time updates via WebSocket | `DONE` |
+| FARM-S133 | Story | Jenkins: connect to Jenkins instance (URL + user + API token per org), list jobs and build history per Component (matched by `vcsUrl` or job name) | `DONE` |
+| FARM-S134 | Story | Jenkins: trigger build from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/jenkins`) and push real-time status updates via WebSocket | `DONE` |
+| FARM-S162 | Story | Travis CI: connect to Travis CI (API token per org, supports travis.com and self-hosted), list builds per Component (matched by `vcsUrl`), display build status and logs | `DONE` |
+| FARM-S163 | Story | Travis CI: trigger build restart from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/travisci`) and push real-time status updates via WebSocket | `DONE` |
+| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins + Travis CI builds + ArgoCD Application status in one view | `DONE` |
+| FARM-S160 | Story | Pipeline `build` stage type: add `"build"` to `PipelineStage.type`; implement executor that builds OCI images using `config.engine` (`docker` | `buildah` | `podman`) with configurable `dockerfile`, `context`, `tag`, and `push` options | `DONE` |
+| FARM-S161 | Story | Build stage UI: add `build` stage card to the visual pipeline builder (`stage-builder.tsx`) with fields for engine selection, Dockerfile path, image tag template (supports `{{version}}` and `{{commitSha}}`), and registry push toggle | `DONE` |
 
 #### Implementation Notes
 

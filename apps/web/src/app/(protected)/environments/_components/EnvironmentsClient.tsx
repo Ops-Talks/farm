@@ -1,11 +1,12 @@
 "use client";
 
 // Client Component wrapper for the Environments page.
-// ErrorBoundary, HelmReleasesPanel, and RolloutStatusCard are all rendered here.
+// ErrorBoundary, HelmReleasesPanel, RolloutStatusCard, and ArgoCDStatusCard are all rendered here.
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { HelmReleasesPanel } from "./HelmReleasesPanel";
 import { RolloutStatusCard } from "./RolloutStatusCard";
+import { ArgoCDStatusCard } from "./ArgoCDStatusCard";
 
 export function EnvironmentsClient() {
   return (
@@ -13,7 +14,7 @@ export function EnvironmentsClient() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Environments</h1>
         <p className="text-muted-foreground mt-1">
-          Monitor Helm releases and Argo Rollout status across all cluster namespaces.
+          Monitor Helm releases, Argo Rollout status, and ArgoCD applications across all cluster namespaces.
         </p>
       </div>
 
@@ -23,6 +24,10 @@ export function EnvironmentsClient() {
 
       <ErrorBoundary>
         <RolloutStatusCard />
+      </ErrorBoundary>
+
+      <ErrorBoundary>
+        <ArgoCDStatusCard />
       </ErrorBoundary>
     </div>
   );

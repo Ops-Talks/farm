@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { PipelineStage } from "@/types/api";
+import { BuildStageCard, type BuildStageFormValues } from "./BuildStageCard";
 
-const STAGE_TYPES = ["script", "approval", "deploy", "notify"] as const;
+const STAGE_TYPES = ["script", "approval", "deploy", "notify", "build"] as const;
 type StageType = (typeof STAGE_TYPES)[number];
 
 const CONFIG_FIELD: Record<StageType, { key: string; label: string; placeholder: string }> = {
@@ -17,6 +18,7 @@ const CONFIG_FIELD: Record<StageType, { key: string; label: string; placeholder:
   approval: { key: "message", label: "Message", placeholder: "Approval required" },
   deploy: { key: "componentId", label: "Component ID", placeholder: "UUID of component" },
   notify: { key: "channel", label: "Channel", placeholder: "e.g. #deployments" },
+  build: { key: "tag", label: "Image Tag", placeholder: "{{version}}" },
 };
 
 const TYPE_BADGE_VARIANT: Record<
@@ -27,6 +29,7 @@ const TYPE_BADGE_VARIANT: Record<
   approval: "outline",
   deploy: "default",
   notify: "secondary",
+  build: "outline",
 };
 
 function getConfigSummary(stage: PipelineStage): string {
@@ -123,6 +126,26 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     reset({ name: "", type: "script", configValue: "" });
     setShowAddForm(false);
   };
+
+  // Handler specifically for build stages — called from BuildStageCard
+  function onAddBuildStage(buildConfig: BuildStageFormValues) {
+    const name = watch("name");
+    if (!name.trim()) {
+      // Trigger name validation without re-submitting
+      void handleSubmit(onAddStage)();
+      return;
+    }
+    const newStage: PipelineStage = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      type: "build",
+      order: stages.length,
+      config: buildConfig as unknown as Record<string, unknown>,
+    };
+    onChange([...stages, newStage]);
+    reset({ name: "", type: "script", configValue: "" });
+    setShowAddForm(false);
+  }
 
   function handleRemoveStage(id: string) {
     const filtered = stages.filter((s) => s.id !== id);
@@ -251,32 +274,46 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                   </select>
                 </div>
               </div>
-              <div className="space-y-1">
-                <label htmlFor="stage-config" className="text-sm font-medium">
-                  {configField.label}
-                </label>
-                <Input
-                  id="stage-config"
-                  placeholder={configField.placeholder}
-                  {...register("configValue")}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
+
+              {/* For "build" type: render BuildStageCard in place of the generic config field */}
+              {currentType === "build" ? (
+                <BuildStageCard
+                  onSave={onAddBuildStage}
+                  onCancel={() => {
                     setShowAddForm(false);
                     reset({ name: "", type: "script", configValue: "" });
                   }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm">
-                  Add Stage
-                </Button>
-              </div>
+                />
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <label htmlFor="stage-config" className="text-sm font-medium">
+                      {configField.label}
+                    </label>
+                    <Input
+                      id="stage-config"
+                      placeholder={configField.placeholder}
+                      {...register("configValue")}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowAddForm(false);
+                        reset({ name: "", type: "script", configValue: "" });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm">
+                      Add Stage
+                    </Button>
+                  </div>
+                </>
+              )}
             </form>
           ) : (
             <Button

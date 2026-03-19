@@ -126,6 +126,7 @@ nav:
     - Audit Log API: api-reference/audit-log.md
     - Helm API: api-reference/helm.md
     - Kubernetes API: api-reference/kubernetes.md
+    - CI/CD Integrations API: api-reference/cicd.md
 
 extra_css:
   - stylesheets/extra.css

@@ -16,6 +16,7 @@ import {
   HelmDeployExecutor,
   HelmDeployConfig,
 } from "../helm/helm-deploy.executor";
+import { BuildStageExecutor } from "./build-stage.executor";
 
 /**
  * Job payload for a pipeline execution task.
@@ -46,6 +47,7 @@ export class PipelineProcessor extends WorkerHost {
     private readonly pipelineRepository: Repository<Pipeline>,
     private readonly eventsGateway: EventsGateway,
     @Optional() private readonly helmDeployExecutor?: HelmDeployExecutor,
+    @Optional() private readonly buildStageExecutor?: BuildStageExecutor,
   ) {
     super();
   }
@@ -158,6 +160,15 @@ export class PipelineProcessor extends WorkerHost {
           const helmConfig = stage.config as unknown as HelmDeployConfig;
           const result = await this.helmDeployExecutor.execute(
             helmConfig,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+        } else if (stage.type === "build" && this.buildStageExecutor) {
+          // Dispatch build stages to BuildStageExecutor.
+          const result = await this.buildStageExecutor.execute(
+            stage,
+            run,
             (msg) => this.emitLog(runId, stage.name, msg),
           );
           stageResult.status = result.success ? "succeeded" : "failed";

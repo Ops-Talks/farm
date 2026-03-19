@@ -69,6 +69,10 @@ Organize your organization with team management:
 - Assign members to teams
 - Link catalog components to team ownership
 
+### CI/CD Integrations
+
+Farm connects to external CI/CD platforms so teams can monitor builds, trigger pipelines, and view deployment status directly from the developer portal. Supported platforms: ArgoCD, CircleCI, Jenkins, and Travis CI. Each platform is connected per-organization using encrypted credentials stored in the database. See the [CI/CD Integrations](../api-reference/cicd.md) reference for endpoint details.
+
 ### Helm Integration
 
 Farm discovers Helm releases from Kubernetes Secrets and provides a dedicated UI card on the component detail page for components with a `helmChart` field in their `catalog-info.yaml`. See the [Helm Integration](helm-integration.md) guide for full details.
@@ -94,6 +98,7 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 | [Documentation](documentation.md) | Create and manage documentation |
 | [Authentication](authentication.md) | User management and access |
 | [Organizations](organizations.md) | Multi-tenant isolation and member management |
+| [CI/CD Integrations](../api-reference/cicd.md) | ArgoCD, CircleCI, Jenkins, Travis CI |
 | [Helm Integration](helm-integration.md) | Helm release discovery and chart metadata |
 | [Kubernetes Operator](kubernetes-operator.md) | Workload, CRD, and Argo Rollouts discovery |
 | [FAQ](faq.md) | Frequently asked questions |
