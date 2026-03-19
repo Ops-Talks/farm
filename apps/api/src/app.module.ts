@@ -34,6 +34,7 @@ import { KubernetesModule } from "./modules/kubernetes/kubernetes.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { HelmModule } from "./modules/helm/helm.module";
 import { CloudModule } from "./modules/cloud/cloud.module";
+import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -238,6 +239,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Cloud provider integrations (AWS, GCP, Azure)",
         },
         module: CloudModule,
+      },
+      {
+        metadata: {
+          name: "core-tag-governance",
+          version: "1.0.0",
+          description:
+            "Resource tagging governance, compliance audit, and violation tracking",
+        },
+        module: TagPolicyModule,
       },
     ]),
   ],

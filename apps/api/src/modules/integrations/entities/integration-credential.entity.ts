@@ -19,6 +19,7 @@ export enum IntegrationType {
   AWS_IAM_ROLE = "aws-iam-role",
   GCP_SERVICE_ACCOUNT = "gcp-service-account",
   AZURE_SERVICE_PRINCIPAL = "azure-service-principal",
+  KEYCLOAK = "keycloak",
 }
 
 /**

@@ -34,6 +34,43 @@ import {
   AzureContainerAppsDeployConfig,
 } from "../cloud/executors/azure-container-apps.executor";
 import { CloudSecretsService } from "../cloud/cloud-secrets.service";
+import {
+  IntegrationCredential,
+  IntegrationType,
+} from "../integrations/entities/integration-credential.entity";
+import * as crypto from "crypto";
+
+/**
+ * Cached token entry used by the Keycloak secret resolver.
+ */
+interface CachedToken {
+  token: string;
+  /** Unix timestamp (ms) after which the token must be refreshed. */
+  expiresAt: number;
+}
+
+/**
+ * Token response from a Keycloak token endpoint.
+ */
+interface TokenResponse {
+  access_token: string;
+  expires_in: number;
+}
+
+/**
+ * Decrypted Keycloak credential stored in IntegrationCredential.
+ */
+interface KeycloakCredentialPayload {
+  keycloakUrl: string;
+  realm: string;
+  clientId: string;
+  clientSecret: string;
+}
+
+/** AES-256-GCM parameters matching IntegrationCredentialService. */
+const CIPHER_ALGORITHM = "aes-256-gcm";
+const CIPHER_IV_LENGTH = 12;
+const CIPHER_TAG_LENGTH = 16;
 
 /**
  * Job payload for a pipeline execution task.
@@ -57,6 +94,18 @@ export interface PipelineExecutionJobData {
 export class PipelineProcessor extends WorkerHost {
   private readonly logger = new Logger(PipelineProcessor.name);
 
+  /**
+   * In-memory cache for Keycloak access tokens keyed by
+   * "{orgId}:{realm}:{clientId}".
+   */
+  private readonly keycloakTokenCache = new Map<string, CachedToken>();
+
+  /**
+   * Derived AES-256-GCM key for decrypting IntegrationCredential values.
+   * Initialised lazily when the first keycloak:// URI is encountered.
+   */
+  private encryptionKey: Buffer | null = null;
+
   constructor(
     @InjectRepository(PipelineRun)
     private readonly runRepository: Repository<PipelineRun>,
@@ -71,6 +120,9 @@ export class PipelineProcessor extends WorkerHost {
     @Optional()
     private readonly azureContainerAppsExecutor?: AzureContainerAppsExecutor,
     @Optional() private readonly cloudSecretsService?: CloudSecretsService,
+    @Optional()
+    @InjectRepository(IntegrationCredential)
+    private readonly credentialRepository?: Repository<IntegrationCredential>,
   ) {
     super();
   }
@@ -148,6 +200,17 @@ export class PipelineProcessor extends WorkerHost {
           finishedAt: null,
           output: null,
         };
+
+        // Resolve keycloak:// secret URIs in the stage config before execution.
+        const orgId =
+          (stage.config["orgId"] as string | undefined) ??
+          pipeline.organizationId ??
+          "";
+        const resolvedConfig = await this.resolveKeycloakSecrets(
+          stage.config,
+          orgId,
+        );
+        stage.config = resolvedConfig;
 
         this.emitLog(
           runId,
@@ -355,5 +418,157 @@ export class PipelineProcessor extends WorkerHost {
       durationMs: run.durationMs,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Scans a stage config object for values matching the `keycloak://` URI
+   * scheme and resolves each to a short-lived access token.  All other values
+   * are returned unchanged.
+   *
+   * @param config - Arbitrary stage config record
+   * @param orgId - Organization UUID used to look up the credential
+   * @returns A new config record with keycloak:// values replaced by tokens
+   */
+  async resolveKeycloakSecrets(
+    config: Record<string, unknown>,
+    orgId: string,
+  ): Promise<Record<string, unknown>> {
+    const resolved: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(config)) {
+      if (typeof value === "string" && value.startsWith("keycloak://")) {
+        try {
+          resolved[key] = await this.resolveKeycloakSecret(value, orgId);
+        } catch (err) {
+          this.logger.warn(
+            `Failed to resolve keycloak:// URI "${value}" — using raw value`,
+            err,
+          );
+          resolved[key] = value;
+        }
+      } else {
+        resolved[key] = value;
+      }
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Resolves a single `keycloak://{realm}/{clientId}` URI to an access token.
+   *
+   * The token is cached in memory until 30 seconds before its expiry to avoid
+   * unnecessary round-trips to the Keycloak token endpoint.
+   *
+   * @param uri - A string of the form `keycloak://{realm}/{clientId}`
+   * @param orgId - Organization UUID used to look up the credential
+   * @returns The access_token string
+   */
+  async resolveKeycloakSecret(uri: string, orgId: string): Promise<string> {
+    // Parse: keycloak://{realm}/{clientId}
+    const withoutScheme = uri.replace(/^keycloak:\/\//, "");
+    const slashIdx = withoutScheme.indexOf("/");
+    const realm =
+      slashIdx !== -1 ? withoutScheme.slice(0, slashIdx) : withoutScheme;
+    const clientId = slashIdx !== -1 ? withoutScheme.slice(slashIdx + 1) : "";
+
+    const cacheKey = `${orgId}:${realm}:${clientId}`;
+    const cached = this.keycloakTokenCache.get(cacheKey);
+
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.token;
+    }
+
+    if (!this.credentialRepository) {
+      throw new Error(
+        "IntegrationCredential repository not available in PipelineProcessor",
+      );
+    }
+
+    // Load the org's Keycloak credential.
+    const credential = await this.credentialRepository.findOne({
+      where: { orgId, type: IntegrationType.KEYCLOAK },
+      order: { createdAt: "DESC" },
+    });
+
+    if (!credential) {
+      throw new Error(
+        `No Keycloak credential found for org ${orgId} — cannot resolve ${uri}`,
+      );
+    }
+
+    const payload = JSON.parse(
+      this.decryptCredential(credential.encryptedValue),
+    ) as KeycloakCredentialPayload;
+
+    const tokenUrl = `${payload.keycloakUrl}/realms/${realm}/protocol/openid-connect/token`;
+
+    const body = new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId || payload.clientId,
+      client_secret: payload.clientSecret,
+    });
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Keycloak token request failed for ${uri}: ` +
+          `${response.status} ${response.statusText}`,
+      );
+    }
+
+    const data = (await response.json()) as TokenResponse;
+    const expiresInMs = (data.expires_in - 30) * 1000;
+
+    this.keycloakTokenCache.set(cacheKey, {
+      token: data.access_token,
+      expiresAt: Date.now() + expiresInMs,
+    });
+
+    return data.access_token;
+  }
+
+  /**
+   * Decrypts an AES-256-GCM encrypted credential value.
+   * Replicates the logic from IntegrationCredentialService.
+   *
+   * @param encryptedValue - Base64-encoded payload: iv(12) + tag(16) + ciphertext
+   * @returns The original plain-text string
+   */
+  private decryptCredential(encryptedValue: string): string {
+    if (!this.encryptionKey) {
+      const jwtSecret =
+        process.env.JWT_SECRET ?? "super-secret-key-change-me-in-production";
+      this.encryptionKey = crypto
+        .createHash("sha256")
+        .update(jwtSecret)
+        .digest();
+    }
+
+    const buffer = Buffer.from(encryptedValue, "base64");
+    const iv = buffer.subarray(0, CIPHER_IV_LENGTH);
+    const tag = buffer.subarray(
+      CIPHER_IV_LENGTH,
+      CIPHER_IV_LENGTH + CIPHER_TAG_LENGTH,
+    );
+    const ciphertext = buffer.subarray(CIPHER_IV_LENGTH + CIPHER_TAG_LENGTH);
+
+    const decipher = crypto.createDecipheriv(
+      CIPHER_ALGORITHM,
+      this.encryptionKey,
+      iv,
+    );
+    decipher.setAuthTag(tag);
+
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+    return decrypted.toString("utf8");
   }
 }

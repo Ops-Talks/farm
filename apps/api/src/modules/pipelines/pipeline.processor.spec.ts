@@ -14,6 +14,26 @@ import { AwsLambdaExecutor } from "../cloud/executors/aws-lambda.executor";
 import { GcpCloudRunExecutor } from "../cloud/executors/gcp-cloud-run.executor";
 import { AzureContainerAppsExecutor } from "../cloud/executors/azure-container-apps.executor";
 import { CloudSecretsService } from "../cloud/cloud-secrets.service";
+import {
+  IntegrationCredential,
+  IntegrationType,
+} from "../integrations/entities/integration-credential.entity";
+import * as crypto from "crypto";
+
+/**
+ * Builds an AES-256-GCM encrypted payload matching IntegrationCredentialService.
+ */
+function buildEncryptedCredential(payload: object, secret: string): string {
+  const key = crypto.createHash("sha256").update(secret).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const ciphertext = Buffer.concat([
+    cipher.update(JSON.stringify(payload), "utf8"),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, ciphertext]).toString("base64");
+}
 
 /**
  * Helper that builds a minimal PipelineRun object for test fixtures.
@@ -947,6 +967,206 @@ describe("PipelineProcessor", () => {
       await proc.process(job(run));
 
       expect(mockAzureExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Keycloak secret resolver — resolveKeycloakSecret / resolveKeycloakSecrets
+  // ---------------------------------------------------------------------------
+  describe("Keycloak secret resolver", () => {
+    const JWT_SECRET = "super-secret-key-change-me-in-production";
+
+    const mockKeycloakPayload = {
+      keycloakUrl: "https://keycloak.example.com",
+      realm: "myrealm",
+      clientId: "farm-client",
+      clientSecret: "s3cr3t",
+    };
+
+    const encryptedCredential = buildEncryptedCredential(
+      mockKeycloakPayload,
+      JWT_SECRET,
+    );
+
+    function buildProcessorWithCredRepo(
+      credRepo: Record<string, jest.Mock>,
+    ): PipelineProcessor {
+      const moduleRef = {
+        get: jest.fn(),
+      };
+      void moduleRef;
+
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+      // Inject the JWT secret so decryptCredential uses the right key.
+      process.env.JWT_SECRET = JWT_SECRET;
+      return proc;
+    }
+
+    it("resolves a keycloak:// URI to an access token on first call", async () => {
+      const mockCredRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue: encryptedCredential,
+        } as Partial<IntegrationCredential>),
+      };
+
+      const proc = buildProcessorWithCredRepo(mockCredRepo);
+
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        // eslint-disable-next-line @typescript-eslint/require-await
+        json: async () => ({ access_token: "token-abc", expires_in: 300 }),
+      });
+      global.fetch = mockFetch as typeof fetch;
+
+      const token = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+
+      expect(token).toBe("token-abc");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("uses cached token on second call without hitting the network", async () => {
+      const mockCredRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue: encryptedCredential,
+        } as Partial<IntegrationCredential>),
+      };
+
+      const proc = buildProcessorWithCredRepo(mockCredRepo);
+
+      let fetchCallCount = 0;
+      // eslint-disable-next-line @typescript-eslint/require-await
+      global.fetch = jest.fn().mockImplementation(async () => {
+        fetchCallCount++;
+        return {
+          ok: true,
+          // eslint-disable-next-line @typescript-eslint/require-await
+          json: async () => ({ access_token: "token-cached", expires_in: 300 }),
+        };
+      }) as typeof fetch;
+
+      const first = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+      const second = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+
+      expect(first).toBe("token-cached");
+      expect(second).toBe("token-cached");
+      // Token endpoint should have been called only once.
+      expect(fetchCallCount).toBe(1);
+    });
+
+    it("resolveKeycloakSecrets replaces all keycloak:// values in the config", async () => {
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+      );
+
+      jest
+        .spyOn(proc, "resolveKeycloakSecret")
+        .mockResolvedValue("resolved-token");
+
+      const stageConfig: Record<string, unknown> = {
+        apiToken: "keycloak://realm1/client1",
+        webhookToken: "keycloak://realm1/client2",
+        plainValue: "no-change",
+        numericValue: 42,
+      };
+
+      const result = await proc.resolveKeycloakSecrets(stageConfig, "org-1");
+
+      expect(result["apiToken"]).toBe("resolved-token");
+      expect(result["webhookToken"]).toBe("resolved-token");
+      expect(result["plainValue"]).toBe("no-change");
+      expect(result["numericValue"]).toBe(42);
+    });
+
+    it("keycloak:// URIs in stage config are resolved before stage execution", async () => {
+      const credRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue: encryptedCredential,
+        } as Partial<IntegrationCredential>),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: getRepositoryToken(IntegrationCredential),
+            useValue: credRepo,
+          },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+
+      // Spy on resolveKeycloakSecrets to verify it is called per-stage.
+      const resolveSpy = jest
+        .spyOn(proc, "resolveKeycloakSecrets")
+        .mockResolvedValue({ apiToken: "resolved-token" });
+
+      const run = buildRun();
+      const pipeline = buildPipeline([
+        {
+          id: "stage-kc-1",
+          name: "Deploy with Keycloak token",
+          type: "script",
+          config: { apiToken: "keycloak://myrealm/farm-client" },
+          order: 1,
+        },
+      ]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(
+        buildJob({
+          pipelineId: run.pipelineId,
+          runId: run.id,
+          triggeredBy: run.triggeredBy,
+        }),
+      );
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      expect(resolveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ apiToken: "keycloak://myrealm/farm-client" }),
+        expect.any(String),
+      );
     });
   });
 });
