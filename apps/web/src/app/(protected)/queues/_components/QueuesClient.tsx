@@ -133,7 +133,7 @@ export function QueuesClient() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Queues</h1>
         <a
-          href="/api/admin/queues"
+          href="/admin/queues"
           target="_blank"
           rel="noopener noreferrer"
         >

@@ -99,7 +99,7 @@ export function QueueDetailClient() {
           {queueInfo?.isPaused && <Badge variant="secondary">Paused</Badge>}
         </div>
         <a
-          href="/api/admin/queues"
+          href="/admin/queues"
           target="_blank"
           rel="noopener noreferrer"
         >
