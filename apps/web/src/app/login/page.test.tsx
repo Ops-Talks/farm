@@ -14,6 +14,27 @@ vi.mock("@/contexts/auth-context", () => ({
   }),
 }));
 
+// useSearchParams is already mocked globally in setup.ts to return an empty
+// URLSearchParams; individual tests override it via vi.mocked() where needed.
+const mockUseSearchParams = vi.fn(() => new URLSearchParams());
+vi.mock("next/navigation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/navigation")>();
+  return {
+    ...actual,
+    useRouter: () => ({
+      push: vi.fn(),
+      replace: vi.fn(),
+      back: vi.fn(),
+      forward: vi.fn(),
+      refresh: vi.fn(),
+      prefetch: vi.fn(),
+    }),
+    usePathname: () => "/login",
+    useParams: () => ({}),
+    useSearchParams: () => mockUseSearchParams(),
+  };
+});
+
 vi.mock("@/lib/api-client", () => ({
   ApiError: class ApiError extends Error {
     status: number;
@@ -163,5 +184,80 @@ describe("LoginPage", () => {
     expect(mockSpanSetAttribute).toHaveBeenCalledWith("result", "error");
     expect(mockSpanSetAttribute).toHaveBeenCalledWith("error.message", "Invalid credentials");
     expect(mockSpanEnd).toHaveBeenCalled();
+  });
+});
+
+// ── Keycloak SSO tests (FARM-E41) ─────────────────────────────────────────────
+
+describe("LoginPage — Keycloak SSO", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset to empty search params
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    // Reset window.location mock
+    Object.defineProperty(window, "location", {
+      value: { href: "" },
+      writable: true,
+    });
+  });
+
+  it('renders the "Login with Keycloak" button', () => {
+    render(<LoginPage />);
+    expect(
+      screen.getByRole("button", { name: /login with keycloak/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("pre-fills org ID input when ?keycloakOrgId query param is present", () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("keycloakOrgId=org-abc"));
+    render(<LoginPage />);
+    expect(screen.getByLabelText("Organisation ID")).toHaveValue("org-abc");
+  });
+
+  it("redirects to keycloak auth URL with orgId on button click", async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.clear(screen.getByLabelText("Organisation ID"));
+    await user.type(screen.getByLabelText("Organisation ID"), "org-test-123");
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /login with keycloak/i }));
+    });
+
+    expect(window.location.href).toContain("/api/v1/auth/keycloak");
+    expect(window.location.href).toContain("orgId=org-test-123");
+  });
+
+  it("shows inline error when Keycloak login is clicked with no org ID", async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    // Clear the input to ensure it's empty
+    await user.clear(screen.getByLabelText("Organisation ID"));
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /login with keycloak/i }));
+    });
+
+    expect(
+      screen.getByText(/organisation id is required for keycloak login/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows error banner when ?error=keycloak_not_configured is in the URL", () => {
+    mockUseSearchParams.mockReturnValue(
+      new URLSearchParams("error=keycloak_not_configured"),
+    );
+    render(<LoginPage />);
+
+    expect(
+      screen.getByRole("alert"),
+    ).toHaveTextContent(/keycloak sso is not configured/i);
+  });
+
+  it("does NOT show the keycloak error banner without the error param", () => {
+    render(<LoginPage />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
