@@ -29,6 +29,10 @@
          <lastmod>2026-03-19</lastmod>
     </url>
     <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/cloud/</loc>
+         <lastmod>2026-03-19</lastmod>
+    </url>
+    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/deployments/</loc>
          <lastmod>2026-03-19</lastmod>
     </url>
@@ -150,6 +154,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/catalog/</loc>
+         <lastmod>2026-03-19</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/cloud-providers/</loc>
          <lastmod>2026-03-19</lastmod>
     </url>
     <url>
