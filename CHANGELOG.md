@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.9] - 2026-03-19
+
+### Added
+- **web**: add cloud provider integrations UI (FARM-E38).
+- **api**: add cloud provider integrations module (FARM-E38).
+
+### Changed
+- add cloud provider integrations documentation (FARM-E38).
+
 ## [0.10.8] - 2026-03-19
 
 ### Added
