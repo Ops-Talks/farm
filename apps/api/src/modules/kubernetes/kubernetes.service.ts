@@ -198,6 +198,15 @@ export class KubernetesService {
     return this.coreV1Api;
   }
 
+  /**
+   * Returns the CustomObjectsApi instance, or null if not initialized.
+   * Used by KyvernoPolicyReportService and other consumers that work with
+   * custom Kubernetes resources.
+   */
+  getCustomObjectsApi(): k8s.CustomObjectsApi | null {
+    return this.customObjectsApi;
+  }
+
   // ---------------------------------------------------------------------------
   // Workload Discovery
   // ---------------------------------------------------------------------------

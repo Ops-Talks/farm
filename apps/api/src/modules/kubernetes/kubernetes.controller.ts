@@ -20,6 +20,10 @@ import {
   CrdResource,
   ArgoRolloutStatus,
 } from "./kubernetes.service";
+import {
+  KyvernoPolicyReportService,
+  KyvernoPolicyReportResult,
+} from "./kyverno-policy-report.service";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
 /**
@@ -35,7 +39,10 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
   type: ErrorResponseDto,
 })
 export class KubernetesController {
-  constructor(private readonly kubernetesService: KubernetesService) {}
+  constructor(
+    private readonly kubernetesService: KubernetesService,
+    private readonly kyvernoPolicyReportService: KyvernoPolicyReportService,
+  ) {}
 
   /**
    * Lists all discovered Kubernetes Deployment workloads across all namespaces.
@@ -125,5 +132,50 @@ export class KubernetesController {
     @Query("namespace") namespace?: string,
   ): Promise<ArgoRolloutStatus[]> {
     return this.kubernetesService.listRollouts(namespace);
+  }
+
+  /**
+   * Lists Kyverno PolicyReport resources from the specified namespace.
+   * Returns an empty array when Kyverno is not installed in the cluster.
+   *
+   * @param namespace - Kubernetes namespace to query (optional, defaults to "default")
+   * @returns Array of mapped Kyverno policy report results
+   */
+  @Get("policy-reports")
+  @ApiOperation({
+    summary: "List Kyverno PolicyReport resources from a namespace",
+  })
+  @ApiQuery({
+    name: "namespace",
+    required: false,
+    description:
+      "Kubernetes namespace to list policy reports from (defaults to default)",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns Kyverno PolicyReport results for the namespace.",
+  })
+  async listPolicyReports(
+    @Query("namespace") namespace?: string,
+  ): Promise<KyvernoPolicyReportResult[]> {
+    return this.kyvernoPolicyReportService.listPolicyReports(namespace);
+  }
+
+  /**
+   * Lists Kyverno ClusterPolicyReport resources (cluster-scoped).
+   * Returns an empty array when Kyverno is not installed in the cluster.
+   *
+   * @returns Array of mapped Kyverno cluster policy report results
+   */
+  @Get("cluster-policy-reports")
+  @ApiOperation({
+    summary: "List Kyverno ClusterPolicyReport resources",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns Kyverno ClusterPolicyReport results.",
+  })
+  async listClusterPolicyReports(): Promise<KyvernoPolicyReportResult[]> {
+    return this.kyvernoPolicyReportService.listClusterPolicyReports();
   }
 }
