@@ -1,9 +1,14 @@
 import * as Joi from "joi";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { version: pkgVersion } = require("../../package.json") as {
+  version: string;
+};
 
 /**
  * Configuration factory that maps environment variables to a configuration object.
  */
 export const configuration = () => ({
+  version: process.env.APP_VERSION || pkgVersion,
   env: process.env.NODE_ENV || "development",
   port: parseInt(process.env.PORT ?? "3000", 10) || 3000,
   log: {
