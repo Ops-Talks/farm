@@ -53,6 +53,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { recordSpan } from "@/lib/otel-spans";
 
 type TabId = "definition" | "runs";
 
@@ -109,8 +110,14 @@ export function PipelineDetailClient() {
   const handleTrigger = () => {
     if (!id) return;
     setTriggering(true);
-    pipelinesApi
-      .trigger(id)
+
+    // Wrap the trigger API call in an OTel span so we can observe pipeline
+    // run trigger rates, latencies, and failures in Tempo.
+    void recordSpan(
+      "pipeline.run.trigger",
+      () => pipelinesApi.trigger(id),
+      { "pipeline.id": id },
+    )
       .then((run) => {
         toast.success(`Pipeline triggered — Run ${run.id.slice(0, 8)}`);
         // Switch to the Runs tab and bump the refresh key so RunList re-fetches

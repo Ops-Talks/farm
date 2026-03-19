@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError } from "@/lib/api-client";
 import { Github } from "lucide-react";
+import { startSpan } from "@/lib/otel-spans";
 
 // ---------------------------------------------------------------------------
 // Zod schema — both fields are required
@@ -34,14 +35,28 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    // Track the login attempt as an OTel span so we can observe auth success
+    // and failure rates in Tempo.  Use startSpan (not recordSpan) so that
+    // result-dependent attributes can be set after the outcome is known.
+    const span = startSpan("auth.login", { "auth.method": "local" });
+
     try {
       await login(values.username, values.password);
+      span.setAttribute("result", "success");
+      span.end();
     } catch (err) {
+      span.setAttribute("result", "error");
+
       if (err instanceof ApiError) {
+        span.setAttribute("error.message", err.message);
         setError("root", { message: err.message });
       } else {
-        setError("root", { message: "An unexpected error occurred" });
+        const msg = "An unexpected error occurred";
+        span.setAttribute("error.message", msg);
+        setError("root", { message: msg });
       }
+
+      span.end();
     }
   };
 

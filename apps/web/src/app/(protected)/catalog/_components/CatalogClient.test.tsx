@@ -32,6 +32,14 @@ vi.mock("@/types/api", () => ({
   },
 }));
 
+// Mock OTel span helpers so tests are not coupled to the OTel SDK.
+const mockRecordSpan = vi.fn((_name: unknown, fn: () => unknown) => fn());
+vi.mock("@/lib/otel-spans", () => ({
+  recordSpan: (...args: Parameters<typeof mockRecordSpan>) =>
+    mockRecordSpan(...args),
+  startSpan: vi.fn(() => ({ setAttribute: vi.fn(), end: vi.fn() })),
+}));
+
 import { CatalogClient } from "./CatalogClient";
 
 // ── Wrapper ───────────────────────────────────────────────────────────────────
@@ -213,6 +221,34 @@ describe("CatalogClient", () => {
     await waitFor(() => {
       expect(mockListComponents).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 0, take: 20 }),
+      );
+    });
+  });
+
+  it("records a catalog.search span with query and result count when the user searches", async () => {
+    const user = userEvent.setup();
+    mockListComponents.mockResolvedValue(
+      paginated([
+        mockComponent({ id: "c1", name: "auth-service" }),
+        mockComponent({ id: "c2", name: "payment-api" }),
+      ]),
+    );
+
+    render(<CatalogClient />, { wrapper: createWrapper() });
+
+    // Wait for data to load.
+    await waitFor(() => expect(screen.getByText("auth-service")).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText("Filter by name..."), "auth");
+
+    await waitFor(() => {
+      expect(mockRecordSpan).toHaveBeenCalledWith(
+        "catalog.search",
+        expect.any(Function),
+        expect.objectContaining({
+          "search.query": expect.stringContaining("auth"),
+          "search.results_count": expect.any(Number),
+        }),
       );
     });
   });

@@ -24,6 +24,14 @@ vi.mock("@/lib/ws-client", () => ({
   disconnect: vi.fn(),
 }));
 
+// Mock OTel context helpers so auth-context tests are not coupled to OTel.
+const mockSetUserContext = vi.fn();
+const mockClearUserContext = vi.fn();
+vi.mock("@/lib/otel-context", () => ({
+  setUserContext: (...args: unknown[]) => mockSetUserContext(...args),
+  clearUserContext: () => mockClearUserContext(),
+}));
+
 function TestConsumer() {
   const { user, isAuthenticated, hasRole, login, logout } = useAuth();
   return (
@@ -75,6 +83,8 @@ describe("AuthContext", () => {
     expect(screen.getByTestId("user-name").textContent).toBe("Farm Admin");
     expect(screen.getByTestId("has-admin").textContent).toBe("yes");
     expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    // OTel user context should be set with the user's id and username.
+    expect(mockSetUserContext).toHaveBeenCalledWith("1", "admin");
   });
 
   it("should logout and clear state", async () => {
@@ -101,6 +111,8 @@ describe("AuthContext", () => {
     expect(mockClearTokens).toHaveBeenCalled();
     expect(screen.getByTestId("auth-status").textContent).toBe("unauthenticated");
     expect(mockPush).toHaveBeenCalledWith("/login");
+    // OTel context must be cleared on logout.
+    expect(mockClearUserContext).toHaveBeenCalled();
   });
 
   it("should restore session from sessionStorage", () => {

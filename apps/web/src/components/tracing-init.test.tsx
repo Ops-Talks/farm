@@ -2,8 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { TracingInit } from '@/components/tracing-init';
 
-// Mock the tracing module so initTracing() is a controllable spy.
+// Mock both bootstrap modules so their side-effects are controlled in tests.
 vi.mock('@/lib/tracing', () => ({ initTracing: vi.fn() }));
+vi.mock('@/lib/web-vitals', () => ({ initWebVitals: vi.fn() }));
 
 describe('TracingInit', () => {
   it('renders nothing', () => {
@@ -21,5 +22,13 @@ describe('TracingInit', () => {
     // (Strict Mode double-invocation).  Assert it was called at least once —
     // the `initialized` guard in the real initTracing() makes it idempotent.
     expect(initTracing).toHaveBeenCalled();
+  });
+
+  it('calls initWebVitals on mount', async () => {
+    const { initWebVitals } = await import('@/lib/web-vitals');
+
+    render(<TracingInit />);
+
+    expect(initWebVitals).toHaveBeenCalled();
   });
 });

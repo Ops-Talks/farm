@@ -18,6 +18,7 @@ import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
 import { CICDTab } from "./CICDTab";
+import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
   lifecycle: string,
@@ -170,6 +171,21 @@ export function ComponentDetailClient() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Record a catalog.component.view span when the component data is loaded.
+  // Fires each time `component` transitions to a new value so we capture
+  // every distinct component that the user views.
+  useEffect(() => {
+    if (!component) return;
+    void recordSpan(
+      "catalog.component.view",
+      () => component.id,
+      {
+        "component.id": component.id,
+        "component.kind": component.kind,
+      },
+    );
+  }, [component]);
 
   if (loading) {
     return (

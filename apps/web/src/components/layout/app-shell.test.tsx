@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 const mockLogout = vi.fn();
 vi.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({
-    user: { username: "admin", displayName: "Admin User", email: "admin@farm.dev", roles: ["admin"] },
+    user: { id: "u1", username: "admin", displayName: "Admin User", email: "admin@farm.dev", roles: ["admin"] },
     logout: mockLogout,
   }),
 }));
@@ -19,6 +19,17 @@ vi.mock("@/contexts/organization-context", () => ({
     refreshOrgs: vi.fn(),
   }),
   OrganizationProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock OTel helpers — org-switcher now imports these.
+vi.mock("@/lib/otel-spans", () => ({
+  recordSpan: vi.fn((_name: unknown, fn: () => unknown) => fn()),
+  startSpan: vi.fn(() => ({ setAttribute: vi.fn(), end: vi.fn() })),
+}));
+vi.mock("@/lib/otel-context", () => ({
+  setUserContext: vi.fn(),
+  clearUserContext: vi.fn(),
+  getUserContext: vi.fn(() => null),
 }));
 
 import React from "react";

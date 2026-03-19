@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, ChevronsUpDown, Check, PlusCircle } from "lucide-react";
 import { useOrganization } from "@/contexts/organization-context";
+import { useAuth } from "@/contexts/auth-context";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -15,6 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { recordSpan } from "@/lib/otel-spans";
+import { setUserContext } from "@/lib/otel-context";
 
 /**
  * OrgSwitcher — sidebar widget that shows the current organization and
@@ -27,6 +30,7 @@ export function OrgSwitcher() {
   const router = useRouter();
   const { organizations, currentOrg, isLoading, switchOrg } =
     useOrganization();
+  const { user } = useAuth();
 
   // Local search state — filters the visible org list inside the dropdown
   const [search, setSearch] = useState("");
@@ -101,7 +105,20 @@ export function OrgSwitcher() {
                 <DropdownMenuItem
                   key={org.id}
                   className="gap-2"
-                  onClick={() => switchOrg(org)}
+                  onClick={() => {
+                    // Record the org switch as an OTel span and update the
+                    // user context so subsequent spans carry the new org id.
+                    void recordSpan(
+                      "org.switch",
+                      () => {
+                        switchOrg(org);
+                        if (user) {
+                          setUserContext(user.id, user.username, org.id);
+                        }
+                      },
+                      { "org.id": org.id, "org.name": org.name },
+                    );
+                  }}
                 >
                   <Building2
                     className={cn(

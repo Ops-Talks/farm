@@ -18,6 +18,7 @@ import {
   getAccessToken,
 } from "@/lib/api-client";
 import { disconnect } from "@/lib/ws-client";
+import { setUserContext, clearUserContext } from "@/lib/otel-context";
 
 interface AuthContextValue {
   user: User | null;
@@ -68,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokens(res.token, res.refreshToken, res.user.username);
       sessionStorage.setItem("farm_user", JSON.stringify(res.user));
       setUser(res.user);
+      // Propagate user identity to OTel spans for the session.
+      setUserContext(res.user.id, res.user.username);
       router.push("/dashboard");
     },
     [router],
@@ -77,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearTokens();
     sessionStorage.removeItem("farm_user");
     disconnect();
+    // Clear OTel user context so stale identity is not attached to future spans.
+    clearUserContext();
     setUser(null);
     router.push("/login");
   }, [router]);

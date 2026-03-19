@@ -25,6 +25,7 @@ import {
   FarmEvent,
 } from "@/types/api";
 import type { CatalogComponent } from "@/types/api";
+import { recordSpan } from "@/lib/otel-spans";
 
 const KIND_GROUP_TABS = [
   { label: "All", id: "all" },
@@ -97,6 +98,21 @@ export function CatalogClient() {
         c.name.toLowerCase().includes(search.toLowerCase()),
       )
     : components;
+
+  // Record a catalog.search span whenever the user types in the search box.
+  // We fire this in a useEffect so `filtered` is already computed (it is a
+  // derived value that lives outside the effect) and the count is accurate.
+  useEffect(() => {
+    if (!search) return;
+    void recordSpan(
+      "catalog.search",
+      () => filtered.length,
+      {
+        "search.query": search,
+        "search.results_count": filtered.length,
+      },
+    );
+  }, [search, filtered.length]);
 
   return (
     <ErrorBoundary>

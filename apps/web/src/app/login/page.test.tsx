@@ -27,6 +27,18 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+// Mock OTel span helpers — tests should not depend on the OTel SDK.
+const mockSpanSetAttribute = vi.fn();
+const mockSpanEnd = vi.fn();
+const mockStartSpan = vi.fn(() => ({
+  setAttribute: mockSpanSetAttribute,
+  end: mockSpanEnd,
+}));
+vi.mock("@/lib/otel-spans", () => ({
+  startSpan: (...args: unknown[]) => mockStartSpan(...args),
+  recordSpan: vi.fn((_name: unknown, fn: () => unknown) => fn()),
+}));
+
 import LoginPage from "@/app/login/page";
 import { ApiError } from "@/lib/api-client";
 
@@ -102,5 +114,54 @@ describe("LoginPage", () => {
     });
 
     expect(screen.getByText("An unexpected error occurred")).toBeInTheDocument();
+  });
+
+  // ── OTel span assertions ────────────────────────────────────────────────────
+
+  it("should create an auth.login span with auth.method=local on submit", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValueOnce(undefined);
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText("Username"), "admin");
+    await user.type(screen.getByLabelText("Password"), "Admin1234");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+    });
+
+    expect(mockStartSpan).toHaveBeenCalledWith("auth.login", { "auth.method": "local" });
+  });
+
+  it("should set result=success attribute on the span after a successful login", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValueOnce(undefined);
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText("Username"), "admin");
+    await user.type(screen.getByLabelText("Password"), "pass");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+    });
+
+    expect(mockSpanSetAttribute).toHaveBeenCalledWith("result", "success");
+    expect(mockSpanEnd).toHaveBeenCalled();
+  });
+
+  it("should set result=error and error.message on the span after a failed login", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockRejectedValueOnce(
+      new ApiError(401, { statusCode: 401, timestamp: "t", path: "/login", message: "Invalid credentials" }),
+    );
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText("Username"), "admin");
+    await user.type(screen.getByLabelText("Password"), "wrong");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Sign In" }));
+    });
+
+    expect(mockSpanSetAttribute).toHaveBeenCalledWith("result", "error");
+    expect(mockSpanSetAttribute).toHaveBeenCalledWith("error.message", "Invalid credentials");
+    expect(mockSpanEnd).toHaveBeenCalled();
   });
 });
