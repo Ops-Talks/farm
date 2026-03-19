@@ -68,24 +68,35 @@ export function ObservabilityClient() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchData = useCallback(async () => {
-    try {
-      const [h, s] = await Promise.all([
-        healthApi.check(),
-        obsApi.summary(),
-      ]);
-      setHealthData(h);
-      setSummary(s);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error("Failed to fetch observability data:", error);
-    } finally {
-      setLoading(false);
+    // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
+    // not prevent the health data from rendering.
+    const [healthResult, summaryResult] = await Promise.allSettled([
+      healthApi.check(),
+      obsApi.summary(),
+    ]);
+
+    if (healthResult.status === "fulfilled") {
+      setHealthData(healthResult.value);
+    } else {
+      console.error("Health check failed:", healthResult.reason);
+      setHealthData(null);
     }
+
+    if (summaryResult.status === "fulfilled") {
+      setSummary(summaryResult.value);
+    } else {
+      console.warn("Observability summary unavailable:", summaryResult.reason);
+      setSummary(null);
+    }
+
+    setLastUpdated(new Date());
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000); // Auto-refresh every 10s
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchData();
+    const interval = setInterval(() => void fetchData(), 10000);
     return () => clearInterval(interval);
   }, [fetchData]);
 

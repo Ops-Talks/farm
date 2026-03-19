@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { catalog, deployments, environments, teams } from "@/lib/api-client";
@@ -12,51 +12,51 @@ interface StatItem {
 
 const REFRESH_INTERVAL = 60_000;
 
-export function QuickStats() {
-  const [stats, setStats] = useState<StatItem[]>([
-    { label: "Components", value: null },
-    { label: "Teams", value: null },
-    { label: "Environments", value: null },
-    { label: "Deployments", value: null },
-  ]);
+const INITIAL_STATS: StatItem[] = [
+  { label: "Components", value: null },
+  { label: "Teams", value: null },
+  { label: "Environments", value: null },
+  { label: "Deployments", value: null },
+];
 
-  const fetchStats = useCallback(() => {
-    Promise.allSettled([
-      catalog.listComponents({ take: 1 }),
-      teams.list(),
-      environments.list(),
-      deployments.list({ take: 1 }),
-    ]).then((results) => {
-      setStats([
-        {
-          label: "Components",
-          value:
-            results[0].status === "fulfilled" ? results[0].value.total : null,
-        },
-        {
-          label: "Teams",
-          value:
-            results[1].status === "fulfilled" ? results[1].value.total : null,
-        },
-        {
-          label: "Environments",
-          value:
-            results[2].status === "fulfilled" ? results[2].value.total : null,
-        },
-        {
-          label: "Deployments",
-          value:
-            results[3].status === "fulfilled" ? results[3].value.total : null,
-        },
-      ]);
-    });
-  }, []);
+export function QuickStats() {
+  const [stats, setStats] = useState<StatItem[]>(INITIAL_STATS);
+
+  function setStatValue(label: string, value: number | null) {
+    setStats((prev) =>
+      prev.map((s) => (s.label === label ? { ...s, value } : s)),
+    );
+  }
 
   useEffect(() => {
+    function fetchStats() {
+      // Fire each request independently so each stat renders as soon as its
+      // response arrives instead of waiting for the slowest call.
+      catalog
+        .listComponents({ take: 1 })
+        .then((r) => setStatValue("Components", r.total ?? 0))
+        .catch(() => setStatValue("Components", 0));
+
+      teams
+        .list()
+        .then((r) => setStatValue("Teams", r.total ?? 0))
+        .catch(() => setStatValue("Teams", 0));
+
+      environments
+        .list()
+        .then((r) => setStatValue("Environments", r.total ?? 0))
+        .catch(() => setStatValue("Environments", 0));
+
+      deployments
+        .list({ take: 1 })
+        .then((r) => setStatValue("Deployments", r.total ?? 0))
+        .catch(() => setStatValue("Deployments", 0));
+    }
+
     fetchStats();
     const interval = setInterval(fetchStats, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, []);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
