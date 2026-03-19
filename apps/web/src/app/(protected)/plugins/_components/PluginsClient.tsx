@@ -103,7 +103,7 @@ function PluginCard({ plugin }: PluginCardProps) {
 // ── Main client component ────────────────────────────────────────────────────
 
 export function PluginsClient() {
-  const { hasRole } = useAuth();
+  const { hasRole, isAuthenticated } = useAuth();
   const isAdmin = hasRole("admin");
   const queryClient = useQueryClient();
 
@@ -113,6 +113,7 @@ export function PluginsClient() {
   const { data: pluginList = [], isLoading } = useQuery<PluginMetadata[]>({
     queryKey: ["plugins"],
     queryFn: () => pluginsApi.list(),
+    enabled: isAuthenticated,
   });
 
   // Mutation for the admin "Reload Plugins" action.

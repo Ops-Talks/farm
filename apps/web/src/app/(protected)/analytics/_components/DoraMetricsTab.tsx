@@ -5,6 +5,7 @@
 // reflected without extra state management here.
 
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/auth-context';
 import { analytics } from '@/lib/api-client';
 import type { DoraAnalytics } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -87,10 +88,12 @@ function MetricCard({ title, value, subtitle, icon, valueClassName }: MetricCard
 // ---------- Main component ---------------------------------------------------
 
 export function DoraMetricsTab({ days }: DoraMetricsTabProps) {
+  const { isAuthenticated } = useAuth();
   const { data, isLoading, isError } = useQuery<DoraAnalytics>({
     queryKey: ['analytics', 'dora', days],
     queryFn: () => analytics.getDora({ days }),
     staleTime: 2 * 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   if (isLoading) return <DoraSkeleton />;

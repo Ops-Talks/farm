@@ -17,6 +17,10 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
+vi.mock('@/contexts/auth-context', () => ({
+  useAuth: () => ({ isAuthenticated: true, hasRole: () => false }),
+}));
+
 import { UsageReportTab } from './UsageReportTab';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

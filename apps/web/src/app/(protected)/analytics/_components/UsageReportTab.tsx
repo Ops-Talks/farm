@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/auth-context';
 import { Download } from 'lucide-react';
 import { analytics } from '@/lib/api-client';
 import type { UsageAnalytics } from '@/lib/api-client';
@@ -70,12 +71,14 @@ function PctBar({ count, max }: { count: number; max: number }) {
 // ---------- Main component ---------------------------------------------------
 
 export function UsageReportTab({ days }: UsageReportTabProps) {
+  const { isAuthenticated } = useAuth();
   const [exporting, setExporting] = useState(false);
 
   const { data, isLoading, isError } = useQuery<UsageAnalytics>({
     queryKey: ['analytics', 'usage', days],
     queryFn: () => analytics.getUsage({ days }),
     staleTime: 2 * 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   const handleExport = async () => {

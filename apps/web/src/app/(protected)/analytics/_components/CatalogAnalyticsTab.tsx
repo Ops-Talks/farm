@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/auth-context';
 import { analytics } from '@/lib/api-client';
 import type { CatalogAnalytics } from '@/lib/api-client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,10 +71,12 @@ function CatalogSkeleton() {
 // ---------- Main component ---------------------------------------------------
 
 export function CatalogAnalyticsTab() {
+  const { isAuthenticated } = useAuth();
   const { data, isLoading, isError } = useQuery<CatalogAnalytics>({
     queryKey: ['analytics', 'catalog'],
     queryFn: () => analytics.getCatalog(),
-    staleTime: 5 * 60 * 1000, // consider fresh for 5 min
+    staleTime: 5 * 60 * 1000,
+    enabled: isAuthenticated,
   });
 
   if (isLoading) return <CatalogSkeleton />;
