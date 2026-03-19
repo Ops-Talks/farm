@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.8] - 2026-03-19
+
+### Added
+- **infra**: merge docs service into docker-compose.yml with profiles.
+- **web**: add frontend OpenTelemetry instrumentation.
+- **api**: add business metrics counters and public traces ingest.
+
+### Changed
+- **roadmap**: add FARM-E43 frontend visual redesign (Phase 8).
+- update observability guide, add OAuth setup and production guide.
+
+### Fixed
+- **web**: gate analytics and plugins queries on isAuthenticated.
+- **web**: fix observability unreachable badge and dashboard lazy stats.
+- **web**: fix Bull Board URL and add /admin proxy rewrite.
+- **web**: clear stale org from sessionStorage on membership mismatch.
+- **observability**: correct prometheus scrape path and grafana tempo UID.
+
 ## [0.10.7] - 2026-03-18
 
 ### Added
