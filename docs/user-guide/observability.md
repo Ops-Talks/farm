@@ -55,11 +55,20 @@ The **Logs** tab queries your Loki instance with LogQL and displays log lines wi
 
 ### Running a query
 
-1. Enter a LogQL selector in the query input (default: `{job="farm-api"}`).
+1. Enter a LogQL selector in the query input (default: `{project="farm"}`).
 2. Choose a time range: 15 minutes, 1 hour, 3 hours, or 24 hours.
 3. Press **Run** to execute.
 
 Up to 200 log lines are shown. Press **Load more** to fetch additional results.
+
+### Useful LogQL selectors
+
+| Goal | Selector |
+|---|---|
+| All Farm logs | `{project="farm"}` |
+| API logs only | `{container="farm-api"}` |
+| Error logs | `{project="farm", level="error"}` |
+| Specific NestJS context | `{container="farm-api", context="HttpException"}` |
 
 ### Log levels
 
@@ -74,7 +83,21 @@ Farm auto-detects the level from each log line's content:
 
 ### Configuration
 
-Set the `LOKI_URL` environment variable (default: `http://localhost:3100`). Farm uses the Loki HTTP API (`/loki/api/v1/query_range`).
+Set the `LOKI_URL` environment variable (default: `http://loki:3100` when using the observability stack, `http://localhost:3100` otherwise). Farm uses the Loki HTTP API (`/loki/api/v1/query_range`).
+
+---
+
+## Grafana Dashboards
+
+The observability stack ships three pre-configured Grafana dashboards at `http://localhost:3002`:
+
+| Dashboard | Description |
+|---|---|
+| **Farm API Overview** | Request rate, latency percentiles, error rate, traces, and business metrics |
+| **Farm — Application Logs** | Log throughput, error/warn counts, and live log panels per container |
+| **Farm — Infrastructure** | Host CPU, memory, disk I/O, network, and filesystem usage |
+
+All dashboards are provisioned automatically from `observability/grafana/provisioning/dashboards/`. No login is required in local development.
 
 ---
 

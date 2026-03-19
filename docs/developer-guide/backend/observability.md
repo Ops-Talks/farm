@@ -1,6 +1,6 @@
 # Observability
 
-Farm includes a fully integrated observability stack for monitoring API performance, tracking errors, and inspecting distributed traces. The stack is **opt-in** and runs alongside the main application via a Docker Compose override.
+Farm includes a fully integrated observability stack for monitoring API performance, tracking errors, inspecting distributed traces, and aggregating logs from all containers. The stack is **opt-in** and runs alongside the main application via a Docker Compose override.
 
 ## Architecture
 
@@ -10,15 +10,23 @@ graph LR
     A -->|OTLP HTTP| T[Tempo]
     W[Farm Web] -->|/api/v1/traces/ingest proxy| A
     A --> T
+    D[Docker containers] -->|stdout/stderr| PT[Promtail]
+    PT -->|push| L[Loki]
+    H[Host OS] -->|cpu/mem/disk/net| NE[Node Exporter]
+    NE --> P
     P --> G[Grafana]
     T --> G
+    L --> G
 ```
 
-| Component   | Purpose                         | Port  |
-|-------------|---------------------------------|-------|
-| Prometheus  | Metrics collection and storage  | 9090  |
-| Tempo       | Distributed trace storage       | 3200  |
-| Grafana     | Dashboards and visualization    | 3002  |
+| Component     | Purpose                                    | Port  |
+|---------------|--------------------------------------------|-------|
+| Prometheus    | Metrics collection and storage             | 9090  |
+| Tempo         | Distributed trace storage                  | 3200  |
+| Loki          | Log aggregation and storage                | 3100  |
+| Promtail      | Log collector (Docker container logs)      | —     |
+| Node Exporter | Host infrastructure metrics                | 9100  |
+| Grafana       | Dashboards and visualization               | 3002  |
 
 ## Quick Start
 
@@ -28,19 +36,22 @@ Start the full observability stack with one command:
 make up-observability
 ```
 
-This launches the base stack (PostgreSQL, Redis, API) plus Prometheus, Tempo, and Grafana. The API container is automatically configured with:
+This launches the base stack (PostgreSQL, Redis, API) plus Prometheus, Tempo, Loki, Promtail, Node Exporter, and Grafana. The API container is automatically configured with:
 
-- `OTEL_ENABLED=true` -- enables OpenTelemetry trace export
-- `OTEL_EXPORTER_ENDPOINT=http://tempo:4318/v1/traces` -- sends traces to Tempo
+- `OTEL_ENABLED=true` — enables OpenTelemetry trace export
+- `OTEL_EXPORTER_ENDPOINT=http://tempo:4318/v1/traces` — sends traces to Tempo
+- `LOKI_URL=http://loki:3100` — Loki endpoint for the Farm log proxy
 
 ### Accessing the Dashboards
 
-| Service    | URL                          |
-|------------|------------------------------|
-| Grafana    | <http://localhost:3002>      |
-| Prometheus | <http://localhost:9090>      |
-| Tempo      | <http://localhost:3200>      |
-| Farm API   | <http://localhost:3000/api>  |
+| Service       | URL                          |
+|---------------|------------------------------|
+| Grafana       | <http://localhost:3002>      |
+| Prometheus    | <http://localhost:9090>      |
+| Tempo         | <http://localhost:3200>      |
+| Loki          | <http://localhost:3100>      |
+| Node Exporter | <http://localhost:9100>      |
+| Farm API      | <http://localhost:3000/api>  |
 
 Grafana starts with anonymous access enabled (no login required) for local development convenience.
 
@@ -50,38 +61,109 @@ Grafana starts with anonymous access enabled (no login required) for local devel
 make down-observability
 ```
 
-## Pre-Configured Dashboard
+## Pre-Configured Dashboards
 
-The stack ships with a **Farm API Overview** dashboard that is provisioned automatically. It includes the following panels:
+The stack ships with three dashboards that are provisioned automatically.
 
-### Request Rate
+### Farm API Overview
+
+Monitors the NestJS application in real time.
+
+#### Request Rate
 
 - **Total request rate** (requests per second) across all endpoints
 - **Error request rate** (5xx responses per second)
 - **Per-route breakdown** by HTTP method and route pattern
 
-### Latency
+#### Latency
 
 - **p50, p95, p99 percentiles** of request duration
 - **Average response time** as a stat panel
 - **Duration heatmap** showing the distribution of response times
 
-### Error Rate
+#### Error Rate
 
 - **Error rate percentage** (5xx / total) with color-coded thresholds:
     - Green: < 1%
-    - Yellow: 1% -- 5%
+    - Yellow: 1% — 5%
     - Red: > 5%
 
-### Traces
+#### Traces
 
 - **Recent traces table** from Tempo, showing the latest 20 traces for `farm-api` and `farm-web` services. Click a trace ID to view the full span waterfall.
 
-### Business Metrics
+#### Business Metrics
 
 - **Pipeline Executions Rate** — `pipeline_executions_total` by status (success / failure / cancelled)
 - **Component Operations Rate** — `component_operations_total` by operation (create / update / delete)
 - **Deployment Operations Total** — `deployment_operations_total` stat panel by operation and status
+
+---
+
+### Farm — Application Logs
+
+Aggregates container logs collected by Promtail from all running Farm services.
+
+| Panel | Description |
+|---|---|
+| Log Rate (lines/min) | Time series of log throughput per container |
+| Error Rate (lines/min) | Time series of `level=error` logs per container |
+| Error Count (last 1h) | Stat panel — total error log lines in the last hour |
+| Warn Count (last 1h) | Stat panel — total warn log lines in the last hour |
+| Total Logs (last 1h) | Stat panel — all log lines in the last hour |
+| API Logs — farm-api | Live log panel filtered to `container="farm-api"` |
+| All Container Logs | Live log panel showing all Farm containers |
+
+Logs are labeled with `project=farm`, `container`, `service`, `level`, and `context` (Winston field). Use these labels in LogQL to filter by container or log level.
+
+---
+
+### Farm — Infrastructure
+
+Host-level metrics from Node Exporter.
+
+| Panel | Description |
+|---|---|
+| CPU Usage % | Time series of total host CPU utilization |
+| Memory Usage % | Time series of host memory utilization |
+| CPU — Current | Stat panel — current CPU % |
+| Memory — Current | Stat panel — current memory % |
+| Total Memory | Stat panel — total RAM installed |
+| Disk Read/Write (bytes/s) | Time series of disk I/O throughput |
+| Network Traffic (bytes/s) | Time series of network receive/transmit |
+| Disk Usage % | Bar gauge per filesystem mount point |
+
+---
+
+## Log Collection
+
+Promtail uses Docker service discovery (`docker_sd_configs`) to automatically collect stdout/stderr from every running Farm container. Logs are pushed to Loki in real time.
+
+### Labels applied to all log streams
+
+| Label | Source |
+|---|---|
+| `container` | Docker container name (e.g. `farm-api`) |
+| `service` | Docker Compose service name |
+| `project` | Always `farm` |
+| `job` | Always `docker` |
+| `level` | Extracted from Winston JSON field (when present) |
+| `context` | Extracted from Winston JSON field (when present) |
+
+### Querying logs in Grafana Explore
+
+```logql
+# All logs from the API
+{container="farm-api"}
+
+# Error logs from all containers
+{project="farm", level="error"}
+
+# Logs from a specific NestJS context
+{container="farm-api", context="HttpException"}
+```
+
+---
 
 ## Metrics Reference
 
@@ -89,19 +171,19 @@ The API exposes these custom Prometheus metrics at `GET /api/v1/metrics`:
 
 ### HTTP Metrics (auto-instrumented)
 
-| Metric                             | Type      | Labels                         | Description                              |
-|------------------------------------|-----------|--------------------------------|------------------------------------------|
+| Metric                             | Type      | Labels                           | Description                              |
+|------------------------------------|-----------|----------------------------------|------------------------------------------|
 | `http_requests_total`              | Counter   | `method`, `route`, `status_code` | Total HTTP requests received             |
 | `http_request_duration_seconds`    | Histogram | `method`, `route`, `status_code` | Request duration in seconds              |
 
 ### Business Metrics
 
-| Metric                          | Type    | Labels                         | Description                                 |
-|---------------------------------|---------|--------------------------------|---------------------------------------------|
-| `pipeline_executions_total`     | Counter | `status`, `pipeline_id`        | Pipeline runs completed (success/failure/cancelled) |
-| `component_operations_total`    | Counter | `operation`                    | Component create/update/delete operations   |
-| `deployment_operations_total`   | Counter | `operation`, `status`          | Deployment create/update operations         |
-| `team_operations_total`         | Counter | `operation`                    | Team create/update/delete operations        |
+| Metric                          | Type    | Labels                    | Description                                 |
+|---------------------------------|---------|---------------------------|---------------------------------------------|
+| `pipeline_executions_total`     | Counter | `status`, `pipeline_id`   | Pipeline runs completed                     |
+| `component_operations_total`    | Counter | `operation`               | Component create/update/delete              |
+| `deployment_operations_total`   | Counter | `operation`, `status`     | Deployment create/update operations         |
+| `team_operations_total`         | Counter | `operation`               | Team create/update/delete operations        |
 
 In addition, all default Node.js process metrics are exposed (CPU, memory, event loop lag, GC).
 
@@ -122,14 +204,14 @@ histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_
 sum(rate(http_requests_total{job="farm-api", status_code=~"5.."}[5m])) / sum(rate(http_requests_total{job="farm-api"}[5m]))
 ```
 
-**Pipeline failure rate:**
+**Host CPU usage:**
 ```promql
-sum(rate(pipeline_executions_total{status="failure"}[5m]))
+100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100)
 ```
 
-**Component operations per minute:**
+**Host memory usage:**
 ```promql
-sum by (operation) (rate(component_operations_total[5m])) * 60
+100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
 ```
 
 ## Tracing
