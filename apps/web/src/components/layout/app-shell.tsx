@@ -129,7 +129,7 @@ function NavItem({
         buttonVariants({ variant: "ghost" }),
         "w-full justify-start gap-2 rounded-md px-3 py-2 h-auto text-sm border-l-2",
         isActive
-          ? "border-primary bg-primary/10 text-primary font-medium hover:bg-primary/15"
+          ? "border-l-primary border-t-transparent border-r-transparent border-b-transparent bg-primary/10 text-primary font-medium hover:bg-primary/15"
           : "border-transparent hover:bg-muted text-foreground/80",
       )}
     >
