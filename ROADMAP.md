@@ -1034,6 +1034,38 @@ Farm's current UI uses the default shadcn/ui Zinc palette with minimal customiza
 
 ---
 
+---
+
+## Phase 9: Security Testing `TODO`
+
+### FARM-E44: Secret Scanning, Container Security and Accessibility Testing `TODO`
+
+> Expand the Farm security posture beyond SAST and DAST by adding three complementary automated checks: secret scanning to catch leaked credentials before they reach main, container image CVE scanning to surface vulnerabilities in the Docker images Farm ships, and automated accessibility auditing to validate WCAG compliance in CI alongside the existing unit and e2e tests.
+
+#### Background
+
+SAST (CodeQL + eslint-plugin-security) and DAST (OWASP ZAP) are already in place. The three remaining gaps are:
+
+1. **Secrets in git history**: A single accidentally committed API key or JWT secret can have long-lasting consequences. Gitleaks scans every commit diff at push time and blocks the PR before the secret lands in the default branch.
+2. **Vulnerable container images**: The Farm API ships as a Docker image that depends on a Node.js base image, PostgreSQL, and Redis. Even if application code is clean, outdated base images can carry high/critical CVEs. Trivy scans image layers and fails the build when critical CVEs are found.
+3. **Accessibility regressions**: Farm already implements ARIA landmarks, skip links, and keyboard navigation (ST183–ST188). Without automated checks these guarantees can silently regress. axe-core integrated with vitest catches WCAG 2.1 AA violations at component level.
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S169 | Story | Secret scanning with Gitleaks: add `.github/workflows/secret-scan.yml` that runs `gitleaks/gitleaks-action` on every push and PR; configure `.gitleaks.toml` to allowlist test fixtures and known false-positives; fail the build on any detected secret | `TODO` |
+| FARM-S170 | Story | Container image scanning with Trivy: add a `trivy` step to the existing CI workflow that scans the built API Docker image for HIGH and CRITICAL CVEs; upload SARIF results to the GitHub Security tab; fail on CRITICAL findings | `TODO` |
+| FARM-S171 | Story | Automated accessibility testing with axe-core: install `@axe-core/react` (or `vitest-axe`) and add axe checks to key page-level components (Login, Dashboard, Catalog, Environments, Teams, Pipelines); assert zero WCAG 2.1 AA violations in CI | `TODO` |
+
+#### Implementation Notes
+
+- **Gitleaks**: Use `gitleaks/gitleaks-action@v2` — zero config by default, add `.gitleaks.toml` only to suppress known false-positives (e.g. test JWT secrets). Add to the existing `ci.yml` or as a standalone workflow.
+- **Trivy**: Use `aquasecurity/trivy-action` after the `docker build` step. Scan mode: `image`. Output: SARIF. Severity filter: `CRITICAL,HIGH`. The API Dockerfile already exists and builds in CI via the Docker Compose workflow.
+- **axe-core**: `vitest-axe` wraps axe-core for vitest. Pattern: `render(<Page />); const results = await axe(container); expect(results).toHaveNoViolations()`. Add to existing page test files — no new infrastructure required.
+
+---
+
 |-------|-------|---------|--------|
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
@@ -1046,4 +1078,5 @@ Farm's current UI uses the default shadcn/ui Zinc palette with minimal customiza
 | Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
-| **Total** | **45** | **169** | |
+| Phase 9: Security Testing | 1 | 3 | `TODO` |
+| **Total** | **46** | **172** | |
