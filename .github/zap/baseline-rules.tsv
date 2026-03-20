@@ -1,0 +1,21 @@
+# ZAP Baseline rules for Farm API
+# Format: rule_id	IGNORE|WARN|FAIL	description
+#
+# Rules set to IGNORE are known false-positives or intentional design choices.
+# Rules set to WARN are reported but do not fail the build.
+# Rules set to FAIL (default) cause the build to fail.
+
+# Authentication endpoint — login/register are intentionally open
+10202	IGNORE	Absence of Anti-CSRF Tokens (auth endpoints are stateless JWT)
+
+# Content-Security-Policy — API-only endpoints don't serve HTML
+10038	WARN	Content Security Policy Header Not Set
+
+# X-Frame-Options — not relevant for a JSON API
+10020	WARN	X-Frame-Options Header Not Set
+
+# Server leaks version info via response headers — low risk for internal API
+10021	WARN	X-Content-Type-Options Header Missing
+
+# Storable and cacheable response — acceptable for public GET endpoints
+10049	WARN	Storable and Cacheable Content
