@@ -92,7 +92,7 @@ export default function LoginClient() {
     <div className="flex min-h-screen">
       {/* ── Left branding panel (desktop only) ─────────────────────────────── */}
       {/* hidden md:flex: display:none on mobile, flex on desktop */}
-      <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center bg-primary p-12 relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center p-12 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #6F00FF, #FE59C2)' }}>
         {/* Subtle dot-grid pattern overlay for depth */}
         <div
           aria-hidden="true"
