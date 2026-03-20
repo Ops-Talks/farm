@@ -14,7 +14,7 @@
 # X-Frame-Options — not relevant for a JSON API
 10020	WARN	X-Frame-Options Header Not Set
 
-# Server leaks version info via response headers — low risk for internal API
+# X-Content-Type-Options — not relevant for a JSON API (no HTML/scripts served)
 10021	WARN	X-Content-Type-Options Header Missing
 
 # Storable and cacheable response — acceptable for public GET endpoints
