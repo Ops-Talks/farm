@@ -92,6 +92,7 @@ nav:
     - Tag Governance: user-guide/tag-governance.md
     - Kyverno Integration: user-guide/kyverno-integration.md
     - Keycloak SSO: user-guide/keycloak-sso.md
+    - Istio Service Mesh: user-guide/istio-integration.md
     - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -136,6 +137,7 @@ nav:
     - Tag Governance API: api-reference/tag-governance.md
     - Kyverno API: api-reference/kyverno.md
     - Keycloak SSO API: api-reference/keycloak-sso.md
+    - Istio API: api-reference/istio.md
 
 extra_css:
   - stylesheets/extra.css
