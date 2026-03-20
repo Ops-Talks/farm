@@ -67,6 +67,8 @@ export interface CatalogComponent {
   vcsUrl?: string;
   /** Optional Helm chart configuration (FARM-E36) */
   helmChart?: HelmChart;
+  /** Optional Kubernetes namespace for Istio service mesh integration (FARM-E42) */
+  namespace?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -690,6 +692,47 @@ export interface KeycloakCredential {
   type: 'keycloak';
   createdAt: string;
   updatedAt: string;
+}
+
+// -- Istio Service Mesh (FARM-E42) --
+
+export interface IstioVirtualService {
+  name: string;
+  namespace: string;
+  hosts: string[];
+  gateways: string[];
+  routes: { destination: string; weight: number; port?: number }[];
+}
+
+export interface IstioPeerAuthentication {
+  name: string;
+  namespace: string;
+  mtlsMode: 'STRICT' | 'PERMISSIVE' | 'DISABLE' | 'UNSET';
+}
+
+export interface IstioAuthorizationPolicy {
+  name: string;
+  namespace: string;
+  action: 'ALLOW' | 'DENY' | 'AUDIT' | 'CUSTOM';
+  hasNoRules: boolean;
+  rules: { from?: string[]; to?: string[]; conditions?: string[] }[];
+}
+
+export interface IstioTopologyEdge {
+  source: string;
+  destination: string;
+  weight?: number;
+}
+
+export interface IstioMetricsTimeseries {
+  query: string;
+  timeseries: { timestamp: number; value: number }[];
+}
+
+export interface IstioLatency {
+  p50: IstioMetricsTimeseries;
+  p95: IstioMetricsTimeseries;
+  p99: IstioMetricsTimeseries;
 }
 
 // -- Kyverno Policy Reports (FARM-E40) --

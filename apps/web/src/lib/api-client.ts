@@ -15,6 +15,12 @@ import type {
   HelmRelease,
   HelmSyncResult,
   IntegrationCredential,
+  IstioAuthorizationPolicy,
+  IstioLatency,
+  IstioMetricsTimeseries,
+  IstioPeerAuthentication,
+  IstioTopologyEdge,
+  IstioVirtualService,
   JaegerTrace,
   JaegerTracesResponse,
   JenkinsJob,
@@ -1240,6 +1246,100 @@ export const kyverno = {
   /** List cluster-scoped ClusterPolicyReport results. */
   listClusterPolicyReports(): Promise<KyvernoPolicyReportResult[]> {
     return request<KyvernoPolicyReportResult[]>('/v1/kubernetes/cluster-policy-reports');
+  },
+};
+
+// -- Istio Service Mesh API (FARM-E42) --
+
+export const istio = {
+  /** Check whether Istio is installed in the cluster. */
+  getStatus(params?: { kubeconfig?: string }): Promise<{ istioEnabled: boolean }> {
+    const qs = params?.kubeconfig
+      ? `?kubeconfig=${encodeURIComponent(params.kubeconfig)}`
+      : '';
+    return request<{ istioEnabled: boolean }>(`/v1/istio/status${qs}`);
+  },
+
+  /** List VirtualServices, optionally scoped to a namespace. */
+  listVirtualServices(params?: { namespace?: string; kubeconfig?: string }): Promise<IstioVirtualService[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<IstioVirtualService[]>(`/v1/istio/virtual-services${qs}`);
+  },
+
+  /** Get a single VirtualService by namespace and name. */
+  getVirtualService(namespace: string, name: string, params?: { kubeconfig?: string }): Promise<IstioVirtualService> {
+    const qs = params?.kubeconfig
+      ? `?kubeconfig=${encodeURIComponent(params.kubeconfig)}`
+      : '';
+    return request<IstioVirtualService>(
+      `/v1/istio/virtual-services/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}${qs}`,
+    );
+  },
+
+  /** Patch traffic weights for a VirtualService (admin only). */
+  patchWeights(
+    namespace: string,
+    name: string,
+    weights: { destination: string; weight: number }[],
+  ): Promise<void> {
+    return request<void>(
+      `/v1/istio/virtual-services/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/weights`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ weights }),
+      },
+    );
+  },
+
+  /** List PeerAuthentication resources for mTLS policy info. */
+  listPeerAuthentications(params?: { namespace?: string; kubeconfig?: string }): Promise<IstioPeerAuthentication[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<IstioPeerAuthentication[]>(`/v1/istio/peer-authentications${qs}`);
+  },
+
+  /** List AuthorizationPolicy resources for access control info. */
+  listAuthorizationPolicies(params?: { namespace?: string; kubeconfig?: string }): Promise<IstioAuthorizationPolicy[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<IstioAuthorizationPolicy[]>(`/v1/istio/authorization-policies${qs}`);
+  },
+
+  /** Get requests-per-second timeseries for a service. */
+  getMetricsRps(params: { service: string; namespace: string; range?: string }): Promise<IstioMetricsTimeseries> {
+    const query = new URLSearchParams({ service: params.service, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<IstioMetricsTimeseries>(`/v1/istio/metrics/rps?${query.toString()}`);
+  },
+
+  /** Get error-rate timeseries for a service. */
+  getMetricsErrorRate(params: { service: string; namespace: string; range?: string }): Promise<IstioMetricsTimeseries> {
+    const query = new URLSearchParams({ service: params.service, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<IstioMetricsTimeseries>(`/v1/istio/metrics/error-rate?${query.toString()}`);
+  },
+
+  /** Get latency percentile timeseries (p50/p95/p99) for a service. */
+  getMetricsLatency(params: { service: string; namespace: string; range?: string }): Promise<IstioLatency> {
+    const query = new URLSearchParams({ service: params.service, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<IstioLatency>(`/v1/istio/metrics/latency?${query.toString()}`);
+  },
+
+  /** Get service topology edges for an organisation. */
+  getTopology(params?: { orgId?: string; kubeconfig?: string }): Promise<IstioTopologyEdge[]> {
+    const query = new URLSearchParams();
+    if (params?.orgId) query.set('orgId', params.orgId);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<IstioTopologyEdge[]>(`/v1/istio/topology${qs}`);
   },
 };
 

@@ -35,6 +35,7 @@ import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { HelmModule } from "./modules/helm/helm.module";
 import { CloudModule } from "./modules/cloud/cloud.module";
 import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
+import { IstioModule } from "./modules/istio/istio.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -248,6 +249,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Resource tagging governance, compliance audit, and violation tracking",
         },
         module: TagPolicyModule,
+      },
+      {
+        metadata: {
+          name: "core-istio",
+          version: "1.0.0",
+          description:
+            "Istio service mesh integration: traffic metrics, topology, security posture, and canary traffic control",
+        },
+        module: IstioModule,
       },
     ]),
   ],
