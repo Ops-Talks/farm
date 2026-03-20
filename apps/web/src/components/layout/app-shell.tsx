@@ -150,8 +150,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Longest-prefix-wins: among all nav items whose href is a prefix of the
   // current pathname, pick the one with the most specific (longest) href.
-  // Longest-prefix-wins: among all nav items whose href is a prefix of the
-  // current pathname, pick the one with the most specific (longest) href.
   // This prevents /compliance from staying active when /compliance/policies is open.
   const activeHref = [...navItems]
     .filter(

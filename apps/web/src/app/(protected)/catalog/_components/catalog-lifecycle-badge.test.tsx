@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import type { ComponentLifecycle } from "@/types/api";
 
 // ---------------------------------------------------------------------------
 // Unit tests for the exported lifecycleBadgeClass helper (FARM-S167).
@@ -17,6 +18,13 @@ vi.mock("@/lib/otel-spans", () => ({
   startSpan: vi.fn(() => ({ setAttribute: vi.fn(), end: vi.fn() })),
 }));
 vi.mock("@/types/api", () => ({
+  ComponentLifecycle: {
+    PLANNED: "planned",
+    EXPERIMENTAL: "experimental",
+    PRODUCTION: "production",
+    DEPRECATED: "deprecated",
+    DECOMMISSIONED: "decommissioned",
+  },
   ComponentKindGroup: { DEV: "dev", INFRA: "infra", DATA: "data", SECURITY: "security" },
   FarmEvent: {
     COMPONENT_CREATED: "component.created",
@@ -33,61 +41,61 @@ import { lifecycleBadgeClass, CatalogClient } from "./CatalogClient";
 
 describe("lifecycleBadgeClass", () => {
   it("returns green classes for production lifecycle", () => {
-    const cls = lifecycleBadgeClass("production");
+    const cls = lifecycleBadgeClass("production" as ComponentLifecycle);
     expect(cls).toContain("bg-green-100");
     expect(cls).toContain("text-green-800");
   });
 
   it("returns yellow classes for experimental lifecycle", () => {
-    const cls = lifecycleBadgeClass("experimental");
+    const cls = lifecycleBadgeClass("experimental" as ComponentLifecycle);
     expect(cls).toContain("bg-yellow-100");
     expect(cls).toContain("text-yellow-800");
   });
 
   it("returns red classes for deprecated lifecycle", () => {
-    const cls = lifecycleBadgeClass("deprecated");
+    const cls = lifecycleBadgeClass("deprecated" as ComponentLifecycle);
     expect(cls).toContain("bg-red-100");
     expect(cls).toContain("text-red-800");
   });
 
   it("returns red classes for decommissioned lifecycle", () => {
-    const cls = lifecycleBadgeClass("decommissioned");
+    const cls = lifecycleBadgeClass("decommissioned" as ComponentLifecycle);
     expect(cls).toContain("bg-red-100");
     expect(cls).toContain("text-red-800");
   });
 
-  it("returns blue classes for development lifecycle", () => {
-    const cls = lifecycleBadgeClass("development");
+  it("returns blue classes for planned lifecycle", () => {
+    const cls = lifecycleBadgeClass("planned" as ComponentLifecycle);
     expect(cls).toContain("bg-blue-100");
     expect(cls).toContain("text-blue-800");
   });
 
   it("returns muted classes for unknown lifecycle values", () => {
-    const cls = lifecycleBadgeClass("unknown-status");
+    const cls = lifecycleBadgeClass("unknown-status" as unknown as ComponentLifecycle);
     expect(cls).toContain("bg-muted");
     expect(cls).toContain("text-muted-foreground");
   });
 
   it("dark mode classes are included for production", () => {
-    const cls = lifecycleBadgeClass("production");
+    const cls = lifecycleBadgeClass("production" as ComponentLifecycle);
     expect(cls).toContain("dark:bg-green-900/30");
     expect(cls).toContain("dark:text-green-400");
   });
 
   it("dark mode classes are included for experimental", () => {
-    const cls = lifecycleBadgeClass("experimental");
+    const cls = lifecycleBadgeClass("experimental" as ComponentLifecycle);
     expect(cls).toContain("dark:bg-yellow-900/30");
     expect(cls).toContain("dark:text-yellow-400");
   });
 
   it("dark mode classes are included for deprecated", () => {
-    const cls = lifecycleBadgeClass("deprecated");
+    const cls = lifecycleBadgeClass("deprecated" as ComponentLifecycle);
     expect(cls).toContain("dark:bg-red-900/30");
     expect(cls).toContain("dark:text-red-400");
   });
 
-  it("dark mode classes are included for development", () => {
-    const cls = lifecycleBadgeClass("development");
+  it("dark mode classes are included for planned", () => {
+    const cls = lifecycleBadgeClass("planned" as ComponentLifecycle);
     expect(cls).toContain("dark:bg-blue-900/30");
     expect(cls).toContain("dark:text-blue-400");
   });
@@ -173,19 +181,19 @@ describe("CatalogClient — lifecycle badge rendering", () => {
     expect(badge.className).toContain("bg-red-100");
   });
 
-  it("renders development lifecycle badge with blue styling", async () => {
+  it("renders planned lifecycle badge with blue styling", async () => {
     const { catalog } = await import("@/lib/api-client");
     vi.mocked(catalog.listComponents).mockResolvedValue(
-      paginated([mockComponent({ lifecycle: "development" })]),
+      paginated([mockComponent({ lifecycle: "planned" })]),
     );
 
     render(<CatalogClient />, { wrapper: createWrapper() });
 
     await waitFor(() =>
-      expect(screen.getByText("development")).toBeInTheDocument(),
+      expect(screen.getByText("planned")).toBeInTheDocument(),
     );
 
-    const badge = screen.getByText("development");
+    const badge = screen.getByText("planned");
     expect(badge.className).toContain("bg-blue-100");
   });
 

@@ -21,6 +21,7 @@ import { catalog } from "@/lib/api-client";
 import { subscribe } from "@/lib/ws-client";
 import {
   ComponentKindGroup,
+  ComponentLifecycle,
   FarmEvent,
 } from "@/types/api";
 import type { CatalogComponent } from "@/types/api";
@@ -40,16 +41,16 @@ const PAGE_SIZE = 20;
 // Lifecycle badge color helper (FARM-S167)
 // Exported so it can be unit-tested independently.
 // ---------------------------------------------------------------------------
-export function lifecycleBadgeClass(lifecycle: string): string {
+export function lifecycleBadgeClass(lifecycle: ComponentLifecycle): string {
   switch (lifecycle) {
-    case "production":
+    case ComponentLifecycle.PRODUCTION:
       return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-    case "experimental":
+    case ComponentLifecycle.EXPERIMENTAL:
       return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-    case "deprecated":
-    case "decommissioned":
+    case ComponentLifecycle.DEPRECATED:
+    case ComponentLifecycle.DECOMMISSIONED:
       return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-    case "development":
+    case ComponentLifecycle.PLANNED:
       return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
     default:
       return "bg-muted text-muted-foreground";
