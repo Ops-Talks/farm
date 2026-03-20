@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode, type ElementType } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -109,8 +109,8 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
   );
 }
 
-// Shared nav item — active state uses primary/10 bg + primary text + left border accent.
-// Used in both the desktop sidebar and the mobile Sheet.
+// Shared nav item — renders a single <Link> (anchor) with button-like styling.
+// Using buttonVariants on the Link avoids the invalid <a><button> nesting.
 function NavItem({
   item,
   isActive,
@@ -124,28 +124,19 @@ function NavItem({
     <Link
       href={item.href}
       onClick={onClick}
-      // Left border accent: primary color on active, transparent on inactive
-      // so layout doesn't shift between states (FARM-S166)
+      aria-current={isActive ? "page" : undefined}
       className={cn(
-        "block border-l-2",
-        isActive ? "border-primary" : "border-transparent",
+        buttonVariants({ variant: "ghost" }),
+        "w-full justify-start gap-2 rounded-md px-3 py-2 h-auto text-sm border-l-2",
+        isActive
+          ? "border-primary bg-primary/10 text-primary font-medium hover:bg-primary/15"
+          : "border-transparent hover:bg-muted text-foreground/80",
       )}
     >
-      <Button
-        variant="ghost"
-        className={cn(
-          "w-full justify-start gap-2 rounded-md px-3 py-2 h-auto text-sm",
-          isActive
-            ? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
-            : "hover:bg-muted text-foreground/80",
-        )}
-        aria-current={isActive ? "page" : undefined}
-      >
-        {item.icon && (
-          <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-        )}
-        {item.label}
-      </Button>
+      {item.icon && (
+        <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      )}
+      {item.label}
     </Link>
   );
 }
@@ -156,6 +147,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { theme, setTheme } = useTheme();
   // Controls the mobile hamburger Sheet open/close state (ST188)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Longest-prefix-wins: among all nav items whose href is a prefix of the
+  // current pathname, pick the one with the most specific (longest) href.
+  // Longest-prefix-wins: among all nav items whose href is a prefix of the
+  // current pathname, pick the one with the most specific (longest) href.
+  // This prevents /compliance from staying active when /compliance/policies is open.
+  const activeHref = [...navItems]
+    .filter(
+      (i) => pathname === i.href || pathname.startsWith(i.href + "/"),
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   const cycleTheme = () => {
     if (theme === "light") setTheme("dark");
@@ -199,7 +201,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2"
         >
           {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = activeHref === item.href;
             return <NavItem key={item.href} item={item} isActive={isActive} />;
           })}
         </nav>
@@ -239,7 +241,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className="flex flex-col gap-0.5 p-2"
                 >
                   {navItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href);
+                    const isActive = activeHref === item.href;
                     return (
                       <NavItem
                         key={item.href}
