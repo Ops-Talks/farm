@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { TracingInit } from "@/components/tracing-init";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -41,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${plusJakartaSans.variable} antialiased`}
+        className={`${geistMono.variable} ${inter.variable} ${plusJakartaSans.variable} antialiased`}
       >
         <Providers>
           {/* TracingInit bootstraps the OTel browser SDK once on first render.
