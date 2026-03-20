@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -37,19 +36,23 @@ const KIND_GROUP_TABS = [
 
 const PAGE_SIZE = 20;
 
-function lifecycleVariant(
-  lifecycle: string,
-): "default" | "secondary" | "destructive" | "outline" {
+// ---------------------------------------------------------------------------
+// Lifecycle badge color helper (FARM-S167)
+// Exported so it can be unit-tested independently.
+// ---------------------------------------------------------------------------
+export function lifecycleBadgeClass(lifecycle: string): string {
   switch (lifecycle) {
     case "production":
-      return "default";
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
     case "experimental":
-      return "secondary";
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
     case "deprecated":
     case "decommissioned":
-      return "destructive";
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+    case "development":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
     default:
-      return "outline";
+      return "bg-muted text-muted-foreground";
   }
 }
 
@@ -183,7 +186,8 @@ export function CatalogClient() {
               </TableRow>
             ) : (
               filtered.map((c) => (
-                <TableRow key={c.id}>
+                // Row hover effect: subtle muted background transition (FARM-S167)
+                <TableRow key={c.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <Link
                       href={`/catalog/${c.id}`}
@@ -193,14 +197,18 @@ export function CatalogClient() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">
+                    {/* Component kind: subtle muted pill (FARM-S167) */}
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted text-muted-foreground capitalize">
                       {c.kind}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={lifecycleVariant(c.lifecycle)}>
+                    {/* Lifecycle: color-coded status badge (FARM-S167) */}
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${lifecycleBadgeClass(c.lifecycle)}`}
+                    >
                       {c.lifecycle}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.owner}
@@ -208,13 +216,12 @@ export function CatalogClient() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {c.tags?.slice(0, 3).map((tag) => (
-                        <Badge
+                        <span
                           key={tag}
-                          variant="secondary"
-                          className="text-xs"
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground"
                         >
                           {tag}
-                        </Badge>
+                        </span>
                       ))}
                       {(c.tags?.length ?? 0) > 3 && (
                         <span className="text-xs text-muted-foreground">

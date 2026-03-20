@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,25 @@ const TYPE_BADGE_VARIANT: Record<
   "gcp-cloud-run": "default",
   "azure-container-apps": "default",
 };
+
+// Map stage type to a left-border accent color (FARM-S168).
+// Provides at-a-glance visual differentiation in the stage list.
+function stageBorderAccent(type: string): string {
+  if (type === "build") return "border-l-blue-500";
+  if (type === "script") return "border-l-purple-500";
+  if (
+    type === "deploy" ||
+    type === "aws-ecs" ||
+    type === "aws-lambda" ||
+    type === "gcp-cloud-run" ||
+    type === "azure-container-apps"
+  ) {
+    return "border-l-green-500";
+  }
+  if (type === "approval") return "border-l-yellow-500";
+  if (type === "notify") return "border-l-teal-500";
+  return "border-l-slate-400";
+}
 
 function getConfigSummary(stage: PipelineStage): string {
   if (CLOUD_DEPLOY_TYPES.has(stage.type)) {
@@ -210,11 +230,14 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                className={cn(
+                  // Base: left border accent by stage type (FARM-S168)
+                  "flex items-center gap-3 rounded-lg border border-l-[3px] px-3 py-2 text-sm transition-colors",
                   isDragTarget
-                    ? "border-primary bg-primary/5"
-                    : "bg-card hover:bg-muted/30"
-                } ${!readOnly ? "cursor-grab active:cursor-grabbing" : ""}`}
+                    ? "border-l-primary bg-primary/5"
+                    : cn(stageBorderAccent(stage.type), "bg-card hover:bg-muted/30"),
+                  !readOnly ? "cursor-grab active:cursor-grabbing" : "",
+                )}
                 aria-label={`Stage ${index + 1}: ${stage.name}`}
               >
                 {/* Drag handle */}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode, type ElementType } from "react";
 import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -22,27 +23,46 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { MenuIcon, BarChart2 } from "lucide-react";
+import {
+  MenuIcon,
+  BarChart2,
+  LayoutDashboard,
+  BookOpen,
+  Rocket,
+  GitPullRequest,
+  Bell,
+  FileText,
+  List,
+  Activity,
+  Building2,
+  Users,
+  Puzzle,
+  Link2,
+  Cloud,
+  KeyRound,
+  ShieldCheck,
+  Tag,
+} from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/catalog", label: "Catalog" },
-  { href: "/deployments", label: "Deployments" },
-  { href: "/pipelines", label: "Pipelines" },
-  { href: "/alerting-rules", label: "Alerting" },
-  { href: "/docs", label: "Docs" },
-  { href: "/queues", label: "Queues" },
-  { href: "/observability", label: "Observability" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/catalog", label: "Catalog", icon: BookOpen },
+  { href: "/deployments", label: "Deployments", icon: Rocket },
+  { href: "/pipelines", label: "Pipelines", icon: GitPullRequest },
+  { href: "/alerting-rules", label: "Alerting", icon: Bell },
+  { href: "/docs", label: "Docs", icon: FileText },
+  { href: "/queues", label: "Queues", icon: List },
+  { href: "/observability", label: "Observability", icon: Activity },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
-  { href: "/organizations", label: "Organizations" },
-  { href: "/teams", label: "Teams" },
-  { href: "/plugins", label: "Plugins" },
-  { href: "/integrations/settings", label: "Integrations" },
-  { href: "/integrations/cloud", label: "Cloud Providers" },
-  { href: "/integrations/keycloak", label: "Keycloak SSO" },
-  { href: "/compliance", label: "Compliance" },
-  { href: "/compliance/policies", label: "Tag Policies" },
+  { href: "/organizations", label: "Organizations", icon: Building2 },
+  { href: "/teams", label: "Teams", icon: Users },
+  { href: "/plugins", label: "Plugins", icon: Puzzle },
+  { href: "/integrations/settings", label: "Integrations", icon: Link2 },
+  { href: "/integrations/cloud", label: "Cloud Providers", icon: Cloud },
+  { href: "/integrations/keycloak", label: "Keycloak SSO", icon: KeyRound },
+  { href: "/compliance", label: "Compliance", icon: ShieldCheck },
+  { href: "/compliance/policies", label: "Tag Policies", icon: Tag },
 ] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {
@@ -67,20 +87,66 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
   });
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm">
       {crumbs.map((c, i) => (
         <span key={c.href} className="flex items-center gap-1">
-          {i > 0 && <span>/</span>}
+          {i > 0 && <span className="text-muted-foreground">/</span>}
           {c.isLast ? (
+            // Final segment: prominent foreground + medium weight (FARM-S166)
             <span className="text-foreground font-medium">{c.label}</span>
           ) : (
-            <Link href={c.href} className="hover:text-foreground">
+            // Non-final: muted, hover transitions to foreground
+            <Link
+              href={c.href}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
               {c.label}
             </Link>
           )}
         </span>
       ))}
     </nav>
+  );
+}
+
+// Shared nav item — active state uses primary/10 bg + primary text + left border accent.
+// Used in both the desktop sidebar and the mobile Sheet.
+function NavItem({
+  item,
+  isActive,
+  onClick,
+}: {
+  item: { href: string; label: string; icon?: ElementType };
+  isActive: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      // Left border accent: primary color on active, transparent on inactive
+      // so layout doesn't shift between states (FARM-S166)
+      className={cn(
+        "block border-l-2",
+        isActive ? "border-primary" : "border-transparent",
+      )}
+    >
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-start gap-2 rounded-md px-3 py-2 h-auto text-sm",
+          isActive
+            ? "bg-primary/10 text-primary font-medium hover:bg-primary/15"
+            : "hover:bg-muted text-foreground/80",
+        )}
+        aria-current={isActive ? "page" : undefined}
+      >
+        {item.icon && (
+          <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        )}
+        {item.label}
+      </Button>
+    </Link>
   );
 }
 
@@ -111,9 +177,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* ST183 – Sidebar: landmark role + aria-label so screen readers identify it */}
-      <aside aria-label="Sidebar" className="hidden w-56 flex-col border-r bg-muted/30 md:flex">
+      <aside
+        aria-label="Sidebar"
+        className="hidden w-56 flex-col border-r bg-sidebar md:flex"
+      >
+        {/* Brand header */}
         <div className="flex h-14 items-center px-4">
-          <Link href="/dashboard" className="text-lg font-bold">
+          <Link href="/dashboard" className="text-lg font-bold text-foreground">
             Farm
           </Link>
         </div>
@@ -124,34 +194,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         <Separator />
         {/* ST183 – Desktop main nav with descriptive aria-label */}
-        <nav aria-label="Main navigation" className="flex flex-1 flex-col gap-1 p-2">
+        <nav
+          aria-label="Main navigation"
+          className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2"
+        >
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
-            return (
-              <Link key={item.href} href={item.href}>
-                {/* ST183 – aria-current marks the active page for screen readers */}
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className="w-full justify-start gap-2"
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  {item.icon && <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
-                  {item.label}
-                </Button>
-              </Link>
-            );
+            return <NavItem key={item.href} item={item} isActive={isActive} />;
           })}
         </nav>
       </aside>
 
-      {/* Main content */}
-      <div className="flex flex-1 flex-col">
-        {/* Header */}
-        <header className="flex h-14 items-center justify-between border-b px-4 md:px-6">
-          {/* ST188 – Mobile: hamburger trigger + brand mark (Sheet houses the full nav) */}
+      {/* Main content column */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Header: h-16 (slightly taller), explicit bottom border (FARM-S166) */}
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 md:px-6">
+          {/* ST188 – Mobile: hamburger trigger + brand mark */}
           <div className="flex items-center gap-2 md:hidden">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              {/* render prop merges Sheet trigger behaviour into our Button element */}
               <SheetTrigger
                 render={
                   <Button
@@ -169,36 +229,31 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <SheetHeader className="border-b px-4 py-3">
                   <SheetTitle>Farm</SheetTitle>
                 </SheetHeader>
-                {/* FARM-S86 — org switcher in mobile nav, below the logo */}
+                {/* FARM-S86 — org switcher in mobile nav */}
                 <div className="border-b px-2 py-2">
                   <OrgSwitcher />
                 </div>
-                {/* ST183 – Mobile nav with dedicated aria-label */}
-                <nav aria-label="Mobile navigation" className="flex flex-col gap-1 p-2">
+                {/* ST183 – Mobile nav */}
+                <nav
+                  aria-label="Mobile navigation"
+                  className="flex flex-col gap-0.5 p-2"
+                >
                   {navItems.map((item) => {
                     const isActive = pathname.startsWith(item.href);
                     return (
-                      <Link
+                      <NavItem
                         key={item.href}
-                        href={item.href}
+                        item={item}
+                        isActive={isActive}
                         onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <Button
-                          variant={isActive ? "secondary" : "ghost"}
-                          className="w-full justify-start gap-2"
-                          aria-current={isActive ? "page" : undefined}
-                        >
-                          {item.icon && <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />}
-                          {item.label}
-                        </Button>
-                      </Link>
+                      />
                     );
                   })}
                 </nav>
               </SheetContent>
             </Sheet>
 
-            {/* Brand link stays visible in header so users can navigate home with sheet closed */}
+            {/* Brand stays visible in header even with sheet closed */}
             <Link href="/dashboard" className="text-lg font-bold">
               Farm
             </Link>
@@ -209,14 +264,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Breadcrumbs pathname={pathname} />
           </div>
 
-          {/* ST183 – User menu with descriptive aria-label */}
+          {/* ST183 – User menu: ring on hover for better affordance (FARM-S166) */}
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent"
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-muted hover:ring-2 hover:ring-ring/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`User menu for ${user?.displayName ?? "user"}`}
             >
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs">
+              {/* Avatar with primary/10 tint and ring border */}
+              <Avatar className="h-7 w-7 ring-1 ring-border">
+                <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
                   {user ? getInitials(user.displayName ?? user.username) : "?"}
                 </AvatarFallback>
               </Avatar>
@@ -227,9 +283,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <DropdownMenuContent align="end" className="w-48">
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium">{user?.displayName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.email}
-                </p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>
@@ -246,7 +300,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         {/* ST184 – id targets the skip-to-content link above */}
-        <main id="main-content" className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <main id="main-content" className="flex-1 overflow-auto p-4 md:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
