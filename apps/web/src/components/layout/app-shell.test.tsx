@@ -51,6 +51,19 @@ describe("AppShell", () => {
     expect(screen.getAllByText(/Teams/i)[0]).toBeInTheDocument();
   });
 
+  it("should mark the active nav item with aria-current=page", () => {
+    // setup.ts mocks usePathname to return "/dashboard"
+    render(<AppShell>Content</AppShell>);
+
+    // The Dashboard buttons should have aria-current="page"
+    const dashboardButtons = screen.getAllByRole("button", { name: /Dashboard/i });
+    // At least one (sidebar) should be marked as current page
+    const activeButtons = dashboardButtons.filter(
+      (btn) => btn.getAttribute("aria-current") === "page",
+    );
+    expect(activeButtons.length).toBeGreaterThan(0);
+  });
+
   it("should render children content", () => {
     render(<AppShell><div data-testid="test-content">Main Content</div></AppShell>);
     expect(screen.getByTestId("test-content")).toBeInTheDocument();

@@ -16,6 +16,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
 
+// Derive a 1-2 letter initial from a team displayName for the avatar.
+function teamInitials(displayName: string): string {
+  return displayName
+    .split(/[\s._-]+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+// Background color for team avatar — cycles through a set of distinct hues.
+function teamAvatarBg(name: string): string {
+  const palette = [
+    "bg-indigo-500",
+    "bg-teal-500",
+    "bg-violet-500",
+    "bg-amber-500",
+    "bg-rose-500",
+    "bg-cyan-500",
+    "bg-emerald-500",
+  ];
+  // Simple hash: sum of char codes mod palette length for deterministic color
+  const hash = name
+    .split("")
+    .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return palette[hash % palette.length] ?? "bg-indigo-500";
+}
+
 function teamTypeBadgeColor(type: TeamType): string {
   switch (type) {
     case TeamType.DEV:
@@ -124,12 +153,27 @@ export function TeamsClient() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((team) => (
             <Link key={team.id} href={`/teams/${team.id}`}>
-              <Card className="transition-colors hover:bg-muted/50 cursor-pointer h-full">
+              {/* Card: hover shadow + primary border tint transition (FARM-S168) */}
+              <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/30 cursor-pointer h-full">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">
-                      {team.displayName}
-                    </CardTitle>
+                  <div className="flex items-start justify-between gap-2">
+                    {/* Avatar initials with deterministic color (FARM-S168) */}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${teamAvatarBg(team.name)}`}
+                        aria-hidden="true"
+                      >
+                        {teamInitials(team.displayName)}
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">
+                          {team.displayName}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {team.name}
+                        </p>
+                      </div>
+                    </div>
                     <Badge
                       variant="secondary"
                       className={teamTypeBadgeColor(team.type)}
@@ -137,9 +181,6 @@ export function TeamsClient() {
                       {team.type}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground font-mono">
-                    {team.name}
-                  </p>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {team.description && (

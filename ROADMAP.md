@@ -996,9 +996,9 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 
 ---
 
-## Phase 8: Frontend Visual Refresh `TODO`
+## Phase 8: Frontend Visual Refresh `DONE`
 
-### FARM-E43: Frontend Visual Redesign `TODO`
+### FARM-E43: Frontend Visual Redesign `DONE`
 
 > Give Farm a polished, opinionated visual identity by replacing the default shadcn/ui theme with a custom design system generated via [tweakcn.com](https://tweakcn.com/) — a visual theme editor for shadcn/ui that exports production-ready CSS variable overrides.
 
@@ -1018,11 +1018,11 @@ Farm's current UI uses the default shadcn/ui Zinc palette with minimal customiza
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S164 | Story | Theme definition: use tweakcn.com to design Farm's custom token set (primary/accent/destructive/muted HSL values, radius scale, shadow levels); export and apply to `apps/web/src/app/globals.css`; verify Storybook / visual regression passes | `TODO` |
-| FARM-S165 | Story | Login and marketing pages redesign: hero layout, gradient accent on the login card, improved form spacing and focus rings; ensure social login buttons are visually distinct from the primary CTA | `TODO` |
-| FARM-S166 | Story | Dashboard and navigation refresh: sidebar icon alignment, active-item highlight using new primary token, breadcrumb polish, top bar spacing; update `AppSidebar`, `OrgSwitcher`, and `Breadcrumb` components | `TODO` |
-| FARM-S167 | Story | Catalog and detail pages polish: component cards with hover elevation, status badge color consistency, timeline/history layout improvements, dependency graph node styling | `TODO` |
-| FARM-S168 | Story | Environments, Teams, and Pipelines visual pass: deployment status chips aligned to new token palette, pipeline stage cards with type-specific accent colors, team avatar grid and member list spacing | `TODO` |
+| FARM-S164 | Story | Theme definition: use tweakcn.com to design Farm's custom token set (primary/accent/destructive/muted HSL values, radius scale, shadow levels); export and apply to `apps/web/src/app/globals.css`; verify Storybook / visual regression passes | `DONE` |
+| FARM-S165 | Story | Login and marketing pages redesign: hero layout, gradient accent on the login card, improved form spacing and focus rings; ensure social login buttons are visually distinct from the primary CTA | `DONE` |
+| FARM-S166 | Story | Dashboard and navigation refresh: sidebar icon alignment, active-item highlight using new primary token, breadcrumb polish, top bar spacing; update `AppSidebar`, `OrgSwitcher`, and `Breadcrumb` components | `DONE` |
+| FARM-S167 | Story | Catalog and detail pages polish: component cards with hover elevation, status badge color consistency, timeline/history layout improvements, dependency graph node styling | `DONE` |
+| FARM-S168 | Story | Environments, Teams, and Pipelines visual pass: deployment status chips aligned to new token palette, pipeline stage cards with type-specific accent colors, team avatar grid and member list spacing | `DONE` |
 
 #### Implementation Notes
 
@@ -1045,5 +1045,5 @@ Farm's current UI uses the default shadcn/ui Zinc palette with minimal customiza
 | Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
 | Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
-| Phase 8: Frontend Visual Refresh | 1 | 5 | `TODO` |
+| Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
 | **Total** | **45** | **169** | |

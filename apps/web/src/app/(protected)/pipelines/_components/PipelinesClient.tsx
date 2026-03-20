@@ -111,7 +111,7 @@ export function PipelinesClient() {
             </TableHeader>
             <TableBody>
               {pipelineList.map((pipeline) => (
-                <TableRow key={pipeline.id}>
+                <TableRow key={pipeline.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <Link
                       href={`/pipelines/${pipeline.id}`}
