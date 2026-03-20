@@ -55,13 +55,13 @@ describe("AppShell", () => {
     // setup.ts mocks usePathname to return "/dashboard"
     render(<AppShell>Content</AppShell>);
 
-    // The Dashboard buttons should have aria-current="page"
-    const dashboardButtons = screen.getAllByRole("button", { name: /Dashboard/i });
+    // NavItem now renders a <Link> (anchor), not a <button>
+    const dashboardLinks = screen.getAllByRole("link", { name: /Dashboard/i });
     // At least one (sidebar) should be marked as current page
-    const activeButtons = dashboardButtons.filter(
-      (btn) => btn.getAttribute("aria-current") === "page",
+    const activeLinks = dashboardLinks.filter(
+      (link) => link.getAttribute("aria-current") === "page",
     );
-    expect(activeButtons.length).toBeGreaterThan(0);
+    expect(activeLinks.length).toBeGreaterThan(0);
   });
 
   it("should render children content", () => {
