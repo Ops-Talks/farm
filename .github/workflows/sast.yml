@@ -63,11 +63,13 @@ jobs:
         run: npm ci
 
       - name: Audit API dependencies
-        # --audit-level=high: fail only on high/critical CVEs; moderate are reported but don't block
-        run: npm audit --audit-level=high --workspace=apps/api
+        # --audit-level=high: fail on high/critical CVEs only
+        # --omit=dev: exclude dev-only tools (e.g. @nestjs/cli, release-it)
+        #   that have unfixable transitive vulns but never run in production
+        run: npm audit --audit-level=high --omit=dev --workspace=apps/api
 
       - name: Audit Web dependencies
-        run: npm audit --audit-level=high --workspace=apps/web
+        run: npm audit --audit-level=high --omit=dev --workspace=apps/web
 
   # ── ESLint security rules ─────────────────────────────────────────────────
   eslint-security:
