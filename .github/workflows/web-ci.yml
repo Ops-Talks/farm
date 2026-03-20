@@ -54,8 +54,12 @@ jobs:
         if: always()
         with:
           files: ./apps/web/coverage/lcov.info
+          flags: web
+          name: web-coverage
+          slug: Ops-Talks/farm
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+          verbose: true
 
       # ── 7. Build ─────────────────────────────────────────────────────────────
       - name: Build (apps/web)

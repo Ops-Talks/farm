@@ -9,12 +9,22 @@ coverage:
     project:
       api:
         target: 70%
-        paths:
-          - apps/api/src/
+        flags:
+          - api
       web:
         target: 70%
-        paths:
-          - apps/web/src/
+        flags:
+          - web
+
+flags:
+  api:
+    paths:
+      - apps/api/src/
+    carryforward: false
+  web:
+    paths:
+      - apps/web/src/
+    carryforward: false
 
 ignore:
   - "apps/api/src/migrations/**"

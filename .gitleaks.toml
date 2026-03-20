@@ -1,0 +1,32 @@
+# Gitleaks configuration for Farm
+# Docs: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+
+title = "farm-gitleaks"
+
+[extend]
+# Extend the default ruleset shipped with gitleaks
+useDefault = true
+
+# ── Allowlist ─────────────────────────────────────────────────────────────────
+# These are intentional test fixtures and placeholder defaults — NOT real secrets.
+[[allowlists]]
+description = "Test fixture JWT secrets and placeholder default values"
+paths = [
+  '''apps/api/test/helpers/e2e-setup\.ts''',
+  '''apps/api/src/modules/auth/strategies/keycloak\.strategy\.spec\.ts''',
+  '''apps/api/src/modules/auth/keycloak-sync\.service\.spec\.ts''',
+  '''apps/api/src/modules/pipelines/pipeline\.processor\.spec\.ts''',
+  '''apps/api/src/modules/auth/strategies/jwt\.strategy\.spec\.ts''',
+  '''apps/api/src/modules/auth/strategies/google\.strategy\.spec\.ts''',
+  '''apps/api/src/modules/auth/strategies/github\.strategy\.spec\.ts''',
+  '''apps/api/src/modules/integrations/integration-credential\.service\.spec\.ts''',
+]
+
+[[allowlists]]
+description = "Configuration default placeholder — must be overridden in production"
+regexes = ['''super-secret-key-change-me-in-production''']
+paths = ['''apps/api/src/config/configuration\.ts''']
+
+[[allowlists]]
+description = "ZAP DAST test user password — hardcoded test credential for CI scanning only"
+regexes = ['''Zap@12345!''']

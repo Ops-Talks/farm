@@ -23,6 +23,9 @@ vi.mock('@/contexts/organization-context', () => ({
 
 import { CloudCostWidget } from './CloudCostWidget';
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from 'vitest-axe';
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function createWrapper() {
@@ -128,4 +131,37 @@ describe('CloudCostWidget', () => {
       expect(screen.getByRole('progressbar', { name: /aws spend percentage/i })).toBeInTheDocument();
     });
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it('has no accessibility violations', async () => {
+    mockGetCost.mockResolvedValue([
+      {
+        provider: 'aws',
+        entries: [
+          { environment: 'production', cost: 150.5, currency: 'USD' },
+          { environment: 'staging', cost: 50.25, currency: 'USD' },
+        ],
+      },
+      {
+        provider: 'gcp',
+        entries: [{ environment: 'production', cost: 80.0, currency: 'USD' }],
+      },
+    ]);
+
+    const { container } = render(<CloudCostWidget />, { wrapper: createWrapper() });
+
+    // Wait for the widget to finish loading before scanning
+    await waitFor(() =>
+      expect(screen.getByTestId('cloud-cost-widget')).toBeInTheDocument(),
+    );
+
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colors — disable to avoid false positives
+        'color-contrast': { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });

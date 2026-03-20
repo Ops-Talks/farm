@@ -1036,9 +1036,9 @@ Farm's current UI uses the default shadcn/ui Zinc palette with minimal customiza
 
 ---
 
-## Phase 9: Security Testing `TODO`
+## Phase 9: Security Testing `DONE`
 
-### FARM-E44: Secret Scanning, Container Security and Accessibility Testing `TODO`
+### FARM-E44: Secret Scanning, Container Security and Accessibility Testing `DONE`
 
 > Expand the Farm security posture beyond SAST and DAST by adding three complementary automated checks: secret scanning to catch leaked credentials before they reach main, container image CVE scanning to surface vulnerabilities in the Docker images Farm ships, and automated accessibility auditing to validate WCAG compliance in CI alongside the existing unit and e2e tests.
 
@@ -1054,15 +1054,15 @@ SAST (CodeQL + eslint-plugin-security) and DAST (OWASP ZAP) are already in place
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S169 | Story | Secret scanning with Gitleaks: add `.github/workflows/secret-scan.yml` that runs `gitleaks/gitleaks-action` on every push and PR; configure `.gitleaks.toml` to allowlist test fixtures and known false-positives; fail the build on any detected secret | `TODO` |
-| FARM-S170 | Story | Container image scanning with Trivy: add a `trivy` step to the existing CI workflow that scans the built API Docker image for HIGH and CRITICAL CVEs; upload SARIF results to the GitHub Security tab; fail on CRITICAL findings | `TODO` |
-| FARM-S171 | Story | Automated accessibility testing with axe-core: install `@axe-core/react` (or `vitest-axe`) and add axe checks to key page-level components (Login, Dashboard, Catalog, Environments, Teams, Pipelines); assert zero WCAG 2.1 AA violations in CI | `TODO` |
+| FARM-S169 | Story | Secret scanning with Gitleaks: add `.github/workflows/secret-scan.yml` that runs `gitleaks/gitleaks-action` on every push and PR; configure `.gitleaks.toml` to allowlist test fixtures and known false-positives; fail the build on any detected secret | `DONE` |
+| FARM-S170 | Story | Container image scanning with Trivy: add `.github/workflows/trivy.yml` that builds the API Docker image and scans for HIGH/CRITICAL CVEs; upload SARIF results to the GitHub Security tab; fail on CRITICAL findings | `DONE` |
+| FARM-S171 | Story | Automated accessibility testing with axe-core: install `vitest-axe` and add axe checks to key page-level components (Login, Catalog, Environments, Teams, Pipelines, Observability); assert zero WCAG 2.1 AA violations in CI | `DONE` |
 
 #### Implementation Notes
 
-- **Gitleaks**: Use `gitleaks/gitleaks-action@v2` — zero config by default, add `.gitleaks.toml` only to suppress known false-positives (e.g. test JWT secrets). Add to the existing `ci.yml` or as a standalone workflow.
-- **Trivy**: Use `aquasecurity/trivy-action` after the `docker build` step. Scan mode: `image`. Output: SARIF. Severity filter: `CRITICAL,HIGH`. The API Dockerfile already exists and builds in CI via the Docker Compose workflow.
-- **axe-core**: `vitest-axe` wraps axe-core for vitest. Pattern: `render(<Page />); const results = await axe(container); expect(results).toHaveNoViolations()`. Add to existing page test files — no new infrastructure required.
+- **Gitleaks**: `gitleaks/gitleaks-action@v2` with `.gitleaks.toml` allowlisting test fixture JWT secrets and config placeholder defaults. Full git history fetched (`fetch-depth: 0`).
+- **Trivy**: Standalone `.github/workflows/trivy.yml` workflow. Builds image with `docker/build-push-action`, scans with `aquasecurity/trivy-action@0.30.0`. SARIF uploaded to GitHub Security tab. Runs on push/PR/weekly schedule.
+- **axe-core**: `vitest-axe` installed in `apps/web`. Axe checks added to 6 page-level test files. Zero WCAG 2.1 AA violations asserted.
 
 ---
 
@@ -1078,5 +1078,5 @@ SAST (CodeQL + eslint-plugin-security) and DAST (OWASP ZAP) are already in place
 | Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
-| Phase 9: Security Testing | 1 | 3 | `TODO` |
+| Phase 9: Security Testing | 1 | 3 | `DONE` |
 | **Total** | **46** | **172** | |
