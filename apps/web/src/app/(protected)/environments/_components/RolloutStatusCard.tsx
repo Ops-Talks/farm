@@ -14,19 +14,36 @@ import type { KubernetesRollout } from "@/types/api";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Map an Argo Rollout phase string to a badge variant. */
+// Map an Argo Rollout phase to a color-coded inline chip class (FARM-S168).
+// Using semantic color classes for at-a-glance deployment status recognition.
+function phaseChipClass(phase: string): string {
+  switch (phase.toLowerCase()) {
+    case "healthy":
+      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+    case "degraded":
+      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+    case "paused":
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+    case "progressing":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+/** Map an Argo Rollout phase string to a badge variant (kept for analysis runs). */
 function phaseVariant(
   phase: string,
 ): "default" | "destructive" | "secondary" | "outline" {
   switch (phase.toLowerCase()) {
     case "healthy":
-      return "default";       // green-ish primary
+      return "default";
     case "degraded":
-      return "destructive";   // red
+      return "destructive";
     case "paused":
-      return "secondary";     // yellow-ish
+      return "secondary";
     case "progressing":
-      return "outline";       // blue-ish outline
+      return "outline";
     default:
       return "secondary";
   }
@@ -51,7 +68,12 @@ function RolloutCard({ rollout }: { rollout: KubernetesRollout }) {
               {rollout.namespace}
             </p>
           </div>
-          <Badge variant={phaseVariant(rollout.phase)}>{rollout.phase}</Badge>
+          {/* Color-coded deployment status chip (FARM-S168) */}
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${phaseChipClass(rollout.phase)}`}
+          >
+            {rollout.phase}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
