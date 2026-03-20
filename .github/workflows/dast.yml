@@ -1,0 +1,218 @@
+name: DAST
+
+on:
+  push:
+    branches: [main, master]
+  schedule:
+    # Run weekly on Tuesday at 03:00 UTC (day after SAST)
+    - cron: '0 3 * * 2'
+  workflow_dispatch:
+
+jobs:
+  # ── ZAP Baseline scan (passive — PR-safe, no writes) ──────────────────────
+  zap-baseline:
+    name: ZAP Baseline Scan (API)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      issues: write
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: farm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API
+        run: npm run build -w apps/api
+
+      - name: Start API server
+        env:
+          PORT: 3000
+          DATABASE_TYPE: postgres
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: farm
+          DATABASE_SYNC: "true"
+          JWT_SECRET: dast-ci-secret-32-characters-long!!
+          JWT_EXPIRATION: 3600s
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+        run: |
+          npm run start:prod -w apps/api &
+          # Wait for the API to be ready
+          timeout 60 bash -c 'until curl -sf http://localhost:3000/api/health; do sleep 2; done'
+          echo "API is up"
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: 'http://localhost:3000/api'
+          # Fail on high risk findings; warn on medium
+          fail_action: true
+          allow_issue_writing: false
+          rules_file_name: '.github/zap/baseline-rules.tsv'
+          cmd_options: '-I'
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: report_html.html
+          retention-days: 30
+
+  # ── ZAP API scan (active — uses OpenAPI spec) ─────────────────────────────
+  zap-api-scan:
+    name: ZAP API Scan (OpenAPI spec)
+    runs-on: ubuntu-latest
+    # Only run on schedule or manual dispatch — active scan can be noisy on PRs
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      security-events: write
+      issues: write
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: farm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API
+        run: npm run build -w apps/api
+
+      - name: Start API server
+        env:
+          PORT: 3000
+          DATABASE_TYPE: postgres
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: farm
+          DATABASE_SYNC: "true"
+          JWT_SECRET: dast-ci-secret-32-characters-long!!
+          JWT_EXPIRATION: 3600s
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          NODE_ENV: test
+        run: |
+          npm run start:prod -w apps/api &
+          timeout 60 bash -c 'until curl -sf http://localhost:3000/api/health; do sleep 2; done'
+          echo "API is up"
+
+      - name: Fetch OpenAPI spec
+        run: |
+          curl -sf http://localhost:3000/api/docs-json -o openapi.json
+          echo "OpenAPI spec fetched"
+
+      - name: Register test user and get JWT token
+        id: auth
+        run: |
+          curl -sf -X POST http://localhost:3000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"username":"zap-user","password":"Zap@12345!","email":"zap@farm.dev","displayName":"ZAP"}' || true
+          TOKEN=$(curl -sf -X POST http://localhost:3000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"zap-user","password":"Zap@12345!"}' | jq -r '.accessToken')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: ZAP API Scan
+        uses: zaproxy/action-api-scan@v0.9.0
+        with:
+          target: 'openapi.json'
+          format: openapi
+          fail_action: true
+          allow_issue_writing: false
+          cmd_options: >-
+            -config globalexcludeurl.url_list.url(0).regex='.*/auth/login.*'
+            -config globalexcludeurl.url_list.url(1).regex='.*/auth/register.*'
+            -z "-config replacer.full_list(0).description=auth
+                -config replacer.full_list(0).enabled=true
+                -config replacer.full_list(0).matchtype=REQ_HEADER
+                -config replacer.full_list(0).matchstr=Authorization
+                -config replacer.full_list(0).replacement=Bearer ${{ steps.auth.outputs.token }}"
+
+      - name: Upload ZAP API scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-scan-report
+          path: report_html.html
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: report_sarif.json
+          category: zap-api-scan
