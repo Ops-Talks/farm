@@ -5,8 +5,11 @@
 # Rules set to WARN are reported but do not fail the build.
 # Rules set to FAIL (default) cause the build to fail.
 
-# Authentication endpoint — login/register are intentionally open
-10202	IGNORE	Absence of Anti-CSRF Tokens (auth endpoints are stateless JWT)
+# CSRF tokens are not applicable to this API — all endpoints use stateless JWT
+# authentication (Bearer token in Authorization header). This rule is globally
+# suppressed across the entire scan because the Farm API has no session cookies
+# or form-based authentication anywhere.
+10202	IGNORE	Absence of Anti-CSRF Tokens (stateless JWT API — no session cookies)
 
 # Content-Security-Policy — API-only endpoints don't serve HTML
 10038	WARN	Content Security Policy Header Not Set
