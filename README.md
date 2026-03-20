@@ -22,7 +22,9 @@ Full documentation: **[https://ops-talks.github.io/farm/](https://ops-talks.gith
 ## Quick Start
 
 ```bash
-make up-docker      # start API + PostgreSQL
+make up-all         # start the Farm Stack
+make down-all       # Delete anything
+make seed           # Populates the Postgres DB with users 
 make healthcheck    # verify the API is up
 ```
 
