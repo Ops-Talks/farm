@@ -162,7 +162,7 @@ The API Dockerfile uses the monorepo root as build context to access `packages/t
 
 ```yaml
 # Step 1: generate SARIF covering CRITICAL and HIGH for the Security tab
-- uses: aquasecurity/trivy-action@0.30.0
+- uses: aquasecurity/trivy-action@v0.35.0
   with:
     image-ref: farm-api:${{ github.sha }}
     format: sarif
@@ -173,7 +173,7 @@ The API Dockerfile uses the monorepo root as build context to access `packages/t
     vuln-type: os,library
 
 # Step 2: gate — fails only when CRITICAL CVEs are present
-- uses: aquasecurity/trivy-action@0.30.0
+- uses: aquasecurity/trivy-action@v0.35.0
   with:
     image-ref: farm-api:${{ github.sha }}
     format: table

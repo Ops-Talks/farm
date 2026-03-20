@@ -12,16 +12,13 @@ useDefault = true
 [[allowlists]]
 description = "Test fixture JWT secrets and placeholder default values"
 paths = [
-  # E2E test helper — clearly a test credential
   '''apps/api/test/helpers/e2e-setup\.ts''',
-  # Unit test specs that sign real JWTs with known test keys
   '''apps/api/src/modules/auth/strategies/keycloak\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/keycloak-sync\.service\.spec\.ts''',
   '''apps/api/src/modules/pipelines/pipeline\.processor\.spec\.ts''',
   '''apps/api/src/modules/auth/strategies/jwt\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/strategies/google\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/strategies/github\.strategy\.spec\.ts''',
-  # Integration credential encryption tests
   '''apps/api/src/modules/integrations/integration-credential\.service\.spec\.ts''',
 ]
 
@@ -31,13 +28,5 @@ regexes = ['''super-secret-key-change-me-in-production''']
 paths = ['''apps/api/src/config/configuration\.ts''']
 
 [[allowlists]]
-description = "ZAP DAST test user credentials in workflow — not a real secret"
-paths = ['''.github/workflows/dast\.yml''']
-
-[[allowlists]]
-description = "Documentation and README examples"
-paths = [
-  '''docs/.*''',
-  '''README\.md''',
-  '''CHANGELOG\.md''',
-]
+description = "ZAP DAST test user password — hardcoded test credential for CI scanning only"
+regexes = ['''Zap@12345!''']

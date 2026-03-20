@@ -41,7 +41,7 @@ jobs:
       # Step 1: generate SARIF covering both CRITICAL and HIGH for the
       # GitHub Security tab (visibility only — never blocks the build).
       - name: Run Trivy — SARIF report (CRITICAL + HIGH)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: farm-api:${{ github.sha }}
           format: sarif
@@ -54,7 +54,7 @@ jobs:
       # Step 2: gate the build — fails only when CRITICAL CVEs are present.
       # HIGH findings appear in the Security tab above but do not block PRs.
       - name: Run Trivy — gate (CRITICAL only)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: farm-api:${{ github.sha }}
           format: table
@@ -65,7 +65,9 @@ jobs:
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        # Skip on fork PRs — GitHub does not grant security-events: write to
+        # fork tokens, which causes the upload to fail with a permissions error.
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           sarif_file: trivy-results.sarif
           category: trivy
