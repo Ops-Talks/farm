@@ -16,7 +16,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      issues: write
 
     services:
       postgres:
@@ -107,7 +106,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      issues: write
 
     services:
       postgres:
@@ -165,25 +163,36 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           NODE_ENV: test
+          SWAGGER_USER: farm
+          SWAGGER_PASSWORD: farm
         run: |
           npm run start:prod -w apps/api &
           timeout 60 bash -c 'until curl -sf http://localhost:3000/api/health; do sleep 2; done'
           echo "API is up"
 
       - name: Fetch OpenAPI spec
+        env:
+          SWAGGER_USER: farm
+          SWAGGER_PASSWORD: farm
         run: |
-          curl -sf http://localhost:3000/api/docs-json -o openapi.json
+          curl -sf -u "$SWAGGER_USER:$SWAGGER_PASSWORD" \
+            http://localhost:3000/api/docs-json -o openapi.json
           echo "OpenAPI spec fetched"
 
       - name: Register test user and get JWT token
         id: auth
         run: |
+          set -euo pipefail
           curl -sf -X POST http://localhost:3000/api/auth/register \
             -H "Content-Type: application/json" \
             -d '{"username":"zap-user","password":"Zap@12345!","email":"zap@farm.dev","displayName":"ZAP"}' || true
           TOKEN=$(curl -sf -X POST http://localhost:3000/api/auth/login \
             -H "Content-Type: application/json" \
             -d '{"username":"zap-user","password":"Zap@12345!"}' | jq -r '.accessToken')
+          if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+            echo "ERROR: Failed to obtain JWT token — login response did not include accessToken"
+            exit 1
+          fi
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
 
       - name: ZAP API Scan
