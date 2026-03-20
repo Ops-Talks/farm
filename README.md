@@ -5,6 +5,8 @@
 [![codecov](https://codecov.io/gh/Ops-Talks/farm/graph/badge.svg)](https://codecov.io/gh/Ops-Talks/farm)
 [![SAST](https://github.com/Ops-Talks/farm/actions/workflows/sast.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/sast.yml)
 [![DAST](https://github.com/Ops-Talks/farm/actions/workflows/dast.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/dast.yml)
+[![Secret Scanning](https://github.com/Ops-Talks/farm/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/secret-scan.yml)
+[![Container Security](https://github.com/Ops-Talks/farm/actions/workflows/trivy.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/trivy.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)

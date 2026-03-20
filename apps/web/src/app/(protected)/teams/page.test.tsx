@@ -46,6 +46,11 @@ vi.mock("@/types/api", () => ({
 
 import TeamsPage from "@/app/(protected)/teams/page";
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from "vitest-axe";
+import { toHaveNoViolations } from "vitest-axe/matchers";
+expect.extend({ toHaveNoViolations });
+
 const mockTeam = (overrides: Record<string, unknown> = {}) => ({
   id: "t1",
   name: "team-alpha",
@@ -163,4 +168,25 @@ describe("TeamsPage", () => {
     expect(screen.getByText("Infra")).toBeInTheDocument();
     expect(screen.getByText("Platform")).toBeInTheDocument();
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it("has no accessibility violations", async () => {
+    mockListTeams.mockResolvedValue(mockPaginated([mockTeam()]));
+
+    const { container } = render(<TeamsPage />, { wrapper: createWrapper() });
+
+    // Wait for team cards to render before scanning
+    await waitFor(() =>
+      expect(screen.getByText("Team Alpha")).toBeInTheDocument(),
+    );
+
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colours — disable to avoid false positives
+        "color-contrast": { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });

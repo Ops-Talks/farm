@@ -52,6 +52,11 @@ vi.mock("sonner", () => ({
 
 import PipelinesPage from "@/app/(protected)/pipelines/page";
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from "vitest-axe";
+import { toHaveNoViolations } from "vitest-axe/matchers";
+expect.extend({ toHaveNoViolations });
+
 function mockPipeline(overrides: Record<string, unknown> = {}) {
   return {
     id: "p1",
@@ -226,4 +231,25 @@ describe("PipelinesPage", () => {
       expect(screen.getByText("No pipelines yet")).toBeInTheDocument();
     });
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it("has no accessibility violations", async () => {
+    mockList.mockResolvedValue([mockPipeline()]);
+
+    const { container } = render(<PipelinesPage />, { wrapper: createWrapper() });
+
+    // Wait for pipeline rows to render before scanning
+    await waitFor(() =>
+      expect(screen.getByText("deploy-production")).toBeInTheDocument(),
+    );
+
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colours — disable to avoid false positives
+        "color-contrast": { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });

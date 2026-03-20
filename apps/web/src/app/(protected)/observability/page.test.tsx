@@ -22,6 +22,11 @@ vi.mock("@/lib/api-client", () => ({
 
 import ObservabilityPage from "@/app/(protected)/observability/page";
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from "vitest-axe";
+import { toHaveNoViolations } from "vitest-axe/matchers";
+expect.extend({ toHaveNoViolations });
+
 const fullSummary = {
   status: "healthy",
   uptime: 3600,
@@ -156,4 +161,26 @@ describe("ObservabilityPage", () => {
     const skeletons = container.querySelectorAll(".animate-pulse");
     expect(skeletons.length).toBeGreaterThan(0);
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it("has no accessibility violations", async () => {
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    const { container } = render(<ObservabilityPage />);
+
+    // Wait for the Health tab content to appear before scanning
+    await waitFor(() =>
+      expect(screen.getByText("Overall Status")).toBeInTheDocument(),
+    );
+
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colours — disable to avoid false positives
+        "color-contrast": { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });

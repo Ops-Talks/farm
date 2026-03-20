@@ -63,6 +63,11 @@ vi.mock("@/lib/otel-spans", () => ({
 import LoginPage from "@/app/login/page";
 import { ApiError } from "@/lib/api-client";
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from "vitest-axe";
+import { toHaveNoViolations } from "vitest-axe/matchers";
+expect.extend({ toHaveNoViolations });
+
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -185,6 +190,19 @@ describe("LoginPage", () => {
     expect(mockSpanSetAttribute).toHaveBeenCalledWith("error.message", "Invalid credentials");
     expect(mockSpanEnd).toHaveBeenCalled();
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(<LoginPage />);
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colours so colour-contrast always false-flags
+        "color-contrast": { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });
 
 // ── Keycloak SSO tests (FARM-E41) ─────────────────────────────────────────────

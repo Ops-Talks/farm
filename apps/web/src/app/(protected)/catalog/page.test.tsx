@@ -43,6 +43,11 @@ vi.mock("@/types/api", () => ({
 
 import CatalogPage from "@/app/(protected)/catalog/page";
 
+// ── Accessibility (axe) ────────────────────────────────────────────────────────
+import { axe } from "vitest-axe";
+import { toHaveNoViolations } from "vitest-axe/matchers";
+expect.extend({ toHaveNoViolations });
+
 const mockComponent = (overrides: Record<string, unknown> = {}) => ({
   id: "c1",
   name: "auth-service",
@@ -178,4 +183,30 @@ describe("CatalogPage", () => {
       expect(screen.getByText("No components found. Register your first component.")).toBeInTheDocument();
     });
   });
+
+  // ── Accessibility ─────────────────────────────────────────────────────────────
+
+  it("has no accessibility violations", async () => {
+    mockListComponents.mockResolvedValue({
+      data: [mockComponent()],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    const { container } = render(<CatalogPage />, { wrapper: createWrapper() });
+
+    // Wait for the component list to fully render before scanning
+    await waitFor(() =>
+      expect(screen.getByText("auth-service")).toBeInTheDocument(),
+    );
+
+    const results = await axe(container, {
+      rules: {
+        // jsdom cannot compute CSS colours — disable to avoid false positives
+        "color-contrast": { enabled: false },
+      },
+    });
+    expect(results).toHaveNoViolations();
+  }, 10000);
 });

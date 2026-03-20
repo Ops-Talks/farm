@@ -115,6 +115,7 @@ nav:
       - developer-guide/frontend/index.md
       - Architecture: developer-guide/frontend/architecture.md
       - Testing: developer-guide/frontend/testing.md
+    - Security Testing: developer-guide/security-testing.md
   - API Reference:
     - api-reference/index.md
     - Health API: api-reference/health.md
