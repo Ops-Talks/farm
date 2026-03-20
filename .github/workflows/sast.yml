@@ -23,6 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         language: [javascript-typescript]
+        # build-mode: none is correct for JS/TS — CodeQL analyses source
+        # directly without requiring a compilation step.
+        build-mode: [none]
 
     steps:
       - name: Checkout repository
@@ -32,17 +35,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           # Use the security-extended query suite for broader coverage
           queries: security-extended
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
