@@ -38,15 +38,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy vulnerability scanner
+      # Step 1: generate SARIF covering both CRITICAL and HIGH for the
+      # GitHub Security tab (visibility only — never blocks the build).
+      - name: Run Trivy — SARIF report (CRITICAL + HIGH)
         uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: farm-api:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
-          # Fail the build only on CRITICAL findings; HIGH findings are reported
-          # but treated as warnings to avoid blocking PRs for transitive issues.
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      # Step 2: gate the build — fails only when CRITICAL CVEs are present.
+      # HIGH findings appear in the Security tab above but do not block PRs.
+      - name: Run Trivy — gate (CRITICAL only)
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: farm-api:${{ github.sha }}
+          format: table
+          severity: CRITICAL
           exit-code: '1'
           ignore-unfixed: true
           vuln-type: os,library

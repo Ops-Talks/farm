@@ -161,20 +161,30 @@ The API Dockerfile uses the monorepo root as build context to access `packages/t
 ### Scan
 
 ```yaml
+# Step 1: generate SARIF covering CRITICAL and HIGH for the Security tab
 - uses: aquasecurity/trivy-action@0.30.0
   with:
     image-ref: farm-api:${{ github.sha }}
     format: sarif
     output: trivy-results.sarif
     severity: CRITICAL,HIGH
-    exit-code: '1'
+    exit-code: '0'          # never blocks — reporting only
+    ignore-unfixed: true
+    vuln-type: os,library
+
+# Step 2: gate — fails only when CRITICAL CVEs are present
+- uses: aquasecurity/trivy-action@0.30.0
+  with:
+    image-ref: farm-api:${{ github.sha }}
+    format: table
+    severity: CRITICAL
+    exit-code: '1'          # blocks the build
     ignore-unfixed: true
     vuln-type: os,library
 ```
 
-- `exit-code: '1'` — fails the build on **CRITICAL** findings
-- `ignore-unfixed: true` — suppresses CVEs with no available fix (avoids noise from base image issues outside Farm's control)
-- `severity: CRITICAL,HIGH` — HIGH findings appear in the SARIF report but do not block the build; only CRITICAL does
+- **Step 1** runs `severity: CRITICAL,HIGH` with `exit-code: '0'` — uploads all HIGH and CRITICAL findings to the GitHub Security tab for visibility without blocking the build.
+- **Step 2** runs `severity: CRITICAL` with `exit-code: '1'` — fails the build **only when CRITICAL CVEs** are present. HIGH findings are surfaced in the Security tab but treated as warnings.
 
 SARIF results are uploaded to the **GitHub Security** tab (Code Scanning) and also saved as a build artifact (30-day retention).
 

@@ -197,7 +197,7 @@ describe("LoginPage", () => {
     const { container } = render(<LoginPage />);
     const results = await axe(container, {
       rules: {
-        // jsdom cannot compute CSS colours so colour-contrast always false-flags
+        // jsdom cannot compute CSS colors so color-contrast always false-flags
         "color-contrast": { enabled: false },
       },
     });

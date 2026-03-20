@@ -246,7 +246,7 @@ describe("PipelinesPage", () => {
 
     const results = await axe(container, {
       rules: {
-        // jsdom cannot compute CSS colours — disable to avoid false positives
+        // jsdom cannot compute CSS colors — disable to avoid false positives
         "color-contrast": { enabled: false },
       },
     });
