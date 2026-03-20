@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2026-03-20
+
+### Changed
+- feat:(security) - New Securiy tests implemented (#9).
+- Update README with new make commands.
+- Updates.
+- fix:(dast) - Include fix.
+- fix:(dast) - Include fix.
+- feat:(dast) - New CI.
+- fix:(ci) - Fix NPM Audit.
+- fix:(ci) - Fix CI test errors.
+
 ## [0.11.0] - 2026-03-20
 
 ### Added
