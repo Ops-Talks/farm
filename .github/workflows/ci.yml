@@ -41,8 +41,12 @@ jobs:
         if: always()
         with:
           files: ./apps/api/coverage/lcov.info
+          flags: api
+          name: api-coverage
+          slug: Ops-Talks/farm
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+          verbose: true
 
       - name: Upload unit test results to Codecov
         uses: codecov/codecov-action@v5
@@ -50,6 +54,9 @@ jobs:
         with:
           files: ./apps/api/coverage/junit.xml
           report_type: test_results
+          flags: api
+          name: api-unit-results
+          slug: Ops-Talks/farm
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
@@ -59,5 +66,8 @@ jobs:
         with:
           files: ./apps/api/coverage/junit-e2e.xml
           report_type: test_results
+          flags: api
+          name: api-e2e-results
+          slug: Ops-Talks/farm
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
