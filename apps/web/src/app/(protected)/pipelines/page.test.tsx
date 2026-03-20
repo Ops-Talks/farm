@@ -54,8 +54,6 @@ import PipelinesPage from "@/app/(protected)/pipelines/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";
-import { toHaveNoViolations } from "vitest-axe/matchers";
-expect.extend({ toHaveNoViolations });
 
 function mockPipeline(overrides: Record<string, unknown> = {}) {
   return {

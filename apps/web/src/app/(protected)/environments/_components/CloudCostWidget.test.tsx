@@ -25,8 +25,6 @@ import { CloudCostWidget } from './CloudCostWidget';
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from 'vitest-axe';
-import { toHaveNoViolations } from 'vitest-axe/matchers';
-expect.extend({ toHaveNoViolations });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

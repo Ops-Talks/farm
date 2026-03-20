@@ -5,7 +5,7 @@ import { toHaveNoViolations } from "vitest-axe/matchers";
 
 // Register vitest-axe matchers globally — all test files get toHaveNoViolations
 // without needing per-file expect.extend calls.
-expect.extend(toHaveNoViolations);
+expect.extend({ toHaveNoViolations });
 
 afterEach(() => {
   cleanup();

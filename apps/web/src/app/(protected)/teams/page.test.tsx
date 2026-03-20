@@ -48,8 +48,6 @@ import TeamsPage from "@/app/(protected)/teams/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";
-import { toHaveNoViolations } from "vitest-axe/matchers";
-expect.extend({ toHaveNoViolations });
 
 const mockTeam = (overrides: Record<string, unknown> = {}) => ({
   id: "t1",

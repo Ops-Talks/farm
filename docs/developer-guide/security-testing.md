@@ -56,7 +56,7 @@ npm run lint -w apps/web
 
 **Workflow**: `.github/workflows/dast.yml`
 
-DAST requires a running application. The workflow starts the Farm API (NestJS + SQLite in-memory) and runs ZAP against it.
+DAST requires a running application. The workflow starts the Farm API (NestJS backed by PostgreSQL, as configured in `.github/workflows/dast.yml`) and runs ZAP against it.
 
 ### Baseline Scan (passive)
 

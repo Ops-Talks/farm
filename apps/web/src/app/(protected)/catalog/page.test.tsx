@@ -45,8 +45,6 @@ import CatalogPage from "@/app/(protected)/catalog/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";
-import { toHaveNoViolations } from "vitest-axe/matchers";
-expect.extend({ toHaveNoViolations });
 
 const mockComponent = (overrides: Record<string, unknown> = {}) => ({
   id: "c1",

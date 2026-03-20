@@ -24,8 +24,6 @@ import ObservabilityPage from "@/app/(protected)/observability/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";
-import { toHaveNoViolations } from "vitest-axe/matchers";
-expect.extend({ toHaveNoViolations });
 
 const fullSummary = {
   status: "healthy",

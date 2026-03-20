@@ -65,8 +65,6 @@ import { ApiError } from "@/lib/api-client";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";
-import { toHaveNoViolations } from "vitest-axe/matchers";
-expect.extend({ toHaveNoViolations });
 
 describe("LoginPage", () => {
   beforeEach(() => {
