@@ -1,5 +1,8 @@
 import { plainToInstance } from "class-transformer";
-import { CreateComponentDto, HelmChartMetadataDto } from "./create-component.dto";
+import {
+  CreateComponentDto,
+  HelmChartMetadataDto,
+} from "./create-component.dto";
 import { ComponentKind } from "../entities/component.entity";
 
 /**

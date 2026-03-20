@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.0] - 2026-03-20
 
 ### Added
 - **web**: add branded Farm design system and visual redesign (FARM-E43).
+- **web**: add branded Farm design system and visual redesign (FARM-E43).
+
+### Changed
+- fix:(ci) - Fix CI test errors.
+- patch:(ui) - Little improvements.
+- fix:(ui) Copillot sugestions.
+- fix:(ui) Copillot sugestions.
+- Update background.
+- feat:(css) - Update colors.
 
 ## [0.10.11] - 2026-03-19
 
