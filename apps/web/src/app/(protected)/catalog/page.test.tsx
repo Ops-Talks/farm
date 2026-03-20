@@ -26,6 +26,13 @@ vi.mock("@/lib/ws-client", () => ({
 }));
 
 vi.mock("@/types/api", () => ({
+  ComponentLifecycle: {
+    PLANNED: "planned",
+    EXPERIMENTAL: "experimental",
+    PRODUCTION: "production",
+    DEPRECATED: "deprecated",
+    DECOMMISSIONED: "decommissioned",
+  },
   ComponentKindGroup: { DEV: "dev", INFRA: "infra", DATA: "data", SECURITY: "security" },
   FarmEvent: {
     COMPONENT_CREATED: "component.created",
