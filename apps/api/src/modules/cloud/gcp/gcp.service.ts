@@ -279,11 +279,42 @@ export class GcpService {
     }
 
     const { auth } = authData;
-    // Strip "gcp:" prefix if present.
-    const secretPath = ref.startsWith("gcp:") ? ref.slice(4) : ref;
+
+    // Normalize and validate the secret reference to prevent constructing
+    // unexpected URL paths from untrusted input.
+    if (!ref.startsWith("gcp:projects/")) {
+      throw new Error(`Invalid GCP secret reference prefix: "${ref}"`);
+    }
+
+    // Strip "gcp:" prefix and split the remaining path.
+    const withoutPrefix = ref.slice("gcp:".length);
+    const segments = withoutPrefix.split("/");
+    // Expected format: projects/{project}/secrets/{name}/versions/{version}
+    if (
+      segments.length !== 7 ||
+      segments[0] !== "projects" ||
+      segments[2] !== "secrets" ||
+      segments[4] !== "versions"
+    ) {
+      throw new Error(`Unsupported GCP secret ref format: "${ref}"`);
+    }
+
+    const projectId = segments[1];
+    const secretName = segments[3];
+    const version = segments[5];
+
+    // Validate individual path segments to avoid path traversal or slashes.
+    const segmentPattern = /^[a-zA-Z0-9\-_.]+$/;
+    if (
+      !segmentPattern.test(projectId) ||
+      !segmentPattern.test(secretName) ||
+      !segmentPattern.test(version)
+    ) {
+      throw new Error(`Invalid characters in GCP secret reference: "${ref}"`);
+    }
 
     const accessToken = await auth.getAccessToken();
-    const url = `https://secretmanager.googleapis.com/v1/${secretPath}:access`;
+    const url = `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/${secretName}/versions/${version}:access`;
 
     const response = await axios.get<{
       payload?: { data?: string };
