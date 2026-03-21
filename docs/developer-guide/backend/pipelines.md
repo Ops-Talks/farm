@@ -126,6 +126,20 @@ When a pipeline has an `approval` stage:
 
 The processor re-fetches the `PipelineRun` entity from the database at the beginning of each stage iteration. If the status is `cancelled`, the loop aborts immediately. This ensures that cancels triggered during execution take effect at the next stage boundary, even if the job is already processing.
 
+## Cloud Deploy Executors
+
+Deploy stages with `config.engine` set to a cloud engine value are dispatched to dedicated executor classes. The executor receives the stage config and a `logFn` callback for streaming output. Secret references in the config are resolved by `CloudSecretsService.resolveConfigSecrets` before the executor runs.
+
+| `config.engine` | Executor class | Target |
+|---|---|---|
+| `helm` | `HelmDeployExecutor` | Kubernetes via Helm CLI |
+| `aws-ecs` | `AwsEcsExecutor` | AWS ECS service update |
+| `aws-lambda` | `AwsLambdaExecutor` | AWS Lambda function code update |
+| `gcp-cloud-run` | `GcpCloudRunExecutor` | GCP Cloud Run service patch |
+| `azure-container-apps` | `AzureContainerAppsExecutor` | Azure Container Apps patch |
+
+All executors are injected as `@Optional()` dependencies in `PipelineProcessor`. Missing executors fall through to the simulated stage logic. See [Cloud Integrations](./cloud-integrations.md) for implementation details.
+
 ## Adding a New Stage Type
 2. Add a handler branch in `PipelineProcessor.process()` for the new type
 3. Document the `config` fields in `docs/api-reference/pipelines.md`
