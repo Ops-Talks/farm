@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { Nunito, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { TracingInit } from "@/components/tracing-init";
 import "./globals.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
   display: "swap",
 });
 
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
-  weight: ["300", "400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -30,10 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${dmSans.variable} ${dmMono.variable} antialiased`}
-      >
+    <html lang="en" suppressHydrationWarning className={`${nunito.variable} ${jetbrainsMono.variable}`}>
+      <body className="antialiased">
         <Providers>
           {/* TracingInit bootstraps the OTel browser SDK once on first render.
               It renders null — no DOM impact. */}
