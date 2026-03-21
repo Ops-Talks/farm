@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { GoogleAuth } from "google-auth-library";
 import axios from "axios";
 import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
@@ -283,7 +283,9 @@ export class GcpService {
     // Normalize and validate the secret reference to prevent constructing
     // unexpected URL paths from untrusted input.
     if (!ref.startsWith("gcp:projects/")) {
-      throw new Error(`Invalid GCP secret reference prefix: "${ref}"`);
+      throw new BadRequestException(
+        `Invalid GCP secret reference prefix: "${ref}"`,
+      );
     }
 
     // Strip "gcp:" prefix and split the remaining path.
@@ -297,21 +299,36 @@ export class GcpService {
       segments[2] !== "secrets" ||
       segments[4] !== "versions"
     ) {
-      throw new Error(`Unsupported GCP secret ref format: "${ref}"`);
+      throw new BadRequestException(
+        `Unsupported GCP secret ref format: "${ref}"`,
+      );
     }
 
     const projectId = segments[1];
     const secretName = segments[3];
     const version = segments[5];
 
-    // Validate individual path segments to avoid path traversal or slashes.
-    const segmentPattern = /^[a-zA-Z0-9\-_.]+$/;
-    if (
-      !segmentPattern.test(projectId) ||
-      !segmentPattern.test(secretName) ||
-      !segmentPattern.test(version)
-    ) {
-      throw new Error(`Invalid characters in GCP secret reference: "${ref}"`);
+    // GCP project IDs: lowercase letters, digits, and hyphens (no dots).
+    const projectPattern = /^[a-z][a-z0-9\-]{0,29}$/;
+    // GCP secret names: letters, digits, underscores, and hyphens (no dots).
+    const namePattern = /^[a-zA-Z0-9_\-]{1,255}$/;
+    // GCP secret versions: digits only, or the literal string "latest".
+    const versionPattern = /^(?:latest|\d+)$/;
+
+    if (!projectPattern.test(projectId)) {
+      throw new BadRequestException(
+        `Invalid GCP project ID in secret reference: "${ref}"`,
+      );
+    }
+    if (!namePattern.test(secretName)) {
+      throw new BadRequestException(
+        `Invalid GCP secret name in secret reference: "${ref}"`,
+      );
+    }
+    if (!versionPattern.test(version)) {
+      throw new BadRequestException(
+        `Invalid GCP secret version in secret reference: "${ref}"`,
+      );
     }
 
     const accessToken = await auth.getAccessToken();
