@@ -111,6 +111,7 @@ nav:
       - Queues: developer-guide/backend/queues.md
       - Email: developer-guide/backend/email.md
       - Pipelines: developer-guide/backend/pipelines.md
+      - Cloud Integrations: developer-guide/backend/cloud-integrations.md
     - Frontend:
       - developer-guide/frontend/index.md
       - Architecture: developer-guide/frontend/architecture.md

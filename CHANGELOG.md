@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- feat:(cloud) - FARM-E38 Cloud Provider Integrations complete.
+- chore:(fonts) - Update project font (#10).
+- update gitleaks.
+- chore:(web) - Improvements.
+
 ## [0.11.1] - 2026-03-20
 
 ### Changed

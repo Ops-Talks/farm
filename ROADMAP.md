@@ -866,7 +866,7 @@ Farm already syncs `catalog-info.yaml` files from URLs (Backstage-compatible dis
 
 ---
 
-### FARM-E38: Cloud Provider Integrations `TODO`
+### FARM-E38: Cloud Provider Integrations `DONE`
 
 > Connect Farm to AWS, GCP, and Azure to discover infrastructure resources, display cost visibility per environment, execute real cloud deploy stages in pipelines, and resolve secrets from managed secret stores.
 
@@ -880,12 +880,12 @@ Credentials are stored per-organization using the `IntegrationCredential` entity
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S142 | Story | AWS: connect account (IAM role via assume-role or access key per org), discover tagged resources (ECS, Lambda, RDS, S3, SQS) and register them in the Catalog as `kind: Infrastructure` linked to the owning Component | `TODO` |
-| FARM-S143 | Story | GCP: connect project (service account JSON per org), discover resources via Cloud Asset API (Cloud Run, Cloud SQL, Pub/Sub, GCS) and register as `kind: Infrastructure` | `TODO` |
-| FARM-S144 | Story | Azure: connect subscription (service principal per org), discover resources via Resource Manager API (Container Apps, Azure SQL, Service Bus, Blob) and register as `kind: Infrastructure` | `TODO` |
-| FARM-S145 | Story | Cost visibility: dashboard widget showing monthly spend per environment, sourced from AWS Cost Explorer, GCP Billing API, or Azure Cost Management; drill-down by component and team | `TODO` |
-| FARM-S146 | Story | Pipeline `deploy` stage real executors: `aws-ecs` (update service image), `aws-lambda` (publish function version), `gcp-cloud-run` (deploy revision), `azure-container-apps` (update container app) | `TODO` |
-| FARM-S147 | Story | Secrets resolver: reference AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault secrets by ARN/path in pipeline stage configs — resolved at execution time, never stored in Farm database | `TODO` |
+| FARM-S142 | Story | AWS: connect account (IAM role via assume-role or access key per org), discover tagged resources (ECS, Lambda, RDS, S3, SQS) and register them in the Catalog as `kind: Infrastructure` linked to the owning Component | `DONE` |
+| FARM-S143 | Story | GCP: connect project (service account JSON per org), discover resources via Cloud Asset API (Cloud Run, Cloud SQL, Pub/Sub, GCS) and register as `kind: Infrastructure` | `DONE` |
+| FARM-S144 | Story | Azure: connect subscription (service principal per org), discover resources via Resource Manager API (Container Apps, Azure SQL, Service Bus, Blob) and register as `kind: Infrastructure` | `DONE` |
+| FARM-S145 | Story | Cost visibility: dashboard widget showing monthly spend per environment, sourced from AWS Cost Explorer, GCP Billing API, or Azure Cost Management; drill-down by component and team | `DONE` |
+| FARM-S146 | Story | Pipeline `deploy` stage real executors: `aws-ecs` (update service image), `aws-lambda` (publish function version), `gcp-cloud-run` (deploy revision), `azure-container-apps` (update container app) | `DONE` |
+| FARM-S147 | Story | Secrets resolver: reference AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault secrets by ARN/path in pipeline stage configs — resolved at execution time, never stored in Farm database | `DONE` |
 
 #### Implementation Notes
 
