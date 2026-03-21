@@ -47,6 +47,24 @@ export class IstioService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Normalizes an optional kubeconfig input that may be provided as a string
+   * or as an array (for example when the HTTP query parameter is repeated).
+   *
+   * For array inputs we currently take the first element, ignoring the rest.
+   *
+   * @param kubeconfig - Optional kubeconfig value from an untrusted source
+   * @returns A single string value or undefined when not provided
+   */
+  private normalizeKubeconfigInput(
+    kubeconfig?: string | string[],
+  ): string | undefined {
+    if (Array.isArray(kubeconfig)) {
+      return kubeconfig[0];
+    }
+    return kubeconfig;
+  }
+
+  /**
    * Resolves a CustomObjectsApi client from an optional inline kubeconfig
    * string or file path. Falls back to the shared KubernetesService client
    * when no kubeconfig is provided.
@@ -54,8 +72,11 @@ export class IstioService {
    * @param kubeconfig - Optional YAML kubeconfig content or file path
    * @returns Configured CustomObjectsApi instance, or null when unavailable
    */
-  private getApi(kubeconfig?: string): k8s.CustomObjectsApi | null {
-    if (!kubeconfig) {
+  private getApi(
+    kubeconfig?: string | string[],
+  ): k8s.CustomObjectsApi | null {
+    const normalizedKubeconfig = this.normalizeKubeconfigInput(kubeconfig);
+    if (!normalizedKubeconfig) {
       return this.kubernetesService.getCustomObjectsApi();
     }
 
@@ -63,12 +84,12 @@ export class IstioService {
       const kc = new k8s.KubeConfig();
       // Treat value as file path first; fall back to inline YAML content.
       if (
-        kubeconfig.trim().startsWith("apiVersion") ||
-        kubeconfig.includes("\n")
+        normalizedKubeconfig.trim().startsWith("apiVersion") ||
+        normalizedKubeconfig.includes("\n")
       ) {
-        kc.loadFromString(kubeconfig);
+        kc.loadFromString(normalizedKubeconfig);
       } else {
-        kc.loadFromFile(kubeconfig);
+        kc.loadFromFile(normalizedKubeconfig);
       }
       return kc.makeApiClient(k8s.CustomObjectsApi);
     } catch (error) {
@@ -101,7 +122,9 @@ export class IstioService {
    * @param kubeconfig - Optional kubeconfig YAML content or file path
    * @returns true when Istio is installed and reachable
    */
-  async isIstioEnabled(kubeconfig?: string): Promise<boolean> {
+  async isIstioEnabled(
+    kubeconfig?: string | string[],
+  ): Promise<boolean> {
     const api = this.getApi(kubeconfig);
     if (!api) {
       this.logger.debug("No Kubernetes client available; Istio disabled");

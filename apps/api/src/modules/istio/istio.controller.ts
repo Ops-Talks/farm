@@ -72,7 +72,7 @@ export class IstioController {
     description: "Istio availability status.",
   })
   async getStatus(
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<{ istioEnabled: boolean }> {
     const istioEnabled = await this.istioService.isIstioEnabled(kubeconfig);
     return { istioEnabled };
@@ -99,7 +99,7 @@ export class IstioController {
   })
   async listVirtualServices(
     @Query("namespace") namespace: string,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<IstioVirtualService[]> {
     return this.istioService.getVirtualServices(
       namespace ?? "default",
@@ -122,7 +122,7 @@ export class IstioController {
   async getVirtualService(
     @Param("namespace") namespace: string,
     @Param("name") name: string,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<IstioVirtualService> {
     return this.istioService.getVirtualService(namespace, name, kubeconfig);
   }
@@ -155,7 +155,7 @@ export class IstioController {
     @Param("namespace") namespace: string,
     @Param("name") name: string,
     @Body() body: PatchWeightsDto,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<void> {
     await this.istioService.patchVirtualServiceWeights(
       namespace,
@@ -186,7 +186,7 @@ export class IstioController {
   })
   async listPeerAuthentications(
     @Query("namespace") namespace: string,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<IstioPeerAuthentication[]> {
     return this.istioService.getPeerAuthentications(
       namespace ?? "default",
@@ -214,7 +214,7 @@ export class IstioController {
   })
   async listAuthorizationPolicies(
     @Query("namespace") namespace: string,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<IstioAuthorizationPolicy[]> {
     return this.istioService.getAuthorizationPolicies(
       namespace ?? "default",
@@ -324,7 +324,7 @@ export class IstioController {
   })
   async getTopology(
     @Query("orgId") orgId: string,
-    @Query("kubeconfig") kubeconfig?: string,
+    @Query("kubeconfig") kubeconfig?: string | string[],
   ): Promise<IstioTopologyEdge[]> {
     return this.istioService.buildTopology(orgId ?? "", kubeconfig);
   }
