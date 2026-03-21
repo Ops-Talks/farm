@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans, DM_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { TracingInit } from "@/components/tracing-init";
 import "./globals.css";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
   display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistMono.variable} ${inter.variable} ${plusJakartaSans.variable} antialiased`}
+        className={`${dmSans.variable} ${dmMono.variable} antialiased`}
       >
         <Providers>
           {/* TracingInit bootstraps the OTel browser SDK once on first render.
