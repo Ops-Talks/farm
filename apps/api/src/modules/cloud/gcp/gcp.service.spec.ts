@@ -265,6 +265,30 @@ describe("GcpService", () => {
         service.resolveSecret(ORG_ID, "gcp:projects/p/secrets/s/versions/1"),
       ).rejects.toThrow("not configured");
     });
+
+    it("should throw when ref does not start with gcp:projects/", async () => {
+      await expect(
+        service.resolveSecret(ORG_ID, "gcp:my-project/secrets/s/versions/1"),
+      ).rejects.toThrow("Invalid GCP secret reference prefix");
+    });
+
+    it("should throw when ref has wrong number of path segments", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my-secret/versions",
+        ),
+      ).rejects.toThrow("Unsupported GCP secret ref format");
+    });
+
+    it("should throw when a path segment contains invalid characters", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my../secrets/versions/latest",
+        ),
+      ).rejects.toThrow();
+    });
   });
 
   // ---------------------------------------------------------------------------

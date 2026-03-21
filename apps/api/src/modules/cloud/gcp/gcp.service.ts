@@ -290,8 +290,9 @@ export class GcpService {
     const withoutPrefix = ref.slice("gcp:".length);
     const segments = withoutPrefix.split("/");
     // Expected format: projects/{project}/secrets/{name}/versions/{version}
+    // Splitting by "/" yields exactly 6 segments.
     if (
-      segments.length !== 7 ||
+      segments.length !== 6 ||
       segments[0] !== "projects" ||
       segments[2] !== "secrets" ||
       segments[4] !== "versions"
