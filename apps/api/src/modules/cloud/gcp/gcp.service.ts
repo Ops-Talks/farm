@@ -309,9 +309,9 @@ export class GcpService {
     const version = segments[5];
 
     // GCP project IDs: lowercase letters, digits, and hyphens (no dots).
-    const projectPattern = /^[a-z][a-z0-9\-]{0,29}$/;
+    const projectPattern = /^[a-z][a-z0-9-]{0,29}$/;
     // GCP secret names: letters, digits, underscores, and hyphens (no dots).
-    const namePattern = /^[a-zA-Z0-9_\-]{1,255}$/;
+    const namePattern = /^[a-zA-Z0-9_-]{1,255}$/;
     // GCP secret versions: digits only, or the literal string "latest".
     const versionPattern = /^(?:latest|\d+)$/;
 

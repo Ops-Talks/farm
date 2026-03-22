@@ -285,7 +285,7 @@ describe("GcpService", () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it("should throw when project ID contains dots (dot-segment traversal)", async () => {
+    it("should throw when project ID is a dot-segment traversal sequence (..)", async () => {
       await expect(
         service.resolveSecret(
           ORG_ID,
