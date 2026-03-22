@@ -1,16 +1,20 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { getToken } from "@willsoto/nestjs-prometheus";
+import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { CatalogService } from "./catalog.service";
 import { EventsGateway } from "../../common/events/events.gateway";
 import * as fs from "fs/promises";
+import { EventEmitter } from "events";
 import {
   Component,
   ComponentKind,
+  ComponentKindGroup,
   ComponentLifecycle,
 } from "./entities/component.entity";
 
 jest.mock("fs/promises");
+jest.mock("child_process", () => ({ spawn: jest.fn() }));
 
 describe("CatalogService", () => {
   let service: CatalogService;
@@ -220,5 +224,391 @@ spec:
         operation: "delete",
       });
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Additional branch-coverage tests
+  // ---------------------------------------------------------------------------
+
+  describe("findOne — NotFoundException", () => {
+    it("should throw NotFoundException when component does not exist", async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(service.findOne("nonexistent-id")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe("findAll — kindGroup filter", () => {
+    it("should filter by kindGroup when provided", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      const [data, total] = await service.findAll(
+        0,
+        20,
+        ComponentKindGroup.DEV,
+      );
+      expect(data).toEqual([mockComponent]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ relations: ["dependencies"] }),
+      );
+    });
+
+    it("should include organizationId in where clause when kindGroup and organizationId are both provided", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      await service.findAll(0, 20, ComponentKindGroup.DEV, "org-uuid-1");
+      const callArg = (
+        mockRepository.findAndCount.mock.calls as Array<
+          [{ where: Array<Record<string, unknown>> }]
+        >
+      )[0][0];
+      expect(
+        callArg.where.some((w) => w["organizationId"] === "org-uuid-1"),
+      ).toBe(true);
+    });
+
+    it("should include teamId in where clause when kindGroup and teamId are both provided", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      await service.findAll(
+        0,
+        20,
+        ComponentKindGroup.INFRA,
+        undefined,
+        "team-uuid-1",
+      );
+      const callArg = (
+        mockRepository.findAndCount.mock.calls as Array<
+          [{ where: Array<Record<string, unknown>> }]
+        >
+      )[0][0];
+      expect(callArg.where.some((w) => w["teamId"] === "team-uuid-1")).toBe(
+        true,
+      );
+    });
+  });
+
+  describe("findAll — organizationId / teamId without kindGroup", () => {
+    it("should filter by organizationId when provided without kindGroup", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      await service.findAll(0, 20, undefined, "org-uuid-1");
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { organizationId: "org-uuid-1" },
+        relations: ["dependencies"],
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should filter by teamId when provided without kindGroup", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      await service.findAll(0, 20, undefined, undefined, "team-uuid-1");
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { teamId: "team-uuid-1" },
+        relations: ["dependencies"],
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should filter by both organizationId and teamId without kindGroup", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockComponent], 1]);
+      await service.findAll(0, 20, undefined, "org-uuid-1", "team-uuid-1");
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { organizationId: "org-uuid-1", teamId: "team-uuid-1" },
+        relations: ["dependencies"],
+        skip: 0,
+        take: 20,
+      });
+    });
+  });
+
+  describe("registerYaml — error branches", () => {
+    it("should throw BadRequestException when YAML kind is not Component", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: API
+metadata:
+  name: my-api
+spec:
+  owner: team-a
+      `;
+      await expect(service.registerYaml(yaml)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw BadRequestException when YAML parses to null", async () => {
+      await expect(service.registerYaml("null")).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw BadRequestException when component name is missing", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  description: no name here
+spec:
+  type: service
+  owner: team-a
+      `;
+      await expect(service.registerYaml(yaml)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw BadRequestException when component owner is missing", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: my-service
+spec:
+  type: service
+      `;
+      await expect(service.registerYaml(yaml)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should throw BadRequestException when YAML content is syntactically invalid", async () => {
+      await expect(
+        service.registerYaml("{ invalid: yaml: [unclosed"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should register a component including helmChart when spec.helm is present", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: helm-service
+spec:
+  type: service
+  owner: team-helm
+  helm:
+    repo: https://charts.example.com
+    chart: my-chart
+    version: 1.0.0
+    valuesRef: values-prod.yaml
+      `;
+      const result = await service.registerYaml(yaml);
+      expect(result.name).toBe("helm-service");
+    });
+  });
+
+  describe("discoverFromLocation — error branches", () => {
+    beforeEach(() => {
+      (fs.rm as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it("should throw BadRequestException when gitClone fails", async () => {
+      jest
+        .spyOn(service as any, "gitClone")
+        .mockRejectedValue(new Error("git clone failed with code 128"));
+
+      await expect(
+        service.discoverFromLocation("http://bad-repo.example.git"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should log error and skip a file that fails to register, counting only successes", async () => {
+      jest.spyOn(service as any, "gitClone").mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, "findYamlFiles")
+        .mockResolvedValue([
+          "/tmp/fake/file1/catalog-info.yaml",
+          "/tmp/fake/file2/catalog-info.yaml",
+        ]);
+
+      (fs.readFile as jest.Mock).mockRejectedValueOnce(
+        new Error("file not readable"),
+      ).mockResolvedValueOnce(`
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: good-service
+spec:
+  type: service
+  owner: team-a
+        `);
+
+      const result = await service.discoverFromLocation(
+        "http://example.com/repo.git",
+      );
+      // Only the second (valid) file succeeds.
+      expect(result).toBe(1);
+    });
+  });
+
+  describe("create — without optional providers", () => {
+    it("should create a component when eventsGateway and eventEmitter are not provided", async () => {
+      const moduleNoOptionals: TestingModule = await Test.createTestingModule({
+        providers: [
+          CatalogService,
+          {
+            provide: getRepositoryToken(Component),
+            useValue: mockRepository,
+          },
+        ],
+      }).compile();
+
+      const svcNoOptionals =
+        moduleNoOptionals.get<CatalogService>(CatalogService);
+
+      const result = await svcNoOptionals.create({
+        name: "bare-service",
+        kind: ComponentKind.SERVICE,
+        owner: "team-bare",
+      });
+
+      expect(result).toBeDefined();
+      expect(mockRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe("update — without dependencyIds", () => {
+    it("should update without touching dependencies when dependencyIds is absent", async () => {
+      // Restore findOne default after NotFoundException test mutated it.
+      mockRepository.findOne.mockResolvedValue(mockComponent);
+
+      const result = await service.update(mockComponent.id, {
+        description: "New description",
+      });
+      // findBy should NOT be called since no dependencyIds were provided.
+      expect(mockRepository.findBy).not.toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// gitClone internal branch tests (child_process.spawn mock)
+// ---------------------------------------------------------------------------
+
+describe("CatalogService — gitClone internal branches", () => {
+  let service: CatalogService;
+  let spawnMock: jest.Mock;
+
+  const mockRepository = {
+    create: jest.fn().mockImplementation((d) => d as Component),
+    save: jest.fn().mockImplementation((d) => Promise.resolve(d as Component)),
+    find: jest.fn().mockResolvedValue([]),
+    findOne: jest.fn().mockResolvedValue(null),
+    findAndCount: jest.fn().mockResolvedValue([[], 0]),
+    findBy: jest.fn().mockResolvedValue([]),
+    merge: jest
+      .fn()
+      .mockImplementation((e, d) => ({ ...e, ...d }) as Component),
+    remove: jest.fn().mockResolvedValue({}),
+  };
+
+  beforeEach(async () => {
+    const { spawn } = jest.requireMock("child_process") as unknown as {
+      spawn: jest.Mock;
+    };
+    spawnMock = spawn;
+
+    jest.clearAllMocks();
+
+    (fs.rm as jest.Mock).mockResolvedValue(undefined);
+    (fs.readdir as jest.Mock).mockResolvedValue([]);
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CatalogService,
+        { provide: getRepositoryToken(Component), useValue: mockRepository },
+      ],
+    }).compile();
+
+    service = module.get<CatalogService>(CatalogService);
+  });
+
+  it("should resolve when git clone exits with code 0", async () => {
+    const emitter = new EventEmitter();
+    spawnMock.mockReturnValue(emitter);
+
+    const clonePromise = service.discoverFromLocation(
+      "http://example.com/repo.git",
+    );
+    // Simulate successful git process exit.
+    process.nextTick(() => emitter.emit("close", 0));
+
+    const count = await clonePromise;
+    expect(count).toBe(0); // No YAML files found (readdir returns [])
+    expect(spawnMock).toHaveBeenCalledWith("git", [
+      "clone",
+      "--depth",
+      "1",
+      "http://example.com/repo.git",
+      expect.any(String),
+    ]);
+  });
+
+  it("should reject when git clone exits with a non-zero code", async () => {
+    const emitter = new EventEmitter();
+    spawnMock.mockReturnValue(emitter);
+
+    const clonePromise = service.discoverFromLocation(
+      "http://example.com/repo.git",
+    );
+    process.nextTick(() => emitter.emit("close", 128));
+
+    await expect(clonePromise).rejects.toThrow(BadRequestException);
+  });
+
+  it("should reject when the spawn process emits an error", async () => {
+    const emitter = new EventEmitter();
+    spawnMock.mockReturnValue(emitter);
+
+    const clonePromise = service.discoverFromLocation(
+      "http://example.com/repo.git",
+    );
+    process.nextTick(() =>
+      emitter.emit("error", new Error("ENOENT: git not found")),
+    );
+
+    await expect(clonePromise).rejects.toThrow(BadRequestException);
+  });
+
+  it("should discover YAML files in nested directories via findYamlFiles", async () => {
+    const emitter = new EventEmitter();
+    spawnMock.mockReturnValue(emitter);
+
+    // Top-level entries: a catalog-info.yaml, a regular file, and a subdirectory.
+    const topLevelEntries = [
+      { name: "catalog-info.yaml", isDirectory: () => false },
+      { name: "README.md", isDirectory: () => false },
+      { name: "subdir", isDirectory: () => true },
+    ];
+    // Subdir entries: a nested catalog-info.yaml.
+    const subDirEntries = [
+      { name: "catalog-info.yaml", isDirectory: () => false },
+    ];
+
+    (fs.readdir as jest.Mock)
+      .mockResolvedValueOnce(topLevelEntries)
+      .mockResolvedValueOnce(subDirEntries);
+
+    (fs.readFile as jest.Mock).mockResolvedValue(`
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: test-service
+spec:
+  type: service
+  owner: team-a
+    `);
+
+    const clonePromise = service.discoverFromLocation(
+      "http://example.com/repo.git",
+    );
+    process.nextTick(() => emitter.emit("close", 0));
+
+    const count = await clonePromise;
+    // Both catalog-info.yaml files should be discovered and registered.
+    expect(count).toBe(2);
   });
 });
