@@ -310,21 +310,37 @@ describe("BuildStageExecutor", () => {
       expect(result.output).toContain("Dockerfile not found");
     });
 
-    it("should not invoke execFile for unknown engine, preventing command injection", async () => {
+    it("should never pass an unknown engine to execFile, preventing command injection", async () => {
       const logs: string[] = [];
-      // Cast to bypass TypeScript's BuildEngine type constraint so the test
-      // can simulate a malicious value arriving from user-supplied config.
+      // Simulate an attacker-controlled value arriving from user-supplied config.
+      // The allowlist in execute() must reject it and fall back to "docker".
+      // docker is then also not available in the test environment, so the run
+      // ends with a failure — but crucially "$(evil)" is never passed to execFile.
+      mockExecFileImpl.mockImplementation(
+        (file: string, _args: string[], cb: (err: Error | null) => void) => {
+          if (file === "$(evil)") {
+            // Fail the test immediately if the malicious string is ever used.
+            cb(new Error("INJECTION: should never reach here"));
+          } else {
+            cb(new Error("docker: not found"));
+          }
+        },
+      );
+
       const result = await executor.execute(
         buildStage({ engine: "$(evil)" as unknown as "docker" }),
         buildRun({ version: "1.0.0", commitSha: "abc1234" }),
         (msg) => logs.push(msg),
       );
 
-      // The allowlist in isEngineAvailable rejects the unknown engine string
-      // before any execFile call is made.
+      // Invalid engine is replaced by "docker" before any execFile call.
+      expect(logs.some((l) => l.includes("rejected unknown engine"))).toBe(true);
+      // "$(evil)" must never appear as the executable argument.
+      const calls = mockExecFileImpl.mock.calls as [string, string[], unknown][];
+      expect(calls.every(([file]) => file !== "$(evil)")).toBe(true);
+      // docker is unavailable in the test environment, so the stage fails.
       expect(result.success).toBe(false);
       expect(result.output).toContain("build executor not available");
-      expect(mockExecFileImpl).not.toHaveBeenCalled();
     });
   });
 });

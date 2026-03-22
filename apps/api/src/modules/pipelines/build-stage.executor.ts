@@ -11,6 +11,8 @@ const execFileAsync = promisify(execFile);
  */
 export type BuildEngine = "docker" | "buildah" | "podman";
 
+const ALLOWED_ENGINES: BuildEngine[] = ["docker", "buildah", "podman"];
+
 /**
  * Configuration for a build stage in a pipeline.
  * Matches stage.config when stage.type === 'build'.
@@ -74,7 +76,15 @@ export class BuildStageExecutor {
     emitLog: (msg: string) => void,
   ): Promise<BuildStageResult> {
     const config = stage.config as unknown as BuildStageConfig;
-    const engine: BuildEngine = config.engine ?? "docker";
+    const rawEngine = config.engine ?? "docker";
+    if (!(ALLOWED_ENGINES as string[]).includes(rawEngine)) {
+      const msg = `build executor rejected unknown engine "${rawEngine}"; falling back to "docker"`;
+      this.logger.warn(msg);
+      emitLog(msg);
+    }
+    const engine: BuildEngine = (ALLOWED_ENGINES as string[]).includes(rawEngine)
+      ? (rawEngine as BuildEngine)
+      : "docker";
     const dockerfile = config.dockerfile ?? "Dockerfile";
     const context = config.context ?? ".";
     const push = config.push ?? false;
@@ -160,7 +170,6 @@ export class BuildStageExecutor {
    * @returns true if the binary is accessible
    */
   async isEngineAvailable(engine: string): Promise<boolean> {
-    const ALLOWED_ENGINES: BuildEngine[] = ["docker", "buildah", "podman"];
     if (!(ALLOWED_ENGINES as string[]).includes(engine)) {
       this.logger.warn(
         `isEngineAvailable: rejected unknown engine "${engine}"`,
