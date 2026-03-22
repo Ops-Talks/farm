@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
 import { GcpService } from "./gcp.service";
 import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
 import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
@@ -262,8 +263,53 @@ describe("GcpService", () => {
       mockCredentialService.findByType.mockResolvedValue(null);
 
       await expect(
-        service.resolveSecret(ORG_ID, "gcp:projects/p/secrets/s/versions/1"),
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my-secret/versions/1",
+        ),
       ).rejects.toThrow("not configured");
+    });
+
+    it("should throw when ref does not start with gcp:projects/", async () => {
+      await expect(
+        service.resolveSecret(ORG_ID, "gcp:my-project/secrets/s/versions/1"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw when ref has wrong number of path segments", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my-secret/versions",
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw when project ID is a dot-segment traversal sequence (..)", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/../secrets/my-secret/versions/latest",
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw when secret name contains dots", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my.secret/versions/latest",
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw when version is not a number or 'latest'", async () => {
+      await expect(
+        service.resolveSecret(
+          ORG_ID,
+          "gcp:projects/my-project/secrets/my-secret/versions/v1.2",
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
