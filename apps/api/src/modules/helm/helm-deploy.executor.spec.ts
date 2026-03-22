@@ -195,9 +195,7 @@ describe("HelmDeployExecutor", () => {
         (
           _file: string,
           _args: string[],
-          cb: (
-            err: Error & { stdout?: string; stderr?: string },
-          ) => void,
+          cb: (err: Error & { stdout?: string; stderr?: string }) => void,
         ) => {
           const helmError = Object.assign(new Error("helm error"), {
             stdout: "",

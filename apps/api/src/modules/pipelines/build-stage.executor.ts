@@ -198,5 +198,4 @@ export class BuildStageExecutor {
       .replace(/\{\{version\}\}/g, version)
       .replace(/\{\{commitSha\}\}/g, commitSha);
   }
-
 }

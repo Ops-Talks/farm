@@ -206,7 +206,8 @@ describe("BuildStageExecutor", () => {
           // Call 1: isEngineAvailable check.
           // Call 2: docker build.
           cb(null, {
-            stdout: fileCallCount === 1 ? "Docker version 24.0.0" : "Build succeeded",
+            stdout:
+              fileCallCount === 1 ? "Docker version 24.0.0" : "Build succeeded",
             stderr: "",
           });
         },
