@@ -3,9 +3,11 @@ import { HelmDeployExecutor, HelmDeployConfig } from "./helm-deploy.executor";
 
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
-// The mock captures the callback-style exec call and allows per-test control.
+// exec  → used only by isHelmAvailable (hardcoded "helm version --short").
+// execFile → used by execute() for the actual helm upgrade --install call.
 // ---------------------------------------------------------------------------
 const mockExecImpl = jest.fn();
+const mockExecFileImpl = jest.fn();
 
 jest.mock("child_process", () => ({
   exec: (cmd: string, optsOrCb: unknown, maybeCb?: unknown) => {
@@ -13,6 +15,15 @@ jest.mock("child_process", () => ({
     // or exec(cmd, callback) when only the command is provided.
     const cb = typeof maybeCb === "function" ? maybeCb : optsOrCb;
     mockExecImpl(cmd, cb);
+  },
+  execFile: (
+    file: string,
+    args: string[],
+    optsOrCb: unknown,
+    maybeCb?: unknown,
+  ) => {
+    const cb = typeof maybeCb === "function" ? maybeCb : optsOrCb;
+    mockExecFileImpl(file, args, cb);
   },
 }));
 
@@ -36,6 +47,7 @@ describe("HelmDeployExecutor", () => {
 
   beforeEach(async () => {
     mockExecImpl.mockReset();
+    mockExecFileImpl.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [HelmDeployExecutor],
@@ -53,44 +65,46 @@ describe("HelmDeployExecutor", () => {
   // -------------------------------------------------------------------------
   describe("buildCommand", () => {
     it("should include basic upgrade --install flags", () => {
-      const cmd = executor.buildCommand(baseConfig);
-      expect(cmd).toContain("helm upgrade --install");
-      expect(cmd).toContain("--namespace");
-      expect(cmd).toContain("--create-namespace");
+      const args = executor.buildCommand(baseConfig);
+      expect(args).toContain("upgrade");
+      expect(args).toContain("--install");
+      expect(args).toContain("--namespace");
+      expect(args).toContain("--create-namespace");
     });
 
     it("should include --version flag when version is provided", () => {
-      const cmd = executor.buildCommand({ ...baseConfig, version: "12.1.0" });
-      expect(cmd).toContain("--version");
-      expect(cmd).toContain("12.1.0");
+      const args = executor.buildCommand({ ...baseConfig, version: "12.1.0" });
+      expect(args).toContain("--version");
+      expect(args).toContain("12.1.0");
     });
 
     it("should include -f flag when valuesFile is provided", () => {
-      const cmd = executor.buildCommand({
+      const args = executor.buildCommand({
         ...baseConfig,
         valuesFile: "values/production.yaml",
       });
-      expect(cmd).toContain("-f");
-      expect(cmd).toContain("values/production.yaml");
+      expect(args).toContain("-f");
+      expect(args).toContain("values/production.yaml");
     });
 
     it("should include --set flags for each key-value pair", () => {
-      const cmd = executor.buildCommand({
+      const args = executor.buildCommand({
         ...baseConfig,
         set: { image: "myapp:1.0", replicas: "3" },
       });
-      expect(cmd).toContain("--set");
-      expect(cmd).toContain("image");
-      expect(cmd).toContain("myapp:1.0");
+      expect(args).toContain("--set");
+      // key and value are combined as a single "key=value" argument.
+      expect(args).toContain("image=myapp:1.0");
+      expect(args).toContain("replicas=3");
     });
 
-    it("should shell-escape values containing spaces", () => {
-      const cmd = executor.buildCommand({
+    it("should pass values with spaces as raw strings (no shell escaping needed)", () => {
+      const args = executor.buildCommand({
         ...baseConfig,
         releaseName: "my release",
       });
-      // The release name is wrapped in single quotes.
-      expect(cmd).toContain("'my release'");
+      // With execFile there is no shell, so values are passed verbatim.
+      expect(args).toContain("my release");
     });
   });
 
@@ -124,7 +138,7 @@ describe("HelmDeployExecutor", () => {
   // -------------------------------------------------------------------------
   describe("execute", () => {
     it("should return success=false with descriptive message when helm is not available", async () => {
-      // helm version fails → not available.
+      // helm version (isHelmAvailable) fails → not available.
       mockExecImpl.mockImplementation(
         (_cmd: string, cb: (err: Error) => void) =>
           cb(new Error("command not found")),
@@ -138,24 +152,25 @@ describe("HelmDeployExecutor", () => {
       expect(result.success).toBe(false);
       expect(result.output).toContain("helm executor not available");
       expect(logs.some((l) => l.includes("not available"))).toBe(true);
+      // execFile must never be reached when helm is unavailable.
+      expect(mockExecFileImpl).not.toHaveBeenCalled();
     });
 
     it("should return success=true and captured output on successful deployment", async () => {
-      let callCount = 0;
+      // isHelmAvailable (exec) succeeds.
       mockExecImpl.mockImplementation(
         (
           _cmd: string,
           cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => {
-          callCount++;
-          // First call: helm version check.
-          // Second call: helm upgrade --install.
-          cb(null, {
-            stdout:
-              callCount === 1 ? "v3.12.0" : "Release deployed successfully",
-            stderr: "",
-          });
-        },
+        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+      );
+      // helm upgrade --install (execFile) succeeds.
+      mockExecFileImpl.mockImplementation(
+        (
+          _file: string,
+          _args: string[],
+          cb: (err: null, result: { stdout: string; stderr: string }) => void,
+        ) => cb(null, { stdout: "Release deployed successfully", stderr: "" }),
       );
 
       const logs: string[] = [];
@@ -168,29 +183,25 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should return success=false and captured stderr when helm command fails", async () => {
-      let callCount = 0;
+      // isHelmAvailable (exec) succeeds.
       mockExecImpl.mockImplementation(
         (
           _cmd: string,
-          cb: (
-            err: (Error & { stdout?: string; stderr?: string }) | null,
-            result?: { stdout: string; stderr: string },
-          ) => void,
+          cb: (err: null, result: { stdout: string; stderr: string }) => void,
+        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+      );
+      // helm upgrade --install (execFile) fails.
+      mockExecFileImpl.mockImplementation(
+        (
+          _file: string,
+          _args: string[],
+          cb: (err: Error & { stdout?: string; stderr?: string }) => void,
         ) => {
-          callCount++;
-          if (callCount === 1) {
-            // helm version succeeds.
-            cb(null, { stdout: "v3.12.0", stderr: "" });
-          } else {
-            // helm upgrade --install fails.
-            const helmError = new Error("helm error") as Error & {
-              stdout: string;
-              stderr: string;
-            };
-            helmError.stdout = "";
-            helmError.stderr = "Error: chart not found";
-            cb(helmError);
-          }
+          const helmError = Object.assign(new Error("helm error"), {
+            stdout: "",
+            stderr: "Error: chart not found",
+          });
+          cb(helmError);
         },
       );
 
@@ -204,13 +215,23 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should include all set overrides in the executed command", async () => {
-      let capturedCmd = "";
+      // isHelmAvailable (exec) succeeds.
       mockExecImpl.mockImplementation(
         (
-          cmd: string,
+          _cmd: string,
+          cb: (err: null, result: { stdout: string; stderr: string }) => void,
+        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+      );
+      let capturedFile = "";
+      let capturedArgs: string[] = [];
+      mockExecFileImpl.mockImplementation(
+        (
+          file: string,
+          args: string[],
           cb: (err: null, result: { stdout: string; stderr: string }) => void,
         ) => {
-          capturedCmd = cmd;
+          capturedFile = file;
+          capturedArgs = args;
           cb(null, { stdout: "", stderr: "" });
         },
       );
@@ -222,8 +243,45 @@ describe("HelmDeployExecutor", () => {
 
       await executor.execute(configWithSet, jest.fn());
 
-      // The second call (upgrade --install) should include --set.
-      expect(capturedCmd).toContain("--set");
+      expect(capturedFile).toBe("helm");
+      expect(capturedArgs).toContain("--set");
+      expect(capturedArgs).toContain("image.tag=1.0.0");
+    });
+
+    it("should pass shell-metacharacter values as literal arguments without shell interpretation", async () => {
+      // isHelmAvailable (exec) succeeds.
+      mockExecImpl.mockImplementation(
+        (
+          _cmd: string,
+          cb: (err: null, result: { stdout: string; stderr: string }) => void,
+        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+      );
+      let capturedFile = "";
+      let capturedArgs: string[] = [];
+      mockExecFileImpl.mockImplementation(
+        (
+          file: string,
+          args: string[],
+          cb: (err: null, result: { stdout: string; stderr: string }) => void,
+        ) => {
+          capturedFile = file;
+          capturedArgs = args;
+          cb(null, { stdout: "", stderr: "" });
+        },
+      );
+
+      // Simulate a user-supplied config value that contains shell metacharacters.
+      const maliciousConfig: HelmDeployConfig = {
+        ...baseConfig,
+        releaseName: "evil; rm -rf /",
+      };
+
+      await executor.execute(maliciousConfig, jest.fn());
+
+      // execFile is invoked with "helm" as the binary; the malicious string is
+      // passed as a plain argument element and is never interpreted by a shell.
+      expect(capturedFile).toBe("helm");
+      expect(capturedArgs).toContain("evil; rm -rf /");
     });
   });
 });

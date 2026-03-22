@@ -4,7 +4,7 @@
 // Handles: engine, dockerfile, context, tag (required), push toggle, registry.
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ export function BuildStageCard({
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<BuildStageFormValues>({
@@ -85,7 +85,7 @@ export function BuildStageCard({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const showPush = watch("push");
+  const showPush = useWatch({ control, name: "push" });
 
   return (
     <div className="rounded-lg border p-4 flex flex-col gap-4 bg-muted/10">

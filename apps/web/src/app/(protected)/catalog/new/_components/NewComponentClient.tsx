@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
@@ -64,7 +64,7 @@ export function NewComponentClient() {
   const {
     register: registerForm,
     handleSubmit: handleFormSubmit,
-    watch: watchForm,
+    control,
     setError: setFormError,
     formState: { errors: formErrors, isSubmitting: formSubmitting },
   } = useForm<ComponentFormValues>({
@@ -87,7 +87,7 @@ export function NewComponentClient() {
   });
 
   // Watch tagsInput to render live badge preview
-  const tagsInputValue = watchForm("tagsInput") ?? "";
+  const tagsInputValue = useWatch({ control, name: "tagsInput" }) ?? "";
 
   // --- YAML form ---
   const {

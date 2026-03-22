@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -44,7 +44,7 @@ export function NewOrgClient() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<NewOrgFormValues>({
@@ -53,7 +53,7 @@ export function NewOrgClient() {
   });
 
   // Derive the slug preview from the watched name field
-  const nameValue = watch("name");
+  const nameValue = useWatch({ control, name: "name" });
   const slug = toSlug(nameValue ?? "");
 
   const onSubmit = async (values: NewOrgFormValues) => {

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Configuration for a Helm-based deploy stage in a pipeline.
@@ -38,7 +39,7 @@ export interface HelmDeployResult {
  * when the binary is unavailable.
  *
  * Execution strategy (in priority order):
- *   1. Local `helm` CLI via child_process.exec
+ *   1. Local `helm` CLI via child_process.execFile (no shell spawned)
  *   2. Graceful degradation — returns { success: false, output: '<reason>' }
  *
  * The K8s Exec-into-pod strategy was intentionally omitted because it
@@ -71,12 +72,16 @@ export class HelmDeployExecutor {
       return { success: false, output: msg };
     }
 
-    const command = this.buildCommand(config);
-    emitLog(`Executing: ${command}`);
-    this.logger.log(`Helm deploy command: ${command}`);
+    // buildCommand returns the args array (without "helm"); execFile passes
+    // each element directly to the OS without invoking a shell, which
+    // eliminates the risk of shell injection from user-supplied config values.
+    const args = this.buildCommand(config);
+    const displayCmd = ["helm", ...args].join(" ");
+    emitLog(`Executing: ${displayCmd}`);
+    this.logger.log(`Helm deploy command: ${displayCmd}`);
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout, stderr } = await execFileAsync("helm", args, {
         timeout: 5 * 60 * 1000, // 5-minute hard cap
         maxBuffer: 10 * 1024 * 1024, // 10 MB output buffer
       });
@@ -121,20 +126,22 @@ export class HelmDeployExecutor {
   }
 
   /**
-   * Constructs the helm upgrade --install command string from the provided config.
+   * Constructs the helm upgrade --install argument list from the provided
+   * config.  The returned array is intended to be passed directly to
+   * execFile("helm", args) — no shell is spawned, so no shell escaping is
+   * applied or required.
    *
    * @param config - HelmDeployConfig
-   * @returns Full helm CLI command as a string
+   * @returns Argument array for execFile (does not include the "helm" binary)
    */
-  buildCommand(config: HelmDeployConfig): string {
-    const parts: string[] = [
-      "helm",
+  buildCommand(config: HelmDeployConfig): string[] {
+    const args: string[] = [
       "upgrade",
       "--install",
-      this.shellEscape(config.releaseName),
-      this.shellEscape(config.chart),
+      config.releaseName,
+      config.chart,
       "--namespace",
-      this.shellEscape(config.namespace),
+      config.namespace,
       "--create-namespace",
       "--wait",
       "--timeout",
@@ -142,34 +149,20 @@ export class HelmDeployExecutor {
     ];
 
     if (config.version) {
-      parts.push("--version", this.shellEscape(config.version));
+      args.push("--version", config.version);
     }
 
     if (config.valuesFile) {
-      parts.push("-f", this.shellEscape(config.valuesFile));
+      args.push("-f", config.valuesFile);
     }
 
     if (config.set) {
       for (const [key, value] of Object.entries(config.set)) {
-        // Keys and values are shell-escaped individually.
-        parts.push(
-          "--set",
-          `${this.shellEscape(key)}=${this.shellEscape(value)}`,
-        );
+        // key=value is passed as a single argument; helm parses it internally.
+        args.push("--set", `${key}=${value}`);
       }
     }
 
-    return parts.join(" ");
-  }
-
-  /**
-   * Minimal shell-escaping for Helm CLI arguments.
-   * Wraps the value in single quotes and escapes any embedded single quotes.
-   *
-   * @param value - The string to escape
-   * @returns Shell-safe representation
-   */
-  private shellEscape(value: string): string {
-    return `'${value.replace(/'/g, "'\\''")}'`;
+    return args;
   }
 }
