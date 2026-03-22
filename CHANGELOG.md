@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.3] - 2026-03-21
 
 ### Changed
-- No release notes could be derived automatically from commits since v0.11.2.
+- Add web coverage job to CI workflow.
 
 ## [0.11.2] - 2026-03-21
 
