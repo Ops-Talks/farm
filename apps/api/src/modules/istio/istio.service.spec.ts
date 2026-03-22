@@ -445,3 +445,536 @@ describe("IstioService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("IstioService — additional branches", () => {
+  let service: IstioService;
+
+  const mockKubernetesService = { getCustomObjectsApi: jest.fn() };
+
+  beforeEach(async () => {
+    mockListClusterCustomObject = jest.fn();
+    mockListNamespacedCustomObject = jest.fn();
+    mockGetNamespacedCustomObject = jest.fn();
+    mockPatchNamespacedCustomObject = jest.fn();
+    mockLoadFromFile = jest.fn();
+    mockLoadFromString = jest.fn();
+    mockMakeApiClient = jest.fn().mockReturnValue({
+      listClusterCustomObject: mockListClusterCustomObject,
+      listNamespacedCustomObject: mockListNamespacedCustomObject,
+      getNamespacedCustomObject: mockGetNamespacedCustomObject,
+      patchNamespacedCustomObject: mockPatchNamespacedCustomObject,
+    });
+
+    mockKubernetesService.getCustomObjectsApi.mockReturnValue({
+      listClusterCustomObject: mockListClusterCustomObject,
+      listNamespacedCustomObject: mockListNamespacedCustomObject,
+      getNamespacedCustomObject: mockGetNamespacedCustomObject,
+      patchNamespacedCustomObject: mockPatchNamespacedCustomObject,
+    });
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        IstioService,
+        { provide: KubernetesService, useValue: mockKubernetesService },
+      ],
+    }).compile();
+
+    service = module.get<IstioService>(IstioService);
+  });
+
+  // ---------------------------------------------------------------------------
+  // getApi — inline YAML kubeconfig (loadFromString path)
+  // ---------------------------------------------------------------------------
+
+  describe("getApi — inline YAML kubeconfig", () => {
+    it("uses loadFromString when kubeconfig contains a newline", async () => {
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      mockLoadFromString.mockImplementation(() => undefined);
+
+      const inlineYaml =
+        "apiVersion: v1\nkind: Config\nclusters: []\ncontexts: []\ncurrent-context: ''\nusers: []\n";
+
+      const result = await service.isIstioEnabled(inlineYaml);
+
+      expect(result).toBe(true);
+      expect(mockLoadFromString).toHaveBeenCalledWith(inlineYaml);
+    });
+
+    it("uses loadFromString when kubeconfig starts with 'apiVersion'", async () => {
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      mockLoadFromString.mockImplementation(() => undefined);
+
+      const inlineYaml =
+        "apiVersion: v1 kind: Config clusters: [] contexts: [] current-context: '' users: []";
+
+      await service.isIstioEnabled(inlineYaml);
+
+      expect(mockLoadFromString).toHaveBeenCalledWith(inlineYaml);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getApi — kubeconfig parsing failure
+  // ---------------------------------------------------------------------------
+
+  describe("getApi — kubeconfig build fails", () => {
+    it("returns empty VS list when kubeconfig loading throws", async () => {
+      mockLoadFromFile.mockImplementation(() => {
+        throw new Error("invalid kubeconfig file");
+      });
+
+      const result = await service.getVirtualServices(
+        "default",
+        "/bad/kubeconfig/path",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns false for isIstioEnabled when kubeconfig loading throws", async () => {
+      mockLoadFromFile.mockImplementation(() => {
+        throw new Error("not found");
+      });
+
+      const result = await service.isIstioEnabled("/bad/path");
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getVirtualService — when api is null
+  // ---------------------------------------------------------------------------
+
+  describe("getVirtualService — null api", () => {
+    it("throws when Kubernetes client is not available", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(null);
+
+      await expect(
+        service.getVirtualService("default", "my-vs"),
+      ).rejects.toThrow("Kubernetes client not available");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getPeerAuthentications — null api and unexpected error
+  // ---------------------------------------------------------------------------
+
+  describe("getPeerAuthentications — null api", () => {
+    it("returns empty array when Kubernetes client is not available", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(null);
+
+      const result = await service.getPeerAuthentications("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getPeerAuthentications — unexpected error", () => {
+    it("returns empty array on non-404 error", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue(
+        new Error("Internal Server Error"),
+      );
+
+      const result = await service.getPeerAuthentications("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getAuthorizationPolicies — null api and unexpected error
+  // ---------------------------------------------------------------------------
+
+  describe("getAuthorizationPolicies — null api", () => {
+    it("returns empty array when Kubernetes client is not available", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(null);
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getAuthorizationPolicies — unexpected error", () => {
+    it("returns empty array on non-404 error", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue(
+        new Error("connection refused"),
+      );
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result).toEqual([]);
+    });
+
+    it("normalizes unknown action to ALLOW", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "weird-policy", namespace: "default" },
+            spec: {
+              selector: { matchLabels: {} },
+              action: "UNKNOWN_ACTION",
+              rules: [],
+            },
+          },
+        ],
+      });
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result[0].action).toBe("ALLOW");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildTopology — unexpected error
+  // ---------------------------------------------------------------------------
+
+  describe("buildTopology — unexpected error", () => {
+    it("returns empty array on non-404 error", async () => {
+      mockListClusterCustomObject.mockRejectedValue(
+        new Error("upstream connect error"),
+      );
+
+      const result = await service.buildTopology("org-1");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mapVirtualService — optional fields default values
+  // ---------------------------------------------------------------------------
+
+  describe("getVirtualServices — default field values", () => {
+    it("maps optional fields to defaults when they are absent", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: {},
+            spec: {},
+          },
+        ],
+      });
+
+      const result = await service.getVirtualServices("default");
+
+      expect(result[0].name).toBe("unknown");
+      expect(result[0].namespace).toBe("default");
+      expect(result[0].hosts).toEqual([]);
+      expect(result[0].gateways).toEqual([]);
+      expect(result[0].http).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildTopology — VS with missing destination host
+  // ---------------------------------------------------------------------------
+
+  describe("buildTopology — skips routes with no destination host", () => {
+    it("does not add an edge when the route destination host is missing", async () => {
+      mockListClusterCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "no-dest-vs", namespace: "default" },
+            spec: {
+              hosts: ["my-service"],
+              http: [
+                {
+                  route: [
+                    { destination: {}, weight: 100 }, // no host
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const result = await service.buildTopology("org-1");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // String(error) branches — throw non-Error objects
+  // ---------------------------------------------------------------------------
+
+  describe("isIstioEnabled — String(error) non-404 path", () => {
+    it("returns false when a non-Error, non-404 error is thrown", async () => {
+      mockListClusterCustomObject.mockRejectedValue("string-error");
+
+      const result = await service.isIstioEnabled();
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("getVirtualServices — String(error) path", () => {
+    it("returns empty array when a non-Error is thrown", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue(42);
+
+      const result = await service.getVirtualServices("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getAuthorizationPolicies — non-404 error with String(error) path", () => {
+    it("returns empty array when a non-Error object is thrown", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue({ code: 500 });
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getPeerAuthentications — non-404 error with String(error) path", () => {
+    it("returns empty array when a non-Error is thrown", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue("peer-auth-error");
+
+      const result = await service.getPeerAuthentications("default");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("buildTopology — non-404 error with String(error) path", () => {
+    it("returns empty array when a non-Error is thrown", async () => {
+      mockListClusterCustomObject.mockRejectedValue("topology-error");
+
+      const result = await service.buildTopology("org-1");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mapVirtualService — ?? defaults inside http routes
+  // ---------------------------------------------------------------------------
+
+  describe("mapVirtualService — route ?? defaults", () => {
+    it("should use default weight and empty destination when route fields are absent", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "vs-partial", namespace: "test" },
+            spec: {
+              hosts: ["svc"],
+              http: [
+                {
+                  name: "route-1",
+                  route: [
+                    {
+                      // no weight, no destination
+                    },
+                    {
+                      weight: 50,
+                      destination: { host: "svc-v2" },
+                    },
+                  ],
+                },
+                {
+                  // http entry with no route array
+                  name: "route-2",
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const result = await service.getVirtualServices("test");
+
+      expect(result[0].http[0].route[0].destination).toBe("");
+      expect(result[0].http[0].route[0].weight).toBe(100); // ?? 100 default
+      expect(result[0].http[1].route).toHaveLength(0); // route ?? []
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mapPeerAuthentication — ?? defaults and invalid mode
+  // ---------------------------------------------------------------------------
+
+  describe("mapPeerAuthentication — ?? defaults", () => {
+    it("should use defaults when PeerAuthentication fields are absent", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: {},
+            spec: {},
+          },
+        ],
+      });
+
+      const result = await service.getPeerAuthentications("default");
+
+      expect(result[0].name).toBe("unknown");
+      expect(result[0].namespace).toBe("default");
+      expect(result[0].selector).toEqual({});
+      expect(result[0].mtlsMode).toBe("UNSET");
+    });
+
+    it("should fall back to UNSET for an unrecognized mtls mode", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "pa-bad", namespace: "default" },
+            spec: { mtls: { mode: "INVALID_MODE" } },
+          },
+        ],
+      });
+
+      const result = await service.getPeerAuthentications("default");
+
+      expect(result[0].mtlsMode).toBe("UNSET");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // mapAuthorizationPolicy — rule field ?? defaults
+  // ---------------------------------------------------------------------------
+
+  describe("mapAuthorizationPolicy — rule field ?? defaults", () => {
+    it("should return empty rules array when spec.rules is absent", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "ap-no-rules", namespace: "default" },
+            spec: { action: "DENY" },
+          },
+        ],
+      });
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result[0].rules).toHaveLength(0);
+      expect(result[0].action).toBe("DENY");
+    });
+
+    it("should handle rule entries with missing from/to/source fields", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "ap-partial", namespace: "default" },
+            spec: {
+              action: "ALLOW",
+              rules: [
+                {
+                  from: [{ source: {} }],
+                  to: [{ operation: {} }],
+                },
+                {
+                  from: [{}],
+                  to: [{}],
+                },
+                {
+                  // No from, no to
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result[0].rules).toHaveLength(3);
+      expect(result[0].rules[0].principals).toBeUndefined();
+      expect(result[0].rules[0].methods).toBeUndefined();
+    });
+
+    it("should include principals and methods when they are present", async () => {
+      mockListNamespacedCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "ap-full", namespace: "default" },
+            spec: {
+              action: "DENY",
+              rules: [
+                {
+                  from: [
+                    {
+                      source: {
+                        principals: ["cluster.local/ns/default/sa/svc"],
+                        namespaces: ["production"],
+                      },
+                    },
+                  ],
+                  to: [
+                    {
+                      operation: {
+                        methods: ["GET", "POST"],
+                        paths: ["/api/*"],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const result = await service.getAuthorizationPolicies("default");
+
+      expect(result[0].rules[0].principals).toEqual([
+        "cluster.local/ns/default/sa/svc",
+      ]);
+      expect(result[0].rules[0].namespaces).toEqual(["production"]);
+      expect(result[0].rules[0].methods).toEqual(["GET", "POST"]);
+      expect(result[0].rules[0].paths).toEqual(["/api/*"]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildTopology — edges with weights and null items
+  // ---------------------------------------------------------------------------
+
+  describe("buildTopology — edge weights and null items", () => {
+    it("returns empty array when response has no items property", async () => {
+      mockListClusterCustomObject.mockResolvedValue({});
+
+      const result = await service.buildTopology("org-1");
+
+      expect(result).toEqual([]);
+    });
+
+    it("creates edges for routes with a valid destination host", async () => {
+      mockListClusterCustomObject.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "vs-with-edges", namespace: "default" },
+            spec: {
+              hosts: ["frontend"],
+              http: [
+                {
+                  route: [
+                    { destination: { host: "backend" }, weight: 80 },
+                    { destination: { host: "backend-canary" }, weight: 20 },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      const result = await service.buildTopology("org-1");
+
+      expect(result.length).toBeGreaterThan(0);
+      const edge = result.find(
+        (e) => e.source === "frontend" && e.destination === "backend",
+      );
+      expect(edge).toBeDefined();
+      expect(edge?.weight).toBe(80);
+    });
+  });
+});

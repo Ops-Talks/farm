@@ -605,4 +605,372 @@ describe("KubernetesService", () => {
       expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Additional branch-coverage tests
+  // -------------------------------------------------------------------------
+
+  describe("initClient — loadFromCluster path", () => {
+    it("should initialize from in-cluster config when kubeconfigPath is empty", async () => {
+      // Make loadFromCluster succeed (not throw).
+      mockLoadFromCluster = jest.fn();
+
+      const inClusterConfig = {
+        get: (key: string) =>
+          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: inClusterConfig },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const inClusterService = module.get<KubernetesService>(KubernetesService);
+      expect(inClusterService.isEnabled()).toBe(true);
+    });
+  });
+
+  describe("getCoreV1Api and getCustomObjectsApi", () => {
+    it("should return the CoreV1Api instance", () => {
+      const api = service.getCoreV1Api();
+      expect(api).not.toBeNull();
+    });
+
+    it("should return the CustomObjectsApi instance", () => {
+      const api = service.getCustomObjectsApi();
+      expect(api).not.toBeNull();
+    });
+  });
+
+  describe("discoverWorkloads — appsV1Api is null", () => {
+    it("should return empty array when appsV1Api is null (makeApiClient returns null)", async () => {
+      mockMakeApiClient = jest.fn().mockReturnValue(null);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: mockConfigService },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const nullApiService = module.get<KubernetesService>(KubernetesService);
+      const workloads = await nullApiService.discoverWorkloads();
+      expect(workloads).toEqual([]);
+    });
+  });
+
+  describe("syncAnnotatedWorkloads — catalogService not available", () => {
+    it("should return zeros when catalogService is not provided", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: mockConfigService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          // Note: CatalogService intentionally omitted
+        ],
+      }).compile();
+
+      const noCatalogService = module.get<KubernetesService>(KubernetesService);
+
+      const result = await noCatalogService.syncAnnotatedWorkloads();
+      expect(result).toEqual({ created: 0, updated: 0 });
+    });
+  });
+
+  describe("syncAnnotatedWorkloads — inner error handling", () => {
+    it("should catch and log errors thrown by catalogService.create", async () => {
+      mockListDeployments.mockResolvedValue(
+        buildFakeDeployments([
+          fakeDeploymentItem({
+            name: "annotated-service",
+            namespace: "production",
+            annotations: {
+              "farm.io/component": "my-annotated-service",
+              "farm.io/owner": "platform-team",
+            },
+          }),
+        ]),
+      );
+      (mockCatalogService.findAll as jest.Mock).mockResolvedValue([[], 0]);
+      (mockCatalogService.create as jest.Mock).mockRejectedValue(
+        new Error("create failed"),
+      );
+
+      const result = await service.syncAnnotatedWorkloads();
+
+      // Error is swallowed; counters remain at 0.
+      expect(result.created).toBe(0);
+      expect(result.updated).toBe(0);
+    });
+
+    it("should catch and log errors thrown by the outer API call", async () => {
+      mockListDeployments.mockRejectedValue(new Error("API unavailable"));
+
+      const result = await service.syncAnnotatedWorkloads();
+
+      expect(result.created).toBe(0);
+      expect(result.updated).toBe(0);
+    });
+
+    it("should use namespace as owner when farm.io/owner annotation is absent", async () => {
+      mockListDeployments.mockResolvedValue(
+        buildFakeDeployments([
+          fakeDeploymentItem({
+            name: "no-owner-service",
+            namespace: "staging",
+            annotations: {
+              "farm.io/component": "no-owner-component",
+              // No "farm.io/owner" annotation
+            },
+          }),
+        ]),
+      );
+      (mockCatalogService.findAll as jest.Mock).mockResolvedValue([[], 0]);
+
+      await service.syncAnnotatedWorkloads();
+
+      expect(mockCatalogService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ owner: "staging" }),
+      );
+    });
+  });
+
+  describe("pollRollouts — disabled service", () => {
+    it("should return early without listing rollouts when disabled", async () => {
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("disabled");
+      });
+
+      const disabledModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: mockConfigService },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const disabledService =
+        disabledModule.get<KubernetesService>(KubernetesService);
+
+      await disabledService.pollRollouts();
+
+      // listRollouts is never called since the service returns early.
+      expect(mockListRollouts).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("parseRollout — blue-green and analysis run fields", () => {
+    it("should populate blueGreen fields when blueGreen status is present", async () => {
+      mockListRollouts.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "bg-rollout", namespace: "prod" },
+            status: {
+              phase: "Healthy",
+              blueGreen: {
+                activeSelector: "abc123",
+                previewSelector: "def456",
+              },
+              canaryStatus: {
+                currentStepAnalysisRunStatus: {
+                  name: "analysis-run-1",
+                  phase: "Running",
+                  message: "in progress",
+                },
+              },
+            },
+          },
+        ],
+      });
+
+      const rollouts = await service.listRollouts();
+
+      expect(rollouts[0].blueGreenActive).toBe("abc123");
+      expect(rollouts[0].blueGreenPreview).toBe("def456");
+      expect(rollouts[0].analysisRunResults).toHaveLength(1);
+      expect(rollouts[0].analysisRunResults![0].name).toBe("analysis-run-1");
+    });
+
+    it("should leave analysisRunResults undefined when no analysis run exists", async () => {
+      mockListRollouts.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "plain-rollout", namespace: "prod" },
+            status: { phase: "Healthy" },
+          },
+        ],
+      });
+
+      const rollouts = await service.listRollouts();
+
+      expect(rollouts[0].analysisRunResults).toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Branch coverage for ?? defaults and String(error) paths
+  // -------------------------------------------------------------------------
+
+  describe("discoverWorkloads — ?? default field values", () => {
+    it("should use default values when deployment fields are absent", async () => {
+      mockListDeployments.mockResolvedValue(
+        buildFakeDeployments([
+          {
+            // All optional fields absent to trigger ?? defaults.
+            metadata: {},
+            spec: {},
+            status: {},
+          },
+        ]),
+      );
+
+      const workloads = await service.discoverWorkloads();
+
+      expect(workloads[0].name).toBe("unknown");
+      expect(workloads[0].namespace).toBe("default");
+      expect(workloads[0].replicas).toBe(0);
+      expect(workloads[0].readyReplicas).toBe(0);
+      expect(workloads[0].image).toBe("unknown");
+      expect(workloads[0].labels).toEqual({});
+    });
+
+    it("should use String(error) when non-Error is thrown in discoverWorkloads", async () => {
+      mockListDeployments.mockRejectedValue("non-error-string");
+
+      const workloads = await service.discoverWorkloads();
+      expect(workloads).toEqual([]);
+    });
+  });
+
+  describe("listCRDs — ?? default and String(error) paths", () => {
+    it("should fill in defaults for CRDs with empty spec", async () => {
+      mockListCRDs.mockResolvedValue({
+        items: [
+          {
+            // All optional fields absent.
+            metadata: {},
+            spec: { versions: [] },
+          },
+          {
+            metadata: {},
+            spec: {
+              versions: [
+                { name: "v1beta1", served: false },
+                { name: "v1", served: true },
+              ],
+            },
+          },
+        ],
+      });
+
+      const crds = await service.listCRDs();
+
+      expect(crds[0].name).toBe("unknown");
+      expect(crds[0].group).toBe("");
+      expect(crds[0].version).toBe("v1"); // No served version; fallback to storedVersions[0] → no items → "v1"
+      expect(crds[0].scope).toBe("Namespaced");
+      expect(crds[0].kind).toBe("Unknown");
+    });
+
+    it("should use String(error) when non-Error is thrown in listCRDs", async () => {
+      mockListCRDs.mockRejectedValue(42);
+
+      const crds = await service.listCRDs();
+      expect(crds).toEqual([]);
+    });
+
+    it("should use storedVersions[0] when no version is marked as served", async () => {
+      mockListCRDs.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "my-crd.example.com" },
+            spec: {
+              group: "example.com",
+              scope: "Cluster",
+              names: { kind: "MyResource" },
+              versions: [{ name: "v1alpha1", served: false }],
+            },
+          },
+        ],
+      });
+
+      const crds = await service.listCRDs();
+      // No served version → falls back to storedVersions[0].name
+      expect(crds[0].version).toBe("v1alpha1");
+    });
+  });
+
+  describe("listRollouts — String(error) path", () => {
+    it("should use String(error) when non-Error is thrown", async () => {
+      mockListRollouts.mockRejectedValue({ message: "object-error" });
+
+      const rollouts = await service.listRollouts();
+      expect(rollouts).toEqual([]);
+    });
+
+    it("should return items ?? [] when items is undefined", async () => {
+      mockListRollouts.mockResolvedValue({
+        // No items property
+      });
+
+      const rollouts = await service.listRollouts();
+      expect(rollouts).toHaveLength(0);
+    });
+  });
+
+  describe("syncAnnotatedWorkloads — String(error) path for inner error", () => {
+    it("should log String(error) when a non-Error is thrown in inner catch", async () => {
+      mockListDeployments.mockResolvedValue(
+        buildFakeDeployments([
+          fakeDeploymentItem({
+            name: "annotated-service",
+            annotations: { "farm.io/component": "my-svc" },
+          }),
+        ]),
+      );
+      (mockCatalogService.findAll as jest.Mock).mockResolvedValue([[], 0]);
+      (mockCatalogService.create as jest.Mock).mockRejectedValue(
+        "non-error-thrown",
+      );
+
+      const result = await service.syncAnnotatedWorkloads();
+      expect(result.created).toBe(0);
+    });
+
+    it("should log String(error) when outer API call throws a non-Error", async () => {
+      mockListDeployments.mockRejectedValue("non-error-outer");
+
+      const result = await service.syncAnnotatedWorkloads();
+      expect(result.created).toBe(0);
+    });
+
+    it("should use namespace as default when annotation owner is missing and namespace is also absent", async () => {
+      mockListDeployments.mockResolvedValue(
+        buildFakeDeployments([
+          {
+            metadata: {
+              annotations: { "farm.io/component": "no-ns-svc" },
+              // No namespace, no farm.io/owner
+            },
+            spec: { replicas: 1 },
+            status: {},
+          },
+        ]),
+      );
+      (mockCatalogService.findAll as jest.Mock).mockResolvedValue([[], 0]);
+
+      await service.syncAnnotatedWorkloads();
+
+      expect(mockCatalogService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ owner: "unknown" }),
+      );
+    });
+  });
 });
