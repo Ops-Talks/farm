@@ -123,6 +123,15 @@ describe("IstioController", () => {
         "/path/to/kubeconfig",
       );
     });
+
+    it("passes array kubeconfig parameter to the service without throwing", async () => {
+      mockIstioService.isIstioEnabled.mockResolvedValue(true);
+      await controller.getStatus(["/path/a", "/path/b"]);
+      expect(mockIstioService.isIstioEnabled).toHaveBeenCalledWith([
+        "/path/a",
+        "/path/b",
+      ]);
+    });
   });
 
   // ---------------------------------------------------------------------------

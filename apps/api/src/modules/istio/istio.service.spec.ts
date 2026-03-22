@@ -180,6 +180,16 @@ describe("IstioService", () => {
       const result = await service.isIstioEnabled();
       expect(result).toBe(false);
     });
+
+    it("handles array kubeconfig by using the first element", async () => {
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      mockLoadFromFile.mockImplementation(() => undefined);
+
+      await service.isIstioEnabled(["/path/to/kubeconfig", "/path/to/other"]);
+
+      expect(mockLoadFromFile).toHaveBeenCalledWith("/path/to/kubeconfig");
+      expect(mockLoadFromFile).not.toHaveBeenCalledWith("/path/to/other");
+    });
   });
 
   // ---------------------------------------------------------------------------

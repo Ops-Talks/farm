@@ -47,15 +47,38 @@ export class IstioService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Normalizes a kubeconfig parameter that may arrive as a string array due to
+   * HTTP query parameter tampering (e.g. ?kubeconfig=a&kubeconfig=b). Returns
+   * the first element when given an array, the string itself when already a
+   * string, or undefined when the value is absent.
+   *
+   * @param kubeconfig - Raw query parameter value
+   * @returns Single normalized string, or undefined
+   */
+  private normalizeKubeconfigInput(
+    kubeconfig?: string | string[],
+  ): string | undefined {
+    if (kubeconfig === undefined) return undefined;
+    if (Array.isArray(kubeconfig)) {
+      this.logger.warn(
+        "Received array value for kubeconfig parameter; using first element",
+      );
+      return kubeconfig[0];
+    }
+    return kubeconfig;
+  }
+
+  /**
    * Resolves a CustomObjectsApi client from an optional inline kubeconfig
    * string or file path. Falls back to the shared KubernetesService client
    * when no kubeconfig is provided.
    *
-   * @param kubeconfig - Optional YAML kubeconfig content or file path
+   * @param kubeconfig - Optional YAML kubeconfig content, file path, or array
    * @returns Configured CustomObjectsApi instance, or null when unavailable
    */
-  private getApi(kubeconfig?: string): k8s.CustomObjectsApi | null {
-    if (!kubeconfig) {
+  private getApi(kubeconfig?: string | string[]): k8s.CustomObjectsApi | null {
+    const normalized = this.normalizeKubeconfigInput(kubeconfig);
+    if (!normalized) {
       return this.kubernetesService.getCustomObjectsApi();
     }
 
@@ -63,12 +86,12 @@ export class IstioService {
       const kc = new k8s.KubeConfig();
       // Treat value as file path first; fall back to inline YAML content.
       if (
-        kubeconfig.trim().startsWith("apiVersion") ||
-        kubeconfig.includes("\n")
+        normalized.trim().startsWith("apiVersion") ||
+        normalized.includes("\n")
       ) {
-        kc.loadFromString(kubeconfig);
+        kc.loadFromString(normalized);
       } else {
-        kc.loadFromFile(kubeconfig);
+        kc.loadFromFile(normalized);
       }
       return kc.makeApiClient(k8s.CustomObjectsApi);
     } catch (error) {
@@ -101,7 +124,7 @@ export class IstioService {
    * @param kubeconfig - Optional kubeconfig YAML content or file path
    * @returns true when Istio is installed and reachable
    */
-  async isIstioEnabled(kubeconfig?: string): Promise<boolean> {
+  async isIstioEnabled(kubeconfig?: string | string[]): Promise<boolean> {
     const api = this.getApi(kubeconfig);
     if (!api) {
       this.logger.debug("No Kubernetes client available; Istio disabled");
@@ -141,7 +164,7 @@ export class IstioService {
    */
   async getVirtualServices(
     namespace: string,
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<IstioVirtualService[]> {
     const api = this.getApi(kubeconfig);
     if (!api) {
@@ -186,7 +209,7 @@ export class IstioService {
   async getVirtualService(
     namespace: string,
     name: string,
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<IstioVirtualService> {
     const api = this.getApi(kubeconfig);
     if (!api) {
@@ -217,7 +240,7 @@ export class IstioService {
     namespace: string,
     name: string,
     weights: { destination: string; weight: number }[],
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<void> {
     const api = this.getApi(kubeconfig);
     if (!api) {
@@ -291,7 +314,7 @@ export class IstioService {
    */
   async getPeerAuthentications(
     namespace: string,
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<IstioPeerAuthentication[]> {
     const api = this.getApi(kubeconfig);
     if (!api) {
@@ -342,7 +365,7 @@ export class IstioService {
    */
   async getAuthorizationPolicies(
     namespace: string,
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<IstioAuthorizationPolicy[]> {
     const api = this.getApi(kubeconfig);
     if (!api) {
@@ -393,7 +416,7 @@ export class IstioService {
    */
   async buildTopology(
     _orgId: string,
-    kubeconfig?: string,
+    kubeconfig?: string | string[],
   ): Promise<IstioTopologyEdge[]> {
     const api = this.getApi(kubeconfig);
     if (!api) {
