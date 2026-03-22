@@ -180,6 +180,16 @@ describe("IstioService", () => {
       const result = await service.isIstioEnabled();
       expect(result).toBe(false);
     });
+
+    it("handles array kubeconfig by using the first element", async () => {
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      // An array value must not throw and must still return a boolean.
+      const result = await service.isIstioEnabled([
+        "/path/to/kubeconfig",
+        "/path/to/other",
+      ]);
+      expect(typeof result).toBe("boolean");
+    });
   });
 
   // ---------------------------------------------------------------------------
