@@ -1,10 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import { PipelineStage } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 /**
  * Supported OCI build engines.
@@ -88,13 +88,16 @@ export class BuildStageExecutor {
     }
 
     const renderedTag = this.renderTag(config.tag, run);
-    const buildCmd = `${engine} build -t ${this.shellEscape(renderedTag)} -f ${this.shellEscape(dockerfile)} ${this.shellEscape(context)}`;
+    // Build the argument list for execFile. Arguments are passed directly to
+    // the OS without a shell, so no escaping is required or applied.
+    const buildArgs = ["build", "-t", renderedTag, "-f", dockerfile, context];
+    const buildCmd = [engine, ...buildArgs].join(" ");
 
     emitLog(`Executing: ${buildCmd}`);
     this.logger.log(`Build stage command: ${buildCmd}`);
 
     try {
-      const buildResult = await execAsync(buildCmd, {
+      const buildResult = await execFileAsync(engine, buildArgs, {
         timeout: 10 * 60 * 1000,
         maxBuffer: 10 * 1024 * 1024,
       });
@@ -104,11 +107,13 @@ export class BuildStageExecutor {
       buildOutput.split("\n").forEach((line) => line && emitLog(line));
 
       if (push) {
-        const pushCmd = `${engine} push ${this.shellEscape(renderedTag)}`;
+        // Push arguments are also passed directly to execFile (no shell).
+        const pushArgs = ["push", renderedTag];
+        const pushCmd = [engine, ...pushArgs].join(" ");
         emitLog(`Executing: ${pushCmd}`);
         this.logger.log(`Build push command: ${pushCmd}`);
 
-        const pushResult = await execAsync(pushCmd, {
+        const pushResult = await execFileAsync(engine, pushArgs, {
           timeout: 5 * 60 * 1000,
           maxBuffer: 10 * 1024 * 1024,
         });
@@ -147,13 +152,25 @@ export class BuildStageExecutor {
 
   /**
    * Checks whether the specified engine binary is available in PATH.
+   * Uses execFile (no shell) so the engine name is passed as a direct argument
+   * and cannot introduce shell metacharacters. The allowlist provides an
+   * additional layer of defence against unexpected values.
    *
    * @param engine - Engine name (docker, buildah, podman)
    * @returns true if the binary is accessible
    */
   async isEngineAvailable(engine: string): Promise<boolean> {
+    const ALLOWED_ENGINES: BuildEngine[] = ["docker", "buildah", "podman"];
+    if (!(ALLOWED_ENGINES as string[]).includes(engine)) {
+      this.logger.warn(
+        `isEngineAvailable: rejected unknown engine "${engine}"`,
+      );
+      return false;
+    }
+
+    const safeEngine = engine as BuildEngine;
     try {
-      await execAsync(`${engine} version`);
+      await execFileAsync(safeEngine, ["version"]);
       return true;
     } catch {
       return false;
@@ -182,14 +199,4 @@ export class BuildStageExecutor {
       .replace(/\{\{commitSha\}\}/g, commitSha);
   }
 
-  /**
-   * Minimal shell-escaping for CLI arguments.
-   * Wraps the value in single quotes and escapes embedded single quotes.
-   *
-   * @param value - The string to escape
-   * @returns Shell-safe representation
-   */
-  private shellEscape(value: string): string {
-    return `'${value.replace(/'/g, "'\\''")}'`;
-  }
 }

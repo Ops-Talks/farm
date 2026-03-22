@@ -9,11 +9,21 @@ import { PipelineRunStatus } from "./entities/pipeline-run.entity";
 // Mock child_process so no real shell is ever invoked.
 // ---------------------------------------------------------------------------
 const mockExecImpl = jest.fn();
+const mockExecFileImpl = jest.fn();
 
 jest.mock("child_process", () => ({
   exec: (cmd: string, optsOrCb: unknown, maybeCb?: unknown) => {
     const cb = typeof maybeCb === "function" ? maybeCb : optsOrCb;
     mockExecImpl(cmd, cb);
+  },
+  execFile: (
+    file: string,
+    args: string[],
+    optsOrCb: unknown,
+    maybeCb?: unknown,
+  ) => {
+    const cb = typeof maybeCb === "function" ? maybeCb : optsOrCb;
+    mockExecFileImpl(file, args, cb);
   },
 }));
 
@@ -59,6 +69,7 @@ describe("BuildStageExecutor", () => {
 
   beforeEach(async () => {
     mockExecImpl.mockReset();
+    mockExecFileImpl.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [BuildStageExecutor],
@@ -118,21 +129,46 @@ describe("BuildStageExecutor", () => {
   // ---------------------------------------------------------------------------
   describe("isEngineAvailable", () => {
     it("should return true when engine version command succeeds", async () => {
-      mockExecImpl.mockImplementation(
+      mockExecFileImpl.mockImplementation(
         (
-          _cmd: string,
+          _file: string,
+          _args: string[],
           cb: (err: null, r: { stdout: string; stderr: string }) => void,
         ) => cb(null, { stdout: "Docker version 24.0.0", stderr: "" }),
       );
       expect(await executor.isEngineAvailable("docker")).toBe(true);
+      expect(mockExecFileImpl).toHaveBeenCalledWith(
+        "docker",
+        ["version"],
+        expect.any(Function),
+      );
     });
 
     it("should return false when engine binary is not found", async () => {
-      mockExecImpl.mockImplementation(
-        (_cmd: string, cb: (err: Error) => void) =>
+      mockExecFileImpl.mockImplementation(
+        (_file: string, _args: string[], cb: (err: Error) => void) =>
           cb(new Error("command not found: docker")),
       );
       expect(await executor.isEngineAvailable("docker")).toBe(false);
+    });
+
+    it("should return false for unknown engine without invoking exec", async () => {
+      expect(await executor.isEngineAvailable("sh")).toBe(false);
+      expect(await executor.isEngineAvailable("bash")).toBe(false);
+      expect(await executor.isEngineAvailable("$(evil)")).toBe(false);
+      expect(mockExecFileImpl).not.toHaveBeenCalled();
+    });
+
+    it("should accept all three allowed engines", async () => {
+      mockExecFileImpl.mockImplementation(
+        (
+          _file: string,
+          _args: string[],
+          cb: (err: null, r: { stdout: string; stderr: string }) => void,
+        ) => cb(null, { stdout: "version output", stderr: "" }),
+      );
+      expect(await executor.isEngineAvailable("buildah")).toBe(true);
+      expect(await executor.isEngineAvailable("podman")).toBe(true);
     });
   });
 
@@ -141,8 +177,8 @@ describe("BuildStageExecutor", () => {
   // ---------------------------------------------------------------------------
   describe("execute", () => {
     it("should return success=false with descriptive message when engine is not available", async () => {
-      mockExecImpl.mockImplementation(
-        (_cmd: string, cb: (err: Error) => void) =>
+      mockExecFileImpl.mockImplementation(
+        (_file: string, _args: string[], cb: (err: Error) => void) =>
           cb(new Error("command not found")),
       );
 
@@ -159,16 +195,18 @@ describe("BuildStageExecutor", () => {
     });
 
     it("should execute build command and return success=true on successful build", async () => {
-      let callCount = 0;
-      mockExecImpl.mockImplementation(
+      let fileCallCount = 0;
+      mockExecFileImpl.mockImplementation(
         (
-          _cmd: string,
+          _file: string,
+          _args: string[],
           cb: (err: null, r: { stdout: string; stderr: string }) => void,
         ) => {
-          callCount++;
+          fileCallCount++;
+          // Call 1: isEngineAvailable check.
+          // Call 2: docker build.
           cb(null, {
-            stdout:
-              callCount === 1 ? "Docker version 24.0.0" : "Build succeeded",
+            stdout: fileCallCount === 1 ? "Docker version 24.0.0" : "Build succeeded",
             stderr: "",
           });
         },
@@ -186,13 +224,14 @@ describe("BuildStageExecutor", () => {
     });
 
     it("should execute push command when push=true", async () => {
-      const capturedCmds: string[] = [];
-      mockExecImpl.mockImplementation(
+      const capturedCalls: Array<{ file: string; args: string[] }> = [];
+      mockExecFileImpl.mockImplementation(
         (
-          cmd: string,
+          file: string,
+          args: string[],
           cb: (err: null, r: { stdout: string; stderr: string }) => void,
         ) => {
-          capturedCmds.push(cmd);
+          capturedCalls.push({ file, args });
           cb(null, { stdout: "ok", stderr: "" });
         },
       );
@@ -203,17 +242,21 @@ describe("BuildStageExecutor", () => {
         jest.fn(),
       );
 
-      expect(capturedCmds.some((c) => c.includes("push"))).toBe(true);
+      // capturedCalls[0]: isEngineAvailable ("version" arg)
+      // capturedCalls[1]: docker build
+      // capturedCalls[2]: docker push
+      expect(capturedCalls.some((c) => c.args.includes("push"))).toBe(true);
     });
 
     it("should use the specified engine (podman)", async () => {
-      const capturedCmds: string[] = [];
-      mockExecImpl.mockImplementation(
+      const capturedCalls: Array<{ file: string; args: string[] }> = [];
+      mockExecFileImpl.mockImplementation(
         (
-          cmd: string,
+          file: string,
+          args: string[],
           cb: (err: null, r: { stdout: string; stderr: string }) => void,
         ) => {
-          capturedCmds.push(cmd);
+          capturedCalls.push({ file, args });
           cb(null, { stdout: "ok", stderr: "" });
         },
       );
@@ -224,29 +267,33 @@ describe("BuildStageExecutor", () => {
         jest.fn(),
       );
 
-      expect(capturedCmds[0]).toContain("podman");
+      // capturedCalls[0]: isEngineAvailable ("podman", ["version"])
+      // capturedCalls[1]: podman build — file must be "podman"
+      expect(capturedCalls[1].file).toBe("podman");
+      expect(capturedCalls[1].args[0]).toBe("build");
     });
 
     it("should return success=false when build command fails", async () => {
-      let callCount = 0;
-      mockExecImpl.mockImplementation(
+      let fileCallCount = 0;
+      mockExecFileImpl.mockImplementation(
         (
-          _cmd: string,
+          _file: string,
+          _args: string[],
           cb: (
-            err: (Error & { stdout?: string; stderr?: string }) | null,
+            err: (Error & { stdout: string; stderr: string }) | null,
             r?: { stdout: string; stderr: string },
           ) => void,
         ) => {
-          callCount++;
-          if (callCount === 1) {
+          fileCallCount++;
+          if (fileCallCount === 1) {
+            // isEngineAvailable check succeeds.
             cb(null, { stdout: "Docker version 24.0.0", stderr: "" });
           } else {
-            const err = new Error("build failed") as Error & {
-              stdout: string;
-              stderr: string;
-            };
-            err.stdout = "";
-            err.stderr = "Error: Dockerfile not found";
+            // docker build fails.
+            const err = Object.assign(new Error("build failed"), {
+              stdout: "",
+              stderr: "Error: Dockerfile not found",
+            });
             cb(err);
           }
         },
@@ -260,6 +307,23 @@ describe("BuildStageExecutor", () => {
 
       expect(result.success).toBe(false);
       expect(result.output).toContain("Dockerfile not found");
+    });
+
+    it("should not invoke execFile for unknown engine, preventing command injection", async () => {
+      const logs: string[] = [];
+      // Cast to bypass TypeScript's BuildEngine type constraint so the test
+      // can simulate a malicious value arriving from user-supplied config.
+      const result = await executor.execute(
+        buildStage({ engine: "$(evil)" as unknown as "docker" }),
+        buildRun({ version: "1.0.0", commitSha: "abc1234" }),
+        (msg) => logs.push(msg),
+      );
+
+      // The allowlist in isEngineAvailable rejects the unknown engine string
+      // before any execFile call is made.
+      expect(result.success).toBe(false);
+      expect(result.output).toContain("build executor not available");
+      expect(mockExecFileImpl).not.toHaveBeenCalled();
     });
   });
 });
