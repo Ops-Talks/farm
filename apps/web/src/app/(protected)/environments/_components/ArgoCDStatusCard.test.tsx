@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { ArgoCDApplication } from "@/types/api";
@@ -222,7 +221,6 @@ describe("ArgoCDStatusCard — admin user", () => {
 
   it("calls syncApplication when Sync button is clicked (admin)", async () => {
     // Use a fresh module scope with admin mock
-    const user = userEvent.setup();
     mockSyncApplication.mockResolvedValue({ message: "sync triggered" });
 
     vi.doMock("@/contexts/auth-context", () => ({

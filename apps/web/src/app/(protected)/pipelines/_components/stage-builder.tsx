@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useRef } from "react";
@@ -101,7 +101,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     reset,
     formState: { errors },
@@ -111,9 +111,10 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
   });
 
   // Watch type to derive the correct config field label/placeholder
-  const currentType = watch("type");
+  const currentType = useWatch({ control, name: "type" });
+  // Watch name for use in build/cloud-deploy stage handlers
+  const nameValue = useWatch({ control, name: "name" });
   // Cloud deploy types use CloudDeployStageCard, so fall back to a safe default
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const configField = (CONFIG_FIELD[currentType] ?? CONFIG_FIELD["script"])!;
 
   // HTML5 Drag-and-Drop state
@@ -170,15 +171,14 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
 
   // Handler specifically for build stages — called from BuildStageCard
   function onAddBuildStage(buildConfig: BuildStageFormValues) {
-    const name = watch("name");
-    if (!name.trim()) {
+    if (!nameValue.trim()) {
       // Trigger name validation without re-submitting
       void handleSubmit(onAddStage)();
       return;
     }
     const newStage: PipelineStage = {
       id: crypto.randomUUID(),
-      name: name.trim(),
+      name: nameValue.trim(),
       type: "build",
       order: stages.length,
       config: buildConfig as unknown as Record<string, unknown>,
@@ -190,8 +190,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
 
   // Handler for cloud deploy stages — called from CloudDeployStageCard
   function onAddCloudDeployStage(deployConfig: CloudDeployConfig) {
-    const name = watch("name");
-    const stageName = name.trim() || (CLOUD_DEPLOY_ENGINES.find((e) => e.value === deployConfig.engine)?.label ?? deployConfig.engine);
+    const stageName = nameValue.trim() || (CLOUD_DEPLOY_ENGINES.find((e) => e.value === deployConfig.engine)?.label ?? deployConfig.engine);
     const { engine, ...config } = deployConfig;
     const newStage: PipelineStage = {
       id: crypto.randomUUID(),

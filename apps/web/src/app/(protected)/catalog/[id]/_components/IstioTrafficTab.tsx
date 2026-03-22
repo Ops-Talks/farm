@@ -7,7 +7,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { istio as istioApi } from '@/lib/api-client';
 import type { CatalogComponent, IstioMetricsTimeseries } from '@/types/api';

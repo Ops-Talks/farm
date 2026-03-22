@@ -17,7 +17,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuth } from '@/contexts/auth-context';
 import { useOrganization } from '@/contexts/organization-context';
 import { tagPolicies as tagPoliciesApi } from '@/lib/api-client';
-import type { ComplianceSummary, ResourceViolation } from '@/types/api';
+import type { ComplianceSummary } from '@/types/api';
 
 // ---------------------------------------------------------------------------
 // Constants

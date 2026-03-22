@@ -8,7 +8,6 @@ import { ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { istio as istioApi } from '@/lib/api-client';
 import type {
@@ -23,20 +22,6 @@ import type {
 
 type MtlsMode = IstioPeerAuthentication['mtlsMode'];
 type AuthAction = IstioAuthorizationPolicy['action'];
-
-function mtlsBadgeVariant(mode: MtlsMode): 'default' | 'secondary' | 'destructive' | 'outline' {
-  switch (mode) {
-    case 'STRICT':
-      return 'default'; // green-ish (default = primary)
-    case 'PERMISSIVE':
-      return 'secondary'; // yellow
-    case 'DISABLE':
-    case 'UNSET':
-      return 'destructive'; // red
-    default:
-      return 'outline';
-  }
-}
 
 function mtlsBadgeClass(mode: MtlsMode): string {
   switch (mode) {

@@ -10,8 +10,6 @@
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import { BarChart2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/shared/page-header';
 import { FilterTabs } from '@/components/shared/filter-tabs';
