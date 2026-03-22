@@ -82,8 +82,10 @@ export class BuildStageExecutor {
       this.logger.warn(msg);
       emitLog(msg);
     }
-    const engine: BuildEngine = (ALLOWED_ENGINES as string[]).includes(rawEngine)
-      ? (rawEngine as BuildEngine)
+    const engine: BuildEngine = (ALLOWED_ENGINES as string[]).includes(
+      rawEngine,
+    )
+      ? rawEngine
       : "docker";
     const dockerfile = config.dockerfile ?? "Dockerfile";
     const context = config.context ?? ".";
