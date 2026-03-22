@@ -334,9 +334,15 @@ describe("BuildStageExecutor", () => {
       );
 
       // Invalid engine is replaced by "docker" before any execFile call.
-      expect(logs.some((l) => l.includes("rejected unknown engine"))).toBe(true);
+      expect(logs.some((l) => l.includes("rejected unknown engine"))).toBe(
+        true,
+      );
       // "$(evil)" must never appear as the executable argument.
-      const calls = mockExecFileImpl.mock.calls as [string, string[], unknown][];
+      const calls = mockExecFileImpl.mock.calls as [
+        string,
+        string[],
+        unknown,
+      ][];
       expect(calls.every(([file]) => file !== "$(evil)")).toBe(true);
       // docker is unavailable in the test environment, so the stage fails.
       expect(result.success).toBe(false);
