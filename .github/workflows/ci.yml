@@ -105,3 +105,18 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           verbose: true
+<<<<<<< Updated upstream
+=======
+
+      - name: Upload unit test results to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ !cancelled() }}
+        with:
+          files: ./apps/web/coverage/junit.xml
+          report_type: test_results
+          flags: web
+          name: web-unit-results
+          slug: Ops-Talks/farm
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+>>>>>>> Stashed changes
