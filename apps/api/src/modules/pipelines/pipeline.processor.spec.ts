@@ -9,6 +9,7 @@ import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { Pipeline, PipelineStage } from "./entities/pipeline.entity";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
+import { BuildStageExecutor } from "./build-stage.executor";
 import { AwsEcsExecutor } from "../cloud/executors/aws-ecs.executor";
 import { AwsLambdaExecutor } from "../cloud/executors/aws-lambda.executor";
 import { GcpCloudRunExecutor } from "../cloud/executors/gcp-cloud-run.executor";
@@ -974,6 +975,24 @@ describe("PipelineProcessor", () => {
   // Keycloak secret resolver — resolveKeycloakSecret / resolveKeycloakSecrets
   // ---------------------------------------------------------------------------
   describe("Keycloak secret resolver", () => {
+    let originalFetch: typeof globalThis.fetch;
+    let originalJwtSecret: string | undefined;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      originalJwtSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = JWT_SECRET;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      if (originalJwtSecret !== undefined) {
+        process.env.JWT_SECRET = originalJwtSecret;
+      } else {
+        delete process.env.JWT_SECRET;
+      }
+    });
+
     const JWT_SECRET = "super-secret-key-change-me-in-production";
 
     const mockKeycloakPayload = {
@@ -996,7 +1015,7 @@ describe("PipelineProcessor", () => {
       };
       void moduleRef;
 
-      const proc = new PipelineProcessor(
+      return new PipelineProcessor(
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1009,9 +1028,6 @@ describe("PipelineProcessor", () => {
         undefined,
         credRepo as never,
       );
-      // Inject the JWT secret so decryptCredential uses the right key.
-      process.env.JWT_SECRET = JWT_SECRET;
-      return proc;
     }
 
     it("resolves a keycloak:// URI to an access token on first call", async () => {
@@ -1168,6 +1184,65 @@ describe("PipelineProcessor", () => {
         expect.any(String),
       );
     });
+
+    it("derives the encryption key only once across multiple credential decryptions", async () => {
+      const credRepo = {
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: "cred-1",
+            orgId: "org-1",
+            type: IntegrationType.KEYCLOAK,
+            encryptedValue: encryptedCredential,
+          } as Partial<IntegrationCredential>)
+          .mockResolvedValueOnce({
+            id: "cred-2",
+            orgId: "org-2",
+            type: IntegrationType.KEYCLOAK,
+            encryptedValue: encryptedCredential,
+          } as Partial<IntegrationCredential>),
+      };
+
+      const proc = buildProcessorWithCredRepo(credRepo);
+
+      // TypeScript's __importStar wraps built-in modules in a namespace object
+      // whose properties are non-configurable getter-only accessors. jest.spyOn
+      // cannot redefine them. Spying on the underlying require("crypto") object
+      // works because the namespace getter always delegates to it, so the processor
+      // code picks up the spy transparently.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const cryptoModule = require("crypto") as typeof crypto;
+      const cryptoSpy = jest.spyOn(cryptoModule, "createHash");
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          // eslint-disable-next-line @typescript-eslint/require-await
+          json: async () => ({ access_token: "token-org1", expires_in: 300 }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          // eslint-disable-next-line @typescript-eslint/require-await
+          json: async () => ({ access_token: "token-org2", expires_in: 300 }),
+        }) as typeof fetch;
+
+      const t1 = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+      const t2 = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-2",
+      );
+
+      expect(t1).toBe("token-org1");
+      expect(t2).toBe("token-org2");
+      // Key derivation must happen only once — the Buffer is cached on the instance.
+      expect(cryptoSpy).toHaveBeenCalledTimes(1);
+      expect(cryptoSpy).toHaveBeenCalledWith("sha256");
+      cryptoSpy.mockRestore();
+    });
   });
 });
 
@@ -1181,3 +1256,985 @@ function job(run: PipelineRun): Job<PipelineExecutionJobData> {
     triggeredBy: run.triggeredBy,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("PipelineProcessor — additional branches", () => {
+  let processor: PipelineProcessor;
+  let mockRunRepo: Record<string, jest.Mock>;
+  let mockPipelineRepo: Record<string, jest.Mock>;
+  let mockEventsGateway: { server: { emit: jest.Mock } };
+
+  const scriptStage: PipelineStage = {
+    id: "stage-script-1",
+    name: "Build",
+    type: "script",
+    config: {},
+    order: 1,
+  };
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+
+    mockRunRepo = {
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
+
+    mockPipelineRepo = {
+      findOne: jest.fn(),
+    };
+
+    mockEventsGateway = {
+      server: { emit: jest.fn() },
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PipelineProcessor,
+        { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+        { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+        { provide: EventsGateway, useValue: mockEventsGateway },
+      ],
+    }).compile();
+
+    processor = module.get<PipelineProcessor>(PipelineProcessor);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
+
+  // -------------------------------------------------------------------------
+  // logFn callbacks — executor paths that call the provided logFn
+  // -------------------------------------------------------------------------
+
+  describe("logFn callbacks in executor dispatches", () => {
+    it("emits pipeline.log when Helm executor calls the logFn", async () => {
+      const mockHelmExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation((_cfg: unknown, logFn: (msg: string) => void) => {
+            logFn("Helm deploy started");
+            return { success: true, output: "deployed" };
+          }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: HelmDeployExecutor, useValue: mockHelmExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const helmStage: PipelineStage = {
+        id: "helm-stage",
+        name: "Deploy Helm",
+        type: "deploy",
+        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([helmStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        "pipeline.log",
+        expect.objectContaining({ message: "Helm deploy started" }),
+      );
+    });
+
+    it("emits pipeline.log when AWS ECS executor calls the logFn", async () => {
+      const mockEcsExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation((_cfg: unknown, logFn: (msg: string) => void) => {
+            logFn("ECS deploy in progress");
+            return { success: true, output: "ecs deployed" };
+          }),
+      };
+      const mockSecretsService = {
+        resolveConfigSecrets: jest
+          .fn()
+          .mockImplementation((cfg: Record<string, unknown>) =>
+            Promise.resolve(cfg),
+          ),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsEcsExecutor, useValue: mockEcsExecutor },
+          { provide: CloudSecretsService, useValue: mockSecretsService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const ecsStage: PipelineStage = {
+        id: "ecs-stage",
+        name: "Deploy ECS",
+        type: "deploy",
+        config: {
+          engine: "aws-ecs",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([ecsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        "pipeline.log",
+        expect.objectContaining({ message: "ECS deploy in progress" }),
+      );
+    });
+
+    it("emits pipeline.log when AWS Lambda executor calls the logFn", async () => {
+      const mockLambdaExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation((_cfg: unknown, logFn: (msg: string) => void) => {
+            logFn("Lambda updating");
+            return { success: true, output: "lambda updated" };
+          }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const lambdaStage: PipelineStage = {
+        id: "lambda-stage",
+        name: "Deploy Lambda",
+        type: "deploy",
+        config: {
+          engine: "aws-lambda",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([lambdaStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        "pipeline.log",
+        expect.objectContaining({ message: "Lambda updating" }),
+      );
+    });
+
+    it("emits pipeline.log when GCP Cloud Run executor calls the logFn", async () => {
+      const mockGcpExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation((_cfg: unknown, logFn: (msg: string) => void) => {
+            logFn("Cloud Run deploying");
+            return { success: true, output: "cloud run updated" };
+          }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const gcpStage: PipelineStage = {
+        id: "gcp-stage",
+        name: "GCP Deploy",
+        type: "deploy",
+        config: {
+          engine: "gcp-cloud-run",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([gcpStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        "pipeline.log",
+        expect.objectContaining({ message: "Cloud Run deploying" }),
+      );
+    });
+
+    it("emits pipeline.log when Azure Container Apps executor calls the logFn", async () => {
+      const mockAzureExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation((_cfg: unknown, logFn: (msg: string) => void) => {
+            logFn("Azure deploying");
+            return { success: true, output: "azure updated" };
+          }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const azureStage: PipelineStage = {
+        id: "azure-stage",
+        name: "Azure Deploy",
+        type: "deploy",
+        config: {
+          engine: "azure-container-apps",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([azureStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+        "pipeline.log",
+        expect.objectContaining({ message: "Azure deploying" }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Build stage executor dispatch
+  // -------------------------------------------------------------------------
+
+  describe("build stage executor dispatch", () => {
+    it("should dispatch build stages to BuildStageExecutor and succeed", async () => {
+      const mockBuildExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation(
+            (_stage: unknown, _run: unknown, logFn: (msg: string) => void) => {
+              logFn("Build output");
+              return { success: true, output: "build succeeded" };
+            },
+          ),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: BuildStageExecutor, useValue: mockBuildExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const buildStage: PipelineStage = {
+        id: "build-stage-1",
+        name: "Compile",
+        type: "build",
+        config: {},
+        order: 1,
+      };
+      const pipeline = buildPipeline([buildStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockBuildExecutor.execute).toHaveBeenCalled();
+      const lastSave = mockRunRepo.save.mock.calls.at(-1) as [PipelineRun];
+      expect(lastSave[0].status).toBe(PipelineRunStatus.SUCCEEDED);
+    });
+
+    it("should mark run as failed when build stage fails", async () => {
+      const mockBuildExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: false, output: "compile error" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: BuildStageExecutor, useValue: mockBuildExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const buildStage: PipelineStage = {
+        id: "build-stage-fail",
+        name: "Compile",
+        type: "build",
+        config: {},
+        order: 1,
+      };
+      const pipeline = buildPipeline([buildStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // resolveKeycloakSecrets — error path
+  // -------------------------------------------------------------------------
+
+  describe("resolveKeycloakSecrets — error path", () => {
+    it("should fall back to the raw keycloak:// value when resolveKeycloakSecret throws", async () => {
+      jest
+        .spyOn(processor, "resolveKeycloakSecret")
+        .mockRejectedValue(new Error("token fetch failed"));
+
+      const config: Record<string, unknown> = {
+        apiToken: "keycloak://realm1/client1",
+        plainValue: "no-change",
+      };
+
+      const result = await processor.resolveKeycloakSecrets(config, "org-1");
+
+      // Falls back to the raw URI.
+      expect(result["apiToken"]).toBe("keycloak://realm1/client1");
+      expect(result["plainValue"]).toBe("no-change");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // resolveKeycloakSecret — missing credentialRepository
+  // -------------------------------------------------------------------------
+
+  describe("resolveKeycloakSecret — no credentialRepository", () => {
+    it("should throw when credentialRepository is not available", async () => {
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+      );
+
+      await expect(
+        proc.resolveKeycloakSecret("keycloak://realm/client", "org-1"),
+      ).rejects.toThrow(
+        "IntegrationCredential repository not available in PipelineProcessor",
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // resolveKeycloakSecret — credential not found
+  // -------------------------------------------------------------------------
+
+  describe("resolveKeycloakSecret — credential not found", () => {
+    it("should throw when no Keycloak credential exists for the org", async () => {
+      const credRepo = { findOne: jest.fn().mockResolvedValue(null) };
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+
+      await expect(
+        proc.resolveKeycloakSecret("keycloak://realm/client", "org-1"),
+      ).rejects.toThrow("No Keycloak credential found for org org-1");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // resolveKeycloakSecret — token request fails
+  // -------------------------------------------------------------------------
+
+  describe("resolveKeycloakSecret — token request fails", () => {
+    const JWT_SECRET = "super-secret-key-change-me-in-production";
+
+    let originalFetch: typeof globalThis.fetch;
+    let originalJwtSecret: string | undefined;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      originalJwtSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = JWT_SECRET;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      if (originalJwtSecret !== undefined) {
+        process.env.JWT_SECRET = originalJwtSecret;
+      } else {
+        delete process.env.JWT_SECRET;
+      }
+    });
+
+    function buildEncryptedCredential(payload: object, secret: string): string {
+      const key = crypto.createHash("sha256").update(secret).digest();
+      const iv = crypto.randomBytes(12);
+      const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+      const ciphertext = Buffer.concat([
+        cipher.update(JSON.stringify(payload), "utf8"),
+        cipher.final(),
+      ]);
+      const tag = cipher.getAuthTag();
+      return Buffer.concat([iv, tag, ciphertext]).toString("base64");
+    }
+
+    const mockPayload = {
+      keycloakUrl: "https://keycloak.example.com",
+      realm: "myrealm",
+      clientId: "farm-client",
+      clientSecret: "s3cr3t",
+    };
+
+    it("should throw when the token endpoint returns a non-ok response", async () => {
+      const credRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue: buildEncryptedCredential(mockPayload, JWT_SECRET),
+        }),
+      };
+
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        json: () => ({}),
+      }) as typeof fetch;
+
+      await expect(
+        proc.resolveKeycloakSecret("keycloak://myrealm/farm-client", "org-1"),
+      ).rejects.toThrow("Keycloak token request failed");
+    });
+
+    it("should handle URI with no slash (no clientId in URI)", async () => {
+      const credRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue: buildEncryptedCredential(mockPayload, JWT_SECRET),
+        }),
+      };
+
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+
+      let capturedBody: string | undefined;
+      global.fetch = jest
+        .fn()
+        .mockImplementation((_url: unknown, init: { body: string }) => {
+          capturedBody = init.body;
+          return {
+            ok: true,
+            json: () => ({ access_token: "tok", expires_in: 300 }),
+          };
+        }) as typeof fetch;
+
+      // URI without a slash — realm = "myrealm", clientId = ""
+      const token = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm",
+        "org-1",
+      );
+
+      expect(token).toBe("tok");
+      // client_id should fall back to payload.clientId when URI has no slash.
+      const body = new URLSearchParams(capturedBody ?? "");
+      expect(body.get("client_id")).toBe("farm-client");
+    });
+
+    it("should use the default jwtSecret when JWT_SECRET env is not set", async () => {
+      // Ensure JWT_SECRET is unset so the ?? fallback is used.
+      delete process.env.JWT_SECRET;
+
+      const encryptedValue = buildEncryptedCredential(
+        mockPayload,
+        "super-secret-key-change-me-in-production",
+      );
+
+      const credRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue,
+        }),
+      };
+
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => ({
+          access_token: "default-key-token",
+          expires_in: 60,
+        }),
+      }) as typeof fetch;
+
+      const token = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+
+      expect(token).toBe("default-key-token");
+    });
+
+    it("should skip encryptionKey derivation on second call (cache hit for decryptCredential path)", async () => {
+      const encryptedValue = buildEncryptedCredential(mockPayload, JWT_SECRET);
+      const credRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: "cred-1",
+          orgId: "org-1",
+          type: IntegrationType.KEYCLOAK,
+          encryptedValue,
+        }),
+      };
+
+      const proc = new PipelineProcessor(
+        mockRunRepo as never,
+        mockPipelineRepo as never,
+        mockEventsGateway as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        credRepo as never,
+      );
+
+      let fetchCallCount = 0;
+      global.fetch = jest.fn().mockImplementation(() => {
+        fetchCallCount++;
+        return {
+          ok: true,
+          json: () => ({
+            access_token: `token-${fetchCallCount}`,
+            expires_in: 300,
+          }),
+        };
+      }) as typeof fetch;
+
+      // First call — decryptCredential derives the key (encryptionKey is null).
+      const t1 = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+      // Second call — uses cached token (no fetch), but the path where encryptionKey
+      // is already set would be exercised if cache expired. Simulate cache expiry
+      // by targeting a different realm to force a second credential lookup.
+      // Clear token cache by targeting different org.
+      const t2 = await proc.resolveKeycloakSecret(
+        "keycloak://otherrealm/farm-client",
+        "org-2",
+      );
+
+      expect(t1).toBe("token-1");
+      expect(t2).toBe("token-2");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CloudSecretsService — truthy path for Lambda, GCP, Azure
+  // -------------------------------------------------------------------------
+
+  describe("cloud executor dispatch with CloudSecretsService", () => {
+    const mockSecretsService = {
+      resolveConfigSecrets: jest
+        .fn()
+        .mockImplementation((cfg: Record<string, unknown>) =>
+          Promise.resolve(cfg),
+        ),
+    };
+
+    it("resolves config via CloudSecretsService before AWS Lambda dispatch", async () => {
+      const mockLambdaExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "lambda ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
+          { provide: CloudSecretsService, useValue: mockSecretsService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const stage: PipelineStage = {
+        id: "lambda-sec",
+        name: "Lambda Secret",
+        type: "deploy",
+        config: {
+          engine: "aws-lambda",
+          orgId: "org-1",
+          functionName: "fn",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([stage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockSecretsService.resolveConfigSecrets).toHaveBeenCalled();
+      expect(mockLambdaExecutor.execute).toHaveBeenCalled();
+    });
+
+    it("resolves config via CloudSecretsService before GCP Cloud Run dispatch", async () => {
+      const mockGcpExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "gcp ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
+          { provide: CloudSecretsService, useValue: mockSecretsService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const stage: PipelineStage = {
+        id: "gcp-sec",
+        name: "GCP Secret",
+        type: "deploy",
+        config: {
+          engine: "gcp-cloud-run",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([stage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockSecretsService.resolveConfigSecrets).toHaveBeenCalled();
+      expect(mockGcpExecutor.execute).toHaveBeenCalled();
+    });
+
+    it("resolves config via CloudSecretsService before Azure Container Apps dispatch", async () => {
+      const mockAzureExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "azure ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
+          { provide: CloudSecretsService, useValue: mockSecretsService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const stage: PipelineStage = {
+        id: "azure-sec",
+        name: "Azure Secret",
+        type: "deploy",
+        config: {
+          engine: "azure-container-apps",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([stage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockSecretsService.resolveConfigSecrets).toHaveBeenCalled();
+      expect(mockAzureExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // failRun with startedAt = null
+  // -------------------------------------------------------------------------
+
+  describe("failRun with startedAt null (resume scenario)", () => {
+    it("should set durationMs to null in failRun when run has no startedAt", async () => {
+      const run = buildRun({
+        status: PipelineRunStatus.RUNNING,
+        startedAt: null,
+        stageResults: [],
+      });
+
+      const failStage: PipelineStage = {
+        id: "fail-stage",
+        name: "FailMe",
+        type: "deploy",
+        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        order: 5,
+      };
+
+      const mockHelmExec = {
+        execute: jest.fn().mockResolvedValue({ success: false, output: null }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: HelmDeployExecutor, useValue: mockHelmExec },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const pipeline = buildPipeline([failStage]);
+
+      // Resume from stage order 5 (skips startedAt initialization block).
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(
+        buildJob({
+          pipelineId: run.pipelineId,
+          runId: run.id,
+          triggeredBy: run.triggeredBy,
+          resumeFromStageOrder: 5,
+        }),
+      );
+
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+      // startedAt was null, so durationMs should be null.
+      expect(failedSave![0].durationMs).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // eventsGateway.server null handling
+  // -------------------------------------------------------------------------
+
+  describe("process — eventsGateway.server is null", () => {
+    it("should not throw when eventsGateway.server is null", async () => {
+      const nullServerGateway = { server: null };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: mockPipelineRepo,
+          },
+          { provide: EventsGateway, useValue: nullServerGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const pipeline = buildPipeline([scriptStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(job(run));
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      // Should succeed without errors even though server is null.
+      const succeededSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
+      expect(succeededSave).toBeDefined();
+    });
+  });
+});

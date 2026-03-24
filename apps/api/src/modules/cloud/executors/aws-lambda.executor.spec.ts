@@ -77,4 +77,56 @@ describe("AwsLambdaExecutor", () => {
     expect(result.success).toBe(false);
     expect(result.output).toContain("not available");
   });
+
+  // ---------------------------------------------------------------------------
+  // Additional branch-coverage tests
+  // ---------------------------------------------------------------------------
+
+  it("should build an s3:// target when imageUri is not provided", async () => {
+    mockAwsService.deployToLambda.mockResolvedValue({
+      success: true,
+      output: "Lambda updated via S3",
+    });
+
+    const s3Config: AwsLambdaDeployConfig = {
+      engine: "aws-lambda",
+      orgId: "org-123",
+      functionName: "my-lambda",
+      s3Bucket: "my-deploy-bucket",
+      s3Key: "builds/my-lambda.zip",
+    };
+
+    const result = await executor.execute(s3Config, logFn);
+
+    expect(result.success).toBe(true);
+    // The logFn should have been called with an s3:// target message.
+    expect(logFn).toHaveBeenCalledWith(
+      expect.stringContaining("s3://my-deploy-bucket/builds/my-lambda.zip"),
+    );
+    expect(mockAwsService.deployToLambda).toHaveBeenCalledWith("org-123", {
+      functionName: "my-lambda",
+      imageUri: undefined,
+      s3Bucket: "my-deploy-bucket",
+      s3Key: "builds/my-lambda.zip",
+    });
+  });
+
+  it("should produce an empty s3:// target when neither imageUri nor s3Bucket/s3Key are set", async () => {
+    mockAwsService.deployToLambda.mockResolvedValue({
+      success: false,
+      output: "Invalid deployment config",
+    });
+
+    const minimalConfig: AwsLambdaDeployConfig = {
+      engine: "aws-lambda",
+      orgId: "org-123",
+      functionName: "my-lambda",
+      // No imageUri, no s3Bucket, no s3Key
+    };
+
+    await executor.execute(minimalConfig, logFn);
+
+    // The target string should degrade to "s3:///"
+    expect(logFn).toHaveBeenCalledWith(expect.stringContaining("s3:///"));
+  });
 });

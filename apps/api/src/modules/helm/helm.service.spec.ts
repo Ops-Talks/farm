@@ -383,3 +383,255 @@ describe("HelmService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("HelmService — additional branches", () => {
+  let service: HelmService;
+  let mockKubernetesService: Partial<jest.Mocked<KubernetesService>>;
+  let mockDeploymentRepo: Record<string, jest.Mock>;
+  let mockComponentRepo: Record<string, jest.Mock>;
+  let mockEnvironmentRepo: Record<string, jest.Mock>;
+  let mockCoreV1Api: {
+    listSecretForAllNamespaces: jest.Mock;
+    listNamespacedSecret: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    mockCoreV1Api = {
+      listSecretForAllNamespaces: jest.fn().mockResolvedValue({ items: [] }),
+      listNamespacedSecret: jest.fn().mockResolvedValue({ items: [] }),
+    };
+
+    mockKubernetesService = {
+      isEnabled: jest.fn().mockReturnValue(true),
+      getCoreV1Api: jest.fn().mockReturnValue(mockCoreV1Api),
+    };
+
+    mockDeploymentRepo = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      }),
+      create: jest.fn().mockImplementation((d) => d as Deployment),
+      save: jest
+        .fn()
+        .mockImplementation((d) => Promise.resolve(d as Deployment)),
+    };
+
+    mockComponentRepo = { findOne: jest.fn().mockResolvedValue(null) };
+    mockEnvironmentRepo = { findOne: jest.fn().mockResolvedValue(null) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HelmService,
+        { provide: KubernetesService, useValue: mockKubernetesService },
+        {
+          provide: getRepositoryToken(Deployment),
+          useValue: mockDeploymentRepo,
+        },
+        { provide: getRepositoryToken(Component), useValue: mockComponentRepo },
+        {
+          provide: getRepositoryToken(Environment),
+          useValue: mockEnvironmentRepo,
+        },
+      ],
+    }).compile();
+
+    service = module.get<HelmService>(HelmService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // -------------------------------------------------------------------------
+  // listReleases — decodeHelmRelease throws for a specific secret
+  // -------------------------------------------------------------------------
+  describe("listReleases — per-secret decode failure", () => {
+    it("should warn and skip a secret whose release data cannot be decoded", async () => {
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "bad-release",
+              namespace: "default",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: { release: "THIS_IS_NOT_VALID_GZIP_DATA" },
+          },
+        ],
+      });
+
+      const releases = await service.listReleases();
+
+      // The bad secret must be skipped; no releases returned.
+      expect(releases).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncReleases — environment not found
+  // -------------------------------------------------------------------------
+  describe("syncReleases — environment not found", () => {
+    it("should skip and still count synced when environment is not found", async () => {
+      const encoded = await buildHelmReleaseData({
+        name: "my-app",
+        namespace: "missing-env",
+        version: 1,
+        info: { status: "deployed", last_deployed: "2024-01-01T00:00:00Z" },
+        chart: { metadata: { name: "my-chart", version: "1.0.0" } },
+      });
+
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          buildFakeSecret({
+            name: "sh.helm.release.v1.my-app.v1",
+            namespace: "missing-env",
+            releaseData: encoded,
+          }),
+        ],
+      });
+
+      const fakeComponent = { id: "comp-uuid", name: "my-app" };
+      mockComponentRepo.findOne.mockResolvedValue(fakeComponent as Component);
+      // Environment NOT found.
+      mockEnvironmentRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.syncReleases();
+
+      expect(mockDeploymentRepo.create).not.toHaveBeenCalled();
+      // syncReleases counts the release as synced even when skipped (no throw).
+      expect(result.synced).toBe(1);
+      expect(result.errors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // mapHelmStatus — all switch cases
+  // -------------------------------------------------------------------------
+  describe("syncReleases — Helm status mapping", () => {
+    const statuses = [
+      { helmStatus: "failed", expectedFarm: DeploymentStatus.FAILED },
+      {
+        helmStatus: "pending-install",
+        expectedFarm: DeploymentStatus.IN_PROGRESS,
+      },
+      {
+        helmStatus: "pending-upgrade",
+        expectedFarm: DeploymentStatus.IN_PROGRESS,
+      },
+      {
+        helmStatus: "pending-rollback",
+        expectedFarm: DeploymentStatus.IN_PROGRESS,
+      },
+      { helmStatus: "uninstalling", expectedFarm: DeploymentStatus.PENDING },
+      { helmStatus: "superseded", expectedFarm: DeploymentStatus.PENDING },
+    ];
+
+    const fakeComponent = { id: "comp-uuid", name: "my-app" } as Component;
+    const fakeEnvironment = {
+      id: "env-uuid",
+      name: "production",
+    } as Environment;
+
+    statuses.forEach(({ helmStatus, expectedFarm }) => {
+      it(`should map helm status "${helmStatus}" to Farm DeploymentStatus.${expectedFarm}`, async () => {
+        const release = {
+          name: "my-app",
+          namespace: "production",
+          version: 1,
+          info: { status: helmStatus, last_deployed: "2024-01-01T00:00:00Z" },
+          chart: {
+            metadata: { name: "my-chart", version: "1.0.0", appVersion: "1.0" },
+          },
+        };
+
+        const encoded = await buildHelmReleaseData(release);
+
+        mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+          items: [
+            buildFakeSecret({
+              name: `sh.helm.release.v1.my-app.v1`,
+              namespace: "production",
+              releaseData: encoded,
+            }),
+          ],
+        });
+
+        mockComponentRepo.findOne.mockResolvedValue(fakeComponent);
+        mockEnvironmentRepo.findOne.mockResolvedValue(fakeEnvironment);
+
+        await service.syncReleases();
+
+        const createArg = (
+          mockDeploymentRepo.create.mock.calls as Array<[Partial<Deployment>]>
+        )[0]?.[0];
+        expect(createArg?.status).toBe(expectedFarm);
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // decodeHelmRelease — missing fields produce ?? defaults
+  // -------------------------------------------------------------------------
+  describe("decodeHelmRelease — missing optional fields", () => {
+    it("should fill in default values when release JSON has missing fields", async () => {
+      // A release JSON with no optional fields set.
+      const minimalRelease = {};
+      const encoded = await buildHelmReleaseData(minimalRelease);
+
+      const result = await service.decodeHelmRelease(encoded);
+
+      expect(result).not.toBeNull();
+      expect(result?.name).toBe("unknown");
+      expect(result?.namespace).toBe("default");
+      expect(result?.chart).toBe("unknown");
+      expect(result?.chartVersion).toBe("unknown");
+      expect(result?.appVersion).toBe("unknown");
+      expect(result?.status).toBe("unknown");
+      expect(result?.revision).toBe(0);
+      // updatedAt falls back to a generated ISO string (non-empty).
+      expect(result?.updatedAt).toBeTruthy();
+    });
+
+    it("should fill in partial ?? defaults when some fields are present", async () => {
+      const partialRelease = {
+        name: "partial-app",
+        // namespace, version, info, chart.metadata are all absent
+        chart: {
+          // metadata absent
+        },
+      };
+      const encoded = await buildHelmReleaseData(partialRelease);
+
+      const result = await service.decodeHelmRelease(encoded);
+
+      expect(result?.name).toBe("partial-app");
+      expect(result?.namespace).toBe("default");
+      expect(result?.chart).toBe("unknown");
+      expect(result?.revision).toBe(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // decodeHelmRelease — single-decode fallback
+  // -------------------------------------------------------------------------
+  describe("decodeHelmRelease — single-decode fallback path", () => {
+    it("should fall back to single-base64 when double-decode produces invalid gzip", async () => {
+      const json = JSON.stringify({ name: "fallback-app", namespace: "test" });
+      const compressed = await gzip(Buffer.from(json, "utf8"));
+      // Single-encode (NOT double-encode).
+      const singleEncoded = compressed.toString("base64");
+
+      const result = await service.decodeHelmRelease(singleEncoded);
+
+      expect(result?.name).toBe("fallback-app");
+      expect(result?.namespace).toBe("test");
+    });
+  });
+});
