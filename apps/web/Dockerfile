@@ -42,6 +42,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Update npm to the latest version so its bundled tar dependency meets the
+# minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
+# CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
+RUN npm install -g npm@latest
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 

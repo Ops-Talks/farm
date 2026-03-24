@@ -37,6 +37,11 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Update npm to the latest version so its bundled tar dependency meets the
+# minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
+# CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
+RUN npm install -g npm@latest
+
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
 COPY packages/types/package.json         ./packages/types/
