@@ -114,6 +114,16 @@ Global `ValidationPipe` with `whitelist: true`, `forbidNonWhitelisted: true`, `t
 - **Unit tests**: `src/**/*.spec.ts` - use `Test.createTestingModule` with mock repositories (`jest.fn()` for each method) and mock services. Reset mocks in `afterEach()`.
 - **E2E tests**: `test/*.e2e-spec.ts` - use `createE2EApp()` and `registerAndLogin()` helpers from `test/helpers/e2e-setup.ts`. These configure SQLite in-memory and return a JWT token with admin role.
 - **E2E helper pattern**: `registerAndLogin(app)` registers a user, promotes to admin via direct DB update, logs in, and returns the JWT token.
+- **Mocking global.fetch**: Never assign directly to `global.fetch` without restoring. `jest.clearAllMocks()` does NOT restore raw global variable assignments — only `jest.fn()` instances tracked by Jest are affected. Use the capture-and-restore pattern scoped to the relevant `describe` block:
+  ```ts
+  let originalFetch: typeof globalThis.fetch;
+  beforeEach(() => { originalFetch = globalThis.fetch; });
+  afterEach(() => { globalThis.fetch = originalFetch; });
+
+  // inside the test:
+  globalThis.fetch = jest.fn().mockResolvedValue({ ... }) as typeof fetch;
+  ```
+  Always use `globalThis.fetch` (not `global.fetch`) — it is type-safe in TypeScript.
 
 ### Configuration
 
