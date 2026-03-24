@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.4] - 2026-03-24
+
+### Changed
+- patch(eslint) - Improvements.
+- patch(eslint) - Improvements.
+- chore(ci.yaml) - Comparison.
+- **web**: add comprehensive api-client test coverage (S176).
+- **api**: improve branch coverage for critical modules (S173).
+- add Phase 10 test coverage hardening to ROADMAP (FARM-E45).
+- Fix/several stuffs (#14).
+- Potential fix for code scanning alert no. 12: Type confusion through parameter tampering (#11).
+- add web coverage and test results upload to Codecov.
+
+### Fixed
+- **security**: add runtime engine allowlist validation in build-stage executor.
+
 ## [0.11.3] - 2026-03-21
 
 ### Changed
