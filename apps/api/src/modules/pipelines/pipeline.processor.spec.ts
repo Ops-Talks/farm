@@ -975,6 +975,24 @@ describe("PipelineProcessor", () => {
   // Keycloak secret resolver — resolveKeycloakSecret / resolveKeycloakSecrets
   // ---------------------------------------------------------------------------
   describe("Keycloak secret resolver", () => {
+    let originalFetch: typeof globalThis.fetch;
+    let originalJwtSecret: string | undefined;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      originalJwtSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = JWT_SECRET;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      if (originalJwtSecret !== undefined) {
+        process.env.JWT_SECRET = originalJwtSecret;
+      } else {
+        delete process.env.JWT_SECRET;
+      }
+    });
+
     const JWT_SECRET = "super-secret-key-change-me-in-production";
 
     const mockKeycloakPayload = {
@@ -997,7 +1015,7 @@ describe("PipelineProcessor", () => {
       };
       void moduleRef;
 
-      const proc = new PipelineProcessor(
+      return new PipelineProcessor(
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1010,9 +1028,6 @@ describe("PipelineProcessor", () => {
         undefined,
         credRepo as never,
       );
-      // Inject the JWT secret so decryptCredential uses the right key.
-      process.env.JWT_SECRET = JWT_SECRET;
-      return proc;
     }
 
     it("resolves a keycloak:// URI to an access token on first call", async () => {
@@ -1168,6 +1183,65 @@ describe("PipelineProcessor", () => {
         expect.objectContaining({ apiToken: "keycloak://myrealm/farm-client" }),
         expect.any(String),
       );
+    });
+
+    it("derives the encryption key only once across multiple credential decryptions", async () => {
+      const credRepo = {
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: "cred-1",
+            orgId: "org-1",
+            type: IntegrationType.KEYCLOAK,
+            encryptedValue: encryptedCredential,
+          } as Partial<IntegrationCredential>)
+          .mockResolvedValueOnce({
+            id: "cred-2",
+            orgId: "org-2",
+            type: IntegrationType.KEYCLOAK,
+            encryptedValue: encryptedCredential,
+          } as Partial<IntegrationCredential>),
+      };
+
+      const proc = buildProcessorWithCredRepo(credRepo);
+
+      // TypeScript's __importStar wraps built-in modules in a namespace object
+      // whose properties are non-configurable getter-only accessors. jest.spyOn
+      // cannot redefine them. Spying on the underlying require("crypto") object
+      // works because the namespace getter always delegates to it, so the processor
+      // code picks up the spy transparently.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const cryptoModule = require("crypto") as typeof crypto;
+      const cryptoSpy = jest.spyOn(cryptoModule, "createHash");
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          // eslint-disable-next-line @typescript-eslint/require-await
+          json: async () => ({ access_token: "token-org1", expires_in: 300 }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          // eslint-disable-next-line @typescript-eslint/require-await
+          json: async () => ({ access_token: "token-org2", expires_in: 300 }),
+        }) as typeof fetch;
+
+      const t1 = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-1",
+      );
+      const t2 = await proc.resolveKeycloakSecret(
+        "keycloak://myrealm/farm-client",
+        "org-2",
+      );
+
+      expect(t1).toBe("token-org1");
+      expect(t2).toBe("token-org2");
+      // Key derivation must happen only once — the Buffer is cached on the instance.
+      expect(cryptoSpy).toHaveBeenCalledTimes(1);
+      expect(cryptoSpy).toHaveBeenCalledWith("sha256");
+      cryptoSpy.mockRestore();
     });
   });
 });
