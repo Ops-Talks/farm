@@ -13,18 +13,23 @@ import tseslint from 'typescript-eslint';
 const localPlugin = {
   rules: {
     /**
-     * Flags direct assignment to global.fetch or globalThis.fetch in test files.
+     * Warns on direct assignment to global.fetch or globalThis.fetch in test
+     * files as a reminder to verify the capture-and-restore guard is in place.
      *
-     * Direct assignment bypasses Jest's mock tracking: jest.clearAllMocks() does
-     * NOT restore global variable assignments. Always capture the original value
-     * in beforeEach and restore it in afterEach:
+     * jest.clearAllMocks() does NOT restore raw global variable assignments —
+     * only jest.fn() instances already tracked by Jest are reset. Without an
+     * explicit restore the mock leaks into every subsequent test in the process.
+     *
+     * The required guard — scoped to the relevant describe block:
      *
      *   let originalFetch: typeof globalThis.fetch;
      *   beforeEach(() => { originalFetch = globalThis.fetch; });
      *   afterEach(() => { globalThis.fetch = originalFetch; });
      *
-     *   // inside the test:
-     *   globalThis.fetch = jest.fn().mockResolvedValue({ ... }) as typeof fetch;
+     * With those hooks in place the warning is expected and acceptable: the
+     * assignment inside the test body is safe because afterEach guarantees
+     * restoration. The rule fires as a deliberate reminder, not a hard ban.
+     * Restore assignments (RHS is a plain identifier) are intentionally exempt.
      */
     'no-global-fetch-assignment': {
       meta: {
@@ -35,8 +40,8 @@ const localPlugin = {
         },
         messages: {
           noGlobalFetchAssignment:
-            'Direct assignment to {{name}}.fetch leaks into subsequent tests because jest.clearAllMocks() does not restore global variable assignments. ' +
-            'Capture the original in beforeEach and restore it in afterEach.',
+            'Direct assignment to {{name}}.fetch is flagged as a reminder: ensure a beforeEach/afterEach capture-and-restore guard exists in the enclosing describe block. ' +
+            'jest.clearAllMocks() does not restore global variable assignments — without the guard this mock leaks into subsequent tests.',
         },
         schema: [],
       },

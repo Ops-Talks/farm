@@ -1751,6 +1751,24 @@ describe("PipelineProcessor — additional branches", () => {
   describe("resolveKeycloakSecret — token request fails", () => {
     const JWT_SECRET = "super-secret-key-change-me-in-production";
 
+    let originalFetch: typeof globalThis.fetch;
+    let originalJwtSecret: string | undefined;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+      originalJwtSecret = process.env.JWT_SECRET;
+      process.env.JWT_SECRET = JWT_SECRET;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+      if (originalJwtSecret !== undefined) {
+        process.env.JWT_SECRET = originalJwtSecret;
+      } else {
+        delete process.env.JWT_SECRET;
+      }
+    });
+
     function buildEncryptedCredential(payload: object, secret: string): string {
       const key = crypto.createHash("sha256").update(secret).digest();
       const iv = crypto.randomBytes(12);
@@ -1771,8 +1789,6 @@ describe("PipelineProcessor — additional branches", () => {
     };
 
     it("should throw when the token endpoint returns a non-ok response", async () => {
-      process.env.JWT_SECRET = JWT_SECRET;
-
       const credRepo = {
         findOne: jest.fn().mockResolvedValue({
           id: "cred-1",
@@ -1809,8 +1825,6 @@ describe("PipelineProcessor — additional branches", () => {
     });
 
     it("should handle URI with no slash (no clientId in URI)", async () => {
-      process.env.JWT_SECRET = JWT_SECRET;
-
       const credRepo = {
         findOne: jest.fn().mockResolvedValue({
           id: "cred-1",
@@ -1859,7 +1873,6 @@ describe("PipelineProcessor — additional branches", () => {
 
     it("should use the default jwtSecret when JWT_SECRET env is not set", async () => {
       // Ensure JWT_SECRET is unset so the ?? fallback is used.
-      const originalJwtSecret = process.env.JWT_SECRET;
       delete process.env.JWT_SECRET;
 
       const encryptedValue = buildEncryptedCredential(
@@ -1904,16 +1917,9 @@ describe("PipelineProcessor — additional branches", () => {
       );
 
       expect(token).toBe("default-key-token");
-
-      // Restore the env var.
-      if (originalJwtSecret !== undefined) {
-        process.env.JWT_SECRET = originalJwtSecret;
-      }
     });
 
     it("should skip encryptionKey derivation on second call (cache hit for decryptCredential path)", async () => {
-      process.env.JWT_SECRET = JWT_SECRET;
-
       const encryptedValue = buildEncryptedCredential(mockPayload, JWT_SECRET);
       const credRepo = {
         findOne: jest.fn().mockResolvedValue({
