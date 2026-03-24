@@ -641,9 +641,27 @@ describe("api-client", () => {
   // ─── Auth extended ────────────────────────────────────────────────────────
 
   describe("auth extended", () => {
-    it("keycloakLogin should set window.location.href when window is available", () => {
-      // In jsdom window is always defined; href assignment should not throw
-      expect(() => auth.keycloakLogin("org-123")).not.toThrow();
+    it("keycloakLogin should set window.location.href to the correct Keycloak URL", () => {
+      const originalLocation = window.location;
+
+      // Replace window.location with a writable stub so the assignment can be
+      // intercepted without triggering a real jsdom navigation side-effect.
+      Object.defineProperty(window, "location", {
+        value: { href: "" },
+        writable: true,
+        configurable: true,
+      });
+
+      auth.keycloakLogin("org-123");
+
+      expect(window.location.href).toBe("/api/v1/auth/keycloak?orgId=org-123");
+
+      // Restore the original location object to avoid leaking state into other tests.
+      Object.defineProperty(window, "location", {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
     });
 
     it("keycloakSync should POST to the sync endpoint", async () => {
