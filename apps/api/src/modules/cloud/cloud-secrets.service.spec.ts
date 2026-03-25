@@ -116,6 +116,22 @@ describe("CloudSecretsService", () => {
       );
     });
 
+    it("should delegate to AzureService for Azure refs with a port in the vault URL", async () => {
+      mockAzureService.resolveSecret.mockResolvedValue("azure-port-secret");
+
+      const result = await service.resolve(
+        "azure:https://localhost:8443:my-secret",
+        ORG_ID,
+      );
+
+      expect(result).toBe("azure-port-secret");
+      expect(mockAzureService.resolveSecret).toHaveBeenCalledWith(
+        ORG_ID,
+        "https://localhost:8443",
+        "my-secret",
+      );
+    });
+
     it("should throw for unsupported ref format", async () => {
       await expect(
         service.resolve("http://not-a-secret-ref.com", ORG_ID),

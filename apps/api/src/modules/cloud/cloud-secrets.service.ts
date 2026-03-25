@@ -23,8 +23,15 @@ export class CloudSecretsService {
   static readonly GCP_SECRET_PATTERN =
     /^gcp:projects\/[^/]+\/secrets\/[^/]+\/versions\/[^/]+$/;
 
-  /** Regex that matches Azure Key Vault references (azure:{vaultUrl}:{secretName}) */
-  static readonly AZURE_SECRET_PATTERN = /^azure:https:\/\/[^:]+:[^:]+$/;
+  /** Regex that matches Azure Key Vault references (azure:{vaultUrl}:{secretName})
+   *
+   * The vault URL may contain colons (e.g. port: https://localhost:8443 or IPv6
+   * literals). The pattern uses [^/]+ for the host segment — which allows colons
+   * for port numbers — and [^:]+ for the secret name so that lastIndexOf(":")
+   * always identifies the correct separator, consistent with the parsing logic.
+   */
+  static readonly AZURE_SECRET_PATTERN =
+    /^azure:https:\/\/[^/]+(?:\/[^:]*)?:[^:]+$/;
 
   constructor(
     @Optional() private readonly awsService?: AwsService,
