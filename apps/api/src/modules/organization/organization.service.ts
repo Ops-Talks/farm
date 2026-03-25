@@ -40,15 +40,17 @@ export class OrganizationService {
    * @returns A lowercase hyphenated slug
    */
   private toSlug(name: string): string {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+/, "")
-      // Negative lookbehind anchors the match to the first hyphen in the trailing
-      // sequence (one not preceded by another hyphen), preventing the engine from
-      // retrying at each position — eliminates O(n^2) backtracking (ReDoS).
-      .replace(/(?<!-)-+$/, "");
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+/, "")
+        // Negative lookbehind anchors the match to the first hyphen in the trailing
+        // sequence (one not preceded by another hyphen), preventing the engine from
+        // retrying at each position — eliminates O(n^2) backtracking (ReDoS).
+        .replace(/(?<!-)-+$/, "")
+    );
   }
 
   /**
