@@ -42,6 +42,12 @@ ENV NODE_ENV=production
 # CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
 RUN npm install -g npm@latest
 
+# Upgrade zlib to >=1.3.2-r0 to fix CVE-2026-22184 (arbitrary code execution
+# via buffer overflow in the untgz utility). The version constraint is explicit
+# so the build fails if the required version is not available in the Alpine
+# repositories, preventing silent regression to a vulnerable version.
+RUN apk add --no-cache "zlib>=1.3.2-r0"
+
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
 COPY packages/types/package.json         ./packages/types/
