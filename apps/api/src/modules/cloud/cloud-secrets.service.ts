@@ -21,10 +21,10 @@ export class CloudSecretsService {
 
   /** Regex that matches GCP Secret Manager paths */
   static readonly GCP_SECRET_PATTERN =
-    /^gcp:projects\/.+\/secrets\/.+\/versions\/.+$/;
+    /^gcp:projects\/[^/]+\/secrets\/[^/]+\/versions\/[^/]+$/;
 
-  /** Regex that matches Azure Key Vault references */
-  static readonly AZURE_SECRET_PATTERN = /^azure:https:\/\/.+:.+$/;
+  /** Regex that matches Azure Key Vault references (azure:{vaultUrl}:{secretName}) */
+  static readonly AZURE_SECRET_PATTERN = /^azure:https:\/\/[^:]+:[^:]+$/;
 
   constructor(
     @Optional() private readonly awsService?: AwsService,
