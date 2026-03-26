@@ -118,6 +118,19 @@ describe("TravisCIService", () => {
         NotFoundException,
       );
     });
+
+    it("should return empty array when response builds field is null", async () => {
+      mockCredentialService.findByType.mockResolvedValue({
+        encryptedValue: "enc",
+        type: IntegrationType.TRAVISCI,
+      });
+      mockHttpGet.mockReturnValue(
+        of(makeAxiosResponse({ builds: null as unknown as never[] })),
+      );
+
+      const result = await service.listBuilds(ORG_ID);
+      expect(result).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------

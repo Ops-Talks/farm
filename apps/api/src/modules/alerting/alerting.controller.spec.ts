@@ -79,6 +79,19 @@ describe("AlertingController", () => {
       expect(result.data).toEqual([mockRule]);
       expect(result.total).toBe(1);
     });
+
+    it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
+      mockService.findAll.mockResolvedValue([[mockRule], 1]);
+
+      const result = await controller.findAll({
+        skip: undefined,
+        take: undefined,
+      } as unknown as ListAlertingRulesQueryDto);
+
+      expect(result).toBeInstanceOf(PaginatedResponseDto);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
+    });
   });
 
   describe("findOne", () => {

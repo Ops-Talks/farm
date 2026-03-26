@@ -132,6 +132,23 @@ describe('CatalogAnalyticsTab', () => {
     });
   });
 
+  it('shows "No data available" when lifecycle and kind distributions are empty but catalog has components', async () => {
+    mockGetCatalog.mockResolvedValue({
+      ownershipCoverage: { total: 5, withOwner: 5, withoutOwner: 0, coveragePercent: 100 },
+      lifecycleDistribution: [],
+      kindDistribution: [],
+      unownedComponents: [],
+    } satisfies CatalogAnalytics);
+    render(<CatalogAnalyticsTab />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      const noDataEls = screen.getAllByText('No data available');
+      expect(noDataEls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    expect(screen.getByText(/All components have an owner/i)).toBeInTheDocument();
+  });
+
   it('shows error state when query fails', async () => {
     mockGetCatalog.mockRejectedValue(new Error('Network error'));
     render(<CatalogAnalyticsTab />, { wrapper: createWrapper() });

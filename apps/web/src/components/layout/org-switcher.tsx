@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -97,7 +98,7 @@ export function OrgSwitcher() {
             No organizations found.
           </div>
         ) : (
-          <>
+          <DropdownMenuGroup>
             <DropdownMenuLabel>Organizations</DropdownMenuLabel>
             {filtered.map((org) => {
               const isActive = currentOrg?.id === org.id;
@@ -135,7 +136,7 @@ export function OrgSwitcher() {
                 </DropdownMenuItem>
               );
             })}
-          </>
+          </DropdownMenuGroup>
         )}
 
         <DropdownMenuSeparator />

@@ -67,6 +67,16 @@ describe("EnvironmentsController", () => {
     expect(service.findAll).toHaveBeenCalledWith(0, 20, undefined);
   });
 
+  it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
+    const mockReq = { organizationId: "org-1" };
+    const result = await controller.findAll(
+      { skip: undefined, take: undefined } as never,
+      mockReq as never,
+    );
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+  });
+
   it("should return one environment", async () => {
     const result = await controller.findOne("env-uuid-1");
     expect(result).toEqual(mockEnvironment);

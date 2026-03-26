@@ -94,6 +94,15 @@ describe("DeploymentsController", () => {
     });
   });
 
+  it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
+    const result = await controller.findAll({
+      skip: undefined,
+      take: undefined,
+    } as never);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+  });
+
   it("should return the deployment matrix", async () => {
     const result = await controller.getMatrix();
     expect(result).toEqual(mockMatrix);

@@ -158,6 +158,128 @@ describe("ObservabilityService", () => {
       expect(result.requestsByStatus["5xx"]).toBe(2);
     });
 
+    it("should count 3xx and 1xx status codes as 'other'", async () => {
+      mockCounter.get.mockResolvedValueOnce({
+        values: [
+          {
+            labels: { method: "GET", route: "/test", status_code: "301" },
+            value: 3,
+          },
+          {
+            labels: { method: "GET", route: "/test", status_code: "102" },
+            value: 1,
+          },
+        ],
+      });
+      const result = await service.getSummary();
+
+      expect(result.requestsByStatus.other).toBe(4);
+    });
+
+    it("should skip request counter values where status_code is not a string", async () => {
+      // When status_code is missing (undefined) or not a string, the
+      // `if (typeof statusCode === "string")` false branch fires and the value is skipped.
+      mockCounter.get.mockResolvedValueOnce({
+        values: [
+          { labels: { method: "GET", route: "/test" }, value: 10 }, // no status_code
+          {
+            labels: {
+              method: "GET",
+              route: "/test",
+              status_code: 200 as unknown as string,
+            },
+            value: 5,
+          }, // numeric
+        ],
+      });
+      const result = await service.getSummary();
+      // Total requests still accumulates, but status groups remain 0.
+      expect(result.totalRequests).toBe(15);
+      expect(result.requestsByStatus["2xx"]).toBe(0);
+    });
+
+    it("should handle histogram values with null metricName using empty-string fallback", async () => {
+      // When val.metricName is null/undefined, `val.metricName ?? ""` uses "".
+      // "" does not end with "_bucket", "_count", or "_sum", so it is skipped.
+      mockHistogram.get.mockResolvedValueOnce({
+        values: [
+          { metricName: null as unknown as string, labels: {}, value: 1 },
+          {
+            metricName: "http_request_duration_seconds_count",
+            labels: {},
+            value: 0,
+          },
+          {
+            metricName: "http_request_duration_seconds_sum",
+            labels: {},
+            value: 0,
+          },
+        ],
+      });
+      const result = await service.getSummary();
+      expect(result.latencyPercentiles).toBeDefined();
+    });
+
+    it("should ignore histogram bucket values where le is '+Inf'", async () => {
+      // `le === '+Inf'` triggers the false branch of `le !== '+Inf'` at line 65.
+      mockHistogram.get.mockResolvedValueOnce({
+        values: [
+          {
+            metricName: "http_request_duration_seconds_bucket",
+            labels: { le: "0.1" },
+            value: 50,
+          },
+          {
+            metricName: "http_request_duration_seconds_bucket",
+            labels: { le: "+Inf" },
+            value: 100,
+          },
+          {
+            metricName: "http_request_duration_seconds_count",
+            labels: {},
+            value: 100,
+          },
+          {
+            metricName: "http_request_duration_seconds_sum",
+            labels: {},
+            value: 5,
+          },
+        ],
+      });
+      const result = await service.getSummary();
+      // p50 should be computed from the 0.1 bucket only (ignoring +Inf).
+      expect(result.latencyPercentiles).toBeDefined();
+    });
+
+    it("should fall back to mean when no bucket satisfies count >= target", async () => {
+      // Use a histogram where count is 1 but no bucket has count >= 1
+      // (by making target > max bucket count)
+      mockHistogram.get.mockResolvedValueOnce({
+        values: [
+          {
+            metricName: "http_request_duration_seconds_bucket",
+            labels: { le: "0.005" },
+            value: 0, // no counts in any bucket
+          },
+          {
+            metricName: "http_request_duration_seconds_count",
+            labels: {},
+            value: 10,
+          },
+          {
+            metricName: "http_request_duration_seconds_sum",
+            labels: {},
+            value: 5.0,
+          },
+        ],
+      });
+
+      const result = await service.getSummary();
+
+      // All percentiles should use totalSum / totalCount fallback = 5.0 / 10 = 0.5
+      expect(result.latencyPercentiles.p50).toBe(0.5);
+    });
+
     it("should compute latency percentiles from histogram buckets", async () => {
       const result = await service.getSummary();
 

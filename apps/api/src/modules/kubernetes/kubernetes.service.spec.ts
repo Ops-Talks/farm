@@ -974,3 +974,416 @@ describe("KubernetesService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("KubernetesService — additional branch coverage", () => {
+  let mockCatalogService: Partial<jest.Mocked<CatalogService>>;
+  let mockEventsGateway: { server: { emit: jest.Mock } | null };
+  let mockConfigService: { get: jest.Mock };
+
+  // Helpers copied from parent describe
+  function buildFakeDeployments(items: object[]) {
+    return { items };
+  }
+
+  function fakeDeploymentItem(opts: {
+    name?: string;
+    namespace?: string;
+    annotations?: Record<string, string>;
+    labels?: Record<string, string>;
+  }) {
+    return {
+      metadata: {
+        name: opts.name ?? "deploy-1",
+        namespace: opts.namespace ?? "default",
+        annotations: opts.annotations ?? {},
+        labels: opts.labels ?? {},
+      },
+      spec: { replicas: 1 },
+      status: { readyReplicas: 1 },
+    };
+  }
+
+  beforeEach(() => {
+    mockListDeployments = jest.fn().mockResolvedValue({ items: [] });
+    mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
+    mockListRollouts = jest.fn().mockResolvedValue({ items: [] });
+    mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });
+
+    mockCatalogService = {
+      findAll: jest.fn().mockResolvedValue([[], 0]),
+      create: jest.fn().mockResolvedValue({ id: "new-comp", name: "test" }),
+      update: jest.fn().mockResolvedValue({ id: "upd-comp", name: "test" }),
+    };
+
+    mockEventsGateway = { server: { emit: jest.fn() } };
+
+    mockConfigService = {
+      get: jest.fn().mockImplementation((key: string) => {
+        if (key === "kubernetes.kubeconfigPath") return "";
+        return undefined;
+      }),
+    };
+  });
+
+  async function buildService() {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KubernetesService,
+        { provide: ConfigService, useValue: mockConfigService },
+        { provide: CatalogService, useValue: mockCatalogService },
+        { provide: EventsGateway, useValue: mockEventsGateway },
+      ],
+    }).compile();
+    return module.get<KubernetesService>(KubernetesService);
+  }
+
+  // -------------------------------------------------------------------------
+  // discoverWorkloads — null items in response
+  // -------------------------------------------------------------------------
+
+  describe("discoverWorkloads — null items", () => {
+    it("should return empty array when response.items is undefined", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest.fn().mockResolvedValue({}),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const workloads = await service.discoverWorkloads();
+
+      expect(workloads).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listCRDs — null items in response
+  // -------------------------------------------------------------------------
+
+  describe("listCRDs — null items", () => {
+    it("should return empty array when response.items is undefined", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest.fn().mockResolvedValue({}),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const crds = await service.listCRDs();
+
+      expect(crds).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listCRDs — crd.spec?.versions ?? []
+  // -------------------------------------------------------------------------
+
+  describe("listCRDs — CRD with no versions", () => {
+    it("should fall back to v1 when versions array is absent", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "my-crd.example.com" },
+              spec: {
+                group: "example.com",
+                scope: "Cluster",
+                names: { kind: "MyResource" },
+                // No versions field
+              },
+            },
+          ],
+        }),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const crds = await service.listCRDs();
+
+      expect(crds[0].version).toBe("v1");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncAnnotatedWorkloads — not enabled (returns early)
+  // -------------------------------------------------------------------------
+
+  describe("syncAnnotatedWorkloads — disabled", () => {
+    it("should return 0,0 when kubernetes is not enabled", async () => {
+      // Force initClient to fail so enabled=false
+      mockLoadFromCluster = jest.fn().mockImplementation(() => {
+        throw new Error("No cluster config");
+      });
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("No file");
+      });
+      mockMakeApiClient = jest.fn();
+
+      const service = await buildService();
+
+      const result = await service.syncAnnotatedWorkloads();
+
+      expect(result.created).toBe(0);
+      expect(result.updated).toBe(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncAnnotatedWorkloads — null annotations on deployment
+  // -------------------------------------------------------------------------
+
+  describe("syncAnnotatedWorkloads — deployment without annotations", () => {
+    it("should skip deployments that have no annotations at all", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockListDeploy = jest.fn().mockResolvedValue(
+        buildFakeDeployments([
+          {
+            metadata: {
+              name: "no-annotations-deploy",
+              namespace: "default",
+              // No annotations field
+            },
+            spec: { replicas: 1 },
+            status: {},
+          },
+        ]),
+      );
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: mockListDeploy,
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.syncAnnotatedWorkloads();
+
+      expect(result.created).toBe(0);
+      expect(result.updated).toBe(0);
+      expect(mockCatalogService.create).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncAnnotatedWorkloads — existing component with null metadata
+  // -------------------------------------------------------------------------
+
+  describe("syncAnnotatedWorkloads — existing component with null metadata", () => {
+    it("should merge into empty object when existing.metadata is null", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockListDeploy = jest.fn().mockResolvedValue(
+        buildFakeDeployments([
+          fakeDeploymentItem({
+            name: "svc-deploy",
+            namespace: "default",
+            annotations: {
+              "farm.io/component": "my-svc",
+              "farm.io/owner": "team-a",
+            },
+          }),
+        ]),
+      );
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: mockListDeploy,
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      (mockCatalogService.findAll as jest.Mock).mockResolvedValue([
+        [{ id: "existing-id", name: "my-svc", metadata: null }],
+        1,
+      ]);
+      (mockCatalogService.update as jest.Mock).mockResolvedValue({
+        id: "existing-id",
+      });
+
+      const result = await service.syncAnnotatedWorkloads();
+
+      expect(result.updated).toBe(1);
+      expect(mockCatalogService.update).toHaveBeenCalledWith(
+        "existing-id",
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            k8sAnnotationSync: true,
+          }) as unknown,
+        }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // pollRollouts — disabled
+  // -------------------------------------------------------------------------
+
+  describe("pollRollouts — disabled", () => {
+    it("should return early without fetching rollouts when disabled", async () => {
+      mockLoadFromCluster = jest.fn().mockImplementation(() => {
+        throw new Error("No cluster");
+      });
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("No file");
+      });
+      mockMakeApiClient = jest.fn();
+
+      const service = await buildService();
+
+      // Should not throw even when disabled
+      await expect(service.pollRollouts()).resolves.toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // pollRollouts — same phase (cache update branch)
+  // -------------------------------------------------------------------------
+
+  describe("pollRollouts — same phase triggers cache update only", () => {
+    it("should update cache without emitting when rollout phase is unchanged", async () => {
+      mockLoadFromCluster = jest.fn();
+      const rolloutItem = {
+        metadata: { name: "stable-rollout", namespace: "prod" },
+        status: { phase: "Healthy" },
+      };
+      const mockListRolloutsLocal = jest
+        .fn()
+        .mockResolvedValue({ items: [rolloutItem] });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListRolloutsLocal,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      // First poll — cache is empty, phase change detected
+      await service.pollRollouts();
+
+      const emitCount = (mockEventsGateway.server as { emit: jest.Mock }).emit
+        .mock.calls.length;
+
+      // Second poll — same phase, should not emit again
+      await service.pollRollouts();
+
+      const emitCountAfter = (mockEventsGateway.server as { emit: jest.Mock })
+        .emit.mock.calls.length;
+
+      // Only one emit (from first poll)
+      expect(emitCountAfter).toBe(emitCount);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // parseRollout — status absent (raw.status ?? {})
+  // -------------------------------------------------------------------------
+
+  describe("parseRollout — status absent", () => {
+    it("should use Unknown phase and empty defaults when status is absent", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockListRolloutsLocal = jest.fn().mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "no-status-rollout", namespace: "default" },
+            // No status field
+          },
+        ],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListRolloutsLocal,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const rollouts = await service.listRollouts();
+
+      expect(rollouts[0].phase).toBe("Unknown");
+      expect(rollouts[0].canaryWeight).toBeUndefined();
+      expect(rollouts[0].blueGreenActive).toBeUndefined();
+      expect(rollouts[0].analysisRunResults).toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listRollouts — with namespace filter
+  // -------------------------------------------------------------------------
+
+  describe("listRollouts — with namespace filter", () => {
+    it("should call listNamespacedCustomObject when namespace is provided", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockNamespacedList = jest.fn().mockResolvedValue({ items: [] });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNamespacedCustomObject: mockNamespacedList,
+      });
+      const service = await buildService();
+
+      const rollouts = await service.listRollouts("my-namespace");
+
+      expect(mockNamespacedList).toHaveBeenCalledWith(
+        expect.objectContaining({ namespace: "my-namespace" }),
+      );
+      expect(rollouts).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // initClient — String(error) path
+  // -------------------------------------------------------------------------
+
+  describe("initClient — String(error) path", () => {
+    it("should log String(error) when a non-Error is thrown during initialization", async () => {
+      mockLoadFromCluster = jest.fn().mockImplementation(() => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw "string error from cluster";
+      });
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw "string error from file";
+      });
+      mockMakeApiClient = jest.fn();
+
+      const service = await buildService();
+
+      // Service initializes but is disabled
+      expect(service.isEnabled()).toBe(false);
+    });
+  });
+});

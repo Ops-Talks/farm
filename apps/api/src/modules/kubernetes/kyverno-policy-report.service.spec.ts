@@ -415,3 +415,290 @@ describe("KyvernoPolicyReportService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("KyvernoPolicyReportService — additional branches", () => {
+  let service: KyvernoPolicyReportService;
+  let mockGetCustomObjectsApi: jest.Mock;
+  let mockTagPolicyService: jest.Mocked<
+    Pick<TagPolicyService, "upsertViolation">
+  >;
+
+  beforeEach(async () => {
+    mockGetCustomObjectsApi = jest.fn();
+
+    const mockKubernetesService = {
+      getCustomObjectsApi: mockGetCustomObjectsApi,
+    };
+
+    mockTagPolicyService = {
+      upsertViolation: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KyvernoPolicyReportService,
+        { provide: KubernetesService, useValue: mockKubernetesService },
+        { provide: TagPolicyService, useValue: mockTagPolicyService },
+      ],
+    }).compile();
+
+    service = module.get<KyvernoPolicyReportService>(
+      KyvernoPolicyReportService,
+    );
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  // -------------------------------------------------------------------------
+  // listPolicyReports — null API
+  // -------------------------------------------------------------------------
+
+  describe("listPolicyReports — null API client", () => {
+    it("should return empty array when getCustomObjectsApi returns null", async () => {
+      mockGetCustomObjectsApi.mockReturnValue(null);
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listClusterPolicyReports — null API + non-404 error
+  // -------------------------------------------------------------------------
+
+  describe("listClusterPolicyReports — null API client", () => {
+    it("should return empty array when getCustomObjectsApi returns null", async () => {
+      mockGetCustomObjectsApi.mockReturnValue(null);
+
+      const results = await service.listClusterPolicyReports();
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe("listClusterPolicyReports — non-404 error", () => {
+    it("should return empty array and log error on unexpected non-404 error", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listClusterCustomObject: jest
+          .fn()
+          .mockRejectedValue(new Error("Connection refused")),
+      });
+
+      const results = await service.listClusterPolicyReports();
+
+      expect(results).toEqual([]);
+    });
+
+    it("should return empty array on non-Error object thrown", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listClusterCustomObject: jest.fn().mockRejectedValue("string error"),
+      });
+
+      const results = await service.listClusterPolicyReports();
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listAllNamespacePolicyReports — null API
+  // -------------------------------------------------------------------------
+
+  describe("listAllNamespacePolicyReports — null API client", () => {
+    it("should return empty array when getCustomObjectsApi returns null", async () => {
+      mockGetCustomObjectsApi.mockReturnValue(null);
+
+      const results = await service.listAllNamespacePolicyReports();
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // mapPolicyReport — no scope (k8s-unknown path)
+  // -------------------------------------------------------------------------
+
+  describe("mapPolicyReport — without scope", () => {
+    it("should set resourceType to k8s-unknown when scope is absent", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "cluster-report",
+                namespace: "default",
+                labels: {},
+              },
+              // No scope field
+              results: [],
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results[0].resourceType).toBe("k8s-unknown");
+      expect(results[0].resourceId).toBe("cluster-report");
+    });
+
+    it("should derive resourceId from scope.name when scope has no namespace", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "ns-report", namespace: undefined, labels: {} },
+              scope: {
+                kind: "Node",
+                name: "worker-node-1",
+                // No namespace on scope, no namespace on metadata
+              },
+              results: [],
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports();
+
+      // ns is undefined from both scope.namespace and item.metadata.namespace
+      expect(results[0].resourceId).toBe("worker-node-1");
+      expect(results[0].resourceType).toBe("k8s-node");
+    });
+
+    it("should use farm/component label as linkedComponentId fallback", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "report-alt-label",
+                namespace: "default",
+                labels: { "farm/component": "alt-comp" },
+              },
+              results: [],
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results[0].linkedComponentId).toBe("alt-comp");
+    });
+
+    it("should return undefined linkedComponentId when no farm labels exist", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "unlabeled-report",
+                namespace: "default",
+                labels: {},
+              },
+              results: [],
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results[0].linkedComponentId).toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listPolicyReports — null items in response
+  // -------------------------------------------------------------------------
+
+  describe("listPolicyReports — null items in response", () => {
+    it("should return empty array when response.items is undefined", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({}),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listClusterPolicyReports — null items in response
+  // -------------------------------------------------------------------------
+
+  describe("listClusterPolicyReports — null items in response", () => {
+    it("should return empty array when response.items is undefined", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listClusterCustomObject: jest.fn().mockResolvedValue({}),
+      });
+
+      const results = await service.listClusterPolicyReports();
+
+      expect(results).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // mapPolicyReport — result fields
+  // -------------------------------------------------------------------------
+
+  describe("mapPolicyReport — result field defaults", () => {
+    it("should use empty string for missing message field in results", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "no-msg-report",
+                namespace: "default",
+                labels: {},
+              },
+              scope: { kind: "Pod", name: "my-pod", namespace: "default" },
+              results: [
+                {
+                  policy: "require-labels",
+                  rule: "check-env",
+                  result: "fail",
+                  // No message field
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results[0].results[0].message).toBe("");
+    });
+
+    it("should handle null results array in policy report", async () => {
+      mockGetCustomObjectsApi.mockReturnValue({
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "null-results-report",
+                namespace: "default",
+                labels: {},
+              },
+              // No results field
+            },
+          ],
+        }),
+      });
+
+      const results = await service.listPolicyReports("default");
+
+      expect(results[0].results).toEqual([]);
+    });
+  });
+});

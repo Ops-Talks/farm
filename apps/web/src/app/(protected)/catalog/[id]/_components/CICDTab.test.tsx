@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { ReactNode } from "react";
 import type {
   ArgoCDApplication,
@@ -20,6 +21,7 @@ const mockListJobs = vi.fn();
 const mockTriggerBuild = vi.fn();
 const mockListBuilds = vi.fn();
 const mockRestartBuild = vi.fn();
+const mockHasRole = vi.hoisted(() => vi.fn().mockReturnValue(false));
 
 vi.mock("@/lib/api-client", () => ({
   argocd: {
@@ -41,7 +43,7 @@ vi.mock("@/lib/api-client", () => ({
 }));
 
 vi.mock("@/contexts/auth-context", () => ({
-  useAuth: () => ({ hasRole: vi.fn().mockReturnValue(false) }),
+  useAuth: () => ({ hasRole: mockHasRole }),
 }));
 
 import { CICDTab } from "./CICDTab";
@@ -133,6 +135,7 @@ describe("CICDTab", () => {
     mockListPipelines.mockResolvedValue([]);
     mockListJobs.mockResolvedValue([]);
     mockListBuilds.mockResolvedValue([]);
+    mockHasRole.mockReturnValue(false);
   });
 
   it("renders section headers for all four providers", async () => {
@@ -332,5 +335,284 @@ describe("CICDTab", () => {
     });
     const badge = screen.getByText("passed");
     expect(badge.className).toContain("bg-green-100");
+  });
+
+  // ─── Admin branch ─────────────────────────────────────────────────────────
+
+  it("shows the Sync button for ArgoCD apps when user is admin", async () => {
+    mockHasRole.mockReturnValue(true);
+    mockListApplications.mockResolvedValue([buildArgoCDApp()]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /sync/i })).toBeInTheDocument();
+    });
+  });
+
+  it("calls argocd.syncApplication when the Sync button is clicked", async () => {
+    mockHasRole.mockReturnValue(true);
+    mockSyncApplication.mockResolvedValue(undefined);
+    mockListApplications.mockResolvedValue([buildArgoCDApp({ name: "prod-app" })]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /sync/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /sync/i }));
+
+    await waitFor(() => {
+      expect(mockSyncApplication).toHaveBeenCalledWith("prod-app");
+    });
+  });
+
+  it("shows an error toast when ArgoCD sync fails", async () => {
+    mockHasRole.mockReturnValue(true);
+    mockSyncApplication.mockRejectedValue(new Error("Network error"));
+    mockListApplications.mockResolvedValue([buildArgoCDApp({ name: "prod-app" })]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /sync/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /sync/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Failed to trigger sync");
+    });
+  });
+
+  // ─── ArgoCD filtering ─────────────────────────────────────────────────────
+
+  it("filters ArgoCD apps by argocdApp name when the component has one set", async () => {
+    mockListApplications.mockResolvedValue([
+      buildArgoCDApp({ name: "target-app" }),
+      buildArgoCDApp({ name: "other-app" }),
+    ]);
+
+    const comp = buildComponent({ argocdApp: "target-app" });
+    render(<CICDTab component={comp} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("target-app")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("other-app")).not.toBeInTheDocument();
+  });
+
+  // ─── healthBadge unknown ──────────────────────────────────────────────────
+
+  it("renders a gray badge for an unrecognized ArgoCD health status", async () => {
+    mockListApplications.mockResolvedValue([
+      buildArgoCDApp({
+        status: { health: { status: "Unknown" }, sync: { status: "Synced" } },
+      }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Unknown")).toBeInTheDocument();
+    });
+    const badge = screen.getByText("Unknown");
+    expect(badge.className).toContain("bg-gray-100");
+  });
+
+  // ─── syncBadge unknown ────────────────────────────────────────────────────
+
+  it("renders a gray badge for an unrecognized ArgoCD sync status", async () => {
+    mockListApplications.mockResolvedValue([
+      buildArgoCDApp({
+        status: { health: { status: "Healthy" }, sync: { status: "Pending" } },
+      }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Pending")).toBeInTheDocument();
+    });
+    const badge = screen.getByText("Pending");
+    expect(badge.className).toContain("bg-gray-100");
+  });
+
+  // ─── CircleCI state badges ────────────────────────────────────────────────
+
+  it("renders CircleCI state badge as green for success state", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "success" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("success")).toBeInTheDocument());
+    expect(screen.getByText("success").className).toContain("bg-green-100");
+  });
+
+  it("renders CircleCI state badge as red for failed state", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "failed" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("failed")).toBeInTheDocument());
+    expect(screen.getByText("failed").className).toContain("bg-red-100");
+  });
+
+  it("renders CircleCI state badge as red for errored state", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "errored" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("errored")).toBeInTheDocument());
+    expect(screen.getByText("errored").className).toContain("bg-red-100");
+  });
+
+  it("renders CircleCI state badge as yellow for running state", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "running" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("running")).toBeInTheDocument());
+    expect(screen.getByText("running").className).toContain("bg-yellow-100");
+  });
+
+  it("renders a gray badge for an unrecognized CircleCI state", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "queued" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("queued")).toBeInTheDocument());
+    expect(screen.getByText("queued").className).toContain("bg-gray-100");
+  });
+
+  // ─── Jenkins null / missing lastBuild ─────────────────────────────────────
+
+  it("renders em dash placeholders for a Jenkins job with no lastBuild", async () => {
+    mockListJobs.mockResolvedValue([
+      buildJob({ lastBuild: null as unknown as JenkinsJob["lastBuild"] }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("build-service")).toBeInTheDocument());
+    // Both the build number and duration cells show "—"
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders a gray em dash badge when Jenkins lastBuild result is null", async () => {
+    mockListJobs.mockResolvedValue([
+      buildJob({ lastBuild: { number: 1, result: null, timestamp: 0, duration: 0 } }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("build-service")).toBeInTheDocument());
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("renders a gray badge for an unrecognized Jenkins result", async () => {
+    mockListJobs.mockResolvedValue([
+      buildJob({ lastBuild: { number: 1, result: "ABORTED", timestamp: 0, duration: 5000 } }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("ABORTED")).toBeInTheDocument());
+    expect(screen.getByText("ABORTED").className).toContain("bg-gray-100");
+  });
+
+  // ─── Travis CI null started_at ────────────────────────────────────────────
+
+  it("shows em dash for Travis CI build with no started_at", async () => {
+    mockListBuilds.mockResolvedValue([
+      buildTravisBuild({ started_at: null as unknown as string }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("55")).toBeInTheDocument());
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  // ─── repositoryUrl fallback ───────────────────────────────────────────────
+
+  it("passes repositoryUrl to travisci.listBuilds when vcsUrl is absent", async () => {
+    mockListBuilds.mockResolvedValue([]);
+    const comp = buildComponent({ repositoryUrl: "https://github.com/org/fallback-repo" });
+
+    render(<CICDTab component={comp} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(mockListBuilds).toHaveBeenCalledWith("https://github.com/org/fallback-repo");
+    });
+  });
+
+  // ─── Empty-string status → "Unknown" fallback in gray badges ──────────────
+
+  it("renders 'Unknown' text in healthBadge when ArgoCD health status is empty", async () => {
+    mockListApplications.mockResolvedValue([
+      buildArgoCDApp({
+        status: { health: { status: "" }, sync: { status: "Synced" } },
+      }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Unknown")).toBeInTheDocument();
+    });
+  });
+
+  it("renders 'Unknown' text in syncBadge when ArgoCD sync status is empty", async () => {
+    mockListApplications.mockResolvedValue([
+      buildArgoCDApp({
+        status: { health: { status: "Healthy" }, sync: { status: "" } },
+      }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    // Two ArgoCD gray badges may render; ensure at least one "Unknown" is present.
+    await waitFor(() => {
+      const unknownCells = screen.getAllByText("Unknown");
+      expect(unknownCells.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("renders 'Unknown' text in ciStateBadge when CircleCI state is empty", async () => {
+    mockListPipelines.mockResolvedValue([
+      buildPipeline({ state: "" }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      const unknownCells = screen.getAllByText("Unknown");
+      expect(unknownCells.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("renders 'Unknown' in ciStateBadge when Travis CI state is null", async () => {
+    mockListBuilds.mockResolvedValue([
+      buildTravisBuild({ state: null as unknown as string }),
+    ]);
+
+    render(<CICDTab component={buildComponent()} />, { wrapper: createWrapper() });
+
+    await waitFor(() => expect(screen.getByText("55")).toBeInTheDocument());
+    // null ?? "" → "" → falls to gray badge with {null || "Unknown"} → "Unknown"
+    expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
   });
 });

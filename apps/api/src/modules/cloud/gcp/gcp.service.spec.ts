@@ -338,3 +338,60 @@ describe("GcpService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// GcpService — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("GcpService — additional branches", () => {
+  let service: GcpService;
+  let mockCredentialService: { findByType: jest.Mock; decrypt: jest.Mock };
+
+  const ORG_ID_2 = "org-uuid-gcp-2";
+
+  beforeEach(async () => {
+    mockCredentialService = {
+      findByType: jest.fn().mockResolvedValue({
+        id: "cred-1",
+        encryptedValue: "encrypted",
+      }),
+      decrypt: jest.fn().mockReturnValue(
+        JSON.stringify({
+          type: "service_account",
+          project_id: "my-project",
+          private_key_id: "key-123",
+          private_key:
+            "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Z3VS5JJcds3xHn\n-----END RSA PRIVATE KEY-----\n",
+          client_email: "sa@my-project.iam.gserviceaccount.com",
+          client_id: "123456",
+          auth_uri: "https://accounts.google.com/o/oauth2/auth",
+          token_uri: "https://oauth2.googleapis.com/token",
+        }),
+      ),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        GcpService,
+        {
+          provide: IntegrationCredentialService,
+          useValue: mockCredentialService,
+        },
+      ],
+    }).compile();
+
+    service = module.get<GcpService>(GcpService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe("getMonthlyCost — non-200 response", () => {
+    it("should return empty array when billing API returns non-200 status", async () => {
+      mockAxiosGet.mockResolvedValue({ status: 403, data: {} });
+
+      const result = await service.getMonthlyCost(ORG_ID_2, 30);
+
+      expect(result).toEqual([]);
+    });
+  });
+});

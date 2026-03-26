@@ -115,5 +115,16 @@ describe("CloudCostService", () => {
 
       expect(result).toHaveLength(0);
     });
+
+    it("should use default 30 days when days parameter is not provided to getFlatCostEntries", async () => {
+      mockCloudResourceService.getAggregatedCost.mockResolvedValue([]);
+
+      await service.getFlatCostEntries(ORG_ID);
+
+      expect(mockCloudResourceService.getAggregatedCost).toHaveBeenCalledWith(
+        ORG_ID,
+        30,
+      );
+    });
   });
 });

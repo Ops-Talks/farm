@@ -217,6 +217,28 @@ describe("DocumentationService", () => {
 
       expect(results).toHaveLength(0);
     });
+
+    it("should scope the search to a specific component when componentId is provided", async () => {
+      mockRepository.find.mockResolvedValue([
+        { ...mockDoc, id: "1", title: "API Guide" },
+      ]);
+
+      await service.search("api", "comp-uuid");
+
+      expect(mockRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { componentId: "comp-uuid" } }),
+      );
+    });
+  });
+
+  describe("findOne — NotFoundException", () => {
+    it("should throw NotFoundException when documentation is not found", async () => {
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(service.findOne("non-existent-id")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 });
 

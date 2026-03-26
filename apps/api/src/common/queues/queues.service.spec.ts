@@ -228,3 +228,63 @@ describe("QueuesService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// QueuesService — additional branch coverage for ?? 0 fallbacks
+// ---------------------------------------------------------------------------
+
+describe("QueuesService — jobCounts ?? 0 fallback branches", () => {
+  let service: QueuesService;
+  let mockQueue: Record<string, jest.Mock>;
+
+  beforeEach(async () => {
+    mockQueue = {
+      getJobCounts: jest.fn().mockResolvedValue({}), // empty object → all counts use ?? 0
+      isPaused: jest.fn().mockResolvedValue(true),
+      getJobs: jest.fn().mockResolvedValue([]),
+      getJob: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        QueuesService,
+        {
+          provide: getQueueToken(QUEUE_NAMES.CATALOG_DISCOVERY),
+          useValue: mockQueue,
+        },
+      ],
+    }).compile();
+
+    service = module.get<QueuesService>(QueuesService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe("listQueues — missing job count keys use ?? 0 default", () => {
+    it("should default all job counts to 0 when getJobCounts returns empty object", async () => {
+      const result = await service.listQueues();
+
+      expect(result[0].jobCounts.active).toBe(0);
+      expect(result[0].jobCounts.completed).toBe(0);
+      expect(result[0].jobCounts.failed).toBe(0);
+      expect(result[0].jobCounts.delayed).toBe(0);
+      expect(result[0].jobCounts.waiting).toBe(0);
+      expect(result[0].jobCounts.paused).toBe(0);
+      expect(result[0].jobCounts.prioritized).toBe(0);
+    });
+  });
+
+  describe("getQueueInfo — missing job count keys use ?? 0 default", () => {
+    it("should default all job counts to 0 when getJobCounts returns empty object", async () => {
+      const result = await service.getQueueInfo(QUEUE_NAMES.CATALOG_DISCOVERY);
+
+      expect(result.jobCounts.active).toBe(0);
+      expect(result.jobCounts.completed).toBe(0);
+      expect(result.jobCounts.failed).toBe(0);
+      expect(result.jobCounts.delayed).toBe(0);
+      expect(result.jobCounts.waiting).toBe(0);
+      expect(result.jobCounts.paused).toBe(0);
+      expect(result.jobCounts.prioritized).toBe(0);
+    });
+  });
+});

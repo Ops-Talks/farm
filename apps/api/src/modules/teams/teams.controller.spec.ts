@@ -139,4 +139,27 @@ describe("TeamsController", () => {
     expect(result).toHaveLength(1);
     expect(service.getComponents).toHaveBeenCalledWith("team-uuid-1");
   });
+
+  // ---------------------------------------------------------------------------
+  // Branch coverage: `query.skip ?? 0` and `query.take ?? 20` null-coalescing
+  // operators — these branches are only reachable when the caller omits skip /
+  // take (i.e. the values are undefined at runtime).
+  // ---------------------------------------------------------------------------
+
+  it("should default skip to 0 and take to 20 when query values are undefined", async () => {
+    const mockReq = { organizationId: undefined };
+    const result = await controller.findAll(
+      { skip: undefined, take: undefined },
+      mockReq as never,
+    );
+
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+    expect(service.findAll).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+    );
+  });
 });

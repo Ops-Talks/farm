@@ -161,6 +161,33 @@ describe('recordSpan', () => {
     ).rejects.toBe(err);
   });
 
+  it('sets ERROR status with String() message when a non-Error value is thrown', async () => {
+    const { SpanStatusCode } = await import('@opentelemetry/api');
+    await expect(
+      recordSpan('test.span', () => { throw 'network timeout'; }),
+    ).rejects.toBe('network timeout');
+
+    expect(mockSpan.setStatus).toHaveBeenCalledWith({
+      code: SpanStatusCode.ERROR,
+      message: 'network timeout',
+    });
+  });
+
+  it('does not call recordException when a non-Error value is thrown', async () => {
+    await expect(
+      recordSpan('test.span', () => { throw 42; }),
+    ).rejects.toBe(42);
+
+    expect(mockSpan.recordException).not.toHaveBeenCalled();
+  });
+
+  it('re-throws a non-Error value unchanged', async () => {
+    const nonError = { code: 'ECONNREFUSED', port: 5432 };
+    await expect(
+      recordSpan('test.span', () => Promise.reject(nonError)),
+    ).rejects.toBe(nonError);
+  });
+
   it('uses context.with to propagate span context', async () => {
     await recordSpan('test.span', () => 'result');
     expect(mockWith).toHaveBeenCalledOnce();

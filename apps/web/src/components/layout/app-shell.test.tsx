@@ -2,12 +2,58 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// ---------------------------------------------------------------------------
+// Hoisted configurable mock state — available inside vi.mock() factories.
+// ---------------------------------------------------------------------------
+const mockPathnameReturn = vi.hoisted(() => vi.fn(() => "/dashboard"));
+const mockTheme = vi.hoisted(() => ({ current: "light" as string }));
+const mockSetTheme = vi.hoisted(() => vi.fn());
+const mockAuthUser = vi.hoisted(() => ({
+  current: {
+    id: "u1",
+    username: "admin",
+    displayName: "Admin User" as string | null | undefined,
+    email: "admin@farm.dev",
+    roles: ["admin"],
+  } as {
+    id: string;
+    username: string;
+    displayName: string | null | undefined;
+    email: string;
+    roles: string[];
+  } | null,
+}));
+
 const mockLogout = vi.fn();
 vi.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({
-    user: { id: "u1", username: "admin", displayName: "Admin User", email: "admin@farm.dev", roles: ["admin"] },
+    user: mockAuthUser.current,
     logout: mockLogout,
   }),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => mockPathnameReturn(),
+  useParams: () => ({}),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+vi.mock("next-themes", () => ({
+  useTheme: () => ({
+    theme: mockTheme.current,
+    setTheme: mockSetTheme,
+    resolvedTheme: mockTheme.current,
+    themes: ["light", "dark", "system"],
+  }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/contexts/organization-context", () => ({
@@ -38,6 +84,16 @@ import { AppShell } from "@/components/layout/app-shell";
 describe("AppShell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset configurable mock state to the default happy-path values.
+    mockAuthUser.current = {
+      id: "u1",
+      username: "admin",
+      displayName: "Admin User",
+      email: "admin@farm.dev",
+      roles: ["admin"],
+    };
+    mockPathnameReturn.mockReturnValue("/dashboard");
+    mockTheme.current = "light";
   });
 
   it("should render sidebar navigation links", () => {
@@ -122,6 +178,109 @@ describe("AppShell", () => {
     await user.click(themeItem);
 
     // setTheme should be called (from next-themes mock in setup.ts)
+  });
+
+  it("should show 'Dark' as theme label and cycle to system when theme is dark", async () => {
+    mockTheme.current = "dark";
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const userTrigger = screen.getByRole("button", { name: /Admin User/i });
+    await user.click(userTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText("Theme: Dark")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Theme: Dark"));
+    expect(mockSetTheme).toHaveBeenCalledWith("system");
+  });
+
+  it("should show 'System' as theme label and cycle to light when theme is system", async () => {
+    mockTheme.current = "system";
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const userTrigger = screen.getByRole("button", { name: /Admin User/i });
+    await user.click(userTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText("Theme: System")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Theme: System"));
+    expect(mockSetTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("should use username for initials when displayName is absent", () => {
+    mockAuthUser.current = {
+      id: "u2",
+      username: "john.doe",
+      displayName: undefined,
+      email: "john@example.com",
+      roles: ["viewer"],
+    };
+    render(<AppShell>Content</AppShell>);
+    // getInitials("john.doe") splits on [._-] → ["john", "doe"] → "JD"
+    expect(screen.getByText("JD")).toBeInTheDocument();
+  });
+
+  it("should show '?' initials when user is null", () => {
+    mockAuthUser.current = null;
+    render(<AppShell>Content</AppShell>);
+    expect(screen.getByText("?")).toBeInTheDocument();
+  });
+
+  it("should render breadcrumbs for a multi-segment pathname", () => {
+    mockPathnameReturn.mockReturnValue("/catalog/my-service");
+    render(<AppShell>Content</AppShell>);
+
+    // First crumb (non-last) renders as a link; second (last) as a span.
+    const catalogLinks = screen.getAllByRole("link", { name: /Catalog/i });
+    expect(catalogLinks.length).toBeGreaterThan(0);
+    expect(screen.getByText("My service")).toBeInTheDocument();
+  });
+
+  it("should mark /compliance/policies active via longest-prefix matching", () => {
+    mockPathnameReturn.mockReturnValue("/compliance/policies");
+    render(<AppShell>Content</AppShell>);
+
+    // /compliance/policies (length 22) wins over /compliance (length 11).
+    const tagPolicyLinks = screen.getAllByRole("link", { name: /Tag Policies/i });
+    const activeLinks = tagPolicyLinks.filter(
+      (link) => link.getAttribute("aria-current") === "page",
+    );
+    expect(activeLinks.length).toBeGreaterThan(0);
+
+    // /compliance itself must NOT be marked active.
+    const complianceLinks = screen.getAllByRole("link", { name: /^Compliance$/i });
+    complianceLinks.forEach((link) => {
+      expect(link.getAttribute("aria-current")).not.toBe("page");
+    });
+  });
+
+  it("should open the mobile navigation sheet when the hamburger button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const hamburger = screen.getByRole("button", { name: /Open navigation menu/i });
+    await user.click(hamburger);
+
+    await waitFor(() => {
+      expect(screen.getByRole("navigation", { name: /Mobile navigation/i })).toBeInTheDocument();
+    });
+  });
+
+  it("should use the startsWith rule when pathname extends a nav href", () => {
+    mockPathnameReturn.mockReturnValue("/catalog/some-id");
+    render(<AppShell>Content</AppShell>);
+
+    // /catalog should be active because /catalog/some-id starts with /catalog/
+    const catalogLinks = screen.getAllByRole("link", { name: /^Catalog$/i });
+    const activeLinks = catalogLinks.filter(
+      (link) => link.getAttribute("aria-current") === "page",
+    );
+    expect(activeLinks.length).toBeGreaterThan(0);
   });
 
 });

@@ -112,6 +112,27 @@ describe("CatalogController", () => {
     expect(await controller.remove("1")).toBeUndefined();
   });
 
+  // ---------------------------------------------------------------------------
+  // Branch coverage: `query.skip ?? 0` and `query.take ?? 20` null-coalescing
+  // operators — only reachable when skip / take are undefined at runtime.
+  // ---------------------------------------------------------------------------
+
+  it("should default skip to 0 and take to 20 when query values are undefined", async () => {
+    const items = [{ id: "1", name: "Test", type: "service" }];
+    service.findAll.mockResolvedValue([items, 1]);
+    const mockReq = { organizationId: undefined };
+
+    const result = await controller.findAll(
+      { skip: undefined, take: undefined },
+      undefined,
+      mockReq as never,
+    );
+
+    expect(result).toBeInstanceOf(PaginatedResponseDto);
+    expect(result.skip).toBe(0);
+    expect(result.take).toBe(20);
+  });
+
   it("should enqueue a discovery job", async () => {
     mockDiscoveryQueue.add.mockResolvedValue({ id: "job-123" });
     const result = await controller.discoverFromLocation({
@@ -121,6 +142,77 @@ describe("CatalogController", () => {
     expect(result.message).toContain("https://github.com/example/repo");
     expect(mockDiscoveryQueue.add).toHaveBeenCalledWith("discover", {
       url: "https://github.com/example/repo",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CatalogController — without discovery queue (synchronous fallback)
+// ---------------------------------------------------------------------------
+
+describe("CatalogController — without discovery queue", () => {
+  let controller: CatalogController;
+  const mockCatalogServiceLocal = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    discoverFromLocation: jest.fn(),
+    registerYaml: jest.fn(),
+  };
+  const mockCacheManagerLocal = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    clear: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CatalogController],
+      providers: [
+        { provide: CatalogService, useValue: mockCatalogServiceLocal },
+        { provide: CACHE_MANAGER, useValue: mockCacheManagerLocal },
+        // No discovery queue — fallback to synchronous discovery
+      ],
+    }).compile();
+
+    controller = module.get<CatalogController>(CatalogController);
+    jest.clearAllMocks();
+  });
+
+  describe("discoverFromLocation — synchronous fallback", () => {
+    it("should call discoverFromLocation directly when no queue is available", async () => {
+      mockCatalogServiceLocal.discoverFromLocation.mockResolvedValue(3);
+
+      const result = await controller.discoverFromLocation({
+        url: "https://github.com/example/fallback-repo",
+      });
+
+      expect(result.discovered).toBe(3);
+      expect(result.message).toContain(
+        "https://github.com/example/fallback-repo",
+      );
+      expect(result.jobId).toBeUndefined();
+    });
+  });
+
+  describe("registerYaml", () => {
+    it("should register a component from YAML and clear cache", async () => {
+      const mockComponent = {
+        id: "comp-yaml",
+        name: "yaml-svc",
+        kind: "service",
+      };
+      mockCatalogServiceLocal.registerYaml.mockResolvedValue(mockComponent);
+
+      const result = await controller.registerYaml({
+        yaml: "apiVersion: farm.io/v1\nkind: Component\nmetadata:\n  name: yaml-svc\nspec:\n  type: service\n  owner: team-a",
+      });
+
+      expect(result).toEqual(mockComponent);
+      expect(mockCacheManagerLocal.clear).toHaveBeenCalled();
     });
   });
 });

@@ -122,6 +122,19 @@ describe("JenkinsService", () => {
 
       await expect(service.listJobs(ORG_ID)).rejects.toThrow(NotFoundException);
     });
+
+    it("should return empty array when response jobs field is null", async () => {
+      mockCredentialService.findByType.mockResolvedValue({
+        encryptedValue: "enc",
+        type: IntegrationType.JENKINS,
+      });
+      mockHttpGet.mockReturnValue(
+        of(makeAxiosResponse({ jobs: null as unknown as never[] })),
+      );
+
+      const result = await service.listJobs(ORG_ID);
+      expect(result).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -157,6 +170,19 @@ describe("JenkinsService", () => {
 
       const [url] = mockHttpGet.mock.calls[0] as [string];
       expect(url).toContain("{0,5}");
+    });
+
+    it("should return empty array when response builds field is null", async () => {
+      mockCredentialService.findByType.mockResolvedValue({
+        encryptedValue: "enc",
+        type: IntegrationType.JENKINS,
+      });
+      mockHttpGet.mockReturnValue(
+        of(makeAxiosResponse({ builds: null as unknown as never[] })),
+      );
+
+      const result = await service.getBuildHistory(ORG_ID, "my-job");
+      expect(result).toEqual([]);
     });
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   OrganizationProvider,
@@ -159,5 +159,38 @@ describe("OrganizationProvider", () => {
       "useOrganization must be used within an OrganizationProvider",
     );
     spy.mockRestore();
+  });
+
+  it("refreshOrgs re-fetches organizations from the API", async () => {
+    vi.mocked(orgsApi.list).mockResolvedValue(mockOrgs as never);
+
+    function TestRefreshConsumer() {
+      const { organizations, isLoading, refreshOrgs } = useOrganization();
+      return (
+        <div>
+          <span data-testid="loading">{String(isLoading)}</span>
+          <span data-testid="count">{organizations.length}</span>
+          <button onClick={() => void refreshOrgs()}>Refresh</button>
+        </div>
+      );
+    }
+
+    render(
+      <OrganizationProvider>
+        <TestRefreshConsumer />
+      </OrganizationProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    expect(orgsApi.list).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText("Refresh"));
+
+    await waitFor(() => {
+      expect(orgsApi.list).toHaveBeenCalledTimes(2);
+    });
   });
 });

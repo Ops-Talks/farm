@@ -332,3 +332,127 @@ describe("IstioController", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// IstioController — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("IstioController — additional branch coverage", () => {
+  let controller: IstioController;
+  let mockIstioService: Record<string, jest.Mock>;
+  let mockIstioMetricsService: Record<string, jest.Mock>;
+
+  beforeEach(async () => {
+    mockIstioService = {
+      isIstioEnabled: jest.fn().mockResolvedValue(false),
+      getVirtualServices: jest.fn().mockResolvedValue([]),
+      getVirtualService: jest.fn().mockResolvedValue({}),
+      patchVirtualServiceWeights: jest.fn().mockResolvedValue(undefined),
+      getPeerAuthentications: jest.fn().mockResolvedValue([]),
+      getAuthorizationPolicies: jest.fn().mockResolvedValue([]),
+      buildTopology: jest.fn().mockResolvedValue([]),
+    };
+
+    mockIstioMetricsService = {
+      getServiceRps: jest.fn().mockResolvedValue({ data: [] }),
+      getServiceErrorRate: jest.fn().mockResolvedValue({ data: [] }),
+      getServiceLatency: jest
+        .fn()
+        .mockResolvedValue({ p50: [], p95: [], p99: [] }),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [IstioController],
+      providers: [
+        { provide: IstioService, useValue: mockIstioService },
+        { provide: IstioMetricsService, useValue: mockIstioMetricsService },
+      ],
+    }).compile();
+
+    controller = module.get<IstioController>(IstioController);
+    jest.clearAllMocks();
+  });
+
+  describe("listVirtualServices — namespace ?? 'default' branch", () => {
+    it("should use 'default' when namespace is undefined", async () => {
+      await controller.listVirtualServices(undefined as unknown as string);
+      expect(mockIstioService.getVirtualServices).toHaveBeenCalledWith(
+        "default",
+        undefined,
+      );
+    });
+
+    it("should use provided namespace", async () => {
+      await controller.listVirtualServices("prod");
+      expect(mockIstioService.getVirtualServices).toHaveBeenCalledWith(
+        "prod",
+        undefined,
+      );
+    });
+  });
+
+  describe("listPeerAuthentications — namespace ?? 'default' branch", () => {
+    it("should use 'default' when namespace is undefined", async () => {
+      await controller.listPeerAuthentications(undefined as unknown as string);
+      expect(mockIstioService.getPeerAuthentications).toHaveBeenCalledWith(
+        "default",
+        undefined,
+      );
+    });
+  });
+
+  describe("listAuthorizationPolicies — namespace ?? 'default' branch", () => {
+    it("should use 'default' when namespace is undefined", async () => {
+      await controller.listAuthorizationPolicies(
+        undefined as unknown as string,
+      );
+      expect(mockIstioService.getAuthorizationPolicies).toHaveBeenCalledWith(
+        "default",
+        undefined,
+      );
+    });
+  });
+
+  describe("getTopology — orgId ?? '' branch", () => {
+    it("should use empty string when orgId is undefined", async () => {
+      await controller.getTopology(undefined as unknown as string);
+      expect(mockIstioService.buildTopology).toHaveBeenCalledWith(
+        "",
+        undefined,
+      );
+    });
+  });
+
+  describe("getMetricsRps — default range", () => {
+    it("should use default range=5m when not provided", async () => {
+      await controller.getMetricsRps("my-svc", "default");
+      expect(mockIstioMetricsService.getServiceRps).toHaveBeenCalledWith(
+        "my-svc",
+        "default",
+        "5m",
+      );
+    });
+  });
+
+  describe("getMetricsErrorRate — default range", () => {
+    it("should use default range=5m when not provided", async () => {
+      await controller.getMetricsErrorRate("my-svc", "default");
+      expect(mockIstioMetricsService.getServiceErrorRate).toHaveBeenCalledWith(
+        "my-svc",
+        "default",
+        "5m",
+      );
+    });
+  });
+
+  describe("getMetricsLatency — default range", () => {
+    it("should use default range=5m when not provided", async () => {
+      await controller.getMetricsLatency("my-svc", "default");
+      expect(mockIstioMetricsService.getServiceLatency).toHaveBeenCalledWith(
+        "my-svc",
+        "default",
+        "5m",
+      );
+    });
+  });
+});
