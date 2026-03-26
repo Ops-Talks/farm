@@ -48,6 +48,11 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Helm](helm.md) | `/api/v1/helm` | Helm release discovery and sync |
 | [Kubernetes](kubernetes.md) | `/api/v1/kubernetes` | Kubernetes workload and CRD discovery |
 | [CI/CD Integrations](cicd.md) | `/api/v1/argocd`, `/api/v1/circleci`, `/api/v1/jenkins`, `/api/v1/travisci` | External CI/CD platform integrations |
+| [Cloud Integrations](cloud.md) | `/api/v1/cloud` | AWS, GCP, Azure resource discovery and cost |
+| [Tag Governance](tag-governance.md) | `/api/v1/tag-policies`, `/api/v1/violations` | Tag policy CRUD, compliance audit, ClusterPolicy export |
+| [Kyverno](kyverno.md) | `/api/v1/kyverno` | PolicyReport reader and ClusterPolicy YAML export |
+| [Keycloak SSO](keycloak-sso.md) | `/api/v1/auth/keycloak`, `/api/v1/keycloak-sync` | OIDC login and group sync |
+| [Istio](istio.md) | `/api/v1/istio` | VirtualService, PeerAuthentication, traffic metrics |
 
 ## Response Format
 

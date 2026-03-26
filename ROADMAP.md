@@ -636,7 +636,7 @@ Backend remains at project root; front-end in `web/` directory with independent 
 
 ---
 
-## Phase 6: Advanced Features `TODO`
+## Phase 6: Advanced Features `DONE`
 
 ### FARM-E25: Multi-Tenant and RBAC `DONE`
 
@@ -729,44 +729,6 @@ Backend remains at project root; front-end in `web/` directory with independent 
 | FARM-S121 | Story | Add React Error Boundary components at feature level (catalog, teams, deployments, observability) | `DONE` |
 | FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to colocated `*.test.tsx` alongside source files | `DONE` |
 | FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `DONE` |
-
-### FARM-E34: Authentication Modernization (Better Auth) `TODO`
-
-> Migrate the authentication layer from the current custom Passport.js/JWT stack to [Better Auth](https://better-auth.com), a TypeScript-first, framework-agnostic auth library with a rich plugin ecosystem.
-
-#### Background and Analysis (2026-03-17)
-
-A detailed gap analysis was produced comparing the current implementation against Better Auth. Summary of findings:
-
-**Current stack:**
-- Backend: NestJS + Passport.js (jwt / local / github / google strategies), custom JWT (1h) + opaque refresh tokens (bcrypt-hashed hex-40), `User` entity with `roles: string[]`, `oauthProvider`, `oauthProviderId`.
-- Frontend: manual `AuthContext` + `sessionStorage` token management, custom 401 retry/refresh logic in `api-client.ts`, `AuthGuard` component.
-
-**Better Auth capabilities that replace custom code:**
-- Native email/password, GitHub, and Google OAuth (no Passport needed).
-- Managed session rotation and refresh (removes ~60 lines of manual retry logic from `api-client.ts`).
-- `organization` plugin natively covers multi-tenant organization and role hierarchy (OWNER/ADMIN/MEMBER).
-- `createAuthClient()` React client with `useSession()` hook replaces `AuthContext`.
-- NestJS adapter via community package `@thallesp/nestjs-better-auth`.
-
-**Key risks identified:**
-- Login uses `username`, Better Auth defaults to `email`. Requires the `username` plugin.
-- NestJS integration is **community-maintained** (not official), introducing long-term maintenance risk.
-- Better Auth requires schema migration: new tables `session`, `account`, `verification` and removal of `User.refreshToken`, `User.oauthProvider`, `User.oauthProviderId`.
-- The Organization module delivered in FARM-E25 (v0.9.11) has a schema incompatible with Better Auth's `organization` plugin; a parallel migration plan is needed.
-- Full-stack migration `bodyParser: false` in `main.ts` is required, which may affect other middleware.
-
-**Recommended approach:** two-phase migration — frontend-only first (lower risk), then backend if the NestJS adapter matures.
-
-#### Stories
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S124 | Story | Frontend-only Better Auth client migration: replace `AuthContext`, `api-client.ts` auth logic, and `AuthGuard` with `createAuthClient()` and `useSession()` hook | `TODO` |
-| FARM-S125 | Story | Backend Better Auth integration: replace Passport strategies with Better Auth instance (`@thallesp/nestjs-better-auth`), disable body parser, migrate guards to `@AllowAnonymous()` pattern | `TODO` |
-| FARM-S126 | Story | Schema migration: add Better Auth tables (`session`, `account`, `verification`), migrate existing users and OAuth accounts, remove deprecated `User` columns | `TODO` |
-| FARM-S127 | Story | Username login plugin: configure Better Auth `username` plugin so existing username-based accounts continue to work without requiring email login | `TODO` |
-| FARM-S128 | Story | Organization module alignment: evaluate replacing FARM-E25 `OrgContextInterceptor` + `OrganizationModule` with Better Auth `organization` plugin, or maintaining both | `TODO` |
 
 ### FARM-E35: CI/CD External Integrations `DONE`
 
@@ -898,7 +860,7 @@ Credentials are stored per-organization using the `IntegrationCredential` entity
 
 ---
 
-### FARM-E39: Resource Tagging Governance `TODO`
+### FARM-E39: Resource Tagging Governance `DONE`
 
 > Define mandatory tag/label policies per organization and automatically audit cloud resources and Kubernetes workloads for compliance — surfacing gaps directly in Farm's UI.
 
@@ -910,9 +872,9 @@ As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37)
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S148 | Story | Tag policy engine: allow org admins to define required tag keys per resource type (e.g., `team`, `component`, `environment` required on all ECS services and K8s Deployments); store policies in DB | `TODO` |
-| FARM-S149 | Story | Compliance audit job: scheduled BullMQ job that evaluates all discovered resources against active policies, records violations (`ResourceViolation` entity), and emits a WebSocket event when the report completes | `TODO` |
-| FARM-S150 | Story | Compliance dashboard: org-level view showing compliance percentage by provider, team, and resource type; per-component violation list with remediation hints (suggested tag values based on Component ownership) | `TODO` |
+| FARM-S148 | Story | Tag policy engine: allow org admins to define required tag keys per resource type (e.g., `team`, `component`, `environment` required on all ECS services and K8s Deployments); store policies in DB | `DONE` |
+| FARM-S149 | Story | Compliance audit job: scheduled BullMQ job that evaluates all discovered resources against active policies, records violations (`ResourceViolation` entity), and emits a WebSocket event when the report completes | `DONE` |
+| FARM-S150 | Story | Compliance dashboard: org-level view showing compliance percentage by provider, team, and resource type; per-component violation list with remediation hints (suggested tag values based on Component ownership) | `DONE` |
 
 #### Implementation Notes
 
@@ -923,7 +885,7 @@ As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37)
 
 ---
 
-### FARM-E40: Kyverno Policy Integration `TODO`
+### FARM-E40: Kyverno Policy Integration `DONE`
 
 > Consume Kyverno `PolicyReport` CRDs to surface policy violations per component, and export Farm tag policies as ready-to-apply `ClusterPolicy` manifests — closing the governance loop between the portal and cluster enforcement.
 
@@ -931,8 +893,8 @@ As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37)
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S151 | Story | PolicyReport reader: watch `PolicyReport` and `ClusterPolicyReport` CRDs in connected clusters; map violations to Farm Components by namespace/labels and display them in the Component detail page alongside FARM-E39 violations | `TODO` |
-| FARM-S152 | Story | ClusterPolicy export: allow org admins to export a Farm Tag Policy (FARM-E39) as a Kyverno `ClusterPolicy` YAML — downloadable from the compliance dashboard and optionally auto-applied to connected clusters | `TODO` |
+| FARM-S151 | Story | PolicyReport reader: watch `PolicyReport` and `ClusterPolicyReport` CRDs in connected clusters; map violations to Farm Components by namespace/labels and display them in the Component detail page alongside FARM-E39 violations | `DONE` |
+| FARM-S152 | Story | ClusterPolicy export: allow org admins to export a Farm Tag Policy (FARM-E39) as a Kyverno `ClusterPolicy` YAML — downloadable from the compliance dashboard and optionally auto-applied to connected clusters | `DONE` |
 
 #### Implementation Notes
 
@@ -942,32 +904,32 @@ As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37)
 
 ---
 
-### FARM-E41: Keycloak / Enterprise SSO `TODO`
+### FARM-E41: Keycloak / Enterprise SSO `DONE`
 
 > Integrate Keycloak as an enterprise identity provider for Farm — enabling SSO login, automatic sync of Keycloak groups to Farm organizations and teams, and Keycloak client credentials as a secret source in pipeline configs.
 
 #### Background
 
-Farm's FARM-E34 evaluates Better Auth as a general auth modernization. Keycloak integration is a separate concern: many enterprises already run Keycloak (or another OIDC provider) and need Farm to federate into it rather than maintain a separate identity silo. These two tracks are complementary — Better Auth can act as the OIDC consumer while Keycloak is the provider.
+Keycloak integration is a separate concern from Farm's existing Passport.js/JWT stack: many enterprises already run Keycloak (or another OIDC provider) and need Farm to federate into it rather than maintain a separate identity silo.
 
 #### Stories
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S153 | Story | Keycloak OIDC login: add Keycloak as a configurable OIDC identity provider (per-org, via `KEYCLOAK_URL` + realm + client ID/secret); users authenticate via Keycloak SSO instead of creating Farm-local accounts | `TODO` |
-| FARM-S154 | Story | Group sync: periodically sync Keycloak Groups/Roles to Farm Organizations and Teams via the Keycloak Admin REST API; support bidirectional role mapping (`keycloak-group → Farm Team`, `keycloak-role → OrgRole`) | `TODO` |
-| FARM-S155 | Story | Client credentials resolver: allow pipeline stage configs to reference Keycloak service account tokens (`keycloak://realm/client`) as a secret source — token is fetched via `client_credentials` grant at execution time | `TODO` |
+| FARM-S153 | Story | Keycloak OIDC login: add Keycloak as a configurable OIDC identity provider (per-org, via `KEYCLOAK_URL` + realm + client ID/secret); users authenticate via Keycloak SSO instead of creating Farm-local accounts | `DONE` |
+| FARM-S154 | Story | Group sync: periodically sync Keycloak Groups/Roles to Farm Organizations and Teams via the Keycloak Admin REST API; support bidirectional role mapping (`keycloak-group → Farm Team`, `keycloak-role → OrgRole`) | `DONE` |
+| FARM-S155 | Story | Client credentials resolver: allow pipeline stage configs to reference Keycloak service account tokens (`keycloak://realm/client`) as a secret source — token is fetched via `client_credentials` grant at execution time | `DONE` |
 
 #### Implementation Notes
 
 - **OIDC config**: Stored per-org in `IntegrationCredential` (type `keycloak`). Discovery via `{keycloak-url}/realms/{realm}/.well-known/openid-configuration`.
 - **Group sync**: Scheduled BullMQ job (configurable interval, default 1h). Uses `GET /admin/realms/{realm}/groups` + `GET /admin/realms/{realm}/users/{id}/role-mappings`.
 - **Conflict resolution**: If a user exists in Farm by email and also in Keycloak, accounts are merged on first SSO login.
-- **Priority over FARM-E34**: Keycloak OIDC (S153) can be implemented without Better Auth migration — it is an additional Passport.js strategy (`passport-openidconnect`).
+- Keycloak OIDC (S153) is an additive Passport.js strategy (`passport-openidconnect`) — no changes to the existing auth stack required.
 
 ---
 
-### FARM-E42: Istio Service Mesh Integration `TODO`
+### FARM-E42: Istio Service Mesh Integration `DONE`
 
 > Surface Istio traffic metrics, service topology, and security posture (mTLS, AuthorizationPolicy) in Farm's component and environment views — using data Istio already generates, with no additional instrumentation required.
 
@@ -981,10 +943,10 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S156 | Story | Traffic metrics per component: pre-built PromQL panels for Istio metrics (RPS, error rate, P50/P95/P99 latency) on the Component detail page — sourced from the existing Prometheus integration | `TODO` |
-| FARM-S157 | Story | Service topology auto-discovery: query Istio `VirtualService` and traffic metrics to build a dependency graph; auto-update `Component.dependencies` with observed upstream/downstream services | `TODO` |
-| FARM-S158 | Story | Security posture view: display `PeerAuthentication` mTLS mode and active `AuthorizationPolicy` rules per component/namespace; flag services with no authorization policy as a security warning | `TODO` |
-| FARM-S159 | Story | Canary traffic control: display active `VirtualService` weight split (canary %) per environment; allow pipeline `deploy` stages to adjust weights via Istio API — complements Argo Rollouts (FARM-S141) | `TODO` |
+| FARM-S156 | Story | Traffic metrics per component: pre-built PromQL panels for Istio metrics (RPS, error rate, P50/P95/P99 latency) on the Component detail page — sourced from the existing Prometheus integration | `DONE` |
+| FARM-S157 | Story | Service topology auto-discovery: query Istio `VirtualService` and traffic metrics to build a dependency graph; auto-update `Component.dependencies` with observed upstream/downstream services | `DONE` |
+| FARM-S158 | Story | Security posture view: display `PeerAuthentication` mTLS mode and active `AuthorizationPolicy` rules per component/namespace; flag services with no authorization policy as a security warning | `DONE` |
+| FARM-S159 | Story | Canary traffic control: display active `VirtualService` weight split (canary %) per environment; allow pipeline `deploy` stages to adjust weights via Istio API — complements Argo Rollouts (FARM-S141) | `DONE` |
 
 #### Implementation Notes
 
@@ -1250,7 +1212,7 @@ Add Vitest `thresholds` to `apps/web/vitest.config.ts` once all coverage stories
 | Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
 | Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
-| Phase 6: Advanced Features | 14 | 63 | `PARTIAL` |
+| Phase 6: Advanced Features | 13 | 58 | `DONE` |
 | Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
