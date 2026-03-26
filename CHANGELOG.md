@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2026-03-25
+
+### Changed
+- fix(web-ci) - The fix was straightforward: .prose appeared immediately with empty renderedHtml when selectedId changed, before the async fetch ran. The waitFor was resolving too early. Changing it to wait for the actual content (toContain('object content')) ensures it waits for the fetch to complete.
+
 ## [0.12.0] - 2026-03-25
 
 ### Changed
