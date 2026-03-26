@@ -89,6 +89,26 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 - Access a centralized list of system capabilities
 - Stay informed about platform updates
 
+### Cloud Providers
+
+Farm discovers and registers cloud resources from [AWS, GCP, and Azure](cloud-providers.md). Connected per-organization via encrypted credentials, it imports tagged resources into the Catalog and displays monthly cost estimates.
+
+### Tag Governance
+
+The [tag governance engine](tag-governance.md) lets org admins define required tag keys per resource type. A scheduled audit job evaluates all discovered resources and records violations with remediation hints. Exports to Kyverno `ClusterPolicy` YAML are also supported.
+
+### Kyverno Integration
+
+Farm reads [Kyverno PolicyReports](kyverno-integration.md) from connected clusters and surfaces violations alongside tag governance results on the component detail page.
+
+### Keycloak SSO
+
+Farm integrates with [Keycloak](keycloak-sso.md) for enterprise SSO login, automatic Keycloak group-to-team sync, and Keycloak client credentials as a secret source in pipeline stage configs.
+
+### Istio Service Mesh
+
+Farm surfaces [Istio](istio-integration.md) traffic metrics (RPS, error rate, P50/P95/P99 latency), mTLS and AuthorizationPolicy security posture, service topology, and canary VirtualService weight controls directly on each catalog component.
+
 ## Quick Links
 
 | Topic | Description |
@@ -101,4 +121,9 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 | [CI/CD Integrations](../api-reference/cicd.md) | ArgoCD, CircleCI, Jenkins, Travis CI |
 | [Helm Integration](helm-integration.md) | Helm release discovery and chart metadata |
 | [Kubernetes Operator](kubernetes-operator.md) | Workload, CRD, and Argo Rollouts discovery |
+| [Cloud Providers](cloud-providers.md) | AWS, GCP, Azure resource discovery |
+| [Tag Governance](tag-governance.md) | Required tag policies and violation reporting |
+| [Kyverno Integration](kyverno-integration.md) | PolicyReport ingestion and ClusterPolicy export |
+| [Keycloak SSO](keycloak-sso.md) | Enterprise SSO login and group sync |
+| [Istio Service Mesh](istio-integration.md) | Traffic metrics, security posture, canary control |
 | [FAQ](faq.md) | Frequently asked questions |
