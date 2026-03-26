@@ -153,3 +153,93 @@ describe("ObservabilityController", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional branch-coverage tests
+// ---------------------------------------------------------------------------
+
+describe("ObservabilityController — additional branches", () => {
+  let controller: ObservabilityController;
+  const mockService = {
+    getSummary: jest.fn().mockResolvedValue({}),
+    queryPrometheus: jest.fn().mockResolvedValue({}),
+    queryJaegerTraces: jest.fn().mockResolvedValue({ data: [] }),
+    queryJaegerServices: jest.fn().mockResolvedValue({ data: [] }),
+    queryJaegerTrace: jest.fn().mockResolvedValue({ data: {} }),
+    queryLoki: jest.fn().mockResolvedValue({ streams: [] }),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ObservabilityController],
+      providers: [{ provide: ObservabilityService, useValue: mockService }],
+    }).compile();
+
+    controller = module.get<ObservabilityController>(ObservabilityController);
+    jest.clearAllMocks();
+  });
+
+  describe("jaegerTraces — with overridden limit and lookback", () => {
+    it("should use provided limit and lookback values", async () => {
+      await controller.jaegerTraces({
+        service: "my-svc",
+        limit: "50",
+        lookback: "2h",
+      });
+      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
+        limit: "50",
+        lookback: "2h",
+        service: "my-svc",
+      });
+    });
+
+    it("should use default limit=20 and lookback=1h when not provided", async () => {
+      await controller.jaegerTraces({ service: "my-svc" });
+      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
+        limit: "20",
+        lookback: "1h",
+        service: "my-svc",
+      });
+    });
+  });
+
+  describe("lokiLogs — with overridden limit", () => {
+    it("should use provided limit when given", async () => {
+      await controller.lokiLogs({ query: "{app=my-app}", limit: "200" });
+      expect(mockService.queryLoki).toHaveBeenCalledWith(
+        { query: "{app=my-app}", limit: "200" },
+        "/loki/api/v1/query_range",
+      );
+    });
+
+    it("should use default limit=100 when not provided", async () => {
+      await controller.lokiLogs({ query: "{app=my-app}" });
+      expect(mockService.queryLoki).toHaveBeenCalledWith(
+        { query: "{app=my-app}", limit: "100" },
+        "/loki/api/v1/query_range",
+      );
+    });
+  });
+
+  describe("prometheusQueryRange", () => {
+    it("should call queryPrometheus with query_range endpoint", async () => {
+      await controller.prometheusQueryRange({
+        query: "rate(requests[5m])",
+        start: "0",
+        end: "300",
+        step: "15",
+      });
+      expect(mockService.queryPrometheus).toHaveBeenCalledWith(
+        { query: "rate(requests[5m])", start: "0", end: "300", step: "15" },
+        "query_range",
+      );
+    });
+  });
+
+  describe("prometheusLabels", () => {
+    it("should call queryPrometheus with labels endpoint", async () => {
+      await controller.prometheusLabels({});
+      expect(mockService.queryPrometheus).toHaveBeenCalledWith({}, "labels");
+    });
+  });
+});

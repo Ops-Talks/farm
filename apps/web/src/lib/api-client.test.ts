@@ -1958,4 +1958,90 @@ describe("api-client", () => {
       expect(refreshCalls.length).toBe(1);
     });
   });
+
+  // ─── Optional parameter null-coalescing branches ──────────────────────────
+  //
+  // Each of the methods below uses `query ?? {}` (or `params ?? {}`) to fall
+  // back to an empty object when the caller omits the optional argument.
+  // V8 instruments both sides of `??`, so we must exercise the "undefined"
+  // path (right-hand side) to close the remaining branch gaps.
+
+  describe("optional parameter defaults (query ?? {} branches)", () => {
+    it("deployments.list should produce no query string when called without arguments", async () => {
+      // query is undefined → toQueryString({}) → "" → no "?" appended to URL
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: [], total: 0, skip: 0, take: 20 }),
+      );
+      await deployments.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/deployments",
+        expect.any(Object),
+      );
+    });
+
+    it("deployments.matrix should produce no query string when called without arguments", async () => {
+      // query is undefined → toQueryString({}) → "" → no "?" appended to URL
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await deployments.matrix();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/deployments/matrix",
+        expect.any(Object),
+      );
+    });
+
+    it("queues.listJobs should produce no query string when called without the optional query argument", async () => {
+      // query is undefined → toQueryString({}) → "" → no "?" appended to URL
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await queues.listJobs("notifications");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/queues/notifications/jobs",
+        expect.any(Object),
+      );
+    });
+
+    it("analytics.getUsage should produce no query string when called without params", async () => {
+      // params is undefined → toQueryString({}) → "" → no "?" appended to URL
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          periodDays: 30,
+          totalAuditEvents: 0,
+          topComponents: [],
+          activeUsers: [],
+          actionBreakdown: [],
+        }),
+      );
+      await analytics.getUsage();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/analytics/usage",
+        expect.any(Object),
+      );
+    });
+  });
+
+  // ─── Istio kubeconfig param in listAuthorizationPolicies ─────────────────
+  //
+  // The `if (params?.kubeconfig)` truthy branch (line 1310) was never exercised
+  // because the existing tests only pass `namespace`.  We need at least one
+  // call that provides `kubeconfig` so the URLSearchParams.set branch fires.
+
+  describe("istio listAuthorizationPolicies kubeconfig branch", () => {
+    it("should append kubeconfig query param when supplied alongside namespace", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await istio.listAuthorizationPolicies({
+        namespace: "production",
+        kubeconfig: "/home/user/.kube/config",
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=production");
+      expect(url).toContain("kubeconfig=");
+    });
+
+    it("should append kubeconfig query param even when namespace is omitted", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await istio.listAuthorizationPolicies({ kubeconfig: "/path/to/config" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("kubeconfig=");
+      expect(url).not.toContain("namespace=");
+    });
+  });
 });

@@ -57,4 +57,14 @@ describe("CatalogDiscoveryProcessor", () => {
 
     await expect(processor.process(job)).rejects.toThrow("Clone failed");
   });
+
+  it("should re-throw non-Error exceptions from the service", async () => {
+    service.discoverFromLocation.mockRejectedValue("plain string error");
+    const job = {
+      id: "job-3",
+      data: { url: "https://github.com/bad/repo" },
+    } as unknown as Job<CatalogDiscoveryJobData>;
+
+    await expect(processor.process(job)).rejects.toBe("plain string error");
+  });
 });

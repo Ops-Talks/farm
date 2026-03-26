@@ -378,6 +378,65 @@ spec:
       ).rejects.toThrow(BadRequestException);
     });
 
+    it("should use ComponentKind.SERVICE fallback when spec.type is absent", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: no-type-service
+spec:
+  owner: team-a
+      `;
+      const result = await service.registerYaml(yaml);
+      expect(result.kind).toBe(ComponentKind.SERVICE);
+    });
+
+    it("should use ComponentLifecycle.EXPERIMENTAL fallback when spec.lifecycle is absent", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: no-lifecycle-service
+spec:
+  owner: team-a
+      `;
+      const result = await service.registerYaml(yaml);
+      expect(result.lifecycle).toBe(ComponentLifecycle.EXPERIMENTAL);
+    });
+
+    it("should use empty-object metadata fallback when metadata section is absent", async () => {
+      // When the YAML has no metadata section, parsed.metadata is undefined.
+      // Line 166: `(undefined as Record<string, unknown>) || {}` uses the `{}` fallback.
+      // The method still throws because dto.name is undefined.
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+spec:
+  owner: team-a
+      `;
+      await expect(service.registerYaml(yaml)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("should wrap a non-Error thrown by create() in a BadRequestException", async () => {
+      // Cause the repository save (called by create) to throw a plain string
+      // so that the catch block at line 186 uses `String(e)` rather than `e.message`.
+      mockRepository.save.mockRejectedValueOnce("plain string error from db");
+
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: string-error-service
+spec:
+  owner: team-a
+      `;
+      await expect(service.registerYaml(yaml)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it("should register a component including helmChart when spec.helm is present", async () => {
       const yaml = `
 apiVersion: farm.io/v1alpha1
@@ -411,6 +470,44 @@ spec:
       await expect(
         service.discoverFromLocation("http://bad-repo.example.git"),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should wrap a non-Error thrown by gitClone in a BadRequestException using String()", async () => {
+      jest
+        .spyOn(service as any, "gitClone")
+        .mockRejectedValue("non-error plain string");
+
+      await expect(
+        service.discoverFromLocation("http://bad-repo.example.git"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should log error and skip a file that fails to register with a non-Error, counting only successes", async () => {
+      jest.spyOn(service as any, "gitClone").mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, "findYamlFiles")
+        .mockResolvedValue([
+          "/tmp/fake/file1/catalog-info.yaml",
+          "/tmp/fake/file2/catalog-info.yaml",
+        ]);
+
+      // First file throws a plain string (non-Error), second returns valid YAML.
+      (fs.readFile as jest.Mock).mockRejectedValueOnce(
+        "plain string read error",
+      ).mockResolvedValueOnce(`
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: good-service
+spec:
+  type: service
+  owner: team-a
+        `);
+
+      const result = await service.discoverFromLocation(
+        "http://example.com/repo.git",
+      );
+      expect(result).toBe(1);
     });
 
     it("should log error and skip a file that fails to register, counting only successes", async () => {

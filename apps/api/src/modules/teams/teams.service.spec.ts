@@ -254,6 +254,14 @@ describe("TeamsService", () => {
         service.addMember("team-uuid-1", "nonexistent"),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it("should throw NotFoundException when team is not found", async () => {
+      teamRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.addMember("nonexistent", "user-uuid-1"),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe("removeMember", () => {
@@ -265,6 +273,14 @@ describe("TeamsService", () => {
       const result = await service.removeMember("team-uuid-1", "user-uuid-1");
       expect(teamRepo.save).toHaveBeenCalled();
       expect(result.members).toEqual([]);
+    });
+
+    it("should throw NotFoundException when team is not found", async () => {
+      teamRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.removeMember("nonexistent", "user-uuid-1"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -278,6 +294,14 @@ describe("TeamsService", () => {
       const result = await service.getMembers("team-uuid-1");
       expect(result).toHaveLength(1);
       expect(result[0].username).toBe("john_doe");
+    });
+
+    it("should throw NotFoundException when team is not found", async () => {
+      teamRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.getMembers("nonexistent")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

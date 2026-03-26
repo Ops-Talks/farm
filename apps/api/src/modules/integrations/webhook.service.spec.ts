@@ -187,3 +187,115 @@ describe("WebhookService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// WebhookService — additional branch coverage for formatMessage ?? fallbacks
+// ---------------------------------------------------------------------------
+
+describe("WebhookService — formatMessage fallback branches", () => {
+  let svc: WebhookService;
+  const SLACK_URL = "https://hooks.slack.com/test";
+  const mockPost = jest.fn();
+
+  beforeEach(async () => {
+    mockPost.mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {} as never,
+      }),
+    );
+    svc = await buildModule(SLACK_URL, "", mockPost);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  it("should use 'unknown' for deployment name when payload.name is missing", async () => {
+    await svc.notify("deployment.status.changed", {
+      status: "succeeded",
+      environment: "prod",
+    });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for deployment status when payload.status is missing", async () => {
+    await svc.notify("deployment.status.changed", {
+      name: "svc",
+      environment: "prod",
+    });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for deployment environment when payload.environment is missing", async () => {
+    await svc.notify("deployment.status.changed", {
+      name: "svc",
+      status: "succeeded",
+    });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for audit actor when payload.actor is missing", async () => {
+    await svc.notify("audit.log.created", {
+      action: "create",
+      resource: "Component/svc",
+    });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for audit action when payload.action is missing", async () => {
+    await svc.notify("audit.log.created", {
+      actor: "admin",
+      resource: "Component/svc",
+    });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for audit resource when payload.resource is missing", async () => {
+    await svc.notify("audit.log.created", { actor: "admin", action: "create" });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for component name when payload.name is missing", async () => {
+    await svc.notify("component.created", { kind: "service" });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should use 'unknown' for component kind when payload.kind is missing", async () => {
+    await svc.notify("component.created", { name: "my-svc" });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("unknown");
+  });
+
+  it("should produce a generic Event message for unrecognised event types", async () => {
+    await svc.notify("some.unknown.event", { foo: "bar" });
+    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+      text: string;
+    };
+    expect(callArg.text).toContain("Event: some.unknown.event");
+  });
+});

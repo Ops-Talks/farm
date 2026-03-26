@@ -90,4 +90,31 @@ describe("PluginManagerController", () => {
     expect(result).toEqual([]);
     expect(service.scanDirectory).toHaveBeenCalledWith("./plugins");
   });
+
+  it("should use './plugins' fallback when configService returns undefined for plugins.dir", async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [CacheModule.register()],
+      controllers: [PluginManagerController],
+      providers: [
+        {
+          provide: PluginManagerService,
+          useValue: {
+            ...service,
+            scanDirectory: jest.fn().mockReturnValue([]),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(undefined) },
+        },
+      ],
+    }).compile();
+
+    const ctrl = module.get<PluginManagerController>(PluginManagerController);
+    const svc = module.get<PluginManagerService>(PluginManagerService);
+
+    ctrl.reloadPlugins();
+
+    expect(svc.scanDirectory).toHaveBeenCalledWith("./plugins");
+  });
 });

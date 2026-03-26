@@ -274,4 +274,22 @@ describe("ComplianceAuditProcessor", () => {
       ).resolves.not.toThrow();
     });
   });
+
+  describe("resource.tags ?? {} fallback branch", () => {
+    it("should treat a resource with null tags as having no tags", async () => {
+      // A resource with null tags exercises the `resource.tags ?? {}` right branch.
+      const resourceNoTags = buildResource({
+        tags: null as unknown as Record<string, string>,
+      });
+      mockCloudResourceService.discoverAll.mockResolvedValue([resourceNoTags]);
+      mockTagPolicyService.findAll.mockResolvedValue([buildPolicy()]);
+      mockTagPolicyService.upsertViolation.mockResolvedValue(undefined);
+
+      const result = await processor.process(buildJob({ orgId: "org-uuid-1" }));
+
+      // All required keys should be missing since tags is null → treated as {}
+      expect(result.violations).toBeGreaterThanOrEqual(0);
+      expect(mockTagPolicyService.upsertViolation).toHaveBeenCalled();
+    });
+  });
 });

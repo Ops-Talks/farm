@@ -130,6 +130,19 @@ describe("AnalyticsController", () => {
       );
       expect(result).toEqual(mockDoraData);
     });
+
+    it("applies the built-in default of 30 days when no days argument is passed", async () => {
+      // Calling the method without an explicit value triggers the ES default-parameter
+      // substitution (`days = 30`), which Istanbul tracks as a separate branch.
+      const result = await controller.getDoraMetrics();
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        30,
+        undefined,
+        undefined,
+      );
+      expect(result).toEqual(mockDoraData);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -148,6 +161,15 @@ describe("AnalyticsController", () => {
       await controller.getUsageAnalytics(7);
 
       expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(7);
+    });
+
+    it("applies the built-in default of 30 days when no days argument is passed", async () => {
+      // Calling without an explicit value triggers the ES default-parameter
+      // substitution (`days = 30`), which Istanbul tracks as a separate branch.
+      const result = await controller.getUsageAnalytics();
+
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      expect(result).toEqual(mockUsageData);
     });
   });
 
@@ -259,6 +281,63 @@ describe("AnalyticsController", () => {
         (c: string[]) => c[0] === "Content-Disposition",
       );
       expect(dispositionCall![1]).toContain(`farm-dora-${today}`);
+    });
+
+    it("produces an empty CSV body when catalog distributions are empty", async () => {
+      // Mock service returns data with empty lifecycle and kind distributions.
+      // The 4 ownership rows are still present, so toCsv returns a non-empty CSV.
+      // But a row value of null triggers the `r[h] ?? ""` fallback inside toCsv.
+      mockService.getCatalogAnalytics.mockResolvedValueOnce({
+        ownershipCoverage: {
+          total: 0,
+          withOwner: 0,
+          withoutOwner: 0,
+          coveragePercent: null as unknown as number,
+        },
+        lifecycleDistribution: [],
+        kindDistribution: [],
+        unownedComponents: [],
+      });
+
+      const res = buildMockRes();
+      await controller.exportReport("catalog", 30, res as unknown as any);
+
+      const csvBody = res.send.mock.calls[0][0] as string;
+      // coveragePercent is null, so r[h] ?? "" fires for that cell
+      expect(csvBody).toContain("Coverage %");
+    });
+
+    it("returns empty CSV when usage report has no components or active users", async () => {
+      // When topComponents and activeUsers are both empty arrays, toCsv is called
+      // with an empty array, triggering the `if (rows.length === 0) return ""`
+      // early-exit branch (line 33).
+      mockService.getUsageAnalytics.mockResolvedValueOnce({
+        periodDays: 30,
+        totalAuditEvents: 0,
+        topComponents: [],
+        activeUsers: [],
+        actionBreakdown: [],
+      });
+
+      const res = buildMockRes();
+      await controller.exportReport("usage", 30, res as unknown as any);
+
+      const csvBody = res.send.mock.calls[0][0] as string;
+      expect(csvBody).toBe("");
+    });
+
+    it("applies the built-in default of 30 days for export when no days argument is passed", async () => {
+      // Omitting `days` exercises the ES default-parameter substitution
+      // (`days = 30`) that Istanbul tracks as its own branch.
+      const res = buildMockRes();
+      await controller.exportReport(
+        "dora",
+        undefined as unknown as number,
+        res as unknown as any,
+      );
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);
+      expect(res.send).toHaveBeenCalled();
     });
   });
 });

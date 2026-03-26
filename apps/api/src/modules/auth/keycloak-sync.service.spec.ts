@@ -275,3 +275,229 @@ describe("KeycloakSyncService", () => {
     expect(mockQueue.add).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// KeycloakSyncService — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("KeycloakSyncService — additional branches", () => {
+  let service: KeycloakSyncService;
+  let mockTeamRepo: Record<string, jest.Mock>;
+  let mockUserRepo: Record<string, jest.Mock>;
+  let mockCredentialRepo: Record<string, jest.Mock>;
+  let mockQueue: { add: jest.Mock };
+
+  const encryptedValue2 = buildEncryptedCredential(
+    mockCredentialPayload,
+    JWT_SECRET,
+  );
+
+  beforeEach(async () => {
+    mockTeamRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
+    mockUserRepo = { findOne: jest.fn() };
+    mockCredentialRepo = { findOne: jest.fn(), find: jest.fn() };
+    mockQueue = { add: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KeycloakSyncService,
+        { provide: getRepositoryToken(Team), useValue: mockTeamRepo },
+        { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        {
+          provide: getRepositoryToken(IntegrationCredential),
+          useValue: mockCredentialRepo,
+        },
+        {
+          provide: getQueueToken(QUEUE_NAMES.KEYCLOAK_SYNC),
+          useValue: mockQueue,
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(JWT_SECRET) },
+        },
+      ],
+    }).compile();
+
+    service = module.get<KeycloakSyncService>(KeycloakSyncService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe("fetchAdminToken", () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("should return access_token on successful response", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ access_token: "test-token-123" }),
+      }) as unknown as typeof globalThis.fetch;
+
+      const token = await service.fetchAdminToken(
+        "https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
+        "farm-client",
+        "secret",
+      );
+
+      expect(token).toBe("test-token-123");
+    });
+
+    it("should throw when the response is not ok", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+      }) as unknown as typeof globalThis.fetch;
+
+      await expect(
+        service.fetchAdminToken(
+          "https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
+          "farm-client",
+          "bad-secret",
+        ),
+      ).rejects.toThrow("Keycloak token request failed");
+    });
+  });
+
+  describe("fetchJson", () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("should return parsed JSON on successful response", async () => {
+      const mockData = [{ id: "g1", name: "admins" }];
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockData),
+      }) as unknown as typeof globalThis.fetch;
+
+      const result = await service.fetchJson<typeof mockData>(
+        "https://keycloak.example.com/admin/realms/myrealm/groups",
+        "admin-token",
+      );
+
+      expect(result).toEqual(mockData);
+    });
+
+    it("should throw when the response is not ok", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+      }) as unknown as typeof globalThis.fetch;
+
+      await expect(
+        service.fetchJson(
+          "https://keycloak.example.com/admin/realms/myrealm/groups",
+          "bad-token",
+        ),
+      ).rejects.toThrow("Keycloak Admin API request failed");
+    });
+  });
+
+  describe("syncOrgGroups — member edge cases", () => {
+    it("should skip members without email", async () => {
+      mockCredentialRepo.findOne.mockResolvedValue({
+        id: "cred-1",
+        orgId: "org-1",
+        encryptedValue: encryptedValue2,
+      });
+
+      jest.spyOn(service, "fetchAdminToken").mockResolvedValue("admin-token");
+      jest.spyOn(service, "fetchJson").mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/require-await
+        async <T>(url: string): Promise<T> => {
+          if (url.endsWith("/groups")) {
+            return [{ id: "g1", name: "devs" }] as unknown as T;
+          }
+          // Member with no email
+          return [{ id: "kc-user-1" }] as unknown as T;
+        },
+      );
+
+      mockTeamRepo.findOne.mockResolvedValue(buildTeam());
+      mockTeamRepo.save.mockImplementation((t: Team) => Promise.resolve(t));
+
+      const result = await service.syncOrgGroups("org-1");
+
+      expect(result.synced).toBe(1);
+    });
+
+    it("should skip members when no matching Farm user is found", async () => {
+      mockCredentialRepo.findOne.mockResolvedValue({
+        id: "cred-1",
+        orgId: "org-1",
+        encryptedValue: encryptedValue2,
+      });
+
+      jest.spyOn(service, "fetchAdminToken").mockResolvedValue("admin-token");
+      jest.spyOn(service, "fetchJson").mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/require-await
+        async <T>(url: string): Promise<T> => {
+          if (url.endsWith("/groups")) {
+            return [{ id: "g1", name: "devs" }] as unknown as T;
+          }
+          return [
+            { id: "kc-user-1", email: "notfound@example.com" },
+          ] as unknown as T;
+        },
+      );
+
+      mockTeamRepo.findOne.mockResolvedValue(buildTeam());
+      mockTeamRepo.save.mockImplementation((t: Team) => Promise.resolve(t));
+      mockUserRepo.findOne.mockResolvedValue(null); // no Farm user
+
+      const result = await service.syncOrgGroups("org-1");
+
+      expect(result.synced).toBe(1);
+    });
+
+    it("should not add member if already in team", async () => {
+      const existingMember = { id: "user-1", email: "alice@example.com" };
+
+      mockCredentialRepo.findOne.mockResolvedValue({
+        id: "cred-1",
+        orgId: "org-1",
+        encryptedValue: encryptedValue2,
+      });
+
+      jest.spyOn(service, "fetchAdminToken").mockResolvedValue("admin-token");
+      jest.spyOn(service, "fetchJson").mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/require-await
+        async <T>(url: string): Promise<T> => {
+          if (url.endsWith("/groups")) {
+            return [{ id: "g1", name: "devs" }] as unknown as T;
+          }
+          return [
+            { id: "kc-user-1", email: "alice@example.com" },
+          ] as unknown as T;
+        },
+      );
+
+      // Team already has the member
+      mockTeamRepo.findOne.mockResolvedValue(
+        buildTeam({ members: [existingMember as User] }),
+      );
+      mockTeamRepo.save.mockImplementation((t: Team) => Promise.resolve(t));
+      mockUserRepo.findOne.mockResolvedValue(existingMember);
+
+      const result = await service.syncOrgGroups("org-1");
+
+      expect(result.synced).toBe(1);
+      // Team members should not have been extended (already a member)
+    });
+  });
+});

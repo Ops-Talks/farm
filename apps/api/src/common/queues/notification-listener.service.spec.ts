@@ -165,5 +165,40 @@ describe("NotificationListenerService", () => {
         }),
       ).resolves.not.toThrow();
     });
+
+    it("should return early without throwing in onDeploymentStatusChanged when queue is absent", () => {
+      Object.defineProperty(process.env, "NODE_ENV", {
+        value: "development",
+        writable: true,
+      });
+
+      const serviceWithoutQueue = new NotificationListenerService(undefined);
+
+      expect(() =>
+        serviceWithoutQueue.onDeploymentStatusChanged({
+          name: "user-service",
+          status: DeploymentStatus.FAILED,
+          environment: "production",
+          version: "1.0.0",
+        }),
+      ).not.toThrow();
+    });
+
+    it("should return early without throwing in onComponentCreated when queue is absent", () => {
+      Object.defineProperty(process.env, "NODE_ENV", {
+        value: "development",
+        writable: true,
+      });
+
+      const serviceWithoutQueue = new NotificationListenerService(undefined);
+
+      expect(() =>
+        serviceWithoutQueue.onComponentCreated({
+          name: "payment-service",
+          kind: "service",
+          owner: "platform-team",
+        }),
+      ).not.toThrow();
+    });
   });
 });

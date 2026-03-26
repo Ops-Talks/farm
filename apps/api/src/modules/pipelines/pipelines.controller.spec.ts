@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
 import { PipelinesController } from "./pipelines.controller";
 import { PipelinesService } from "./pipelines.service";
 import { PipelineRunStatus } from "./entities/pipeline-run.entity";
@@ -64,6 +65,16 @@ describe("PipelinesController", () => {
               ...mockRun,
               status: PipelineRunStatus.CANCELLED,
             }),
+            getRunStats: jest.fn().mockResolvedValue({
+              total: 0,
+              byStatus: {},
+              successRate: 0,
+              avgDurationMs: null,
+              lastRunAt: null,
+            }),
+            compareRuns: jest
+              .fn()
+              .mockResolvedValue({ runA: {}, runB: {}, stageDiff: [] }),
           },
         },
       ],
@@ -213,6 +224,105 @@ describe("PipelinesController", () => {
         "run-uuid-1",
         "user-uuid-1",
       );
+    });
+  });
+
+  describe("getRunStats", () => {
+    it("should return run statistics for a pipeline", async () => {
+      const mockStats = {
+        total: 5,
+        byStatus: {
+          queued: 0,
+          running: 0,
+          succeeded: 4,
+          failed: 1,
+          cancelled: 0,
+          waiting_approval: 0,
+        },
+        successRate: 80,
+        avgDurationMs: 30000,
+        lastRunAt: new Date(),
+      };
+      jest
+        .spyOn(service, "getRunStats" as keyof PipelinesService)
+        .mockResolvedValue(mockStats as never);
+
+      const result = await controller.getRunStats("pipeline-uuid-1");
+
+      expect(result).toEqual(mockStats);
+    });
+  });
+
+  describe("compareRuns", () => {
+    it("should compare two runs and return snapshots + diff", async () => {
+      const mockComparison = {
+        runA: { id: "run-a", status: PipelineRunStatus.SUCCEEDED },
+        runB: { id: "run-b", status: PipelineRunStatus.FAILED },
+        stageDiff: [],
+      };
+      jest
+        .spyOn(service, "compareRuns" as keyof PipelinesService)
+        .mockResolvedValue(mockComparison as never);
+
+      const result = await controller.compareRuns(
+        "pipeline-uuid-1",
+        "run-a",
+        "run-b",
+      );
+
+      expect(result).toEqual(mockComparison);
+    });
+
+    it("should throw BadRequestException when runIdA is missing", async () => {
+      await expect(
+        controller.compareRuns("pipeline-uuid-1", "", "run-b"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when runIdB is missing", async () => {
+      await expect(
+        controller.compareRuns("pipeline-uuid-1", "run-a", ""),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe("create — req.user missing (anonymous fallback)", () => {
+    it("should use 'anonymous' when req.user is undefined", async () => {
+      const requestWithNoUser =
+        {} as unknown as import("../../common/interfaces/request-with-org.interface").RequestWithOrg;
+      await controller.create({ name: "new-pipeline" }, requestWithNoUser);
+      expect(service.create).toHaveBeenCalledWith(
+        { name: "new-pipeline" },
+        "anonymous",
+      );
+    });
+  });
+
+  describe("trigger — req.user missing (anonymous fallback)", () => {
+    it("should use 'anonymous' when req.user is undefined", async () => {
+      const requestWithNoUser =
+        {} as unknown as import("../../common/interfaces/request-with-org.interface").RequestWithOrg;
+      await controller.trigger("pipeline-uuid-1", {}, requestWithNoUser);
+      expect(service.triggerRun).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "anonymous",
+      );
+    });
+  });
+
+  describe("findAll — skip/take ?? defaults", () => {
+    it("should default skip to 0 and take to 20 when not provided", async () => {
+      const result = await controller.findAll({});
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
+    });
+  });
+
+  describe("findRuns — skip/take ?? defaults", () => {
+    it("should default skip to 0 and take to 20 when not provided", async () => {
+      const result = await controller.findRuns("pipeline-uuid-1", {});
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
     });
   });
 });

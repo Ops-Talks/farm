@@ -635,3 +635,312 @@ describe("HelmService — additional branches", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// HelmService — deeper branch coverage
+// ---------------------------------------------------------------------------
+
+describe("HelmService — deeper branch coverage", () => {
+  let service: HelmService;
+  let mockKubernetesService: Partial<jest.Mocked<KubernetesService>>;
+  let mockDeploymentRepo: Record<string, jest.Mock>;
+  let mockComponentRepo: Record<string, jest.Mock>;
+  let mockEnvironmentRepo: Record<string, jest.Mock>;
+  let mockCoreV1Api: {
+    listSecretForAllNamespaces: jest.Mock;
+    listNamespacedSecret: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    mockCoreV1Api = {
+      listSecretForAllNamespaces: jest.fn().mockResolvedValue({ items: [] }),
+      listNamespacedSecret: jest.fn().mockResolvedValue({ items: [] }),
+    };
+
+    mockKubernetesService = {
+      isEnabled: jest.fn().mockReturnValue(true),
+      getCoreV1Api: jest.fn().mockReturnValue(mockCoreV1Api),
+    };
+
+    mockDeploymentRepo = {
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      }),
+      create: jest.fn().mockImplementation((d) => d as Deployment),
+      save: jest
+        .fn()
+        .mockImplementation((d) => Promise.resolve(d as Deployment)),
+    };
+
+    mockComponentRepo = { findOne: jest.fn().mockResolvedValue(null) };
+    mockEnvironmentRepo = { findOne: jest.fn().mockResolvedValue(null) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        HelmService,
+        { provide: KubernetesService, useValue: mockKubernetesService },
+        {
+          provide: getRepositoryToken(Deployment),
+          useValue: mockDeploymentRepo,
+        },
+        { provide: getRepositoryToken(Component), useValue: mockComponentRepo },
+        {
+          provide: getRepositoryToken(Environment),
+          useValue: mockEnvironmentRepo,
+        },
+      ],
+    }).compile();
+
+    service = module.get<HelmService>(HelmService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  // -------------------------------------------------------------------------
+  // listReleases — null items in response
+  // -------------------------------------------------------------------------
+
+  describe("listReleases — null items in API response", () => {
+    it("should return empty array when response.items is undefined", async () => {
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({});
+
+      const releases = await service.listReleases();
+
+      expect(releases).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listReleases — non-Error thrown in outer catch
+  // -------------------------------------------------------------------------
+
+  describe("listReleases — non-Error thrown", () => {
+    it("should return empty array when a non-Error is thrown by the API", async () => {
+      mockCoreV1Api.listSecretForAllNamespaces.mockRejectedValue(
+        "string error",
+      );
+
+      const releases = await service.listReleases();
+
+      expect(releases).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listReleases — secret with no data.release field
+  // -------------------------------------------------------------------------
+
+  describe("listReleases — secret missing data.release", () => {
+    it("should skip secrets that have no data.release field", async () => {
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "no-data-secret",
+              namespace: "default",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: {}, // No 'release' key
+          },
+        ],
+      });
+
+      const releases = await service.listReleases();
+
+      expect(releases).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listReleases — non-Error thrown in per-secret decode (String(error) path)
+  // -------------------------------------------------------------------------
+
+  describe("listReleases — non-Error in per-secret decode catch", () => {
+    it("should warn with String(error) when a non-Error is thrown decoding a secret", async () => {
+      // Use valid type but make decodeHelmRelease throw a non-Error
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "bad-release",
+              namespace: "default",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: { release: "INVALID_NON_GZIP_DATA_0000" },
+          },
+        ],
+      });
+
+      const releases = await service.listReleases();
+
+      // The bad release is skipped.
+      expect(releases).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // decodeHelmRelease — decoded is null path (mock returns null)
+  // -------------------------------------------------------------------------
+
+  describe("listReleases — decoded result is null", () => {
+    it("should not push decoded result when decodeHelmRelease returns null", async () => {
+      const encoded = await buildHelmReleaseData({ name: "skip-me" });
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "null-decode",
+              namespace: "default",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: { release: encoded },
+          },
+        ],
+      });
+
+      // Mock decodeHelmRelease to return null
+      jest.spyOn(service, "decodeHelmRelease").mockResolvedValue(null);
+
+      const releases = await service.listReleases();
+
+      expect(releases).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncReleases — k8s disabled
+  // -------------------------------------------------------------------------
+
+  describe("syncReleases — k8s disabled", () => {
+    it("should return 0 synced and no errors when kubernetes is disabled", async () => {
+      (mockKubernetesService.isEnabled as jest.Mock).mockReturnValue(false);
+
+      const result = await service.syncReleases();
+
+      expect(result.synced).toBe(0);
+      expect(result.errors).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // syncReleases — upsertReleaseDeployment throws non-Error
+  // -------------------------------------------------------------------------
+
+  describe("syncReleases — non-Error thrown in upsert", () => {
+    it("should record String(error) in errors when a non-Error is thrown", async () => {
+      const encoded = await buildHelmReleaseData({
+        name: "my-app",
+        namespace: "production",
+        version: 1,
+        info: { status: "deployed", last_deployed: "2024-01-01T00:00:00Z" },
+        chart: { metadata: { name: "my-chart", version: "1.0.0" } },
+      });
+
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "sh.helm.release.v1.my-app.v1",
+              namespace: "production",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: { release: encoded },
+          },
+        ],
+      });
+
+      // Throw a non-Error from componentRepository.findOne
+      mockComponentRepo.findOne.mockRejectedValue("non-error-string");
+
+      const result = await service.syncReleases();
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain("production/my-app");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // upsertReleaseDeployment — existing deployment update path with null metadata
+  // -------------------------------------------------------------------------
+
+  describe("upsertReleaseDeployment — existing deployment with null metadata", () => {
+    it("should treat null existing.metadata as empty object when merging helm meta", async () => {
+      const fakeComponent = { id: "comp-uuid", name: "my-app" } as Component;
+      const fakeEnvironment = {
+        id: "env-uuid",
+        name: "production",
+      } as Environment;
+      const existingDeployment: Partial<Deployment> = {
+        id: "dep-uuid",
+        componentId: "comp-uuid",
+        environmentId: "env-uuid",
+        version: "old-chart@0.1.0",
+        status: DeploymentStatus.SUCCEEDED,
+        metadata: null as unknown as Record<string, unknown>, // null metadata
+      };
+
+      const encoded = await buildHelmReleaseData({
+        name: "my-app",
+        namespace: "production",
+        version: 2,
+        info: { status: "deployed", last_deployed: "2024-01-15T10:00:00Z" },
+        chart: {
+          metadata: { name: "my-chart", version: "1.0.0", appVersion: "2.0" },
+        },
+      });
+
+      mockCoreV1Api.listSecretForAllNamespaces.mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "sh.helm.release.v1.my-app.v2",
+              namespace: "production",
+              labels: { owner: "helm" },
+            },
+            type: "helm.sh/release.v1",
+            data: { release: encoded },
+          },
+        ],
+      });
+
+      mockComponentRepo.findOne.mockResolvedValue(fakeComponent);
+      mockEnvironmentRepo.findOne.mockResolvedValue(fakeEnvironment);
+      mockDeploymentRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(existingDeployment),
+      });
+
+      const result = await service.syncReleases();
+
+      expect(result.synced).toBe(1);
+      expect(mockDeploymentRepo.save).toHaveBeenCalled();
+      // Should not throw even with null metadata
+      const saveArg = (
+        mockDeploymentRepo.save.mock.calls[0] as [Partial<Deployment>]
+      )[0];
+      expect(saveArg.metadata).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // decodeHelmRelease — both gzip attempts fail (throws)
+  // -------------------------------------------------------------------------
+
+  describe("decodeHelmRelease — both gunzip attempts fail", () => {
+    it("should throw when both double and single gzip decoding fail", async () => {
+      // Plain base64 of non-gzip data
+      const notGzip = Buffer.from("this is not gzip data at all").toString(
+        "base64",
+      );
+
+      await expect(service.decodeHelmRelease(notGzip)).rejects.toThrow();
+    });
+  });
+});

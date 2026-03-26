@@ -202,4 +202,39 @@ describe("HealthController", () => {
       },
     });
   });
+
+  it("version indicator uses fallback '0.2.4' when config returns undefined", async () => {
+    // Override ConfigService to return undefined so the || fallback is used.
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [
+        { provide: HealthCheckService, useValue: { check: jest.fn() } },
+        { provide: TypeOrmHealthIndicator, useValue: { pingCheck: jest.fn() } },
+        {
+          provide: MemoryHealthIndicator,
+          useValue: { checkHeap: jest.fn(), checkRSS: jest.fn() },
+        },
+        { provide: DiskHealthIndicator, useValue: { checkStorage: jest.fn() } },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(undefined) },
+        },
+      ],
+    }).compile();
+
+    const ctrl = module.get<HealthController>(HealthController);
+    const hs = module.get<HealthCheckService>(HealthCheckService);
+
+    (hs.check as jest.Mock).mockImplementation(
+      (indicators: Array<() => unknown>) => {
+        return indicators[4]();
+      },
+    );
+
+    const result = (await ctrl.check()) as {
+      version: { status: string; version: string };
+    };
+
+    expect(result.version.version).toBe("0.2.4");
+  });
 });

@@ -130,6 +130,28 @@ describe("AlertingService", () => {
         take: 20,
       });
     });
+
+    it("should apply environmentId, organizationId and enabled filters", async () => {
+      repo.findAndCount.mockResolvedValue([[mockRule], 1]);
+
+      const query = Object.assign(new ListAlertingRulesQueryDto(), {
+        environmentId: "env-uuid-1",
+        organizationId: "org-uuid-1",
+        enabled: true,
+      });
+      await service.findAll(query);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        where: {
+          environmentId: "env-uuid-1",
+          organizationId: "org-uuid-1",
+          enabled: true,
+        },
+        order: { createdAt: "DESC" },
+        skip: 0,
+        take: 20,
+      });
+    });
   });
 
   describe("findOne", () => {
@@ -162,6 +184,32 @@ describe("AlertingService", () => {
       const result = await service.update("rule-uuid-1", { duration: "10m" });
 
       expect(result.duration).toBe("10m");
+    });
+
+    it("should skip name conflict check when the provided name equals the current name", async () => {
+      repo.findOne.mockResolvedValue(mockRule);
+      repo.merge.mockReturnValue({ ...mockRule });
+      repo.save.mockResolvedValue(mockRule);
+
+      // Providing the same name should not trigger a conflict lookup.
+      await service.update("rule-uuid-1", { name: mockRule.name });
+
+      // findOne is called once (for findOne inside update), NOT again for duplicate check.
+      expect(repo.findOne).toHaveBeenCalledTimes(1);
+    });
+
+    it("should update with a new name when no conflicting rule exists", async () => {
+      repo.findOne
+        .mockResolvedValueOnce(mockRule) // findOne for the rule being updated
+        .mockResolvedValueOnce(null); // findOne for conflict check → no conflict
+      repo.merge.mockReturnValue({ ...mockRule, name: "new-rule-name" });
+      repo.save.mockResolvedValue({ ...mockRule, name: "new-rule-name" });
+
+      const result = await service.update("rule-uuid-1", {
+        name: "new-rule-name",
+      });
+
+      expect(result.name).toBe("new-rule-name");
     });
 
     it("should throw ConflictException if new name already exists on another rule", async () => {

@@ -235,5 +235,33 @@ describe("IstioMetricsService", () => {
       )[0];
       expect(opts.params.step).toBe("300s");
     });
+
+    it("uses the coarsest step ('900s') for ranges longer than 1 day", async () => {
+      mockHttpService.get.mockReturnValue(of(buildEmptyPrometheusResponse()));
+
+      await service.getServiceRps("svc", "ns", "2d");
+
+      const [, opts] = (
+        mockHttpService.get.mock.calls as Array<
+          [string, { params: { step: string } }]
+        >
+      )[0];
+      expect(opts.params.step).toBe("900s");
+    });
+
+    it("falls back to default 300 seconds when duration string is invalid", async () => {
+      mockHttpService.get.mockReturnValue(of(buildEmptyPrometheusResponse()));
+
+      // An unrecognised duration string causes parseDurationToSeconds to return 300
+      // (≤300s), so the step should be the finest: "15s".
+      await service.getServiceRps("svc", "ns", "invalid");
+
+      const [, opts] = (
+        mockHttpService.get.mock.calls as Array<
+          [string, { params: { step: string } }]
+        >
+      )[0];
+      expect(opts.params.step).toBe("15s");
+    });
   });
 });

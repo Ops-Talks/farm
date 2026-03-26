@@ -17,5 +17,8 @@
     "test": "npm run api:test && npm run web:test",
     "build": "npm run api:build && npm run web:build",
     "lint": "npm run lint -w apps/api && npm run web:lint"
+  },
+  "devDependencies": {
+    "picomatch": "^4.0.4"
   }
 }

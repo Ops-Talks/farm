@@ -91,4 +91,39 @@ describe("ComplianceAuditService", () => {
       expect(mockQueue.add).not.toHaveBeenCalled();
     });
   });
+
+  describe("without audit queue (queue is null)", () => {
+    let serviceNoQueue: ComplianceAuditService;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ComplianceAuditService,
+          // Queue is intentionally omitted to exercise the `?.add` null path.
+          { provide: TagPolicyService, useValue: mockTagPolicyService },
+        ],
+      }).compile();
+
+      serviceNoQueue = module.get<ComplianceAuditService>(
+        ComplianceAuditService,
+      );
+    });
+
+    it("should not throw when scheduleAudit is called without a queue", async () => {
+      await expect(
+        serviceNoQueue.scheduleAudit("org-1"),
+      ).resolves.not.toThrow();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+    });
+
+    it("should not throw when triggerAudit is called without a queue", async () => {
+      await expect(serviceNoQueue.triggerAudit("org-1")).resolves.not.toThrow();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+    });
+
+    it("should run scheduled audits without throwing when queue is absent", async () => {
+      await expect(serviceNoQueue.runScheduledAudits()).resolves.not.toThrow();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+    });
+  });
 });

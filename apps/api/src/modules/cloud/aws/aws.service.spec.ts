@@ -489,3 +489,187 @@ describe("AwsService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// AwsService — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("AwsService — additional branches", () => {
+  let service: AwsService;
+  const ORG_ID_2 = "org-uuid-aws-2";
+  const CREDENTIAL_PAYLOAD_2 = JSON.stringify({
+    accessKeyId: "AKIAIOSFODNN7EXAMPLE",
+    secretAccessKey: "secret",
+    region: "us-east-1",
+  });
+
+  const mockCredentialService2 = {
+    findByType: jest.fn().mockResolvedValue({
+      id: "cred-aws-1",
+      encryptedValue: "encrypted",
+    }),
+    decrypt: jest.fn().mockReturnValue(CREDENTIAL_PAYLOAD_2),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AwsService,
+        {
+          provide: IntegrationCredentialService,
+          useValue: mockCredentialService2,
+        },
+      ],
+    }).compile();
+
+    service = module.get<AwsService>(AwsService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe("discoverResources — null ResourceTagMappingList fallback", () => {
+    it("should return empty when ResourceTagMappingList is null", async () => {
+      (ResourceGroupsTaggingAPIClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResourceTagMappingList: null, // null fallback → empty array via ?? []
+          PaginationToken: undefined,
+        }),
+      }));
+
+      const result = await service.discoverResources(ORG_ID_2);
+      expect(result).toEqual([]);
+    });
+
+    it("should use farm.io/component tag as linkedComponentId fallback", async () => {
+      (ResourceGroupsTaggingAPIClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResourceTagMappingList: [
+            {
+              ResourceARN: "arn:aws:ecs:us-east-1:123:cluster/my-cluster",
+              Tags: [{ Key: "farm.io/component", Value: "legacy-comp" }],
+            },
+          ],
+          PaginationToken: undefined,
+        }),
+      }));
+
+      const result = await service.discoverResources(ORG_ID_2);
+
+      expect(result[0].linkedComponentId).toBe("legacy-comp");
+    });
+
+    it("should skip tags with undefined value", async () => {
+      (ResourceGroupsTaggingAPIClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResourceTagMappingList: [
+            {
+              ResourceARN: "arn:aws:ecs:us-east-1:123:cluster/my-cluster",
+              Tags: [
+                { Key: "farm:component", Value: undefined }, // undefined value — skipped
+                { Key: "Name", Value: "my-cluster" },
+              ],
+            },
+          ],
+          PaginationToken: undefined,
+        }),
+      }));
+
+      const result = await service.discoverResources(ORG_ID_2);
+
+      expect(result[0].tags["farm:component"]).toBeUndefined();
+      expect(result[0].tags["Name"]).toBe("my-cluster");
+    });
+  });
+
+  describe("discoverResources — skip ARN with no ResourceARN", () => {
+    it("should skip mappings where ResourceARN is undefined", async () => {
+      (ResourceGroupsTaggingAPIClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResourceTagMappingList: [
+            { ResourceARN: undefined, Tags: [] }, // no ARN
+            {
+              ResourceARN: "arn:aws:ecs:us-east-1:123:cluster/valid-cluster",
+              Tags: [],
+            },
+          ],
+          PaginationToken: undefined,
+        }),
+      }));
+
+      const result = await service.discoverResources(ORG_ID_2);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].resourceId).toBe(
+        "arn:aws:ecs:us-east-1:123:cluster/valid-cluster",
+      );
+    });
+  });
+
+  describe("getMonthlyCost — null ResultsByTime fallback", () => {
+    it("should return empty array when ResultsByTime is null", async () => {
+      (CostExplorerClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResultsByTime: null, // null fallback → [] via ?? []
+        }),
+      }));
+
+      const result = await service.getMonthlyCost(ORG_ID_2, 30);
+
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when Groups is null in a time slice", async () => {
+      (CostExplorerClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResultsByTime: [
+            { Groups: null }, // null Groups fallback → [] via ?? []
+          ],
+        }),
+      }));
+
+      const result = await service.getMonthlyCost(ORG_ID_2, 30);
+
+      expect(result).toEqual([]);
+    });
+
+    it("should use '0' amount and 'USD' currency when Metrics are absent", async () => {
+      (CostExplorerClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({
+          ResultsByTime: [
+            {
+              Groups: [
+                {
+                  Keys: ["farm:environment$production"],
+                  Metrics: undefined, // no Metrics
+                },
+              ],
+            },
+          ],
+        }),
+      }));
+
+      const result = await service.getMonthlyCost(ORG_ID_2, 30);
+
+      expect(result[0].cost).toBe(0);
+      expect(result[0].currency).toBe("USD");
+    });
+  });
+
+  describe("deployToLambda — S3 source branch (no imageUri)", () => {
+    it("should deploy using S3Bucket and S3Key when imageUri is not provided", async () => {
+      (LambdaClient as jest.Mock).mockImplementation(() => ({
+        send: jest.fn().mockResolvedValue({ Version: undefined }), // undefined Version → "latest"
+      }));
+
+      const result = await service.deployToLambda(ORG_ID_2, {
+        functionName: "my-fn",
+        s3Bucket: "my-bucket",
+        s3Key: "my-key.zip",
+        // no imageUri — uses S3 path
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.output).toContain("latest"); // Version ?? "latest"
+    });
+  });
+});

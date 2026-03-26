@@ -245,3 +245,162 @@ describe("CloudResourceService", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// CloudResourceService — additional branch coverage
+// ---------------------------------------------------------------------------
+
+describe("CloudResourceService — without optional providers", () => {
+  let service: CloudResourceService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CloudResourceService,
+        // No AWS, GCP, or Azure providers — all optional
+      ],
+    }).compile();
+
+    service = module.get<CloudResourceService>(CloudResourceService);
+  });
+
+  describe("discoverAll — no providers", () => {
+    it("should return empty array when no providers are configured", async () => {
+      const result = await service.discoverAll("org-1");
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("discoverByProvider — no providers", () => {
+    it("should return empty array for aws when awsService is absent", async () => {
+      const result = await service.discoverByProvider("org-1", "aws");
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array for gcp when gcpService is absent", async () => {
+      const result = await service.discoverByProvider("org-1", "gcp");
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array for azure when azureService is absent", async () => {
+      const result = await service.discoverByProvider("org-1", "azure");
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array for unknown provider (default case)", async () => {
+      const result = await service.discoverByProvider("org-1", "aws" as never);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("getAggregatedCost — no providers", () => {
+    it("should return empty array when no providers are configured", async () => {
+      const result = await service.getAggregatedCost("org-1", 30);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("resolveSecret — no providers", () => {
+    it("should throw when awsService is absent for ARN refs", async () => {
+      await expect(
+        service.resolveSecret(
+          "arn:aws:secretsmanager:us-east-1:123:secret:my-secret",
+          "org-1",
+        ),
+      ).rejects.toThrow("AWS service not available");
+    });
+
+    it("should throw when gcpService is absent for gcp: refs", async () => {
+      await expect(
+        service.resolveSecret("gcp:my-secret/1", "org-1"),
+      ).rejects.toThrow("GCP service not available");
+    });
+
+    it("should throw when azureService is absent for azure: refs", async () => {
+      await expect(
+        service.resolveSecret(
+          "azure:https://my-vault.vault.azure.net:my-secret",
+          "org-1",
+        ),
+      ).rejects.toThrow("Azure service not available");
+    });
+  });
+
+  describe("listConnectedProviders — no providers", () => {
+    it("should return empty array when no providers are configured", async () => {
+      const result = await service.listConnectedProviders("org-1");
+      expect(result).toEqual([]);
+    });
+  });
+});
+
+describe("CloudResourceService — cost with rejected providers", () => {
+  let service: CloudResourceService;
+  let mockAwsService: {
+    getMonthlyCost: jest.Mock;
+    discoverResources: jest.Mock;
+  };
+  let mockGcpService: {
+    getMonthlyCost: jest.Mock;
+    discoverResources: jest.Mock;
+  };
+  let mockAzureService: {
+    getMonthlyCost: jest.Mock;
+    discoverResources: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    mockAwsService = {
+      getMonthlyCost: jest.fn(),
+      discoverResources: jest.fn(),
+    };
+    mockGcpService = {
+      getMonthlyCost: jest.fn(),
+      discoverResources: jest.fn(),
+    };
+    mockAzureService = {
+      getMonthlyCost: jest.fn(),
+      discoverResources: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        CloudResourceService,
+        { provide: AwsService, useValue: mockAwsService },
+        { provide: GcpService, useValue: mockGcpService },
+        { provide: AzureService, useValue: mockAzureService },
+      ],
+    }).compile();
+
+    service = module.get<CloudResourceService>(CloudResourceService);
+  });
+
+  describe("getAggregatedCost — rejected providers", () => {
+    it("should log error when AWS cost fetch rejects", async () => {
+      mockAwsService.getMonthlyCost.mockRejectedValue(new Error("AWS err"));
+      mockGcpService.getMonthlyCost.mockResolvedValue([]);
+      mockAzureService.getMonthlyCost.mockResolvedValue([]);
+
+      const result = await service.getAggregatedCost("org-1", 30);
+      expect(result).toEqual([]);
+    });
+
+    it("should log error when GCP cost fetch rejects", async () => {
+      mockAwsService.getMonthlyCost.mockResolvedValue([]);
+      mockGcpService.getMonthlyCost.mockRejectedValue(new Error("GCP err"));
+      mockAzureService.getMonthlyCost.mockResolvedValue([]);
+
+      const result = await service.getAggregatedCost("org-1", 30);
+      expect(result).toEqual([]);
+    });
+
+    it("should log error when Azure cost fetch rejects", async () => {
+      mockAwsService.getMonthlyCost.mockResolvedValue([]);
+      mockGcpService.getMonthlyCost.mockResolvedValue([]);
+      mockAzureService.getMonthlyCost.mockRejectedValue(new Error("Azure err"));
+
+      const result = await service.getAggregatedCost("org-1", 30);
+      expect(result).toEqual([]);
+    });
+  });
+});

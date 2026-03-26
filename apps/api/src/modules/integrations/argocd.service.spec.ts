@@ -102,6 +102,19 @@ describe("ArgoCDService", () => {
       expect(result).toEqual([]);
       expect(mockHttpGet).not.toHaveBeenCalled();
     });
+
+    it("should return empty array when response items field is null", async () => {
+      mockCredentialService.findByType.mockResolvedValue({
+        encryptedValue: "enc-data",
+        type: IntegrationType.ARGOCD,
+      });
+      mockHttpGet.mockReturnValue(
+        of(makeAxiosResponse({ items: null as unknown as never[] })),
+      );
+
+      const result = await service.listApplications(ORG_ID);
+      expect(result).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------

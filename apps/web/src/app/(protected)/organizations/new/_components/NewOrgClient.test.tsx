@@ -8,6 +8,21 @@ import userEvent from "@testing-library/user-event";
 const mockCreate = vi.fn();
 const mockRefreshOrgs = vi.fn();
 const mockSwitchOrg = vi.fn();
+const mockPush = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: mockPush,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => "/organizations/new",
+  useParams: () => ({}),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 vi.mock("@/lib/api-client", () => ({
   organizations: {
@@ -42,6 +57,7 @@ describe("NewOrgClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRefreshOrgs.mockResolvedValue(undefined);
+    mockPush.mockReset();
   });
 
   it("renders the form fields", () => {
@@ -128,5 +144,94 @@ describe("NewOrgClient", () => {
     });
 
     resolve!();
+  });
+
+  it("shows a joined error message when ApiError body.message is an array", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockRejectedValueOnce(
+      new ApiError(400, { message: ["Name too short", "Must be unique"] }),
+    );
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "X");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Name too short, Must be unique")).toBeInTheDocument();
+    });
+  });
+
+  it("shows a generic error message when a non-ApiError is thrown", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockRejectedValueOnce(new Error("Network failure"));
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "Test Org");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("An unexpected error occurred. Please try again."),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("calls refreshOrgs and switchOrg after successful creation", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockResolvedValueOnce({ id: "org-2", name: "My Org", slug: "my-org" });
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "My Org");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => expect(mockRefreshOrgs).toHaveBeenCalled());
+    expect(mockSwitchOrg).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "org-2", name: "My Org" }),
+    );
+  });
+
+  it("navigates to the new organization page after successful creation", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockResolvedValueOnce({ id: "org-3", name: "New Org", slug: "new-org" });
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "New Org");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/organizations/org-3");
+    });
+  });
+
+  it("omits the description field when left blank", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockResolvedValueOnce({ id: "org-4", name: "Empty Desc", slug: "empty-desc" });
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "Empty Desc");
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ description: undefined }),
+    );
+  });
+
+  it("passes the trimmed description to create when provided", async () => {
+    const user = userEvent.setup();
+    mockCreate.mockResolvedValueOnce({ id: "org-5", name: "With Desc", slug: "with-desc" });
+    render(<NewOrgClient />);
+
+    await user.type(screen.getByLabelText(/^name/i), "With Desc");
+    await user.type(
+      screen.getByLabelText(/description/i),
+      "A great organization",
+    );
+    await user.click(screen.getByRole("button", { name: "Create Organization" }));
+
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "A great organization" }),
+    );
   });
 });

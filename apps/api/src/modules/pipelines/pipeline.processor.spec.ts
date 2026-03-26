@@ -2238,3 +2238,412 @@ describe("PipelineProcessor — additional branches", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// PipelineProcessor — executor paths without CloudSecretsService
+// ---------------------------------------------------------------------------
+
+describe("PipelineProcessor — executor branches without CloudSecretsService", () => {
+  let mockRunRepo: Record<string, jest.Mock>;
+  let mockPipelineRepo: Record<string, jest.Mock>;
+  let mockEventsGateway: { server: { emit: jest.Mock } };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+
+    mockRunRepo = { findOne: jest.fn(), save: jest.fn() };
+    mockPipelineRepo = { findOne: jest.fn() };
+    mockEventsGateway = { server: { emit: jest.fn() } };
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
+
+  function job(run: PipelineRun): Job<PipelineExecutionJobData> {
+    return {
+      data: {
+        pipelineId: run.pipelineId,
+        runId: run.id,
+        triggeredBy: run.triggeredBy,
+      },
+    } as Job<PipelineExecutionJobData>;
+  }
+
+  // -------------------------------------------------------------------------
+  // approval stage with null stageResults (run.stageResults ?? [])
+  // -------------------------------------------------------------------------
+
+  describe("approval stage — run.stageResults is null", () => {
+    it("should treat null stageResults as empty array before appending approval result", async () => {
+      const run = buildRun({
+        startedAt: new Date(),
+        stageResults: null as unknown as [],
+      });
+      const approvalStage: PipelineStage = {
+        id: "approval-stage",
+        name: "Gate",
+        type: "approval",
+        config: {},
+        order: 1,
+      };
+      const pipeline = buildPipeline([approvalStage]);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const waitingSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.WAITING_APPROVAL);
+      expect(waitingSave).toBeDefined();
+      expect(waitingSave![0].stageResults).toHaveLength(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // aws-ecs without CloudSecretsService (config used directly)
+  // -------------------------------------------------------------------------
+
+  describe("aws-ecs dispatch without CloudSecretsService", () => {
+    it("should pass stage.config directly to AwsEcsExecutor when CloudSecretsService is absent", async () => {
+      const mockEcsExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "ecs ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsEcsExecutor, useValue: mockEcsExecutor },
+          // No CloudSecretsService
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const ecsStage: PipelineStage = {
+        id: "ecs-stage",
+        name: "ECS Deploy",
+        type: "deploy",
+        config: { engine: "aws-ecs", orgId: "org-1" } as unknown as Record<
+          string,
+          unknown
+        >,
+        order: 1,
+      };
+      const pipeline = buildPipeline([ecsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockEcsExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // aws-lambda without CloudSecretsService
+  // -------------------------------------------------------------------------
+
+  describe("aws-lambda dispatch without CloudSecretsService", () => {
+    it("should pass stage.config directly to AwsLambdaExecutor when CloudSecretsService is absent", async () => {
+      const mockLambdaExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "lambda ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
+          // No CloudSecretsService
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const lambdaStage: PipelineStage = {
+        id: "lambda-stage",
+        name: "Lambda Deploy",
+        type: "deploy",
+        config: {
+          engine: "aws-lambda",
+          orgId: "org-1",
+          functionName: "fn",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([lambdaStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockLambdaExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // gcp-cloud-run without CloudSecretsService
+  // -------------------------------------------------------------------------
+
+  describe("gcp-cloud-run dispatch without CloudSecretsService", () => {
+    it("should pass stage.config directly to GcpCloudRunExecutor when CloudSecretsService is absent", async () => {
+      const mockGcpExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "gcp ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
+          // No CloudSecretsService
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const gcpStage: PipelineStage = {
+        id: "gcp-stage",
+        name: "GCP Deploy",
+        type: "deploy",
+        config: {
+          engine: "gcp-cloud-run",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([gcpStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockGcpExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // azure-container-apps without CloudSecretsService
+  // -------------------------------------------------------------------------
+
+  describe("azure-container-apps dispatch without CloudSecretsService", () => {
+    it("should pass stage.config directly to AzureContainerAppsExecutor when CloudSecretsService is absent", async () => {
+      const mockAzureExecutor = {
+        execute: jest
+          .fn()
+          .mockResolvedValue({ success: true, output: "azure ok" }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
+          // No CloudSecretsService
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const azureStage: PipelineStage = {
+        id: "azure-stage",
+        name: "Azure Deploy",
+        type: "deploy",
+        config: {
+          engine: "azure-container-apps",
+          orgId: "org-1",
+        } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([azureStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockAzureExecutor.execute).toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // process — run.startedAt is null when run succeeds (durationMs = null)
+  // -------------------------------------------------------------------------
+
+  describe("process — succeeds with null startedAt", () => {
+    it("should set durationMs to null when run has no startedAt and succeeds", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      // Resume scenario: startedAt is null because it was set in a previous processing pass.
+      const run = buildRun({
+        startedAt: null as unknown as Date,
+        stageResults: [],
+      });
+      const scriptStage: PipelineStage = {
+        id: "s1",
+        name: "Script",
+        type: "script",
+        config: {},
+        order: 5,
+      };
+      const pipeline = buildPipeline([scriptStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(
+        buildJob({
+          pipelineId: run.pipelineId,
+          runId: run.id,
+          triggeredBy: run.triggeredBy,
+          resumeFromStageOrder: 5,
+        }),
+      );
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      const succeededSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
+      expect(succeededSave).toBeDefined();
+      expect(succeededSave![0].durationMs).toBeNull();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // process — outer catch with non-Error exception (String(error) path)
+  // -------------------------------------------------------------------------
+
+  describe("process — outer catch with non-Error", () => {
+    it("should call failRun with String(error) when a non-Error is thrown in stage execution", async () => {
+      const mockHelmExecutor = {
+        execute: jest.fn().mockRejectedValue("non-error-string"),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: HelmDeployExecutor, useValue: mockHelmExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date() });
+      const helmStage: PipelineStage = {
+        id: "helm-s",
+        name: "Helm",
+        type: "deploy",
+        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        order: 1,
+      };
+      const pipeline = buildPipeline([helmStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // resolveKeycloakSecrets — non-keycloak string values pass through unchanged
+  // -------------------------------------------------------------------------
+
+  describe("resolveKeycloakSecrets — non-keycloak values unchanged", () => {
+    it("should return non-string and non-keycloak values unchanged", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+
+      const config: Record<string, unknown> = {
+        plainString: "just-a-value",
+        numberVal: 42,
+        boolVal: true,
+        nested: { key: "val" },
+      };
+
+      const result = await proc.resolveKeycloakSecrets(config, "org-1");
+
+      expect(result.plainString).toBe("just-a-value");
+      expect(result.numberVal).toBe(42);
+      expect(result.boolVal).toBe(true);
+    });
+  });
+});

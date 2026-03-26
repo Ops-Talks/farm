@@ -102,6 +102,15 @@ describe("DocumentationController", () => {
       expect(result.data).toHaveLength(1);
       expect(service.findAll).toHaveBeenCalledWith(0, 20, "comp-uuid-1");
     });
+
+    it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
+      const result = await controller.findAll({
+        skip: undefined,
+        take: undefined,
+      } as never);
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(20);
+    });
   });
 
   describe("findOne", () => {
