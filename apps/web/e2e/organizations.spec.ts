@@ -14,9 +14,10 @@
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
 
-test.beforeEach(async ({ page }) => {
-  await setupAuthStorage(page);
-});
+test.describe("Organizations — authenticated", () => {
+  test.beforeEach(async ({ page }) => {
+    await setupAuthStorage(page);
+  });
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -431,7 +432,7 @@ test("admin can remove a member from the organization", async ({ page }) => {
     .click({ force: true });
 
   // A ConfirmDialog should appear with the "Remove member" title
-  await expect(page.getByText("Remove member")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Remove member" })).toBeVisible();
 
   // Click the destructive confirm button whose accessible name is exactly
   // "Remove" — this is distinct from the icon button's aria-label which is
@@ -444,6 +445,8 @@ test("admin can remove a member from the organization", async ({ page }) => {
     timeout: 10_000,
   });
 });
+
+}); // end test.describe("Organizations — authenticated")
 
 /**
  * Test 10: An unauthenticated user who navigates to /organizations is

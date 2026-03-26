@@ -21,11 +21,13 @@ import type { Page } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
 
 // ---------------------------------------------------------------------------
-// Inject mock auth tokens into sessionStorage before each test page load.
+// Authenticated test suite — beforeEach is scoped here so the unauthenticated
+// describe block below does not inherit the addInitScript token injection.
 // ---------------------------------------------------------------------------
-test.beforeEach(async ({ page }) => {
-  await setupAuthStorage(page);
-});
+test.describe("Environments — authenticated", () => {
+  test.beforeEach(async ({ page }) => {
+    await setupAuthStorage(page);
+  });
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -37,9 +39,9 @@ test.beforeEach(async ({ page }) => {
 // ---------------------------------------------------------------------------
 
 const MOCK_HELM_RELEASE = {
-  name: "my-service",
+  name: "helm-deploy",
   namespace: "production",
-  chart: "my-service",
+  chart: "helm-chart",
   chartVersion: "1.2.3",
   appVersion: "v2.0.0",
   status: "deployed",
@@ -48,7 +50,7 @@ const MOCK_HELM_RELEASE = {
 };
 
 const MOCK_ROLLOUT = {
-  name: "my-service",
+  name: "argo-rollout",
   namespace: "production",
   // KubernetesRollout uses `phase`, not `status`
   phase: "Healthy",
@@ -56,7 +58,7 @@ const MOCK_ROLLOUT = {
 };
 
 const MOCK_ARGOCD_APP = {
-  name: "my-service-prod",
+  name: "argocd-prod-app",
   namespace: "argocd",
   // ArgoCDApplication uses a nested status object, not flat syncStatus/healthStatus
   status: {
@@ -201,7 +203,7 @@ test("Helm releases panel renders a table row with mock release data", async ({
   await page.goto("/environments");
 
   // The card section heading rendered by HelmReleasesPanel
-  await expect(page.getByText("Helm Releases")).toBeVisible();
+  await expect(page.getByText("Helm Releases", { exact: true })).toBeVisible();
 
   // The release name and namespace must both appear inside the table
   await expect(page.getByText(MOCK_HELM_RELEASE.name)).toBeVisible();
@@ -266,7 +268,7 @@ test("ArgoCDStatusCard renders with ArgoCD application data", async ({
   await page.goto("/environments");
 
   // The card section heading rendered by ArgoCDStatusCard
-  await expect(page.getByText("ArgoCD Applications")).toBeVisible();
+  await expect(page.getByText("ArgoCD Applications", { exact: true })).toBeVisible();
 
   // The application name and namespace must both appear in the table
   await expect(page.getByText(MOCK_ARGOCD_APP.name)).toBeVisible();
@@ -316,6 +318,8 @@ test("ArgoCDStatusCard per-app Sync button triggers POST for the correct applica
   // Assert the correct application sync endpoint was called
   await syncRequest;
 });
+
+}); // end test.describe("Environments — authenticated")
 
 // ── Unauthenticated access ───────────────────────────────────────────────────
 

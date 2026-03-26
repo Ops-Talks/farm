@@ -309,10 +309,14 @@ test.describe("docs page — authenticated", () => {
       timeout: 5000,
     });
 
+    // Scope to the search results card to avoid matching the tree sidebar title.
+    const searchCard = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: /Search Results/ });
     // The result row must show the title and the relevance score badge.
-    await expect(page.getByText(MOCK_SEARCH_RESULT.title)).toBeVisible();
+    await expect(searchCard.getByText(MOCK_SEARCH_RESULT.title)).toBeVisible();
     // score 0.95 → Math.round(0.95 * 100) = 95 → badge text "95%".
-    await expect(page.getByText("95%")).toBeVisible();
+    await expect(searchCard.getByText("95%")).toBeVisible();
   });
 
   /**
@@ -337,8 +341,13 @@ test.describe("docs page — authenticated", () => {
     });
 
     // The search result is rendered as a <button> inside the results card.
-    await page
+    // Scope to the card to avoid the identically-named tree sidebar button.
+    const searchResultCard = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: /Search Results/ });
+    await searchResultCard
       .getByRole("button", { name: MOCK_SEARCH_RESULT.title })
+      .first()
       .click();
 
     // The search results panel must be dismissed.

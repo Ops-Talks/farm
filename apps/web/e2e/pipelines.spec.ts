@@ -317,10 +317,10 @@ test.describe("Pipelines — authenticated flows", () => {
 
     // Action buttons present on the Definition tab
     await expect(
-      page.getByRole("button", { name: /trigger run/i }),
+      page.locator('button', { hasText: "Trigger Run" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /delete pipeline/i }),
+      page.locator('button', { hasText: "Delete" }).first(),
     ).toBeVisible();
 
     // Stage name from MOCK_PIPELINE.stages[0]
@@ -339,8 +339,8 @@ test.describe("Pipelines — authenticated flows", () => {
 
     await page.goto(`/pipelines/${MOCK_PIPELINE.id}`);
 
-    // Switch to the Runs tab
-    await page.getByRole("tab", { name: /runs/i }).click();
+    // Switch to the Runs tab (FilterTabs renders <button>, not role="tab")
+    await page.getByRole("button", { name: "Runs" }).click();
 
     // Run ID column renders the first 8 characters of the full run ID
     await expect(page.getByText(MOCK_RUN.id.slice(0, 8))).toBeVisible({
