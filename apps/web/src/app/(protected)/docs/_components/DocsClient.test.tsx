@@ -675,12 +675,11 @@ describe("DocsClient", () => {
 
       fireEvent.click(screen.getByTestId("tree-select-btn"));
 
+      // Wait for the async fetch to complete and inject the coerced HTML.
       await waitFor(() =>
-        expect(document.querySelector(".prose")).toBeInTheDocument(),
-      );
-      // The innerHTML should be the String() coercion result.
-      expect(document.querySelector(".prose")?.innerHTML).toContain(
-        "object content",
+        expect(document.querySelector(".prose")?.innerHTML).toContain(
+          "object content",
+        ),
       );
     });
   });
