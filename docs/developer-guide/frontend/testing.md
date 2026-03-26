@@ -224,3 +224,105 @@ Each test should work in isolation. Use `beforeEach` with `vi.clearAllMocks()` t
 | Queues Page | `queues.test.tsx` | 6 |
 | Observability Page | `observability.test.tsx` | 5 |
 | **Total** | **11 files** | **101** |
+
+## End-to-End Tests (Playwright)
+
+Farm uses **Playwright** for browser-level E2E tests that validate full user journeys without a live backend. All API calls are intercepted with `page.route()`.
+
+### Location
+
+```
+apps/web/
+  e2e/
+    helpers/
+      setup-auth-storage.ts    # Seeds sessionStorage tokens via addInitScript
+    global-setup.ts            # MOCK_USER, MOCK_TOKENS, AUTH_FILE constants
+    auth.spec.ts               # Login, logout, token refresh flows
+    catalog.spec.ts            # Component list, create, detail flows
+    deployments.spec.ts        # Deployment list and matrix
+    teams.spec.ts              # Team CRUD and member management
+    environments.spec.ts       # Helm releases, ArgoCD, Rollout dashboard
+    organizations.spec.ts      # Org list, create, member management
+    pipelines.spec.ts          # Pipeline list, create, runs, trigger
+    docs.spec.ts               # Doc tree, content rendering, search
+```
+
+### Running E2E Tests
+
+```bash
+# All E2E specs (headless)
+cd apps/web && npx playwright test
+
+# Single spec
+cd apps/web && npx playwright test e2e/environments.spec.ts
+
+# Headed (with browser UI)
+cd apps/web && npx playwright test --headed
+
+# UI mode (interactive)
+cd apps/web && npx playwright test --ui
+```
+
+### Auth Pattern
+
+All authenticated tests use `setupAuthStorage` to inject fake JWT tokens into `sessionStorage` before the page loads:
+
+```typescript
+import { setupAuthStorage } from "./helpers/setup-auth-storage";
+
+test.beforeEach(async ({ page }) => {
+  await setupAuthStorage(page);
+});
+```
+
+`setupAuthStorage` uses `page.addInitScript()` so the tokens are available on the very first render, before any React hydration.
+
+### Route Mocking Pattern
+
+Playwright resolves route interceptors in **LIFO order** (last registered wins). Always register the catch-all first:
+
+```typescript
+// 1. Catch-all — registered first, lowest priority
+await page.route("**/api/v1/**", (route) =>
+  route.fulfill({ status: 200, contentType: "application/json", body: "[]" })
+);
+
+// 2. Specific routes — registered last, highest priority
+await page.route("**/api/v1/catalog/components**", (route) =>
+  route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ data: [MOCK_COMPONENT], total: 1 }),
+  })
+);
+```
+
+### Unauthenticated Tests
+
+Isolate unauthenticated redirect tests in a separate `test.describe` block with cleared storage:
+
+```typescript
+test.describe("Page — unauthenticated access", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("redirects to /login", async ({ page }) => {
+    await page.route("**/socket.io/**", (route) => route.abort());
+    await page.goto("/protected-page");
+    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
+  });
+});
+```
+
+### E2E Coverage
+
+| Spec | Tests | Flows covered |
+|------|-------|---------------|
+| `auth.spec.ts` | 5 | Login, invalid credentials, refresh, logout, redirect |
+| `catalog.spec.ts` | 8 | List, create, detail, delete |
+| `deployments.spec.ts` | 4 | List, matrix view |
+| `teams.spec.ts` | 7 | List, create, detail, member management |
+| `environments.spec.ts` | 9 | Helm releases, Rollouts, ArgoCD apps, sync actions |
+| `organizations.spec.ts` | 10 | List, create, settings, member add/remove |
+| `pipelines.spec.ts` | 10 | List, create, detail, runs tab, trigger |
+| `docs.spec.ts` | 9 | Tree navigation, content rendering, search, create form |
+| **Total** | **62** | |

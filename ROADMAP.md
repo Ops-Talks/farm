@@ -958,6 +958,36 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 
 ---
 
+## Phase 7: Frontend Hardening `TODO`
+
+### FARM-E46: Production-Grade Frontend Quality `TODO`
+
+> Close the remaining quality gaps in the Farm web application: expand Playwright E2E coverage to all critical flows, establish a Storybook component library, enforce Content Security Policy headers, add a Core Web Vitals CI gate, and apply a systematic performance optimization pass to heavy components.
+
+#### Background
+
+Phase 5.5 delivered the foundational frontend quality work — Vitest unit tests, error boundaries, loading states, accessibility improvements, and mobile responsiveness. Phase 9 added axe-core accessibility checks to key page components. What remains is a focused hardening pass that covers three areas still at risk: **untested critical flows** (only 4 of 12+ major features have E2E coverage), **missing component documentation** (zero Storybook stories), and **performance and security gaps** (heavy components lack memoization; no CSP headers configured for the frontend).
+
+#### Stories
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S180 | Story | Playwright E2E expansion: add test specs for environments, organizations, pipelines (create/run/compare), and docs flows; expand from 4 to 8 spec files covering all critical user journeys | `DONE` |
+| FARM-S181 | Story | Storybook setup: install and configure Storybook for Next.js; create `.stories.tsx` files for all shared UI primitives (`Button`, `Card`, `Dialog`, `Tabs`, `Input`, `Badge`) and shared layout components (`PageHeader`, `FilterTabs`, `EmptyState`, `ConfirmDialog`) | `TODO` |
+| FARM-S182 | Story | Content Security Policy: add `headers()` to `next.config.ts` with CSP (`script-src`, `style-src`, `img-src`, `connect-src`), HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin` | `TODO` |
+| FARM-S183 | Story | Performance optimization pass: audit components with >200 lines for unnecessary re-renders; apply `React.memo` to pure list/card components, `useMemo` to expensive computations (doc tree traversal, trace waterfall layout, metric formatting), and `useCallback` to event handlers passed as props; target 60+ optimized call sites (up from 23) | `TODO` |
+| FARM-S184 | Story | Web Vitals CI gate: add a Lighthouse CI step to the GitHub Actions `web` job that asserts LCP < 2.5 s, CLS < 0.1, and TBT < 200 ms on the login page and dashboard; fail the build on regression; store HTML reports as workflow artifacts | `TODO` |
+
+#### Implementation Notes
+
+- **E2E expansion** (S180): Follow the existing pattern in `e2e/auth.spec.ts` and `e2e/catalog.spec.ts`. Use `global-setup.ts` session reuse. Each new spec covers: happy path, form validation error, and a delete/cleanup flow. Environments and organizations share a similar CRUD shape — they can reuse helper factories from `e2e/helpers/`.
+- **Storybook** (S181): Use `@storybook/nextjs` framework adapter. Add `.storybook/main.ts` with Webpack 5 + path alias mirroring `tsconfig.json`. Stories are colocated alongside components (`button.stories.tsx` next to `button.tsx`). No visual regression CI required in this story — that is a follow-on.
+- **CSP** (S182): The `connect-src` directive must whitelist the API origin (`NEXT_PUBLIC_API_URL`) and the WebSocket origin. Use `nonce`-based CSP for inline styles injected by `next-themes`. Start in `Report-Only` mode to catch violations without breaking the app, then switch to enforced after one release cycle.
+- **Performance pass** (S183): Use React DevTools Profiler in development to identify components with high render counts. Priority targets: `CatalogClient` (component list), `RunDetailClient` (864-line component), `DocsClient` (1,171-line component), `ObservabilityClient`. Do not apply `React.memo` blindly — only where props are stable across parent re-renders.
+- **Lighthouse CI** (S184): Use `treosh/lighthouse-ci-action`. The target URLs are served by the running `web` job in CI — requires a brief `next build && next start` step. Alternatively, use static export or a staging URL. Store `.lighthouserc.json` at `apps/web/.lighthouserc.json`.
+
+---
+
 ## Phase 8: Frontend Visual Refresh `DONE`
 
 ### FARM-E43: Frontend Visual Redesign `DONE`
