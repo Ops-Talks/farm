@@ -61,18 +61,33 @@ function deploymentStatusVariant(
 
 /** Detect repository provider from URL for labelling the link button */
 function detectProvider(url: string): { label: string; icon: React.ReactNode } {
-  if (url.includes("github.com")) {
+  let hostname: string | null = null;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    // If URL parsing fails, fall back to generic repository label
+    hostname = null;
+  }
+
+  if (hostname === "github.com" || (hostname !== null && hostname.endsWith(".github.com"))) {
     return {
       label: "View on GitHub",
       icon: <Github className="h-4 w-4" />,
     };
   }
-  if (url.includes("gitlab.com") || url.includes("gitlab.")) {
+
+  if (
+    hostname === "gitlab.com" ||
+    (hostname !== null && hostname.endsWith(".gitlab.com")) ||
+    // Support generic gitlab.<tld> hosts, but restrict to exactly two labels (e.g. "gitlab.example")
+    (hostname !== null && hostname.startsWith("gitlab.") && hostname.split(".").length === 2)
+  ) {
     return {
       label: "View on GitLab",
       icon: <GitBranch className="h-4 w-4" />,
     };
   }
+
   return {
     label: "View Repository",
     icon: <ExternalLink className="h-4 w-4" />,
