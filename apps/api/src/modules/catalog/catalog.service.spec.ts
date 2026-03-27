@@ -724,6 +724,7 @@ describe("CatalogService — gitClone internal branches", () => {
       "clone",
       "--depth",
       "1",
+      "--",
       "http://example.com/repo.git",
       expect.any(String),
     ]);

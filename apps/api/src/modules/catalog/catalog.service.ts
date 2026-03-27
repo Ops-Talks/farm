@@ -166,6 +166,7 @@ export class CatalogService {
         "clone",
         "--depth",
         "1",
+        "--",
         normalizedUrl,
         targetDir,
       ]);
