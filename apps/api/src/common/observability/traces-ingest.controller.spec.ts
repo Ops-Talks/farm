@@ -63,13 +63,23 @@ describe("TracesIngestController", () => {
   });
 
   describe("POST traces/ingest", () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
     it("proxies the body to the default collector and returns its status", async () => {
       // Arrange — stub global fetch to simulate a Tempo 200 response
       const mockFetch = jest.fn().mockResolvedValue({
         status: 200,
         text: jest.fn().mockResolvedValue(""),
       });
-      global.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
 
       const req = makeReq({ resourceSpans: [] });
       const res = makeRes();
@@ -101,7 +111,7 @@ describe("TracesIngestController", () => {
         status: 200,
         text: jest.fn().mockResolvedValue(""),
       });
-      global.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
 
       const req = makeReq({ resourceSpans: [] });
       const res = makeRes();
@@ -122,7 +132,7 @@ describe("TracesIngestController", () => {
         status: 429,
         text: jest.fn().mockResolvedValue("rate limited"),
       });
-      global.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
 
       const req = makeReq({});
       const res = makeRes();
@@ -140,7 +150,7 @@ describe("TracesIngestController", () => {
       const mockFetch = jest
         .fn()
         .mockRejectedValue(new Error("connection refused"));
-      global.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
 
       const req = makeReq({});
       const res = makeRes();

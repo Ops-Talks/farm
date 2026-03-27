@@ -1047,7 +1047,7 @@ describe("PipelineProcessor", () => {
         // eslint-disable-next-line @typescript-eslint/require-await
         json: async () => ({ access_token: "token-abc", expires_in: 300 }),
       });
-      global.fetch = mockFetch as typeof fetch;
+      globalThis.fetch = mockFetch as typeof fetch;
 
       const token = await proc.resolveKeycloakSecret(
         "keycloak://myrealm/farm-client",
@@ -1072,7 +1072,7 @@ describe("PipelineProcessor", () => {
 
       let fetchCallCount = 0;
       // eslint-disable-next-line @typescript-eslint/require-await
-      global.fetch = jest.fn().mockImplementation(async () => {
+      globalThis.fetch = jest.fn().mockImplementation(async () => {
         fetchCallCount++;
         return {
           ok: true,
@@ -1812,7 +1812,7 @@ describe("PipelineProcessor — additional branches", () => {
         credRepo as never,
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
+      globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 401,
         statusText: "Unauthorized",
@@ -1849,7 +1849,7 @@ describe("PipelineProcessor — additional branches", () => {
       );
 
       let capturedBody: string | undefined;
-      global.fetch = jest
+      globalThis.fetch = jest
         .fn()
         .mockImplementation((_url: unknown, init: { body: string }) => {
           capturedBody = init.body;
@@ -1903,7 +1903,7 @@ describe("PipelineProcessor — additional branches", () => {
         credRepo as never,
       );
 
-      global.fetch = jest.fn().mockResolvedValue({
+      globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: () => ({
           access_token: "default-key-token",
@@ -1945,7 +1945,7 @@ describe("PipelineProcessor — additional branches", () => {
       );
 
       let fetchCallCount = 0;
-      global.fetch = jest.fn().mockImplementation(() => {
+      globalThis.fetch = jest.fn().mockImplementation(() => {
         fetchCallCount++;
         return {
           ok: true,

@@ -457,6 +457,91 @@ spec:
     });
   });
 
+  describe("validateGitUrl", () => {
+    // Type-safe accessor for private method testing
+    type ValidateGitUrlFn = (url: string) => void;
+    const validateGitUrl = (url: string): void =>
+      (
+        service as unknown as { validateGitUrl: ValidateGitUrlFn }
+      ).validateGitUrl(url);
+
+    it("should throw BadRequestException for an empty string", () => {
+      expect(() => validateGitUrl("")).toThrow(
+        "Repository URL must not be empty.",
+      );
+    });
+
+    it("should throw BadRequestException for a whitespace-only string", () => {
+      expect(() => validateGitUrl("   ")).toThrow(
+        "Repository URL must not be empty.",
+      );
+    });
+
+    it("should throw BadRequestException for a value starting with '-'", () => {
+      expect(() => validateGitUrl("--upload-pack=malicious")).toThrow(
+        "Invalid repository URL.",
+      );
+    });
+
+    it("should throw BadRequestException for a value starting with '-' (short flag)", () => {
+      expect(() => validateGitUrl("-e malicious")).toThrow(
+        "Invalid repository URL.",
+      );
+    });
+
+    it("should throw BadRequestException for an unparseable URL with a scheme", () => {
+      expect(() => validateGitUrl("://not-a-valid-url")).toThrow(
+        "Invalid repository URL format.",
+      );
+    });
+
+    it("should throw BadRequestException for a git:// scheme URL", () => {
+      expect(() => validateGitUrl("git://github.com/org/repo.git")).toThrow(
+        "Only HTTP(S) repository URLs are allowed.",
+      );
+    });
+
+    it("should throw BadRequestException for an ftp:// scheme URL", () => {
+      expect(() => validateGitUrl("ftp://example.com/repo.git")).toThrow(
+        "Only HTTP(S) repository URLs are allowed.",
+      );
+    });
+
+    it("should throw BadRequestException for a file:// scheme URL", () => {
+      expect(() => validateGitUrl("file:///etc/passwd")).toThrow(
+        "Only HTTP(S) repository URLs are allowed.",
+      );
+    });
+
+    it("should throw BadRequestException for a non-URL, non-SSH value without a scheme", () => {
+      expect(() => validateGitUrl("not-a-valid-remote")).toThrow(
+        "Invalid repository URL.",
+      );
+    });
+
+    it("should not throw for a valid http:// URL", () => {
+      expect(() =>
+        validateGitUrl("http://github.com/org/repo.git"),
+      ).not.toThrow();
+    });
+
+    it("should not throw for a valid https:// URL", () => {
+      expect(() =>
+        validateGitUrl("https://github.com/org/repo.git"),
+      ).not.toThrow();
+    });
+
+    it("should not throw for a valid SSH-style remote (git@host:org/repo.git)", () => {
+      expect(() => validateGitUrl("git@github.com:org/repo.git")).not.toThrow();
+    });
+
+    it("should not throw for an SSH-style remote with a numeric host part", () => {
+      expect(() =>
+        validateGitUrl("git@192.168.1.1:org/repo.git"),
+      ).not.toThrow();
+    });
+  });
+
   describe("discoverFromLocation — error branches", () => {
     beforeEach(() => {
       (fs.rm as jest.Mock).mockResolvedValue(undefined);

@@ -2,6 +2,7 @@ import { GoogleStrategy } from "./google.strategy";
 import { ConfigService } from "@nestjs/config";
 import { AuthService } from "../auth.service";
 import { User } from "../entities/user.entity";
+import type { Profile } from "passport-google-oauth20";
 
 const mockConfigService = {
   get: jest.fn((key: string) => {
@@ -63,7 +64,7 @@ describe("GoogleStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
@@ -96,7 +97,7 @@ describe("GoogleStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
@@ -122,7 +123,7 @@ describe("GoogleStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
@@ -141,7 +142,12 @@ describe("GoogleStrategy", () => {
     };
 
     const done = jest.fn();
-    await strategy.validate("token", "refresh", profile as any, done);
+    await strategy.validate(
+      "token",
+      "refresh",
+      profile as unknown as Profile,
+      done,
+    );
 
     const calledWith = (done.mock.calls as Array<[Error]>)[0][0];
     expect(calledWith).toBeInstanceOf(Error);
@@ -160,7 +166,12 @@ describe("GoogleStrategy", () => {
     };
 
     const done = jest.fn();
-    await strategy.validate("token", "refresh", profile as any, done);
+    await strategy.validate(
+      "token",
+      "refresh",
+      profile as unknown as Profile,
+      done,
+    );
 
     expect(mockAuthService.findOrCreateOAuthUser).toHaveBeenCalledWith(
       "google",
@@ -181,7 +192,12 @@ describe("GoogleStrategy", () => {
     };
 
     const done = jest.fn();
-    await strategy.validate("token", "refresh", profile as any, done);
+    await strategy.validate(
+      "token",
+      "refresh",
+      profile as unknown as Profile,
+      done,
+    );
 
     expect(mockAuthService.findOrCreateOAuthUser).toHaveBeenCalledWith(
       "google",

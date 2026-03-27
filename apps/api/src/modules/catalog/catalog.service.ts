@@ -78,6 +78,7 @@ export class CatalogService {
    * @returns The number of components discovered
    */
   async discoverFromLocation(url: string): Promise<number> {
+    this.validateGitUrl(url);
     const tempDir = path.join("/tmp/farm-discovery", randomUUID());
     this.logger.log(`Cloning ${url} into ${tempDir}`);
 
@@ -108,6 +109,48 @@ export class CatalogService {
       await fs.rm(tempDir, { recursive: true, force: true });
       this.logger.log(`Cleaned up temporary directory: ${tempDir}`);
     }
+  }
+
+  /**
+   * Validates that the provided Git URL/remotely-controlled value is safe to pass to git.
+   * Rejects empty values, option-like values (starting with "-"), and disallowed URL schemes.
+   * Allows HTTPS URLs and common SSH-style Git remotes (e.g., git@github.com:org/repo.git).
+   */
+  private validateGitUrl(url: string): void {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      throw new BadRequestException("Repository URL must not be empty.");
+    }
+
+    // Prevent git from interpreting the value as an option, such as --upload-pack
+    if (trimmed.startsWith("-")) {
+      throw new BadRequestException("Invalid repository URL.");
+    }
+
+    // If the value looks like a URL with a scheme, only allow http(s)
+    if (trimmed.includes("://")) {
+      let parsed: URL;
+      try {
+        parsed = new URL(trimmed);
+      } catch {
+        throw new BadRequestException("Invalid repository URL format.");
+      }
+
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new BadRequestException(
+          "Only HTTP(S) repository URLs are allowed.",
+        );
+      }
+      return;
+    }
+
+    // Allow common SSH-style Git remotes, e.g. git@github.com:org/repo.git
+    const sshPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:[^\s]+$/;
+    if (sshPattern.test(trimmed)) {
+      return;
+    }
+
+    throw new BadRequestException("Invalid repository URL.");
   }
 
   private async gitClone(url: string, targetDir: string): Promise<void> {
