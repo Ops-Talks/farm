@@ -79,7 +79,8 @@ function detectProvider(url: string): { label: string; icon: React.ReactNode } {
   if (
     hostname === "gitlab.com" ||
     (hostname !== null && hostname.endsWith(".gitlab.com")) ||
-    (hostname !== null && hostname.startsWith("gitlab.") && hostname.indexOf(".") !== -1)
+    // Support generic gitlab.<tld> hosts, but restrict to exactly two labels (e.g. "gitlab.example")
+    (hostname !== null && hostname.startsWith("gitlab.") && hostname.split(".").length === 2)
   ) {
     return {
       label: "View on GitLab",
