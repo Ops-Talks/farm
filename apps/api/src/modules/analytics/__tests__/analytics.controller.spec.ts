@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { HttpStatus } from "@nestjs/common";
+import type { Response } from "express";
 import { AnalyticsController } from "../analytics.controller";
 import { AnalyticsService } from "../analytics.service";
 import { CatalogAnalyticsDto } from "../dto/catalog-analytics.dto";
@@ -212,7 +213,7 @@ describe("AnalyticsController", () => {
     it("sets Content-Type to text/csv for catalog report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as any);
+      await controller.exportReport("catalog", 30, res as unknown as Response);
 
       expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/csv");
     });
@@ -220,7 +221,7 @@ describe("AnalyticsController", () => {
     it("sets Content-Disposition with filename for catalog report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as any);
+      await controller.exportReport("catalog", 30, res as unknown as Response);
 
       const dispositionCall = res.setHeader.mock.calls.find(
         (c: string[]) => c[0] === "Content-Disposition",
@@ -234,7 +235,7 @@ describe("AnalyticsController", () => {
     it("responds with HTTP 200 for a valid export", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as any);
+      await controller.exportReport("catalog", 30, res as unknown as Response);
 
       expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
       expect(res.send).toHaveBeenCalled();
@@ -243,7 +244,7 @@ describe("AnalyticsController", () => {
     it("generates CSV content for catalog report with expected sections", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as any);
+      await controller.exportReport("catalog", 30, res as unknown as Response);
 
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toContain("Ownership");
@@ -254,7 +255,7 @@ describe("AnalyticsController", () => {
     it("generates CSV content for dora report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("dora", 30, res as unknown as any);
+      await controller.exportReport("dora", 30, res as unknown as Response);
 
       expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);
       const csvBody = res.send.mock.calls[0][0] as string;
@@ -264,7 +265,7 @@ describe("AnalyticsController", () => {
     it("generates CSV content for usage report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("usage", 30, res as unknown as any);
+      await controller.exportReport("usage", 30, res as unknown as Response);
 
       expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
       const csvBody = res.send.mock.calls[0][0] as string;
@@ -275,7 +276,7 @@ describe("AnalyticsController", () => {
       const res = buildMockRes();
       const today = new Date().toISOString().split("T")[0];
 
-      await controller.exportReport("dora", 30, res as unknown as any);
+      await controller.exportReport("dora", 30, res as unknown as Response);
 
       const dispositionCall = res.setHeader.mock.calls.find(
         (c: string[]) => c[0] === "Content-Disposition",
@@ -300,7 +301,7 @@ describe("AnalyticsController", () => {
       });
 
       const res = buildMockRes();
-      await controller.exportReport("catalog", 30, res as unknown as any);
+      await controller.exportReport("catalog", 30, res as unknown as Response);
 
       const csvBody = res.send.mock.calls[0][0] as string;
       // coveragePercent is null, so r[h] ?? "" fires for that cell
@@ -320,7 +321,7 @@ describe("AnalyticsController", () => {
       });
 
       const res = buildMockRes();
-      await controller.exportReport("usage", 30, res as unknown as any);
+      await controller.exportReport("usage", 30, res as unknown as Response);
 
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toBe("");
@@ -333,7 +334,7 @@ describe("AnalyticsController", () => {
       await controller.exportReport(
         "dora",
         undefined as unknown as number,
-        res as unknown as any,
+        res as unknown as Response,
       );
 
       expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);

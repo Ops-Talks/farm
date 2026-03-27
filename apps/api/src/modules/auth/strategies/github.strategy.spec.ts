@@ -2,6 +2,7 @@ import { GithubStrategy } from "./github.strategy";
 import { ConfigService } from "@nestjs/config";
 import { AuthService } from "../auth.service";
 import { User } from "../entities/user.entity";
+import type { Profile } from "passport-github2";
 
 const mockConfigService = {
   get: jest.fn((key: string) => {
@@ -63,7 +64,7 @@ describe("GithubStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
@@ -101,7 +102,7 @@ describe("GithubStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
@@ -128,7 +129,7 @@ describe("GithubStrategy", () => {
     await strategy.validate(
       "access-token",
       "refresh-token",
-      profile as any,
+      profile as unknown as Profile,
       done,
     );
 
