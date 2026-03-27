@@ -61,18 +61,29 @@ function deploymentStatusVariant(
 
 /** Detect repository provider from URL for labelling the link button */
 function detectProvider(url: string): { label: string; icon: React.ReactNode } {
-  if (url.includes("github.com")) {
-    return {
-      label: "View on GitHub",
-      icon: <Github className="h-4 w-4" />,
-    };
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Treat github.com and its subdomains as GitHub
+    if (hostname === "github.com" || hostname.endsWith(".github.com")) {
+      return {
+        label: "View on GitHub",
+        icon: <Github className="h-4 w-4" />,
+      };
+    }
+
+    // Treat gitlab.com and its subdomains as GitLab
+    if (hostname === "gitlab.com" || hostname.endsWith(".gitlab.com")) {
+      return {
+        label: "View on GitLab",
+        icon: <GitBranch className="h-4 w-4" />,
+      };
+    }
+  } catch {
+    // If the URL cannot be parsed, fall through to the default label/icon.
   }
-  if (url.includes("gitlab.com") || url.includes("gitlab.")) {
-    return {
-      label: "View on GitLab",
-      icon: <GitBranch className="h-4 w-4" />,
-    };
-  }
+
   return {
     label: "View Repository",
     icon: <ExternalLink className="h-4 w-4" />,
