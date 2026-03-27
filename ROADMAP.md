@@ -821,6 +821,55 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
+## Phase 21: Policy Engine Expansion `TODO`
+
+### FARM-E66: OPA and Gatekeeper Integration `TODO`
+
+Extend the existing Kyverno policy support to cover Open Policy Agent (OPA) running standalone
+and OPA Gatekeeper (the Kubernetes admission controller built on OPA). Farm reads
+`ConstraintTemplate` and `Constraint` CRDs from Gatekeeper and, for standalone OPA, queries
+the REST API to evaluate Rego policies and surface violation results alongside Kyverno reports.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S266 | Story | OPA Gatekeeper CRD ingestion -- list `ConstraintTemplate` (templates.gatekeeper.sh/v1) and `Constraint` resources (all CRDs in the `constraints.gatekeeper.sh` group) per namespace; detect Gatekeeper presence via `gatekeeper-system` namespace | `TODO` |
+| FARM-S267 | Story | Gatekeeper violation reporting -- aggregate audit results from `Constraint.status.violations`; map to the same `PolicyViolation` interface already used by Kyverno so the frontend reuses `ViolationsTab` | `TODO` |
+| FARM-S268 | Story | Standalone OPA integration -- configure OPA REST API base URL (`OPA_URL` env var); `POST /v1/data/{policy_path}` to evaluate named Rego policies with a component metadata input document; store and display pass/fail results per component | `TODO` |
+| FARM-S269 | Story | Frontend OPA/Gatekeeper tabs -- extend `ViolationsTab` with a source selector (Kyverno / Gatekeeper / OPA); `ConstraintTemplateTable` listing template name, CRD group, enforcement action; `OpaEvaluationPanel` for on-demand policy evaluation with JSON input editor | `TODO` |
+
+#### FARM-S266 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T223 | Task | `GatekeeperService.isGatekeeperEnabled()`: check for `gatekeeper-system` namespace and `constrainttemplates.templates.gatekeeper.sh` CRD; graceful `false` when absent | `TODO` |
+| FARM-T224 | Task | `GatekeeperService.listConstraintTemplates()`: list `ConstraintTemplate` resources via `CustomObjectsApi`; return name, CRD group, enforcement action, description; `GET /api/gatekeeper/constraint-templates`; unit + e2e tests | `TODO` |
+| FARM-T225 | Task | `GatekeeperService.listConstraints(namespace)`: dynamically discover all Constraint CRDs from the `constraints.gatekeeper.sh` group and list instances; `GET /api/gatekeeper/constraints`; unit + e2e tests | `TODO` |
+
+#### FARM-S267 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T226 | Task | `GatekeeperService.listViolations(namespace)`: aggregate `status.violations[]` from all Constraint instances; map to `PolicyViolation { kind, name, namespace, message, constraint, enforcementAction }`; `GET /api/gatekeeper/violations`; unit + e2e tests | `TODO` |
+| FARM-T227 | Task | Extend `KubernetesPolicyReportService` (or create `PolicyAggregatorService`) to merge Kyverno and Gatekeeper violations into a unified list; `GET /api/kubernetes/policy-violations?source=kyverno|gatekeeper|all`; unit tests | `TODO` |
+
+#### FARM-S268 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T228 | Task | `OpaService`: configure `OPA_URL` env var (default `http://localhost:8181`); `evaluate(policyPath, input)` sends `POST /v1/data/{policyPath}` with component metadata as input document; map result to `OpaResult { allowed, violations: string[] }`; unit tests with fetch mock | `TODO` |
+| FARM-T229 | Task | `OpaModule` with `OpaService` and `OpaController`; register in `app.module.ts`; `GET /api/opa/status` (ping OPA health endpoint); `POST /api/opa/evaluate` accepting `{ policyPath, input }` body; unit + e2e tests | `TODO` |
+| FARM-T230 | Task | Persist OPA evaluation results per component: `OpaResult` entity with `componentId`, `policyPath`, `allowed`, `violations`, `evaluatedAt`; migration; `GET /api/catalog/components/:id/opa-results`; unit tests | `TODO` |
+
+#### FARM-S269 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T231 | Task | Extend `ViolationsTab` with a `source` toggle (All / Kyverno / Gatekeeper); `ConstraintTemplateTable` component listing template name, CRD group, enforcement action badge; visible only when Gatekeeper is detected | `TODO` |
+| FARM-T232 | Task | `OpaEvaluationPanel` component: policy path input, JSON input editor (textarea with syntax hint), evaluate button calling `POST /api/opa/evaluate`, result badge (allowed/denied) and violations list; visible only when OPA is reachable | `TODO` |
+| FARM-T233 | Task | Add `gatekeeper` and `opa` tabs to `ComponentDetailClient.tsx`; fetch `isGatekeeperEnabled` and OPA status on mount; render tabs conditionally; tests for both new tab components | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -848,4 +897,5 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `TODO` |
 | Phase 19: FinOps | 2 | 7 | `TODO` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
-| **Total** | **66** | **252** | |
+| Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
+| **Total** | **67** | **256** | |
