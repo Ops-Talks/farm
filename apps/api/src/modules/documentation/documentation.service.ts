@@ -12,6 +12,14 @@ import {
 } from "./interfaces/documentation.interfaces";
 
 /**
+ * Maximum number of sanitization loop iterations for any single pass.
+ * Prevents CPU amplification from pathological inputs while still handling
+ * realistic nesting depths. When reached, the loop stops and remaining
+ * sanitization steps continue (fail-closed).
+ */
+const MAX_SANITIZE_ITERATIONS = 20;
+
+/**
  * Strips dangerous HTML elements and attributes from rendered content.
  * Removes script/iframe/object/embed tags and event handler attributes.
  */
@@ -20,29 +28,37 @@ export function sanitizeHtml(html: string): string {
     /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi;
   const DANGEROUS_TAG_SELF_CLOSING_REGEX =
     /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi;
-  const EVENT_HANDLER_ATTR_REGEX =
-    /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi;
+  const EVENT_HANDLER_ATTR_REGEX = /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi;
 
   let sanitized = html;
   let previous: string;
 
-  // Iteratively remove dangerous block-level tags until no more matches remain.
+  // Iteratively remove dangerous block-level tags until stable or iteration limit reached.
+  let blockIter = 0;
   do {
     previous = sanitized;
     sanitized = sanitized.replace(DANGEROUS_TAG_BLOCK_REGEX, "");
-  } while (sanitized !== previous);
+    blockIter++;
+  } while (sanitized !== previous && blockIter < MAX_SANITIZE_ITERATIONS);
 
-  // Iteratively remove dangerous self-closing tags until stable.
+  // Iteratively remove dangerous self-closing tags until stable or iteration limit reached.
+  let selfClosingIter = 0;
   do {
     previous = sanitized;
     sanitized = sanitized.replace(DANGEROUS_TAG_SELF_CLOSING_REGEX, "");
-  } while (sanitized !== previous);
+    selfClosingIter++;
+  } while (sanitized !== previous && selfClosingIter < MAX_SANITIZE_ITERATIONS);
 
-  // Iteratively strip event-handler attributes (on*) until none remain.
+  // Iteratively strip event-handler attributes (on*) until stable or iteration limit reached.
+  let eventHandlerIter = 0;
   do {
     previous = sanitized;
     sanitized = sanitized.replace(EVENT_HANDLER_ATTR_REGEX, "");
-  } while (sanitized !== previous);
+    eventHandlerIter++;
+  } while (
+    sanitized !== previous &&
+    eventHandlerIter < MAX_SANITIZE_ITERATIONS
+  );
 
   sanitized = sanitized.replace(
     /href\s*=\s*["']?\s*javascript:[^"'>\s]*/gi,

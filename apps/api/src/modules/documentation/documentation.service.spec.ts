@@ -268,4 +268,39 @@ describe("sanitizeHtml", () => {
     const html = "<h1>Hello</h1><p>World</p>";
     expect(sanitizeHtml(html)).toBe(html);
   });
+
+  it("should remove nested block tags that become dangerous after a first pass", () => {
+    // Removing the inner <script>...</script> leaves an outer <script>...</script>
+    // which requires a second iteration to remove.
+    const html = "<sc<script>ript>alert(1)</sc</script>ript>";
+    const result = sanitizeHtml(html);
+    expect(result).not.toContain("<script");
+    expect(result).not.toContain("alert(1)");
+  });
+
+  it("should remove self-closing tags that become dangerous after a first pass", () => {
+    // Removing the inner <script> (self-closing) leaves an outer <script>
+    // which requires a second iteration to remove.
+    const html = "<sc<script>ript>";
+    const result = sanitizeHtml(html);
+    expect(result).not.toContain("<script");
+  });
+
+  it("should remove nested iframe tags across multiple iterations", () => {
+    const html =
+      "<ifr<iframe src='evil.com'>ame src='evil.com'></ifr</iframe>ame>";
+    const result = sanitizeHtml(html);
+    expect(result).not.toContain("<iframe");
+  });
+
+  it("should terminate and return a sanitized result even with deeply repeated nesting", () => {
+    // Build input that requires several passes but stays within the iteration limit.
+    let html = "attack";
+    for (let i = 0; i < 5; i++) {
+      html = `<sc<script>ript>${html}</sc</script>ript>`;
+    }
+    const result = sanitizeHtml(html);
+    expect(result).not.toContain("<script");
+    expect(typeof result).toBe("string");
+  });
 });
