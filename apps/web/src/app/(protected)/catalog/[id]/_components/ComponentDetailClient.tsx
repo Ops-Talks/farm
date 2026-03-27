@@ -24,6 +24,7 @@ import { KyvernoPolicyTab } from "./KyvernoPolicyTab";
 import { IstioTrafficTab } from "./IstioTrafficTab";
 import { IstioSecurityTab } from "./IstioSecurityTab";
 import { IstioCanaryTab } from "./IstioCanaryTab";
+import { ApiSpecsTab } from "./ApiSpecsTab";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -275,6 +276,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="istio-traffic">Traffic</TabsTrigger>
           <TabsTrigger value="istio-security">Security</TabsTrigger>
           <TabsTrigger value="istio-canary">Canary</TabsTrigger>
+          <TabsTrigger value="api-specs">API Specs</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -549,6 +551,13 @@ export function ComponentDetailClient() {
         <TabsContent value="istio-canary">
           <ErrorBoundary>
             <IstioCanaryTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── API Specs tab (FARM-E47) ───────────────────────────────────── */}
+        <TabsContent value="api-specs">
+          <ErrorBoundary>
+            <ApiSpecsTab componentId={component.id} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

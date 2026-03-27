@@ -22,1224 +22,815 @@ Farm project roadmap organized using JIRA-like hierarchy.
 
 ---
 
-## Phase 1: Backend Core (v0.1.0 -- v0.4.4) `DONE`
+## Completed Phases Archive
 
-### FARM-E01: Platform Foundation `DONE`
+All phases below are complete and released. Detailed story/task breakdowns have been removed to keep this file maintainable. See git history and release notes for full implementation details.
 
-> NestJS project scaffolding, configuration, Docker, and CI/CD.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S01 | Story | NestJS project initialization with TypeScript | `DONE` |
-| FARM-S02 | Story | TypeORM and PostgreSQL integration | `DONE` |
-| FARM-S03 | Story | Docker multi-stage build (dev, test, production) | `DONE` |
-| FARM-S04 | Story | Makefile automation (build, test, docker, docs) | `DONE` |
-| FARM-S05 | Story | Environment configuration with Joi validation | `DONE` |
-| FARM-S06 | Story | GitHub Actions CI/CD workflow | `DONE` |
-| FARM-S07 | Story | MkDocs documentation site with Material theme | `DONE` |
-
-### FARM-E02: Authentication and Authorization `DONE`
-
-> JWT-based auth with Passport, refresh tokens, and role-based access control.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S08 | Story | User registration with bcrypt password hashing | `DONE` |
-| FARM-S09 | Story | JWT login with Passport Local and JWT strategies | `DONE` |
-| FARM-S10 | Story | Refresh token rotation with replay attack detection | `DONE` |
-| FARM-S11 | Story | Role-based access control (admin, user) | `DONE` |
-| FARM-S12 | Story | Rate-limited auth endpoints (throttle guard) | `DONE` |
-
-### FARM-E03: Software Catalog `DONE`
-
-> Multi-domain component catalog with YAML registration and async discovery.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S13 | Story | Component CRUD with 28 component kinds across 4 domains | `DONE` |
-| FARM-S14 | Story | Component lifecycle tracking (planned through decommissioned) | `DONE` |
-| FARM-S15 | Story | YAML-based component registration | `DONE` |
-| FARM-S16 | Story | Repository location discovery (async via BullMQ) | `DONE` |
-| FARM-S17 | Story | Component filtering by kind group | `DONE` |
-
-### FARM-E04: Team Management `DONE`
-
-> Team CRUD, membership, and component ownership.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S18 | Story | Team CRUD with multi-domain types (Dev, Infra, Security, Data, Platform) | `DONE` |
-| FARM-S19 | Story | Team membership management (add/remove users) | `DONE` |
-| FARM-S20 | Story | Component ownership by teams | `DONE` |
-
-### FARM-E05: Environments and Deployments `DONE`
-
-> Environment management, deployment tracking, and matrix views.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S21 | Story | Environment CRUD (Dev, Staging, Production) | `DONE` |
-| FARM-S22 | Story | Deployment recording with status transitions | `DONE` |
-| FARM-S23 | Story | Deployment matrix view (latest version per component per environment) | `DONE` |
-| FARM-S24 | Story | Latest deployment per environment query | `DONE` |
-
-### FARM-E06: Technical Documentation Engine `DONE`
-
-> Hierarchical documentation with Markdown rendering and search.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S25 | Story | Documentation CRUD with hierarchical parent/child structure | `DONE` |
-| FARM-S26 | Story | Markdown rendering with HTML sanitization | `DONE` |
-| FARM-S27 | Story | Full-text search with relevance scoring | `DONE` |
-| FARM-S28 | Story | Documentation tree navigation endpoint | `DONE` |
-| FARM-S29 | Story | Component-scoped documentation filtering | `DONE` |
-
-### FARM-E07: Plugin Architecture `DONE`
-
-> Dynamic plugin system for modular extensibility.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S30 | Story | Plugin manager module with dynamic registration | `DONE` |
-| FARM-S31 | Story | Plugin discovery API with menu items and routes | `DONE` |
-| FARM-S32 | Story | Core modules registered as plugins (Catalog, Docs, Auth, Environments, Teams) | `DONE` |
+| Phase | Epics | Stories | Release | Status |
+|-------|-------|---------|---------|--------|
+| Phase 1: Backend Core | 7 | 32 | v0.1.0 - v0.4.4 | `DONE` |
+| Phase 2: Production Hardening | 8 | 34 | v0.4.5 - v0.6.0 | `DONE` |
+| Phase 3: Backend Completion | 1 | 1 | v0.7.0 | `DONE` |
+| Phase 4: Front-End Foundation | 1 | 3 | v0.8.0 | `DONE` |
+| Phase 5: Front-End Core Pages | 7 | 12 | v0.9.0 | `DONE` |
+| Phase 5.5: Front-End Quality and Hardening | 3 | 10 | v0.10.0 | `DONE` |
+| Phase 5.6: E2E Testing | 1 | 1 | v0.10.1 | `DONE` |
+| Phase 5.7: Backend Bug Fixes | 1 | 2 | v0.10.2 | `DONE` |
+| Phase 6: Advanced Features | 13 | 58 | v0.11.0 - v0.12.0 | `DONE` |
+| Phase 7: Frontend Hardening | 1 | 5 | v0.12.1 - v0.12.2 | `DONE` |
+| Phase 8: Frontend Visual Refresh | 1 | 5 | v0.12.0 | `DONE` |
+| Phase 9: Security Testing | 1 | 3 | v0.12.0 | `DONE` |
+| Phase 10: Test Coverage Hardening | 1 | 8 | v0.12.0 | `DONE` |
 
 ---
 
-## Phase 2: Production Hardening (v0.4.5 -- v0.6.0) `DONE`
+## Phase 11: API Management `TODO`
 
-### FARM-E08: API Quality `DONE`
+### FARM-E47: API Catalog and Lifecycle Management `TODO`
 
-> Swagger documentation, pagination, versioning, and validation.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S33 | Story | Swagger/OpenAPI documentation at `/api/docs` | `DONE` |
-| FARM-S34 | Story | Pagination framework for all list endpoints | `DONE` |
-| FARM-S35 | Story | URI-based API versioning (`/api/v1/`) | `DONE` |
-| FARM-S36 | Story | DTO validation with class-validator (UUID, email, length) | `DONE` |
-| FARM-S37 | Story | Swagger bearer auth button for JWT testing | `DONE` |
-
-### FARM-E09: Security Hardening `DONE`
-
-> HTTP security headers, non-root container, graceful shutdown.
+> Treat APIs as first-class citizens alongside software components. Each component can register one or more API specifications (OpenAPI 3.x, AsyncAPI 2.x). Specs are versioned, diffed for breaking changes, and browsable via an embedded spec viewer in the frontend.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S38 | Story | Helmet HTTP security headers | `DONE` |
-| FARM-S39 | Story | Non-root Docker container (USER node) | `DONE` |
-| FARM-S40 | Story | Graceful shutdown hooks (SIGTERM/SIGINT) | `DONE` |
-| FARM-S41 | Story | CORS configuration with allowed origins | `DONE` |
+| FARM-S185 | Story | API specification ingestion per component (OpenAPI 3.x and AsyncAPI 2.x, stored as raw YAML/JSON with format auto-detection) | `TODO` |
+| FARM-S186 | Story | API version registry and deprecation tracking (version field, status: active/deprecated/sunset, sunset date) | `TODO` |
+| FARM-S187 | Story | API changelog and breaking change detection (diff two spec versions, flag added/removed/modified operations) | `TODO` |
+| FARM-S188 | Story | API consumer registry (which teams/components consume which API, ManyToMany with metadata) | `TODO` |
+| FARM-S189 | Story | Frontend API catalog browser (list specs, embedded Swagger UI, version switcher, deprecation badge) | `TODO` |
 
-### FARM-E10: Observability `DONE`
-
-> Prometheus metrics, OpenTelemetry tracing, Grafana dashboards.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S42 | Story | Prometheus metrics (`http_requests_total`, `http_request_duration_seconds`) | `DONE` |
-| FARM-S43 | Story | OpenTelemetry distributed tracing with OTLP export | `DONE` |
-| FARM-S44 | Story | Log-trace correlation (trace_id/span_id in Winston logs) | `DONE` |
-| FARM-S45 | Story | Grafana + Prometheus + Tempo observability stack (`docker-compose.observability.yml`) | `DONE` |
-| FARM-S46 | Story | Pre-provisioned Grafana dashboard (request rate, latency percentiles, error rate) | `DONE` |
-| FARM-S47 | Story | Health monitoring with Terminus (database, memory, disk) | `DONE` |
-
-### FARM-E11: Caching and Performance `DONE`
-
-> Redis-backed response caching with automatic invalidation.
+#### FARM-S185 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S48 | Story | Redis caching with in-memory fallback | `DONE` |
-| FARM-S49 | Story | Cache interceptors on catalog and plugin GET endpoints | `DONE` |
-| FARM-S50 | Story | Automatic cache invalidation on write operations | `DONE` |
+| FARM-T60 | Task | Create `ApiSpec` entity (`id`, `componentId`, `name`, `format`: openapi/asyncapi, `version`, `spec` JSONB, `status`) with migration | `TODO` |
+| FARM-T61 | Task | `POST /api/v1/components/:id/api-specs` with multipart YAML/JSON upload and format auto-detection via spec structure | `TODO` |
+| FARM-T62 | Task | Unit tests for `ApiSpecService` (create, findAll, findOne, remove) and e2e tests for upload and retrieval endpoints | `TODO` |
 
-### FARM-E12: Background Processing `DONE`
-
-> BullMQ job queues with Bull Board monitoring dashboard.
+#### FARM-S186 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S51 | Story | BullMQ integration with Redis | `DONE` |
-| FARM-S52 | Story | Catalog discovery processor (async YAML ingestion) | `DONE` |
-| FARM-S53 | Story | Notification processor (placeholder for future use) | `DONE` |
-| FARM-S54 | Story | Bull Board dashboard at `/api/admin/queues` | `DONE` |
+| FARM-T63 | Task | Add `deprecatedAt`, `sunsetAt`, `status` enum (active/deprecated/sunset) columns to `ApiSpec` entity | `TODO` |
+| FARM-T64 | Task | `PATCH /api/v1/api-specs/:id` endpoint to update status and sunset date; emit WebSocket `api-spec:deprecated` event | `TODO` |
 
-### FARM-E13: Real-Time Communication `DONE`
-
-> WebSocket events gateway with JWT-authenticated handshake.
+#### FARM-S187 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S55 | Story | Socket.IO events gateway on `/events` namespace | `DONE` |
-| FARM-S56 | Story | JWT-authenticated WebSocket handshake | `DONE` |
-| FARM-S57 | Story | Component lifecycle events (created, updated, deleted) | `DONE` |
-| FARM-S58 | Story | Deployment status events (created, updated) | `DONE` |
+| FARM-T65 | Task | `SpecDiffService`: parse two OpenAPI documents, compare paths/operations/schemas, categorize changes as breaking/non-breaking | `TODO` |
+| FARM-T66 | Task | `GET /api/v1/api-specs/:id/diff?compareWith=:otherId` returning structured changelog array with change type and location | `TODO` |
 
-### FARM-E14: Code Quality and Developer Experience `DONE`
-
-> TypeScript strict mode, database seeding, structured logging.
+#### FARM-S188 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S59 | Story | Near-full TypeScript strict mode (7 strict flags) | `DONE` |
-| FARM-S60 | Story | Database seeder with sample data (`npm run seed`) | `DONE` |
-| FARM-S61 | Story | Structured logging with Winston (rotation, levels, JSON) | `DONE` |
-| FARM-S62 | Story | Request logger middleware (method, path, status, duration) | `DONE` |
+| FARM-T67 | Task | Create `ApiConsumer` join entity (`apiSpecId`, `consumerComponentId`, `consumerTeamId`, `addedAt`); unique constraint per pair | `TODO` |
+| FARM-T68 | Task | `POST/DELETE /api/v1/api-specs/:id/consumers` and `GET /api/v1/components/:id/consumed-apis` endpoints | `TODO` |
 
-### FARM-E15: Testing Infrastructure `DONE`
-
-> Unit and E2E test suites with coverage thresholds.
+#### FARM-S189 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S63 | Story | Unit test suite (184+ tests across all modules) | `DONE` |
-| FARM-S64 | Story | E2E test suite (40 tests covering all API endpoints) | `DONE` |
-| FARM-S65 | Story | Coverage thresholds (65% branches, 70% functions/lines/statements) | `DONE` |
-| FARM-S66 | Story | Docker-based test execution (`make test-docker`) | `DONE` |
+| FARM-T69 | Task | Add `api-specs` tab to component detail page; list all specs with version badge, format badge, and status indicator | `TODO` |
+| FARM-T70 | Task | Embed `swagger-ui-react` for OpenAPI specs and AsyncAPI Playground for AsyncAPI specs in the spec viewer panel | `TODO` |
+| FARM-T71 | Task | Version switcher dropdown; breaking change diff panel rendered between any two selected versions | `TODO` |
 
 ---
 
-## Phase 3: Backend Completion `DONE`
+### FARM-E48: API Gateway Integration `TODO`
 
-### FARM-E16: Communication and Notifications `DONE`
-
-> Email service for transactional notifications.
-
-#### FARM-S67: Email Service `DONE`
+> Surface gateway-level metadata (routes, rate limits, upstream health) inside Farm without replacing the gateway. A pluggable adapter interface allows multiple gateway backends; Kong is the first implementation.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T01 | Task | Install and configure Nodemailer | `DONE` |
-| FARM-T02 | Task | Create EmailModule and EmailService | `DONE` |
-| FARM-T03 | Task | Implement email templates with Handlebars | `DONE` |
-| FARM-T04 | Task | Integrate email with notification queue | `DONE` |
-| FARM-T05 | Task | Unit and E2E tests | `DONE` |
-| FARM-T06 | Task | Documentation | `DONE` |
+| FARM-S190 | Story | Gateway adapter interface with Kong admin API adapter as first implementation | `TODO` |
+| FARM-S191 | Story | Route inventory sync -- pull routes/services from gateway, persist as `GatewayRoute` entities, map to catalog components | `TODO` |
+| FARM-S192 | Story | API health check aggregation -- poll registered API upstream endpoints on a schedule, surface uptime and latency per API | `TODO` |
+
+#### FARM-S190 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T72 | Task | Define `IGatewayAdapter` interface (`getRoutes()`, `getServices()`, `getHealth()`); `KongAdapter` implementation using Kong Admin API | `TODO` |
+| FARM-T73 | Task | `GatewayModule` config env vars (`GATEWAY_TYPE`, `GATEWAY_URL`, `GATEWAY_API_KEY`); conditional adapter registration in DI | `TODO` |
+
+#### FARM-S191 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T74 | Task | Create `GatewayRoute` entity (`externalId`, `name`, `paths`, `methods`, `componentId` FK nullable, `syncedAt`) | `TODO` |
+| FARM-T75 | Task | BullMQ sync job (scheduled every 15 min): fetch routes from adapter, upsert `GatewayRoute` rows, emit WebSocket event on changes | `TODO` |
+
+#### FARM-S192 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T76 | Task | `ApiHealthCheck` entity (`apiSpecId`, `url`, `status`: up/degraded/down, `latencyMs`, `checkedAt`) | `TODO` |
+| FARM-T77 | Task | Health check BullMQ job (every 5 min): HTTP HEAD/GET each registered API URL, store result, emit event on status change | `TODO` |
 
 ---
 
-## Phase 4: Front-End Foundation `DONE`
+## Phase 12: Multi-tenancy `TODO`
 
-### FARM-E17: Tech Stack and Project Setup `DONE`
+### FARM-E49: Workspace Isolation `TODO`
 
-> Select front-end framework, configure project, and establish build tooling.
-
-#### FARM-S68: Front-End Stack Selection `DONE`
+> Introduce a Workspace entity as the top-level tenant boundary. All major resources (components, teams, environments, documentation, pipelines) are workspace-scoped. Existing data migrates to a seeded "default" workspace without downtime.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T07 | Task | Evaluate and select primary front-end framework | `DONE` |
-| FARM-T08 | Task | Select UI component library | `DONE` |
+| FARM-S193 | Story | `Workspace` entity and CRUD API (name, slug, logoUrl, settings JSONB, createdBy) | `TODO` |
+| FARM-S194 | Story | Resource scoping -- add `workspaceId` FK to all major entities; all list and detail endpoints enforce workspace context | `TODO` |
+| FARM-S195 | Story | Data migration: seed default workspace, backfill `workspaceId` on all existing rows | `TODO` |
+| FARM-S196 | Story | Frontend workspace switcher (replaces org switcher in app shell, persists active workspace to localStorage) | `TODO` |
 
-Decision documented in ADR-001: Next.js 16 (React 19) + Shadcn/ui + Tailwind CSS 4.
-
-#### FARM-S69: Project Configuration `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T09 | Task | Create `web/` directory with Next.js application | `DONE` |
-| FARM-T10 | Task | Configure shared API types in `web/src/types/` | `DONE` |
-
-Backend remains at project root; front-end in `web/` directory with independent `package.json`.
-
-#### FARM-S70: Front-End Build and Tooling `DONE`
+#### FARM-S193 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T11 | Task | Initialize front-end application with TypeScript strict mode | `DONE` |
-| FARM-T12 | Task | Docker and Makefile integration | `DONE` |
-| FARM-T13 | Task | API client and integration layer (JWT, refresh, interceptors) | `DONE` |
-| FARM-T14 | Task | Socket.IO client setup with typed event handlers | `DONE` |
+| FARM-T78 | Task | Create `Workspace` entity with slug uniqueness constraint; `WorkspaceModule` with full CRUD service and controller | `TODO` |
+| FARM-T79 | Task | `GET /api/v1/workspaces/current` resolving from JWT claims; workspace slug as optional route prefix for scoped resources | `TODO` |
+
+#### FARM-S194 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T80 | Task | Add nullable `workspaceId` UUID FK with index to: `Component`, `Team`, `Environment`, `Documentation`, `Pipeline`, `AlertingRule` entities | `TODO` |
+| FARM-T81 | Task | Add `WorkspaceGuard` to inject `workspaceId` from `X-Workspace-ID` request header into all scoped service calls | `TODO` |
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST201 | Sub-task | Generate single TypeORM migration covering `workspaceId` column additions across all 6 entities | `TODO` |
+| FARM-ST202 | Sub-task | Update all `QueryBuilder` and `findOptions` in services to filter by `workspaceId` when present | `TODO` |
+| FARM-ST203 | Sub-task | Update all e2e tests to include `X-Workspace-ID` header in requests | `TODO` |
+| FARM-ST204 | Sub-task | Add workspace-scoped authorization unit tests for each service | `TODO` |
+
+#### FARM-S195 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T82 | Task | TypeORM data migration: INSERT default workspace row, then UPDATE each scoped table SET workspace_id = default_id WHERE workspace_id IS NULL | `TODO` |
+
+#### FARM-S196 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T83 | Task | Replace `OrgSwitcher` component with `WorkspaceSwitcher`; fetch user workspaces from API, store active workspace ID in localStorage | `TODO` |
+| FARM-T84 | Task | Thread active workspace ID through all API client calls as `X-Workspace-ID` request header via fetch interceptor | `TODO` |
 
 ---
 
-## Phase 5: Front-End Core Pages `DONE`
+### FARM-E50: Workspace-Scoped RBAC `TODO`
 
-### FARM-E18: Authentication UI `DONE`
-
-> Login page, token management, and route protection.
-
-#### FARM-S71: Login and Auth Flow `DONE`
+> Per-workspace roles (owner, admin, member, viewer) complement the existing global admin/user roles. Workspace owners can invite members, assign roles, and manage workspace settings independently.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T15 | Task | Login page | `DONE` |
-| FARM-ST57 | Sub-task | Create login form component (username, password) | `DONE` |
-| FARM-ST58 | Sub-task | Implement `POST /api/v1/auth/login` integration | `DONE` |
-| FARM-ST59 | Sub-task | Store access and refresh tokens securely | `DONE` |
-| FARM-ST60 | Sub-task | Handle login errors (invalid credentials, rate limited) | `DONE` |
-| FARM-ST61 | Sub-task | Redirect to dashboard on successful login | `DONE` |
-| FARM-T16 | Task | Protected routes | `DONE` |
-| FARM-ST62 | Sub-task | Create auth guard / route middleware | `DONE` |
-| FARM-ST63 | Sub-task | Redirect unauthenticated users to `/login` | `DONE` |
-| FARM-ST64 | Sub-task | Implement role-based route access (admin vs user) | `DONE` |
-| FARM-T17 | Task | Token lifecycle management | `DONE` |
-| FARM-ST65 | Sub-task | Implement silent token refresh using `POST /api/v1/auth/refresh` | `DONE` |
-| FARM-ST66 | Sub-task | Handle refresh token expiry (force re-login) | `DONE` |
-| FARM-ST67 | Sub-task | Implement logout (clear tokens, disconnect WebSocket) | `DONE` |
+| FARM-S197 | Story | `WorkspaceMember` entity (workspaceId, userId, role: owner/admin/member/viewer, joinedAt) with unique constraint | `TODO` |
+| FARM-S198 | Story | Workspace-scoped `@WorkspaceRoles()` decorator and guard; protect all workspace-owned endpoints | `TODO` |
+| FARM-S199 | Story | Workspace invitation flow (invite by email -> signed token link -> accept/decline -> member created) | `TODO` |
+| FARM-S200 | Story | Frontend: workspace settings page with member list, role assignment dropdown, and pending invitations panel | `TODO` |
 
-### FARM-E19: Dashboard `DONE`
-
-> High-level overview of system health, queues, and recent activity.
-
-#### FARM-S72: Dashboard Page `DONE`
+#### FARM-S197 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T18 | Task | System health panel | `DONE` |
-| FARM-ST68 | Sub-task | Fetch `GET /api/health` and display status indicators | `DONE` |
-| FARM-ST69 | Sub-task | Show database, memory, and disk health with color coding | `DONE` |
-| FARM-ST70 | Sub-task | Auto-refresh health status on interval | `DONE` |
-| FARM-T19 | Task | Queue status panel | `DONE` |
-| FARM-ST71 | Sub-task | Display active BullMQ queues with job counts | `DONE` |
-| FARM-ST72 | Sub-task | Show waiting, active, completed, and failed job totals | `DONE` |
-| FARM-ST73 | Sub-task | Link to full queues page for details | `DONE` |
-| FARM-T20 | Task | Recent activity feed | `DONE` |
-| FARM-ST74 | Sub-task | Subscribe to WebSocket events for real-time updates | `DONE` |
-| FARM-ST75 | Sub-task | Display recent component and deployment events | `DONE` |
-| FARM-ST76 | Sub-task | Show timestamp, event type, and affected resource | `DONE` |
-| FARM-T21 | Task | Quick stats summary | `DONE` |
-| FARM-ST77 | Sub-task | Fetch total components, teams, environments, and deployments | `DONE` |
-| FARM-ST78 | Sub-task | Display stat cards with counts | `DONE` |
+| FARM-T85 | Task | Create `WorkspaceMember` entity and `WorkspaceRole` enum; unique constraint on (workspaceId, userId) pair | `TODO` |
+| FARM-T86 | Task | `GET /workspaces/:slug/members`, `PATCH /workspaces/:slug/members/:userId` (role change), `DELETE` (remove member) | `TODO` |
 
-### FARM-E20: Catalog UI `DONE`
-
-> Component listing, detail view, and registration interface.
-
-#### FARM-S73: Component Listing `DONE`
+#### FARM-S199 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T22 | Task | Component list page | `DONE` |
-| FARM-ST79 | Sub-task | Fetch `GET /api/v1/catalog/components` with pagination | `DONE` |
-| FARM-ST80 | Sub-task | Implement data table with sorting and pagination controls | `DONE` |
-| FARM-ST81 | Sub-task | Add kind group filter tabs (Dev, Infra, Data, Security) | `DONE` |
-| FARM-ST82 | Sub-task | Add search input for component name filtering | `DONE` |
-| FARM-ST83 | Sub-task | Subscribe to WebSocket for live component updates | `DONE` |
-
-#### FARM-S74: Component Detail View `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T23 | Task | Component detail page | `DONE` |
-| FARM-ST84 | Sub-task | Fetch `GET /api/v1/catalog/components/:id` and display metadata | `DONE` |
-| FARM-ST85 | Sub-task | Show lifecycle badge, owner team, tags, and contact info | `DONE` |
-| FARM-ST86 | Sub-task | Display linked documentation (from Documentation module) | `DONE` |
-| FARM-ST87 | Sub-task | Show deployment history for the component | `DONE` |
-| FARM-ST88 | Sub-task | Display dependency graph (if dependencies exist) | `DONE` |
-
-#### FARM-S75: Component Registration `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T24 | Task | Component creation form | `DONE` |
-| FARM-ST89 | Sub-task | Create form with all component fields and validation | `DONE` |
-| FARM-ST90 | Sub-task | Implement `POST /api/v1/catalog/components` submission | `DONE` |
-| FARM-ST91 | Sub-task | Add YAML import option (`POST /api/v1/catalog/register-yaml`) | `DONE` |
-| FARM-ST92 | Sub-task | Add repository discovery trigger (`POST /api/v1/catalog/locations`) | `DONE` |
-
-### FARM-E21: Deployment Matrix UI `DONE`
-
-> Visual deployment matrix and deployment tracking interface.
-
-#### FARM-S76: Deployment Matrix View `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T25 | Task | Deployment matrix page | `DONE` |
-| FARM-ST93 | Sub-task | Fetch `GET /api/v1/deployments/matrix` with filters | `DONE` |
-| FARM-ST94 | Sub-task | Render matrix grid (components as rows, environments as columns) | `DONE` |
-| FARM-ST95 | Sub-task | Color-code cells by deployment status | `DONE` |
-| FARM-ST96 | Sub-task | Add filters by kind group, owner, and lifecycle | `DONE` |
-| FARM-ST97 | Sub-task | Subscribe to WebSocket for real-time deployment status updates | `DONE` |
-
-#### FARM-S77: Deployment History `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T26 | Task | Deployment list and detail pages | `DONE` |
-| FARM-ST98 | Sub-task | Fetch `GET /api/v1/deployments` with filters (component, environment, status) | `DONE` |
-| FARM-ST99 | Sub-task | Display deployment timeline with status transitions | `DONE` |
-| FARM-ST100 | Sub-task | Show deployment metadata and version info | `DONE` |
-
-### FARM-E22: Jobs and Queues UI `DONE`
-
-> BullMQ queue monitoring and job management interface.
-
-#### FARM-S78: Queue Dashboard `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T27 | Task | Queue overview page | `DONE` |
-| FARM-ST101 | Sub-task | List all BullMQ queues with job counts by status | `DONE` |
-| FARM-ST102 | Sub-task | Display queue health indicators | `DONE` |
-| FARM-ST103 | Sub-task | Provide link to Bull Board (`/api/admin/queues`) for advanced management | `DONE` |
-
-#### FARM-S79: Job History `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T28 | Task | Job listing and detail view | `DONE` |
-| FARM-ST104 | Sub-task | List recent jobs per queue with status badges | `DONE` |
-| FARM-ST105 | Sub-task | Show job payload, result, and error details | `DONE` |
-| FARM-ST106 | Sub-task | Implement job retry action for failed jobs | `DONE` |
-
-### FARM-E23: Observability UI `DONE`
-
-> Health checks, metrics visualization, and trace inspection.
-
-#### FARM-S80: Health and Metrics Page `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T29 | Task | Health check display | `DONE` |
-| FARM-ST107 | Sub-task | Fetch and render `GET /api/health` with detailed component status | `DONE` |
-| FARM-ST108 | Sub-task | Display uptime, memory usage, and disk space | `DONE` |
-| FARM-T30 | Task | Grafana integration | `DONE` |
-| FARM-ST109 | Sub-task | Embed or link to Grafana Farm API Overview dashboard | `DONE` |
-| FARM-ST110 | Sub-task | Display key metrics inline (request rate, p95 latency, error rate) | `DONE` |
-| FARM-T31 | Task | Trace viewer | `DONE` |
-| FARM-ST111 | Sub-task | Link to Grafana Tempo for distributed trace inspection | `DONE` |
-| FARM-ST112 | Sub-task | Display recent traces with duration and status (future iteration) | `DONE` |
-
-### FARM-E24: Teams and Settings UI `DONE`
-
-> Team management, user settings, and platform administration.
-
-#### FARM-S81: Team Management Page `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T32 | Task | Team listing and detail | `DONE` |
-| FARM-ST113 | Sub-task | Fetch `GET /api/v1/teams` and display team cards | `DONE` |
-| FARM-ST114 | Sub-task | Show team members, owned components, and type badge | `DONE` |
-| FARM-ST115 | Sub-task | Implement team creation and editing forms (admin only) | `DONE` |
-| FARM-ST116 | Sub-task | Add/remove member actions | `DONE` |
-
-#### FARM-S82: Documentation Browser `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T33 | Task | Documentation viewer | `DONE` |
-| FARM-ST117 | Sub-task | Fetch documentation tree (`GET /api/v1/docs/tree`) for navigation sidebar | `DONE` |
-| FARM-ST118 | Sub-task | Render Markdown content from `GET /api/v1/docs/:id/rendered` | `DONE` |
-| FARM-ST119 | Sub-task | Implement documentation search (`GET /api/v1/docs/search`) | `DONE` |
-| FARM-ST120 | Sub-task | Create/edit documentation form (admin only) | `DONE` |
-
-#### FARM-S83: Navigation Layout `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T34 | Task | Global navigation structure | `DONE` |
-| FARM-ST121 | Sub-task | Implement sidebar with sections: Dashboard, Catalog, Deployments, Docs, Queues, Observability, Teams, Settings | `DONE` |
-| FARM-ST122 | Sub-task | Add top bar with user info, notifications, and logout | `DONE` |
-| FARM-ST123 | Sub-task | Implement breadcrumb navigation | `DONE` |
-| FARM-ST124 | Sub-task | Support dark mode toggle | `DONE` |
+| FARM-T87 | Task | `WorkspaceInvitation` entity (email, tokenHash, role, expiresAt, status: pending/accepted/declined); 48-hour TTL | `TODO` |
+| FARM-T88 | Task | `POST /workspaces/:slug/invitations` sends email via notification processor; `POST /invitations/:token/accept` creates member row | `TODO` |
 
 ---
 
-## Phase 5.5: Front-End Quality and Hardening `DONE`
+## Phase 13: Observability 2.0 `TODO`
 
-> Issues, enhancements, and test coverage discovered during deep frontend analysis.
+### FARM-E51: SLO / SLA Management `TODO`
 
-### FARM-E30: Front-End Testing Infrastructure `DONE`
-
-> Set up Vitest + React Testing Library and create comprehensive unit tests for all frontend code.
-
-#### FARM-S103: Test Framework Setup `DONE`
+> Define Service Level Objectives per component. Track error budget consumption and burn rate over rolling windows. Auto-generate alerting rules from SLO configuration.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T35 | Task | Install and configure Vitest with React Testing Library | `DONE` |
-| FARM-ST125 | Sub-task | Install vitest, @testing-library/react, @testing-library/jest-dom, @testing-library/user-event, jsdom | `DONE` |
-| FARM-ST126 | Sub-task | Configure vitest.config.ts with jsdom, path aliases, and setup file | `DONE` |
-| FARM-ST127 | Sub-task | Create test setup file with jest-dom matchers and global mocks (next/navigation, next-themes) | `DONE` |
-| FARM-ST128 | Sub-task | Add `test` and `test:coverage` scripts to web/package.json | `DONE` |
+| FARM-S201 | Story | `Slo` entity and CRUD API (name, targetPercent, metricType: availability/latency/error-rate, window: 7d/30d/90d, componentId) | `TODO` |
+| FARM-S202 | Story | Error budget calculation -- query Prometheus, compute consumed budget vs remaining percentage and burn rate | `TODO` |
+| FARM-S203 | Story | Auto-generate alerting rules from SLO (fast-burn and slow-burn rules per SLO, managed via alerting module) | `TODO` |
+| FARM-S204 | Story | Frontend SLO dashboard (health gauge per SLO, burn rate sparkline, error budget progress bar, 30-day history chart) | `TODO` |
 
-#### FARM-S104: API Client and Utility Tests `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T36 | Task | Unit tests for api-client.ts | `DONE` |
-| FARM-ST129 | Sub-task | Test token storage (setTokens, clearTokens, getAccessToken) with sessionStorage mock | `DONE` |
-| FARM-ST130 | Sub-task | Test request() wrapper (success, error, 204 handling) | `DONE` |
-| FARM-ST131 | Sub-task | Test automatic 401 token refresh flow | `DONE` |
-| FARM-ST132 | Sub-task | Test ApiError class construction and message formatting | `DONE` |
-| FARM-ST133 | Sub-task | Test toQueryString helper with various input shapes | `DONE` |
-| FARM-ST134 | Sub-task | Test all API namespace methods (auth, catalog, deployments, teams, queues, docs, health, observability) | `DONE` |
-| FARM-T37 | Task | Unit tests for ws-client.ts | `DONE` |
-| FARM-ST135 | Sub-task | Test subscribe/unsubscribe with mocked socket.io-client | `DONE` |
-| FARM-ST136 | Sub-task | Test disconnect and isConnected | `DONE` |
-| FARM-ST137 | Sub-task | Test reconnection and listener re-registration | `DONE` |
-
-#### FARM-S105: Auth and Provider Tests `DONE`
+#### FARM-S201 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T38 | Task | Unit tests for AuthContext and AuthProvider | `DONE` |
-| FARM-ST138 | Sub-task | Test login flow (calls API, stores tokens, sets user, redirects) | `DONE` |
-| FARM-ST139 | Sub-task | Test logout flow (clears tokens, disconnects WS, redirects) | `DONE` |
-| FARM-ST140 | Sub-task | Test session restoration from sessionStorage | `DONE` |
-| FARM-ST141 | Sub-task | Test hasRole helper | `DONE` |
-| FARM-T39 | Task | Unit tests for AuthGuard component | `DONE` |
-| FARM-ST142 | Sub-task | Test redirect to /login when not authenticated | `DONE` |
-| FARM-ST143 | Sub-task | Test role-based redirect when insufficient permissions | `DONE` |
-| FARM-ST144 | Sub-task | Test children render when authenticated | `DONE` |
+| FARM-T89 | Task | Create `Slo` entity with `SloMetricType` and `SloWindow` enums; `SloModule` with CRUD API and migration | `TODO` |
+| FARM-T90 | Task | Unit tests for `SloService`; e2e tests for CRUD endpoints including componentId foreign key validation | `TODO` |
 
-#### FARM-S106: Page Component Tests `DONE`
+#### FARM-S202 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T40 | Task | Login page tests | `DONE` |
-| FARM-ST145 | Sub-task | Test form rendering (username, password, submit button) | `DONE` |
-| FARM-ST146 | Sub-task | Test form submission calls login | `DONE` |
-| FARM-ST147 | Sub-task | Test error display on failed login | `DONE` |
-| FARM-ST148 | Sub-task | Test loading state during submission | `DONE` |
-| FARM-T41 | Task | Dashboard page tests | `DONE` |
-| FARM-ST149 | Sub-task | Test QuickStats renders stat cards with fetched data | `DONE` |
-| FARM-ST150 | Sub-task | Test HealthPanel renders health status badges | `DONE` |
-| FARM-ST151 | Sub-task | Test HealthPanel shows API Unreachable on error | `DONE` |
-| FARM-ST152 | Sub-task | Test ActivityFeed shows empty state and renders events | `DONE` |
-| FARM-T42 | Task | Catalog page tests | `DONE` |
-| FARM-ST153 | Sub-task | Test component list rendering with pagination | `DONE` |
-| FARM-ST154 | Sub-task | Test kind group filter tabs | `DONE` |
-| FARM-ST155 | Sub-task | Test search input filtering | `DONE` |
-| FARM-ST156 | Sub-task | Test component detail page rendering | `DONE` |
-| FARM-ST157 | Sub-task | Test component creation form validation and submission | `DONE` |
-| FARM-T43 | Task | Deployment pages tests | `DONE` |
-| FARM-ST158 | Sub-task | Test deployment matrix rendering with status colors | `DONE` |
-| FARM-ST159 | Sub-task | Test deployment history table with pagination | `DONE` |
-| FARM-ST160 | Sub-task | Test status filter tabs | `DONE` |
-| FARM-T44 | Task | Teams pages tests | `DONE` |
-| FARM-ST161 | Sub-task | Test team listing with type filter and search | `DONE` |
-| FARM-ST162 | Sub-task | Test team detail page (members, components, edit/delete) | `DONE` |
-| FARM-ST163 | Sub-task | Test team creation form | `DONE` |
-| FARM-T45 | Task | Queues pages tests | `DONE` |
-| FARM-ST164 | Sub-task | Test queue list rendering with job counts | `DONE` |
-| FARM-ST165 | Sub-task | Test queue detail page with job list and retry action | `DONE` |
-| FARM-T46 | Task | Observability page tests | `DONE` |
-| FARM-ST166 | Sub-task | Test health tab rendering | `DONE` |
-| FARM-ST167 | Sub-task | Test metrics tab with formatted values | `DONE` |
-| FARM-ST168 | Sub-task | Test tab switching | `DONE` |
-| FARM-T47 | Task | Docs page tests | `DONE` |
-| FARM-ST169 | Sub-task | Test documentation tree sidebar rendering | `DONE` |
-| FARM-ST170 | Sub-task | Test doc content viewer with rendered markdown | `DONE` |
-| FARM-ST171 | Sub-task | Test documentation search | `DONE` |
+| FARM-T91 | Task | `SloCalculatorService`: query Prometheus HTTP API using metricType-to-PromQL mapping, compute availability % over window | `TODO` |
+| FARM-T92 | Task | `GET /api/v1/slos/:id/budget` returning `{ targetPercent, currentPercent, budgetRemaining, burnRate, status }` | `TODO` |
 
-#### FARM-S107: Layout and Navigation Tests `DONE`
+#### FARM-S203 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T48 | Task | AppShell layout tests | `DONE` |
-| FARM-ST172 | Sub-task | Test sidebar navigation links and active state | `DONE` |
-| FARM-ST173 | Sub-task | Test breadcrumb rendering for nested routes | `DONE` |
-| FARM-ST174 | Sub-task | Test user dropdown menu (display name, email, roles, sign out) | `DONE` |
-| FARM-ST175 | Sub-task | Test dark mode theme cycling | `DONE` |
-
-### FARM-E31: Front-End Bug Fixes `DONE`
-
-> Issues identified during frontend codebase analysis.
-
-#### FARM-S108: Runtime and Configuration Bugs `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T49 | Task | Fix QueuePanel hardcoded NEXT_PUBLIC_API_URL reference | `DONE` |
-| FARM-ST176 | Sub-task | QueuePanel uses `process.env.NEXT_PUBLIC_API_URL` to build Bull Board URL; should use relative `/api` path like other components | `DONE` |
-| FARM-T50 | Task | Fix WebSocket client hardcoded localhost URL | `DONE` |
-| FARM-ST177 | Sub-task | ws-client.ts uses `process.env.NEXT_PUBLIC_WS_URL ?? "http://localhost:3000"` which breaks in Docker; needs a relative or configurable approach | `DONE` |
-| FARM-T51 | Task | Phase 5 summary row still shows TODO in ROADMAP | `DONE` |
-| FARM-ST178 | Sub-task | Update Phase 5 status from `TODO` to `DONE` in summary table | `DONE` |
-
-### FARM-E32: Front-End Enhancements `DONE`
-
-> UX improvements, missing features, and architectural enhancements.
-
-#### FARM-S109: Error Handling and Loading States `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T52 | Task | Add Next.js error boundaries | `DONE` |
-| FARM-ST179 | Sub-task | Create `app/(protected)/error.tsx` global error boundary | `DONE` |
-| FARM-ST180 | Sub-task | Create `app/(protected)/not-found.tsx` for 404 pages | `DONE` |
-| FARM-ST181 | Sub-task | Create `app/(protected)/loading.tsx` with skeleton loading | `DONE` |
-| FARM-T53 | Task | Add per-page loading.tsx files | `DONE` |
-| FARM-ST182 | Sub-task | Create loading states for catalog, teams, deployments, queues, observability, docs pages | `DONE` |
-
-#### FARM-S110: Accessibility and UX Improvements `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T54 | Task | Keyboard navigation improvements | `DONE` |
-| FARM-ST183 | Sub-task | Add proper aria-labels to all interactive elements | `DONE` |
-| FARM-ST184 | Sub-task | Ensure focus management on page transitions | `DONE` |
-| FARM-ST185 | Sub-task | Add skip-to-content link for screen readers | `DONE` |
-| FARM-T55 | Task | Toast notifications for mutations | `DONE` |
-| FARM-ST186 | Sub-task | Add success/error toasts for create, update, delete operations across all pages | `DONE` |
-| FARM-ST187 | Sub-task | Sonner extended to catalog, teams, deployments, queues | `DONE` |
-
-#### FARM-S111: Mobile Responsiveness `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T56 | Task | Mobile navigation improvements | `DONE` |
-| FARM-ST188 | Sub-task | Replace horizontal mobile nav buttons with hamburger menu (Sheet component) | `DONE` |
-| FARM-ST189 | Sub-task | Ensure all tables are horizontally scrollable on small screens | `DONE` |
-| FARM-ST190 | Sub-task | Test and fix all pages at 375px, 768px, and 1024px breakpoints | `DONE` |
-
-#### FARM-S112: Component Architecture Improvements `DONE`
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T57 | Task | Extract reusable page patterns | `DONE` |
-| FARM-ST191 | Sub-task | Create shared PageHeader component (title, description, action buttons) | `DONE` |
-| FARM-ST192 | Sub-task | Create shared FilterTabs component (used by catalog, deployments, teams) | `DONE` |
-| FARM-ST193 | Sub-task | Create shared EmptyState component with consistent styling | `DONE` |
-| FARM-ST194 | Sub-task | Create shared ConfirmDialog component for delete actions | `DONE` |
-| FARM-T58 | Task | Decompose large page files | `DONE` |
-| FARM-ST195 | Sub-task | Split docs/page.tsx (651 lines) into separate TreeSidebar, DocViewer, DocForm, SearchPanel components | `DONE` |
-| FARM-ST196 | Sub-task | Split observability/page.tsx (529 lines) into HealthTab, MetricsTab, TracesTab components in separate files | `DONE` |
-| FARM-ST197 | Sub-task | Split teams/[id]/page.tsx into TeamEditForm, MembersSection, ComponentsSection components | `DONE` |
-| FARM-ST198 | Sub-task | Split queues/[name]/page.tsx into JobDetailPanel, JobList, queue-utils components | `DONE` |
+| FARM-T93 | Task | On SLO create/update auto-create two `AlertingRule` records: fast-burn (2% budget in 1 h) and slow-burn (5% in 6 h), flagged `autoGenerated: true` | `TODO` |
+| FARM-T94 | Task | SLO delete cascades to its auto-generated alerting rules; manual rules for the same component are unaffected | `TODO` |
 
 ---
 
-## Phase 5.6: E2E Testing `DONE`
+### FARM-E52: Incident Management `TODO`
 
-### FARM-E33: End-to-End Test Suite `DONE`
-
-> Playwright-based E2E coverage for critical user flows.
+> Lightweight incident lifecycle inside Farm: declare, update, resolve, and write post-mortems. Each incident is linked to affected components and environments with a structured update timeline.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S113 | Story | Playwright E2E test suite for critical user flows | `DONE` |
+| FARM-S205 | Story | `Incident` entity and API (title, severity: P1-P4, status: open/investigating/identified/resolved, affected components and environments) | `TODO` |
+| FARM-S206 | Story | Incident timeline -- ordered event log with author, timestamp, message, and status change snapshot | `TODO` |
+| FARM-S207 | Story | Post-mortem document linked to incident (rootCause, contributingFactors, actionItems JSONB array, Markdown body, approvedBy) | `TODO` |
+| FARM-S208 | Story | Frontend: incident list with severity filter, incident detail with live timeline, post-mortem editor with action item checklist | `TODO` |
+
+#### FARM-S205 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T95 | Task | Create `Incident` entity with `IncidentSeverity` and `IncidentStatus` enums; ManyToMany to `Component` and `Environment` | `TODO` |
+| FARM-T96 | Task | CRUD API; `PATCH /incidents/:id/status` validates allowed transitions (open -> investigating -> identified -> resolved) | `TODO` |
+| FARM-T97 | Task | Emit WebSocket events `incident:created` and `incident:status-changed` on state transitions | `TODO` |
+
+#### FARM-S206 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T98 | Task | `IncidentUpdate` entity (incidentId, authorId, message, previousStatus, newStatus, createdAt); auto-created on every status change | `TODO` |
+| FARM-T99 | Task | `POST /incidents/:id/updates` for manual timeline entries; `GET /incidents/:id/timeline` ordered by `createdAt ASC` | `TODO` |
+
+#### FARM-S207 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T100 | Task | `PostMortem` entity (1:1 with Incident, rootCause, contributingFactors text[], actionItems JSONB, body Markdown, approvedBy userId) | `TODO` |
+| FARM-T101 | Task | `PATCH /post-mortems/:id/approve` sets approvedBy and approvedAt; restricted to admin or incident creator | `TODO` |
 
 ---
 
-## Phase 5.7: Backend Bug Fixes `DONE`
+### FARM-E53: Custom Dashboard Builder `TODO`
 
-### FARM-E34: Known Backend Issues `DONE`
-
-> Bugs identified in production-like environments after feature completion.
-
-#### FARM-S114: Deployments API Bugs `DONE`
+> Users compose custom dashboards from a library of reusable widgets. Layouts persist to the database and can be shared workspace-wide or kept private.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T59 | Task | Fix `GET /api/v1/deployments/matrix` returning HTTP 500 on PostgreSQL | `DONE` |
-| FARM-ST199 | Sub-task | Investigate `QueryFailedError: syntax error at or near "SELECT"` in `DeploymentsService.getMatrix()` raw SQL query | `DONE` |
-| FARM-ST200 | Sub-task | Rewrite or fix the raw SQL in `getMatrix()` to be PostgreSQL-compatible and add E2E test coverage | `DONE` |
+| FARM-S209 | Story | `Dashboard` and `DashboardWidget` entities (dashboard: name, owner, visibility; widget: type, gridX/Y/W/H, configJSON) | `TODO` |
+| FARM-S210 | Story | Widget type library: MetricGraph, ComponentHealth, DeploymentFeed, QueueStatus, SloGauge, AlertSummary, TeamActivity, UptimeChart | `TODO` |
+| FARM-S211 | Story | Frontend dashboard builder with drag-and-drop grid (`react-grid-layout`), widget picker panel, and per-widget config drawer | `TODO` |
+| FARM-S212 | Story | Dashboard sharing (public read-only link with signed token, workspace-scoped visibility toggle) | `TODO` |
 
-**Fixed in 2026-03-17:** Replaced raw string-concatenated subquery with TypeORM `.subQuery()` in `DeploymentsService.getMatrix()`. The old pattern produced `d.createdAt = SELECT MAX(...)` (invalid on PostgreSQL); `.subQuery()` emits `(SELECT MAX(...))` with required parentheses. 41 tests passing.
+#### FARM-S209 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T102 | Task | Create `Dashboard` and `DashboardWidget` entities; `DashboardModule` with CRUD for both; migration | `TODO` |
+| FARM-T103 | Task | `PATCH /dashboards/:id/layout` bulk-updates widget positions in a single transaction (`[{widgetId, x, y, w, h}]`) | `TODO` |
+
+#### FARM-S210 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T104 | Task | Define `WidgetType` enum and per-type config schema (TypeScript interfaces); validate `configJSON` against schema on widget create/update | `TODO` |
+| FARM-T105 | Task | `GET /dashboards/:id/widgets/:widgetId/data` routes to the appropriate data source based on widget type | `TODO` |
+
+#### FARM-S211 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T106 | Task | Install `react-grid-layout`; build `DashboardGrid` component with responsive breakpoints (12-col desktop, 6-col tablet, 2-col mobile) | `TODO` |
+| FARM-T107 | Task | `WidgetPicker` side panel: categorized widget list with preview card; drag from panel onto grid to add | `TODO` |
+| FARM-T108 | Task | Per-widget `ConfigDrawer`: dynamic form rendered from widget type config schema; save persists via `PATCH /widgets/:id` | `TODO` |
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST205 | Sub-task | Widget rendering components (one per WidgetType): fetch data, handle loading and error states, render chart or list | `TODO` |
+| FARM-ST206 | Sub-task | Auto-save layout on change with 1-second debounce to avoid excessive API calls during drag | `TODO` |
+| FARM-ST207 | Sub-task | Empty dashboard state with "Add your first widget" CTA and shortcut to widget picker | `TODO` |
 
 ---
 
-## Phase 6: Advanced Features `DONE`
+## Phase 14: AI / Intelligence `TODO`
 
-### FARM-E25: Multi-Tenant and RBAC `DONE`
+### FARM-E54: AI-Assisted Search and Discovery `TODO`
 
-> Organization-level isolation and fine-grained permissions.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S84 | Story | Organization entity, tenant isolation, and query scoping enforcement via `OrgContextInterceptor` + `X-Organization-Id` header | `DONE` |
-| FARM-S85 | Story | Fine-grained permission system — member management endpoints (`GET/POST/PATCH/DELETE /organizations/:id/members`) with role-hierarchy enforcement | `DONE` |
-| FARM-S86 | Story | Team-scoped catalog filtering — `?teamId=` filter on `GET /catalog` scopes components by owning team | `DONE` |
-| FARM-S87 | Story | Organization settings page — full member management UI (list, add, change role, remove) | `DONE` |
-| FARM-S115 | Story | Per-user rate limiting (`PerUserThrottlerGuard` global, stricter limits on auth endpoints) | `DONE` |
-
-**Delivered in v0.9.11 (2026-03-17):**
-- `OrgContextInterceptor`: validates `X-Organization-Id` header, verifies `UserOrganization` membership, stamps `req.organizationId` globally.
-- Two-tier RBAC: global `RolesGuard` (admin/user from JWT) + org-level `OrgRolesGuard` (OWNER=3 / ADMIN=2 / MEMBER=1 hierarchy).
-- Catalog, Teams, Environments, AuditLog services scope queries by `organizationId` when the header is present.
-- Frontend `api-client.ts` automatically injects `X-Organization-Id` from `sessionStorage`.
-- `PerUserThrottlerGuard` globally registered; auth endpoints override with `5/min` login and `10/min` refresh limits.
-
-### FARM-E26: Workflow and Pipeline UI `DONE`
-
-> Visual pipeline builder and execution monitoring.
+> Semantic search across catalog, documentation, and API specs using vector embeddings. Natural language queries return ranked, faceted results. LLM summarization reduces time-to-understanding for documentation pages.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S88 | Story | Pipeline definition CRUD (backend) — `Pipeline` + `PipelineRun` entities, full REST API | `DONE` |
-| FARM-S89 | Story | Visual pipeline builder (drag-and-drop stages) — `stage-builder.tsx` with HTML5 drag-and-drop, all four stage types | `DONE` |
-| FARM-S90 | Story | Pipeline execution monitoring with real-time logs (BullMQ + WebSocket) — live log viewer, approval/cancel/retrigger actions, dashboard widget, WebSocket toast notifications | `DONE` |
-| FARM-S91 | Story | Pipeline history and run comparison | `DONE` |
+| FARM-S213 | Story | Embedding pipeline -- generate embeddings on create/update via BullMQ job, store in pgvector; extension enabled via migration | `TODO` |
+| FARM-S214 | Story | Semantic search API (`POST /api/v1/search/semantic`) -- vector similarity search over component, documentation, and API spec embeddings | `TODO` |
+| FARM-S215 | Story | AI doc summarization -- LLM generates a 3-sentence summary per documentation page on ingestion; shown in doc detail header | `TODO` |
+| FARM-S216 | Story | Frontend: unified search bar with semantic/keyword toggle, result type facets (components, docs, APIs), keyboard navigation | `TODO` |
 
-**Delivered in 2026-03-17 (FARM-S91):**
-- `GET /api/v1/pipelines/:id/runs` now paginated with `skip/take/status` query params, returns `{ data, total, skip, take }`.
-- `GET /api/v1/pipelines/:id/runs/stats` — aggregate stats: total, byStatus, successRate, avgDurationMs, lastRunAt.
-- `GET /api/v1/pipelines/:id/runs/compare?a=:runIdA&b=:runIdB` — diff of two runs with per-stage status, duration, delta, and `changed` flag.
-- Frontend: `RunStatsPanel` (4 stat cards), pagination + status filter in `RunList`, `RunComparison` Sheet with side-by-side stage diff.
-
-### FARM-E27: Deep Observability Integration `DONE`
-
-> Native metrics rendering and alerting within the portal.
+#### FARM-S213 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S92 | Story | Per-component metrics dashboards (PromQL-powered) | `DONE` |
-| FARM-S93 | Story | Alerting rules configuration UI | `DONE` |
-| FARM-S94 | Story | Trace waterfall visualization (native, not Grafana iframe) | `DONE` |
-| FARM-S95 | Story | Log aggregation viewer with search and filtering | `DONE` |
-| FARM-S116 | Story | WebSocket real-time notification broadcasting | `DONE` |
-| FARM-S118 | Story | OpenTelemetry Web instrumentation (browser spans + trace propagation) | `DONE` |
+| FARM-T109 | Task | Enable `pgvector` extension via TypeORM migration; add `embedding vector(1536)` column to `Component`, `Documentation`, `ApiSpec` | `TODO` |
+| FARM-T110 | Task | `EmbeddingService`: calls OpenAI Embeddings API (`text-embedding-3-small`), returns `number[]`; injectable and fully mockable in tests | `TODO` |
+| FARM-T111 | Task | BullMQ `EmbeddingJob` processor: triggered after component/doc/api-spec create or update; calls `EmbeddingService`, persists vector | `TODO` |
 
-**Delivered in 2026-03-17 (FARM-S118):**
-- `src/lib/tracing.ts`: `initTracing()` with `WebTracerProvider`, `BatchSpanProcessor`, `OTLPTraceExporter`, `ZoneContextManager`, auto-instrumentations for fetch/XHR/document-load; `traceparent` header injected in all requests.
-- `src/components/tracing-init.tsx`: `'use client'` component rendered in root layout, calls `initTracing()` on mount.
-- `src/instrumentation.ts`: Next.js native hook (server no-op — backend handles server tracing).
-- `apps/api/src/common/observability/traces-ingest.controller.ts`: `POST /api/v1/traces/ingest` OTLP proxy forwarding browser spans to Tempo. 6 tests covering proxy, env override, 502 fallback.
-
-### FARM-E28: Integrations and Extensibility `DONE`
-
-> Third-party integrations and plugin marketplace.
+#### FARM-S214 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S96 | Story | GitHub/GitLab repository integration | `DONE` |
-| FARM-S114 | Story | OAuth2 social login (GitHub, Google) | `DONE` |
-| FARM-S97 | Story | Slack/Teams notification channels | `DONE` |
-| FARM-S117 | Story | Email domain event wiring to system events | `DONE` |
-| FARM-S98 | Story | Kubernetes cluster discovery and status | `DONE` |
-| FARM-S99 | Story | Plugin marketplace UI (install/uninstall/configure) | `DONE` |
+| FARM-T112 | Task | `SemanticSearchService.search(query, types[], limit)`: embed query string, run `ORDER BY embedding <=> $1 LIMIT $2` via raw QueryBuilder | `TODO` |
+| FARM-T113 | Task | `POST /api/v1/search/semantic` controller; request DTO: `{ query: string, types?: string[], limit?: number }` | `TODO` |
 
-### FARM-E29: Data and Analytics `DONE`
-
-> Platform usage analytics and reporting.
-> Delivered 2026-03-18: all 3 stories complete — 519 API tests, 333 web tests, 0 lint errors.
+#### FARM-S215 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S100 | Story | Service catalog analytics (ownership coverage, lifecycle distribution) | `DONE` |
-| FARM-S101 | Story | Deployment frequency and lead time metrics (DORA) | `DONE` |
-| FARM-S102 | Story | Platform usage reports (API calls, active users, popular components) | `DONE` |
-
-### FARM-E31: Frontend Architecture Hardening `DONE`
-
-> Align `apps/web` with Bulletproof React principles for scalability and maintainability.
-> Delivered 2026-03-18: all 5 stories complete — 309 tests, 0 lint errors.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S119 | Story | Adopt React Hook Form for all forms (login, create component, team member, pipeline stages) | `DONE` |
-| FARM-S120 | Story | Adopt TanStack Query (React Query) for server state — replace manual useState + refetch with query/mutation hooks | `DONE` |
-| FARM-S121 | Story | Add React Error Boundary components at feature level (catalog, teams, deployments, observability) | `DONE` |
-| FARM-S122 | Story | Colocate tests with features — migrate `src/__tests__/` to colocated `*.test.tsx` alongside source files | `DONE` |
-| FARM-S123 | Story | Introduce `next/dynamic` for heavy components (charts, trace waterfall, metrics widgets) | `DONE` |
-
-### FARM-E35: CI/CD External Integrations `DONE`
-
-> Integrate Farm with external CI/CD platforms so teams can monitor builds, trigger pipelines, and view deployment status directly from the developer portal — without switching context between tools.
-
-#### Background
-
-Farm already has GitHub/GitLab VCS integration (FARM-S96) and Kubernetes cluster discovery (FARM-S98). This epic extends that foundation to cover two of the most common CI/CD platforms: **ArgoCD** (GitOps CD for Kubernetes) and **CircleCI** (hosted CI/CD).
-
-Integration credentials (API tokens, instance URLs) are stored per-organization in the database — encrypted — following the same pattern already used for GitHub and Slack tokens. No secrets in environment variables.
-
-Both integrations are HTTP-only (no heavy SDK required). ArgoCD connects via its REST API. CircleCI uses its v2 API and webhook push model.
-
-#### Stories
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S129 | Story | ArgoCD: connect to ArgoCD instance (URL + token per org), list Applications and display health/sync status in the Environments module | `DONE` |
-| FARM-S130 | Story | ArgoCD: trigger Application sync from Farm UI; display manifest diff and sync history per deployment | `DONE` |
-| FARM-S131 | Story | CircleCI: connect to CircleCI (API token per org), list pipeline runs per Component (matched by `vcsUrl`), display build status | `DONE` |
-| FARM-S132 | Story | CircleCI: trigger pipeline from Farm UI; receive status webhooks (`POST /api/v1/webhooks/circleci`) and push real-time updates via WebSocket | `DONE` |
-| FARM-S133 | Story | Jenkins: connect to Jenkins instance (URL + user + API token per org), list jobs and build history per Component (matched by `vcsUrl` or job name) | `DONE` |
-| FARM-S134 | Story | Jenkins: trigger build from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/jenkins`) and push real-time status updates via WebSocket | `DONE` |
-| FARM-S162 | Story | Travis CI: connect to Travis CI (API token per org, supports travis.com and self-hosted), list builds per Component (matched by `vcsUrl`), display build status and logs | `DONE` |
-| FARM-S163 | Story | Travis CI: trigger build restart from Farm UI; receive webhook notifications (`POST /api/v1/webhooks/travisci`) and push real-time status updates via WebSocket | `DONE` |
-| FARM-S135 | Story | CI/CD unified tab on Component detail page: show GitHub Actions + CircleCI + Jenkins + Travis CI builds + ArgoCD Application status in one view | `DONE` |
-| FARM-S160 | Story | Pipeline `build` stage type: add `"build"` to `PipelineStage.type`; implement executor that builds OCI images using `config.engine` (`docker` | `buildah` | `podman`) with configurable `dockerfile`, `context`, `tag`, and `push` options | `DONE` |
-| FARM-S161 | Story | Build stage UI: add `build` stage card to the visual pipeline builder (`stage-builder.tsx`) with fields for engine selection, Dockerfile path, image tag template (supports `{{version}}` and `{{commitSha}}`), and registry push toggle | `DONE` |
-
-#### Implementation Notes
-
-- **ArgoCD**: REST API at `{argocd-url}/api/v1/applications`. Auth via `Authorization: Bearer <token>`. Existing `KubernetesModule` provides cluster context but ArgoCD connects independently via HTTP.
-- **CircleCI**: v2 API at `https://circleci.com/api/v2`. Pipeline trigger: `POST /project/{slug}/pipeline`. Webhooks: Farm registers a `POST /api/v1/webhooks/circleci` receiver endpoint.
-- **Component link**: `Component.vcsUrl` field already exists — used to match CircleCI projects. A new nullable `argocdApp` field on `Component` links to an ArgoCD Application name.
-- **Jenkins**: REST API at `{jenkins-url}/api/json`. Auth via HTTP Basic (`user:api-token`). Job trigger: `POST /job/{jobName}/build`. Webhooks: Farm registers `POST /api/v1/webhooks/jenkins` (Generic Webhook Trigger plugin on Jenkins side).
-- **Travis CI**: REST API v3 at `https://api.travis-ci.com` (cloud) or `{travis-url}/api` (self-hosted Enterprise). Auth via `Authorization: token <api-token>`. Builds listed via `GET /repo/{slug}/builds`. Restart trigger: `POST /build/{id}/restart`. Webhooks: Travis CI sends `POST` to a configurable URL — Farm registers `POST /api/v1/webhooks/travisci`. `IntegrationCredential` type enum extended with `travisci`.
-- **Credential storage**: New `IntegrationCredential` entity (org-scoped, type enum: `argocd | circleci | jenkins | travisci | github | slack`, encrypted value column).
-- **Build stage engines**: `docker` requires a Docker daemon socket (suitable for VMs and local dev). `buildah` and `podman` run daemonless and rootless — preferred when Farm executes inside a Kubernetes pod. Engine is selected per-stage via `config.engine`; defaults to `docker` if omitted. `containerd` is intentionally excluded — it is the cluster runtime (managed by Kubernetes) and not a build tool; Farm reaches it indirectly through the existing `KubernetesModule`.
-- **Image tag templates**: `{{version}}` resolves to the Pipeline trigger version; `{{commitSha}}` resolves to the short Git SHA from `Component.vcsUrl`. Rendered at execution time by the `BuildStageExecutor`.
+| FARM-T114 | Task | `SummarizationService`: calls OpenAI Chat API (`gpt-4o-mini`) with system prompt instructing a 3-sentence summary; injectable | `TODO` |
+| FARM-T115 | Task | Add `summary` text column to `Documentation`; populate via BullMQ job on create/update alongside embedding generation | `TODO` |
 
 ---
 
-### FARM-E36: Helm Integration `DONE`
+### FARM-E55: Dependency Intelligence `TODO`
 
-> Track Helm chart metadata per component, import live Helm releases as deployments, and execute real `helm upgrade` operations from Farm pipelines.
-
-#### Background
-
-Farm already has Kubernetes cluster discovery (FARM-S98), an Environments/Deployments module, and a Pipeline engine with a `deploy` stage type (currently simulated). Helm is the dominant Kubernetes package manager — integrating it closes the loop between the component catalog and what is actually running in each cluster.
-
-#### Stories
+> Automated analysis of the component dependency graph. Detect circular dependencies, calculate the blast radius of a failing component, and surface dependency health scores in the catalog.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S136 | Story | Add `helmChart` metadata to `Component` entity (`repo`, `chart`, `version`, `valuesRef`); expose field in catalog UI and `catalog-info.yaml` discovery | `DONE` |
-| FARM-S137 | Story | Helm release discovery: query helm releases via Kubernetes Secrets and import as Deployment records | `DONE` |
-| FARM-S138 | Story | Pipeline `deploy` stage real executor: when `config.engine = "helm"`, run `helm upgrade --install` | `DONE` |
+| FARM-S217 | Story | Dependency graph builder -- construct directed adjacency graph from `component_dependencies` join table, cached in Redis | `TODO` |
+| FARM-S218 | Story | Circular dependency detection -- iterative DFS with back-edge detection, surface detected cycles as catalog warnings per component | `TODO` |
+| FARM-S219 | Story | Blast radius analysis -- BFS from a given node, return affected component list with hop distance and estimated risk score | `TODO` |
+| FARM-S220 | Story | Frontend: interactive D3 force-directed dependency graph with cycle highlighting and blast radius overlay on hover | `TODO` |
 
-#### Implementation Notes
-
-- **Helm release storage**: Helm 3 stores release state as Kubernetes Secrets in the release namespace (`type: helm.sh/release.v1`). Farm reads them via the existing `@kubernetes/client-node` integration — no Helm CLI required on the server.
-- **Values files**: Referenced by URL or stored inline in the stage config. Secrets (passwords, tokens) should reference Kubernetes Secrets by name rather than embedding values.
-- **Pipeline executor**: The `PipelineProcessor` stage dispatcher checks `config.engine` and delegates to a `HelmDeployExecutor` service that wraps `@kubernetes/client-node` exec or calls the Helm REST API if a Helm Controller (e.g., Flux HelmRelease) is present.
-
----
-
-### FARM-E37: Kubernetes Operator and CRD Discovery `DONE`
-
-> Ship a Farm Kubernetes Operator for auto-registering components via pod annotations, and enable discovery of resources managed by popular in-cluster Operators (Prometheus, Cert-Manager, Argo Rollouts, Strimzi).
-
-#### Background
-
-Farm already syncs `catalog-info.yaml` files from URLs (Backstage-compatible discovery). A Farm Operator extends this by watching Kubernetes workload annotations in real time — no YAML file needed. Additionally, clusters often run Operators (Prometheus Operator, Cert-Manager, Strimzi) whose Custom Resources contain valuable context that developers need — Farm surfaces these alongside the component that owns them.
-
-#### Stories
+#### FARM-S217 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S139 | Story | Annotation auto-registration: watches Deployments/StatefulSets/Services for farm.io/* annotations and syncs to Farm catalog | `DONE` |
-| FARM-S140 | Story | CRD discovery: detect installed Operators in connected clusters and display Custom Resources in component detail | `DONE` |
-| FARM-S141 | Story | Argo Rollouts integration: display Rollout resource status (canary weight, bluegreen revisions, analysis runs) | `DONE` |
+| FARM-T116 | Task | `DependencyGraphService.build()`: load all `component_dependencies` rows, construct adjacency list in-memory, cache in Redis (TTL 5 min) | `TODO` |
+| FARM-T117 | Task | Invalidate Redis graph cache on component dependency create or delete events via event emitter | `TODO` |
 
-#### Implementation Notes
-
-- **Farm Operator runtime**: Deployed as a separate container in the target cluster. Uses `controller-runtime` (Go) or `operator-sdk`. Communicates with Farm API using a long-lived service account token stored as a cluster Secret.
-- **Annotation contract**:
-  ```yaml
-  metadata:
-    annotations:
-      farm.io/component: "my-service"         # Component name in Farm
-      farm.io/owner: "platform-team"          # Team slug
-      farm.io/catalog-url: "https://..."      # Optional — link to catalog-info.yaml
-      farm.io/environment: "production"       # Environment slug in Farm
-  ```
-- **CRD discovery**: Uses `apiextensions.k8s.io/v1` CRD list + label-based resource fetching. Farm maintains a mapping of well-known Operator CRD groups to display templates.
-- **Argo Rollouts**: Uses the `argoproj.io/v1alpha1` API group. Rollout status is polled (30s interval) and cached; WebSocket push on status change.
-
----
-
-### FARM-E38: Cloud Provider Integrations `DONE`
-
-> Connect Farm to AWS, GCP, and Azure to discover infrastructure resources, display cost visibility per environment, execute real cloud deploy stages in pipelines, and resolve secrets from managed secret stores.
-
-#### Background
-
-Farm's Environments module tracks deployments and Kubernetes clusters. Cloud providers extend this to managed services (RDS, Lambda, Cloud Run, Azure Container Apps) and give platform teams cost attribution and secret management without embedding credentials in pipeline configs.
-
-Credentials are stored per-organization using the `IntegrationCredential` entity introduced in FARM-E35 — extended here to support cloud provider credential types (`aws-iam-role`, `gcp-service-account`, `azure-service-principal`).
-
-#### Stories
+#### FARM-S218 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S142 | Story | AWS: connect account (IAM role via assume-role or access key per org), discover tagged resources (ECS, Lambda, RDS, S3, SQS) and register them in the Catalog as `kind: Infrastructure` linked to the owning Component | `DONE` |
-| FARM-S143 | Story | GCP: connect project (service account JSON per org), discover resources via Cloud Asset API (Cloud Run, Cloud SQL, Pub/Sub, GCS) and register as `kind: Infrastructure` | `DONE` |
-| FARM-S144 | Story | Azure: connect subscription (service principal per org), discover resources via Resource Manager API (Container Apps, Azure SQL, Service Bus, Blob) and register as `kind: Infrastructure` | `DONE` |
-| FARM-S145 | Story | Cost visibility: dashboard widget showing monthly spend per environment, sourced from AWS Cost Explorer, GCP Billing API, or Azure Cost Management; drill-down by component and team | `DONE` |
-| FARM-S146 | Story | Pipeline `deploy` stage real executors: `aws-ecs` (update service image), `aws-lambda` (publish function version), `gcp-cloud-run` (deploy revision), `azure-container-apps` (update container app) | `DONE` |
-| FARM-S147 | Story | Secrets resolver: reference AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault secrets by ARN/path in pipeline stage configs — resolved at execution time, never stored in Farm database | `DONE` |
+| FARM-T118 | Task | Implement iterative DFS cycle detection on the adjacency list; return array of cycle paths as string[][] | `TODO` |
+| FARM-T119 | Task | `GET /api/v1/components/:id/dependency-cycles` and `GET /api/v1/catalog/cycles` (all cycles across catalog) | `TODO` |
 
-#### Implementation Notes
-
-- **AWS auth**: Prefer IAM roles with `sts:AssumeRole` over long-lived access keys. Farm stores the role ARN; assumes it at request time via AWS SDK v3 `STSClient`.
-- **GCP auth**: Service account JSON stored encrypted in `IntegrationCredential`. Used via `google-auth-library`.
-- **Azure auth**: Service principal (`clientId`, `clientSecret`, `tenantId`) stored encrypted. Used via `@azure/identity` `ClientSecretCredential`.
-- **Resource tagging**: Discovery queries filter by tag `farm:component` or `farm.io/component` — same annotation contract as the Kubernetes Operator (FARM-E37).
-- **Cost granularity**: Cost Explorer / Billing API returns cost grouped by tag. Requires `farm:environment` tag on all cloud resources for accurate attribution.
-- **Pipeline executors**: Each executor is a strategy class implementing `DeployExecutor` interface, registered in a `DeployExecutorRegistry`. The `PipelineProcessor` dispatches by `config.engine`.
-
----
-
-### FARM-E39: Resource Tagging Governance `DONE`
-
-> Define mandatory tag/label policies per organization and automatically audit cloud resources and Kubernetes workloads for compliance — surfacing gaps directly in Farm's UI.
-
-#### Background
-
-As Farm discovers cloud resources (FARM-E38) and Kubernetes workloads (FARM-E37), it accumulates enough inventory to enforce tagging standards. This epic closes the governance loop: teams can define which tags are required, Farm checks compliance on a schedule, and engineers see violations in their component and environment views.
-
-#### Stories
+#### FARM-S219 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S148 | Story | Tag policy engine: allow org admins to define required tag keys per resource type (e.g., `team`, `component`, `environment` required on all ECS services and K8s Deployments); store policies in DB | `DONE` |
-| FARM-S149 | Story | Compliance audit job: scheduled BullMQ job that evaluates all discovered resources against active policies, records violations (`ResourceViolation` entity), and emits a WebSocket event when the report completes | `DONE` |
-| FARM-S150 | Story | Compliance dashboard: org-level view showing compliance percentage by provider, team, and resource type; per-component violation list with remediation hints (suggested tag values based on Component ownership) | `DONE` |
-
-#### Implementation Notes
-
-- **Policy storage**: `TagPolicy` entity (orgId, resourceType enum, requiredKeys string[], severity: warning/error).
-- **Violation storage**: `ResourceViolation` entity (orgId, resourceId, resourceType, provider, missingKeys, detectedAt, resolvedAt nullable).
-- **Remediation hints**: Farm knows `Component.owner`, `Component.teamId`, `Component.organizationId` — pre-fills suggested values for `team`, `component`, `environment` tags in the violation detail UI.
-- **Scheduling**: Uses existing BullMQ infrastructure. Default cadence: every 6 hours, configurable per org.
+| FARM-T120 | Task | `BlastRadiusService.compute(componentId)`: BFS traversal collecting downstream nodes with hop count; risk score = sum of hop-weighted node counts | `TODO` |
+| FARM-T121 | Task | `GET /api/v1/components/:id/blast-radius` returning `{ affectedCount, riskScore, components: [{ id, name, hops }] }` | `TODO` |
 
 ---
 
-### FARM-E40: Kyverno Policy Integration `DONE`
+### FARM-E56: Anomaly Detection `TODO`
 
-> Consume Kyverno `PolicyReport` CRDs to surface policy violations per component, and export Farm tag policies as ready-to-apply `ClusterPolicy` manifests — closing the governance loop between the portal and cluster enforcement.
-
-#### Stories
+> Baseline-learning anomaly detection on key metrics (error rate, latency p99, queue depth). Surfaces deviations automatically without manual threshold configuration.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S151 | Story | PolicyReport reader: watch `PolicyReport` and `ClusterPolicyReport` CRDs in connected clusters; map violations to Farm Components by namespace/labels and display them in the Component detail page alongside FARM-E39 violations | `DONE` |
-| FARM-S152 | Story | ClusterPolicy export: allow org admins to export a Farm Tag Policy (FARM-E39) as a Kyverno `ClusterPolicy` YAML — downloadable from the compliance dashboard and optionally auto-applied to connected clusters | `DONE` |
+| FARM-S221 | Story | Metric baseline learner -- rolling 7-day mean and standard deviation per metric per component, recalculated daily via BullMQ CRON | `TODO` |
+| FARM-S222 | Story | Anomaly scoring job -- runs every 5 min, computes Z-score against baseline, emits `anomaly:detected` WebSocket event when Z-score exceeds 3 | `TODO` |
+| FARM-S223 | Story | `AnomalyAlert` entity and API (componentId, metricName, score, severity, suppressedUntil, acknowledgedBy) | `TODO` |
+| FARM-S224 | Story | Frontend: anomaly feed widget for custom dashboards, per-component anomaly history tab in component detail page | `TODO` |
 
-#### Implementation Notes
-
-- `PolicyReport` is in the `wgpolicyk8s.io/v1alpha2` API group. Farm reads them via `@kubernetes/client-node` custom objects API, same pattern as CRD discovery in FARM-E37.
-- Violation deduplication: Farm checks if a Kyverno violation already exists as a `ResourceViolation` (FARM-E39) to avoid duplicates in the compliance view.
-- ClusterPolicy export is read-only from Farm's perspective — it generates YAML, the admin applies it. Auto-apply requires cluster write permissions and an explicit opt-in toggle per org.
-
----
-
-### FARM-E41: Keycloak / Enterprise SSO `DONE`
-
-> Integrate Keycloak as an enterprise identity provider for Farm — enabling SSO login, automatic sync of Keycloak groups to Farm organizations and teams, and Keycloak client credentials as a secret source in pipeline configs.
-
-#### Background
-
-Keycloak integration is a separate concern from Farm's existing Passport.js/JWT stack: many enterprises already run Keycloak (or another OIDC provider) and need Farm to federate into it rather than maintain a separate identity silo.
-
-#### Stories
+#### FARM-S221 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S153 | Story | Keycloak OIDC login: add Keycloak as a configurable OIDC identity provider (per-org, via `KEYCLOAK_URL` + realm + client ID/secret); users authenticate via Keycloak SSO instead of creating Farm-local accounts | `DONE` |
-| FARM-S154 | Story | Group sync: periodically sync Keycloak Groups/Roles to Farm Organizations and Teams via the Keycloak Admin REST API; support bidirectional role mapping (`keycloak-group → Farm Team`, `keycloak-role → OrgRole`) | `DONE` |
-| FARM-S155 | Story | Client credentials resolver: allow pipeline stage configs to reference Keycloak service account tokens (`keycloak://realm/client`) as a secret source — token is fetched via `client_credentials` grant at execution time | `DONE` |
+| FARM-T122 | Task | `MetricBaseline` entity (`componentId`, `metricName`, `mean`, `stddev`, `sampleCount`, `computedAt`); unique on (componentId, metricName) | `TODO` |
+| FARM-T123 | Task | `BaselineLearnerJob` (BullMQ CRON daily at 02:00 UTC): query Prometheus for 7-day data, compute mean/stddev per component, upsert baseline rows | `TODO` |
 
-#### Implementation Notes
-
-- **OIDC config**: Stored per-org in `IntegrationCredential` (type `keycloak`). Discovery via `{keycloak-url}/realms/{realm}/.well-known/openid-configuration`.
-- **Group sync**: Scheduled BullMQ job (configurable interval, default 1h). Uses `GET /admin/realms/{realm}/groups` + `GET /admin/realms/{realm}/users/{id}/role-mappings`.
-- **Conflict resolution**: If a user exists in Farm by email and also in Keycloak, accounts are merged on first SSO login.
-- Keycloak OIDC (S153) is an additive Passport.js strategy (`passport-openidconnect`) — no changes to the existing auth stack required.
-
----
-
-### FARM-E42: Istio Service Mesh Integration `DONE`
-
-> Surface Istio traffic metrics, service topology, and security posture (mTLS, AuthorizationPolicy) in Farm's component and environment views — using data Istio already generates, with no additional instrumentation required.
-
-#### Background
-
-Farm already has Prometheus-powered metrics dashboards (FARM-S92) and distributed trace visualization (FARM-S94). Istio enriches both: it produces per-service HTTP traffic metrics (`istio_requests_total`, `istio_request_duration_milliseconds`) that Farm can query via the existing PromQL integration, and it generates a real-time service dependency graph that can auto-populate `Component.dependencies` in the Catalog.
-
-All stories degrade gracefully — if Istio is not installed in the connected cluster, the relevant UI sections are hidden.
-
-#### Stories
+#### FARM-S222 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S156 | Story | Traffic metrics per component: pre-built PromQL panels for Istio metrics (RPS, error rate, P50/P95/P99 latency) on the Component detail page — sourced from the existing Prometheus integration | `DONE` |
-| FARM-S157 | Story | Service topology auto-discovery: query Istio `VirtualService` and traffic metrics to build a dependency graph; auto-update `Component.dependencies` with observed upstream/downstream services | `DONE` |
-| FARM-S158 | Story | Security posture view: display `PeerAuthentication` mTLS mode and active `AuthorizationPolicy` rules per component/namespace; flag services with no authorization policy as a security warning | `DONE` |
-| FARM-S159 | Story | Canary traffic control: display active `VirtualService` weight split (canary %) per environment; allow pipeline `deploy` stages to adjust weights via Istio API — complements Argo Rollouts (FARM-S141) | `DONE` |
-
-#### Implementation Notes
-
-- **Istio detection**: Farm checks for `networking.istio.io/v1alpha3` CRD group on cluster connect; sets a per-cluster `istioEnabled` flag that gates all Istio UI sections.
-- **Metrics**: Reuses the `PrometheusService` from FARM-E27 — Istio metrics are just additional PromQL queries with `destination_workload` label selectors.
-- **Topology**: `VirtualService.spec.http[].route[].destination.host` maps to service names. Cross-referenced with Farm Component names via `Component.vcsUrl` or explicit annotation.
-- **mTLS / AuthorizationPolicy**: Read via `@kubernetes/client-node` custom objects API (`security.istio.io/v1beta1`).
-- **Canary control**: Patch `VirtualService.spec.http[].route[].weight` via Kubernetes API. Requires cluster write permission — gated behind `OrgRole.ADMIN`.
+| FARM-T124 | Task | `AnomalyScorerJob` (BullMQ CRON every 5 min): fetch current metric values from Prometheus, compute Z-score against stored baseline | `TODO` |
+| FARM-T125 | Task | On Z-score > 3: create `AnomalyAlert` record, emit `anomaly:detected` event with payload `{ componentId, metric, score, severity }` | `TODO` |
 
 ---
 
-## Phase 7: Frontend Hardening `DONE`
+## Phase 15: Developer Self-Service `TODO`
 
-### FARM-E46: Production-Grade Frontend Quality `DONE`
+### FARM-E57: Service Templates and Golden Paths `TODO`
 
-> Close the remaining quality gaps in the Farm web application: expand Playwright E2E coverage to all critical flows, establish a Storybook component library, enforce Content Security Policy headers, add a Core Web Vitals CI gate, and apply a systematic performance optimization pass to heavy components.
-
-#### Background
-
-Phase 5.5 delivered the foundational frontend quality work — Vitest unit tests, error boundaries, loading states, accessibility improvements, and mobile responsiveness. Phase 9 added axe-core accessibility checks to key page components. What remains is a focused hardening pass that covers three areas still at risk: **untested critical flows** (only 4 of 12+ major features have E2E coverage), **missing component documentation** (zero Storybook stories), and **performance and security gaps** (heavy components lack memoization; no CSP headers configured for the frontend).
-
-#### Stories
+> Curated service templates (NestJS API, Next.js app, Go service, Python worker) scaffold a new repository with CI, Dockerfile, catalog-info.yaml, and tests included. The scaffolded repository is automatically registered in Farm as a catalog component.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S180 | Story | Playwright E2E expansion: add test specs for environments, organizations, pipelines (create/run/compare), and docs flows; expand from 4 to 8 spec files covering all critical user journeys | `DONE` |
-| FARM-S181 | Story | Storybook setup: install and configure Storybook for Next.js; create `.stories.tsx` files for all shared UI primitives (`Button`, `Card`, `Dialog`, `Tabs`, `Input`, `Badge`) and shared layout components (`PageHeader`, `FilterTabs`, `EmptyState`, `ConfirmDialog`) | `DONE` |
-| FARM-S182 | Story | Content Security Policy: add `headers()` to `next.config.ts` with CSP (`script-src`, `style-src`, `img-src`, `connect-src`), HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin` | `DONE` |
-| FARM-S183 | Story | Performance optimization pass: audit components with >200 lines for unnecessary re-renders; apply `React.memo` to pure list/card components, `useMemo` to expensive computations (doc tree traversal, trace waterfall layout, metric formatting), and `useCallback` to event handlers passed as props; target 60+ optimized call sites (up from 23) | `DONE` |
-| FARM-S184 | Story | Web Vitals CI gate: add a Lighthouse CI step to the GitHub Actions `web` job that asserts LCP < 2.5 s, CLS < 0.1, and TBT < 200 ms on the login page and dashboard; fail the build on regression; store HTML reports as workflow artifacts | `DONE` |
+| FARM-S225 | Story | `ServiceTemplate` entity and CRUD API (name, description, language, framework, tags, repositoryUrl, variables JSONB schema) | `TODO` |
+| FARM-S226 | Story | Scaffolding BullMQ job processor -- clone template, substitute variables, push to target org/repo via GitHub API | `TODO` |
+| FARM-S227 | Story | Frontend golden path wizard (select template -> configure variables -> review -> trigger scaffold -> real-time progress) | `TODO` |
+| FARM-S228 | Story | Auto-registration on scaffold completion -- create catalog component, documentation stub, and default SLO for the new service | `TODO` |
 
-#### Implementation Notes
-
-- **E2E expansion** (S180): Follow the existing pattern in `e2e/auth.spec.ts` and `e2e/catalog.spec.ts`. Use `global-setup.ts` session reuse. Each new spec covers: happy path, form validation error, and a delete/cleanup flow. Environments and organizations share a similar CRUD shape — they can reuse helper factories from `e2e/helpers/`.
-- **Storybook** (S181): Use `@storybook/nextjs` framework adapter. Add `.storybook/main.ts` with Webpack 5 + path alias mirroring `tsconfig.json`. Stories are colocated alongside components (`button.stories.tsx` next to `button.tsx`). No visual regression CI required in this story — that is a follow-on.
-- **CSP** (S182): The `connect-src` directive must whitelist the API origin (`NEXT_PUBLIC_API_URL`) and the WebSocket origin. Use `nonce`-based CSP for inline styles injected by `next-themes`. Start in `Report-Only` mode to catch violations without breaking the app, then switch to enforced after one release cycle.
-- **Performance pass** (S183): Use React DevTools Profiler in development to identify components with high render counts. Priority targets: `CatalogClient` (component list), `RunDetailClient` (864-line component), `DocsClient` (1,171-line component), `ObservabilityClient`. Do not apply `React.memo` blindly — only where props are stable across parent re-renders.
-- **Lighthouse CI** (S184): Use `treosh/lighthouse-ci-action`. The target URLs are served by the running `web` job in CI — requires a brief `next build && next start` step. Alternatively, use static export or a staging URL. Store `.lighthouserc.json` at `apps/web/.lighthouserc.json`.
-
----
-
-## Phase 8: Frontend Visual Refresh `DONE`
-
-### FARM-E43: Frontend Visual Redesign `DONE`
-
-> Give Farm a polished, opinionated visual identity by replacing the default shadcn/ui theme with a custom design system generated via [tweakcn.com](https://tweakcn.com/) — a visual theme editor for shadcn/ui that exports production-ready CSS variable overrides.
-
-#### Background
-
-Farm's current UI uses the default shadcn/ui Zinc palette with minimal customization. While functional, it lacks visual distinctiveness. tweakcn.com enables zero-dependency theme customization: you pick colors, border radius, typography scale, and shadow intensity visually, then export a drop-in `globals.css` replacement. No component rewrites required — only CSS variable tokens change.
-
-#### Goals
-
-- A distinctive, branded color palette (primary, accent, destructive, muted) for both light and dark modes.
-- Consistent border radius, shadow system, and spacing tokens applied across every page.
-- Improved typography hierarchy: larger headings, tighter line heights, proper font weight contrast.
-- Full dark mode fidelity — no washed-out backgrounds or invisible borders in dark theme.
-- Polished page layouts: login, dashboard, catalog, environments, teams, pipelines.
-
-#### Stories
+#### FARM-S225 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S164 | Story | Theme definition: use tweakcn.com to design Farm's custom token set (primary/accent/destructive/muted HSL values, radius scale, shadow levels); export and apply to `apps/web/src/app/globals.css`; verify Storybook / visual regression passes | `DONE` |
-| FARM-S165 | Story | Login and marketing pages redesign: hero layout, gradient accent on the login card, improved form spacing and focus rings; ensure social login buttons are visually distinct from the primary CTA | `DONE` |
-| FARM-S166 | Story | Dashboard and navigation refresh: sidebar icon alignment, active-item highlight using new primary token, breadcrumb polish, top bar spacing; update `AppSidebar`, `OrgSwitcher`, and `Breadcrumb` components | `DONE` |
-| FARM-S167 | Story | Catalog and detail pages polish: component cards with hover elevation, status badge color consistency, timeline/history layout improvements, dependency graph node styling | `DONE` |
-| FARM-S168 | Story | Environments, Teams, and Pipelines visual pass: deployment status chips aligned to new token palette, pipeline stage cards with type-specific accent colors, team avatar grid and member list spacing | `DONE` |
+| FARM-T126 | Task | Create `ServiceTemplate` entity; `ServiceTemplateModule` with CRUD API; seed 4 built-in templates on startup if table is empty | `TODO` |
+| FARM-T127 | Task | `TemplateVariable` schema: `{ key, label, description, default, required, pattern }` array stored as JSONB; validated before scaffold | `TODO` |
 
-#### Implementation Notes
-
-- **tweakcn.com workflow**: Open the editor, select `shadcn/ui` target, tweak HSL values for `--primary`, `--secondary`, `--accent`, `--muted`, `--destructive`, `--background`, `--foreground` and their `-foreground` pairs. Export the `:root` / `.dark` block and replace the relevant section of `globals.css`. No component changes required unless overrides are needed.
-- **Token scope**: Only `apps/web/src/app/globals.css` holds the design tokens. All shadcn/ui components consume them via Tailwind utilities (`bg-primary`, `text-muted-foreground`, etc.). Changing the tokens propagates everywhere automatically.
-- **Dark mode**: Farm uses `next-themes` with the `class` strategy. Both `:root` and `.dark` blocks must be exported from tweakcn.com and applied.
-- **No breaking changes**: All component APIs remain unchanged. This is a pure CSS-variable swap + layout micro-adjustments. Existing tests remain valid; add a smoke test that renders each major page and asserts no `undefined` class names.
-- **Radius and shadow**: Define three levels — `--radius-sm`, `--radius-md` (default), `--radius-lg` — and three shadow levels. Use them consistently: cards get `shadow-sm`, modals get `shadow-lg`, dropdowns get `shadow-md`.
-
----
-
----
-
-## Phase 9: Security Testing `DONE`
-
-### FARM-E44: Secret Scanning, Container Security and Accessibility Testing `DONE`
-
-> Expand the Farm security posture beyond SAST and DAST by adding three complementary automated checks: secret scanning to catch leaked credentials before they reach main, container image CVE scanning to surface vulnerabilities in the Docker images Farm ships, and automated accessibility auditing to validate WCAG compliance in CI alongside the existing unit and e2e tests.
-
-#### Background
-
-SAST (CodeQL + eslint-plugin-security) and DAST (OWASP ZAP) are already in place. The three remaining gaps are:
-
-1. **Secrets in git history**: A single accidentally committed API key or JWT secret can have long-lasting consequences. Gitleaks scans every commit diff at push time and blocks the PR before the secret lands in the default branch.
-2. **Vulnerable container images**: The Farm API ships as a Docker image that depends on a Node.js base image, PostgreSQL, and Redis. Even if application code is clean, outdated base images can carry high/critical CVEs. Trivy scans image layers and fails the build when critical CVEs are found.
-3. **Accessibility regressions**: Farm already implements ARIA landmarks, skip links, and keyboard navigation (ST183–ST188). Without automated checks these guarantees can silently regress. axe-core integrated with vitest catches WCAG 2.1 AA violations at component level.
-
-#### Stories
+#### FARM-S226 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S169 | Story | Secret scanning with Gitleaks: add `.github/workflows/secret-scan.yml` that runs `gitleaks/gitleaks-action` on every push and PR; configure `.gitleaks.toml` to allowlist test fixtures and known false-positives; fail the build on any detected secret | `DONE` |
-| FARM-S170 | Story | Container image scanning with Trivy: add `.github/workflows/trivy.yml` that builds the API Docker image and scans for HIGH/CRITICAL CVEs; upload SARIF results to the GitHub Security tab; fail on CRITICAL findings | `DONE` |
-| FARM-S171 | Story | Automated accessibility testing with axe-core: install `vitest-axe` and add axe checks to key page-level components (Login, Catalog, Environments, Teams, Pipelines, Observability); assert zero WCAG 2.1 AA violations in CI | `DONE` |
-
-#### Implementation Notes
-
-- **Gitleaks**: `gitleaks/gitleaks-action@v2` with `.gitleaks.toml` allowlisting test fixture JWT secrets and config placeholder defaults. Full git history fetched (`fetch-depth: 0`).
-- **Trivy**: Standalone `.github/workflows/trivy.yml` workflow. Builds image with `docker/build-push-action`, scans with `aquasecurity/trivy-action@0.30.0`. SARIF uploaded to GitHub Security tab. Runs on push/PR/weekly schedule.
-- **axe-core**: `vitest-axe` installed in `apps/web`. Axe checks added to 6 page-level test files. Zero WCAG 2.1 AA violations asserted.
-
----
-
-## Phase 10: Test Coverage Hardening `DONE`
-
-### FARM-E45: 80% Code Coverage — API and Web `DONE`
-
-> Raise test coverage to a minimum of 80% for all four metrics (statements, branches, functions, lines) in both `apps/api` and `apps/web`, and enforce the threshold in CI so it cannot regress.
-
-#### Background
-
-As of v0.11.3, coverage stands at:
-
-| App | Statements | Branches | Functions | Lines |
-|-----|-----------|---------|-----------|-------|
-| `apps/api` | 79.8% | **65.8%** | 76.7% | 80.3% |
-| `apps/web` | **59.7%** | **53.0%** | **56.1%** | 61.5% |
-
-The API is close on statements and lines but has a large branch gap caused by untested error paths, edge cases in complex services, and several controllers with 0% coverage. The web has a broad gap across all metrics: the API client library, layout components, and most feature-page client components lack unit tests entirely.
-
-The goal of this phase is to close both gaps in a structured, module-by-module way and lock the threshold in CI via Jest `coverageThreshold` (API) and Vitest `thresholds` (web).
-
-#### Goals
-
-- `apps/api`: reach 80% on all four metrics; primary effort is branch coverage (from 65.8% to 80%).
-- `apps/web`: reach 80% on all four metrics; effort is broad across the stack.
-- CI fails the build if any metric drops below 80% after the phase is complete.
-- No test doubles that hide real behavior; prefer narrow mocks with real logic paths exercised.
-
----
-
-#### FARM-S172: API — CI coverage threshold enforcement `DONE`
-
-Add `coverageThreshold` to `apps/api/jest.config.ts` set to 80% for all four metrics. This story is intentionally last so it only lands after the coverage gap is closed; adding it early would break CI immediately.
+| FARM-T128 | Task | `ScaffoldJob` BullMQ processor: clone template via `simple-git`, replace `{{VARIABLE}}` tokens in all text files and filenames recursively | `TODO` |
+| FARM-T129 | Task | Push scaffolded code to new GitHub repo via REST API (create repo + initial commit); store `ScaffoldRequest` entity with status tracking | `TODO` |
+| FARM-T130 | Task | Rollback on failure: delete partially created repo if push fails; notify requestor via WebSocket `scaffold:failed` event | `TODO` |
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T01 | Task | Add `global: { statements: 80, branches: 80, functions: 80, lines: 80 }` to `coverageThreshold` in `jest.config.ts` | `DONE` |
-| FARM-T02 | Task | Verify CI `api` job fails on a branch that artificially lowers coverage, then revert and confirm it passes | `DONE` |
+| FARM-ST208 | Sub-task | Require `GITHUB_SCAFFOLD_TOKEN` env var with `repo` and `admin:org` scopes; document in env var reference | `TODO` |
+| FARM-ST209 | Sub-task | Dry-run mode: `POST /scaffold/dry-run` returns rendered file tree diff without creating any remote resources | `TODO` |
+| FARM-ST210 | Sub-task | Unit tests for variable substitution: nested directories, binary file passthrough, missing required variable validation | `TODO` |
 
----
-
-#### FARM-S173: API — Branch coverage in core services `DONE`
-
-The biggest single gap in the API. Target modules with branch coverage below 75%:
-
-| Module | Current branch% | Priority |
-|--------|----------------|----------|
-| `catalog/catalog.service.ts` | 53.1% | High |
-| `pipelines/pipelines.service.ts` | 53.3% | High |
-| `istio/istio.service.ts` | 57.1% | High |
-| `auth/keycloak-oidc.service.ts` | 60.7% | High |
-| `cloud/executors/aws-lambda.executor.ts` | 61.1% | High |
-| `helm/helm.service.ts` | 62.9% | Medium |
-| `kubernetes/kyverno-policy-report.service.ts` | 67.3% | Medium |
-| `kubernetes/kubernetes.service.ts` | 65.9% | Medium |
-| `pipelines/pipeline.processor.ts` | 73.4% | Medium |
+#### FARM-S227 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T03 | Task | `catalog.service.ts`: cover null owner, empty results, pagination edge cases, YAML parse errors | `DONE` |
-| FARM-T04 | Task | `pipelines.service.ts`: cover stage not found, run already terminal, concurrent run guard, processor error paths | `DONE` |
-| FARM-T05 | Task | `istio.service.ts`: cover `normalizeKubeconfigInput` array input, `getApi` fallback to shared client, all 7 error paths | `DONE` |
-| FARM-T06 | Task | `keycloak-oidc.service.ts`: cover token refresh failure, disabled Keycloak config branch, user-not-found path | `DONE` |
-| FARM-T07 | Task | `aws-lambda.executor.ts`: cover missing ARN, SDK error propagation, dry-run branch | `DONE` |
-| FARM-T08 | Task | `helm.service.ts`: cover release not found, upgrade dry-run, rollback failure, diff output empty | `DONE` |
-| FARM-T09 | Task | `kubernetes.service.ts` + `kyverno-policy-report.service.ts`: cover cluster unreachable, resource not found, policy violation parsing | `DONE` |
-| FARM-T10 | Task | `pipeline.processor.ts`: cover stage skip, partial failure, all stage type dispatch branches | `DONE` |
+| FARM-T131 | Task | Multi-step wizard with stepper UI: step 1 template picker, step 2 variable form (dynamic from template config), step 3 review, step 4 progress | `TODO` |
+| FARM-T132 | Task | WebSocket subscription on step 4 to receive real-time `scaffold:progress` and `scaffold:complete` events | `TODO` |
 
 ---
 
-#### FARM-S174: API — Missing controller and processor coverage `DONE`
+### FARM-E58: Self-Service Environment Provisioning `TODO`
 
-Several controllers and processors have 0% coverage because no spec file exists.
-
-| Module | Current% |
-|--------|---------|
-| `audit-log/audit-log.controller.ts` | 0% |
-| `auth/keycloak-sync.processor.ts` | 0% |
-| `integrations/argocd.controller.ts` | 0% |
-| `integrations/circleci.controller.ts` | 0% |
-| `integrations/jenkins.controller.ts` | 0% |
-| `integrations/travisci.controller.ts` | 0% |
-| `integrations/webhook-receiver.controller.ts` | 0% |
-| `integrations/integration-credential.controller.ts` | 0% |
-| `integrations/integrations-listener.service.ts` | 0% |
-| `kubernetes/kubernetes.controller.ts` | 0% |
+> Developers request ephemeral or persistent environments through an approval workflow. Farm provisions the environment via a pluggable cloud adapter and enforces TTL expiry automatically.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T11 | Task | Write spec for `audit-log.controller.ts`: list endpoint, pagination, auth guard | `DONE` |
-| FARM-T12 | Task | Write spec for `keycloak-sync.processor.ts`: user sync, error handling, retry | `DONE` |
-| FARM-T13 | Task | Write specs for integration controllers (ArgoCD, CircleCI, Jenkins, TravisCI, webhook receiver, credential CRUD) | `DONE` |
-| FARM-T14 | Task | Write spec for `integrations-listener.service.ts`: event handling, credential lookup | `DONE` |
-| FARM-T15 | Task | Write spec for `kubernetes.controller.ts`: list resources, apply, delete, error propagation | `DONE` |
+| FARM-S229 | Story | `EnvironmentRequest` entity and API (requestor, type, size/tier, TTL hours, status: pending/approved/provisioning/active/expired/rejected) | `TODO` |
+| FARM-S230 | Story | Approval workflow -- workspace admins receive WebSocket notification; approve/reject with comment; decision enqueues provisioning job | `TODO` |
+| FARM-S231 | Story | Provisioning adapter interface (`IProvisioningAdapter`) with AWS EKS namespace adapter as first implementation | `TODO` |
+| FARM-S232 | Story | TTL expiry BullMQ CRON job -- checks active environments past TTL, triggers deprovisioning, sends 1-hour expiry warning | `TODO` |
+| FARM-S233 | Story | Frontend: environment request form, request status tracker with progress steps, approver inbox with batch approve/reject | `TODO` |
 
----
-
-#### FARM-S175: API — Function coverage in auth and analytics `DONE`
-
-| Module | Current fn% |
-|--------|------------|
-| `auth/auth.controller.ts` | 28.6% |
-| `analytics/analytics.controller.ts` (fn indirect) | covered via integration |
+#### FARM-S229 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T16 | Task | `auth.controller.ts`: add tests for all endpoints — register, login, logout, refresh, profile, OAuth callback stubs | `DONE` |
+| FARM-T133 | Task | Create `EnvironmentRequest` entity with `EnvironmentRequestStatus` enum; `EnvironmentRequestModule` CRUD API | `TODO` |
+| FARM-T134 | Task | Status transition guard: valid paths only (pending -> approved, pending -> rejected, approved -> provisioning, provisioning -> active, active -> expired) | `TODO` |
 
----
-
-#### FARM-S176: Web — API client library coverage `DONE`
-
-`apps/web/src/lib/api-client.ts` is the single largest coverage gap in the frontend: 48.5% statements, 31.0% branches, 35.4% functions. It contains all HTTP call wrappers for every resource.
+#### FARM-S230 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T17 | Task | Write `api-client.test.ts` using `msw` (Mock Service Worker) to intercept HTTP: cover all CRUD methods for auth, catalog, environments, teams, pipelines, integrations | `DONE` |
-| FARM-T18 | Task | Cover error branches: 4xx responses, 5xx responses, network timeout, token expiry refresh flow | `DONE` |
-| FARM-T19 | Task | Cover query-string serialization helpers and `buildUrl` branches | `DONE` |
+| FARM-T135 | Task | `POST /environment-requests/:id/approve` and `/reject` -- require `WorkspaceRole.admin`; emit `env-request:decided` WebSocket event | `TODO` |
+| FARM-T136 | Task | On approval, enqueue `ProvisioningJob` with environment request ID and resolved adapter config from workspace settings | `TODO` |
 
----
-
-#### FARM-S177: Web — Layout and navigation components `DONE`
-
-`app-shell.tsx` (65.7% stmt), `org-switcher.tsx` (40.9% stmt), and `activity-feed.tsx` (35.9% stmt) are rendered on every authenticated page but have minimal test coverage.
+#### FARM-S231 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T20 | Task | `app-shell.tsx`: test sidebar collapse/expand, active route highlighting, responsive breakpoint rendering | `DONE` |
-| FARM-T21 | Task | `org-switcher.tsx`: test org list rendering, switching, loading state, empty state | `DONE` |
-| FARM-T22 | Task | `activity-feed.tsx`: test feed rendering, empty state, loading skeleton, pagination | `DONE` |
+| FARM-T137 | Task | Define `IProvisioningAdapter` interface: `provision(request): Promise<ProvisioningResult>` and `deprovision(envId): Promise<void>` | `TODO` |
+| FARM-T138 | Task | `EksNamespaceAdapter`: create Kubernetes namespace, apply resource quota, store kubeconfig secret in AWS SSM Parameter Store | `TODO` |
+| FARM-T139 | Task | `ProvisioningJob` BullMQ processor: call adapter, update request to `active`, create `Environment` record, emit WebSocket event | `TODO` |
 
----
-
-#### FARM-S178: Web — Feature page client components `DONE`
-
-Most feature-page `*Client.tsx` components lack unit tests. Target the lowest-covered modules and the most user-critical pages.
-
-| Module area | Approximate coverage | Priority |
-|-------------|---------------------|----------|
-| Catalog detail tabs (IstioCanaryTab, IstioSecurityTab, IstioTrafficTab) | ~55% | High |
-| Compliance dashboard + policy list | ~60% | High |
-| Environments / ArgoCd status card | ~65% | Medium |
-| Pipeline stage builder + BuildStageCard | ~70% | Medium |
-| Organizations new form | ~68% | Medium |
+#### FARM-S232 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T23 | Task | Istio tabs (Canary, Security, Traffic): test data rendering, loading skeleton, empty/error states, user interactions | `DONE` |
-| FARM-T24 | Task | Compliance pages: `ComplianceDashboardClient`, `PolicyListClient` — test rule display, violation count, filter interactions | `DONE` |
-| FARM-T25 | Task | Pipeline builder (`stage-builder.tsx`, `BuildStageCard.tsx`): test stage add/remove/reorder, form validation, `useWatch` integration | `DONE` |
-| FARM-T26 | Task | Organization and catalog forms (`NewOrgClient.tsx`, `NewComponentClient.tsx`): test validation, slug preview, tag input, submit flow | `DONE` |
-| FARM-T27 | Task | `ws-client.ts`: test connect, disconnect, reconnect, message dispatch, error handling | `DONE` |
+| FARM-T140 | Task | `TtlExpiryJob` (BullMQ CRON every 30 min): query active requests where `approvedAt + ttlHours < NOW()`, call adapter `deprovision()` | `TODO` |
+| FARM-T141 | Task | 1-hour pre-expiry warning: schedule a delayed BullMQ job at provision time to notify requestor 60 min before TTL | `TODO` |
 
 ---
 
-#### FARM-S179: Web — CI coverage threshold enforcement `DONE`
+## Phase 16: Kubernetes Operators `TODO`
 
-Add Vitest `thresholds` to `apps/web/vitest.config.ts` once all coverage stories are complete.
+### FARM-E59: Kubernetes Operators Integration `TODO`
+
+> Extend Farm's existing Kubernetes integration to surface Operators as first-class infrastructure components alongside Helm releases. Operators installed via OLM (Operator Lifecycle Manager) are discovered automatically, their managed Custom Resources are inventoried, and each Operator can be linked to a catalog component for full traceability.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T28 | Task | Add `thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 }` under `coverage:` in `vitest.config.ts` | `DONE` |
-| FARM-T29 | Task | Verify CI `web` job fails when threshold is violated; confirm it passes after all coverage work | `DONE` |
+| FARM-S237 | Story | Operator discovery via OLM ClusterServiceVersions with status (healthy / degraded / failing) | `TODO` |
+| FARM-S238 | Story | Custom Resource inventory -- list CR instances per operator with spec and status conditions | `TODO` |
+| FARM-S239 | Story | Operator-to-component binding -- link installed operators to catalog components | `TODO` |
+| FARM-S240 | Story | Frontend Operators browser -- list operators, CR viewer, component link | `TODO` |
+| FARM-S241 | Story | CRI-O container runtime visibility -- detect runtime per node, surface version info and storage metrics | `TODO` |
+
+#### FARM-S237 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T151 | Task | OLM adapter in `KubernetesService`: list `ClusterServiceVersions` across all namespaces via `/apis/operators.coreos.com/v1alpha1/clusterserviceversions`; map to `OperatorInfo` (name, displayName, version, namespace, phase, description) | `TODO` |
+| FARM-T152 | Task | `GET /api/kubernetes/operators` endpoint returning all discovered operators with phase badge (Succeeded / Failed / Pending); unit + e2e tests | `TODO` |
+
+#### FARM-S238 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T153 | Task | CRD discovery: extract `spec.customresourcedefinitions.owned` from each CSV; query `/apis/{group}/{version}/{plural}` for CR instances via `KubernetesService` | `TODO` |
+| FARM-T154 | Task | `GET /api/kubernetes/operators/:name/custom-resources` returning CR instances (name, namespace, kind, status conditions); unit + e2e tests | `TODO` |
+
+#### FARM-S239 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T155 | Task | `OperatorBinding` entity (`operatorName`, `operatorNamespace`, `componentId` FK → Component, `addedAt`); unique constraint on `(operatorName, operatorNamespace, componentId)`; TypeORM migration | `TODO` |
+| FARM-T156 | Task | `POST /api/kubernetes/operators/:name/binding` and `DELETE /api/kubernetes/operators/:name/binding` to associate / disassociate an operator with a catalog component; unit + e2e tests | `TODO` |
+
+#### FARM-S240 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T157 | Task | Operators list page at `/operators` with status badge, version, description, and linked component chip; reuse `FilterTabs` and `EmptyState` shared components | `TODO` |
+| FARM-T158 | Task | Operator detail panel: installed CRDs list, CR instances table with status conditions, binding selector to link/unlink a catalog component | `TODO` |
+| FARM-T159 | Task | Add "Operators" section to Component detail overview tab when one or more operators are bound to the component; show operator name, phase, and link to detail panel | `TODO` |
+
+#### FARM-S241 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T169 | Task | Detect CRI-O via Kubernetes Node `.status.nodeInfo.containerRuntimeVersion` (value starts with `crio://`); `GET /api/kubernetes/runtime` returning runtime type, version, and count per node | `TODO` |
+| FARM-T170 | Task | Surface CRI-O storage stats by scraping the CRI-O metrics endpoint (port 9090 default) via `KubernetesService` pod proxy: image layer cache hit rate, storage usage per node | `TODO` |
+| FARM-T171 | Task | Frontend: runtime info badge per node in the Kubernetes section (runtime name + version); dedicated "Runtime" card in cluster overview showing dominant runtime and version distribution across nodes | `TODO` |
 
 ---
 
-#### Implementation Notes
+## Phase 17: Container Registry Integration `TODO`
 
-- **API branch coverage strategy**: for each service, read the Istanbul uncovered-branch markers in the text report (`| uncoveredLines`) and write a test that exercises each `else` / `catch` / `default` path. Most are error-handling branches that need a mock to reject or throw.
-- **Web testing stack**: use `@testing-library/react` + `vitest` + `msw` for component + API tests. For hooks, use `renderHook` from `@testing-library/react`. Avoid snapshot tests — they add noise without coverage value.
-- **Exclusions**: `*.module.ts`, `main.ts`, `migrations/`, `seeds/`, and pure type/interface files (`*.interfaces.ts`, pure DTOs with no logic) are excluded from coverage via `coveragePathIgnorePatterns` / `exclude`. These files contain no testable logic.
-- **Ordering**: complete API stories (FARM-S173 → FARM-S175) before FARM-S172 (threshold). Complete web stories (FARM-S176 → FARM-S178) before FARM-S179. Threshold stories are the final gate.
-- **Codecov**: the existing CI pipeline already uploads `lcov.info` for both apps to Codecov with `carryforward: false`. Once thresholds are set locally, Codecov status checks on PRs provide a second enforcement layer.
+### FARM-E60: Container Registry Integration `TODO`
+
+> Surface container image metadata and vulnerability scan results inside Farm alongside each catalog component. A pluggable adapter interface supports AWS ECR, GCP Artifact Registry, Docker Hub, and Harbor as first-class implementations. Platform engineers get a single place to answer "what image is running, when was it pushed, and does it have critical CVEs?" without leaving the portal.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S242 | Story | Registry adapter interface with ECR, GCP Artifact Registry, and Docker Hub implementations | `TODO` |
+| FARM-S243 | Story | Container image metadata on components -- registry, image name, latest tag, digest, and pushed date synced from adapter | `TODO` |
+| FARM-S244 | Story | Vulnerability surface -- pull CVE scan results from registry, surface critical/high counts in component detail and a dedicated security sub-tab | `TODO` |
+| FARM-S245 | Story | Dragonfly (d7y.io) cluster detection and health monitoring -- detect Manager, Scheduler, and dfget daemon components; surface version and health status | `TODO` |
+| FARM-S246 | Story | Dragonfly P2P pull task metrics and peer topology -- show active P2P tasks, acceleration stats, and peer distribution per image pull | `TODO` |
+| FARM-S247 | Story | Harbor adapter -- HarborAdapter implementing IRegistryAdapter with native Trivy scan results and replication rules visibility | `TODO` |
+
+#### FARM-S242 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T160 | Task | Define `IRegistryAdapter` interface (`listRepositories()`, `listTags(repo)`, `getManifest(repo, tag)`, `getScanResults(repo, tag)`); config env vars `REGISTRY_TYPE`, `REGISTRY_URL`, `REGISTRY_CREDENTIALS` | `TODO` |
+| FARM-T161 | Task | `EcrAdapter` (AWS SDK v3), `GcrAdapter` (Artifact Registry REST API), `DockerHubAdapter` (Docker Hub API v2 with token auth); each implementing `IRegistryAdapter` | `TODO` |
+| FARM-T162 | Task | `RegistryModule` with conditional adapter registration based on `REGISTRY_TYPE`; `GET /api/registry/repositories` and `GET /api/registry/repositories/:name/tags` endpoints; unit + e2e tests | `TODO` |
+
+#### FARM-S243 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T163 | Task | Add `containerImage` JSONB column to `Component` entity (`registry`, `image`, `latestTag`, `digest`, `pushedAt`); TypeORM migration | `TODO` |
+| FARM-T164 | Task | `POST /api/catalog/components/:id/container-image` to set or sync image metadata from registry; BullMQ job (every 15 min) to refresh `latestTag` and `digest` automatically | `TODO` |
+| FARM-T165 | Task | Container image card in Component detail overview tab: registry badge, image name, latest tag, digest (truncated), pushed date | `TODO` |
+
+#### FARM-S244 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T166 | Task | `ContainerVulnerability` entity (`componentId`, `registry`, `image`, `tag`, `severity`: critical/high/medium/low, `cveId`, `packageName`, `fixedVersion`, `scannedAt`); TypeORM migration | `TODO` |
+| FARM-T167 | Task | Vulnerability sync BullMQ job: fetch scan results from adapter, upsert `ContainerVulnerability` rows, emit WebSocket `container:vulnerability-found` event on new critical findings | `TODO` |
+| FARM-T168 | Task | Vulnerabilities summary card in Component detail: critical/high/medium/low counts with color badges; full CVE table in dedicated "Security" sub-tab with severity filter and fixed-version column | `TODO` |
+
+#### FARM-S245 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T172 | Task | Dragonfly detection: query Kubernetes for `Deployment` or `DaemonSet` resources with label `app.kubernetes.io/name=dragonfly`; identify Manager, Scheduler, and dfget (dfdaemon) pods; map to `DragonflyInfo` (component, namespace, version, ready replicas) | `TODO` |
+| FARM-T173 | Task | `GET /api/kubernetes/dragonfly/status` returning installation status (not-installed / degraded / healthy), component breakdown, and version; unit + e2e tests | `TODO` |
+| FARM-T174 | Task | Frontend: Dragonfly health card in the Kubernetes section showing overall status badge, component list (Manager / Scheduler / dfget), and version | `TODO` |
+
+#### FARM-S246 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T175 | Task | Scrape Dragonfly Manager metrics endpoint (`/metrics`) via `KubernetesService` pod proxy; parse P2P task counters (total tasks, succeeded, failed, in-progress) and peer counts | `TODO` |
+| FARM-T176 | Task | `GET /api/kubernetes/dragonfly/tasks` returning recent P2P pull tasks (image, peer count, bytes transferred, acceleration ratio, duration); `GET /api/kubernetes/dragonfly/peers` returning active peer list | `TODO` |
+| FARM-T177 | Task | Frontend: Dragonfly pull metrics panel with task table (image, peers, acceleration ratio badge, status) and a sparkline chart of P2P vs. direct-pull bytes over the last 24 hours | `TODO` |
+
+#### FARM-S247 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T178 | Task | `HarborAdapter` implementing `IRegistryAdapter` using Harbor API v2 (`/api/v2.0/repositories`, `/api/v2.0/projects/{project}/repositories/{repository}/artifacts/{reference}/scan`); config via `REGISTRY_TYPE=harbor`, `HARBOR_URL`, `HARBOR_USERNAME`, `HARBOR_PASSWORD`; unit + e2e tests | `TODO` |
+| FARM-T179 | Task | Harbor replication rules: `GET /api/registry/harbor/replications` listing active replication rules (source registry, destination registry, filter, trigger type, last execution status) via Harbor API v2 `/api/v2.0/replication/policies` | `TODO` |
+| FARM-T180 | Task | Frontend: Harbor badge in the registry adapter selector; replication rules table in the Container Registry section showing source → destination with trigger type and last execution status badge | `TODO` |
 
 ---
 
+## Phase 18: GitOps and Autoscaling `TODO`
+
+### FARM-E61: Flux GitOps Integration `TODO`
+
+> Surface Flux v2 GitOps resources (Kustomizations, HelmReleases, GitRepositories) inside Farm so Platform Engineers can answer reconciliation status, drift, and source provenance questions without leaving the portal. Each Flux resource can be bound to a catalog component for full traceability.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S248 | Story | Flux installation detection and Kustomization reconciliation status | `TODO` |
+| FARM-S249 | Story | HelmRelease CRD visibility -- surface Flux-managed Helm releases with reconciliation state and last applied revision | `TODO` |
+| FARM-S250 | Story | GitRepository and OCIRepository source tracking -- source URL, branch, last fetched commit, ready condition | `TODO` |
+| FARM-S251 | Story | Frontend Flux dashboard -- reconciliation status board, drift alerts, FluxBinding to catalog components | `TODO` |
+
+#### FARM-S248 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T181 | Task | Detect Flux v2 installation by querying `flux-system` namespace for controller deployments (source-controller, kustomize-controller, helm-controller, notification-controller); `GET /api/kubernetes/flux/status` returning installed controllers and versions | `TODO` |
+| FARM-T182 | Task | List `Kustomization` CRDs (`kustomizations.kustomize.toolkit.fluxcd.io`): name, namespace, path, ready condition, last applied revision, suspend status; `GET /api/kubernetes/flux/kustomizations`; unit + e2e tests | `TODO` |
+
+#### FARM-S249 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T183 | Task | List `HelmRelease` CRDs (`helmreleases.helm.toolkit.fluxcd.io`): name, namespace, chart name, chart version, ready condition, last applied revision; `GET /api/kubernetes/flux/helm-releases`; unit + e2e tests | `TODO` |
+| FARM-T184 | Task | `FluxBinding` entity (`resourceKind`: kustomization/helmrelease, `resourceName`, `resourceNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/flux/binding`; TypeORM migration; unit + e2e tests | `TODO` |
+
+#### FARM-S250 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T185 | Task | List `GitRepository` and `OCIRepository` sources: URL, branch/tag, last fetched commit SHA, ready condition; `GET /api/kubernetes/flux/sources`; unit + e2e tests | `TODO` |
+| FARM-T186 | Task | WebSocket event `flux:reconciliation-failed` emitted when a Kustomization or HelmRelease transitions to a failed ready condition; poll interval 60s via BullMQ scheduled job | `TODO` |
+
+#### FARM-S251 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T187 | Task | Flux dashboard page at `/gitops` listing all Kustomizations and HelmReleases with ready badge (ready / suspended / failed), last revision, namespace; `FilterTabs` for resource type | `TODO` |
+| FARM-T188 | Task | Flux resource detail panel: source info (URL, branch, last commit), conditions list, events timeline, linked component chip | `TODO` |
+| FARM-T189 | Task | "GitOps" section in Component detail overview tab when a `FluxBinding` exists: resource name, type badge, reconciliation status, last applied revision | `TODO` |
+
+---
+
+### FARM-E62: KEDA Autoscaling Visibility `TODO`
+
+> Expose KEDA ScaledObjects and ScaledJobs inside Farm so Platform Engineers can understand what drives autoscaling decisions for each component -- scaler type, current metric value vs target, active/idle/fallback status -- and link each scaled workload to its catalog component.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S252 | Story | ScaledObject and ScaledJob discovery with active scaler detection and ready condition | `TODO` |
+| FARM-S253 | Story | Scaler detail -- source type (Kafka, SQS, Prometheus, Redis, BullMQ, etc.), current metric value, target, current vs min/max replicas | `TODO` |
+| FARM-S254 | Story | Frontend KEDA dashboard and component integration | `TODO` |
+
+#### FARM-S252 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T190 | Task | Detect KEDA installation via `keda-operator` deployment; list `ScaledObject` CRDs (`scaledobjects.keda.sh`): name, namespace, target deployment, min/max replicas, ready condition, active flag; `GET /api/kubernetes/keda/scaled-objects`; unit + e2e tests | `TODO` |
+| FARM-T191 | Task | List `ScaledJob` CRDs (`scaledjobs.keda.sh`): name, namespace, job template ref, min/max replica count, ready condition; `GET /api/kubernetes/keda/scaled-jobs`; unit + e2e tests | `TODO` |
+
+#### FARM-S253 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T192 | Task | For each ScaledObject, extract trigger list from spec: scaler type, metadata (Kafka topic + consumer group lag, SQS queue name + queueLength, Prometheus query + threshold, Redis list length); `GET /api/kubernetes/keda/scaled-objects/:name/triggers` | `TODO` |
+| FARM-T193 | Task | `KedaBinding` entity (`scaledObjectName`, `scaledObjectNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/keda/binding`; TypeORM migration; unit + e2e tests | `TODO` |
+
+#### FARM-S254 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T194 | Task | KEDA section in Kubernetes page: ScaledObjects list with active badge (active / idle / fallback), current replicas / max replicas chip, scaler type badge; `FilterTabs` for ScaledObject vs ScaledJob | `TODO` |
+| FARM-T195 | Task | ScaledObject detail panel: trigger list with current metric value vs target, replica count history sparkline (last 1h), pause/resume button (admin) toggling `autoscaling.keda.sh/paused` annotation | `TODO` |
+| FARM-T196 | Task | "Autoscaling" section in Component detail overview tab when a `KedaBinding` exists: scaler type badge, current replicas, active status, link to ScaledObject detail panel | `TODO` |
+
+---
+
+## Phase 19: FinOps `TODO`
+
+### FARM-E63: Infracost Pipeline Integration `TODO`
+
+> Integrate Infracost into Farm pipelines to surface estimated infrastructure cost changes before they reach production. A new `InfracostExecutor` stage runs `infracost diff` as part of CI, stores the cost delta in the pipeline run, and alerts when a change exceeds a configurable budget threshold per component.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S255 | Story | InfracostExecutor pipeline stage -- run `infracost diff` in CI, store cost delta JSON in pipeline run metadata | `TODO` |
+| FARM-S256 | Story | Component cost estimate -- persist latest Infracost estimate per component with monthly cost breakdown and history | `TODO` |
+| FARM-S257 | Story | Cost change alerting -- configurable `costBudgetUsd` per component; WebSocket alert when a pipeline run delta exceeds the threshold | `TODO` |
+
+#### FARM-S255 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T197 | Task | `InfracostExecutor` implementing the pipeline stage executor interface: run `infracost diff --path . --format json` via `spawn`; parse `totalMonthlyCost`, `diffMonthlyCost`, and `projects[]`; store result in pipeline run `metadata.infracost`; unit tests | `TODO` |
+| FARM-T198 | Task | Add `infracost` to `PipelineStageKind` enum; stage config fields: `terraformDir` (path, default `.`), `costThreshold` (optional USD decimal, triggers warning log if exceeded); update Swagger docs | `TODO` |
+
+#### FARM-S256 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T199 | Task | `CostEstimate` entity (`componentId` FK → Component, `estimatedMonthlyCost` decimal, `currency` varchar default USD, `pipelineRunId` FK nullable, `breakdown` JSONB, `measuredAt`); TypeORM migration | `TODO` |
+| FARM-T200 | Task | `upsertCostEstimate(componentId, data)` in a new `FinOpsService`; `GET /api/catalog/components/:id/cost-estimate` endpoint; called by `InfracostExecutor` on successful run; unit + e2e tests | `TODO` |
+
+#### FARM-S257 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T201 | Task | `costBudgetUsd` nullable decimal column on `Component` entity; included in `UpdateComponentDto` so it can be set via `PATCH /api/catalog/components/:id`; migration | `TODO` |
+| FARM-T202 | Task | Budget check in `InfracostExecutor`: when `diffMonthlyCost > costBudgetUsd`, emit WebSocket `cost:budget-exceeded` event with `{ componentId, delta, pipelineRunId }` via `EventsGateway` | `TODO` |
+| FARM-T203 | Task | Frontend: cost estimate card in Component detail overview tab showing estimated monthly cost, diff from previous run (green/red delta badge), last updated timestamp; budget exceeded warning banner when threshold is breached | `TODO` |
+
+---
+
+### FARM-E64: OpenCost Component Cost Visibility `TODO`
+
+> Query OpenCost's allocation API to surface real Kubernetes compute costs per component, team, and namespace. Platform Engineers can set monthly budgets per component, receive alerts when actual spend exceeds them, and explore costs across the platform from a dedicated FinOps dashboard.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S258 | Story | OpenCost adapter -- connect to OpenCost `/model/allocation` API; query actual cost by `app` label matching component name | `TODO` |
+| FARM-S259 | Story | Real cost per component -- CPU, memory, storage, and network cost breakdown synced daily; history endpoint for sparklines | `TODO` |
+| FARM-S260 | Story | Cost dashboard -- team-level and namespace-level cost aggregation; top-N most expensive components table | `TODO` |
+| FARM-S261 | Story | Actual cost alerts -- budget threshold per component; alert and notification panel entry when monthly actual spend exceeds budget | `TODO` |
+
+#### FARM-S258 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T204 | Task | `OpenCostService`: `OPENCOST_URL` env var; `getAllocation(labelSelector, window)` method calling `/model/allocation?window=7d&aggregate=label:app&filterLabels=app:<value>`; unit tests with mocked `globalThis.fetch` | `TODO` |
+| FARM-T205 | Task | `GET /api/cost/components/:id/actual` returning 7d and 30d actual cost breakdown (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`) by querying OpenCost with the component `name` as label value; e2e tests | `TODO` |
+
+#### FARM-S259 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T206 | Task | `ActualCost` entity (`componentId` FK, `window` varchar, `cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost` decimals, `currency`, `syncedAt`); BullMQ daily sync job refreshing costs for all components with an active deployment; TypeORM migration | `TODO` |
+| FARM-T207 | Task | `GET /api/cost/components/:id/history` returning daily cost series for the last 30 days for sparkline rendering; unit + e2e tests | `TODO` |
+
+#### FARM-S260 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T208 | Task | `GET /api/cost/teams/:id/summary` aggregating `ActualCost` rows for all components owned by team; `GET /api/cost/summary` returning top-N most expensive components platform-wide; unit + e2e tests | `TODO` |
+| FARM-T209 | Task | Cost dashboard page at `/cost` with two views: "By Component" (sortable table with monthly cost, trend sparkline, budget usage bar) and "By Team" (team cost cards); `FilterTabs` for view switching | `TODO` |
+
+#### FARM-S261 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T210 | Task | `costBudgetUsd` on `Component` (shared with FARM-T201) used by OpenCost budget checks; single migration covers both Infracost and OpenCost budget field if not yet added | `TODO` |
+| FARM-T211 | Task | Post-sync budget check in `FinOpsService`: when 30d `ActualCost.totalCost > costBudgetUsd`, emit WebSocket `cost:actual-budget-exceeded` and create an alerting record; unit tests | `TODO` |
+| FARM-T212 | Task | Frontend: budget progress bar in cost dashboard (`$340 of $500 monthly budget used`); red border on component card when budget exceeded; notification panel entry for budget breach events | `TODO` |
+
+---
+
+## Phase 20: Service Mesh Expansion `TODO`
+
+### FARM-E65: Linkerd Integration `TODO`
+
+> Mirror the existing Istio integration for Linkerd 2.x. Surface Linkerd control plane health, traffic metrics (RPS / error rate / latency) from Prometheus using Linkerd labels, mTLS auto-rotation status, authorization policies (`policy.linkerd.io`), and Service Profiles (per-route retry and timeout config). Three new tabs in the Component detail page mirror the Istio Traffic, Security, and Canary tabs.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S262 | Story | Linkerd control plane detection and health -- identify installed components (controller, identity, proxy-injector, destination) in the `linkerd` namespace | `TODO` |
+| FARM-S263 | Story | Traffic metrics -- RPS, error rate, and P50/P95/P99 latency per component from Prometheus using Linkerd metric labels; topology edges from `request_total{dst_deployment!=""}` | `TODO` |
+| FARM-S264 | Story | mTLS, authorization policies, and Service Profiles -- `ServerAuthorization`, `AuthorizationPolicy` CRDs from `policy.linkerd.io`; `ServiceProfile` CRDs with per-route retry and timeout config | `TODO` |
+| FARM-S265 | Story | Frontend Linkerd tabs in Component detail -- LinkerdTrafficTab, LinkerdSecurityTab, LinkerdServiceProfileTab; tabs visible only when Linkerd is detected | `TODO` |
+
+#### FARM-S262 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T213 | Task | `LinkerdService.isLinkerdEnabled()`: query `linkerd` namespace for control plane deployments (linkerd-controller, linkerd-identity, linkerd-proxy-injector, linkerd-destination); graceful `false` when namespace absent or CRDs not installed | `TODO` |
+| FARM-T214 | Task | `LinkerdModule` with `LinkerdService`, `LinkerdMetricsService`, and `LinkerdController`; register in `app.module.ts`; `GET /api/linkerd/status` returning `{ installed, components: [{ name, ready, version }] }`; unit tests | `TODO` |
+
+#### FARM-S263 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T215 | Task | `LinkerdMetricsService`: query Prometheus `request_total{deployment=X,namespace=Y,direction="inbound"}` for RPS and error rate; `response_latency_ms_bucket` for P50/P95/P99; reuse `KubernetesService.queryPrometheus()` | `TODO` |
+| FARM-T216 | Task | `GET /api/linkerd/components/:namespace/:name/metrics/rps`, `/error-rate`, `/latency`; `GET /api/linkerd/topology` building edges from `request_total` with `dst_deployment` label; same `IstioTopologyEdge` interface shape; unit + e2e tests | `TODO` |
+
+#### FARM-S264 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T217 | Task | List `ServerAuthorization` (`serverauthorizations.policy.linkerd.io/v1beta1`) and `AuthorizationPolicy` (`authorizationpolicies.policy.linkerd.io/v1alpha1`) CRDs per namespace via `CustomObjectsApi`; `GET /api/linkerd/authorization-policies`; unit + e2e tests | `TODO` |
+| FARM-T218 | Task | List `ServiceProfile` CRDs (`serviceprofiles.linkerd.io/v1alpha2`): name, namespace, routes array (name, condition path/method, isRetryable, timeout, retryBudget); `GET /api/linkerd/service-profiles`; unit + e2e tests | `TODO` |
+
+#### FARM-S265 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T219 | Task | Frontend `LinkerdTrafficTab`: RPS line chart, error rate gauge, latency P50/P95/P99 table -- reuse `PromQLChartCard` and `MiniLineChart` shared components from `IstioTrafficTab` | `TODO` |
+| FARM-T220 | Task | Frontend `LinkerdSecurityTab`: mTLS status badge per namespace (auto-mTLS always-on indicator), `ServerAuthorization` and `AuthorizationPolicy` table with allowed/denied routes -- mirror `IstioSecurityTab` layout | `TODO` |
+| FARM-T221 | Task | Frontend `LinkerdServiceProfileTab`: `ServiceProfile` list with per-route table (path, method, retryable badge, timeout chip) and per-route RPS/error-rate fetched from metrics endpoint | `TODO` |
+| FARM-T222 | Task | Add `linkerd-traffic`, `linkerd-security`, `linkerd-profile` tabs to `ComponentDetailClient.tsx`; fetch Linkerd status on mount and render tabs only when `status.installed === true`; tests for all three tab components | `TODO` |
+
+---
+
+## Summary
+
+| Phase | Epics | Stories | Status |
 |-------|-------|---------|--------|
 | Phase 1: Backend Core | 7 | 32 | `DONE` |
 | Phase 2: Production Hardening | 8 | 34 | `DONE` |
 | Phase 3: Backend Completion | 1 | 1 | `DONE` |
 | Phase 4: Front-End Foundation | 1 | 3 | `DONE` |
 | Phase 5: Front-End Core Pages | 7 | 12 | `DONE` |
-| Phase 5.5: Front-End Quality | 3 | 10 | `DONE` |
+| Phase 5.5: Front-End Quality and Hardening | 3 | 10 | `DONE` |
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
 | Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
 | Phase 6: Advanced Features | 13 | 58 | `DONE` |
@@ -1247,4 +838,14 @@ Add Vitest `thresholds` to `apps/web/vitest.config.ts` once all coverage stories
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
 | Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
-| **Total** | **47** | **180** | |
+| Phase 11: API Management | 2 | 8 | `TODO` |
+| Phase 12: Multi-tenancy | 2 | 8 | `TODO` |
+| Phase 13: Observability 2.0 | 3 | 12 | `TODO` |
+| Phase 14: AI / Intelligence | 3 | 12 | `TODO` |
+| Phase 15: Developer Self-Service | 2 | 9 | `TODO` |
+| Phase 16: Kubernetes Operators | 1 | 5 | `TODO` |
+| Phase 17: Container Registry Integration | 1 | 6 | `TODO` |
+| Phase 18: GitOps and Autoscaling | 2 | 7 | `TODO` |
+| Phase 19: FinOps | 2 | 7 | `TODO` |
+| Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
+| **Total** | **66** | **252** | |

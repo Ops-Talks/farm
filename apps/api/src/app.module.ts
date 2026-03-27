@@ -36,6 +36,7 @@ import { HelmModule } from "./modules/helm/helm.module";
 import { CloudModule } from "./modules/cloud/cloud.module";
 import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { IstioModule } from "./modules/istio/istio.module";
+import { ApiSpecsModule } from "./modules/api-specs/api-specs.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -258,6 +259,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Istio service mesh integration: traffic metrics, topology, security posture, and canary traffic control",
         },
         module: IstioModule,
+      },
+      {
+        metadata: {
+          name: "core-api-specs",
+          version: "1.0.0",
+          description:
+            "API catalog and lifecycle management: spec versioning, consumer tracking, and structural diff",
+        },
+        module: ApiSpecsModule,
       },
     ]),
   ],

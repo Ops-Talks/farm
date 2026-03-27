@@ -30,6 +30,7 @@ import {
   kyverno,
   istio,
   keycloakCredentials,
+  apiSpecs,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -2042,6 +2043,114 @@ describe("api-client", () => {
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("kubeconfig=");
       expect(url).not.toContain("namespace=");
+    });
+  });
+
+  // ─── API Catalog and Lifecycle Management (FARM-E47) ─────────────────────
+
+  describe("apiSpecs", () => {
+    it("listByComponent sends GET to /api/v1/catalog/components/:id/api-specs", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await apiSpecs.listByComponent("comp-123");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/catalog/components/comp-123/api-specs",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/catalog/components/:id/api-specs with body", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ id: "spec-1", name: "My API", format: "openapi", version: "1.0.0" }),
+      );
+      await apiSpecs.create("comp-123", {
+        name: "My API",
+        format: "openapi",
+        version: "1.0.0",
+        spec: "{}",
+      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/catalog/components/comp-123/api-specs",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("My API");
+      expect(body.format).toBe("openapi");
+    });
+
+    it("getOne sends GET to /api/v1/api-specs/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "spec-1" }));
+      await apiSpecs.getOne("spec-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/api-specs/spec-1",
+        expect.any(Object),
+      );
+    });
+
+    it("update sends PATCH to /api/v1/api-specs/:id with body", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "spec-1", status: "deprecated" }));
+      await apiSpecs.update("spec-1", { status: "deprecated" });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/api-specs/spec-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.status).toBe("deprecated");
+    });
+
+    it("remove sends DELETE to /api/v1/api-specs/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await apiSpecs.remove("spec-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/api-specs/spec-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("diff sends GET to /api/v1/api-specs/:id/diff with compareWith param", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ totalChanges: 1, breakingChanges: 0, entries: [] }),
+      );
+      await apiSpecs.diff("spec-1", "spec-2");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/api-specs/spec-1/diff");
+      expect(url).toContain("compareWith=spec-2");
+    });
+
+    it("addConsumer sends POST to /api/v1/api-specs/:id/consumers with body", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ id: "consumer-1", apiSpecId: "spec-1" }),
+      );
+      await apiSpecs.addConsumer("spec-1", { consumerComponentId: "comp-2" });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/api-specs/spec-1/consumers",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.consumerComponentId).toBe("comp-2");
+    });
+
+    it("removeConsumer sends DELETE to /api/v1/api-specs/:id/consumers/:consumerId", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await apiSpecs.removeConsumer("spec-1", "consumer-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/api-specs/spec-1/consumers/consumer-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("listConsumedApis sends GET to /api/v1/catalog/components/:id/consumed-apis", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await apiSpecs.listConsumedApis("comp-123");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/catalog/components/comp-123/consumed-apis",
+        expect.any(Object),
+      );
     });
   });
 });
