@@ -270,5 +270,44 @@ describe("ComponentDetailClient", () => {
         expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
       });
     });
+
+    // Security tests: ensure substring matching doesn't match malicious URLs
+    it("rejects malicious URL containing github.com as substring (not actual host)", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ repositoryUrl: "https://malicious-github.com.attacker.com/repo" }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
+      });
+      // Should NOT match GitHub since the hostname is "malicious-github.com.attacker.com"
+      expect(screen.queryByRole("link", { name: /View on GitHub/ })).not.toBeInTheDocument();
+    });
+
+    it("rejects malicious URL containing gitlab.com as substring (not actual host)", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ repositoryUrl: "https://fake-gitlab.com.attacker.com/repo" }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
+      });
+      // Should NOT match GitLab since the hostname is "fake-gitlab.com.attacker.com"
+      expect(screen.queryByRole("link", { name: /View on GitLab/ })).not.toBeInTheDocument();
+    });
+
+    it("rejects URL with github.com in path (not hostname)", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ repositoryUrl: "https://attacker.com/github.com/fake/repo" }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
+      });
+      expect(screen.queryByRole("link", { name: /View on GitHub/ })).not.toBeInTheDocument();
+    });
   });
 });
