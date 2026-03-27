@@ -137,7 +137,9 @@ export class CatalogService {
       }
 
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        throw new BadRequestException("Only HTTP(S) repository URLs are allowed.");
+        throw new BadRequestException(
+          "Only HTTP(S) repository URLs are allowed.",
+        );
       }
       return;
     }
