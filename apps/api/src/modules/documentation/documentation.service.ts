@@ -16,21 +16,34 @@ import {
  * Removes script/iframe/object/embed tags and event handler attributes.
  */
 export function sanitizeHtml(html: string): string {
-  let sanitized = html.replace(
-    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi,
-    "",
-  );
-  sanitized = sanitized.replace(
-    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi,
-    "",
-  );
+  const DANGEROUS_TAG_BLOCK_REGEX =
+    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi;
+  const DANGEROUS_TAG_SELF_CLOSING_REGEX =
+    /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi;
   const EVENT_HANDLER_ATTR_REGEX =
     /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi;
+
+  let sanitized = html;
   let previous: string;
+
+  // Iteratively remove dangerous block-level tags until no more matches remain.
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(DANGEROUS_TAG_BLOCK_REGEX, "");
+  } while (sanitized !== previous);
+
+  // Iteratively remove dangerous self-closing tags until stable.
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(DANGEROUS_TAG_SELF_CLOSING_REGEX, "");
+  } while (sanitized !== previous);
+
+  // Iteratively strip event-handler attributes (on*) until none remain.
   do {
     previous = sanitized;
     sanitized = sanitized.replace(EVENT_HANDLER_ATTR_REGEX, "");
   } while (sanitized !== previous);
+
   sanitized = sanitized.replace(
     /href\s*=\s*["']?\s*javascript:[^"'>\s]*/gi,
     'href="#"',
