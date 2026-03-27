@@ -227,15 +227,28 @@ describe("ComponentDetailClient", () => {
       });
     });
 
-    it("detects self-hosted GitLab (e.g., gitlab.example.com)", async () => {
+    it("detects GitLab with exactly two hostname labels (e.g., gitlab.local)", async () => {
       mockGetComponent.mockResolvedValue(
-        makeComponent({ repositoryUrl: "https://gitlab.example.com/group/project" }),
+        makeComponent({ repositoryUrl: "https://gitlab.local/group/project" }),
       );
       render(<ComponentDetailClient />);
 
       await waitFor(() => {
         expect(screen.getByRole("link", { name: /View on GitLab/ })).toBeInTheDocument();
       });
+    });
+
+    it("rejects gitlab-like hostnames with more than two labels (e.g., gitlab.example.com)", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ repositoryUrl: "https://gitlab.example.com/group/project" }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        // gitlab.example.com has 3 labels, should NOT match GitLab
+        expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
+      });
+      expect(screen.queryByRole("link", { name: /View on GitLab/ })).not.toBeInTheDocument();
     });
 
     it("renders generic repository label for Bitbucket URLs", async () => {
