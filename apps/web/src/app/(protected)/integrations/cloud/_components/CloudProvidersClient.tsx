@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,7 +80,7 @@ type AzureFormValues = z.infer<typeof azureSchema>;
 // Per-provider connect forms
 // ---------------------------------------------------------------------------
 
-function AwsConnectForm({
+const AwsConnectForm = memo(function AwsConnectForm({
   onSave,
   onClose,
   isPending,
@@ -149,9 +149,9 @@ function AwsConnectForm({
       </div>
     </form>
   );
-}
+});
 
-function GcpConnectForm({
+const GcpConnectForm = memo(function GcpConnectForm({
   onSave,
   onClose,
   isPending,
@@ -202,9 +202,9 @@ function GcpConnectForm({
       </div>
     </form>
   );
-}
+});
 
-function AzureConnectForm({
+const AzureConnectForm = memo(function AzureConnectForm({
   onSave,
   onClose,
   isPending,
@@ -272,7 +272,7 @@ function AzureConnectForm({
       </div>
     </form>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Helper — build the credential payload per provider
@@ -322,7 +322,7 @@ interface ConnectModalProps {
   isPending: boolean;
 }
 
-function ConnectModal({ provider, label, onSave, onClose, isPending }: ConnectModalProps) {
+const ConnectModal = memo(function ConnectModal({ provider, label, onSave, onClose, isPending }: ConnectModalProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
@@ -349,7 +349,7 @@ function ConnectModal({ provider, label, onSave, onClose, isPending }: ConnectMo
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Provider card
@@ -368,7 +368,7 @@ interface ProviderCardProps {
   isDisconnecting: boolean;
 }
 
-function ProviderCard({
+const ProviderCard = memo(function ProviderCard({
   type,
   label,
   description,
@@ -425,13 +425,13 @@ function ProviderCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Loading skeleton
 // ---------------------------------------------------------------------------
 
-function ProviderCardSkeleton() {
+const ProviderCardSkeleton = memo(function ProviderCardSkeleton() {
   return (
     <Card>
       <CardHeader>
@@ -450,7 +450,7 @@ function ProviderCardSkeleton() {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -505,36 +505,42 @@ export function CloudProvidersClient() {
     },
   });
 
-  function getProviderStatus(type: CloudProvider): ProviderStatus | undefined {
-    return providerStatuses.find((s) => s.provider === type);
-  }
+  const getProviderStatus = useCallback(
+    (type: CloudProvider): ProviderStatus | undefined =>
+      providerStatuses.find((s) => s.provider === type),
+    [providerStatuses],
+  );
 
-  function getCredentialId(type: CloudProvider): string | undefined {
-    const typeMap: Record<CloudProvider, string> = {
-      aws: 'aws-iam-role',
-      gcp: 'gcp-service-account',
-      azure: 'azure-service-principal',
-    };
-    return credentials.find((c) => c.type === typeMap[type])?.id;
-  }
+  const getCredentialId = useCallback(
+    (type: CloudProvider): string | undefined => {
+      const typeMap: Record<CloudProvider, string> = {
+        aws: 'aws-iam-role',
+        gcp: 'gcp-service-account',
+        azure: 'azure-service-principal',
+      };
+      return credentials.find((c) => c.type === typeMap[type])?.id;
+    },
+    [credentials],
+  );
 
-  function handleConnect(provider: CloudProvider) {
+  const handleConnect = useCallback((provider: CloudProvider) => {
     setModalProvider(provider);
-  }
+  }, []);
 
-  function handleDisconnect(id: string) {
+  const handleDisconnect = useCallback((id: string) => {
     disconnectMutation.mutate(id);
-  }
+  }, [disconnectMutation]);
 
-  function handleSave(data: Record<string, unknown>) {
+  const handleSave = useCallback((data: Record<string, unknown>) => {
     if (!modalProvider) return;
     const payload = buildCredentialPayload(modalProvider, data);
     connectMutation.mutate(payload);
-  }
+  }, [modalProvider, connectMutation]);
 
-  const activeProviderMeta = modalProvider
-    ? PROVIDERS.find((p) => p.type === modalProvider)
-    : null;
+  const activeProviderMeta = useMemo(
+    () => (modalProvider ? PROVIDERS.find((p) => p.type === modalProvider) : null),
+    [modalProvider],
+  );
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">

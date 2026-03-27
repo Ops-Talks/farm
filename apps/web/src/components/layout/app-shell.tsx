@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode, type ElementType } from "react";
+import { memo, useCallback, useMemo, useState, type ReactNode, type ElementType } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -75,7 +75,7 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-function Breadcrumbs({ pathname }: { pathname: string }) {
+const Breadcrumbs = memo(function Breadcrumbs({ pathname }: { pathname: string }) {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length <= 1) return null;
 
@@ -107,11 +107,11 @@ function Breadcrumbs({ pathname }: { pathname: string }) {
       ))}
     </nav>
   );
-}
+});
 
 // Shared nav item — renders a single <Link> (anchor) with button-like styling.
 // Using buttonVariants on the Link avoids the invalid <a><button> nesting.
-function NavItem({
+const NavItem = memo(function NavItem({
   item,
   isActive,
   onClick,
@@ -139,7 +139,7 @@ function NavItem({
       {item.label}
     </Link>
   );
-}
+});
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -151,20 +151,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Longest-prefix-wins: among all nav items whose href is a prefix of the
   // current pathname, pick the one with the most specific (longest) href.
   // This prevents /compliance from staying active when /compliance/policies is open.
-  const activeHref = [...navItems]
-    .filter(
-      (i) => pathname === i.href || pathname.startsWith(i.href + "/"),
-    )
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const activeHref = useMemo(
+    () =>
+      [...navItems]
+        .filter((i) => pathname === i.href || pathname.startsWith(i.href + "/"))
+        .sort((a, b) => b.href.length - a.href.length)[0]?.href,
+    [pathname],
+  );
 
-  const cycleTheme = () => {
+  const cycleTheme = useCallback(() => {
     if (theme === "light") setTheme("dark");
     else if (theme === "dark") setTheme("system");
     else setTheme("light");
-  };
+  }, [theme, setTheme]);
 
-  const themeLabel =
-    theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System";
+  const themeLabel = useMemo(
+    () => (theme === "light" ? "Light" : theme === "dark" ? "Dark" : "System"),
+    [theme],
+  );
 
   return (
     <div className="flex min-h-screen">

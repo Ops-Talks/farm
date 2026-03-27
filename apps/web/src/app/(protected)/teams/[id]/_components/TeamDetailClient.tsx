@@ -80,7 +80,7 @@ export function TeamDetailClient() {
     }
   }, [showAddMember, allUsers.length]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!id) return;
     setSaving(true);
     teams
@@ -106,9 +106,9 @@ export function TeamDetailClient() {
         }
       })
       .finally(() => setSaving(false));
-  };
+  }, [id, editForm]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (!id) return;
     teams
       .delete(id)
@@ -125,9 +125,9 @@ export function TeamDetailClient() {
           );
         }
       });
-  };
+  }, [id, router]);
 
-  const handleAddMember = (userId: string) => {
+  const handleAddMember = useCallback((userId: string) => {
     if (!id) return;
     teams
       .addMember(id, userId)
@@ -147,9 +147,9 @@ export function TeamDetailClient() {
           );
         }
       });
-  };
+  }, [id]);
 
-  const handleRemoveMember = (userId: string) => {
+  const handleRemoveMember = useCallback((userId: string) => {
     if (!id) return;
     teams
       .removeMember(id, userId)
@@ -167,7 +167,12 @@ export function TeamDetailClient() {
           );
         }
       });
-  };
+  }, [id]);
+
+  const handleFormChange = useCallback(
+    (updates: Partial<typeof editForm>) => setEditForm((prev) => ({ ...prev, ...updates })),
+    [],
+  );
 
   if (loading) {
     return (
@@ -270,7 +275,7 @@ export function TeamDetailClient() {
         <TeamEditForm
           form={editForm}
           saving={saving}
-          onFormChange={(updates) => setEditForm({ ...editForm, ...updates })}
+          onFormChange={handleFormChange}
           onSave={handleSave}
           onCancel={() => setEditing(false)}
         />

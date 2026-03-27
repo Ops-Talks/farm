@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { pipelines as pipelinesApi, ApiError } from "@/lib/api-client";
 import { subscribe } from "@/lib/ws-client";
@@ -211,6 +211,20 @@ export function RunDetail({ pipelineId, runId, pipeline }: RunDetailProps) {
       .finally(() => setActionLoading(false));
   }, [pipelineId, handleActionError]);
 
+  // Find the stage currently waiting for approval (used in the banner).
+  // These hooks must be called before any early return.
+  const waitingStageResult = useMemo(
+    () =>
+      run?.stageResults?.find(
+        (sr) => sr.status === PipelineRunStatus.WAITING_APPROVAL || sr.status === "waiting",
+      ),
+    [run?.stageResults],
+  );
+  const waitingStage = useMemo(
+    () => pipeline?.stages?.find((s) => s.id === waitingStageResult?.stageId),
+    [pipeline?.stages, waitingStageResult?.stageId],
+  );
+
   if (loading) {
     return (
       <div className="flex flex-col gap-4 pt-4">
@@ -228,14 +242,6 @@ export function RunDetail({ pipelineId, runId, pipeline }: RunDetailProps) {
       </div>
     );
   }
-
-  // Find the stage currently waiting for approval (used in the banner).
-  const waitingStageResult = run.stageResults?.find(
-    (sr) => sr.status === PipelineRunStatus.WAITING_APPROVAL || sr.status === "waiting",
-  );
-  const waitingStage = pipeline?.stages?.find(
-    (s) => s.id === waitingStageResult?.stageId,
-  );
 
   // Determine which action button group to show.
   const showApprovalActions = run.status === PipelineRunStatus.WAITING_APPROVAL;

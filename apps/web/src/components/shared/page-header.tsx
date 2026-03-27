@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 interface PageHeaderProps {
   title: string;
@@ -8,7 +8,7 @@ interface PageHeaderProps {
   children?: ReactNode;
 }
 
-export function PageHeader({ title, description, children }: PageHeaderProps) {
+export const PageHeader = memo(function PageHeader({ title, description, children }: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div>
@@ -20,4 +20,4 @@ export function PageHeader({ title, description, children }: PageHeaderProps) {
       {children && <div className="flex items-center gap-2">{children}</div>}
     </div>
   );
-}
+});

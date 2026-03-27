@@ -5,7 +5,7 @@
 // - Admin-only create / edit / delete via modal form (RHF + Zod).
 // - Uses Base UI Dialog for modals (consistent with ConfirmDialog).
 
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,7 +45,7 @@ type PolicyFormValues = z.infer<typeof policySchema>;
 // Loading skeletons
 // ---------------------------------------------------------------------------
 
-function PolicyCardSkeleton() {
+const PolicyCardSkeleton = memo(function PolicyCardSkeleton() {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -60,7 +60,7 @@ function PolicyCardSkeleton() {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Policy card
@@ -75,7 +75,7 @@ interface PolicyCardProps {
   isExporting: boolean;
 }
 
-function PolicyCard({ policy, isAdmin, onEdit, onDelete, onExport, isExporting }: PolicyCardProps) {
+const PolicyCard = memo(function PolicyCard({ policy, isAdmin, onEdit, onDelete, onExport, isExporting }: PolicyCardProps) {
   return (
     <Card data-testid={`policy-card-${policy.id}`}>
       <CardHeader className="pb-2">
@@ -152,7 +152,7 @@ function PolicyCard({ policy, isAdmin, onEdit, onDelete, onExport, isExporting }
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Policy form modal
@@ -409,24 +409,24 @@ export function PolicyListClient() {
     },
   });
 
-  function openCreate() {
+  const openCreate = useCallback(() => {
     setEditingPolicy(null);
     setModalOpen(true);
-  }
+  }, []);
 
-  function openEdit(p: TagPolicy) {
+  const openEdit = useCallback((p: TagPolicy) => {
     setEditingPolicy(p);
     setModalOpen(true);
-  }
+  }, []);
 
-  function openDelete(p: TagPolicy) {
+  const openDelete = useCallback((p: TagPolicy) => {
     setDeleteTarget(p);
-  }
+  }, []);
 
-  function handleExport(p: TagPolicy) {
+  const handleExport = useCallback((p: TagPolicy) => {
     setExportingId(p.id);
     exportMutation.mutate(p.id);
-  }
+  }, [exportMutation]);
 
   return (
     <ErrorBoundary>

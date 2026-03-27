@@ -3,6 +3,7 @@
 // CICDTab — shows CI/CD status from ArgoCD, CircleCI, Jenkins and Travis CI
 // for the current catalog component.
 
+import { memo, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -142,7 +143,7 @@ function jenkinsBadge(result: string | null | undefined) {
 // Loading skeleton
 // ---------------------------------------------------------------------------
 
-function SectionSkeleton() {
+const SectionSkeleton = memo(function SectionSkeleton() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 3 }).map((_, i) => (
@@ -150,37 +151,37 @@ function SectionSkeleton() {
       ))}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Empty state
 // ---------------------------------------------------------------------------
 
-function EmptySection({ message }: { message: string }) {
+const EmptySection = memo(function EmptySection({ message }: { message: string }) {
   return (
     <div className="py-8 text-center border rounded-xl bg-muted/20">
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Section header
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ title }: { title: string }) {
+const SectionHeader = memo(function SectionHeader({ title }: { title: string }) {
   return (
     <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
       {title}
     </h3>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // ArgoCD section
 // ---------------------------------------------------------------------------
 
-function ArgoCDSection({
+const ArgoCDSection = memo(function ArgoCDSection({
   argocdApp,
   isAdmin,
 }: {
@@ -204,9 +205,10 @@ function ArgoCDSection({
   });
 
   // Filter by argocdApp name if provided
-  const filtered = argocdApp
-    ? apps.filter((a) => a.name === argocdApp)
-    : apps;
+  const filtered = useMemo(
+    () => (argocdApp ? apps.filter((a) => a.name === argocdApp) : apps),
+    [argocdApp, apps],
+  );
 
   return (
     <div>
@@ -254,13 +256,13 @@ function ArgoCDSection({
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // CircleCI section
 // ---------------------------------------------------------------------------
 
-function CircleCISection({ vcsUrl }: { vcsUrl?: string }) {
+const CircleCISection = memo(function CircleCISection({ vcsUrl }: { vcsUrl?: string }) {
   const { data: pipelines = [], isLoading: isPending } = useQuery({
     queryKey: ["circleci-pipelines", vcsUrl],
     queryFn: () => circleci.listPipelines(vcsUrl),
@@ -301,13 +303,13 @@ function CircleCISection({ vcsUrl }: { vcsUrl?: string }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Jenkins section
 // ---------------------------------------------------------------------------
 
-function JenkinsSection() {
+const JenkinsSection = memo(function JenkinsSection() {
   const { data: jobs = [], isLoading: isPending } = useQuery({
     queryKey: ["jenkins-jobs"],
     queryFn: () => jenkins.listJobs(),
@@ -350,13 +352,13 @@ function JenkinsSection() {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Travis CI section
 // ---------------------------------------------------------------------------
 
-function TravisCISection({ vcsUrl }: { vcsUrl?: string }) {
+const TravisCISection = memo(function TravisCISection({ vcsUrl }: { vcsUrl?: string }) {
   const { data: builds = [], isLoading: isPending } = useQuery({
     queryKey: ["travisci-builds", vcsUrl],
     queryFn: () => travisci.listBuilds(vcsUrl),
@@ -397,7 +399,7 @@ function TravisCISection({ vcsUrl }: { vcsUrl?: string }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Public component

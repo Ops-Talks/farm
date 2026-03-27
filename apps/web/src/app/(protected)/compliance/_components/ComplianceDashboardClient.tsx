@@ -4,7 +4,7 @@
 // Displays a summary row, per-provider and per-resource-type tables, and a
 // paginated, filterable violations table with an inline resolve action.
 
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ShieldCheck, AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
@@ -56,7 +56,7 @@ function truncId(id: string, max = 24) {
 // Loading skeletons
 // ---------------------------------------------------------------------------
 
-function SummaryCardsSkeleton() {
+const SummaryCardsSkeleton = memo(function SummaryCardsSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="summary-skeleton">
       {[1, 2, 3, 4].map((n) => (
@@ -71,9 +71,9 @@ function SummaryCardsSkeleton() {
       ))}
     </div>
   );
-}
+});
 
-function TableSkeleton({ rows = 5 }: { rows?: number }) {
+const TableSkeleton = memo(function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
     <div className="space-y-2" data-testid="table-skeleton">
       {Array.from({ length: rows }).map((_, i) => (
@@ -81,7 +81,7 @@ function TableSkeleton({ rows = 5 }: { rows?: number }) {
       ))}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Summary cards
@@ -91,7 +91,7 @@ interface SummaryCardsProps {
   summary: ComplianceSummary;
 }
 
-function SummaryCards({ summary }: SummaryCardsProps) {
+const SummaryCards = memo(function SummaryCards({ summary }: SummaryCardsProps) {
   const rate = Math.round(summary.complianceRate);
   const colourClass = complianceColour(rate);
   const badgeVariant = complianceBadgeVariant(rate);
@@ -158,7 +158,7 @@ function SummaryCards({ summary }: SummaryCardsProps) {
       </Card>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Provider breakdown table
@@ -168,7 +168,7 @@ interface ProviderTableProps {
   byProvider: ComplianceSummary['byProvider'];
 }
 
-function ProviderTable({ byProvider }: ProviderTableProps) {
+const ProviderTable = memo(function ProviderTable({ byProvider }: ProviderTableProps) {
   const entries = Object.entries(byProvider);
   if (entries.length === 0) return null;
 
@@ -233,7 +233,7 @@ function ProviderTable({ byProvider }: ProviderTableProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Resource-type breakdown table
@@ -243,7 +243,7 @@ interface ResourceTypeTableProps {
   byResourceType: ComplianceSummary['byResourceType'];
 }
 
-function ResourceTypeTable({ byResourceType }: ResourceTypeTableProps) {
+const ResourceTypeTable = memo(function ResourceTypeTable({ byResourceType }: ResourceTypeTableProps) {
   const entries = Object.entries(byResourceType);
   if (entries.length === 0) return null;
 
@@ -287,13 +287,13 @@ function ResourceTypeTable({ byResourceType }: ResourceTypeTableProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Provider badge helper
 // ---------------------------------------------------------------------------
 
-function ProviderBadge({ provider }: { provider: string }) {
+const ProviderBadge = memo(function ProviderBadge({ provider }: { provider: string }) {
   const colourMap: Record<string, string> = {
     aws: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
     gcp: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
@@ -305,7 +305,7 @@ function ProviderBadge({ provider }: { provider: string }) {
       {provider}
     </span>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Violations table
@@ -355,6 +355,12 @@ function ViolationsTable({ orgId, isAuthenticated }: ViolationsTableProps) {
       toast.error('Failed to resolve violation');
     },
   });
+
+  // Memoize the resolve handler to keep a stable reference when passed to onClick
+  const handleResolve = useCallback(
+    (id: string) => resolveMutation.mutate(id),
+    [resolveMutation],
+  );
 
   const violations = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -484,7 +490,7 @@ function ViolationsTable({ orgId, isAuthenticated }: ViolationsTableProps) {
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => resolveMutation.mutate(v.id)}
+                            onClick={() => handleResolve(v.id)}
                             disabled={resolveMutation.isPending}
                             data-testid={`resolve-btn-${v.id}`}
                           >
@@ -561,6 +567,10 @@ export function ComplianceDashboardClient() {
     },
   });
 
+  const handleRunAudit = useCallback(() => {
+    auditMutation.mutate();
+  }, [auditMutation]);
+
   return (
     <ErrorBoundary>
       <div className="flex flex-col gap-6">
@@ -573,7 +583,7 @@ export function ComplianceDashboardClient() {
             </p>
           </div>
           <Button
-            onClick={() => auditMutation.mutate()}
+            onClick={handleRunAudit}
             disabled={auditMutation.isPending || !orgId}
             className="gap-2"
             data-testid="run-audit-btn"

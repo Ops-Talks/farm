@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ interface ConfirmDialogProps {
   onCancel?: () => void;
 }
 
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   onOpenChange,
   title,
@@ -28,15 +29,15 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  function handleCancel() {
+  const handleCancel = useCallback(() => {
     onCancel?.();
     onOpenChange(false);
-  }
+  }, [onCancel, onOpenChange]);
 
-  function handleConfirm() {
+  const handleConfirm = useCallback(() => {
     onConfirm();
     onOpenChange(false);
-  }
+  }, [onConfirm, onOpenChange]);
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -90,4 +91,4 @@ export function ConfirmDialog({
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
   );
-}
+});

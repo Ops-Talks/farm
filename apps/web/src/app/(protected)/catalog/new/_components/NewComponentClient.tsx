@@ -3,7 +3,7 @@
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,6 +88,11 @@ export function NewComponentClient() {
 
   // Watch tagsInput to render live badge preview
   const tagsInputValue = useWatch({ control, name: "tagsInput" }) ?? "";
+  // Pre-compute the parsed tags array to avoid splitting on every render
+  const tagsPreview = useMemo(
+    () => tagsInputValue.split(",").map((t) => t.trim()).filter(Boolean),
+    [tagsInputValue],
+  );
 
   // --- YAML form ---
   const {
@@ -316,13 +321,9 @@ export function NewComponentClient() {
                   placeholder="Comma-separated values, e.g. production, critical, internal"
                   {...registerForm("tagsInput")}
                 />
-                {tagsInputValue && (
+                {tagsPreview.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {tagsInputValue
-                      .split(",")
-                      .map((t) => t.trim())
-                      .filter(Boolean)
-                      .map((tag) => (
+                    {tagsPreview.map((tag) => (
                         <Badge
                           key={tag}
                           variant="secondary"

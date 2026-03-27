@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { docs, catalog, ApiError } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import type {
@@ -106,7 +106,7 @@ export function DocsClient() {
       .finally(() => setContentLoading(false));
   }, [selectedId]);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
@@ -117,9 +117,9 @@ export function DocsClient() {
       .then(setSearchResults)
       .catch(() => setSearchResults([]))
       .finally(() => setIsSearching(false));
-  };
+  }, [searchQuery]);
 
-  const handleCreate = (data: Partial<DocumentationEntry>) => {
+  const handleCreate = useCallback((data: Partial<DocumentationEntry>) => {
     docs
       .create(data)
       .then((created) => {
@@ -133,9 +133,9 @@ export function DocsClient() {
           toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
         }
       });
-  };
+  }, [fetchDocs]);
 
-  const handleUpdate = (data: Partial<DocumentationEntry>) => {
+  const handleUpdate = useCallback((data: Partial<DocumentationEntry>) => {
     if (!editingDoc) return;
     docs
       .update(editingDoc.id, data)
@@ -154,9 +154,9 @@ export function DocsClient() {
           toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
         }
       });
-  };
+  }, [editingDoc, fetchDocs, selectedId]);
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = useCallback((id: string, title: string) => {
     if (!confirm(`Delete document "${title}"?`)) return;
     docs
       .delete(id)
@@ -173,11 +173,17 @@ export function DocsClient() {
           toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
         }
       });
-  };
+  }, [selectedId, fetchDocs]);
 
   // Get unique component IDs from docs
-  const docComponentIds = [...new Set(allDocs.map((d) => d.componentId))];
-  const componentMap = new Map(components.map((c) => [c.id, c]));
+  const docComponentIds = useMemo(
+    () => [...new Set(allDocs.map((d) => d.componentId))],
+    [allDocs],
+  );
+  const componentMap = useMemo(
+    () => new Map(components.map((c) => [c.id, c])),
+    [components],
+  );
 
   if (loading) {
     return (

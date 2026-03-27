@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { memo, useMemo, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ interface MiniLineChartProps {
   label?: string;
 }
 
-export function MiniLineChart({ data, height = 80, label }: MiniLineChartProps) {
+export const MiniLineChart = memo(function MiniLineChart({ data, height = 80, label }: MiniLineChartProps) {
   if (!data || data.length === 0) {
     return (
       <div
@@ -141,7 +141,7 @@ export function MiniLineChart({ data, height = 80, label }: MiniLineChartProps) 
       </svg>
     </div>
   );
-}
+});
 
 // ---- PromQLChartCard ----
 
@@ -150,7 +150,7 @@ interface PromQLChartCardProps {
   defaultQuery: string;
 }
 
-export function PromQLChartCard({ title, defaultQuery }: PromQLChartCardProps) {
+export const PromQLChartCard = memo(function PromQLChartCard({ title, defaultQuery }: PromQLChartCardProps) {
   const [query, setQuery] = useState(defaultQuery);
   const [inputQuery, setInputQuery] = useState(defaultQuery);
   const [results, setResults] = useState<PrometheusResult[]>([]);
@@ -243,7 +243,7 @@ export function PromQLChartCard({ title, defaultQuery }: PromQLChartCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---- MetricsTab ----
 
@@ -252,14 +252,25 @@ export function MetricsTab({
 }: {
   summary: ObservabilitySummary | null;
 }) {
-  if (!summary) return null;
-
-  // Estimate requests per second (total / uptime)
-  const rps = summary.uptime > 0 ? summary.totalRequests / summary.uptime : 0;
+  // Estimate requests per second (total / uptime).
+  // Hooks must be called unconditionally, before any early return.
+  const rps = useMemo(
+    () =>
+      summary && summary.uptime > 0 ? summary.totalRequests / summary.uptime : 0,
+    [summary],
+  );
 
   // Calculate error rate (5xx / total)
-  const total5xx = summary.requestsByStatus?.["5xx"] ?? 0;
-  const errorRate = summary.totalRequests > 0 ? total5xx / summary.totalRequests : 0;
+  const total5xx = useMemo(
+    () => summary?.requestsByStatus?.["5xx"] ?? 0,
+    [summary],
+  );
+  const errorRate = useMemo(
+    () => (summary && summary.totalRequests > 0 ? total5xx / summary.totalRequests : 0),
+    [summary, total5xx],
+  );
+
+  if (!summary) return null;
 
   return (
     <div className="space-y-6">

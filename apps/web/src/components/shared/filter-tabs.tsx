@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 interface FilterTabsProps {
   tabs: { id: string; label: string }[];
   activeTab: string;
@@ -7,7 +9,7 @@ interface FilterTabsProps {
   className?: string;
 }
 
-export function FilterTabs({
+export const FilterTabs = memo(function FilterTabs({
   tabs,
   activeTab,
   onChange,
@@ -30,4 +32,4 @@ export function FilterTabs({
       ))}
     </div>
   );
-}
+});

@@ -31,6 +31,7 @@ ignore:
   - "apps/api/src/**/*.spec.ts"
   - "apps/api/test/**"
   - "apps/web/src/**/*.test.{ts,tsx}"
+  - "apps/web/src/**/*.stories.{ts,tsx}"
   - "apps/web/src/test/**"
   - "apps/web/src/components/ui/**"
   - "node_modules/**"
