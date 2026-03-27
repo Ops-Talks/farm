@@ -460,56 +460,56 @@ spec:
   describe("validateGitUrl", () => {
     it("should throw BadRequestException for an empty string", () => {
       expect(() => (service as any).validateGitUrl("")).toThrow(
-        BadRequestException,
+        "Repository URL must not be empty.",
       );
     });
 
     it("should throw BadRequestException for a whitespace-only string", () => {
       expect(() => (service as any).validateGitUrl("   ")).toThrow(
-        BadRequestException,
+        "Repository URL must not be empty.",
       );
     });
 
     it("should throw BadRequestException for a value starting with '-'", () => {
       expect(() =>
         (service as any).validateGitUrl("--upload-pack=malicious"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Invalid repository URL.");
     });
 
     it("should throw BadRequestException for a value starting with '-' (short flag)", () => {
       expect(() => (service as any).validateGitUrl("-e malicious")).toThrow(
-        BadRequestException,
+        "Invalid repository URL.",
       );
     });
 
     it("should throw BadRequestException for an unparseable URL with a scheme", () => {
       expect(() =>
         (service as any).validateGitUrl("://not-a-valid-url"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Invalid repository URL format.");
     });
 
     it("should throw BadRequestException for a git:// scheme URL", () => {
       expect(() =>
         (service as any).validateGitUrl("git://github.com/org/repo.git"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Only HTTP(S) repository URLs are allowed.");
     });
 
     it("should throw BadRequestException for an ftp:// scheme URL", () => {
       expect(() =>
         (service as any).validateGitUrl("ftp://example.com/repo.git"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Only HTTP(S) repository URLs are allowed.");
     });
 
     it("should throw BadRequestException for a file:// scheme URL", () => {
       expect(() =>
         (service as any).validateGitUrl("file:///etc/passwd"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Only HTTP(S) repository URLs are allowed.");
     });
 
     it("should throw BadRequestException for a non-URL, non-SSH value without a scheme", () => {
       expect(() =>
         (service as any).validateGitUrl("not-a-valid-remote"),
-      ).toThrow(BadRequestException);
+      ).toThrow("Invalid repository URL.");
     });
 
     it("should not throw for a valid http:// URL", () => {
