@@ -1,0 +1,29 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:3001/login"],
+      "startServerCommand": "npm run start -w apps/web -- -p 3001",
+      "startServerReadyPattern": "Ready on",
+      "startServerReadyTimeout": 30000,
+      "numberOfRuns": 1,
+      "settings": {
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage",
+        "onlyCategories": ["performance", "accessibility", "best-practices"]
+      }
+    },
+    "assert": {
+      "preset": "lighthouse:no-prs",
+      "assertions": {
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.1 }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 200 }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 3000 }],
+        "interactive": ["warn", { "maxNumericValue": 5000 }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": ".lighthouse-reports"
+    }
+  }
+}
