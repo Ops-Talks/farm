@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { FolderSearch } from "lucide-react";
 
 interface EmptyStateProps {
@@ -10,7 +10,7 @@ interface EmptyStateProps {
   children?: ReactNode;
 }
 
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   title,
   description,
   icon,
@@ -30,4 +30,4 @@ export function EmptyState({
       {children}
     </div>
   );
-}
+});

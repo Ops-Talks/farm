@@ -3,6 +3,7 @@
 // CloudDeployStageCard — form card for cloud deploy pipeline stages.
 // Supports four engine types: aws-ecs, aws-lambda, gcp-cloud-run, azure-container-apps.
 
+import { memo, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -72,7 +73,7 @@ export type CloudDeployConfig =
 // Per-engine sub-forms
 // ---------------------------------------------------------------------------
 
-function AwsEcsForm({
+const AwsEcsForm = memo(function AwsEcsForm({
   onSubmit,
   onCancel,
   isPending,
@@ -126,9 +127,9 @@ function AwsEcsForm({
       </div>
     </form>
   );
-}
+});
 
-function AwsLambdaForm({
+const AwsLambdaForm = memo(function AwsLambdaForm({
   onSubmit,
   onCancel,
   isPending,
@@ -185,9 +186,9 @@ function AwsLambdaForm({
       </div>
     </form>
   );
-}
+});
 
-function GcpCloudRunForm({
+const GcpCloudRunForm = memo(function GcpCloudRunForm({
   onSubmit,
   onCancel,
   isPending,
@@ -247,9 +248,9 @@ function GcpCloudRunForm({
       </div>
     </form>
   );
-}
+});
 
-function AzureContainerAppsForm({
+const AzureContainerAppsForm = memo(function AzureContainerAppsForm({
   onSubmit,
   onCancel,
   isPending,
@@ -305,7 +306,7 @@ function AzureContainerAppsForm({
       </div>
     </form>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main CloudDeployStageCard
@@ -324,7 +325,27 @@ export function CloudDeployStageCard({
   onCancel,
   isPending,
 }: CloudDeployStageCardProps) {
-  const engineLabel = CLOUD_DEPLOY_ENGINES.find((e) => e.value === engine)?.label ?? engine;
+  const engineLabel = useMemo(
+    () => CLOUD_DEPLOY_ENGINES.find((e) => e.value === engine)?.label ?? engine,
+    [engine],
+  );
+
+  const handleSaveEcs = useCallback(
+    (v: AwsEcsValues) => onSave({ ...v, engine: 'aws-ecs' }),
+    [onSave],
+  );
+  const handleSaveLambda = useCallback(
+    (v: AwsLambdaValues) => onSave({ ...v, engine: 'aws-lambda' }),
+    [onSave],
+  );
+  const handleSaveCloudRun = useCallback(
+    (v: GcpCloudRunValues) => onSave({ ...v, engine: 'gcp-cloud-run' }),
+    [onSave],
+  );
+  const handleSaveAca = useCallback(
+    (v: AzureContainerAppsValues) => onSave({ ...v, engine: 'azure-container-apps' }),
+    [onSave],
+  );
 
   return (
     <Card data-testid={`cloud-deploy-stage-card-${engine}`}>
@@ -334,28 +355,28 @@ export function CloudDeployStageCard({
       <CardContent>
         {engine === 'aws-ecs' && (
           <AwsEcsForm
-            onSubmit={(v) => onSave({ ...v, engine: 'aws-ecs' })}
+            onSubmit={handleSaveEcs}
             onCancel={onCancel}
             isPending={isPending}
           />
         )}
         {engine === 'aws-lambda' && (
           <AwsLambdaForm
-            onSubmit={(v) => onSave({ ...v, engine: 'aws-lambda' })}
+            onSubmit={handleSaveLambda}
             onCancel={onCancel}
             isPending={isPending}
           />
         )}
         {engine === 'gcp-cloud-run' && (
           <GcpCloudRunForm
-            onSubmit={(v) => onSave({ ...v, engine: 'gcp-cloud-run' })}
+            onSubmit={handleSaveCloudRun}
             onCancel={onCancel}
             isPending={isPending}
           />
         )}
         {engine === 'azure-container-apps' && (
           <AzureContainerAppsForm
-            onSubmit={(v) => onSave({ ...v, engine: 'azure-container-apps' })}
+            onSubmit={handleSaveAca}
             onCancel={onCancel}
             isPending={isPending}
           />

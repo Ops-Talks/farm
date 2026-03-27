@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -83,8 +83,8 @@ interface RepositoryCardProps {
   repositoryUrl: string;
 }
 
-function RepositoryCard({ repositoryUrl }: RepositoryCardProps) {
-  const { label, icon } = detectProvider(repositoryUrl);
+const RepositoryCard = memo(function RepositoryCard({ repositoryUrl }: RepositoryCardProps) {
+  const { label, icon } = useMemo(() => detectProvider(repositoryUrl), [repositoryUrl]);
 
   return (
     <Card>
@@ -141,7 +141,7 @@ function RepositoryCard({ repositoryUrl }: RepositoryCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 export function ComponentDetailClient() {
   const params = useParams<{ id: string }>();

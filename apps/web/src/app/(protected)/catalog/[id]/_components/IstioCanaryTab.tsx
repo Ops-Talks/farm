@@ -3,6 +3,7 @@
 // IstioCanaryTab — shows Istio VirtualService route weight splits and
 // allows admin users to adjust canary traffic weights. (FARM-S159)
 
+import { memo, useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +18,6 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { useAuth } from '@/contexts/auth-context';
 import { istio as istioApi } from '@/lib/api-client';
 import type { CatalogComponent, IstioVirtualService } from '@/types/api';
-import { useState } from 'react';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -184,7 +184,7 @@ interface VirtualServiceCardProps {
   onEdit: (vs: IstioVirtualService) => void;
 }
 
-function VirtualServiceCard({ vs, isAdmin, onEdit }: VirtualServiceCardProps) {
+const VirtualServiceCard = memo(function VirtualServiceCard({ vs, isAdmin, onEdit }: VirtualServiceCardProps) {
   const totalWeight = vs.routes.reduce((sum, r) => sum + r.weight, 0);
   const isCanary = vs.routes.length > 1;
 
@@ -279,7 +279,7 @@ function VirtualServiceCard({ vs, isAdmin, onEdit }: VirtualServiceCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -296,6 +296,18 @@ export function IstioCanaryTab({ component }: IstioCanaryTabProps) {
   const queryClient = useQueryClient();
 
   const [editingVs, setEditingVs] = useState<IstioVirtualService | null>(null);
+
+  const handleEditVs = useCallback((vs: IstioVirtualService) => {
+    setEditingVs(vs);
+  }, []);
+
+  const handleCloseDialog = useCallback((open: boolean) => {
+    if (!open) setEditingVs(null);
+  }, []);
+
+  const handleSyncSuccess = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['istio-virtual-services', namespace] });
+  }, [queryClient, namespace]);
 
   const vsQuery = useQuery({
     queryKey: ['istio-virtual-services', namespace],
@@ -335,7 +347,7 @@ export function IstioCanaryTab({ component }: IstioCanaryTabProps) {
           key={`${vs.namespace}/${vs.name}`}
           vs={vs}
           isAdmin={isAdmin}
-          onEdit={setEditingVs}
+          onEdit={handleEditVs}
         />
       ))}
 
@@ -343,10 +355,8 @@ export function IstioCanaryTab({ component }: IstioCanaryTabProps) {
         <AdjustWeightsDialog
           vs={editingVs}
           open={editingVs !== null}
-          onOpenChange={(open) => { if (!open) setEditingVs(null); }}
-          onSuccess={() => {
-            void queryClient.invalidateQueries({ queryKey: ['istio-virtual-services', namespace] });
-          }}
+          onOpenChange={handleCloseDialog}
+          onSuccess={handleSyncSuccess}
         />
       )}
     </div>

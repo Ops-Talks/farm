@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -92,7 +92,7 @@ type TravisCIFormValues = z.infer<typeof travisCISchema>;
 // Per-type connect forms
 // ---------------------------------------------------------------------------
 
-function ArgoCDConnectForm({
+const ArgoCDConnectForm = memo(function ArgoCDConnectForm({
   onSave,
   onClose,
   isPending,
@@ -146,9 +146,9 @@ function ArgoCDConnectForm({
       </div>
     </form>
   );
-}
+});
 
-function CircleCIConnectForm({
+const CircleCIConnectForm = memo(function CircleCIConnectForm({
   onSave,
   onClose,
   isPending,
@@ -193,9 +193,9 @@ function CircleCIConnectForm({
       </div>
     </form>
   );
-}
+});
 
-function JenkinsConnectForm({
+const JenkinsConnectForm = memo(function JenkinsConnectForm({
   onSave,
   onClose,
   isPending,
@@ -258,9 +258,9 @@ function JenkinsConnectForm({
       </div>
     </form>
   );
-}
+});
 
-function TravisCIConnectForm({
+const TravisCIConnectForm = memo(function TravisCIConnectForm({
   onSave,
   onClose,
   isPending,
@@ -319,7 +319,7 @@ function TravisCIConnectForm({
       </div>
     </form>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Single integration card
@@ -336,7 +336,7 @@ interface IntegrationCardProps {
   isDisconnecting: boolean;
 }
 
-function IntegrationCard({
+const IntegrationCard = memo(function IntegrationCard({
   type,
   label,
   icon,
@@ -398,7 +398,7 @@ function IntegrationCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Connect modal
@@ -412,7 +412,7 @@ interface ConnectModalProps {
   isPending: boolean;
 }
 
-function ConnectModal({ type, label, onSave, onClose, isPending }: ConnectModalProps) {
+const ConnectModal = memo(function ConnectModal({ type, label, onSave, onClose, isPending }: ConnectModalProps) {
   const formProps = {
     onSave: (data: Record<string, unknown>) => onSave(type, data),
     onClose,
@@ -442,7 +442,7 @@ function ConnectModal({ type, label, onSave, onClose, isPending }: ConnectModalP
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main client component
@@ -487,25 +487,34 @@ export function IntegrationSettingsClient() {
 
   // ------ Helpers ------
 
-  function getCredentialForType(type: IntegrationType): IntegrationCredential | undefined {
-    return credentials.find((c) => c.type === type);
-  }
+  const getCredentialForType = useCallback(
+    (type: IntegrationType): IntegrationCredential | undefined =>
+      credentials.find((c) => c.type === type),
+    [credentials],
+  );
 
-  function handleConnect(type: IntegrationType) {
+  const handleConnect = useCallback((type: IntegrationType) => {
     setModalType(type);
-  }
+  }, []);
 
-  function handleDisconnect(credential: IntegrationCredential) {
-    removeMutation.mutate(credential.id);
-  }
+  const handleDisconnect = useCallback(
+    (credential: IntegrationCredential) => {
+      removeMutation.mutate(credential.id);
+    },
+    [removeMutation],
+  );
 
-  function handleSave(type: IntegrationType, data: Record<string, unknown>) {
-    createMutation.mutate({ type, ...data });
-  }
+  const handleSave = useCallback(
+    (type: IntegrationType, data: Record<string, unknown>) => {
+      createMutation.mutate({ type, ...data });
+    },
+    [createMutation],
+  );
 
-  const activeIntegration = modalType
-    ? INTEGRATIONS.find((i) => i.type === modalType)
-    : null;
+  const activeIntegration = useMemo(
+    () => (modalType ? INTEGRATIONS.find((i) => i.type === modalType) : null),
+    [modalType],
+  );
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">

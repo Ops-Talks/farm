@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -116,18 +116,18 @@ export function RunList({
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = useCallback((value: string) => {
     setStatusFilter(value);
     setSkip(0); // reset to first page
     setSelectedForCompare([]); // clear compare selections on filter change
-  };
+  }, []);
 
-  const handleToggleCompareMode = () => {
+  const handleToggleCompareMode = useCallback(() => {
     setCompareMode((prev) => !prev);
     setSelectedForCompare([]);
-  };
+  }, []);
 
-  const handleCompareCheck = (runId: string, checked: boolean) => {
+  const handleCompareCheck = useCallback((runId: string, checked: boolean) => {
     setSelectedForCompare((prev) => {
       if (checked) {
         // enforce maximum of 2 selections
@@ -136,13 +136,15 @@ export function RunList({
       }
       return prev.filter((id) => id !== runId);
     });
-  };
+  }, []);
 
   // ── Derived pagination values ─────────────────────────────────────────────
-  const pageStart = total === 0 ? 0 : skip + 1;
-  const pageEnd = Math.min(skip + PAGE_SIZE, total);
-  const hasPrev = skip > 0;
-  const hasNext = skip + PAGE_SIZE < total;
+  const { pageStart, pageEnd, hasPrev, hasNext } = useMemo(() => ({
+    pageStart: total === 0 ? 0 : skip + 1,
+    pageEnd: Math.min(skip + PAGE_SIZE, total),
+    hasPrev: skip > 0,
+    hasNext: skip + PAGE_SIZE < total,
+  }), [total, skip]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 

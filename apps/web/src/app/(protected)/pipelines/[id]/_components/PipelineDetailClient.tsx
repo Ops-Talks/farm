@@ -107,7 +107,7 @@ export function PipelineDetailClient() {
     fetchPipeline();
   }, [fetchPipeline]);
 
-  const handleTrigger = () => {
+  const handleTrigger = useCallback(() => {
     if (!id) return;
     setTriggering(true);
 
@@ -134,9 +134,9 @@ export function PipelineDetailClient() {
         }
       })
       .finally(() => setTriggering(false));
-  };
+  }, [id]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (!id || !pipeline) return;
     setSaving(true);
     pipelinesApi
@@ -159,9 +159,9 @@ export function PipelineDetailClient() {
         }
       })
       .finally(() => setSaving(false));
-  };
+  }, [id, pipeline, editName, editDescription, editStages]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (!id) return;
     pipelinesApi
       .remove(id)
@@ -177,17 +177,17 @@ export function PipelineDetailClient() {
           toast.error("Failed to delete pipeline");
         }
       });
-  };
+  }, [id, router]);
 
-  const handleSelectRun = (runId: string) => {
+  const handleSelectRun = useCallback((runId: string) => {
     setSelectedRunId((prev) => (prev === runId ? null : runId));
-  };
+  }, []);
 
-  const handleCompare = (runIdA: string, runIdB: string) => {
+  const handleCompare = useCallback((runIdA: string, runIdB: string) => {
     setCompareRunA(runIdA);
     setCompareRunB(runIdB);
     setShowComparison(true);
-  };
+  }, []);
 
   if (loading) {
     return (

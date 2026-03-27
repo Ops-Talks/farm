@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect, useCallback } from "react";
+import { memo, useMemo, useState, useEffect, useCallback } from "react";
 import { Trash2, Users } from "lucide-react";
 import { organizations as orgsApi, ApiError } from "@/lib/api-client";
 import type { MemberResponse } from "@/types/api";
@@ -70,7 +70,7 @@ const ROLE_BADGE_VARIANT: Record<OrgRoleValue, "secondary" | "default" | "outlin
 };
 
 /** Initials avatar built from Tailwind primitives (no external dependency). */
-function InitialsAvatar({ username }: { username: string }) {
+const InitialsAvatar = memo(function InitialsAvatar({ username }: { username: string }) {
   return (
     <div
       className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium shrink-0 select-none"
@@ -79,10 +79,10 @@ function InitialsAvatar({ username }: { username: string }) {
       {username.charAt(0).toUpperCase()}
     </div>
   );
-}
+});
 
 /** Skeleton placeholder for a single member row while the list is loading. */
-function MemberRowSkeleton() {
+const MemberRowSkeleton = memo(function MemberRowSkeleton() {
   return (
     <TableRow>
       <TableCell>
@@ -103,13 +103,13 @@ function MemberRowSkeleton() {
       <TableCell />
     </TableRow>
   );
-}
+});
 
 /**
  * Inline role <select> styled to match the rest of the form controls.
  * Rendered only for rows where the current user may change the role.
  */
-function RoleSelect({
+const RoleSelect = memo(function RoleSelect({
   value,
   disabled,
   ariaLabel,
@@ -132,7 +132,7 @@ function RoleSelect({
       <option value="admin">Admin</option>
     </select>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -194,15 +194,20 @@ export function MembersSection({
    * not identified as owner in the parent (org.ownerId check) also receive
    * the management UI once their role is confirmed from the API.
    */
-  const currentMember = members.find((m) => m.userId === currentUserId);
-  const effectiveCanManage =
-    canManage || currentMember?.role === "admin" || currentMember?.role === "owner";
+  const currentMember = useMemo(
+    () => members.find((m) => m.userId === currentUserId),
+    [members, currentUserId],
+  );
+  const effectiveCanManage = useMemo(
+    () => canManage || currentMember?.role === "admin" || currentMember?.role === "owner",
+    [canManage, currentMember],
+  );
 
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
 
-  const handleAddMember = async (values: AddMemberFormValues) => {
+  const handleAddMember = useCallback(async (values: AddMemberFormValues) => {
     try {
       await orgsApi.members.add(orgId, {
         username: values.username.trim(),
@@ -216,9 +221,9 @@ export function MembersSection({
         message: err instanceof ApiError ? err.message : "Failed to add member.",
       });
     }
-  };
+  }, [orgId, resetAddForm, loadMembers, setAddError]);
 
-  function handleRoleChange(userId: string, newRole: string) {
+  const handleRoleChange = useCallback((userId: string, newRole: string) => {
     setUpdatingRoleFor(userId);
     orgsApi.members
       .updateRole(orgId, userId, { role: newRole })
@@ -228,9 +233,9 @@ export function MembersSection({
       })
       .catch(() => toast.error("Failed to update role."))
       .finally(() => setUpdatingRoleFor(null));
-  }
+  }, [orgId, loadMembers]);
 
-  function handleRemoveConfirm() {
+  const handleRemoveConfirm = useCallback(() => {
     if (!pendingRemove) return;
     const { userId, username } = pendingRemove;
     setPendingRemove(null);
@@ -242,7 +247,7 @@ export function MembersSection({
         loadMembers();
       })
       .catch(() => toast.error("Failed to remove member."));
-  }
+  }, [pendingRemove, orgId, loadMembers]);
 
   // ---------------------------------------------------------------------------
   // Render helpers

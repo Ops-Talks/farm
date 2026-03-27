@@ -1,9 +1,9 @@
 "use client";
 
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,22 +115,25 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
   // Watch name for use in build/cloud-deploy stage handlers
   const nameValue = useWatch({ control, name: "name" });
   // Cloud deploy types use CloudDeployStageCard, so fall back to a safe default
-  const configField = (CONFIG_FIELD[currentType] ?? CONFIG_FIELD["script"])!;
+  const configField = useMemo(
+    () => (CONFIG_FIELD[currentType] ?? CONFIG_FIELD["script"])!,
+    [currentType],
+  );
 
   // HTML5 Drag-and-Drop state
   const dragIndexRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  function handleDragStart(index: number) {
+  const handleDragStart = useCallback((index: number) => {
     dragIndexRef.current = index;
-  }
+  }, []);
 
-  function handleDragOver(e: React.DragEvent, index: number) {
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
     setDragOverIndex(index);
-  }
+  }, []);
 
-  function handleDrop(e: React.DragEvent, dropIndex: number) {
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     const fromIndex = dragIndexRef.current;
     if (fromIndex === null || fromIndex === dropIndex) {
@@ -147,14 +150,14 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     onChange(updated);
     dragIndexRef.current = null;
     setDragOverIndex(null);
-  }
+  }, [stages, onChange]);
 
-  function handleDragEnd() {
+  const handleDragEnd = useCallback(() => {
     dragIndexRef.current = null;
     setDragOverIndex(null);
-  }
+  }, []);
 
-  const onAddStage = (values: AddStageFormValues) => {
+  const onAddStage = useCallback((values: AddStageFormValues) => {
     const field = CONFIG_FIELD[values.type];
     const newStage: PipelineStage = {
       id: crypto.randomUUID(),
@@ -167,10 +170,10 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     // Reset the form and close the panel
     reset({ name: "", type: "script", configValue: "" });
     setShowAddForm(false);
-  };
+  }, [stages, onChange, reset]);
 
   // Handler specifically for build stages — called from BuildStageCard
-  function onAddBuildStage(buildConfig: BuildStageFormValues) {
+  const onAddBuildStage = useCallback((buildConfig: BuildStageFormValues) => {
     if (!nameValue.trim()) {
       // Trigger name validation without re-submitting
       void handleSubmit(onAddStage)();
@@ -186,10 +189,10 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     onChange([...stages, newStage]);
     reset({ name: "", type: "script", configValue: "" });
     setShowAddForm(false);
-  }
+  }, [nameValue, handleSubmit, onAddStage, stages, onChange, reset]);
 
   // Handler for cloud deploy stages — called from CloudDeployStageCard
-  function onAddCloudDeployStage(deployConfig: CloudDeployConfig) {
+  const onAddCloudDeployStage = useCallback((deployConfig: CloudDeployConfig) => {
     const stageName = nameValue.trim() || (CLOUD_DEPLOY_ENGINES.find((e) => e.value === deployConfig.engine)?.label ?? deployConfig.engine);
     const { engine, ...config } = deployConfig;
     const newStage: PipelineStage = {
@@ -202,13 +205,13 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     onChange([...stages, newStage]);
     reset({ name: "", type: "script", configValue: "" });
     setShowAddForm(false);
-  }
+  }, [nameValue, stages, onChange, reset]);
 
-  function handleRemoveStage(id: string) {
+  const handleRemoveStage = useCallback((id: string) => {
     const filtered = stages.filter((s) => s.id !== id);
     const updated = filtered.map((s, i) => ({ ...s, order: i }));
     onChange(updated);
-  }
+  }, [stages, onChange]);
 
   return (
     <div className="flex flex-col gap-3">

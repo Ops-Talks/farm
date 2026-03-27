@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -315,7 +315,7 @@ function ConfigurationCard({
 // Group Sync Card
 // ---------------------------------------------------------------------------
 
-function GroupSyncCard({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
+const GroupSyncCard = memo(function GroupSyncCard({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) {
   const syncMutation = useMutation({
     mutationFn: () => authApi.keycloakSync(orgId),
     onSuccess: (data) => {
@@ -366,21 +366,24 @@ function GroupSyncCard({ orgId, isAdmin }: { orgId: string; isAdmin: boolean }) 
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Login URL Info Card
 // ---------------------------------------------------------------------------
 
-function LoginUrlCard({ orgId }: { orgId: string }) {
+const LoginUrlCard = memo(function LoginUrlCard({ orgId }: { orgId: string }) {
   const [copied, setCopied] = useState(false);
 
-  const loginUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/login?keycloakOrgId=${encodeURIComponent(orgId)}`
-      : `/login?keycloakOrgId=${encodeURIComponent(orgId)}`;
+  const loginUrl = useMemo(
+    () =>
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/login?keycloakOrgId=${encodeURIComponent(orgId)}`
+        : `/login?keycloakOrgId=${encodeURIComponent(orgId)}`,
+    [orgId],
+  );
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(loginUrl);
       setCopied(true);
@@ -389,7 +392,7 @@ function LoginUrlCard({ orgId }: { orgId: string }) {
     } catch {
       toast.error('Failed to copy URL');
     }
-  };
+  }, [loginUrl]);
 
   return (
     <Card>
@@ -426,7 +429,7 @@ function LoginUrlCard({ orgId }: { orgId: string }) {
       </CardContent>
     </Card>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Root component
