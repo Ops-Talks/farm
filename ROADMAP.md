@@ -958,9 +958,9 @@ All stories degrade gracefully — if Istio is not installed in the connected cl
 
 ---
 
-## Phase 7: Frontend Hardening `TODO`
+## Phase 7: Frontend Hardening `DONE`
 
-### FARM-E46: Production-Grade Frontend Quality `TODO`
+### FARM-E46: Production-Grade Frontend Quality `DONE`
 
 > Close the remaining quality gaps in the Farm web application: expand Playwright E2E coverage to all critical flows, establish a Storybook component library, enforce Content Security Policy headers, add a Core Web Vitals CI gate, and apply a systematic performance optimization pass to heavy components.
 
@@ -973,10 +973,10 @@ Phase 5.5 delivered the foundational frontend quality work — Vitest unit tests
 | ID | Type | Title | Status |
 |----|------|-------|--------|
 | FARM-S180 | Story | Playwright E2E expansion: add test specs for environments, organizations, pipelines (create/run/compare), and docs flows; expand from 4 to 8 spec files covering all critical user journeys | `DONE` |
-| FARM-S181 | Story | Storybook setup: install and configure Storybook for Next.js; create `.stories.tsx` files for all shared UI primitives (`Button`, `Card`, `Dialog`, `Tabs`, `Input`, `Badge`) and shared layout components (`PageHeader`, `FilterTabs`, `EmptyState`, `ConfirmDialog`) | `TODO` |
-| FARM-S182 | Story | Content Security Policy: add `headers()` to `next.config.ts` with CSP (`script-src`, `style-src`, `img-src`, `connect-src`), HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin` | `TODO` |
-| FARM-S183 | Story | Performance optimization pass: audit components with >200 lines for unnecessary re-renders; apply `React.memo` to pure list/card components, `useMemo` to expensive computations (doc tree traversal, trace waterfall layout, metric formatting), and `useCallback` to event handlers passed as props; target 60+ optimized call sites (up from 23) | `TODO` |
-| FARM-S184 | Story | Web Vitals CI gate: add a Lighthouse CI step to the GitHub Actions `web` job that asserts LCP < 2.5 s, CLS < 0.1, and TBT < 200 ms on the login page and dashboard; fail the build on regression; store HTML reports as workflow artifacts | `TODO` |
+| FARM-S181 | Story | Storybook setup: install and configure Storybook for Next.js; create `.stories.tsx` files for all shared UI primitives (`Button`, `Card`, `Dialog`, `Tabs`, `Input`, `Badge`) and shared layout components (`PageHeader`, `FilterTabs`, `EmptyState`, `ConfirmDialog`) | `DONE` |
+| FARM-S182 | Story | Content Security Policy: add `headers()` to `next.config.ts` with CSP (`script-src`, `style-src`, `img-src`, `connect-src`), HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Referrer-Policy: strict-origin-when-cross-origin` | `DONE` |
+| FARM-S183 | Story | Performance optimization pass: audit components with >200 lines for unnecessary re-renders; apply `React.memo` to pure list/card components, `useMemo` to expensive computations (doc tree traversal, trace waterfall layout, metric formatting), and `useCallback` to event handlers passed as props; target 60+ optimized call sites (up from 23) | `DONE` |
+| FARM-S184 | Story | Web Vitals CI gate: add a Lighthouse CI step to the GitHub Actions `web` job that asserts LCP < 2.5 s, CLS < 0.1, and TBT < 200 ms on the login page and dashboard; fail the build on regression; store HTML reports as workflow artifacts | `DONE` |
 
 #### Implementation Notes
 
@@ -1058,9 +1058,9 @@ SAST (CodeQL + eslint-plugin-security) and DAST (OWASP ZAP) are already in place
 
 ---
 
-## Phase 10: Test Coverage Hardening `TODO`
+## Phase 10: Test Coverage Hardening `DONE`
 
-### FARM-E45: 80% Code Coverage — API and Web `TODO`
+### FARM-E45: 80% Code Coverage — API and Web `DONE`
 
 > Raise test coverage to a minimum of 80% for all four metrics (statements, branches, functions, lines) in both `apps/api` and `apps/web`, and enforce the threshold in CI so it cannot regress.
 
@@ -1086,18 +1086,18 @@ The goal of this phase is to close both gaps in a structured, module-by-module w
 
 ---
 
-#### FARM-S172: API — CI coverage threshold enforcement `TODO`
+#### FARM-S172: API — CI coverage threshold enforcement `DONE`
 
 Add `coverageThreshold` to `apps/api/jest.config.ts` set to 80% for all four metrics. This story is intentionally last so it only lands after the coverage gap is closed; adding it early would break CI immediately.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T01 | Task | Add `global: { statements: 80, branches: 80, functions: 80, lines: 80 }` to `coverageThreshold` in `jest.config.ts` | `TODO` |
-| FARM-T02 | Task | Verify CI `api` job fails on a branch that artificially lowers coverage, then revert and confirm it passes | `TODO` |
+| FARM-T01 | Task | Add `global: { statements: 80, branches: 80, functions: 80, lines: 80 }` to `coverageThreshold` in `jest.config.ts` | `DONE` |
+| FARM-T02 | Task | Verify CI `api` job fails on a branch that artificially lowers coverage, then revert and confirm it passes | `DONE` |
 
 ---
 
-#### FARM-S173: API — Branch coverage in core services `TODO`
+#### FARM-S173: API — Branch coverage in core services `DONE`
 
 The biggest single gap in the API. Target modules with branch coverage below 75%:
 
@@ -1115,18 +1115,18 @@ The biggest single gap in the API. Target modules with branch coverage below 75%
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T03 | Task | `catalog.service.ts`: cover null owner, empty results, pagination edge cases, YAML parse errors | `TODO` |
-| FARM-T04 | Task | `pipelines.service.ts`: cover stage not found, run already terminal, concurrent run guard, processor error paths | `TODO` |
-| FARM-T05 | Task | `istio.service.ts`: cover `normalizeKubeconfigInput` array input, `getApi` fallback to shared client, all 7 error paths | `TODO` |
-| FARM-T06 | Task | `keycloak-oidc.service.ts`: cover token refresh failure, disabled Keycloak config branch, user-not-found path | `TODO` |
-| FARM-T07 | Task | `aws-lambda.executor.ts`: cover missing ARN, SDK error propagation, dry-run branch | `TODO` |
-| FARM-T08 | Task | `helm.service.ts`: cover release not found, upgrade dry-run, rollback failure, diff output empty | `TODO` |
-| FARM-T09 | Task | `kubernetes.service.ts` + `kyverno-policy-report.service.ts`: cover cluster unreachable, resource not found, policy violation parsing | `TODO` |
-| FARM-T10 | Task | `pipeline.processor.ts`: cover stage skip, partial failure, all stage type dispatch branches | `TODO` |
+| FARM-T03 | Task | `catalog.service.ts`: cover null owner, empty results, pagination edge cases, YAML parse errors | `DONE` |
+| FARM-T04 | Task | `pipelines.service.ts`: cover stage not found, run already terminal, concurrent run guard, processor error paths | `DONE` |
+| FARM-T05 | Task | `istio.service.ts`: cover `normalizeKubeconfigInput` array input, `getApi` fallback to shared client, all 7 error paths | `DONE` |
+| FARM-T06 | Task | `keycloak-oidc.service.ts`: cover token refresh failure, disabled Keycloak config branch, user-not-found path | `DONE` |
+| FARM-T07 | Task | `aws-lambda.executor.ts`: cover missing ARN, SDK error propagation, dry-run branch | `DONE` |
+| FARM-T08 | Task | `helm.service.ts`: cover release not found, upgrade dry-run, rollback failure, diff output empty | `DONE` |
+| FARM-T09 | Task | `kubernetes.service.ts` + `kyverno-policy-report.service.ts`: cover cluster unreachable, resource not found, policy violation parsing | `DONE` |
+| FARM-T10 | Task | `pipeline.processor.ts`: cover stage skip, partial failure, all stage type dispatch branches | `DONE` |
 
 ---
 
-#### FARM-S174: API — Missing controller and processor coverage `TODO`
+#### FARM-S174: API — Missing controller and processor coverage `DONE`
 
 Several controllers and processors have 0% coverage because no spec file exists.
 
@@ -1145,15 +1145,15 @@ Several controllers and processors have 0% coverage because no spec file exists.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T11 | Task | Write spec for `audit-log.controller.ts`: list endpoint, pagination, auth guard | `TODO` |
-| FARM-T12 | Task | Write spec for `keycloak-sync.processor.ts`: user sync, error handling, retry | `TODO` |
-| FARM-T13 | Task | Write specs for integration controllers (ArgoCD, CircleCI, Jenkins, TravisCI, webhook receiver, credential CRUD) | `TODO` |
-| FARM-T14 | Task | Write spec for `integrations-listener.service.ts`: event handling, credential lookup | `TODO` |
-| FARM-T15 | Task | Write spec for `kubernetes.controller.ts`: list resources, apply, delete, error propagation | `TODO` |
+| FARM-T11 | Task | Write spec for `audit-log.controller.ts`: list endpoint, pagination, auth guard | `DONE` |
+| FARM-T12 | Task | Write spec for `keycloak-sync.processor.ts`: user sync, error handling, retry | `DONE` |
+| FARM-T13 | Task | Write specs for integration controllers (ArgoCD, CircleCI, Jenkins, TravisCI, webhook receiver, credential CRUD) | `DONE` |
+| FARM-T14 | Task | Write spec for `integrations-listener.service.ts`: event handling, credential lookup | `DONE` |
+| FARM-T15 | Task | Write spec for `kubernetes.controller.ts`: list resources, apply, delete, error propagation | `DONE` |
 
 ---
 
-#### FARM-S175: API — Function coverage in auth and analytics `TODO`
+#### FARM-S175: API — Function coverage in auth and analytics `DONE`
 
 | Module | Current fn% |
 |--------|------------|
@@ -1162,35 +1162,35 @@ Several controllers and processors have 0% coverage because no spec file exists.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T16 | Task | `auth.controller.ts`: add tests for all endpoints — register, login, logout, refresh, profile, OAuth callback stubs | `TODO` |
+| FARM-T16 | Task | `auth.controller.ts`: add tests for all endpoints — register, login, logout, refresh, profile, OAuth callback stubs | `DONE` |
 
 ---
 
-#### FARM-S176: Web — API client library coverage `TODO`
+#### FARM-S176: Web — API client library coverage `DONE`
 
 `apps/web/src/lib/api-client.ts` is the single largest coverage gap in the frontend: 48.5% statements, 31.0% branches, 35.4% functions. It contains all HTTP call wrappers for every resource.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T17 | Task | Write `api-client.test.ts` using `msw` (Mock Service Worker) to intercept HTTP: cover all CRUD methods for auth, catalog, environments, teams, pipelines, integrations | `TODO` |
-| FARM-T18 | Task | Cover error branches: 4xx responses, 5xx responses, network timeout, token expiry refresh flow | `TODO` |
-| FARM-T19 | Task | Cover query-string serialization helpers and `buildUrl` branches | `TODO` |
+| FARM-T17 | Task | Write `api-client.test.ts` using `msw` (Mock Service Worker) to intercept HTTP: cover all CRUD methods for auth, catalog, environments, teams, pipelines, integrations | `DONE` |
+| FARM-T18 | Task | Cover error branches: 4xx responses, 5xx responses, network timeout, token expiry refresh flow | `DONE` |
+| FARM-T19 | Task | Cover query-string serialization helpers and `buildUrl` branches | `DONE` |
 
 ---
 
-#### FARM-S177: Web — Layout and navigation components `TODO`
+#### FARM-S177: Web — Layout and navigation components `DONE`
 
 `app-shell.tsx` (65.7% stmt), `org-switcher.tsx` (40.9% stmt), and `activity-feed.tsx` (35.9% stmt) are rendered on every authenticated page but have minimal test coverage.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T20 | Task | `app-shell.tsx`: test sidebar collapse/expand, active route highlighting, responsive breakpoint rendering | `TODO` |
-| FARM-T21 | Task | `org-switcher.tsx`: test org list rendering, switching, loading state, empty state | `TODO` |
-| FARM-T22 | Task | `activity-feed.tsx`: test feed rendering, empty state, loading skeleton, pagination | `TODO` |
+| FARM-T20 | Task | `app-shell.tsx`: test sidebar collapse/expand, active route highlighting, responsive breakpoint rendering | `DONE` |
+| FARM-T21 | Task | `org-switcher.tsx`: test org list rendering, switching, loading state, empty state | `DONE` |
+| FARM-T22 | Task | `activity-feed.tsx`: test feed rendering, empty state, loading skeleton, pagination | `DONE` |
 
 ---
 
-#### FARM-S178: Web — Feature page client components `TODO`
+#### FARM-S178: Web — Feature page client components `DONE`
 
 Most feature-page `*Client.tsx` components lack unit tests. Target the lowest-covered modules and the most user-critical pages.
 
@@ -1204,22 +1204,22 @@ Most feature-page `*Client.tsx` components lack unit tests. Target the lowest-co
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T23 | Task | Istio tabs (Canary, Security, Traffic): test data rendering, loading skeleton, empty/error states, user interactions | `TODO` |
-| FARM-T24 | Task | Compliance pages: `ComplianceDashboardClient`, `PolicyListClient` — test rule display, violation count, filter interactions | `TODO` |
-| FARM-T25 | Task | Pipeline builder (`stage-builder.tsx`, `BuildStageCard.tsx`): test stage add/remove/reorder, form validation, `useWatch` integration | `TODO` |
-| FARM-T26 | Task | Organization and catalog forms (`NewOrgClient.tsx`, `NewComponentClient.tsx`): test validation, slug preview, tag input, submit flow | `TODO` |
-| FARM-T27 | Task | `ws-client.ts`: test connect, disconnect, reconnect, message dispatch, error handling | `TODO` |
+| FARM-T23 | Task | Istio tabs (Canary, Security, Traffic): test data rendering, loading skeleton, empty/error states, user interactions | `DONE` |
+| FARM-T24 | Task | Compliance pages: `ComplianceDashboardClient`, `PolicyListClient` — test rule display, violation count, filter interactions | `DONE` |
+| FARM-T25 | Task | Pipeline builder (`stage-builder.tsx`, `BuildStageCard.tsx`): test stage add/remove/reorder, form validation, `useWatch` integration | `DONE` |
+| FARM-T26 | Task | Organization and catalog forms (`NewOrgClient.tsx`, `NewComponentClient.tsx`): test validation, slug preview, tag input, submit flow | `DONE` |
+| FARM-T27 | Task | `ws-client.ts`: test connect, disconnect, reconnect, message dispatch, error handling | `DONE` |
 
 ---
 
-#### FARM-S179: Web — CI coverage threshold enforcement `TODO`
+#### FARM-S179: Web — CI coverage threshold enforcement `DONE`
 
 Add Vitest `thresholds` to `apps/web/vitest.config.ts` once all coverage stories are complete.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T28 | Task | Add `thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 }` under `coverage:` in `vitest.config.ts` | `TODO` |
-| FARM-T29 | Task | Verify CI `web` job fails when threshold is violated; confirm it passes after all coverage work | `TODO` |
+| FARM-T28 | Task | Add `thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 }` under `coverage:` in `vitest.config.ts` | `DONE` |
+| FARM-T29 | Task | Verify CI `web` job fails when threshold is violated; confirm it passes after all coverage work | `DONE` |
 
 ---
 
@@ -1243,8 +1243,8 @@ Add Vitest `thresholds` to `apps/web/vitest.config.ts` once all coverage stories
 | Phase 5.6: E2E Testing | 1 | 1 | `DONE` |
 | Phase 5.7: Backend Bug Fixes | 1 | 2 | `DONE` |
 | Phase 6: Advanced Features | 13 | 58 | `DONE` |
-| Phase 7: Frontend Hardening | 1 | 5 | `TODO` |
+| Phase 7: Frontend Hardening | 1 | 5 | `DONE` |
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
-| Phase 10: Test Coverage Hardening | 1 | 8 | `TODO` |
+| Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
 | **Total** | **47** | **180** | |
