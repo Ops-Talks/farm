@@ -40,7 +40,7 @@ test.describe("Environments — authenticated", () => {
 
 const MOCK_HELM_RELEASE = {
   name: "helm-deploy",
-  namespace: "production",
+  namespace: "helm-ns",
   chart: "helm-chart",
   chartVersion: "1.2.3",
   appVersion: "v2.0.0",
@@ -51,7 +51,7 @@ const MOCK_HELM_RELEASE = {
 
 const MOCK_ROLLOUT = {
   name: "argo-rollout",
-  namespace: "production",
+  namespace: "rollout-ns",
   // KubernetesRollout uses `phase`, not `status`
   phase: "Healthy",
   updatedAt: new Date().toISOString(),
@@ -59,7 +59,7 @@ const MOCK_ROLLOUT = {
 
 const MOCK_ARGOCD_APP = {
   name: "argocd-prod-app",
-  namespace: "argocd",
+  namespace: "argocd-ns",
   // ArgoCDApplication uses a nested status object, not flat syncStatus/healthStatus
   status: {
     health: { status: "Healthy" },
@@ -207,7 +207,9 @@ test("Helm releases panel renders a table row with mock release data", async ({
 
   // The release name and namespace must both appear inside the table
   await expect(page.getByText(MOCK_HELM_RELEASE.name)).toBeVisible();
-  await expect(page.getByText(MOCK_HELM_RELEASE.namespace)).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: MOCK_HELM_RELEASE.namespace, exact: true }),
+  ).toBeVisible();
 });
 
 test("Helm releases panel shows empty state when no releases are returned", async ({
@@ -257,7 +259,7 @@ test("RolloutStatusCard renders with Argo Rollout data", async ({ page }) => {
   await expect(page.getByText(MOCK_ROLLOUT.name)).toBeVisible();
 
   // The namespace rendered in monospace below the rollout name
-  await expect(page.getByText(MOCK_ROLLOUT.namespace)).toBeVisible();
+  await expect(page.getByText(MOCK_ROLLOUT.namespace, { exact: true })).toBeVisible();
 });
 
 test("ArgoCDStatusCard renders with ArgoCD application data", async ({
@@ -272,7 +274,9 @@ test("ArgoCDStatusCard renders with ArgoCD application data", async ({
 
   // The application name and namespace must both appear in the table
   await expect(page.getByText(MOCK_ARGOCD_APP.name)).toBeVisible();
-  await expect(page.getByText(MOCK_ARGOCD_APP.namespace)).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: MOCK_ARGOCD_APP.namespace, exact: true }),
+  ).toBeVisible();
 });
 
 test("ArgoCDStatusCard shows empty state when no applications are returned", async ({

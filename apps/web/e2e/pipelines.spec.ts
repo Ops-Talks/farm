@@ -347,8 +347,10 @@ test.describe("Pipelines — authenticated flows", () => {
       timeout: 10_000,
     });
 
-    // Status badge for the run
-    await expect(page.getByText(MOCK_RUN.status)).toBeVisible();
+    // Status badge — scope to the run row to avoid matching the filter <option>
+    await expect(
+      page.getByRole("cell").filter({ hasText: MOCK_RUN.status }),
+    ).toBeVisible();
   });
 
   /**
