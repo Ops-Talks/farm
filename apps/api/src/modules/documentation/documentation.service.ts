@@ -24,10 +24,14 @@ export function sanitizeHtml(html: string): string {
     /<\s*(script|iframe|object|embed|form|link|meta|base)[^>]*\/?>/gi,
     "",
   );
-  sanitized = sanitized.replace(
-    /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi,
-    "",
-  );
+  let previous: string;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(
+      /\s+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi,
+      "",
+    );
+  } while (sanitized !== previous);
   sanitized = sanitized.replace(
     /href\s*=\s*["']?\s*javascript:[^"'>\s]*/gi,
     'href="#"',
