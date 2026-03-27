@@ -724,6 +724,7 @@ describe("CatalogService — gitClone internal branches", () => {
       "clone",
       "--depth",
       "1",
+      "--",
       "http://example.com/repo.git",
       expect.any(String),
     ]);
@@ -753,6 +754,43 @@ describe("CatalogService — gitClone internal branches", () => {
     );
 
     await expect(clonePromise).rejects.toThrow(BadRequestException);
+  });
+
+  describe("gitClone — URL validation at sink", () => {
+    type GitCloneFn = (url: string, targetDir: string) => Promise<void>;
+
+    it("should throw BadRequestException for an option-like URL and not call spawn", async () => {
+      const gitClone = (
+        service as unknown as { gitClone: GitCloneFn }
+      ).gitClone.bind(service);
+
+      await expect(
+        gitClone("--upload-pack=malicious", "/tmp/target"),
+      ).rejects.toThrow(BadRequestException);
+      expect(spawnMock).not.toHaveBeenCalled();
+    });
+
+    it("should throw BadRequestException for a URL with leading whitespace before an option flag and not call spawn", async () => {
+      const gitClone = (
+        service as unknown as { gitClone: GitCloneFn }
+      ).gitClone.bind(service);
+
+      await expect(
+        gitClone("  --upload-pack=malicious", "/tmp/target"),
+      ).rejects.toThrow(BadRequestException);
+      expect(spawnMock).not.toHaveBeenCalled();
+    });
+
+    it("should throw BadRequestException for a disallowed scheme URL and not call spawn", async () => {
+      const gitClone = (
+        service as unknown as { gitClone: GitCloneFn }
+      ).gitClone.bind(service);
+
+      await expect(
+        gitClone("git://github.com/org/repo.git", "/tmp/target"),
+      ).rejects.toThrow(BadRequestException);
+      expect(spawnMock).not.toHaveBeenCalled();
+    });
   });
 
   it("should discover YAML files in nested directories via findYamlFiles", async () => {

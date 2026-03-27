@@ -154,8 +154,22 @@ export class CatalogService {
   }
 
   private async gitClone(url: string, targetDir: string): Promise<void> {
+    // Normalize the URL once so validation and git both see the same value.
+    const normalizedUrl = url.trim();
+
+    // Validate the Git URL here to ensure all callers pass a safe value,
+    // even if they forget to call validateGitUrl themselves.
+    this.validateGitUrl(normalizedUrl);
+
     return new Promise((resolve, reject) => {
-      const process = spawn("git", ["clone", "--depth", "1", url, targetDir]);
+      const process = spawn("git", [
+        "clone",
+        "--depth",
+        "1",
+        "--",
+        normalizedUrl,
+        targetDir,
+      ]);
       process.on("close", (code) => {
         if (code === 0) {
           resolve();
