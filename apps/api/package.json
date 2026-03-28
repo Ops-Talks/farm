@@ -27,6 +27,8 @@
     "seed": "npm run build && node dist/database/seeds/seed-runner.js"
   },
   "dependencies": {
+    "@aws-sdk/client-api-gateway": "^3.1019.0",
+    "@aws-sdk/client-cloudwatch": "^3.1019.0",
     "@aws-sdk/client-cost-explorer": "^3.1012.0",
     "@aws-sdk/client-ecs": "^3.1012.0",
     "@aws-sdk/client-lambda": "^3.1012.0",
@@ -149,7 +151,9 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/app.module.ts",
+      "!**/migrations/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

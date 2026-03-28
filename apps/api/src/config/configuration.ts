@@ -97,6 +97,19 @@ export const configuration = () => ({
     user: process.env.SWAGGER_USER || "farm",
     password: process.env.SWAGGER_PASSWORD || "farm",
   },
+  gateway: {
+    kong: {
+      enabled: process.env.GATEWAY_KONG_ENABLED === "true",
+      url: process.env.GATEWAY_KONG_URL || "",
+      apiKey: process.env.GATEWAY_KONG_API_KEY || "",
+    },
+    aws: {
+      enabled: process.env.GATEWAY_AWS_ENABLED === "true",
+      region: process.env.GATEWAY_AWS_REGION || "",
+      accessKeyId: process.env.GATEWAY_AWS_ACCESS_KEY_ID || "",
+      secretAccessKey: process.env.GATEWAY_AWS_SECRET_ACCESS_KEY || "",
+    },
+  },
 });
 
 /**
@@ -164,4 +177,12 @@ export const validationSchema = Joi.object({
   // Swagger Basic Auth
   SWAGGER_USER: Joi.string().default("farm"),
   SWAGGER_PASSWORD: Joi.string().default("farm"),
+  // Gateway integration (all optional)
+  GATEWAY_KONG_ENABLED: Joi.boolean().default(false),
+  GATEWAY_KONG_URL: Joi.string().allow("").default(""),
+  GATEWAY_KONG_API_KEY: Joi.string().allow("").default(""),
+  GATEWAY_AWS_ENABLED: Joi.boolean().default(false),
+  GATEWAY_AWS_REGION: Joi.string().allow("").default(""),
+  GATEWAY_AWS_ACCESS_KEY_ID: Joi.string().allow("").default(""),
+  GATEWAY_AWS_SECRET_ACCESS_KEY: Joi.string().allow("").default(""),
 });

@@ -793,6 +793,40 @@ export interface AddConsumerDto {
   consumerTeamId?: string;
 }
 
+// -- Gateway Routes (FARM-E48) --
+
+export type GatewayType = "kong" | "aws";
+
+/**
+ * Health status for a gateway route endpoint.
+ * Renamed RouteHealthStatus to avoid collision with the NestJS HealthStatus interface above.
+ */
+export type RouteHealthStatus = "up" | "degraded" | "down";
+
+export interface GatewayRoute {
+  id: string;
+  externalId: string;
+  name: string;
+  paths: string[];
+  methods: string[];
+  tags: string[];
+  gatewayType: GatewayType;
+  componentId: string | null;
+  syncedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiHealthCheck {
+  id: string;
+  url: string;
+  status: RouteHealthStatus;
+  latencyMs: number | null;
+  apiSpecId: string | null;
+  checkedAt: string;
+  createdAt: string;
+}
+
 // -- Kyverno Policy Reports (FARM-E40) --
 
 /** A Kyverno PolicyReport (or ClusterPolicyReport) result returned by the backend. */

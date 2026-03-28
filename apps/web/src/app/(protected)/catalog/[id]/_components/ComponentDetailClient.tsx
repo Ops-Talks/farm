@@ -25,6 +25,7 @@ import { IstioTrafficTab } from "./IstioTrafficTab";
 import { IstioSecurityTab } from "./IstioSecurityTab";
 import { IstioCanaryTab } from "./IstioCanaryTab";
 import { ApiSpecsTab } from "./ApiSpecsTab";
+import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -277,6 +278,8 @@ export function ComponentDetailClient() {
           <TabsTrigger value="istio-security">Security</TabsTrigger>
           <TabsTrigger value="istio-canary">Canary</TabsTrigger>
           <TabsTrigger value="api-specs">API Specs</TabsTrigger>
+          {/* Gateway Routes tab (FARM-E48) */}
+          <TabsTrigger value="gateway">Gateway Routes</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -558,6 +561,19 @@ export function ComponentDetailClient() {
         <TabsContent value="api-specs">
           <ErrorBoundary>
             <ApiSpecsTab componentId={component.id} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Gateway Routes tab (FARM-E48) ─────────────────────────────── */}
+        <TabsContent value="gateway">
+          <ErrorBoundary>
+            {/*
+             * isAdmin: No role context is available on this page for other tabs either.
+             * Defaulting to false to keep the admin actions (Sync, Health Check) hidden
+             * until a proper auth/role context is threaded through. Set to true during
+             * local development to test the admin UI.
+             */}
+            <GatewayRoutesTab componentId={component.id} isAdmin={false} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

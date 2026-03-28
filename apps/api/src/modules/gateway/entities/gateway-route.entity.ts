@@ -1,0 +1,82 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
+import { ApiProperty } from "@nestjs/swagger";
+import { Component } from "../../catalog/entities/component.entity";
+import { GatewayType } from "../enums/gateway-type.enum";
+
+/**
+ * Represents a route entry synchronized from an API gateway (Kong or AWS API Gateway).
+ */
+@Entity("gateway_routes")
+export class GatewayRoute {
+  @ApiProperty({ description: "Unique identifier of the gateway route" })
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
+
+  @ApiProperty({ description: "External identifier from the gateway provider" })
+  @Column()
+  externalId: string;
+
+  @ApiProperty({ description: "Human-readable route name" })
+  @Column()
+  name: string;
+
+  @ApiProperty({
+    description: "URL paths matched by this route",
+    type: [String],
+  })
+  @Column("simple-array", { default: "" })
+  paths: string[];
+
+  @ApiProperty({
+    description: "HTTP methods matched by this route",
+    type: [String],
+  })
+  @Column("simple-array", { default: "" })
+  methods: string[];
+
+  @ApiProperty({
+    description: "Tags associated with this route",
+    type: [String],
+    nullable: true,
+  })
+  @Column("simple-array", { default: "", nullable: true })
+  tags: string[];
+
+  @ApiProperty({ enum: GatewayType, description: "Gateway provider type" })
+  @Column({ type: "varchar" })
+  gatewayType: GatewayType;
+
+  @ApiProperty({
+    description: "Associated catalog component ID",
+    nullable: true,
+  })
+  @Column({ nullable: true })
+  componentId: string | null;
+
+  @ManyToOne(() => Component, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "componentId" })
+  component: Component | null;
+
+  @ApiProperty({
+    description: "Timestamp of last successful sync",
+    nullable: true,
+  })
+  @Column({ nullable: true, type: "timestamp" })
+  syncedAt: Date | null;
+
+  @ApiProperty({ description: "Creation timestamp" })
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @ApiProperty({ description: "Last update timestamp" })
+  @UpdateDateColumn()
+  updatedAt: Date;
+}
