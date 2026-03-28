@@ -167,12 +167,13 @@ export class AwsApiGatewayAdapter implements IGatewayAdapter {
           0,
         );
 
+        const latencyDatapoints = latencyResponse.Datapoints ?? [];
         const latencyAvg =
-          (latencyResponse.Datapoints ?? []).length > 0
-            ? (latencyResponse.Datapoints ?? []).reduce(
+          latencyDatapoints.length > 0
+            ? latencyDatapoints.reduce(
                 (acc, dp) => acc + (dp.Average ?? 0),
                 0,
-              ) / (latencyResponse.Datapoints ?? []).length
+              ) / latencyDatapoints.length
             : null;
 
         let status: HealthStatus = HealthStatus.UP;

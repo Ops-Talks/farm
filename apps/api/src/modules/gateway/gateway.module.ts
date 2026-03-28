@@ -14,6 +14,23 @@ import { GATEWAY_ADAPTERS } from "./gateway.constants";
 export { GATEWAY_ADAPTERS } from "./gateway.constants";
 
 /**
+ * Factory that builds the list of enabled gateway adapters based on
+ * environment configuration. Exported for direct unit testing.
+ */
+export function gatewayAdaptersFactory(
+  config: ConfigService,
+): IGatewayAdapter[] {
+  const adapters: IGatewayAdapter[] = [];
+  if (config.get<boolean>("gateway.kong.enabled")) {
+    adapters.push(new KongAdapter(config));
+  }
+  if (config.get<boolean>("gateway.aws.enabled")) {
+    adapters.push(new AwsApiGatewayAdapter(config));
+  }
+  return adapters;
+}
+
+/**
  * Feature module for API Gateway integration.
  *
  * Provides:
@@ -30,16 +47,7 @@ export { GATEWAY_ADAPTERS } from "./gateway.constants";
     {
       provide: GATEWAY_ADAPTERS,
       inject: [ConfigService],
-      useFactory: (config: ConfigService): IGatewayAdapter[] => {
-        const adapters: IGatewayAdapter[] = [];
-        if (config.get<boolean>("gateway.kong.enabled")) {
-          adapters.push(new KongAdapter(config));
-        }
-        if (config.get<boolean>("gateway.aws.enabled")) {
-          adapters.push(new AwsApiGatewayAdapter(config));
-        }
-        return adapters;
-      },
+      useFactory: gatewayAdaptersFactory,
     },
   ],
   exports: [GatewayService],

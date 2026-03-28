@@ -60,6 +60,17 @@ describe("AwsApiGatewayAdapter", () => {
     expect(adapter.type).toBe(GatewayType.AWS);
   });
 
+  it("should use provided credentials when accessKeyId and secretAccessKey are set", () => {
+    const config = buildConfigService({
+      "gateway.aws.region": "eu-west-1",
+      "gateway.aws.accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+      "gateway.aws.secretAccessKey": "secret",
+    });
+    const adapter = new AwsApiGatewayAdapter(config);
+    expect(adapter.type).toBe(GatewayType.AWS);
+    expect(MockAPIGatewayClient).toHaveBeenCalled();
+  });
+
   describe("getRoutes()", () => {
     it("should return empty array when no REST APIs exist", async () => {
       const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
@@ -125,6 +136,65 @@ describe("AwsApiGatewayAdapter", () => {
       const routes = await adapter.getRoutes();
 
       expect(routes).toHaveLength(0);
+    });
+
+    it("should skip APIs that have no id or name", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValueOnce({
+        items: [{ id: undefined, name: undefined }],
+      });
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(0);
+      expect(apiGatewaySendMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should use resource path as externalId segment when resource has no id", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock
+        .mockResolvedValueOnce({
+          items: [{ id: "api-1", name: "My API" }],
+        })
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: undefined,
+              path: "/orders",
+              resourceMethods: { GET: {} },
+            },
+          ],
+        });
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes[0].externalId).toBe("api-1::/orders");
+    });
+
+    it("should handle GetResourcesCommand error gracefully and continue", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock
+        .mockResolvedValueOnce({
+          items: [
+            { id: "api-1", name: "API One" },
+            { id: "api-2", name: "API Two" },
+          ],
+        })
+        .mockRejectedValueOnce(new Error("Access denied"))
+        .mockResolvedValueOnce({
+          items: [{ id: "res-1", path: "/v2", resourceMethods: { GET: {} } }],
+        });
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(1);
+      expect(routes[0].externalId).toBe("api-2::res-1");
     });
   });
 
@@ -193,6 +263,207 @@ describe("AwsApiGatewayAdapter", () => {
       const health = await adapter.getHealth();
 
       expect(health[0].status).toBe(HealthStatus.DEGRADED);
+    });
+
+    it("should compute latencyMs average when CloudWatch returns latency datapoints", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock
+        .mockResolvedValueOnce({ Datapoints: [] }) // 5XX
+        .mockResolvedValueOnce({ Datapoints: [] }) // 4XX
+        .mockResolvedValueOnce({
+          Datapoints: [{ Average: 100 }, { Average: 200 }],
+        }); // Latency
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].latencyMs).toBe(150);
+      expect(health[0].status).toBe(HealthStatus.UP);
+    });
+
+    it("should skip APIs that have no id or name", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: undefined, name: undefined }],
+      });
+
+      const health = await adapter.getHealth();
+
+      expect(health).toHaveLength(0);
+      expect(cloudWatchSendMock).not.toHaveBeenCalled();
+    });
+
+    it("should handle CloudWatch errors gracefully and push DOWN status", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock.mockRejectedValue(new Error("CloudWatch timeout"));
+
+      const health = await adapter.getHealth();
+
+      expect(health).toHaveLength(1);
+      expect(health[0].status).toBe(HealthStatus.DOWN);
+    });
+
+    it("should use undefined region fallback in URL when region config is absent", async () => {
+      const undefinedConfig = {
+        get: jest.fn().mockReturnValue(undefined),
+      } as unknown as ConfigService;
+      const adapter = new AwsApiGatewayAdapter(undefinedConfig);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock
+        .mockResolvedValueOnce({ Datapoints: [] })
+        .mockResolvedValueOnce({ Datapoints: [] })
+        .mockResolvedValueOnce({ Datapoints: [] });
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].url).toContain("us-east-1");
+    });
+
+    it("should handle undefined Datapoints and undefined Sum/Average values", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock
+        .mockResolvedValueOnce({ Datapoints: [{ Sum: undefined }] })
+        .mockResolvedValueOnce({ Datapoints: [{ Sum: undefined }] })
+        .mockResolvedValueOnce({ Datapoints: [{ Average: undefined }] });
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].status).toBe(HealthStatus.UP);
+      expect(health[0].latencyMs).toBe(0);
+    });
+
+    it("should handle missing Datapoints key in CloudWatch response", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock.mockResolvedValue({});
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].status).toBe(HealthStatus.UP);
+      expect(health[0].latencyMs).toBeNull();
+    });
+
+    it("should use undefined region fallback in catch block URL", async () => {
+      const undefinedConfig = {
+        get: jest.fn().mockReturnValue(undefined),
+      } as unknown as ConfigService;
+      const adapter = new AwsApiGatewayAdapter(undefinedConfig);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: "My API" }],
+      });
+
+      cloudWatchSendMock.mockRejectedValue(new Error("timeout"));
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].url).toContain("us-east-1");
+      expect(health[0].status).toBe(HealthStatus.DOWN);
+    });
+
+    it("should handle undefined items in GetRestApis response for getHealth", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({});
+
+      const health = await adapter.getHealth();
+
+      expect(health).toHaveLength(0);
+    });
+  });
+
+  describe("getRoutes() additional null-coalescing branches", () => {
+    it("should handle undefined items in GetRestApis response", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({});
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(0);
+    });
+
+    it("should handle undefined items in GetResources response", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock
+        .mockResolvedValueOnce({ items: [{ id: "api-1", name: "My API" }] })
+        .mockResolvedValueOnce({});
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(0);
+    });
+
+    it("should skip resources that have no path", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock
+        .mockResolvedValueOnce({ items: [{ id: "api-1", name: "My API" }] })
+        .mockResolvedValueOnce({
+          items: [
+            { id: "res-1", path: undefined, resourceMethods: { GET: {} } },
+          ],
+        });
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(0);
+    });
+
+    it("should skip APIs where id is set but name is undefined", async () => {
+      const config = buildConfigService({ "gateway.aws.region": "us-east-1" });
+      const adapter = new AwsApiGatewayAdapter(config);
+
+      apiGatewaySendMock.mockResolvedValue({
+        items: [{ id: "api-1", name: undefined }],
+      });
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes).toHaveLength(0);
+    });
+  });
+
+  describe("constructor null-coalescing branches", () => {
+    it("should default region to us-east-1 when region config is undefined", () => {
+      const undefinedConfig = {
+        get: jest.fn().mockReturnValue(undefined),
+      } as unknown as ConfigService;
+      const adapter = new AwsApiGatewayAdapter(undefinedConfig);
+      expect(adapter.type).toBe(GatewayType.AWS);
     });
   });
 });

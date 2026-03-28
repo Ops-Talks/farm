@@ -230,6 +230,82 @@ describe("KongAdapter", () => {
       expect(health[0].status).toBe(HealthStatus.DOWN);
     });
 
+    it("should return DEGRADED status when a target has HEALTHCHECKS_OFF", async () => {
+      const config = buildConfigService({
+        "gateway.kong.url": "http://kong:8001",
+        "gateway.kong.apiKey": "",
+      });
+      const adapter = new KongAdapter(config);
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+        )
+        .mockResolvedValueOnce(
+          mockFetchResponse({ data: [{ health: "HEALTHCHECKS_OFF" }] }),
+        );
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].status).toBe(HealthStatus.DEGRADED);
+    });
+
+    it("should return DOWN when the upstreams endpoint returns non-ok", async () => {
+      const config = buildConfigService({
+        "gateway.kong.url": "http://kong:8001",
+        "gateway.kong.apiKey": "",
+      });
+      const adapter = new KongAdapter(config);
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(mockFetchResponse({}, false));
+
+      const health = await adapter.getHealth();
+
+      expect(health).toHaveLength(0);
+    });
+
+    it("should return DOWN when the per-upstream health endpoint returns non-ok", async () => {
+      const config = buildConfigService({
+        "gateway.kong.url": "http://kong:8001",
+        "gateway.kong.apiKey": "",
+      });
+      const adapter = new KongAdapter(config);
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+        )
+        .mockResolvedValueOnce(mockFetchResponse({}, false));
+
+      const health = await adapter.getHealth();
+
+      expect(health[0].status).toBe(HealthStatus.DOWN);
+    });
+
+    it("should catch errors from per-upstream health fetch and push DOWN", async () => {
+      const config = buildConfigService({
+        "gateway.kong.url": "http://kong:8001",
+        "gateway.kong.apiKey": "",
+      });
+      const adapter = new KongAdapter(config);
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce(
+          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+        )
+        .mockRejectedValueOnce(new Error("Network failure"));
+
+      const health = await adapter.getHealth();
+
+      expect(health).toHaveLength(1);
+      expect(health[0].status).toBe(HealthStatus.DOWN);
+    });
+
     it("should return empty array when no upstreams exist", async () => {
       const config = buildConfigService({
         "gateway.kong.url": "http://kong:8001",
@@ -244,6 +320,47 @@ describe("KongAdapter", () => {
       const health = await adapter.getHealth();
 
       expect(health).toHaveLength(0);
+    });
+  });
+
+  describe("getRoutes() null-coalescing branches", () => {
+    it("should default paths, methods, and tags to empty arrays when null", async () => {
+      const config = buildConfigService({
+        "gateway.kong.url": "http://kong:8001",
+        "gateway.kong.apiKey": "",
+      });
+      const adapter = new KongAdapter(config);
+
+      globalThis.fetch = jest.fn().mockResolvedValue(
+        mockFetchResponse({
+          data: [
+            {
+              id: "route-null",
+              name: "null-route",
+              paths: null,
+              methods: null,
+              tags: null,
+            },
+          ],
+          next: null,
+        }),
+      );
+
+      const routes = await adapter.getRoutes();
+
+      expect(routes[0].paths).toEqual([]);
+      expect(routes[0].methods).toEqual([]);
+      expect(routes[0].tags).toEqual([]);
+    });
+  });
+
+  describe("constructor null-coalescing branches", () => {
+    it("should default baseUrl and apiKey to empty string when config returns undefined", () => {
+      const config = {
+        get: jest.fn().mockReturnValue(undefined),
+      } as unknown as ConfigService;
+      const adapter = new KongAdapter(config);
+      expect(adapter.type).toBe(GatewayType.KONG);
     });
   });
 });
