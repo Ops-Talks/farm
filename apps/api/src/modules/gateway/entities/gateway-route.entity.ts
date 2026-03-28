@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
@@ -71,6 +72,16 @@ export class GatewayRoute {
   })
   @Column({ nullable: true, type: "timestamp" })
   syncedAt: Date | null;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440100",
+    description: "The UUID of the organization this gateway route belongs to",
+    required: false,
+    nullable: true,
+  })
+  @Index()
+  @Column({ nullable: true })
+  organizationId: string;
 
   @ApiProperty({ description: "Creation timestamp" })
   @CreateDateColumn()

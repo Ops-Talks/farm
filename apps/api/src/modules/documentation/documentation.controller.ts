@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -17,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiHeader,
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { DocumentationService } from "./documentation.service";
@@ -33,6 +35,7 @@ import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing technical documentation.
@@ -80,14 +83,19 @@ export class DocumentationController {
   })
   async create(
     @Body() createDocumentationDto: CreateDocumentationDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Documentation> {
-    return await this.documentationService.create(createDocumentationDto);
+    return await this.documentationService.create(
+      createDocumentationDto,
+      req.organizationId,
+    );
   }
 
   /**
    * Retrieves all documentation entries, optionally filtered by component.
-   * @param componentId - Optional component ID to filter documentation
-   * @returns An array of documentation entries
+   * @param query - Query params including optional componentId filter
+   * @param req - The incoming request carrying the resolved organization ID
+   * @returns A paginated list of documentation entries
    */
   @Get()
   @ApiOperation({ summary: "List all documentation entries" })
@@ -96,6 +104,11 @@ export class DocumentationController {
     required: false,
     description: "Filter docs by component UUID",
   })
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: false,
+    description: "Filter docs by organization UUID",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Return documentation list.",
@@ -103,11 +116,14 @@ export class DocumentationController {
   })
   async findAll(
     @Query() query: ListDocumentationQueryDto,
+    @Req() req: RequestWithOrg,
   ): Promise<PaginatedResponseDto<Documentation>> {
+    const organizationId = req.organizationId;
     const [data, total] = await this.documentationService.findAll(
       query.skip,
       query.take,
       query.componentId,
+      organizationId,
     );
     return new PaginatedResponseDto(
       data,

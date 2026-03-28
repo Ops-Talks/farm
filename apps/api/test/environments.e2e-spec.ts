@@ -14,10 +14,11 @@ interface EnvironmentResponse {
 describe("Environments CRUD (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -36,6 +37,7 @@ describe("Environments CRUD (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
@@ -51,6 +53,7 @@ describe("Environments CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -69,6 +72,7 @@ describe("Environments CRUD (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as EnvironmentResponse;
@@ -84,6 +88,7 @@ describe("Environments CRUD (e2e)", () => {
     const updateRes = await request(app.getHttpServer())
       .patch(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(updateDto)
       .expect(200);
 
@@ -94,12 +99,14 @@ describe("Environments CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
       .get(`/api/v1/environments/${envId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -112,12 +119,14 @@ describe("Environments CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(envDto)
       .expect(201);
 
     await request(app.getHttpServer())
       .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(envDto)
       .expect(409);
   });
@@ -126,6 +135,7 @@ describe("Environments CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "bad-type-env",
         type: "nonexistent_type",

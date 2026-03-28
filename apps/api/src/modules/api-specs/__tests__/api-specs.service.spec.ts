@@ -31,6 +31,7 @@ describe("ApiSpecsService", () => {
     status: ApiSpecStatus.ACTIVE,
     deprecatedAt: null,
     sunsetAt: null,
+    organizationId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
   };

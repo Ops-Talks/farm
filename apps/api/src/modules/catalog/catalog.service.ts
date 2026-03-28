@@ -203,7 +203,10 @@ export class CatalogService {
    * @param yamlContent - The raw YAML content
    * @returns The created component
    */
-  async registerYaml(yamlContent: string): Promise<Component> {
+  async registerYaml(
+    yamlContent: string,
+    organizationId?: string,
+  ): Promise<Component> {
     try {
       const parsed = yaml.load(yamlContent) as CatalogInfoYaml;
 
@@ -237,7 +240,7 @@ export class CatalogService {
         );
       }
 
-      return await this.create(dto);
+      return await this.create(dto, organizationId);
     } catch (e) {
       if (e instanceof BadRequestException) throw e;
       const message = e instanceof Error ? e.message : String(e);
@@ -250,9 +253,15 @@ export class CatalogService {
    * @param createComponentDto - Data for the component to create
    * @returns The newly created component
    */
-  async create(createComponentDto: CreateComponentDto): Promise<Component> {
+  async create(
+    createComponentDto: CreateComponentDto,
+    organizationId?: string,
+  ): Promise<Component> {
     const { dependencyIds, ...rest } = createComponentDto;
-    const component = this.componentRepository.create(rest);
+    const component = this.componentRepository.create({
+      ...rest,
+      ...(organizationId ? { organizationId } : {}),
+    });
 
     if (dependencyIds?.length) {
       component.dependencies = await this.componentRepository.findBy({

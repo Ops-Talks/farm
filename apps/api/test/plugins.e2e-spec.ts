@@ -9,10 +9,12 @@ import { User } from "../src/modules/auth/entities/user.entity";
 describe("Plugin Manager (e2e)", () => {
   let app: INestApplication<App>;
   let adminToken: string;
+  let adminOrganizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    adminToken = await registerAndLogin(app);
+    ({ token: adminToken, organizationId: adminOrganizationId } =
+      await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -45,6 +47,7 @@ describe("Plugin Manager (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       const plugins = res.body as {
@@ -70,6 +73,7 @@ describe("Plugin Manager (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       const plugins = res.body as {
@@ -89,12 +93,15 @@ describe("Plugin Manager (e2e)", () => {
     });
 
     it("should allow any authenticated user to list plugins", async () => {
-      await registerAndLogin(app, {
-        username: "plugin_viewer",
-        email: "plugin_viewer@test.com",
-        password: "ViewerPass1",
-        displayName: "Plugin Viewer",
-      });
+      const { organizationId: viewerOrganizationId } = await registerAndLogin(
+        app,
+        {
+          username: "plugin_viewer",
+          email: "plugin_viewer@test.com",
+          password: "ViewerPass1",
+          displayName: "Plugin Viewer",
+        },
+      );
 
       // Demote user back to regular role
       const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
@@ -114,6 +121,7 @@ describe("Plugin Manager (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${viewerToken}`)
+        .set("X-Organization-Id", viewerOrganizationId)
         .expect(200);
     });
   });
@@ -125,6 +133,7 @@ describe("Plugin Manager (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/plugins/nonexistent")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(404);
     });
   });
@@ -134,6 +143,7 @@ describe("Plugin Manager (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins/menu-items")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -145,6 +155,7 @@ describe("Plugin Manager (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins/routes")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);

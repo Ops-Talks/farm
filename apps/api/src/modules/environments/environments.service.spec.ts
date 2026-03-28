@@ -68,6 +68,25 @@ describe("EnvironmentsService", () => {
       expect(repository.create).toHaveBeenCalled();
     });
 
+    it("should assign organizationId when provided", async () => {
+      jest.spyOn(repository, "findOne").mockResolvedValue(null);
+      jest
+        .spyOn(repository, "create")
+        .mockReturnValue(mockEnvironment as Environment);
+      jest
+        .spyOn(repository, "save")
+        .mockResolvedValue(mockEnvironment as Environment);
+
+      await service.create(
+        { name: "production", type: EnvironmentType.PRODUCTION },
+        "org-uuid-1",
+      );
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-uuid-1" }),
+      );
+    });
+
     it("should throw ConflictException if name exists", async () => {
       jest
         .spyOn(repository, "findOne")

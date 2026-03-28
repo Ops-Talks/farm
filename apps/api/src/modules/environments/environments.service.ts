@@ -30,6 +30,7 @@ export class EnvironmentsService {
    */
   async create(
     createEnvironmentDto: CreateEnvironmentDto,
+    organizationId?: string,
   ): Promise<Environment> {
     const existing = await this.environmentRepository.findOne({
       where: { name: createEnvironmentDto.name },
@@ -41,7 +42,10 @@ export class EnvironmentsService {
       );
     }
 
-    const environment = this.environmentRepository.create(createEnvironmentDto);
+    const environment = this.environmentRepository.create({
+      ...createEnvironmentDto,
+      ...(organizationId ? { organizationId } : {}),
+    });
     this.logger.log(`Creating environment: ${createEnvironmentDto.name}`);
     return await this.environmentRepository.save(environment);
   }

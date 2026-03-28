@@ -135,8 +135,12 @@ export class CatalogController {
   })
   async registerYaml(
     @Body() registerYamlDto: RegisterComponentYamlDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Component> {
-    const result = await this.catalogService.registerYaml(registerYamlDto.yaml);
+    const result = await this.catalogService.registerYaml(
+      registerYamlDto.yaml,
+      req.organizationId,
+    );
     await this.cacheManager.clear();
     return result;
   }
@@ -156,8 +160,12 @@ export class CatalogController {
   })
   async create(
     @Body() createComponentDto: CreateComponentDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Component> {
-    const result = await this.catalogService.create(createComponentDto);
+    const result = await this.catalogService.create(
+      createComponentDto,
+      req.organizationId,
+    );
     await this.cacheManager.clear();
     return result;
   }

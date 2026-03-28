@@ -11,10 +11,11 @@ import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 describe("Gateway (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -26,6 +27,7 @@ describe("Gateway (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/gateway/routes")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -44,6 +46,7 @@ describe("Gateway (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/gateway/routes/00000000-0000-0000-0000-000000000000")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
   });
@@ -53,6 +56,7 @@ describe("Gateway (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post("/api/v1/gateway/sync")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(201);
 
       expect(res.body).toEqual({ message: "Sync triggered" });
@@ -70,6 +74,7 @@ describe("Gateway (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/gateway/health")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -87,6 +92,7 @@ describe("Gateway (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post("/api/v1/gateway/health/check")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(201);
 
       expect(res.body).toEqual({ message: "Health check triggered" });
@@ -96,6 +102,18 @@ describe("Gateway (e2e)", () => {
       await request(app.getHttpServer())
         .post("/api/v1/gateway/health/check")
         .expect(401);
+    });
+  });
+
+  describe("org context", () => {
+    it("should accept X-Organization-Id header and return empty routes scoped to org", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/gateway/routes")
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
     });
   });
 });

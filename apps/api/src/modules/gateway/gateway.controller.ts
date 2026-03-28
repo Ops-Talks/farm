@@ -7,10 +7,12 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -23,6 +25,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { GatewayService } from "./gateway.service";
 import { GatewayRoute } from "./entities/gateway-route.entity";
 import { ApiHealthCheck } from "./entities/api-health-check.entity";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller exposing gateway route discovery and health check endpoints.
@@ -40,12 +43,19 @@ export class GatewayController {
     required: false,
     description: "Filter routes by catalog component UUID",
   })
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: false,
+    description: "Filter routes by organization UUID",
+  })
   @ApiOkResponse({ type: [GatewayRoute] })
   @Get("routes")
   findAllRoutes(
     @Query("componentId") componentId?: string,
+    @Req() req?: RequestWithOrg,
   ): Promise<GatewayRoute[]> {
-    return this.gatewayService.findAllRoutes(componentId);
+    const organizationId = req?.organizationId;
+    return this.gatewayService.findAllRoutes(componentId, organizationId);
   }
 
   @ApiOperation({ summary: "Get a single gateway route by ID" })

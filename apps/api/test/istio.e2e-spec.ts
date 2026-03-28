@@ -19,6 +19,8 @@ describe("Istio (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
   let adminToken: string;
+  let adminOrganizationId: string;
+  let viewerOrganizationId: string;
 
   // ---------------------------------------------------------------------------
   // Mock service implementations
@@ -103,15 +105,19 @@ describe("Istio (e2e)", () => {
     const istioMetricsService = app.get(IstioMetricsService);
     Object.assign(istioMetricsService, mockIstioMetricsService);
 
-    adminToken = await registerAndLogin(app);
+    ({ token: adminToken, organizationId: adminOrganizationId } =
+      await registerAndLogin(app));
 
     // Register a second non-admin user for authorization tests.
-    token = await registerAndLogin(app, {
-      username: "istio-viewer",
-      email: "istio-viewer@e2e-test.com",
-      password: "TestPassword1",
-      displayName: "Istio Viewer",
-    });
+    ({ token, organizationId: viewerOrganizationId } = await registerAndLogin(
+      app,
+      {
+        username: "istio-viewer",
+        email: "istio-viewer@e2e-test.com",
+        password: "TestPassword1",
+        displayName: "Istio Viewer",
+      },
+    ));
 
     // Remove admin role from the viewer user by re-logging in without role promotion.
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
@@ -137,6 +143,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/status")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(res.body).toHaveProperty("istioEnabled");
@@ -161,6 +168,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/virtual-services?namespace=default")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -186,6 +194,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/virtual-services/default/checkout-vs")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(res.body).toHaveProperty("name", "checkout-vs");
@@ -209,6 +218,7 @@ describe("Istio (e2e)", () => {
       await request(app.getHttpServer())
         .patch("/api/v1/istio/virtual-services/default/checkout-vs/weights")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .send(validBody)
         .expect(204);
     });
@@ -217,6 +227,7 @@ describe("Istio (e2e)", () => {
       await request(app.getHttpServer())
         .patch("/api/v1/istio/virtual-services/default/checkout-vs/weights")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", viewerOrganizationId)
         .send(validBody)
         .expect(403);
     });
@@ -232,6 +243,7 @@ describe("Istio (e2e)", () => {
       await request(app.getHttpServer())
         .patch("/api/v1/istio/virtual-services/default/checkout-vs/weights")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .send({ weights: [{ destination: 123, weight: "not-a-number" }] })
         .expect(400);
     });
@@ -246,6 +258,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/peer-authentications?namespace=default")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -264,6 +277,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/authorization-policies?namespace=default")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -282,6 +296,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/metrics/rps?service=checkout&namespace=default")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(res.body).toHaveProperty("timeseries");
@@ -303,6 +318,7 @@ describe("Istio (e2e)", () => {
           "/api/v1/istio/metrics/error-rate?service=checkout&namespace=default",
         )
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(res.body).toHaveProperty("timeseries");
@@ -319,6 +335,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/metrics/latency?service=checkout&namespace=default")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(res.body).toHaveProperty("p50");
@@ -336,6 +353,7 @@ describe("Istio (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/istio/topology?orgId=org-123")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", adminOrganizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);

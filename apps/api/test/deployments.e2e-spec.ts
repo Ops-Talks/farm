@@ -25,17 +25,19 @@ interface DeploymentResponse {
 describe("Deployments Lifecycle (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
   let componentId: string;
   let environmentId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
 
     // Create prerequisite component
     const compRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "deploy-e2e-service",
         kind: "service",
@@ -49,6 +51,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const envRes = await request(app.getHttpServer())
       .post("/api/v1/environments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "deploy-e2e-staging",
         type: "staging",
@@ -74,6 +77,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
@@ -90,6 +94,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const progressRes = await request(app.getHttpServer())
       .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ status: "in_progress" })
       .expect(200);
 
@@ -99,6 +104,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const successRes = await request(app.getHttpServer())
       .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         status: "succeeded",
         finishedAt: new Date().toISOString(),
@@ -111,6 +117,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as DeploymentResponse;
@@ -121,6 +128,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get(`/api/v1/deployments?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -139,6 +147,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const latestRes = await request(app.getHttpServer())
       .get(`/api/v1/deployments/latest?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const latestDeployments = latestRes.body as DeploymentResponse[];
@@ -150,6 +159,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         componentId,
         environmentId,
@@ -163,6 +173,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/deployments/${deploymentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ status: "succeeded" })
       .expect(400);
   });
@@ -171,6 +182,7 @@ describe("Deployments Lifecycle (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/deployments")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         componentId: "00000000-0000-0000-0000-000000000000",
         environmentId: "00000000-0000-0000-0000-000000000000",

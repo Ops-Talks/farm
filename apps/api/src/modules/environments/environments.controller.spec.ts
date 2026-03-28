@@ -45,12 +45,18 @@ describe("EnvironmentsController", () => {
   });
 
   it("should create an environment", async () => {
-    const result = await controller.create({
-      name: "production",
-      type: EnvironmentType.PRODUCTION,
-    });
+    const result = await controller.create(
+      {
+        name: "production",
+        type: EnvironmentType.PRODUCTION,
+      },
+      { organizationId: "org-uuid-1" } as never,
+    );
     expect(result).toEqual(mockEnvironment);
-    expect(service.create).toHaveBeenCalled();
+    expect(service.create).toHaveBeenCalledWith(
+      { name: "production", type: EnvironmentType.PRODUCTION },
+      "org-uuid-1",
+    );
   });
 
   it("should return all environments with pagination", async () => {

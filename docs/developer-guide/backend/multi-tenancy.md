@@ -7,10 +7,10 @@ This guide explains how Farm handles multi-tenancy through Organizations, how th
 Farm uses a multi-tenant model where a single deployment serves multiple isolated organizations. The key relationships are:
 
 - One **User** can belong to many **Organizations**, each with a distinct role.
-- One **Organization** owns many resources: components, teams, environments, and audit log entries.
+- One **Organization** owns many resources: components, teams, environments, documentation pages, API specs, gateway routes, and audit log entries.
 - Resources without an organization affiliation remain accessible to all authenticated users (backward-compatible with pre-multi-tenancy data).
 
-The `organizationId` foreign key on `Component`, `Team`, `Environment`, and `AuditLog` is **nullable and indexed**. A `null` value means the resource is not scoped to any organization.
+The `organizationId` foreign key on `Component`, `Team`, `Environment`, `AuditLog`, `Documentation`, `ApiSpec`, and `GatewayRoute` is **nullable and indexed**. A `null` value means the resource is not scoped to any organization.
 
 ## Organization Lifecycle
 
@@ -21,7 +21,7 @@ Create organization  -->  Invite members  -->  Assign roles  -->  Scope resource
 
 1. A user creates an organization. The creator is automatically assigned the `OWNER` role.
 2. The owner or an admin adds members to the organization.
-3. Resources (components, teams, environments) created while an org context is active are tagged with `organizationId`.
+3. Resources (components, teams, environments, documentation, API specs, gateway routes) created while an org context is active are tagged with `organizationId`.
 4. Subsequent requests include the `X-Organization-Id` header to operate within the organization's scope.
 
 ## Two-Tier RBAC

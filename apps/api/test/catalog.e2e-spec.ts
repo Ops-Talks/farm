@@ -16,10 +16,11 @@ interface ComponentResponse {
 describe("Catalog CRUD (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -40,6 +41,7 @@ describe("Catalog CRUD (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
@@ -56,6 +58,7 @@ describe("Catalog CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -74,6 +77,7 @@ describe("Catalog CRUD (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as ComponentResponse;
@@ -89,6 +93,7 @@ describe("Catalog CRUD (e2e)", () => {
     const updateRes = await request(app.getHttpServer())
       .patch(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(updateDto)
       .expect(200);
 
@@ -100,12 +105,14 @@ describe("Catalog CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
       .get(`/api/v1/catalog/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -113,6 +120,7 @@ describe("Catalog CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "e2e-infra-component",
         kind: "cluster",
@@ -123,6 +131,7 @@ describe("Catalog CRUD (e2e)", () => {
     const infraRes = await request(app.getHttpServer())
       .get("/api/v1/catalog/components?kindGroup=infra")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const infraBody = infraRes.body as {
@@ -151,6 +160,7 @@ describe("Catalog CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "bad-kind",
         kind: "nonexistent_kind",

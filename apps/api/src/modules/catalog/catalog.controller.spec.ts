@@ -60,8 +60,10 @@ describe("CatalogController", () => {
       owner: "test-team",
     };
     service.create.mockResolvedValue({ id: "1", ...dto });
-    expect(await controller.create(dto)).toEqual({ id: "1", ...dto });
-    expect(service.create).toHaveBeenCalledWith(dto);
+    expect(
+      await controller.create(dto, { organizationId: "org-uuid-1" } as never),
+    ).toEqual({ id: "1", ...dto });
+    expect(service.create).toHaveBeenCalledWith(dto, "org-uuid-1");
   });
 
   it("should return all components with pagination", async () => {
@@ -207,11 +209,18 @@ describe("CatalogController — without discovery queue", () => {
       };
       mockCatalogServiceLocal.registerYaml.mockResolvedValue(mockComponent);
 
-      const result = await controller.registerYaml({
-        yaml: "apiVersion: farm.io/v1\nkind: Component\nmetadata:\n  name: yaml-svc\nspec:\n  type: service\n  owner: team-a",
-      });
+      const result = await controller.registerYaml(
+        {
+          yaml: "apiVersion: farm.io/v1\nkind: Component\nmetadata:\n  name: yaml-svc\nspec:\n  type: service\n  owner: team-a",
+        },
+        { organizationId: "org-uuid-1" } as never,
+      );
 
       expect(result).toEqual(mockComponent);
+      expect(mockCatalogServiceLocal.registerYaml).toHaveBeenCalledWith(
+        expect.any(String),
+        "org-uuid-1",
+      );
       expect(mockCacheManagerLocal.clear).toHaveBeenCalled();
     });
   });

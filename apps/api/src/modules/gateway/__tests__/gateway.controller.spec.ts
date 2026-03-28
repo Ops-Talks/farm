@@ -18,6 +18,7 @@ const mockRoute: GatewayRoute = {
   componentId: null,
   component: null,
   syncedAt: null,
+  organizationId: "",
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -63,21 +64,38 @@ describe("GatewayController", () => {
     it("should return all routes without filter", async () => {
       mockGatewayService.findAllRoutes.mockResolvedValue([mockRoute]);
 
-      const result = await controller.findAllRoutes(undefined);
+      const result = await controller.findAllRoutes(undefined, {});
 
-      expect(mockGatewayService.findAllRoutes).toHaveBeenCalledWith(undefined);
+      expect(mockGatewayService.findAllRoutes).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      );
       expect(result).toEqual([mockRoute]);
     });
 
     it("should pass componentId filter to service", async () => {
       mockGatewayService.findAllRoutes.mockResolvedValue([]);
 
-      const result = await controller.findAllRoutes("comp-uuid-1");
+      const result = await controller.findAllRoutes("comp-uuid-1", {});
 
       expect(mockGatewayService.findAllRoutes).toHaveBeenCalledWith(
         "comp-uuid-1",
+        undefined,
       );
       expect(result).toEqual([]);
+    });
+
+    it("should pass organizationId filter to service", async () => {
+      mockGatewayService.findAllRoutes.mockResolvedValue([mockRoute]);
+      const req = { organizationId: "org-uuid-1" };
+
+      const result = await controller.findAllRoutes(undefined, req);
+
+      expect(mockGatewayService.findAllRoutes).toHaveBeenCalledWith(
+        undefined,
+        "org-uuid-1",
+      );
+      expect(result).toEqual([mockRoute]);
     });
   });
 

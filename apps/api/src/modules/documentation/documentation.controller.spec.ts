@@ -16,6 +16,7 @@ describe("DocumentationController", () => {
     version: "1.0.0",
     parentId: null,
     order: 0,
+    organizationId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -69,45 +70,63 @@ describe("DocumentationController", () => {
 
   describe("create", () => {
     it("should create a documentation entry", async () => {
-      const result = await controller.create({
-        title: "Getting Started",
-        sourceUrl: "https://raw.githubusercontent.com/org/repo/main/README.md",
-        componentId: "comp-uuid-1",
-        author: "john_doe",
-        version: "1.0.0",
-      });
+      const result = await controller.create(
+        {
+          title: "Getting Started",
+          sourceUrl:
+            "https://raw.githubusercontent.com/org/repo/main/README.md",
+          componentId: "comp-uuid-1",
+          author: "john_doe",
+          version: "1.0.0",
+        },
+        { organizationId: "org-uuid-1" } as never,
+      );
       expect(result).toEqual(mockDoc);
-      expect(service.create).toHaveBeenCalled();
+      expect(service.create).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Getting Started" }),
+        "org-uuid-1",
+      );
     });
   });
 
   describe("findAll", () => {
     it("should return all documentation entries with pagination", async () => {
-      const result = await controller.findAll({ skip: 0, take: 20 });
+      const result = await controller.findAll({ skip: 0, take: 20 }, {});
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.skip).toBe(0);
       expect(result.take).toBe(20);
-      expect(service.findAll).toHaveBeenCalledWith(0, 20, undefined);
+      expect(service.findAll).toHaveBeenCalledWith(0, 20, undefined, undefined);
     });
 
     it("should filter by componentId when provided", async () => {
-      const result = await controller.findAll({
-        skip: 0,
-        take: 20,
-        componentId: "comp-uuid-1",
-      });
+      const result = await controller.findAll(
+        {
+          skip: 0,
+          take: 20,
+          componentId: "comp-uuid-1",
+        },
+        {},
+      );
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
-      expect(service.findAll).toHaveBeenCalledWith(0, 20, "comp-uuid-1");
+      expect(service.findAll).toHaveBeenCalledWith(
+        0,
+        20,
+        "comp-uuid-1",
+        undefined,
+      );
     });
 
     it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
-      const result = await controller.findAll({
-        skip: undefined,
-        take: undefined,
-      } as never);
+      const result = await controller.findAll(
+        {
+          skip: undefined,
+          take: undefined,
+        } as never,
+        {},
+      );
       expect(result.skip).toBe(0);
       expect(result.take).toBe(20);
     });
