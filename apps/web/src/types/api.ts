@@ -306,6 +306,23 @@ export interface MemberResponse {
   joinedAt: string;
 }
 
+/**
+ * Represents a pending (or resolved) email invitation to join an organization.
+ * Returned by the invitations sub-resource endpoints under
+ * /api/v1/organizations/:id/invitations.
+ */
+export interface OrgInvitation {
+  id: string;
+  organizationId: string;
+  email: string;
+  role: string;
+  status: "pending" | "accepted" | "declined";
+  /** ISO-8601 timestamp when the invitation expires. */
+  expiresAt: string;
+  /** ISO-8601 timestamp when the invitation was created. */
+  createdAt: string;
+}
+
 // -- Documentation --
 
 export interface DocumentationEntry {

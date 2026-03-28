@@ -10,13 +10,19 @@ import { OrganizationService } from "../organization.service";
 import { Organization } from "../entities/organization.entity";
 import { UserOrganization } from "../entities/user-organization.entity";
 import { User } from "../../auth/entities/user.entity";
+import {
+  OrgInvitation,
+  InvitationStatus,
+} from "../entities/org-invitation.entity";
 import { OrgRole } from "@farm/types";
+import { QUEUE_NAMES } from "../../../common/queues/queue-names";
 
 describe("OrganizationService — member management", () => {
   let service: OrganizationService;
   let orgRepo: Record<string, jest.Mock>;
   let userOrgRepo: Record<string, jest.Mock>;
   let userRepo: Record<string, jest.Mock>;
+  let invitationRepo: Record<string, jest.Mock>;
 
   // Fixed UUIDs used throughout the tests
   const ownerId = "owner-uuid-1";
@@ -108,6 +114,13 @@ describe("OrganizationService — member management", () => {
       findOne: jest.fn(),
     };
 
+    invitationRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationService,
@@ -117,6 +130,14 @@ describe("OrganizationService — member management", () => {
           useValue: userOrgRepo,
         },
         { provide: getRepositoryToken(User), useValue: userRepo },
+        {
+          provide: getRepositoryToken(OrgInvitation),
+          useValue: invitationRepo,
+        },
+        {
+          provide: `BullQueue_${QUEUE_NAMES.NOTIFICATIONS}`,
+          useValue: undefined,
+        },
       ],
     }).compile();
 
@@ -395,6 +416,326 @@ describe("OrganizationService — member management", () => {
       await expect(
         service.removeMember(orgId, adminId, "admin-uuid-99"),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Invitation management tests
+// ---------------------------------------------------------------------------
+
+describe("OrganizationService — invitation management", () => {
+  let service: OrganizationService;
+  let orgRepo: Record<string, jest.Mock>;
+  let userOrgRepo: Record<string, jest.Mock>;
+  let userRepo: Record<string, jest.Mock>;
+  let invitationRepo: Record<string, jest.Mock>;
+  let notificationsQueue: Record<string, jest.Mock>;
+
+  const orgId = "org-uuid-1";
+  const inviterId = "inviter-uuid-1";
+  const inviteeEmail = "invitee@example.com";
+  const invitationId = "inv-uuid-1";
+
+  const mockOrg: Partial<Organization> = {
+    id: orgId,
+    name: "Acme Corp",
+    slug: "acme-corp",
+    ownerId: inviterId,
+  };
+
+  const mockAcceptingUser: Partial<User> = {
+    id: "acceptor-uuid",
+    username: "acceptor_user",
+    email: "acceptor@example.com",
+  };
+
+  const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
+  const pastDate = new Date(Date.now() - 1000);
+
+  const mockPendingInvitation: Partial<OrgInvitation> = {
+    id: invitationId,
+    organizationId: orgId,
+    email: inviteeEmail,
+    tokenHash: "abc123hash",
+    status: InvitationStatus.PENDING,
+    role: "member",
+    expiresAt: futureDate,
+    invitedByUserId: inviterId,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+  };
+
+  beforeEach(async () => {
+    orgRepo = {
+      findOne: jest.fn(),
+      findAndCount: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      merge: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    userOrgRepo = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+      createQueryBuilder: jest.fn(),
+    };
+
+    userRepo = {
+      findOne: jest.fn(),
+    };
+
+    invitationRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
+    notificationsQueue = {
+      add: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OrganizationService,
+        { provide: getRepositoryToken(Organization), useValue: orgRepo },
+        {
+          provide: getRepositoryToken(UserOrganization),
+          useValue: userOrgRepo,
+        },
+        { provide: getRepositoryToken(User), useValue: userRepo },
+        {
+          provide: getRepositoryToken(OrgInvitation),
+          useValue: invitationRepo,
+        },
+        {
+          provide: `BullQueue_${QUEUE_NAMES.NOTIFICATIONS}`,
+          useValue: notificationsQueue,
+        },
+      ],
+    }).compile();
+
+    service = module.get<OrganizationService>(OrganizationService);
+  });
+
+  // ---------------------------------------------------------------------------
+  // createInvitation
+  // ---------------------------------------------------------------------------
+
+  describe("createInvitation", () => {
+    it("should create an invitation and return the response DTO on success", async () => {
+      orgRepo.findOne.mockResolvedValue(mockOrg);
+      invitationRepo.findOne.mockResolvedValue(null);
+      invitationRepo.create.mockReturnValue(mockPendingInvitation);
+      invitationRepo.save.mockResolvedValue(mockPendingInvitation);
+
+      const result = await service.createInvitation(
+        orgId,
+        { email: inviteeEmail, role: "member" },
+        inviterId,
+      );
+
+      expect(result.id).toBe(invitationId);
+      expect(result.organizationId).toBe(orgId);
+      expect(result.email).toBe(inviteeEmail);
+      expect(result.role).toBe("member");
+      expect(result.status).toBe(InvitationStatus.PENDING);
+      // Plain token must never be in the response
+      expect((result as Record<string, unknown>)["tokenHash"]).toBeUndefined();
+      expect((result as Record<string, unknown>)["token"]).toBeUndefined();
+    });
+
+    it("should throw NotFoundException when the organization does not exist", async () => {
+      orgRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.createInvitation(orgId, { email: inviteeEmail }, inviterId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("should throw ConflictException when a pending invitation already exists", async () => {
+      orgRepo.findOne.mockResolvedValue(mockOrg);
+      invitationRepo.findOne.mockResolvedValue(mockPendingInvitation);
+
+      await expect(
+        service.createInvitation(orgId, { email: inviteeEmail }, inviterId),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("should not enqueue a notification in test environment", async () => {
+      // NODE_ENV is already "test" in the test runner
+      orgRepo.findOne.mockResolvedValue(mockOrg);
+      invitationRepo.findOne.mockResolvedValue(null);
+      invitationRepo.create.mockReturnValue(mockPendingInvitation);
+      invitationRepo.save.mockResolvedValue(mockPendingInvitation);
+
+      await service.createInvitation(orgId, { email: inviteeEmail }, inviterId);
+
+      // Queue should NOT be called because NODE_ENV === "test"
+      expect(notificationsQueue.add).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // listInvitations
+  // ---------------------------------------------------------------------------
+
+  describe("listInvitations", () => {
+    it("should return an array of pending invitations ordered by createdAt DESC", async () => {
+      invitationRepo.find.mockResolvedValue([mockPendingInvitation]);
+
+      const result = await service.listInvitations(orgId);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].email).toBe(inviteeEmail);
+      expect(result[0].status).toBe(InvitationStatus.PENDING);
+      expect(invitationRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            organizationId: orgId,
+            status: InvitationStatus.PENDING,
+          },
+          order: { createdAt: "DESC" },
+        }),
+      );
+    });
+
+    it("should return an empty array when there are no pending invitations", async () => {
+      invitationRepo.find.mockResolvedValue([]);
+
+      const result = await service.listInvitations(orgId);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // cancelInvitation
+  // ---------------------------------------------------------------------------
+
+  describe("cancelInvitation", () => {
+    it("should set invitation status to DECLINED on success", async () => {
+      const invitation = { ...mockPendingInvitation };
+      invitationRepo.findOne.mockResolvedValue(invitation);
+      invitationRepo.save.mockImplementation((inv: OrgInvitation) =>
+        Promise.resolve(inv),
+      );
+
+      await service.cancelInvitation(orgId, invitationId);
+
+      expect(invitationRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: InvitationStatus.DECLINED }),
+      );
+    });
+
+    it("should throw NotFoundException when the invitation does not exist", async () => {
+      invitationRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.cancelInvitation(orgId, "nonexistent-id"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("should throw BadRequestException when the invitation is no longer pending", async () => {
+      const acceptedInvitation = {
+        ...mockPendingInvitation,
+        status: InvitationStatus.ACCEPTED,
+      };
+      invitationRepo.findOne.mockResolvedValue(acceptedInvitation);
+
+      await expect(
+        service.cancelInvitation(orgId, invitationId),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // acceptInvitation
+  // ---------------------------------------------------------------------------
+
+  describe("acceptInvitation", () => {
+    const plainToken = "plaintoken1234";
+
+    it("should create a UserOrganization membership and return MemberResponseDto on success", async () => {
+      invitationRepo.findOne.mockResolvedValue({ ...mockPendingInvitation });
+      userOrgRepo.findOne.mockResolvedValue(null);
+      const savedMembership = {
+        userId: "acceptor-uuid",
+        organizationId: orgId,
+        role: "member",
+        createdAt: new Date(),
+      };
+      userOrgRepo.create.mockReturnValue(savedMembership);
+      userOrgRepo.save.mockResolvedValue(savedMembership);
+      invitationRepo.save.mockImplementation((inv: OrgInvitation) =>
+        Promise.resolve(inv),
+      );
+      userRepo.findOne.mockResolvedValue(mockAcceptingUser);
+
+      const result = await service.acceptInvitation(
+        plainToken,
+        "acceptor-uuid",
+      );
+
+      expect(result.userId).toBe("acceptor-uuid");
+      expect(result.username).toBe("acceptor_user");
+      expect(result.role).toBe("member");
+      expect(userOrgRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: "acceptor-uuid",
+          organizationId: orgId,
+          role: "member",
+        }),
+      );
+      expect(invitationRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: InvitationStatus.ACCEPTED }),
+      );
+    });
+
+    it("should throw NotFoundException when the token does not match any invitation", async () => {
+      invitationRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.acceptInvitation(plainToken, "acceptor-uuid"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("should throw BadRequestException when the invitation has already been accepted", async () => {
+      invitationRepo.findOne.mockResolvedValue({
+        ...mockPendingInvitation,
+        status: InvitationStatus.ACCEPTED,
+      });
+
+      await expect(
+        service.acceptInvitation(plainToken, "acceptor-uuid"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException when the invitation has expired", async () => {
+      invitationRepo.findOne.mockResolvedValue({
+        ...mockPendingInvitation,
+        expiresAt: pastDate,
+      });
+
+      await expect(
+        service.acceptInvitation(plainToken, "acceptor-uuid"),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("should throw ConflictException when the user is already a member", async () => {
+      invitationRepo.findOne.mockResolvedValue({ ...mockPendingInvitation });
+      userOrgRepo.findOne.mockResolvedValue({
+        userId: "acceptor-uuid",
+        organizationId: orgId,
+      });
+
+      await expect(
+        service.acceptInvitation(plainToken, "acceptor-uuid"),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

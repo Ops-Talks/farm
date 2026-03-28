@@ -9,7 +9,9 @@ import { OrganizationService } from "./organization.service";
 import { Organization } from "./entities/organization.entity";
 import { UserOrganization } from "./entities/user-organization.entity";
 import { User } from "../auth/entities/user.entity";
+import { OrgInvitation } from "./entities/org-invitation.entity";
 import { OrgRole } from "@farm/types";
+import { QUEUE_NAMES } from "../../common/queues/queue-names";
 
 describe("OrganizationService", () => {
   let service: OrganizationService;
@@ -55,6 +57,13 @@ describe("OrganizationService", () => {
       findOne: jest.fn(),
     };
 
+    const invitationRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationService,
@@ -66,6 +75,14 @@ describe("OrganizationService", () => {
         {
           provide: getRepositoryToken(User),
           useValue: userRepo,
+        },
+        {
+          provide: getRepositoryToken(OrgInvitation),
+          useValue: invitationRepo,
+        },
+        {
+          provide: `BullQueue_${QUEUE_NAMES.NOTIFICATIONS}`,
+          useValue: undefined,
         },
       ],
     }).compile();

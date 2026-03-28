@@ -25,6 +25,11 @@ vi.mock("@/lib/api-client", () => ({
       add: vi.fn(),
       remove: vi.fn(),
     },
+    invitations: {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      cancel: vi.fn(),
+    },
     delete: vi.fn(),
   },
   auth: {

@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { OrgSettingsForm } from "./org-settings-form";
 import { MembersSection } from "./members-section";
+import { InvitationsPanel } from "./invitations-panel";
 import { DangerZone } from "./danger-zone";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export function OrgDetailClient() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("member");
 
   const fetchOrg = useCallback(() => {
     if (!id) return;
@@ -39,6 +41,20 @@ export function OrgDetailClient() {
   useEffect(() => {
     fetchOrg();
   }, [fetchOrg]);
+
+  // Derive the current user's role from the members list once the org is loaded.
+  useEffect(() => {
+    if (!id || !user) return;
+    orgsApi.members
+      .list(id)
+      .then((res) => {
+        const self = res.data.find((m) => m.userId === user.id);
+        if (self) setCurrentUserRole(self.role);
+      })
+      .catch(() => {
+        // Non-critical — fall back to member
+      });
+  }, [id, user]);
 
   if (loading) {
     return (
@@ -113,6 +129,12 @@ export function OrgDetailClient() {
           canManage={isOwner}
         />
       </div>
+
+      {/* Invitations panel — only for admin / owner */}
+      <InvitationsPanel
+        orgId={id}
+        currentUserRole={isOwner ? "owner" : currentUserRole}
+      />
 
       {/* Danger zone — only for the organization owner */}
       <DangerZone org={org} isOwner={isOwner} />

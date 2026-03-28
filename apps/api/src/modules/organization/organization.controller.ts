@@ -30,6 +30,8 @@ import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { AddMemberDto } from "./dto/add-member.dto";
 import { UpdateMemberRoleDto } from "./dto/update-member-role.dto";
 import { MemberResponseDto } from "./dto/member-response.dto";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { InvitationResponseDto } from "./dto/invitation-response.dto";
 import { Organization } from "./entities/organization.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginationQueryDto, PaginatedResponseDto } from "../../common/dto";
@@ -387,5 +389,96 @@ export class OrganizationController {
     @Request() req: AuthenticatedRequest,
   ): Promise<void> {
     await this.organizationService.removeMember(id, req.user.userId, userId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Invitation management endpoints
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates a new organization invitation and sends an email to the invitee.
+   * Requires at least ADMIN role.
+   * @param id - The UUID of the organization
+   * @param inviteMemberDto - Invitation data (email and optional role)
+   * @param req - The authenticated request
+   * @returns The created invitation response
+   */
+  @Post(":id/invitations")
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(OrgRolesGuard)
+  @OrgRoles("admin")
+  @ApiOperation({ summary: "Create an organization invitation" })
+  @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiCreatedResponse({
+    description: "The invitation has been successfully created.",
+    type: InvitationResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "A pending invitation for this email already exists.",
+    type: ErrorResponseDto,
+  })
+  async createInvitation(
+    @Param("id") id: string,
+    @Body() inviteMemberDto: InviteMemberDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<InvitationResponseDto> {
+    return this.organizationService.createInvitation(
+      id,
+      inviteMemberDto,
+      req.user.userId,
+    );
+  }
+
+  /**
+   * Lists all pending invitations for an organization.
+   * Requires at least ADMIN role.
+   * @param id - The UUID of the organization
+   * @returns Array of pending invitation response DTOs
+   */
+  @Get(":id/invitations")
+  @UseGuards(OrgRolesGuard)
+  @OrgRoles("admin")
+  @ApiOperation({ summary: "List pending invitations for an organization" })
+  @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiOkResponse({
+    description: "Successfully retrieved invitation list.",
+    type: [InvitationResponseDto],
+  })
+  async listInvitations(
+    @Param("id") id: string,
+  ): Promise<InvitationResponseDto[]> {
+    return this.organizationService.listInvitations(id);
+  }
+
+  /**
+   * Cancels a pending organization invitation.
+   * Requires at least ADMIN role.
+   * @param id - The UUID of the organization
+   * @param invitationId - The UUID of the invitation to cancel
+   */
+  @Delete(":id/invitations/:invitationId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(OrgRolesGuard)
+  @OrgRoles("admin")
+  @ApiOperation({ summary: "Cancel a pending organization invitation" })
+  @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiParam({ name: "invitationId", description: "The UUID of the invitation" })
+  @ApiNoContentResponse({ description: "Invitation successfully cancelled." })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Invitation not found.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: "Invitation is no longer pending.",
+    type: ErrorResponseDto,
+  })
+  async cancelInvitation(
+    @Param("id") id: string,
+    @Param("invitationId") invitationId: string,
+  ): Promise<void> {
+    await this.organizationService.cancelInvitation(id, invitationId);
   }
 }

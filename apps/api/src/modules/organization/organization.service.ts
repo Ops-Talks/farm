@@ -5,18 +5,30 @@ import {
   ForbiddenException,
   BadRequestException,
   Logger,
+  Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
+import { randomBytes, createHash } from "crypto";
 import { Organization } from "./entities/organization.entity";
 import { UserOrganization } from "./entities/user-organization.entity";
 import { User } from "../auth/entities/user.entity";
+import {
+  OrgInvitation,
+  InvitationStatus,
+} from "./entities/org-invitation.entity";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { AddMemberDto } from "./dto/add-member.dto";
 import { UpdateMemberRoleDto } from "./dto/update-member-role.dto";
 import { MemberResponseDto } from "./dto/member-response.dto";
+import { InviteMemberDto } from "./dto/invite-member.dto";
+import { InvitationResponseDto } from "./dto/invitation-response.dto";
 import { OrgRole } from "@farm/types";
+import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { NotificationJobData } from "../../common/queues/notification.processor";
 
 /**
  * Service responsible for managing organizations and organization membership.
@@ -32,6 +44,11 @@ export class OrganizationService {
     private readonly userOrganizationRepository: Repository<UserOrganization>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(OrgInvitation)
+    private readonly orgInvitationRepository: Repository<OrgInvitation>,
+    @Optional()
+    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS)
+    private readonly notificationsQueue?: Queue<NotificationJobData>,
   ) {}
 
   /**
@@ -411,6 +428,201 @@ export class OrganizationService {
     await this.userOrganizationRepository.remove(targetMembership);
 
     this.logger.log(`Removed member ${targetUserId} from org ${orgId}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Invitation management
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates a new pending organization invitation and enqueues a notification
+   * email to the invitee.
+   * @param orgId - The UUID of the organization
+   * @param dto - Invitation data (email and optional role)
+   * @param invitedByUserId - The UUID of the user sending the invitation
+   * @returns The created invitation response (without the plain token)
+   * @throws NotFoundException if the organization does not exist
+   * @throws ConflictException if a pending invitation already exists for this email
+   */
+  async createInvitation(
+    orgId: string,
+    dto: InviteMemberDto,
+    invitedByUserId: string,
+  ): Promise<InvitationResponseDto> {
+    const org = await this.findOne(orgId);
+
+    const existingInvitation = await this.orgInvitationRepository.findOne({
+      where: {
+        organizationId: orgId,
+        email: dto.email,
+        status: InvitationStatus.PENDING,
+      },
+    });
+    if (existingInvitation) {
+      throw new ConflictException(
+        `A pending invitation already exists for "${dto.email}" in this organization`,
+      );
+    }
+
+    const plainToken = randomBytes(40).toString("hex");
+    const tokenHash = createHash("sha256").update(plainToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    const role = dto.role ?? "member";
+
+    const invitation = this.orgInvitationRepository.create({
+      organizationId: orgId,
+      email: dto.email,
+      tokenHash,
+      status: InvitationStatus.PENDING,
+      role,
+      expiresAt,
+      invitedByUserId,
+    });
+    const saved = await this.orgInvitationRepository.save(invitation);
+
+    this.logger.log(
+      `Created invitation for ${dto.email} to org ${orgId} (role: ${role})`,
+    );
+
+    if (process.env.NODE_ENV !== "test" && this.notificationsQueue) {
+      const inviter = await this.userRepository.findOne({
+        where: { id: invitedByUserId },
+      });
+      const inviterName = inviter?.username ?? invitedByUserId;
+      const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+      const acceptUrl = `${appUrl}/invitations/${plainToken}/accept`;
+
+      await this.notificationsQueue.add("email", {
+        type: "email",
+        recipient: dto.email,
+        subject: `You have been invited to join ${org.name}`,
+        template: "org-invitation",
+        payload: { inviterName, orgName: org.name, role, acceptUrl },
+      });
+    }
+
+    return {
+      id: saved.id,
+      organizationId: saved.organizationId,
+      email: saved.email,
+      role: saved.role,
+      status: saved.status,
+      expiresAt: saved.expiresAt,
+      createdAt: saved.createdAt,
+    };
+  }
+
+  /**
+   * Returns all pending invitations for the given organization ordered by
+   * creation date descending.
+   * @param orgId - The UUID of the organization
+   * @returns Array of pending invitation response DTOs
+   */
+  async listInvitations(orgId: string): Promise<InvitationResponseDto[]> {
+    const invitations = await this.orgInvitationRepository.find({
+      where: { organizationId: orgId, status: InvitationStatus.PENDING },
+      order: { createdAt: "DESC" },
+    });
+
+    return invitations.map((inv) => ({
+      id: inv.id,
+      organizationId: inv.organizationId,
+      email: inv.email,
+      role: inv.role,
+      status: inv.status,
+      expiresAt: inv.expiresAt,
+      createdAt: inv.createdAt,
+    }));
+  }
+
+  /**
+   * Cancels a pending invitation by setting its status to DECLINED.
+   * @param orgId - The UUID of the organization
+   * @param invitationId - The UUID of the invitation to cancel
+   * @throws NotFoundException if the invitation does not exist in this organization
+   * @throws BadRequestException if the invitation is no longer pending
+   */
+  async cancelInvitation(orgId: string, invitationId: string): Promise<void> {
+    const invitation = await this.orgInvitationRepository.findOne({
+      where: { id: invitationId, organizationId: orgId },
+    });
+    if (!invitation) {
+      throw new NotFoundException(
+        `Invitation with ID "${invitationId}" not found in this organization`,
+      );
+    }
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new BadRequestException("Invitation is no longer pending");
+    }
+
+    invitation.status = InvitationStatus.DECLINED;
+    await this.orgInvitationRepository.save(invitation);
+
+    this.logger.log(`Cancelled invitation ${invitationId} in org ${orgId}`);
+  }
+
+  /**
+   * Accepts an organization invitation using the plain token from the email link.
+   * Creates the corresponding UserOrganization membership on success.
+   * @param token - The plain invitation token from the accept URL
+   * @param userId - The UUID of the authenticated user accepting the invitation
+   * @returns The newly created member response DTO
+   * @throws NotFoundException if no invitation matches the token
+   * @throws BadRequestException if the invitation has already been used or has expired
+   * @throws ConflictException if the user is already a member of the organization
+   */
+  async acceptInvitation(
+    token: string,
+    userId: string,
+  ): Promise<MemberResponseDto> {
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+
+    const invitation = await this.orgInvitationRepository.findOne({
+      where: { tokenHash },
+    });
+    if (!invitation) {
+      throw new NotFoundException("Invitation not found or already used");
+    }
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new BadRequestException("Invitation has already been used");
+    }
+    if (invitation.expiresAt < new Date()) {
+      throw new BadRequestException("Invitation has expired");
+    }
+
+    const existingMembership = await this.userOrganizationRepository.findOne({
+      where: { organizationId: invitation.organizationId, userId },
+    });
+    if (existingMembership) {
+      throw new ConflictException(
+        "You are already a member of this organization",
+      );
+    }
+
+    const membership = this.userOrganizationRepository.create({
+      userId,
+      organizationId: invitation.organizationId,
+      role: invitation.role as OrgRole,
+    });
+    const savedMembership =
+      await this.userOrganizationRepository.save(membership);
+
+    invitation.status = InvitationStatus.ACCEPTED;
+    await this.orgInvitationRepository.save(invitation);
+
+    this.logger.log(
+      `User ${userId} accepted invitation ${invitation.id} to org ${invitation.organizationId}`,
+    );
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    return {
+      userId,
+      username: user?.username ?? "",
+      email: user?.email ?? "",
+      role: savedMembership.role,
+      joinedAt: savedMembership.createdAt,
+    };
   }
 
   // ---------------------------------------------------------------------------
