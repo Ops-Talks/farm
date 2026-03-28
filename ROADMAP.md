@@ -97,36 +97,36 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-### FARM-E48: API Gateway Integration `TODO`
+### FARM-E48: API Gateway Integration `DONE`
 
-> Surface gateway-level metadata (routes, rate limits, upstream health) inside Farm without replacing the gateway. A pluggable adapter interface allows multiple gateway backends; Kong is the first implementation.
+> Surface gateway-level metadata (routes, rate limits, upstream health) inside Farm without replacing the gateway. A pluggable adapter interface allows multiple gateway backends; Kong and AWS API Gateway are both implemented as opt-in, independent adapters.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S190 | Story | Gateway adapter interface with Kong admin API adapter as first implementation | `TODO` |
-| FARM-S191 | Story | Route inventory sync -- pull routes/services from gateway, persist as `GatewayRoute` entities, map to catalog components | `TODO` |
-| FARM-S192 | Story | API health check aggregation -- poll registered API upstream endpoints on a schedule, surface uptime and latency per API | `TODO` |
+| FARM-S190 | Story | Gateway adapter interface with Kong admin API adapter as first implementation | `DONE` |
+| FARM-S191 | Story | Route inventory sync -- pull routes/services from gateway, persist as `GatewayRoute` entities, map to catalog components | `DONE` |
+| FARM-S192 | Story | API health check aggregation -- poll registered API upstream endpoints on a schedule, surface uptime and latency per API | `DONE` |
 
 #### FARM-S190 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T72 | Task | Define `IGatewayAdapter` interface (`getRoutes()`, `getServices()`, `getHealth()`); `KongAdapter` implementation using Kong Admin API | `TODO` |
-| FARM-T73 | Task | `GatewayModule` config env vars (`GATEWAY_TYPE`, `GATEWAY_URL`, `GATEWAY_API_KEY`); conditional adapter registration in DI | `TODO` |
+| FARM-T72 | Task | Define `IGatewayAdapter` interface (`getRoutes()`, `getServices()`, `getHealth()`); `KongAdapter` + `AwsApiGatewayAdapter` implementations | `DONE` |
+| FARM-T73 | Task | `GatewayModule` config env vars (`GATEWAY_KONG_ENABLED`, `GATEWAY_AWS_ENABLED`, etc.); independent opt-in adapter registration in DI | `DONE` |
 
 #### FARM-S191 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T74 | Task | Create `GatewayRoute` entity (`externalId`, `name`, `paths`, `methods`, `componentId` FK nullable, `syncedAt`) | `TODO` |
-| FARM-T75 | Task | BullMQ sync job (scheduled every 15 min): fetch routes from adapter, upsert `GatewayRoute` rows, emit WebSocket event on changes | `TODO` |
+| FARM-T74 | Task | Create `GatewayRoute` entity (`externalId`, `name`, `paths`, `methods`, `gatewayType`, `componentId` FK nullable, `syncedAt`) | `DONE` |
+| FARM-T75 | Task | Scheduled sync (every 15 min via `@nestjs/schedule`): fetch routes from all enabled adapters, upsert `GatewayRoute` rows, emit WebSocket event on changes | `DONE` |
 
 #### FARM-S192 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T76 | Task | `ApiHealthCheck` entity (`apiSpecId`, `url`, `status`: up/degraded/down, `latencyMs`, `checkedAt`) | `TODO` |
-| FARM-T77 | Task | Health check BullMQ job (every 5 min): HTTP HEAD/GET each registered API URL, store result, emit event on status change | `TODO` |
+| FARM-T76 | Task | `ApiHealthCheck` entity (`apiSpecId`, `url`, `status`: up/degraded/down, `latencyMs`, `checkedAt`) | `DONE` |
+| FARM-T77 | Task | Health check scheduled job (every 5 min): HTTP HEAD/GET each registered API URL, store result, emit event on status change | `DONE` |
 
 ---
 
