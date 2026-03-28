@@ -57,6 +57,9 @@ import type {
   TravisBuild,
   UpdateApiSpecDto,
   User,
+  // Gateway Routes (FARM-E48)
+  GatewayRoute,
+  ApiHealthCheck,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1458,5 +1461,36 @@ export const apiSpecs = {
   /** List all API specs consumed by a component. */
   listConsumedApis(componentId: string): Promise<ApiSpec[]> {
     return request<ApiSpec[]>(`/v1/catalog/components/${componentId}/consumed-apis`);
+  },
+};
+
+// -- Gateway Routes (FARM-E48) --
+
+export const gateway = {
+  /** List gateway routes, optionally filtered by component. */
+  listRoutes(componentId?: string): Promise<GatewayRoute[]> {
+    const qs = componentId ? `?componentId=${encodeURIComponent(componentId)}` : "";
+    return request<GatewayRoute[]>(`/v1/gateway/routes${qs}`);
+  },
+
+  /** Get a single gateway route by ID. */
+  getRoute(id: string): Promise<GatewayRoute> {
+    return request<GatewayRoute>(`/v1/gateway/routes/${id}`);
+  },
+
+  /** Trigger a manual route sync (admin only). */
+  triggerSync(): Promise<{ message: string }> {
+    return request<{ message: string }>(`/v1/gateway/sync`, { method: "POST" });
+  },
+
+  /** List API health check results, optionally filtered by apiSpecId. */
+  listHealth(apiSpecId?: string): Promise<ApiHealthCheck[]> {
+    const qs = apiSpecId ? `?apiSpecId=${encodeURIComponent(apiSpecId)}` : "";
+    return request<ApiHealthCheck[]>(`/v1/gateway/health${qs}`);
+  },
+
+  /** Trigger an on-demand health check (admin only). */
+  triggerHealthCheck(): Promise<{ message: string }> {
+    return request<{ message: string }>(`/v1/gateway/health/check`, { method: "POST" });
   },
 };
