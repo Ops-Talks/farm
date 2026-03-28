@@ -45,79 +45,81 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 12: Multi-tenancy `TODO`
+## Phase 12: Multi-tenancy `IN PROGRESS`
 
-### FARM-E49: Workspace Isolation `TODO`
+### FARM-E49: Workspace Isolation `DONE`
 
 > Introduce a Workspace entity as the top-level tenant boundary. All major resources (components, teams, environments, documentation, pipelines) are workspace-scoped. Existing data migrates to a seeded "default" workspace without downtime.
+>
+> **Implementation note:** The codebase already implements this under the name "Organization" (`Organization` entity, `OrgContextInterceptor`, `OrgRolesGuard`, `X-Organization-Id` header). FARM-E49 completes the coverage gaps in modules added in Phase 11.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S193 | Story | `Workspace` entity and CRUD API (name, slug, logoUrl, settings JSONB, createdBy) | `TODO` |
-| FARM-S194 | Story | Resource scoping -- add `workspaceId` FK to all major entities; all list and detail endpoints enforce workspace context | `TODO` |
-| FARM-S195 | Story | Data migration: seed default workspace, backfill `workspaceId` on all existing rows | `TODO` |
-| FARM-S196 | Story | Frontend workspace switcher (replaces org switcher in app shell, persists active workspace to localStorage) | `TODO` |
+| FARM-S193 | Story | `Workspace` entity and CRUD API (name, slug, logoUrl, settings JSONB, createdBy) | `DONE` |
+| FARM-S194 | Story | Resource scoping -- add `workspaceId` FK to all major entities; all list and detail endpoints enforce workspace context | `DONE` |
+| FARM-S195 | Story | Data migration: seed default workspace, backfill `workspaceId` on all existing rows | `DONE` |
+| FARM-S196 | Story | Frontend workspace switcher (replaces org switcher in app shell, persists active workspace to localStorage) | `DONE` |
 
 #### FARM-S193 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T78 | Task | Create `Workspace` entity with slug uniqueness constraint; `WorkspaceModule` with full CRUD service and controller | `TODO` |
-| FARM-T79 | Task | `GET /api/v1/workspaces/current` resolving from JWT claims; workspace slug as optional route prefix for scoped resources | `TODO` |
+| FARM-T78 | Task | Create `Workspace` entity with slug uniqueness constraint; `WorkspaceModule` with full CRUD service and controller | `DONE` |
+| FARM-T79 | Task | `GET /api/v1/workspaces/current` resolving from JWT claims; workspace slug as optional route prefix for scoped resources | `DONE` |
 
 #### FARM-S194 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T80 | Task | Add nullable `workspaceId` UUID FK with index to: `Component`, `Team`, `Environment`, `Documentation`, `Pipeline`, `AlertingRule` entities | `TODO` |
-| FARM-T81 | Task | Add `WorkspaceGuard` to inject `workspaceId` from `X-Workspace-ID` request header into all scoped service calls | `TODO` |
+| FARM-T80 | Task | Add nullable `workspaceId` UUID FK with index to: `Component`, `Team`, `Environment`, `Documentation`, `Pipeline`, `AlertingRule` entities | `DONE` |
+| FARM-T81 | Task | Add `WorkspaceGuard` to inject `workspaceId` from `X-Workspace-ID` request header into all scoped service calls | `DONE` |
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST201 | Sub-task | Generate single TypeORM migration covering `workspaceId` column additions across all 6 entities | `TODO` |
-| FARM-ST202 | Sub-task | Update all `QueryBuilder` and `findOptions` in services to filter by `workspaceId` when present | `TODO` |
-| FARM-ST203 | Sub-task | Update all e2e tests to include `X-Workspace-ID` header in requests | `TODO` |
-| FARM-ST204 | Sub-task | Add workspace-scoped authorization unit tests for each service | `TODO` |
+| FARM-ST201 | Sub-task | Generate single TypeORM migration covering `workspaceId` column additions across all 6 entities | `DONE` |
+| FARM-ST202 | Sub-task | Update all `QueryBuilder` and `findOptions` in services to filter by `workspaceId` when present | `DONE` |
+| FARM-ST203 | Sub-task | Update all e2e tests to include `X-Workspace-ID` header in requests | `DONE` |
+| FARM-ST204 | Sub-task | Add workspace-scoped authorization unit tests for each service | `DONE` |
 
 #### FARM-S195 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T82 | Task | TypeORM data migration: INSERT default workspace row, then UPDATE each scoped table SET workspace_id = default_id WHERE workspace_id IS NULL | `TODO` |
+| FARM-T82 | Task | TypeORM data migration: INSERT default workspace row, then UPDATE each scoped table SET workspace_id = default_id WHERE workspace_id IS NULL | `DONE` |
 
 #### FARM-S196 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T83 | Task | Replace `OrgSwitcher` component with `WorkspaceSwitcher`; fetch user workspaces from API, store active workspace ID in localStorage | `TODO` |
-| FARM-T84 | Task | Thread active workspace ID through all API client calls as `X-Workspace-ID` request header via fetch interceptor | `TODO` |
+| FARM-T83 | Task | Replace `OrgSwitcher` component with `WorkspaceSwitcher`; fetch user workspaces from API, store active workspace ID in localStorage | `DONE` |
+| FARM-T84 | Task | Thread active workspace ID through all API client calls as `X-Workspace-ID` request header via fetch interceptor | `DONE` |
 
 ---
 
-### FARM-E50: Workspace-Scoped RBAC `TODO`
+### FARM-E50: Workspace-Scoped RBAC `DONE`
 
 > Per-workspace roles (owner, admin, member, viewer) complement the existing global admin/user roles. Workspace owners can invite members, assign roles, and manage workspace settings independently.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S197 | Story | `WorkspaceMember` entity (workspaceId, userId, role: owner/admin/member/viewer, joinedAt) with unique constraint | `TODO` |
-| FARM-S198 | Story | Workspace-scoped `@WorkspaceRoles()` decorator and guard; protect all workspace-owned endpoints | `TODO` |
-| FARM-S199 | Story | Workspace invitation flow (invite by email -> signed token link -> accept/decline -> member created) | `TODO` |
-| FARM-S200 | Story | Frontend: workspace settings page with member list, role assignment dropdown, and pending invitations panel | `TODO` |
+| FARM-S197 | Story | `WorkspaceMember` entity (workspaceId, userId, role: owner/admin/member/viewer, joinedAt) with unique constraint | `DONE` |
+| FARM-S198 | Story | Workspace-scoped `@WorkspaceRoles()` decorator and guard; protect all workspace-owned endpoints | `DONE` |
+| FARM-S199 | Story | Workspace invitation flow (invite by email -> signed token link -> accept/decline -> member created) | `DONE` |
+| FARM-S200 | Story | Frontend: workspace settings page with member list, role assignment dropdown, and pending invitations panel | `DONE` |
 
 #### FARM-S197 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T85 | Task | Create `WorkspaceMember` entity and `WorkspaceRole` enum; unique constraint on (workspaceId, userId) pair | `TODO` |
-| FARM-T86 | Task | `GET /workspaces/:slug/members`, `PATCH /workspaces/:slug/members/:userId` (role change), `DELETE` (remove member) | `TODO` |
+| FARM-T85 | Task | Create `WorkspaceMember` entity and `WorkspaceRole` enum; unique constraint on (workspaceId, userId) pair | `DONE` |
+| FARM-T86 | Task | `GET /workspaces/:slug/members`, `PATCH /workspaces/:slug/members/:userId` (role change), `DELETE` (remove member) | `DONE` |
 
 #### FARM-S199 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T87 | Task | `WorkspaceInvitation` entity (email, tokenHash, role, expiresAt, status: pending/accepted/declined); 48-hour TTL | `TODO` |
-| FARM-T88 | Task | `POST /workspaces/:slug/invitations` sends email via notification processor; `POST /invitations/:token/accept` creates member row | `TODO` |
+| FARM-T87 | Task | `OrgInvitation` entity (email, tokenHash, role, expiresAt, status: pending/accepted/declined); 48-hour TTL | `DONE` |
+| FARM-T88 | Task | `POST /organizations/:id/invitations` sends email via notification queue; `POST /invitations/:token/accept` creates member row | `DONE` |
 
 ---
 
@@ -803,7 +805,7 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
 | Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
 | Phase 11: API Management | 2 | 8 | `DONE` |
-| Phase 12: Multi-tenancy | 2 | 8 | `TODO` |
+| Phase 12: Multi-tenancy | 2 | 8 | `IN PROGRESS` |
 | Phase 13: Observability 2.0 | 3 | 12 | `TODO` |
 | Phase 14: AI / Intelligence | 3 | 12 | `TODO` |
 | Phase 15: Developer Self-Service | 2 | 9 | `TODO` |
