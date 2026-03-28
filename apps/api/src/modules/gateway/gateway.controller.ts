@@ -54,7 +54,7 @@ export class GatewayController {
     @Query("componentId") componentId?: string,
     @Req() req?: RequestWithOrg,
   ): Promise<GatewayRoute[]> {
-    const organizationId = req?.["organizationId"];
+    const organizationId = req?.organizationId;
     return this.gatewayService.findAllRoutes(componentId, organizationId);
   }
 
