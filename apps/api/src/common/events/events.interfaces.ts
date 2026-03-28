@@ -15,6 +15,8 @@ export enum FarmEvent {
   ARGOCD_SYNC_UPDATED = "argocd.sync.updated",
   COMPLIANCE_AUDIT_COMPLETED = "compliance.audit.completed",
   API_SPEC_DEPRECATED = "api-spec:deprecated",
+  GATEWAY_ROUTE_SYNCED = "gateway.route.synced",
+  API_HEALTH_CHANGED = "api.health.changed",
 }
 
 /**

@@ -10,6 +10,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
 import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
+import { ScheduleModule } from "@nestjs/schedule";
 import {
   PrometheusModule,
   makeCounterProvider,
@@ -37,6 +38,7 @@ import { CloudModule } from "./modules/cloud/cloud.module";
 import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { IstioModule } from "./modules/istio/istio.module";
 import { ApiSpecsModule } from "./modules/api-specs/api-specs.module";
+import { GatewayModule } from "./modules/gateway/gateway.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -64,6 +66,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
       verboseMemoryLeak: false,
       ignoreErrors: false,
     }),
+    ScheduleModule.forRoot(),
     PrometheusModule.register({
       path: "/metrics",
       defaultMetrics: { enabled: true },
@@ -268,6 +271,14 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "API catalog and lifecycle management: spec versioning, consumer tracking, and structural diff",
         },
         module: ApiSpecsModule,
+      },
+      {
+        metadata: {
+          name: "core-gateway",
+          version: "1.0.0",
+          description: "API Gateway integration (Kong, AWS)",
+        },
+        module: GatewayModule,
       },
     ]),
   ],

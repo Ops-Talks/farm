@@ -4,4 +4,6 @@ export const QUEUE_NAMES = {
   PIPELINE_EXECUTION: "pipeline-execution",
   COMPLIANCE_AUDIT: "compliance-audit",
   KEYCLOAK_SYNC: "keycloak-sync",
+  GATEWAY_SYNC: "gateway-sync",
+  API_HEALTH_CHECK: "api-health-check",
 } as const;
