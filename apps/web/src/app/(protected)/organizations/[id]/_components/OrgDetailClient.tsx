@@ -42,6 +42,20 @@ export function OrgDetailClient() {
     fetchOrg();
   }, [fetchOrg]);
 
+  // Derive the current user's role from the members list once the org is loaded.
+  useEffect(() => {
+    if (!id || !user) return;
+    orgsApi.members
+      .list(id)
+      .then((res) => {
+        const self = res.data.find((m) => m.userId === user.id);
+        if (self) setCurrentUserRole(self.role);
+      })
+      .catch(() => {
+        // Non-critical — fall back to member
+      });
+  }, [id, user]);
+
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
