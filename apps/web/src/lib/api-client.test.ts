@@ -31,6 +31,7 @@ import {
   istio,
   keycloakCredentials,
   apiSpecs,
+  gateway,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -2150,6 +2151,71 @@ describe("api-client", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/v1/catalog/components/comp-123/consumed-apis",
         expect.any(Object),
+      );
+    });
+  });
+
+  describe("gateway", () => {
+    it("listRoutes sends GET to /v1/gateway/routes without filter", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gateway.listRoutes();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/routes",
+        expect.any(Object),
+      );
+    });
+
+    it("listRoutes appends componentId query param when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gateway.listRoutes("comp-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/routes?componentId=comp-1",
+        expect.any(Object),
+      );
+    });
+
+    it("getRoute sends GET to /v1/gateway/routes/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "route-1" }));
+      await gateway.getRoute("route-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/routes/route-1",
+        expect.any(Object),
+      );
+    });
+
+    it("triggerSync sends POST to /v1/gateway/sync", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "Sync triggered" }));
+      await gateway.triggerSync();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/sync",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("listHealth sends GET to /v1/gateway/health without filter", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gateway.listHealth();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/health",
+        expect.any(Object),
+      );
+    });
+
+    it("listHealth appends apiSpecId query param when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gateway.listHealth("spec-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/health?apiSpecId=spec-1",
+        expect.any(Object),
+      );
+    });
+
+    it("triggerHealthCheck sends POST to /v1/gateway/health/check", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "Health check triggered" }));
+      await gateway.triggerHealthCheck();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/gateway/health/check",
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });
