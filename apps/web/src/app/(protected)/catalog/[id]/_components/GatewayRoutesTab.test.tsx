@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import type { ApiHealthCheck, GatewayRoute } from "@/types/api";
 
 // ---------------------------------------------------------------------------
@@ -398,5 +398,40 @@ describe("GatewayRoutesTab", () => {
     await waitFor(() => {
       expect(screen.getByTestId("health-badge-up")).toBeInTheDocument();
     });
+  });
+
+  it("resolveRouteHealth matches when route path starts with hc.url (right side of ||)", async () => {
+    // url="/api" does NOT start with path="/api/users", but path starts with url — covers p.startsWith(hc.url)
+    mockListRoutes.mockResolvedValue([makeRoute({ paths: ["/api/users"] })]);
+    mockListHealth.mockResolvedValue([makeHealthCheck({ url: "/api", status: "degraded" })]);
+
+    render(<GatewayRoutesTab componentId="comp-1" isAdmin={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("health-badge-degraded")).toBeInTheDocument();
+    });
+  });
+
+  it("shows Syncing… text on sync button while request is pending", async () => {
+    mockListRoutes.mockResolvedValue([makeRoute()]);
+    mockListHealth.mockResolvedValue([]);
+    // Use a promise that resolves after we check the loading state
+    let resolveSync!: () => void;
+    mockTriggerSync.mockReturnValue(new Promise<void>((res) => { resolveSync = res; }));
+    mockListRoutes.mockResolvedValue([makeRoute()]);
+
+    render(<GatewayRoutesTab componentId="comp-1" isAdmin={true} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("sync-routes-button")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("sync-routes-button"));
+
+    // Loading text is set synchronously before the await
+    expect(screen.getByTestId("sync-routes-button")).toHaveTextContent("Syncing\u2026");
+
+    // Resolve so the component can clean up
+    await act(async () => { resolveSync(); });
   });
 });
