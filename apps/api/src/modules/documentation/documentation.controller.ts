@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiHeader,
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { DocumentationService } from "./documentation.service";
@@ -103,11 +104,10 @@ export class DocumentationController {
     required: false,
     description: "Filter docs by component UUID",
   })
-  @ApiQuery({
-    name: "organizationId",
+  @ApiHeader({
+    name: "X-Organization-Id",
     required: false,
-    description:
-      "Filter docs by organization UUID (resolved from X-Organization-Id header)",
+    description: "Filter docs by organization UUID",
   })
   @ApiResponse({
     status: HttpStatus.OK,

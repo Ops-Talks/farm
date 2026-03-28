@@ -12,6 +12,7 @@ import {
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -42,11 +43,10 @@ export class GatewayController {
     required: false,
     description: "Filter routes by catalog component UUID",
   })
-  @ApiQuery({
-    name: "organizationId",
+  @ApiHeader({
+    name: "X-Organization-Id",
     required: false,
-    description:
-      "Filter routes by organization UUID (resolved from X-Organization-Id header)",
+    description: "Filter routes by organization UUID",
   })
   @ApiOkResponse({ type: [GatewayRoute] })
   @Get("routes")
