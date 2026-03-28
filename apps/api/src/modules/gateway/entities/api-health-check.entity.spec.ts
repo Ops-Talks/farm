@@ -1,6 +1,6 @@
 import { getMetadataArgsStorage } from "typeorm";
-import { ApiHealthCheck } from "../api-health-check.entity";
-import { ApiSpec } from "../../../api-specs/entities/api-spec.entity";
+import { ApiHealthCheck } from "./api-health-check.entity";
+import { ApiSpec } from "../../api-specs/entities/api-spec.entity";
 
 describe("ApiHealthCheck entity", () => {
   it("should resolve the ManyToOne type function for the apiSpec relation", () => {

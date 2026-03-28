@@ -1,6 +1,6 @@
 import { getMetadataArgsStorage } from "typeorm";
-import { GatewayRoute } from "../gateway-route.entity";
-import { Component } from "../../../catalog/entities/component.entity";
+import { GatewayRoute } from "./gateway-route.entity";
+import { Component } from "../../catalog/entities/component.entity";
 
 describe("GatewayRoute entity", () => {
   it("should resolve the ManyToOne type function for the component relation", () => {
