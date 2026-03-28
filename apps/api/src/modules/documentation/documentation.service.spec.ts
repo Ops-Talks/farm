@@ -20,6 +20,7 @@ describe("DocumentationService", () => {
     version: "1.0.0",
     parentId: null,
     order: 0,
+    organizationId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -104,6 +105,57 @@ describe("DocumentationService", () => {
         skip: 0,
         take: 20,
       });
+    });
+
+    it("should filter by organizationId when provided", async () => {
+      const orgDoc = { ...mockDoc, organizationId: "org-uuid-1" };
+      mockRepository.findAndCount.mockResolvedValue([[orgDoc], 1]);
+
+      const [data, total] = await service.findAll(
+        0,
+        20,
+        undefined,
+        "org-uuid-1",
+      );
+
+      expect(data).toEqual([orgDoc]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { organizationId: "org-uuid-1" },
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should filter by both componentId and organizationId when both are provided", async () => {
+      const orgDoc = { ...mockDoc, organizationId: "org-uuid-1" };
+      mockRepository.findAndCount.mockResolvedValue([[orgDoc], 1]);
+
+      const [data, total] = await service.findAll(
+        0,
+        20,
+        "comp-uuid",
+        "org-uuid-1",
+      );
+
+      expect(data).toEqual([orgDoc]);
+      expect(total).toBe(1);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
+        where: { componentId: "comp-uuid", organizationId: "org-uuid-1" },
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should return all entries without organization filter when organizationId is not provided", async () => {
+      mockRepository.findAndCount.mockResolvedValue([[mockDoc], 1]);
+
+      const [data] = await service.findAll(0, 20);
+
+      expect(data).toEqual([mockDoc]);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} }),
+      );
     });
   });
 

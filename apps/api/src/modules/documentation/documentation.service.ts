@@ -101,9 +101,11 @@ export class DocumentationService {
     skip = 0,
     take = 20,
     componentId?: string,
+    organizationId?: string,
   ): Promise<[Documentation[], number]> {
     const where: Record<string, unknown> = {};
     if (componentId) where.componentId = componentId;
+    if (organizationId) where.organizationId = organizationId;
     return await this.documentationRepository.findAndCount({
       where,
       skip,

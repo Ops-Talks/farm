@@ -18,6 +18,7 @@ const mockRoute: GatewayRoute = {
   componentId: null,
   component: null,
   syncedAt: null,
+  organizationId: "",
   createdAt: new Date(),
   updatedAt: new Date(),
 };

@@ -129,18 +129,24 @@ export class GatewayService {
   }
 
   /**
-   * Returns all gateway routes, optionally filtered by catalog component.
+   * Returns all gateway routes, optionally filtered by catalog component and
+   * organization.
    *
    * @param componentId - Optional UUID of a catalog component
+   * @param organizationId - Optional UUID of an organization
    */
-  async findAllRoutes(componentId?: string): Promise<GatewayRoute[]> {
-    if (componentId) {
-      return this.routeRepo.find({
-        where: { componentId },
-        order: { createdAt: "DESC" },
-      });
-    }
-    return this.routeRepo.find({ order: { createdAt: "DESC" } });
+  async findAllRoutes(
+    componentId?: string,
+    organizationId?: string,
+  ): Promise<GatewayRoute[]> {
+    const where: Record<string, unknown> = {};
+    if (componentId) where.componentId = componentId;
+    if (organizationId) where.organizationId = organizationId;
+
+    return this.routeRepo.find({
+      ...(Object.keys(where).length > 0 ? { where } : {}),
+      order: { createdAt: "DESC" },
+    });
   }
 
   /**

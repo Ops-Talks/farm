@@ -25,6 +25,7 @@ const mockRoute: GatewayRoute = {
   componentId: null,
   component: null,
   syncedAt: null,
+  organizationId: "",
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -262,6 +263,49 @@ describe("GatewayService", () => {
         }),
       );
       expect(result).toEqual([]);
+    });
+
+    it("should filter by organizationId when provided", async () => {
+      const orgRoute = { ...mockRoute, organizationId: "org-uuid-1" };
+      mockRouteRepo.find.mockResolvedValue([orgRoute]);
+
+      const result = await service.findAllRoutes(undefined, "org-uuid-1");
+
+      expect(mockRouteRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { organizationId: "org-uuid-1" },
+        }),
+      );
+      expect(result).toEqual([orgRoute]);
+    });
+
+    it("should filter by both componentId and organizationId when both are provided", async () => {
+      const orgRoute = {
+        ...mockRoute,
+        componentId: "comp-uuid-1",
+        organizationId: "org-uuid-1",
+      };
+      mockRouteRepo.find.mockResolvedValue([orgRoute]);
+
+      const result = await service.findAllRoutes("comp-uuid-1", "org-uuid-1");
+
+      expect(mockRouteRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { componentId: "comp-uuid-1", organizationId: "org-uuid-1" },
+        }),
+      );
+      expect(result).toEqual([orgRoute]);
+    });
+
+    it("should return all routes without where clause when no filters are given", async () => {
+      mockRouteRepo.find.mockResolvedValue([mockRoute]);
+
+      await service.findAllRoutes();
+
+      const calls = mockRouteRepo.find.mock.calls as Array<
+        [Record<string, unknown>]
+      >;
+      expect(calls[0][0]).not.toHaveProperty("where");
     });
   });
 
