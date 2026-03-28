@@ -41,92 +41,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 8: Frontend Visual Refresh | 1 | 5 | v0.12.0 | `DONE` |
 | Phase 9: Security Testing | 1 | 3 | v0.12.0 | `DONE` |
 | Phase 10: Test Coverage Hardening | 1 | 8 | v0.12.0 | `DONE` |
-
----
-
-## Phase 11: API Management `TODO`
-
-### FARM-E47: API Catalog and Lifecycle Management `TODO`
-
-> Treat APIs as first-class citizens alongside software components. Each component can register one or more API specifications (OpenAPI 3.x, AsyncAPI 2.x). Specs are versioned, diffed for breaking changes, and browsable via an embedded spec viewer in the frontend.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S185 | Story | API specification ingestion per component (OpenAPI 3.x and AsyncAPI 2.x, stored as raw YAML/JSON with format auto-detection) | `TODO` |
-| FARM-S186 | Story | API version registry and deprecation tracking (version field, status: active/deprecated/sunset, sunset date) | `TODO` |
-| FARM-S187 | Story | API changelog and breaking change detection (diff two spec versions, flag added/removed/modified operations) | `TODO` |
-| FARM-S188 | Story | API consumer registry (which teams/components consume which API, ManyToMany with metadata) | `TODO` |
-| FARM-S189 | Story | Frontend API catalog browser (list specs, embedded Swagger UI, version switcher, deprecation badge) | `TODO` |
-
-#### FARM-S185 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T60 | Task | Create `ApiSpec` entity (`id`, `componentId`, `name`, `format`: openapi/asyncapi, `version`, `spec` JSONB, `status`) with migration | `TODO` |
-| FARM-T61 | Task | `POST /api/v1/components/:id/api-specs` with multipart YAML/JSON upload and format auto-detection via spec structure | `TODO` |
-| FARM-T62 | Task | Unit tests for `ApiSpecService` (create, findAll, findOne, remove) and e2e tests for upload and retrieval endpoints | `TODO` |
-
-#### FARM-S186 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T63 | Task | Add `deprecatedAt`, `sunsetAt`, `status` enum (active/deprecated/sunset) columns to `ApiSpec` entity | `TODO` |
-| FARM-T64 | Task | `PATCH /api/v1/api-specs/:id` endpoint to update status and sunset date; emit WebSocket `api-spec:deprecated` event | `TODO` |
-
-#### FARM-S187 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T65 | Task | `SpecDiffService`: parse two OpenAPI documents, compare paths/operations/schemas, categorize changes as breaking/non-breaking | `TODO` |
-| FARM-T66 | Task | `GET /api/v1/api-specs/:id/diff?compareWith=:otherId` returning structured changelog array with change type and location | `TODO` |
-
-#### FARM-S188 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T67 | Task | Create `ApiConsumer` join entity (`apiSpecId`, `consumerComponentId`, `consumerTeamId`, `addedAt`); unique constraint per pair | `TODO` |
-| FARM-T68 | Task | `POST/DELETE /api/v1/api-specs/:id/consumers` and `GET /api/v1/components/:id/consumed-apis` endpoints | `TODO` |
-
-#### FARM-S189 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T69 | Task | Add `api-specs` tab to component detail page; list all specs with version badge, format badge, and status indicator | `TODO` |
-| FARM-T70 | Task | Embed `swagger-ui-react` for OpenAPI specs and AsyncAPI Playground for AsyncAPI specs in the spec viewer panel | `TODO` |
-| FARM-T71 | Task | Version switcher dropdown; breaking change diff panel rendered between any two selected versions | `TODO` |
-
----
-
-### FARM-E48: API Gateway Integration `DONE`
-
-> Surface gateway-level metadata (routes, rate limits, upstream health) inside Farm without replacing the gateway. A pluggable adapter interface allows multiple gateway backends; Kong and AWS API Gateway are both implemented as opt-in, independent adapters.
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-S190 | Story | Gateway adapter interface with Kong admin API adapter as first implementation | `DONE` |
-| FARM-S191 | Story | Route inventory sync -- pull routes/services from gateway, persist as `GatewayRoute` entities, map to catalog components | `DONE` |
-| FARM-S192 | Story | API health check aggregation -- poll registered API upstream endpoints on a schedule, surface uptime and latency per API | `DONE` |
-
-#### FARM-S190 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T72 | Task | Define `IGatewayAdapter` interface (`getRoutes()`, `getServices()`, `getHealth()`); `KongAdapter` + `AwsApiGatewayAdapter` implementations | `DONE` |
-| FARM-T73 | Task | `GatewayModule` config env vars (`GATEWAY_KONG_ENABLED`, `GATEWAY_AWS_ENABLED`, etc.); independent opt-in adapter registration in DI | `DONE` |
-
-#### FARM-S191 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T74 | Task | Create `GatewayRoute` entity (`externalId`, `name`, `paths`, `methods`, `gatewayType`, `componentId` FK nullable, `syncedAt`) | `DONE` |
-| FARM-T75 | Task | Scheduled sync (every 15 min via `@nestjs/schedule`): fetch routes from all enabled adapters, upsert `GatewayRoute` rows, emit WebSocket event on changes | `DONE` |
-
-#### FARM-S192 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T76 | Task | `ApiHealthCheck` entity (`apiSpecId`, `url`, `status`: up/degraded/down, `latencyMs`, `checkedAt`) | `DONE` |
-| FARM-T77 | Task | Health check scheduled job (every 5 min): HTTP HEAD/GET each registered API URL, store result, emit event on status change | `DONE` |
+| Phase 11: API Management | 2 | 8 | v0.13.0 | `DONE` |
 
 ---
 
@@ -887,7 +802,7 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 | Phase 8: Frontend Visual Refresh | 1 | 5 | `DONE` |
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
 | Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
-| Phase 11: API Management | 2 | 8 | `TODO` |
+| Phase 11: API Management | 2 | 8 | `DONE` |
 | Phase 12: Multi-tenancy | 2 | 8 | `TODO` |
 | Phase 13: Observability 2.0 | 3 | 12 | `TODO` |
 | Phase 14: AI / Intelligence | 3 | 12 | `TODO` |
