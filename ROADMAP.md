@@ -47,7 +47,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ## Phase 12: Multi-tenancy `IN PROGRESS`
 
-### FARM-E49: Workspace Isolation `IN PROGRESS`
+### FARM-E49: Workspace Isolation `DONE`
 
 > Introduce a Workspace entity as the top-level tenant boundary. All major resources (components, teams, environments, documentation, pipelines) are workspace-scoped. Existing data migrates to a seeded "default" workspace without downtime.
 >
@@ -58,7 +58,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | FARM-S193 | Story | `Workspace` entity and CRUD API (name, slug, logoUrl, settings JSONB, createdBy) | `DONE` |
 | FARM-S194 | Story | Resource scoping -- add `workspaceId` FK to all major entities; all list and detail endpoints enforce workspace context | `DONE` |
 | FARM-S195 | Story | Data migration: seed default workspace, backfill `workspaceId` on all existing rows | `DONE` |
-| FARM-S196 | Story | Frontend workspace switcher (replaces org switcher in app shell, persists active workspace to localStorage) | `TODO` |
+| FARM-S196 | Story | Frontend workspace switcher (replaces org switcher in app shell, persists active workspace to localStorage) | `DONE` |
 
 #### FARM-S193 Tasks
 
@@ -91,7 +91,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T83 | Task | Replace `OrgSwitcher` component with `WorkspaceSwitcher`; fetch user workspaces from API, store active workspace ID in localStorage | `TODO` |
+| FARM-T83 | Task | Replace `OrgSwitcher` component with `WorkspaceSwitcher`; fetch user workspaces from API, store active workspace ID in localStorage | `DONE` |
 | FARM-T84 | Task | Thread active workspace ID through all API client calls as `X-Workspace-ID` request header via fetch interceptor | `DONE` |
 
 ---
