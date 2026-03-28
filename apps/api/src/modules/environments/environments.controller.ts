@@ -84,8 +84,12 @@ export class EnvironmentsController {
   })
   async create(
     @Body() createEnvironmentDto: CreateEnvironmentDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Environment> {
-    return await this.environmentsService.create(createEnvironmentDto);
+    return await this.environmentsService.create(
+      createEnvironmentDto,
+      req.organizationId,
+    );
   }
 
   /**

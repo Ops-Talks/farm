@@ -82,8 +82,12 @@ export class DocumentationController {
   })
   async create(
     @Body() createDocumentationDto: CreateDocumentationDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Documentation> {
-    return await this.documentationService.create(createDocumentationDto);
+    return await this.documentationService.create(
+      createDocumentationDto,
+      req.organizationId,
+    );
   }
 
   /**

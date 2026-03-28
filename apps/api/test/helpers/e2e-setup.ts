@@ -8,6 +8,9 @@ import { Reflector } from "@nestjs/core";
 import { Test, TestingModule } from "@nestjs/testing";
 import { AppModule } from "../../src/app.module";
 import { User } from "../../src/modules/auth/entities/user.entity";
+import { Organization } from "../../src/modules/organization/entities/organization.entity";
+import { UserOrganization } from "../../src/modules/organization/entities/user-organization.entity";
+import { OrgRole } from "@farm/types";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import request from "supertest";
@@ -48,7 +51,8 @@ export async function createE2EApp(): Promise<INestApplication<App>> {
 }
 
 /**
- * Registers a user with admin role and returns the JWT token.
+ * Registers a user with admin role, creates an organization for that user,
+ * and returns the JWT token together with the organization id.
  * Updates the user role to admin after registration so guarded
  * endpoints can be accessed in E2E tests.
  */
@@ -60,7 +64,7 @@ export async function registerAndLogin(
     password?: string;
     displayName?: string;
   },
-): Promise<string> {
+): Promise<{ token: string; organizationId: string }> {
   const user = {
     username: userData?.username || "e2e-admin",
     email: userData?.email || "admin@e2e-test.com",
@@ -82,5 +86,40 @@ export async function registerAndLogin(
     .send({ username: user.username, password: user.password })
     .expect(200);
 
-  return (loginRes.body as { token: string }).token;
+  const token = (loginRes.body as { token: string }).token;
+
+  // Retrieve the persisted user to get its generated id
+  const userEntity = await userRepo.findOne({
+    where: { username: user.username },
+  });
+
+  // Use a per-username slug so concurrent registrations in the same app
+  // instance (e.g. istio / plugins tests) do not collide on the unique
+  // slug / name columns.
+  const orgSlug = userData?.username ? `${user.username}-org` : "e2e-test-org";
+  const orgName = userData?.username ? `${user.username} Org` : "E2E Test Org";
+
+  // Create the organization row
+  const orgRepo = app.get<Repository<Organization>>(
+    getRepositoryToken(Organization),
+  );
+  const org = orgRepo.create({
+    name: orgName,
+    slug: orgSlug,
+    ownerId: userEntity!.id,
+  });
+  const savedOrg = await orgRepo.save(org);
+
+  // Create the membership row linking the owner to the organization
+  const userOrgRepo = app.get<Repository<UserOrganization>>(
+    getRepositoryToken(UserOrganization),
+  );
+  const userOrg = userOrgRepo.create({
+    userId: userEntity!.id,
+    organizationId: savedOrg.id,
+    role: OrgRole.OWNER,
+  });
+  await userOrgRepo.save(userOrg);
+
+  return { token, organizationId: savedOrg.id };
 }

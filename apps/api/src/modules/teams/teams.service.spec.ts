@@ -99,6 +99,25 @@ describe("TeamsService", () => {
       expect(teamRepo.create).toHaveBeenCalled();
     });
 
+    it("should assign organizationId when provided", async () => {
+      teamRepo.findOne.mockResolvedValue(null);
+      teamRepo.create.mockReturnValue(mockTeam);
+      teamRepo.save.mockResolvedValue(mockTeam);
+
+      await service.create(
+        {
+          name: "platform-team",
+          displayName: "Platform Engineering",
+          type: TeamType.PLATFORM,
+        },
+        "org-uuid-1",
+      );
+
+      expect(teamRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-uuid-1" }),
+      );
+    });
+
     it("should increment team_operations_total with operation=create", async () => {
       mockTeamOperationsCounter.inc.mockClear();
       teamRepo.findOne.mockResolvedValue(null);

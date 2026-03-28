@@ -70,15 +70,22 @@ describe("DocumentationController", () => {
 
   describe("create", () => {
     it("should create a documentation entry", async () => {
-      const result = await controller.create({
-        title: "Getting Started",
-        sourceUrl: "https://raw.githubusercontent.com/org/repo/main/README.md",
-        componentId: "comp-uuid-1",
-        author: "john_doe",
-        version: "1.0.0",
-      });
+      const result = await controller.create(
+        {
+          title: "Getting Started",
+          sourceUrl:
+            "https://raw.githubusercontent.com/org/repo/main/README.md",
+          componentId: "comp-uuid-1",
+          author: "john_doe",
+          version: "1.0.0",
+        },
+        { organizationId: "org-uuid-1" } as never,
+      );
       expect(result).toEqual(mockDoc);
-      expect(service.create).toHaveBeenCalled();
+      expect(service.create).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Getting Started" }),
+        "org-uuid-1",
+      );
     });
   });
 

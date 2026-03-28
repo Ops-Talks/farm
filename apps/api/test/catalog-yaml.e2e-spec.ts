@@ -13,10 +13,11 @@ interface ComponentResponse {
 describe("Catalog YAML Registration (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -42,6 +43,7 @@ spec:
     const res = await request(app.getHttpServer())
       .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ yaml: yamlContent })
       .expect(201);
 
@@ -55,6 +57,7 @@ spec:
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -83,6 +86,7 @@ spec:
     await request(app.getHttpServer())
       .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ yaml: invalidYaml })
       .expect(400);
   });
@@ -100,6 +104,7 @@ spec:
     await request(app.getHttpServer())
       .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ yaml: incompleteYaml })
       .expect(400);
   });
@@ -108,6 +113,7 @@ spec:
     await request(app.getHttpServer())
       .post("/api/v1/catalog/register-yaml")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ yaml: "" })
       .expect(400);
   });

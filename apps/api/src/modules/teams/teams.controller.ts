@@ -84,8 +84,11 @@ export class TeamsController {
     description: "A team with this name already exists.",
     type: ErrorResponseDto,
   })
-  async create(@Body() createTeamDto: CreateTeamDto): Promise<Team> {
-    return await this.teamsService.create(createTeamDto);
+  async create(
+    @Body() createTeamDto: CreateTeamDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<Team> {
+    return await this.teamsService.create(createTeamDto, req.organizationId);
   }
 
   /**

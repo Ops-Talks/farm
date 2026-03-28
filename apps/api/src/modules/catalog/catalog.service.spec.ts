@@ -144,6 +144,22 @@ spec:
       expect(result.name).toBe("yaml-service");
       expect(result.owner).toBe("team-yaml");
     });
+
+    it("should pass organizationId when provided", async () => {
+      const yaml = `
+apiVersion: farm.io/v1alpha1
+kind: Component
+metadata:
+  name: yaml-org-service
+spec:
+  type: service
+  owner: team-yaml
+      `;
+      await service.registerYaml(yaml, "org-uuid-1");
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-uuid-1" }),
+      );
+    });
   });
 
   describe("create", () => {

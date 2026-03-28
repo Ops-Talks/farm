@@ -86,10 +86,12 @@ export class DocumentationService {
    */
   async create(
     createDocumentationDto: CreateDocumentationDto,
+    organizationId?: string,
   ): Promise<Documentation> {
-    const documentation = this.documentationRepository.create(
-      createDocumentationDto,
-    );
+    const documentation = this.documentationRepository.create({
+      ...createDocumentationDto,
+      ...(organizationId ? { organizationId } : {}),
+    });
     return await this.documentationRepository.save(documentation);
   }
 

@@ -68,13 +68,23 @@ describe("TeamsController", () => {
   });
 
   it("should create a team", async () => {
-    const result = await controller.create({
-      name: "platform-team",
-      displayName: "Platform Engineering",
-      type: TeamType.PLATFORM,
-    });
+    const result = await controller.create(
+      {
+        name: "platform-team",
+        displayName: "Platform Engineering",
+        type: TeamType.PLATFORM,
+      },
+      { organizationId: "org-uuid-1" } as never,
+    );
     expect(result).toEqual(mockTeam);
-    expect(service.create).toHaveBeenCalled();
+    expect(service.create).toHaveBeenCalledWith(
+      {
+        name: "platform-team",
+        displayName: "Platform Engineering",
+        type: TeamType.PLATFORM,
+      },
+      "org-uuid-1",
+    );
   });
 
   it("should return all teams with pagination", async () => {

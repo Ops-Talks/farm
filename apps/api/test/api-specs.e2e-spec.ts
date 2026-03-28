@@ -69,10 +69,11 @@ interface ComponentResponse {
 describe("API Specs (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -86,6 +87,7 @@ describe("API Specs (e2e)", () => {
     const compRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "api-spec-e2e-service",
         kind: "service",
@@ -103,6 +105,7 @@ describe("API Specs (e2e)", () => {
     const consumerCompRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "api-consumer-service",
         kind: "service",
@@ -120,6 +123,7 @@ describe("API Specs (e2e)", () => {
     const createSpecRes = await request(app.getHttpServer())
       .post(`/api/v1/catalog/components/${componentId}/api-specs`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "Users API v1",
         format: "openapi",
@@ -141,6 +145,7 @@ describe("API Specs (e2e)", () => {
     const createSpec2Res = await request(app.getHttpServer())
       .post(`/api/v1/catalog/components/${componentId}/api-specs`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "Users API v2",
         format: "openapi",
@@ -158,6 +163,7 @@ describe("API Specs (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get(`/api/v1/catalog/components/${componentId}/api-specs`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const specs = listRes.body as ApiSpecResponse[];
@@ -171,6 +177,7 @@ describe("API Specs (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/api-specs/${specId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as ApiSpecResponse;
@@ -183,6 +190,7 @@ describe("API Specs (e2e)", () => {
     const patchRes = await request(app.getHttpServer())
       .patch(`/api/v1/api-specs/${specId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ status: "deprecated" })
       .expect(200);
 
@@ -197,6 +205,7 @@ describe("API Specs (e2e)", () => {
     const diffRes = await request(app.getHttpServer())
       .get(`/api/v1/api-specs/${specId}/diff?compareWith=${specId2}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const diffResult = diffRes.body as {
@@ -217,6 +226,7 @@ describe("API Specs (e2e)", () => {
     const addConsumerRes = await request(app.getHttpServer())
       .post(`/api/v1/api-specs/${specId}/consumers`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ consumerComponentId: consumerComponentId })
       .expect(201);
 
@@ -232,6 +242,7 @@ describe("API Specs (e2e)", () => {
     const consumedRes = await request(app.getHttpServer())
       .get(`/api/v1/catalog/components/${consumerComponentId}/consumed-apis`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const consumedApis = consumedRes.body as ApiSpecResponse[];
@@ -244,12 +255,14 @@ describe("API Specs (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/api-specs/${specId}/consumers/${consumerId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Verify consumer removed
     const consumedAfterDelete = await request(app.getHttpServer())
       .get(`/api/v1/catalog/components/${consumerComponentId}/consumed-apis`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const remainingConsumed = consumedAfterDelete.body as ApiSpecResponse[];
@@ -261,12 +274,14 @@ describe("API Specs (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/api-specs/${specId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Verify deleted
     await request(app.getHttpServer())
       .get(`/api/v1/api-specs/${specId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -274,6 +289,7 @@ describe("API Specs (e2e)", () => {
     await request(app.getHttpServer())
       .get("/api/v1/api-specs/00000000-0000-0000-0000-000000000000")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -282,6 +298,7 @@ describe("API Specs (e2e)", () => {
     const compRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "validation-test-service",
         kind: "service",
@@ -295,6 +312,7 @@ describe("API Specs (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/v1/catalog/components/${comp.id}/api-specs`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ name: "", format: "invalid-format", version: "", spec: "" })
       .expect(400);
   });

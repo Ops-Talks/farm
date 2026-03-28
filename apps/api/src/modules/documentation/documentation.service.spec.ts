@@ -80,6 +80,21 @@ describe("DocumentationService", () => {
       const result = await service.create(dto);
       expect(result.title).toBe(dto.title);
     });
+
+    it("should assign organizationId when provided", async () => {
+      const dto: CreateDocumentationDto = {
+        title: "Org Doc",
+        sourceUrl: "http://example.com/doc.md",
+        componentId: "id",
+        author: "author",
+        version: "1.0.0",
+      };
+      const repoCreate = mockRepository.create;
+      await service.create(dto, "org-uuid-1");
+      expect(repoCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-uuid-1" }),
+      );
+    });
   });
 
   describe("findAll", () => {

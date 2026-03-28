@@ -45,10 +45,11 @@ function extractItems<T>(body: T[] | { data: T[] }): T[] {
 describe("Teams (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -70,6 +71,7 @@ describe("Teams (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
@@ -89,6 +91,7 @@ describe("Teams (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const teams = extractItems<TeamResponse>(
@@ -100,6 +103,7 @@ describe("Teams (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as TeamResponse;
@@ -120,6 +124,7 @@ describe("Teams (e2e)", () => {
     const updateRes = await request(app.getHttpServer())
       .patch(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(updateDto)
       .expect(200);
 
@@ -134,12 +139,14 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Step 6: Confirm deletion returns 404
     await request(app.getHttpServer())
       .get(`/api/v1/teams/${teamId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -148,6 +155,7 @@ describe("Teams (e2e)", () => {
     const teamRes = await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "e2e-member-team",
         displayName: "E2E Member Team",
@@ -161,6 +169,7 @@ describe("Teams (e2e)", () => {
     const usersRes = await request(app.getHttpServer())
       .get("/api/v1/auth/users")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const users = extractItems<UserResponse>(
@@ -174,6 +183,7 @@ describe("Teams (e2e)", () => {
     const addRes = await request(app.getHttpServer())
       .post(`/api/v1/teams/${teamId}/members/${userId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const teamAfterAdd = addRes.body as TeamResponse;
@@ -183,6 +193,7 @@ describe("Teams (e2e)", () => {
     const membersRes = await request(app.getHttpServer())
       .get(`/api/v1/teams/${teamId}/members`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const members = extractItems<UserResponse>(
@@ -194,12 +205,14 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/teams/${teamId}/members/${userId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     // List members and verify the user is gone
     const membersAfterRemove = await request(app.getHttpServer())
       .get(`/api/v1/teams/${teamId}/members`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const remainingMembers = extractItems<UserResponse>(
@@ -213,6 +226,7 @@ describe("Teams (e2e)", () => {
     const teamRes = await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "e2e-component-owner",
         displayName: "E2E Component Owner Team",
@@ -232,6 +246,7 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(componentDto)
       .expect(201);
 
@@ -239,6 +254,7 @@ describe("Teams (e2e)", () => {
     const componentsRes = await request(app.getHttpServer())
       .get(`/api/v1/teams/${team.id}/components`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const components = extractItems<ComponentResponse>(
@@ -253,6 +269,7 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({})
       .expect(400);
 
@@ -260,6 +277,7 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ name: "incomplete-team" })
       .expect(400);
   });
@@ -268,6 +286,7 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "bad-type-team",
         displayName: "Bad Type Team",
@@ -286,12 +305,14 @@ describe("Teams (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(teamDto)
       .expect(201);
 
     await request(app.getHttpServer())
       .post("/api/v1/teams")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(teamDto)
       .expect(409);
   });

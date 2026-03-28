@@ -42,7 +42,10 @@ export class TeamsService {
    * @returns The newly created team
    * @throws ConflictException if a team with the same name already exists
    */
-  async create(createTeamDto: CreateTeamDto): Promise<Team> {
+  async create(
+    createTeamDto: CreateTeamDto,
+    organizationId?: string,
+  ): Promise<Team> {
     const existing = await this.teamRepository.findOne({
       where: { name: createTeamDto.name },
     });
@@ -52,7 +55,10 @@ export class TeamsService {
       );
     }
 
-    const team = this.teamRepository.create(createTeamDto);
+    const team = this.teamRepository.create({
+      ...createTeamDto,
+      ...(organizationId ? { organizationId } : {}),
+    });
     this.logger.log(`Creating team: ${createTeamDto.name}`);
     const saved = await this.teamRepository.save(team);
     this.teamOperationsTotal?.inc({ operation: "create" });

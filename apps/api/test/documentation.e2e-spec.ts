@@ -20,16 +20,18 @@ interface DocumentationResponse {
 describe("Documentation CRUD (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
   let componentId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    token = await registerAndLogin(app);
+    ({ token, organizationId } = await registerAndLogin(app));
 
     // Create a component to associate documentation with
     const compRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "docs-e2e-service",
         kind: "service",
@@ -57,6 +59,7 @@ describe("Documentation CRUD (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
@@ -74,6 +77,7 @@ describe("Documentation CRUD (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const fetched = getRes.body as DocumentationResponse;
@@ -84,6 +88,7 @@ describe("Documentation CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -102,6 +107,7 @@ describe("Documentation CRUD (e2e)", () => {
     const filteredRes = await request(app.getHttpServer())
       .get(`/api/v1/docs?componentId=${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const filteredBody = filteredRes.body as {
@@ -124,6 +130,7 @@ describe("Documentation CRUD (e2e)", () => {
     const updateRes = await request(app.getHttpServer())
       .patch(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(updateDto)
       .expect(200);
 
@@ -135,12 +142,14 @@ describe("Documentation CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Step 7: Confirm deletion returns 404
     await request(app.getHttpServer())
       .get(`/api/v1/docs/${docId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -148,6 +157,7 @@ describe("Documentation CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ title: "Incomplete" })
       .expect(400);
   });
@@ -156,6 +166,7 @@ describe("Documentation CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/docs")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         title: "Bad URL Doc",
         sourceUrl: "not-a-url",
@@ -164,5 +175,53 @@ describe("Documentation CRUD (e2e)", () => {
         version: "1.0.0",
       })
       .expect(400);
+  });
+
+  describe("org isolation", () => {
+    it("should not return documentation from another organization", async () => {
+      // Register second user with a distinct org
+      const second = await registerAndLogin(app, {
+        username: "e2e-doc-user2",
+        email: "doc-user2@e2e-test.com",
+      });
+
+      // Create a catalog component inside the second org
+      const compRes = await request(app.getHttpServer())
+        .post("/api/v1/catalog/components")
+        .set("Authorization", `Bearer ${second.token}`)
+        .set("X-Organization-Id", second.organizationId)
+        .send({
+          name: "isolated-doc-component",
+          kind: "service",
+          owner: "team",
+        })
+        .expect(201);
+
+      // Create a documentation entry inside the second org
+      await request(app.getHttpServer())
+        .post("/api/v1/docs")
+        .set("Authorization", `Bearer ${second.token}`)
+        .set("X-Organization-Id", second.organizationId)
+        .send({
+          title: "Secret Doc",
+          sourceUrl: "https://raw.example.com/secret.md",
+          componentId: (compRes.body as { id: string }).id,
+          author: "e2e-doc-user2",
+          version: "1.0.0",
+        })
+        .expect(201);
+
+      // List docs as the first user scoped to their own org — must NOT see the second org's doc
+      const listRes = await request(app.getHttpServer())
+        .get("/api/v1/docs")
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
+        .expect(200);
+
+      const titles = (
+        listRes.body as { data: Array<{ title: string }> }
+      ).data.map((d) => d.title);
+      expect(titles).not.toContain("Secret Doc");
+    });
   });
 });
