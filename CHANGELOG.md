@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.3] - 2026-03-27
+
+### Added
+- **api-specs**: implement FARM-E47 API Catalog and Lifecycle Management (#32).
+
+### Changed
+- Fix incomplete URL substring sanitization in provider detection (#28).
+- Fix for code scanning alert no. 8: Incomplete multi-character sanitization (#26).
+- Fix for code scanning alert no. 10: Incomplete multi-character sanitization (#25).
+
+### Fixed
+- resolve CodeQL command injection alert and restore missing web test dependency (#31).
+- **api**: resolve ESLint type-safety errors in test files (#30).
+
 ## [0.12.2] - 2026-03-27
 
 ### Changed

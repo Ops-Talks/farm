@@ -62,9 +62,7 @@ describe("ApiSpecsComponentController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ApiSpecsComponentController],
-      providers: [
-        { provide: ApiSpecsService, useValue: mockApiSpecsService },
-      ],
+      providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
     }).compile();
 
     controller = module.get<ApiSpecsComponentController>(
@@ -115,9 +113,7 @@ describe("ConsumedApisController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ConsumedApisController],
-      providers: [
-        { provide: ApiSpecsService, useValue: mockApiSpecsService },
-      ],
+      providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
     }).compile();
 
     controller = module.get<ConsumedApisController>(ConsumedApisController);
@@ -149,9 +145,7 @@ describe("ApiSpecsController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ApiSpecsController],
-      providers: [
-        { provide: ApiSpecsService, useValue: mockApiSpecsService },
-      ],
+      providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
     }).compile();
 
     controller = module.get<ApiSpecsController>(ApiSpecsController);
