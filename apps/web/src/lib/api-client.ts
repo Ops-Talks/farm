@@ -1,9 +1,13 @@
 import type {
+  AddConsumerDto,
   AlertingRule,
+  ApiConsumer,
+  ApiSpec,
   ArgoCDApplication,
   CatalogComponent,
   CircleCIPipeline,
   ComplianceSummary,
+  CreateApiSpecDto,
   Deployment,
   DeploymentMatrixRow,
   DocumentationEntry,
@@ -47,9 +51,11 @@ import type {
   RefreshTokenRequest,
   RefreshTokenResponse,
   ResourceViolation,
+  SpecDiffResult,
   TagPolicy,
   Team,
   TravisBuild,
+  UpdateApiSpecDto,
   User,
 } from "@/types/api";
 
@@ -1390,5 +1396,67 @@ export const keycloakCredentials = {
     return request<void>(`/v1/integrations/credentials/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// -- API Catalog and Lifecycle Management (FARM-E47) --
+
+export const apiSpecs = {
+  /** List all API specs published by a component. */
+  listByComponent(componentId: string): Promise<ApiSpec[]> {
+    return request<ApiSpec[]>(`/v1/catalog/components/${componentId}/api-specs`);
+  },
+
+  /** Publish a new API spec for a component. */
+  create(componentId: string, dto: CreateApiSpecDto): Promise<ApiSpec> {
+    return request<ApiSpec>(`/v1/catalog/components/${componentId}/api-specs`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Fetch a single API spec by its id. */
+  getOne(id: string): Promise<ApiSpec> {
+    return request<ApiSpec>(`/v1/api-specs/${id}`);
+  },
+
+  /** Update status, sunsetAt, or deprecatedAt on an API spec (admin only). */
+  update(id: string, dto: UpdateApiSpecDto): Promise<ApiSpec> {
+    return request<ApiSpec>(`/v1/api-specs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete an API spec (admin only). */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/api-specs/${id}`, { method: "DELETE" });
+  },
+
+  /** Compute a diff between two API spec versions. */
+  diff(id: string, compareWithId: string): Promise<SpecDiffResult> {
+    return request<SpecDiffResult>(
+      `/v1/api-specs/${id}/diff?compareWith=${encodeURIComponent(compareWithId)}`,
+    );
+  },
+
+  /** Register a consumer for an API spec. */
+  addConsumer(id: string, dto: AddConsumerDto): Promise<ApiConsumer> {
+    return request<ApiConsumer>(`/v1/api-specs/${id}/consumers`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Remove a consumer from an API spec (admin only). */
+  removeConsumer(id: string, consumerId: string): Promise<void> {
+    return request<void>(`/v1/api-specs/${id}/consumers/${consumerId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /** List all API specs consumed by a component. */
+  listConsumedApis(componentId: string): Promise<ApiSpec[]> {
+    return request<ApiSpec[]>(`/v1/catalog/components/${componentId}/consumed-apis`);
   },
 };

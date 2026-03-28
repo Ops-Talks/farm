@@ -121,6 +121,7 @@ nav:
     - api-reference/index.md
     - Health API: api-reference/health.md
     - Catalog API: api-reference/catalog.md
+    - API Management: api-management.md
     - Documentation API: api-reference/docs.md
     - Environments API: api-reference/environments.md
     - Deployments API: api-reference/deployments.md

@@ -735,6 +735,64 @@ export interface IstioLatency {
   p99: IstioMetricsTimeseries;
 }
 
+// -- API Catalog and Lifecycle Management (FARM-E47) --
+
+export type ApiSpecFormat = "openapi" | "asyncapi";
+export type ApiSpecStatus = "active" | "deprecated" | "sunset";
+
+export interface ApiSpec {
+  id: string;
+  componentId: string;
+  name: string;
+  format: ApiSpecFormat;
+  version: string;
+  spec: string; // raw YAML/JSON content
+  status: ApiSpecStatus;
+  deprecatedAt: string | null;
+  sunsetAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiConsumer {
+  id: string;
+  apiSpecId: string;
+  consumerComponentId: string | null;
+  consumerTeamId: string | null;
+  addedAt: string;
+}
+
+export interface SpecDiffEntry {
+  type: "added" | "removed" | "modified";
+  breaking: boolean;
+  path: string;
+  detail: string;
+}
+
+export interface SpecDiffResult {
+  totalChanges: number;
+  breakingChanges: number;
+  entries: SpecDiffEntry[];
+}
+
+export interface CreateApiSpecDto {
+  name: string;
+  format: ApiSpecFormat;
+  version: string;
+  spec: string;
+}
+
+export interface UpdateApiSpecDto {
+  status?: ApiSpecStatus;
+  sunsetAt?: string;
+  deprecatedAt?: string;
+}
+
+export interface AddConsumerDto {
+  consumerComponentId?: string;
+  consumerTeamId?: string;
+}
+
 // -- Kyverno Policy Reports (FARM-E40) --
 
 /** A Kyverno PolicyReport (or ClusterPolicyReport) result returned by the backend. */
