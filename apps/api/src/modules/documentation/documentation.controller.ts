@@ -118,7 +118,7 @@ export class DocumentationController {
     @Query() query: ListDocumentationQueryDto,
     @Req() req: RequestWithOrg,
   ): Promise<PaginatedResponseDto<Documentation>> {
-    const organizationId = req["organizationId"];
+    const organizationId = req.organizationId;
     const [data, total] = await this.documentationService.findAll(
       query.skip,
       query.take,
