@@ -4,6 +4,8 @@ import { OrganizationController } from "../organization.controller";
 import { OrganizationService } from "../organization.service";
 import { Organization } from "../entities/organization.entity";
 import { MemberResponseDto } from "../dto/member-response.dto";
+import { InvitationResponseDto } from "../dto/invitation-response.dto";
+import { InvitationStatus } from "../entities/org-invitation.entity";
 import { PaginatedResponseDto } from "../../../common/dto";
 import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../../common/guards/org-roles.guard";
@@ -68,6 +70,9 @@ describe("OrganizationController", () => {
             addMember: jest.fn().mockResolvedValue(mockMember),
             updateMemberRole: jest.fn().mockResolvedValue(mockMember),
             removeMember: jest.fn().mockResolvedValue(undefined),
+            createInvitation: jest.fn(),
+            listInvitations: jest.fn(),
+            cancelInvitation: jest.fn(),
           },
         },
       ],
@@ -486,6 +491,139 @@ describe("OrganizationController", () => {
       await expect(
         controller.removeMember("org-uuid-1", "user-uuid-2", mockRequest),
       ).rejects.toThrow("Forbidden");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // createInvitation
+  // ---------------------------------------------------------------------------
+
+  describe("createInvitation", () => {
+    const mockInvitation: InvitationResponseDto = {
+      id: "inv-uuid-1",
+      organizationId: "org-uuid-1",
+      email: "invitee@example.com",
+      role: "member",
+      status: InvitationStatus.PENDING,
+      expiresAt: new Date("2099-01-01"),
+      createdAt: new Date("2024-01-01"),
+    };
+
+    it("should create an invitation and return the response DTO", async () => {
+      (service.createInvitation as jest.Mock).mockResolvedValue(mockInvitation);
+      const dto = { email: "invitee@example.com", role: OrgRole.MEMBER };
+
+      const result = await controller.createInvitation(
+        "org-uuid-1",
+        dto,
+        mockRequest,
+      );
+
+      expect(result).toEqual(mockInvitation);
+      expect(service.createInvitation).toHaveBeenCalledWith(
+        "org-uuid-1",
+        dto,
+        "user-uuid-1",
+      );
+    });
+
+    it("should forward the caller's userId to the service", async () => {
+      (service.createInvitation as jest.Mock).mockResolvedValue(mockInvitation);
+      const callerRequest = {
+        user: { userId: "admin-uuid", username: "admin", roles: ["admin"] },
+      } as unknown as AuthenticatedRequest;
+
+      await controller.createInvitation(
+        "org-uuid-1",
+        { email: "someone@example.com" },
+        callerRequest,
+      );
+
+      expect(service.createInvitation).toHaveBeenCalledWith(
+        "org-uuid-1",
+        { email: "someone@example.com" },
+        "admin-uuid",
+      );
+    });
+
+    it("should propagate errors thrown by the service", async () => {
+      (service.createInvitation as jest.Mock).mockRejectedValueOnce(
+        new Error("Conflict"),
+      );
+
+      await expect(
+        controller.createInvitation(
+          "org-uuid-1",
+          { email: "dup@example.com" },
+          mockRequest,
+        ),
+      ).rejects.toThrow("Conflict");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // listInvitations
+  // ---------------------------------------------------------------------------
+
+  describe("listInvitations", () => {
+    const mockInvitations: InvitationResponseDto[] = [
+      {
+        id: "inv-uuid-1",
+        organizationId: "org-uuid-1",
+        email: "a@example.com",
+        role: "member",
+        status: InvitationStatus.PENDING,
+        expiresAt: new Date("2099-01-01"),
+        createdAt: new Date("2024-01-01"),
+      },
+    ];
+
+    it("should return an array of pending invitations", async () => {
+      (service.listInvitations as jest.Mock).mockResolvedValue(mockInvitations);
+
+      const result = await controller.listInvitations("org-uuid-1");
+
+      expect(result).toEqual(mockInvitations);
+      expect(service.listInvitations).toHaveBeenCalledWith("org-uuid-1");
+    });
+
+    it("should return an empty array when there are no pending invitations", async () => {
+      (service.listInvitations as jest.Mock).mockResolvedValue([]);
+
+      const result = await controller.listInvitations("org-uuid-1");
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // cancelInvitation
+  // ---------------------------------------------------------------------------
+
+  describe("cancelInvitation", () => {
+    it("should cancel an invitation and return undefined", async () => {
+      (service.cancelInvitation as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await controller.cancelInvitation(
+        "org-uuid-1",
+        "inv-uuid-1",
+      );
+
+      expect(result).toBeUndefined();
+      expect(service.cancelInvitation).toHaveBeenCalledWith(
+        "org-uuid-1",
+        "inv-uuid-1",
+      );
+    });
+
+    it("should propagate errors thrown by the service", async () => {
+      (service.cancelInvitation as jest.Mock).mockRejectedValueOnce(
+        new Error("Not Found"),
+      );
+
+      await expect(
+        controller.cancelInvitation("org-uuid-1", "nonexistent"),
+      ).rejects.toThrow("Not Found");
     });
   });
 });

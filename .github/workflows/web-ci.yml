@@ -61,6 +61,15 @@ jobs:
           fail_ci_if_error: false
           verbose: true
 
+      # ── 6b. Upload test results to Codecov ───────────────────────────────────
+      - name: Upload unit test results to Codecov
+        uses: codecov/test-results-action@v1
+        if: always()
+        with:
+          files: ./apps/web/coverage/junit.xml
+          flags: web
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       # ── 7. Build ─────────────────────────────────────────────────────────────
       - name: Build (apps/web)
         run: npm run web:build

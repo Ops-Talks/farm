@@ -96,30 +96,30 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-### FARM-E50: Workspace-Scoped RBAC `TODO`
+### FARM-E50: Workspace-Scoped RBAC `DONE`
 
 > Per-workspace roles (owner, admin, member, viewer) complement the existing global admin/user roles. Workspace owners can invite members, assign roles, and manage workspace settings independently.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S197 | Story | `WorkspaceMember` entity (workspaceId, userId, role: owner/admin/member/viewer, joinedAt) with unique constraint | `TODO` |
-| FARM-S198 | Story | Workspace-scoped `@WorkspaceRoles()` decorator and guard; protect all workspace-owned endpoints | `TODO` |
-| FARM-S199 | Story | Workspace invitation flow (invite by email -> signed token link -> accept/decline -> member created) | `TODO` |
-| FARM-S200 | Story | Frontend: workspace settings page with member list, role assignment dropdown, and pending invitations panel | `TODO` |
+| FARM-S197 | Story | `WorkspaceMember` entity (workspaceId, userId, role: owner/admin/member/viewer, joinedAt) with unique constraint | `DONE` |
+| FARM-S198 | Story | Workspace-scoped `@WorkspaceRoles()` decorator and guard; protect all workspace-owned endpoints | `DONE` |
+| FARM-S199 | Story | Workspace invitation flow (invite by email -> signed token link -> accept/decline -> member created) | `DONE` |
+| FARM-S200 | Story | Frontend: workspace settings page with member list, role assignment dropdown, and pending invitations panel | `DONE` |
 
 #### FARM-S197 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T85 | Task | Create `WorkspaceMember` entity and `WorkspaceRole` enum; unique constraint on (workspaceId, userId) pair | `TODO` |
-| FARM-T86 | Task | `GET /workspaces/:slug/members`, `PATCH /workspaces/:slug/members/:userId` (role change), `DELETE` (remove member) | `TODO` |
+| FARM-T85 | Task | Create `WorkspaceMember` entity and `WorkspaceRole` enum; unique constraint on (workspaceId, userId) pair | `DONE` |
+| FARM-T86 | Task | `GET /workspaces/:slug/members`, `PATCH /workspaces/:slug/members/:userId` (role change), `DELETE` (remove member) | `DONE` |
 
 #### FARM-S199 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T87 | Task | `WorkspaceInvitation` entity (email, tokenHash, role, expiresAt, status: pending/accepted/declined); 48-hour TTL | `TODO` |
-| FARM-T88 | Task | `POST /workspaces/:slug/invitations` sends email via notification processor; `POST /invitations/:token/accept` creates member row | `TODO` |
+| FARM-T87 | Task | `OrgInvitation` entity (email, tokenHash, role, expiresAt, status: pending/accepted/declined); 48-hour TTL | `DONE` |
+| FARM-T88 | Task | `POST /organizations/:id/invitations` sends email via notification queue; `POST /invitations/:token/accept` creates member row | `DONE` |
 
 ---
 
@@ -787,6 +787,28 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 
 ---
 
+## Phase 22: CI/CD Hardening `TODO`
+
+### FARM-E67: CI Pipeline Hardening `TODO`
+
+Hardens the GitHub Actions CI pipeline with three gaps identified in the current setup: the API TypeScript build is never validated in the normal CI flow; database migrations are never exercised against a real PostgreSQL instance (e2e tests use SQLite with `synchronize: true`); and Playwright E2E tests only run on Chromium.
+
+| ID | Type | Description | Status |
+|----|------|-------------|--------|
+| FARM-S270 | Story | API build validation in `ci.yml` -- add a `npm run build -w apps/api` step to the `api` job so every PR verifies the TypeScript compiles to `dist/` cleanly | `TODO` |
+| FARM-S271 | Story | Migration integrity job -- new `migrations` job in `ci.yml` with a PostgreSQL 16 service container; runs `npm run migration:run -w apps/api` against a real database to catch constraint errors, type mismatches, and dialect incompatibilities invisible to SQLite | `TODO` |
+| FARM-S272 | Story | Playwright cross-browser support -- extend `web-ci.yml` and `playwright.config.ts` to run E2E tests on Chromium, Firefox, and WebKit; upload per-browser artifacts on failure | `TODO` |
+
+#### FARM-E67 Tasks
+
+| ID | Type | Description | Status |
+|----|------|-------------|--------|
+| FARM-T234 | Task | Add `- name: Build API` step (`run: npm run build -w apps/api`) to the `api` job in `ci.yml`, after the E2E tests step and before the Codecov upload; no additional secrets or services required | `TODO` |
+| FARM-T235 | Task | Add `migrations` job to `ci.yml`: PostgreSQL 16-alpine service container with health check; steps: checkout, Node 20, `npm ci`, `npm run build -w apps/api`, `npm run migration:run -w apps/api`; env vars use the same dummy credentials already used in `dast.yml` (`DATABASE_SYNC: "false"`); job runs in parallel with `api` and `lighthouse` | `TODO` |
+| FARM-T236 | Task | Add Firefox and WebKit projects to `apps/web/playwright.config.ts`; update `web-ci.yml` `e2e` job to install all browsers (`npx playwright install --with-deps`) and run tests without `--project=chromium` filter; upload separate artifacts per browser on failure | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -805,7 +827,7 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 | Phase 9: Security Testing | 1 | 3 | `DONE` |
 | Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
 | Phase 11: API Management | 2 | 8 | `DONE` |
-| Phase 12: Multi-tenancy | 2 | 8 | `TODO` |
+| Phase 12: Multi-tenancy | 2 | 8 | `IN PROGRESS` |
 | Phase 13: Observability 2.0 | 3 | 12 | `TODO` |
 | Phase 14: AI / Intelligence | 3 | 12 | `TODO` |
 | Phase 15: Developer Self-Service | 2 | 9 | `TODO` |
@@ -815,4 +837,5 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 | Phase 19: FinOps | 2 | 7 | `TODO` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
-| **Total** | **67** | **256** | |
+| Phase 22: CI/CD Hardening | 1 | 3 | `TODO` |
+| **Total** | **68** | **259** | |

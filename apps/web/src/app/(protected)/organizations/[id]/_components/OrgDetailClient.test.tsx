@@ -25,6 +25,11 @@ vi.mock("@/lib/api-client", () => ({
       add: vi.fn(),
       remove: vi.fn(),
     },
+    invitations: {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      cancel: vi.fn(),
+    },
     delete: vi.fn(),
   },
   auth: {
@@ -149,6 +154,16 @@ describe("OrgDetailClient", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Danger Zone")).toBeInTheDocument();
+    });
+  });
+
+  it("renders fallback description when org has no description", async () => {
+    const orgWithoutDescription = { ...makeOrg(), description: undefined };
+    mockGetOrg.mockResolvedValue(orgWithoutDescription);
+    render(<OrgDetailClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No description provided.")).toBeInTheDocument();
     });
   });
 });

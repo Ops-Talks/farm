@@ -143,6 +143,23 @@ async function mockOrgsRoutes(
     },
   );
 
+  // Invitations for the org: GET /organizations/{id}/invitations.
+  // Returns an empty array so the InvitationsPanel renders without crashing.
+  await page.route(
+    `**/api/v1/organizations/${MOCK_ORG.id}/invitations`,
+    (route) => {
+      if (route.request().method() === "GET") {
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      } else {
+        void route.continue();
+      }
+    },
+  );
+
   // Individual org detail: GET /organizations/{id}.
   await page.route(`**/api/v1/organizations/${MOCK_ORG.id}`, (route) =>
     route.fulfill({
@@ -297,7 +314,7 @@ test("organization detail page shows the members section", async ({ page }) => {
 
   // Members card title — CardTitle renders as a <div> in this project's
   // ui library, so a text match is used rather than a heading role query.
-  await expect(page.getByText("Members")).toBeVisible();
+  await expect(page.getByText("Members", { exact: true })).toBeVisible();
 
   // The mock member should appear in the table
   await expect(page.getByText(MOCK_MEMBER.username)).toBeVisible();

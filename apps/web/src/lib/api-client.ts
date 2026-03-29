@@ -40,6 +40,7 @@ import type {
   MemberResponse,
   ObservabilitySummary,
   Organization,
+  OrgInvitation,
   PaginatedResponse,
   PaginationQuery,
   Pipeline,
@@ -597,6 +598,36 @@ export const organizations = {
         method: "DELETE",
       });
     },
+  },
+
+  /**
+   * Invitation sub-resource methods for /api/v1/organizations/:id/invitations.
+   */
+  invitations: {
+    list(orgId: string): Promise<OrgInvitation[]> {
+      return request(`/v1/organizations/${orgId}/invitations`);
+    },
+
+    create(orgId: string, dto: { email: string; role?: string }): Promise<OrgInvitation> {
+      return request(`/v1/organizations/${orgId}/invitations`, {
+        method: "POST",
+        body: JSON.stringify(dto),
+      });
+    },
+
+    cancel(orgId: string, invitationId: string): Promise<void> {
+      return request(`/v1/organizations/${orgId}/invitations/${invitationId}`, {
+        method: "DELETE",
+      });
+    },
+  },
+};
+
+// -- Standalone invitation acceptance --
+
+export const invitations = {
+  accept(token: string): Promise<MemberResponse> {
+    return request(`/v1/invitations/${token}/accept`, { method: "POST" });
   },
 };
 
