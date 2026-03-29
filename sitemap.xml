@@ -5,19 +5,19 @@
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/api-gateway/</loc>
-         <lastmod>2026-03-29</lastmod>
-    </url>
-    <url>
-         <loc>https://ops-talks.github.io/farm/api-management/</loc>
-         <lastmod>2026-03-29</lastmod>
-    </url>
-    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/</loc>
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/api-reference/analytics/</loc>
+         <lastmod>2026-03-29</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/api-gateway/</loc>
+         <lastmod>2026-03-29</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/api-reference/api-management/</loc>
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
@@ -205,6 +205,10 @@
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/dashboards/</loc>
+         <lastmod>2026-03-29</lastmod>
+    </url>
+    <url>
          <loc>https://ops-talks.github.io/farm/user-guide/documentation/</loc>
          <lastmod>2026-03-29</lastmod>
     </url>
@@ -218,6 +222,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/helm-integration/</loc>
+         <lastmod>2026-03-29</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/incidents/</loc>
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
@@ -250,6 +258,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/production/</loc>
+         <lastmod>2026-03-29</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/slos/</loc>
          <lastmod>2026-03-29</lastmod>
     </url>
     <url>
