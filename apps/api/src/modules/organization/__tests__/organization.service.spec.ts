@@ -578,6 +578,52 @@ describe("OrganizationService — invitation management", () => {
       // Queue should NOT be called because NODE_ENV === "test"
       expect(notificationsQueue.add).not.toHaveBeenCalled();
     });
+
+    it("should enqueue a notification email when NODE_ENV is not test", async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      orgRepo.findOne.mockResolvedValue(mockOrg);
+      invitationRepo.findOne.mockResolvedValue(null);
+      invitationRepo.create.mockReturnValue(mockPendingInvitation);
+      invitationRepo.save.mockResolvedValue(mockPendingInvitation);
+      userRepo.findOne.mockResolvedValue({ id: inviterId, username: "inviter_user" });
+
+      await service.createInvitation(orgId, { email: inviteeEmail }, inviterId);
+
+      expect(notificationsQueue.add).toHaveBeenCalledWith(
+        "email",
+        expect.objectContaining({
+          type: "email",
+          recipient: inviteeEmail,
+          template: "org-invitation",
+        }),
+      );
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it("should use invitedByUserId as inviterName when user is not found", async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      orgRepo.findOne.mockResolvedValue(mockOrg);
+      invitationRepo.findOne.mockResolvedValue(null);
+      invitationRepo.create.mockReturnValue(mockPendingInvitation);
+      invitationRepo.save.mockResolvedValue(mockPendingInvitation);
+      userRepo.findOne.mockResolvedValue(null);
+
+      await service.createInvitation(orgId, { email: inviteeEmail }, inviterId);
+
+      expect(notificationsQueue.add).toHaveBeenCalledWith(
+        "email",
+        expect.objectContaining({
+          payload: expect.objectContaining({ inviterName: inviterId }),
+        }),
+      );
+
+      process.env.NODE_ENV = originalEnv;
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -736,6 +782,37 @@ describe("OrganizationService — invitation management", () => {
       await expect(
         service.acceptInvitation(plainToken, "acceptor-uuid"),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getMembership
+  // ---------------------------------------------------------------------------
+
+  describe("getMembership", () => {
+    it("should return the UserOrganization record when found", async () => {
+      const mockMembership = {
+        userId: "inviter-uuid-1",
+        organizationId: "org-uuid-1",
+        role: OrgRole.OWNER,
+        createdAt: new Date("2023-01-01"),
+      };
+      userOrgRepo.findOne.mockResolvedValue(mockMembership);
+
+      const result = await service.getMembership("inviter-uuid-1", "org-uuid-1");
+
+      expect(result).toEqual(mockMembership);
+      expect(userOrgRepo.findOne).toHaveBeenCalledWith({
+        where: { userId: "inviter-uuid-1", organizationId: "org-uuid-1" },
+      });
+    });
+
+    it("should return null when the user is not a member", async () => {
+      userOrgRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.getMembership("outsider-uuid", "org-uuid-1");
+
+      expect(result).toBeNull();
     });
   });
 });

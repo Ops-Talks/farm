@@ -184,4 +184,148 @@ describe("InvitationsPanel", () => {
       expect(mockInvitationsCancel).toHaveBeenCalledWith("org-1", "inv-uuid-99");
     });
   });
+
+  it("shows 'Expired' label for past expiry dates", async () => {
+    const inv = makeInvitation({
+      email: "expired@test.com",
+      expiresAt: new Date(Date.now() - 1000).toISOString(),
+    });
+    mockInvitationsList.mockResolvedValue([inv]);
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Expired")).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Expires in Xh' label for invitations expiring within 24 hours", async () => {
+    const inv = makeInvitation({
+      email: "soon@test.com",
+      expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    });
+    mockInvitationsList.mockResolvedValue([inv]);
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/expires in \d+h/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Expires in Xd' label for invitations expiring in more than 24 hours", async () => {
+    const inv = makeInvitation({
+      email: "future@test.com",
+      expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+    });
+    mockInvitationsList.mockResolvedValue([inv]);
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/expires in \d+d/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows error toast when loadInvitations fails", async () => {
+    mockInvitationsList.mockRejectedValue(new Error("Network error"));
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invitations-panel")).toBeInTheDocument();
+    });
+  });
+
+  it("shows form error when handleInvite is called with an ApiError", async () => {
+    const { ApiError: MockApiError } = await import("@/lib/api-client");
+    const user = userEvent.setup();
+
+    mockInvitationsCreate.mockRejectedValue(
+      new MockApiError(422, { message: "Invitee is already a member." }),
+    );
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invite-form")).toBeInTheDocument();
+    });
+
+    const emailInput = screen.getByRole("textbox", { name: /email address/i });
+    await user.clear(emailInput);
+    await user.type(emailInput, "member@example.com");
+
+    const sendButton = screen.getByRole("button", { name: /send/i });
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Invitee is already a member.")).toBeInTheDocument();
+    });
+  });
+
+  it("shows generic form error when handleInvite fails with a non-ApiError", async () => {
+    const user = userEvent.setup();
+    mockInvitationsCreate.mockRejectedValue(new Error("Unexpected error"));
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invite-form")).toBeInTheDocument();
+    });
+
+    const emailInput = screen.getByRole("textbox", { name: /email address/i });
+    await user.clear(emailInput);
+    await user.type(emailInput, "test@example.com");
+
+    const sendButton = screen.getByRole("button", { name: /send/i });
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to send invitation.")).toBeInTheDocument();
+    });
+  });
+
+  it("shows form error when email is empty on submit", async () => {
+    const user = userEvent.setup();
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invite-form")).toBeInTheDocument();
+    });
+
+    const sendButton = screen.getByRole("button", { name: /send/i });
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("Email address is required.")).toBeInTheDocument();
+    });
+    expect(mockInvitationsCreate).not.toHaveBeenCalled();
+  });
+
+  it("allows changing invitation role to admin", async () => {
+    const user = userEvent.setup();
+
+    render(<InvitationsPanel orgId="org-1" currentUserRole="admin" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("invite-form")).toBeInTheDocument();
+    });
+
+    const roleSelect = screen.getByRole("combobox", { name: /invitation role/i });
+    await user.selectOptions(roleSelect, "admin");
+
+    const emailInput = screen.getByRole("textbox", { name: /email address/i });
+    await user.type(emailInput, "newadmin@example.com");
+
+    const sendButton = screen.getByRole("button", { name: /send/i });
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(mockInvitationsCreate).toHaveBeenCalledWith("org-1", {
+        email: "newadmin@example.com",
+        role: "admin",
+      });
+    });
+  });
 });

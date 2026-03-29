@@ -32,6 +32,7 @@ import {
   keycloakCredentials,
   apiSpecs,
   gateway,
+  invitations,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -936,6 +937,52 @@ describe("api-client", () => {
           expect.objectContaining({ method: "DELETE" }),
         );
       });
+    });
+
+    describe("invitations sub-resource", () => {
+      it("should list pending invitations for an organization", async () => {
+        const mockInv = { id: "inv-1", email: "user@test.com", role: "member", status: "pending" };
+        mockFetch.mockReturnValueOnce(jsonResponse([mockInv]));
+        const result = await organizations.invitations.list("org-1");
+        expect(result).toHaveLength(1);
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/v1/organizations/org-1/invitations",
+          expect.any(Object),
+        );
+      });
+
+      it("should create an invitation for an organization", async () => {
+        const mockInv = { id: "inv-2", email: "new@test.com", role: "member", status: "pending" };
+        mockFetch.mockReturnValueOnce(jsonResponse(mockInv));
+        const result = await organizations.invitations.create("org-1", { email: "new@test.com", role: "member" });
+        expect(result.email).toBe("new@test.com");
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/v1/organizations/org-1/invitations",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+
+      it("should cancel an invitation", async () => {
+        mockFetch.mockReturnValueOnce(noContentResponse());
+        await organizations.invitations.cancel("org-1", "inv-1");
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/v1/organizations/org-1/invitations/inv-1",
+          expect.objectContaining({ method: "DELETE" }),
+        );
+      });
+    });
+  });
+
+  describe("invitations (standalone accept)", () => {
+    it("should POST to /v1/invitations/:token/accept and return member response", async () => {
+      const mockMember = { userId: "u1", username: "alice", role: "member" };
+      mockFetch.mockReturnValueOnce(jsonResponse(mockMember));
+      const result = await invitations.accept("my-plain-token");
+      expect(result.username).toBe("alice");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/invitations/my-plain-token/accept",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
   });
 

@@ -212,6 +212,25 @@ describe("OrganizationService", () => {
         service.update("org-uuid-1", { name: "Other" }, ownerId),
       ).rejects.toThrow(ConflictException);
     });
+
+    it("should update slug when name changes without conflict", async () => {
+      const updated = { ...mockOrg, name: "New Name", slug: "new-name" };
+      orgRepo.findOne
+        .mockResolvedValueOnce(mockOrg)
+        .mockResolvedValueOnce(null);
+      userOrgRepo.findOne.mockResolvedValue(mockMembership);
+      orgRepo.merge.mockReturnValue(updated);
+      orgRepo.save.mockResolvedValue(updated);
+
+      const result = await service.update(
+        "org-uuid-1",
+        { name: "New Name" },
+        ownerId,
+      );
+
+      expect(result.name).toBe("New Name");
+      expect(result.slug).toBe("new-name");
+    });
   });
 
   describe("remove", () => {

@@ -156,6 +156,16 @@ describe("OrgDetailClient", () => {
       expect(screen.getByText("Danger Zone")).toBeInTheDocument();
     });
   });
+
+  it("renders fallback description when org has no description", async () => {
+    const orgWithoutDescription = { ...makeOrg(), description: undefined };
+    mockGetOrg.mockResolvedValue(orgWithoutDescription);
+    render(<OrgDetailClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No description provided.")).toBeInTheDocument();
+    });
+  });
 });
 
 
