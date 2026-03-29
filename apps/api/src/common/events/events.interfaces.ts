@@ -17,6 +17,8 @@ export enum FarmEvent {
   API_SPEC_DEPRECATED = "api-spec:deprecated",
   GATEWAY_ROUTE_SYNCED = "gateway.route.synced",
   API_HEALTH_CHANGED = "api.health.changed",
+  INCIDENT_CREATED = "incident.created",
+  INCIDENT_STATUS_CHANGED = "incident.status-changed",
 }
 
 /**
@@ -63,5 +65,27 @@ export interface PipelineLogPayload {
   runId: string;
   stage: string;
   message: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for incident creation events.
+ */
+export interface IncidentEventPayload {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for incident status-change events.
+ */
+export interface IncidentStatusChangedPayload {
+  id: string;
+  title: string;
+  previousStatus: string;
+  newStatus: string;
   timestamp: string;
 }

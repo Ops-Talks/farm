@@ -13,6 +13,8 @@ import {
   DeploymentEventPayload,
   PipelineRunUpdatedPayload,
   PipelineLogPayload,
+  IncidentEventPayload,
+  IncidentStatusChangedPayload,
 } from "./events.interfaces";
 
 /**
@@ -110,5 +112,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   emitPipelineLog(payload: PipelineLogPayload): void {
     this.server?.emit(FarmEvent.PIPELINE_LOG, payload);
+  }
+
+  /**
+   * Emits an incident.created event to all connected clients.
+   */
+  emitIncidentCreated(payload: IncidentEventPayload): void {
+    this.server?.emit(FarmEvent.INCIDENT_CREATED, payload);
+  }
+
+  /**
+   * Emits an incident.status-changed event to all connected clients.
+   */
+  emitIncidentStatusChanged(payload: IncidentStatusChangedPayload): void {
+    this.server?.emit(FarmEvent.INCIDENT_STATUS_CHANGED, payload);
   }
 }
