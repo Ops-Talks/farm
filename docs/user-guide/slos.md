@@ -65,11 +65,11 @@ Click **View Budget** on any SLO to see detailed metrics: current performance pe
 
 ## Metric Types
 
-| Type | What it measures | Prometheus query pattern |
+| Type | What it measures | Prometheus query pattern (simplified) |
 |---|---|---|
-| `availability` | Uptime percentage | `up{job="<component>"}` averaged over the window |
-| `latency` | Response time compliance | `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))` |
-| `error_rate` | Error-free request ratio | `rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])` |
+| `availability` | Uptime percentage over the SLO window | `avg_over_time(up{job="<componentId>"}[<window>])` |
+| `latency` | Response time compliance over the SLO window | `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="<componentId>"}[<window>]))` |
+| `error_rate` | Error-free request ratio over the SLO window | `rate(http_requests_total{job="<componentId>",status!~"5.."}[<window>]) / rate(http_requests_total{job="<componentId>"}[<window>])` |
 
 If Prometheus is not configured (`PROMETHEUS_URL` not set), Farm generates simulated metrics for development and demonstration purposes.
 
