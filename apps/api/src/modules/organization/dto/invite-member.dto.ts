@@ -1,5 +1,6 @@
-import { IsEmail, IsEnum, IsOptional } from "class-validator";
+import { IsEmail, IsIn, IsOptional } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { OrgRole } from "@farm/types";
 
 /**
  * Data transfer object for inviting a new member to an organization via email.
@@ -13,11 +14,11 @@ export class InviteMemberDto {
   email: string;
 
   @ApiPropertyOptional({
-    enum: ["member", "admin"],
-    default: "member",
+    enum: [OrgRole.MEMBER, OrgRole.ADMIN],
+    default: OrgRole.MEMBER,
     description: "Role to assign upon invitation acceptance",
   })
   @IsOptional()
-  @IsEnum(["member", "admin"])
-  role?: string;
+  @IsIn([OrgRole.MEMBER, OrgRole.ADMIN])
+  role?: OrgRole;
 }

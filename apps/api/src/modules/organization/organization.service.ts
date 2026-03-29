@@ -467,7 +467,7 @@ export class OrganizationService {
     const plainToken = randomBytes(40).toString("hex");
     const tokenHash = createHash("sha256").update(plainToken).digest("hex");
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-    const role = dto.role ?? "member";
+    const role = dto.role ?? OrgRole.MEMBER;
 
     const invitation = this.orgInvitationRepository.create({
       organizationId: orgId,

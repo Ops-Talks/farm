@@ -511,7 +511,7 @@ describe("OrganizationController", () => {
 
     it("should create an invitation and return the response DTO", async () => {
       (service.createInvitation as jest.Mock).mockResolvedValue(mockInvitation);
-      const dto = { email: "invitee@example.com", role: "member" };
+      const dto = { email: "invitee@example.com", role: OrgRole.MEMBER };
 
       const result = await controller.createInvitation(
         "org-uuid-1",

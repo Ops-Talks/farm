@@ -535,7 +535,7 @@ describe("OrganizationService — invitation management", () => {
 
       const result = await service.createInvitation(
         orgId,
-        { email: inviteeEmail, role: "member" },
+        { email: inviteeEmail, role: OrgRole.MEMBER },
         inviterId,
       );
 
