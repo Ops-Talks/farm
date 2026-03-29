@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-03-29
+
+### Added
+- **org**: organization invitation flow (FARM-E50 S199).
+- **org**: enforce org isolation on all create endpoints (FARM-E49).
+- **org**: complete org scoping for Phase 11 entities (FARM-E49).
+
+### Changed
+- Feature/phase 13 (#39).
+- **roadmap**: mark FARM-E49 DONE, Phase 12 IN PROGRESS.
+- Feature/farm e50 (#38).
+- feat(roadmap) - Update.
+- Update apps/api/src/modules/documentation/documentation.controller.ts.
+- Update apps/api/src/modules/gateway/gateway.controller.ts.
+- fix(tests) - Gateway Controller.
+- mark Phase 11 as DONE in ROADMAP; ignore GIT_COMMIT.md.
+
+### Fixed
+- **org**: use ApiHeader for X-Organization-Id and type-safe req.organizationId.
+
 ## [0.13.0] - 2026-03-28
 
 ### Changed
