@@ -25,11 +25,13 @@ export default function AcceptInvitationPage() {
     if (!token || calledRef.current) return;
     calledRef.current = true;
 
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     invitations
       .accept(token)
       .then(() => {
         setState("success");
-        setTimeout(() => router.push("/"), 3000);
+        timeoutId = setTimeout(() => router.push("/"), 3000);
       })
       .catch((err: unknown) => {
         const message =
@@ -37,6 +39,8 @@ export default function AcceptInvitationPage() {
         setErrorMessage(message);
         setState("error");
       });
+
+    return () => clearTimeout(timeoutId);
   }, [token, router]);
 
   if (state === "loading") {

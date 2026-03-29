@@ -46,6 +46,12 @@ interface MembersSectionProps {
    * after fetch also get management UI.
    */
   canManage: boolean;
+  /**
+   * Optional callback invoked once after the member list is loaded, with the
+   * current user's role.  Use this to avoid a duplicate members request in the
+   * parent when the role is needed for other sections (e.g. InvitationsPanel).
+   */
+  onRoleLoaded?: (role: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +148,7 @@ export function MembersSection({
   orgId,
   currentUserId,
   canManage,
+  onRoleLoaded,
 }: MembersSectionProps) {
   const [members, setMembers] = useState<MemberResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,6 +209,13 @@ export function MembersSection({
     () => canManage || currentMember?.role === "admin" || currentMember?.role === "owner",
     [canManage, currentMember],
   );
+
+  // Notify parent of the current user's role once the member list has loaded.
+  useEffect(() => {
+    if (currentMember?.role) {
+      onRoleLoaded?.(currentMember.role);
+    }
+  }, [currentMember, onRoleLoaded]);
 
   // ---------------------------------------------------------------------------
   // Handlers

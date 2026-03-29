@@ -13,7 +13,7 @@ export class AddOrgInvitations1774100000001 implements MigrationInterface {
     if (isPostgres) {
       await queryRunner.query(`
         CREATE TABLE "org_invitations" (
-          "id"              uuid              NOT NULL DEFAULT gen_random_uuid(),
+          "id"              uuid              NOT NULL DEFAULT uuid_generate_v4(),
           "organizationId"  uuid              NOT NULL,
           "email"           varchar(255)      NOT NULL,
           "tokenHash"       varchar(64)       NOT NULL,
@@ -39,6 +39,14 @@ export class AddOrgInvitations1774100000001 implements MigrationInterface {
       await queryRunner.query(`
         CREATE INDEX "IDX_org_invitations_org_id"
           ON "org_invitations" ("organizationId")
+      `);
+
+      // Partial unique index: at most one pending invitation per (org, email).
+      // Uses a WHERE clause so accepted/cancelled rows do not block re-invites.
+      await queryRunner.query(`
+        CREATE UNIQUE INDEX "IDX_org_invitations_pending_unique"
+          ON "org_invitations" ("organizationId", "email")
+          WHERE status = 'pending'
       `);
     } else {
       // SQLite (used in E2E / unit tests via better-sqlite3).
@@ -68,6 +76,9 @@ export class AddOrgInvitations1774100000001 implements MigrationInterface {
     const isPostgres = queryRunner.connection.options.type === "postgres";
 
     if (isPostgres) {
+      await queryRunner.query(
+        `DROP INDEX IF EXISTS "IDX_org_invitations_pending_unique"`,
+      );
       await queryRunner.query(
         `DROP INDEX IF EXISTS "IDX_org_invitations_org_id"`,
       );
