@@ -81,11 +81,12 @@ describe("IncidentController", () => {
       title: "Database outage",
       severity: IncidentSeverity.P1,
     };
+    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
 
-    const result = await controller.create(dto);
+    const result = await controller.create(req as any, dto);
 
     expect(result).toEqual(mockIncident);
-    expect(incidentService.create).toHaveBeenCalledWith(dto);
+    expect(incidentService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
   });
 
   it("should list incidents with pagination", async () => {
@@ -119,13 +120,15 @@ describe("IncidentController", () => {
 
   it("should update incident status with user context", async () => {
     const dto = { status: IncidentStatus.INVESTIGATING };
+    const req = { user: { userId: "user-uuid-1" } };
 
-    const result = await controller.updateStatus("incident-uuid-1", dto);
+    const result = await controller.updateStatus(req as any, "incident-uuid-1", dto);
 
     expect(result.status).toBe(IncidentStatus.INVESTIGATING);
     expect(incidentService.updateStatus).toHaveBeenCalledWith(
       "incident-uuid-1",
       dto,
+      "user-uuid-1",
     );
   });
 
@@ -137,13 +140,15 @@ describe("IncidentController", () => {
 
   it("should create manual timeline entry", async () => {
     const dto = { message: "Scaling replicas" };
+    const req = { user: { userId: "user-uuid-1" } };
 
-    const result = await controller.createUpdate("incident-uuid-1", dto);
+    const result = await controller.createUpdate(req as any, "incident-uuid-1", dto);
 
     expect(result).toEqual(mockTimelineEntry);
     expect(incidentUpdateService.create).toHaveBeenCalledWith(
       "incident-uuid-1",
       dto,
+      "user-uuid-1",
     );
   });
 

@@ -26,10 +26,11 @@ export class SloService {
   /**
    * Creates a new SLO.
    * @param createSloDto - Data for the new SLO
+   * @param organizationId - Optional organization scope (overrides dto value)
    * @returns The created SLO
    * @throws ConflictException if an SLO with the same name already exists
    */
-  async create(createSloDto: CreateSloDto): Promise<Slo> {
+  async create(createSloDto: CreateSloDto, organizationId?: string): Promise<Slo> {
     const existing = await this.sloRepository.findOne({
       where: { name: createSloDto.name },
     });
@@ -39,7 +40,10 @@ export class SloService {
       );
     }
 
-    const slo = this.sloRepository.create(createSloDto);
+    const slo = this.sloRepository.create({
+      ...createSloDto,
+      organizationId: organizationId ?? createSloDto.organizationId,
+    });
     this.logger.log(`Creating SLO: ${createSloDto.name}`);
     return await this.sloRepository.save(slo);
   }

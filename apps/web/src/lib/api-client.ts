@@ -1696,11 +1696,10 @@ export const postMortems = {
     });
   },
 
-  /** Approve a post-mortem (admin only). */
-  approve(id: string, userId: string): Promise<PostMortem> {
+  /** Approve a post-mortem (admin only). The approver is derived from the JWT token. */
+  approve(id: string): Promise<PostMortem> {
     return request<PostMortem>(`/v1/post-mortems/${id}/approve`, {
       method: "PATCH",
-      body: JSON.stringify({ userId }),
     });
   },
 };

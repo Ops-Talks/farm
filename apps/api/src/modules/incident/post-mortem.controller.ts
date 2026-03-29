@@ -9,6 +9,7 @@ import {
   HttpStatus,
   UseGuards,
   NotFoundException,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -19,6 +20,7 @@ import {
   ApiOkResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { Request } from "express";
 import { PostMortemService } from "./post-mortem.service";
 import { CreatePostMortemDto } from "./dto/create-post-mortem.dto";
 import { UpdatePostMortemDto } from "./dto/update-post-mortem.dto";
@@ -60,6 +62,9 @@ export class PostMortemController {
 
   /**
    * Creates a new post-mortem for an incident.
+   * The organizationId is taken from the OrgContextInterceptor (X-Organization-Id header)
+   * and cannot be overridden by the request body.
+   * @param req - The incoming request containing the JWT user payload and org context
    * @param dto - The data for the new post-mortem
    * @returns The created post-mortem
    */
@@ -81,8 +86,11 @@ export class PostMortemController {
     description: "A post-mortem already exists for this incident.",
     type: ErrorResponseDto,
   })
-  async create(@Body() dto: CreatePostMortemDto): Promise<PostMortem> {
-    return await this.postMortemService.create(dto);
+  async create(
+    @Req() req: Request & { user: { userId: string }; organizationId?: string },
+    @Body() dto: CreatePostMortemDto,
+  ): Promise<PostMortem> {
+    return await this.postMortemService.create(dto, req.organizationId);
   }
 
   /**
@@ -169,6 +177,8 @@ export class PostMortemController {
 
   /**
    * Approves a post-mortem. Sets the approvedBy and approvedAt fields.
+   * The approver is derived from the authenticated user's JWT token.
+   * @param req - The incoming request containing the JWT user payload
    * @param id - The UUID of the post-mortem to approve
    * @returns The approved post-mortem
    */
@@ -188,9 +198,10 @@ export class PostMortemController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async approve(@Param("id") id: string): Promise<PostMortem> {
-    // In a real application the userId would come from the JWT token.
-    // For now we pass a placeholder; the guard already ensures the user is admin.
-    return await this.postMortemService.approve(id, "system");
+  async approve(
+    @Req() req: Request & { user: { userId: string } },
+    @Param("id") id: string,
+  ): Promise<PostMortem> {
+    return await this.postMortemService.approve(id, req.user.userId);
   }
 }

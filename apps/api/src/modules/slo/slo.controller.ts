@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { Request } from "express";
 import { SloService } from "./slo.service";
 import { SloCalculatorService } from "./slo-calculator.service";
 import { CreateSloDto } from "./dto/create-slo.dto";
@@ -70,6 +72,9 @@ export class SloController {
 
   /**
    * Creates a new Service Level Objective.
+   * The organizationId is taken from the OrgContextInterceptor (X-Organization-Id header)
+   * and cannot be overridden by the request body.
+   * @param req - The incoming request containing the JWT user payload and org context
    * @param createSloDto - The data for the new SLO
    * @returns The created SLO
    */
@@ -86,8 +91,11 @@ export class SloController {
     description: "An SLO with this name already exists.",
     type: ErrorResponseDto,
   })
-  async create(@Body() createSloDto: CreateSloDto): Promise<Slo> {
-    return await this.sloService.create(createSloDto);
+  async create(
+    @Req() req: Request & { user: { userId: string }; organizationId?: string },
+    @Body() createSloDto: CreateSloDto,
+  ): Promise<Slo> {
+    return await this.sloService.create(createSloDto, req.organizationId);
   }
 
   /**

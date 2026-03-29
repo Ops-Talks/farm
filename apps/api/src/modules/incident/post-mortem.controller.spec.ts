@@ -43,7 +43,7 @@ describe("PostMortemController", () => {
             }),
             approve: jest.fn().mockResolvedValue({
               ...mockPostMortem,
-              approvedBy: "system",
+              approvedBy: "user-uuid-1",
               approvedAt: new Date(),
             }),
           },
@@ -60,11 +60,12 @@ describe("PostMortemController", () => {
       incidentId: "incident-uuid-1",
       rootCause: "Connection pool misconfiguration",
     };
+    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
 
-    const result = await controller.create(dto);
+    const result = await controller.create(req as any, dto);
 
     expect(result).toEqual(mockPostMortem);
-    expect(postMortemService.create).toHaveBeenCalledWith(dto);
+    expect(postMortemService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
   });
 
   it("should get post-mortem by ID", async () => {
@@ -101,13 +102,15 @@ describe("PostMortemController", () => {
   });
 
   it("should approve a post-mortem with user context", async () => {
-    const result = await controller.approve("pm-uuid-1");
+    const req = { user: { userId: "user-uuid-1" } };
 
-    expect(result.approvedBy).toBe("system");
+    const result = await controller.approve(req as any, "pm-uuid-1");
+
+    expect(result.approvedBy).toBe("user-uuid-1");
     expect(result.approvedAt).toBeDefined();
     expect(postMortemService.approve).toHaveBeenCalledWith(
       "pm-uuid-1",
-      "system",
+      "user-uuid-1",
     );
   });
 });

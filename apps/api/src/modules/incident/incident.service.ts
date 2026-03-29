@@ -25,6 +25,7 @@ const ALLOWED_TRANSITIONS: Record<IncidentStatus, IncidentStatus[]> = {
   [IncidentStatus.OPEN]: [
     IncidentStatus.INVESTIGATING,
     IncidentStatus.IDENTIFIED,
+    IncidentStatus.RESOLVED,
   ],
   [IncidentStatus.INVESTIGATING]: [
     IncidentStatus.IDENTIFIED,

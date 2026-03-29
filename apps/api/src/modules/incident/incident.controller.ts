@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
+import { Request } from "express";
 import { IncidentService } from "./incident.service";
 import { IncidentUpdateService } from "./incident-update.service";
 import { CreateIncidentDto } from "./dto/create-incident.dto";
@@ -71,6 +73,9 @@ export class IncidentController {
 
   /**
    * Creates a new incident.
+   * The organizationId is taken from the OrgContextInterceptor (X-Organization-Id header)
+   * and cannot be overridden by the request body.
+   * @param req - The incoming request containing the JWT user payload and org context
    * @param dto - The data for the new incident
    * @returns The created incident
    */
@@ -82,8 +87,11 @@ export class IncidentController {
     description: "The incident has been successfully created.",
     type: Incident,
   })
-  async create(@Body() dto: CreateIncidentDto): Promise<Incident> {
-    return await this.incidentService.create(dto);
+  async create(
+    @Req() req: Request & { user: { userId: string }; organizationId?: string },
+    @Body() dto: CreateIncidentDto,
+  ): Promise<Incident> {
+    return await this.incidentService.create(dto, req.organizationId);
   }
 
   /**
@@ -162,6 +170,8 @@ export class IncidentController {
   /**
    * Transitions an incident to a new status.
    * Validates allowed transitions and creates a timeline entry automatically.
+   * The author of the timeline entry is derived from the JWT token.
+   * @param req - The incoming request containing the JWT user payload
    * @param id - The UUID of the incident
    * @param dto - Target status and optional message
    * @returns The updated incident
@@ -183,10 +193,11 @@ export class IncidentController {
     type: ErrorResponseDto,
   })
   async updateStatus(
+    @Req() req: Request & { user: { userId: string } },
     @Param("id") id: string,
     @Body() dto: UpdateIncidentStatusDto,
   ): Promise<Incident> {
-    return await this.incidentService.updateStatus(id, dto);
+    return await this.incidentService.updateStatus(id, dto, req.user.userId);
   }
 
   /**
@@ -215,7 +226,9 @@ export class IncidentController {
 
   /**
    * Creates a manual timeline entry for an incident.
+   * The author is derived from the JWT token and cannot be overridden by the body.
    * Available to any authenticated user, not admin-only.
+   * @param req - The incoming request containing the JWT user payload
    * @param id - The UUID of the incident
    * @param dto - The update message
    * @returns The created timeline entry
@@ -237,10 +250,11 @@ export class IncidentController {
     type: ErrorResponseDto,
   })
   async createUpdate(
+    @Req() req: Request & { user: { userId: string } },
     @Param("id") id: string,
     @Body() dto: CreateIncidentUpdateDto,
   ): Promise<IncidentUpdate> {
-    return await this.incidentUpdateService.create(id, dto);
+    return await this.incidentUpdateService.create(id, dto, req.user.userId);
   }
 
   /**

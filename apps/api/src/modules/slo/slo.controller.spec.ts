@@ -71,11 +71,12 @@ describe("SloController", () => {
       organizationId: "org-uuid-1",
     };
     sloService.create.mockResolvedValue({ id: "slo-uuid-1", ...dto });
+    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
 
-    const result = await controller.create(dto);
+    const result = await controller.create(req as any, dto);
 
     expect(result).toEqual({ id: "slo-uuid-1", ...dto });
-    expect(sloService.create).toHaveBeenCalledWith(dto);
+    expect(sloService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
   });
 
   it("should list SLOs with pagination", async () => {
@@ -119,7 +120,9 @@ describe("SloController", () => {
       name: "api-availability",
       targetPercent: 99.95,
       currentPercent: 99.98,
-      budgetRemaining: 85.5,
+      budgetTotal: 0.05,
+      budgetConsumed: 0.02,
+      budgetRemaining: 60.0,
       burnRate: 0.45,
       status: SloBudgetStatus.HEALTHY,
       windowStart: "2024-01-01T00:00:00.000Z",

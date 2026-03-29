@@ -990,12 +990,10 @@ export interface UpdateIncidentDto {
 export interface UpdateIncidentStatusDto {
   status: IncidentStatus;
   message?: string;
-  userId?: string;
 }
 
 export interface CreateIncidentUpdateDto {
   message: string;
-  authorId?: string;
 }
 
 export interface CreatePostMortemDto {
@@ -1084,11 +1082,11 @@ export interface UpdateWidgetDto {
 }
 
 export interface UpdateLayoutItem {
-  id: string;
-  gridX: number;
-  gridY: number;
-  gridW: number;
-  gridH: number;
+  widgetId: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface UpdateLayoutDto {

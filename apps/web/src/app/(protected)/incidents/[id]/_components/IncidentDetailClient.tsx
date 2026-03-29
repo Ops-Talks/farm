@@ -172,7 +172,6 @@ export function IncidentDetailClient({ id }: IncidentDetailClientProps) {
       const dto: UpdateIncidentStatusDto = {
         status: newStatus,
         message: `Status changed to ${newStatus}`,
-        userId: user?.id,
       };
       const updated = await incidents.updateStatus(incident.id, dto);
       setIncident(updated);
@@ -198,7 +197,6 @@ export function IncidentDetailClient({ id }: IncidentDetailClientProps) {
     try {
       const entry = await incidents.createUpdate(id, {
         message: updateMessage.trim(),
-        authorId: user?.id,
       });
       setTimeline((prev) => [...prev, entry]);
       setUpdateMessage("");
@@ -265,7 +263,7 @@ export function IncidentDetailClient({ id }: IncidentDetailClientProps) {
   async function handleApprovePostMortem() {
     if (!postMortem || !user) return;
     try {
-      const updated = await postMortems.approve(postMortem.id, user.id);
+      const updated = await postMortems.approve(postMortem.id);
       setPostMortem(updated);
       toast.success("Post-mortem approved");
     } catch {

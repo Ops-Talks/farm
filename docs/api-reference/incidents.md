@@ -87,7 +87,6 @@ PATCH /api/v1/incidents/:id/status
 |-----------|--------|----------|----------------------------------|
 | `status`  | string | Yes      | Target status                    |
 | `message` | string | No       | Message for the timeline entry   |
-| `userId`  | string | No       | UUID of the user making the change |
 
 **Allowed Transitions:**
 
@@ -201,13 +200,7 @@ PATCH /api/v1/post-mortems/:id
 PATCH /api/v1/post-mortems/:id/approve
 ```
 
-**Requires:** `admin` role. Sets the `approvedBy` and `approvedAt` fields.
-
-**Request Body:**
-
-| Field    | Type   | Required | Description                  |
-|----------|--------|----------|------------------------------|
-| `userId` | string | Yes      | UUID of the approving user   |
+**Requires:** `admin` role. Sets the `approvedBy` and `approvedAt` fields. The approving user is derived from the JWT token.
 
 **Response:** `200 OK`
 
