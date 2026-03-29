@@ -95,7 +95,7 @@ export function InvitationsPanel({ orgId, currentUserRole }: InvitationsPanelPro
     }
     orgsApi.invitations
       .list(orgId)
-      .then(setInvitations)
+      .then((data) => setInvitations(Array.isArray(data) ? data : []))
       .catch(() => toast.error("Failed to load invitations."))
       .finally(() => setLoading(false));
   }, [orgId, canManage]);
