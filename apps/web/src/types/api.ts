@@ -863,3 +863,232 @@ export interface KyvernoPolicyReportResult {
     severity?: string;
   }>;
 }
+
+// -- SLO Management (FARM-E51) --
+
+export type SloMetricType = "availability" | "latency" | "error_rate";
+export type SloWindow = "7d" | "30d" | "90d";
+export type SloBudgetStatus = "healthy" | "warning" | "critical" | "exhausted";
+
+export interface Slo {
+  id: string;
+  name: string;
+  description: string | null;
+  targetPercent: number;
+  metricType: SloMetricType;
+  window: SloWindow;
+  componentId: string | null;
+  organizationId: string | null;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SloBudgetResponse {
+  sloId: string;
+  name: string;
+  targetPercent: number;
+  currentPercent: number;
+  budgetTotal: number;
+  budgetConsumed: number;
+  budgetRemaining: number;
+  burnRate: number;
+  status: SloBudgetStatus;
+  windowStart: string;
+  windowEnd: string;
+}
+
+export interface CreateSloDto {
+  name: string;
+  description?: string;
+  targetPercent: number;
+  metricType: SloMetricType;
+  window: SloWindow;
+  componentId?: string;
+  enabled?: boolean;
+}
+
+export interface UpdateSloDto {
+  name?: string;
+  description?: string;
+  targetPercent?: number;
+  metricType?: SloMetricType;
+  window?: SloWindow;
+  componentId?: string;
+  enabled?: boolean;
+}
+
+// -- Incident Management (FARM-E52) --
+
+export type IncidentSeverity = "P1" | "P2" | "P3" | "P4";
+export type IncidentStatus = "open" | "investigating" | "identified" | "resolved";
+
+export interface Incident {
+  id: string;
+  title: string;
+  description: string | null;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  commanderUserId: string | null;
+  organizationId: string | null;
+  resolvedAt: string | null;
+  affectedComponents?: CatalogComponent[];
+  affectedEnvironments?: Environment[];
+  updates?: IncidentUpdateEntry[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncidentUpdateEntry {
+  id: string;
+  incidentId: string;
+  authorId: string | null;
+  message: string;
+  previousStatus: IncidentStatus | null;
+  newStatus: IncidentStatus | null;
+  createdAt: string;
+}
+
+export interface PostMortemActionItem {
+  title: string;
+  assignee?: string;
+  done: boolean;
+}
+
+export interface PostMortem {
+  id: string;
+  incidentId: string;
+  rootCause: string;
+  contributingFactors: string[] | null;
+  actionItems: PostMortemActionItem[] | null;
+  body: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  organizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateIncidentDto {
+  title: string;
+  description?: string;
+  severity: IncidentSeverity;
+  commanderUserId?: string;
+  affectedComponentIds?: string[];
+  affectedEnvironmentIds?: string[];
+}
+
+export interface UpdateIncidentDto {
+  title?: string;
+  description?: string;
+  severity?: IncidentSeverity;
+  commanderUserId?: string;
+  affectedComponentIds?: string[];
+  affectedEnvironmentIds?: string[];
+}
+
+export interface UpdateIncidentStatusDto {
+  status: IncidentStatus;
+  message?: string;
+}
+
+export interface CreateIncidentUpdateDto {
+  message: string;
+}
+
+export interface CreatePostMortemDto {
+  incidentId: string;
+  rootCause: string;
+  contributingFactors?: string[];
+  actionItems?: PostMortemActionItem[];
+  body?: string;
+}
+
+export interface UpdatePostMortemDto {
+  rootCause?: string;
+  contributingFactors?: string[];
+  actionItems?: PostMortemActionItem[];
+  body?: string;
+}
+
+// -- Custom Dashboard Builder (FARM-E53) --
+
+export type DashboardVisibility = "private" | "workspace";
+export type WidgetType =
+  | "metric_graph"
+  | "component_health"
+  | "deployment_feed"
+  | "queue_status"
+  | "slo_gauge"
+  | "alert_summary"
+  | "team_activity"
+  | "uptime_chart";
+
+export interface DashboardWidget {
+  id: string;
+  dashboardId: string;
+  type: WidgetType;
+  title: string;
+  gridX: number;
+  gridY: number;
+  gridW: number;
+  gridH: number;
+  config: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Dashboard {
+  id: string;
+  name: string;
+  description: string | null;
+  ownerId: string;
+  visibility: DashboardVisibility;
+  organizationId: string | null;
+  widgets: DashboardWidget[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDashboardDto {
+  name: string;
+  description?: string;
+  visibility?: DashboardVisibility;
+}
+
+export interface UpdateDashboardDto {
+  name?: string;
+  description?: string;
+  visibility?: DashboardVisibility;
+}
+
+export interface CreateWidgetDto {
+  type: WidgetType;
+  title: string;
+  gridX?: number;
+  gridY?: number;
+  gridW?: number;
+  gridH?: number;
+  config?: Record<string, unknown>;
+}
+
+export interface UpdateWidgetDto {
+  title?: string;
+  gridX?: number;
+  gridY?: number;
+  gridW?: number;
+  gridH?: number;
+  config?: Record<string, unknown>;
+}
+
+export interface UpdateLayoutItem {
+  widgetId: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface UpdateLayoutDto {
+  widgets: UpdateLayoutItem[];
+}

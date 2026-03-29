@@ -39,6 +39,9 @@ import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { IstioModule } from "./modules/istio/istio.module";
 import { ApiSpecsModule } from "./modules/api-specs/api-specs.module";
 import { GatewayModule } from "./modules/gateway/gateway.module";
+import { SloModule } from "./modules/slo/slo.module";
+import { IncidentModule } from "./modules/incident/incident.module";
+import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -279,6 +282,32 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "API Gateway integration (Kong, AWS)",
         },
         module: GatewayModule,
+      },
+      {
+        metadata: {
+          name: "core-slo",
+          version: "1.0.0",
+          description:
+            "SLO management, error budget calculation, and burn rate monitoring",
+        },
+        module: SloModule,
+      },
+      {
+        metadata: {
+          name: "core-incidents",
+          version: "1.0.0",
+          description:
+            "Incident lifecycle management with timeline and post-mortems",
+        },
+        module: IncidentModule,
+      },
+      {
+        metadata: {
+          name: "core-dashboards",
+          version: "1.0.0",
+          description: "Custom dashboard builder with configurable widget grid",
+        },
+        module: DashboardModule,
       },
     ]),
   ],

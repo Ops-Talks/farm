@@ -61,6 +61,29 @@ import type {
   // Gateway Routes (FARM-E48)
   GatewayRoute,
   ApiHealthCheck,
+  // SLO Management (FARM-E51)
+  Slo,
+  SloBudgetResponse,
+  CreateSloDto,
+  UpdateSloDto,
+  // Incident Management (FARM-E52)
+  Incident,
+  IncidentUpdateEntry,
+  PostMortem,
+  CreateIncidentDto,
+  UpdateIncidentDto,
+  UpdateIncidentStatusDto,
+  CreateIncidentUpdateDto,
+  CreatePostMortemDto,
+  UpdatePostMortemDto,
+  // Custom Dashboard Builder (FARM-E53)
+  Dashboard,
+  DashboardWidget,
+  CreateDashboardDto,
+  UpdateDashboardDto,
+  CreateWidgetDto,
+  UpdateWidgetDto,
+  UpdateLayoutDto,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1523,5 +1546,248 @@ export const gateway = {
   /** Trigger an on-demand health check (admin only). */
   triggerHealthCheck(): Promise<{ message: string }> {
     return request<{ message: string }>(`/v1/gateway/health/check`, { method: "POST" });
+  },
+};
+
+// -- SLO Management (FARM-E51) --
+
+export const slos = {
+  /** List SLOs with optional filters and pagination. */
+  list(params?: {
+    componentId?: string;
+    metricType?: string;
+    enabled?: boolean;
+    skip?: number;
+    take?: number;
+  }): Promise<PaginatedResponse<Slo>> {
+    const qs = new URLSearchParams();
+    if (params?.componentId) qs.set("componentId", params.componentId);
+    if (params?.metricType) qs.set("metricType", params.metricType);
+    if (params?.enabled !== undefined) qs.set("enabled", String(params.enabled));
+    if (params?.skip !== undefined) qs.set("skip", String(params.skip));
+    if (params?.take !== undefined) qs.set("take", String(params.take));
+    const q = qs.toString();
+    return request<PaginatedResponse<Slo>>(`/v1/slos${q ? `?${q}` : ""}`);
+  },
+
+  /** Get a single SLO by ID. */
+  getOne(id: string): Promise<Slo> {
+    return request<Slo>(`/v1/slos/${id}`);
+  },
+
+  /** Create a new SLO (admin only). */
+  create(dto: CreateSloDto): Promise<Slo> {
+    return request<Slo>(`/v1/slos`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update an SLO (admin only). */
+  update(id: string, dto: UpdateSloDto): Promise<Slo> {
+    return request<Slo>(`/v1/slos/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete an SLO (admin only). */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/slos/${id}`, { method: "DELETE" });
+  },
+
+  /** Get error budget for an SLO. */
+  getBudget(id: string): Promise<SloBudgetResponse> {
+    return request<SloBudgetResponse>(`/v1/slos/${id}/budget`);
+  },
+};
+
+// -- Incident Management (FARM-E52) --
+
+export const incidents = {
+  /** List incidents with optional filters and pagination. */
+  list(params?: {
+    severity?: string;
+    status?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<PaginatedResponse<Incident>> {
+    const qs = new URLSearchParams();
+    if (params?.severity) qs.set("severity", params.severity);
+    if (params?.status) qs.set("status", params.status);
+    if (params?.skip !== undefined) qs.set("skip", String(params.skip));
+    if (params?.take !== undefined) qs.set("take", String(params.take));
+    const q = qs.toString();
+    return request<PaginatedResponse<Incident>>(`/v1/incidents${q ? `?${q}` : ""}`);
+  },
+
+  /** Get a single incident by ID with relations. */
+  getOne(id: string): Promise<Incident> {
+    return request<Incident>(`/v1/incidents/${id}`);
+  },
+
+  /** Create a new incident (admin only). */
+  create(dto: CreateIncidentDto): Promise<Incident> {
+    return request<Incident>(`/v1/incidents`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update an incident (admin only). */
+  update(id: string, dto: UpdateIncidentDto): Promise<Incident> {
+    return request<Incident>(`/v1/incidents/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update incident status (admin only). */
+  updateStatus(id: string, dto: UpdateIncidentStatusDto): Promise<Incident> {
+    return request<Incident>(`/v1/incidents/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete an incident (admin only). */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/incidents/${id}`, { method: "DELETE" });
+  },
+
+  /** Create a manual timeline entry. */
+  createUpdate(incidentId: string, dto: CreateIncidentUpdateDto): Promise<IncidentUpdateEntry> {
+    return request<IncidentUpdateEntry>(`/v1/incidents/${incidentId}/updates`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Get timeline entries for an incident. */
+  getTimeline(incidentId: string): Promise<IncidentUpdateEntry[]> {
+    return request<IncidentUpdateEntry[]>(`/v1/incidents/${incidentId}/timeline`);
+  },
+};
+
+export const postMortems = {
+  /** Create a post-mortem (admin only). */
+  create(dto: CreatePostMortemDto): Promise<PostMortem> {
+    return request<PostMortem>(`/v1/post-mortems`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Get a post-mortem by ID. */
+  getOne(id: string): Promise<PostMortem> {
+    return request<PostMortem>(`/v1/post-mortems/${id}`);
+  },
+
+  /** Get post-mortem by incident ID. */
+  getByIncident(incidentId: string): Promise<PostMortem> {
+    return request<PostMortem>(`/v1/post-mortems/by-incident/${incidentId}`);
+  },
+
+  /** Update a post-mortem (admin only). */
+  update(id: string, dto: UpdatePostMortemDto): Promise<PostMortem> {
+    return request<PostMortem>(`/v1/post-mortems/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Approve a post-mortem (admin only). The approver is derived from the JWT token. */
+  approve(id: string): Promise<PostMortem> {
+    return request<PostMortem>(`/v1/post-mortems/${id}/approve`, {
+      method: "PATCH",
+    });
+  },
+};
+
+// -- Custom Dashboard Builder (FARM-E53) --
+
+export const dashboards = {
+  /** List dashboards with optional filters and pagination. */
+  list(params?: {
+    ownerId?: string;
+    visibility?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<PaginatedResponse<Dashboard>> {
+    const qs = new URLSearchParams();
+    if (params?.ownerId) qs.set("ownerId", params.ownerId);
+    if (params?.visibility) qs.set("visibility", params.visibility);
+    if (params?.skip !== undefined) qs.set("skip", String(params.skip));
+    if (params?.take !== undefined) qs.set("take", String(params.take));
+    const q = qs.toString();
+    return request<PaginatedResponse<Dashboard>>(`/v1/dashboards${q ? `?${q}` : ""}`);
+  },
+
+  /** Get a single dashboard by ID with widgets. */
+  getOne(id: string): Promise<Dashboard> {
+    return request<Dashboard>(`/v1/dashboards/${id}`);
+  },
+
+  /** Create a new dashboard. */
+  create(dto: CreateDashboardDto): Promise<Dashboard> {
+    return request<Dashboard>(`/v1/dashboards`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update a dashboard. */
+  update(id: string, dto: UpdateDashboardDto): Promise<Dashboard> {
+    return request<Dashboard>(`/v1/dashboards/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update dashboard layout (bulk widget position update). */
+  updateLayout(id: string, dto: UpdateLayoutDto): Promise<Dashboard> {
+    return request<Dashboard>(`/v1/dashboards/${id}/layout`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete a dashboard. */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/dashboards/${id}`, { method: "DELETE" });
+  },
+
+  /** Add a widget to a dashboard. */
+  createWidget(dashboardId: string, dto: CreateWidgetDto): Promise<DashboardWidget> {
+    return request<DashboardWidget>(`/v1/dashboards/${dashboardId}/widgets`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update a widget. */
+  updateWidget(
+    dashboardId: string,
+    widgetId: string,
+    dto: UpdateWidgetDto,
+  ): Promise<DashboardWidget> {
+    return request<DashboardWidget>(`/v1/dashboards/${dashboardId}/widgets/${widgetId}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete a widget. */
+  removeWidget(dashboardId: string, widgetId: string): Promise<void> {
+    return request<void>(`/v1/dashboards/${dashboardId}/widgets/${widgetId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /** Get widget data. */
+  getWidgetData(dashboardId: string, widgetId: string): Promise<Record<string, unknown>> {
+    return request<Record<string, unknown>>(
+      `/v1/dashboards/${dashboardId}/widgets/${widgetId}/data`,
+    );
   },
 };

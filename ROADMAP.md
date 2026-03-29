@@ -123,9 +123,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 13: Observability 2.0 `TODO`
+## Phase 13: Observability 2.0 `DONE`
 
-### FARM-E51: SLO / SLA Management `TODO`
+### FARM-E51: SLO / SLA Management `DONE`
 
 > Define Service Level Objectives per component. Track error budget consumption and burn rate over rolling windows. Auto-generate alerting rules from SLO configuration.
 
@@ -159,7 +159,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-### FARM-E52: Incident Management `TODO`
+### FARM-E52: Incident Management `DONE`
 
 > Lightweight incident lifecycle inside Farm: declare, update, resolve, and write post-mortems. Each incident is linked to affected components and environments with a structured update timeline.
 
@@ -194,7 +194,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-### FARM-E53: Custom Dashboard Builder `TODO`
+### FARM-E53: Custom Dashboard Builder `DONE`
 
 > Users compose custom dashboards from a library of reusable widgets. Layouts persist to the database and can be shared workspace-wide or kept private.
 
@@ -828,7 +828,7 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 10: Test Coverage Hardening | 1 | 8 | `DONE` |
 | Phase 11: API Management | 2 | 8 | `DONE` |
 | Phase 12: Multi-tenancy | 2 | 8 | `IN PROGRESS` |
-| Phase 13: Observability 2.0 | 3 | 12 | `TODO` |
+| Phase 13: Observability 2.0 | 3 | 12 | `DONE` |
 | Phase 14: AI / Intelligence | 3 | 12 | `TODO` |
 | Phase 15: Developer Self-Service | 2 | 9 | `TODO` |
 | Phase 16: Kubernetes Operators | 1 | 5 | `TODO` |

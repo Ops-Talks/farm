@@ -42,6 +42,9 @@ import {
   KeyRound,
   ShieldCheck,
   Tag,
+  Target,
+  AlertTriangle,
+  LayoutGrid,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
@@ -51,6 +54,8 @@ const navItems = [
   { href: "/deployments", label: "Deployments", icon: Rocket },
   { href: "/pipelines", label: "Pipelines", icon: GitPullRequest },
   { href: "/alerting-rules", label: "Alerting", icon: Bell },
+  { href: "/slos", label: "SLOs", icon: Target },
+  { href: "/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/docs", label: "Docs", icon: FileText },
   { href: "/queues", label: "Queues", icon: List },
   { href: "/observability", label: "Observability", icon: Activity },
@@ -63,6 +68,7 @@ const navItems = [
   { href: "/integrations/keycloak", label: "Keycloak SSO", icon: KeyRound },
   { href: "/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/compliance/policies", label: "Tag Policies", icon: Tag },
+  { href: "/custom-dashboards", label: "Custom Dashboards", icon: LayoutGrid },
 ] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {
