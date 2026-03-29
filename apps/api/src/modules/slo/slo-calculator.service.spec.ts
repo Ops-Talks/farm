@@ -69,6 +69,8 @@ describe("SloCalculatorService", () => {
       expect(result.name).toBe("api-availability");
       expect(result.targetPercent).toBe(99.95);
       expect(typeof result.currentPercent).toBe("number");
+      expect(typeof result.budgetTotal).toBe("number");
+      expect(typeof result.budgetConsumed).toBe("number");
       expect(typeof result.budgetRemaining).toBe("number");
       expect(typeof result.burnRate).toBe("number");
       expect(result.windowStart).toBeDefined();

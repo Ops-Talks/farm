@@ -889,10 +889,13 @@ export interface SloBudgetResponse {
   name: string;
   targetPercent: number;
   currentPercent: number;
-  budgetRemaining: number;
   budgetTotal: number;
   budgetConsumed: number;
+  budgetRemaining: number;
+  burnRate: number;
   status: SloBudgetStatus;
+  windowStart: string;
+  windowEnd: string;
 }
 
 export interface CreateSloDto {

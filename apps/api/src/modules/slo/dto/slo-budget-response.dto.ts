@@ -39,8 +39,21 @@ export class SloBudgetResponseDto {
   currentPercent: number;
 
   @ApiProperty({
-    example: 85.5,
-    description: "Percentage of the error budget still remaining (0-100)",
+    example: 0.05,
+    description: "Total error budget in percentage points (100 - targetPercent)",
+  })
+  budgetTotal: number;
+
+  @ApiProperty({
+    example: 0.03,
+    description: "Error budget consumed so far in percentage points",
+  })
+  budgetConsumed: number;
+
+  @ApiProperty({
+    example: 40.0,
+    description:
+      "Percentage of the error budget still remaining (0-100 scale where 100 means no budget has been consumed)",
   })
   budgetRemaining: number;
 

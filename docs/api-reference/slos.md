@@ -122,12 +122,24 @@ Returns the current error budget status for an SLO based on Prometheus metrics (
   "name": "api-availability",
   "targetPercent": 99.95,
   "currentPercent": 99.97,
-  "budgetRemaining": 0.02,
   "budgetTotal": 0.05,
   "budgetConsumed": 0.03,
-  "status": "healthy"
+  "budgetRemaining": 40.0,
+  "burnRate": 0.45,
+  "status": "healthy",
+  "windowStart": "2024-01-01T00:00:00.000Z",
+  "windowEnd": "2024-01-31T00:00:00.000Z"
 }
 ```
+
+**Field Descriptions:**
+
+| Field             | Type   | Description                                                                                                                         |
+|-------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `budgetTotal`     | number | Total error budget in percentage points (100 - targetPercent, e.g., 0.05 for a 99.95% target)                                      |
+| `budgetConsumed`  | number | Error budget consumed so far in percentage points (e.g., 0.03 means 0.03 percentage points have been consumed)                     |
+| `budgetRemaining` | number | Percentage of the total error budget still remaining on a 0-100 scale (e.g., 40.0 means 40% of the error budget has not been used) |
+| `burnRate`        | number | Rate of budget consumption relative to the elapsed window fraction (1.0 = on track, >1.0 = consuming faster than sustainable)      |
 
 **Budget Status Values:**
 

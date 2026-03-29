@@ -54,11 +54,12 @@ export class SloCalculatorService {
     const currentPercent = await this.queryMetric(slo, windowStart, windowEnd);
 
     const targetPercent = Number(slo.targetPercent);
-    const totalBudget = 100 - targetPercent;
-    const budgetConsumed = Math.max(0, 100 - currentPercent);
+    const budgetTotal = Math.round((100 - targetPercent) * 10000) / 10000;
+    const rawConsumed = Math.max(0, 100 - currentPercent);
+    const budgetConsumed = Math.round(Math.min(rawConsumed, budgetTotal) * 10000) / 10000;
     const budgetRemaining =
-      totalBudget > 0
-        ? Math.max(0, ((totalBudget - budgetConsumed) / totalBudget) * 100)
+      budgetTotal > 0
+        ? Math.max(0, ((budgetTotal - budgetConsumed) / budgetTotal) * 100)
         : 0;
 
     // Calculate the elapsed fraction of the window
@@ -67,7 +68,7 @@ export class SloCalculatorService {
     const elapsedFraction = windowMs > 0 ? elapsedMs / windowMs : 1;
 
     const budgetConsumedFraction =
-      totalBudget > 0 ? budgetConsumed / totalBudget : 0;
+      budgetTotal > 0 ? rawConsumed / budgetTotal : 0;
     const burnRate =
       elapsedFraction > 0 ? budgetConsumedFraction / elapsedFraction : 0;
 
@@ -78,6 +79,8 @@ export class SloCalculatorService {
       name: slo.name,
       targetPercent,
       currentPercent: Math.round(currentPercent * 100) / 100,
+      budgetTotal,
+      budgetConsumed,
       budgetRemaining: Math.round(budgetRemaining * 100) / 100,
       burnRate: Math.round(burnRate * 100) / 100,
       status,
