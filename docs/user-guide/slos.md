@@ -55,7 +55,7 @@ Each SLO card displays a status badge based on remaining budget:
 | Status | Condition | Color |
 |---|---|---|
 | **Healthy** | More than 50% budget remaining | Green |
-| **Warning** | 10--50% budget remaining | Yellow |
+| **Warning** | 10-50% budget remaining | Yellow |
 | **Critical** | Less than 10% budget remaining | Red |
 | **Exhausted** | Budget fully consumed | Red (solid) |
 
