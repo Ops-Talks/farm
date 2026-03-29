@@ -314,7 +314,7 @@ test("organization detail page shows the members section", async ({ page }) => {
 
   // Members card title — CardTitle renders as a <div> in this project's
   // ui library, so a text match is used rather than a heading role query.
-  await expect(page.getByText("Members")).toBeVisible();
+  await expect(page.getByText("Members", { exact: true })).toBeVisible();
 
   // The mock member should appear in the table
   await expect(page.getByText(MOCK_MEMBER.username)).toBeVisible();

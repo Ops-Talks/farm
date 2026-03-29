@@ -100,7 +100,7 @@ check-back: fmt lint api-test test-e2e api-build
 api-build:
 	npm run api:build
 
-check-front: web-lint web-build web-test
+check-front: web-lint web-build web-test web-e2e
 
 check: check-back check-front
 
