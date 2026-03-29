@@ -33,6 +33,10 @@ import {
   apiSpecs,
   gateway,
   invitations,
+  slos,
+  incidents,
+  postMortems,
+  dashboards,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -2263,6 +2267,393 @@ describe("api-client", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/v1/gateway/health/check",
         expect.objectContaining({ method: "POST" }),
+      );
+    });
+  });
+
+  describe("slos", () => {
+    it("list sends GET to /api/v1/slos without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await slos.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos",
+        expect.any(Object),
+      );
+    });
+
+    it("list appends all query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await slos.list({
+        componentId: "comp-1",
+        metricType: "latency",
+        enabled: true,
+        skip: 0,
+        take: 20,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("componentId=comp-1");
+      expect(url).toContain("metricType=latency");
+      expect(url).toContain("enabled=true");
+      expect(url).toContain("skip=0");
+      expect(url).toContain("take=20");
+    });
+
+    it("getOne sends GET to /api/v1/slos/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "slo-1" }));
+      await slos.getOne("slo-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos/slo-1",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/slos with body", async () => {
+      const dto = { name: "Availability SLO", targetPercent: 99.9, componentId: "comp-1" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "slo-new", ...dto }));
+      await slos.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("Availability SLO");
+      expect(body.targetPercent).toBe(99.9);
+    });
+
+    it("update sends PATCH to /api/v1/slos/:id with body", async () => {
+      const dto = { targetPercent: 99.5 };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "slo-1", ...dto }));
+      await slos.update("slo-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos/slo-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.targetPercent).toBe(99.5);
+    });
+
+    it("remove sends DELETE to /api/v1/slos/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await slos.remove("slo-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos/slo-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("getBudget sends GET to /api/v1/slos/:id/budget", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ remaining: 0.5, consumed: 0.5 }));
+      await slos.getBudget("slo-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/slos/slo-1/budget",
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe("incidents", () => {
+    it("list sends GET to /api/v1/incidents without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await incidents.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents",
+        expect.any(Object),
+      );
+    });
+
+    it("list appends all query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await incidents.list({
+        severity: "critical",
+        status: "open",
+        skip: 0,
+        take: 10,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("severity=critical");
+      expect(url).toContain("status=open");
+      expect(url).toContain("skip=0");
+      expect(url).toContain("take=10");
+    });
+
+    it("getOne sends GET to /api/v1/incidents/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inc-1" }));
+      await incidents.getOne("inc-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/incidents with body", async () => {
+      const dto = { title: "Service Down", severity: "critical" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inc-new", ...dto }));
+      await incidents.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.title).toBe("Service Down");
+      expect(body.severity).toBe("critical");
+    });
+
+    it("update sends PATCH to /api/v1/incidents/:id with body", async () => {
+      const dto = { title: "Updated Title" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inc-1", ...dto }));
+      await incidents.update("inc-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.title).toBe("Updated Title");
+    });
+
+    it("updateStatus sends PATCH to /api/v1/incidents/:id/status with body", async () => {
+      const dto = { status: "resolved" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inc-1", status: "resolved" }));
+      await incidents.updateStatus("inc-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1/status",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.status).toBe("resolved");
+    });
+
+    it("remove sends DELETE to /api/v1/incidents/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await incidents.remove("inc-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("createUpdate sends POST to /api/v1/incidents/:id/updates with body", async () => {
+      const dto = { message: "Investigating root cause" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "upd-1", ...dto }));
+      await incidents.createUpdate("inc-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1/updates",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.message).toBe("Investigating root cause");
+    });
+
+    it("getTimeline sends GET to /api/v1/incidents/:id/timeline", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await incidents.getTimeline("inc-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/incidents/inc-1/timeline",
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe("postMortems", () => {
+    it("create sends POST to /api/v1/post-mortems with body", async () => {
+      const dto = { incidentId: "inc-1", title: "Post-mortem for outage" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "pm-1", ...dto }));
+      await postMortems.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/post-mortems",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.incidentId).toBe("inc-1");
+      expect(body.title).toBe("Post-mortem for outage");
+    });
+
+    it("getOne sends GET to /api/v1/post-mortems/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "pm-1" }));
+      await postMortems.getOne("pm-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/post-mortems/pm-1",
+        expect.any(Object),
+      );
+    });
+
+    it("getByIncident sends GET to /api/v1/post-mortems/by-incident/:incidentId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "pm-1", incidentId: "inc-1" }));
+      await postMortems.getByIncident("inc-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/post-mortems/by-incident/inc-1",
+        expect.any(Object),
+      );
+    });
+
+    it("update sends PATCH to /api/v1/post-mortems/:id with body", async () => {
+      const dto = { summary: "Updated summary" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "pm-1", ...dto }));
+      await postMortems.update("pm-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/post-mortems/pm-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.summary).toBe("Updated summary");
+    });
+
+    it("approve sends PATCH to /api/v1/post-mortems/:id/approve", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "pm-1", approved: true }));
+      await postMortems.approve("pm-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/post-mortems/pm-1/approve",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+    });
+  });
+
+  describe("dashboards", () => {
+    it("list sends GET to /api/v1/dashboards without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await dashboards.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards",
+        expect.any(Object),
+      );
+    });
+
+    it("list appends all query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await dashboards.list({
+        ownerId: "user-1",
+        visibility: "public",
+        skip: 0,
+        take: 25,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("ownerId=user-1");
+      expect(url).toContain("visibility=public");
+      expect(url).toContain("skip=0");
+      expect(url).toContain("take=25");
+    });
+
+    it("getOne sends GET to /api/v1/dashboards/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "dash-1" }));
+      await dashboards.getOne("dash-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/dashboards with body", async () => {
+      const dto = { name: "My Dashboard", visibility: "private" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "dash-new", ...dto }));
+      await dashboards.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("My Dashboard");
+      expect(body.visibility).toBe("private");
+    });
+
+    it("update sends PATCH to /api/v1/dashboards/:id with body", async () => {
+      const dto = { name: "Renamed Dashboard" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "dash-1", ...dto }));
+      await dashboards.update("dash-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("Renamed Dashboard");
+    });
+
+    it("updateLayout sends PATCH to /api/v1/dashboards/:id/layout with body", async () => {
+      const dto = { widgets: [{ widgetId: "w-1", x: 0, y: 0, w: 6, h: 4 }] };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "dash-1" }));
+      await dashboards.updateLayout("dash-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1/layout",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.widgets).toHaveLength(1);
+      expect(body.widgets[0].widgetId).toBe("w-1");
+    });
+
+    it("remove sends DELETE to /api/v1/dashboards/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await dashboards.remove("dash-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("createWidget sends POST to /api/v1/dashboards/:id/widgets with body", async () => {
+      const dto = { type: "chart", title: "CPU Usage" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "w-1", ...dto }));
+      await dashboards.createWidget("dash-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1/widgets",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.type).toBe("chart");
+      expect(body.title).toBe("CPU Usage");
+    });
+
+    it("updateWidget sends PATCH to /api/v1/dashboards/:dashboardId/widgets/:widgetId with body", async () => {
+      const dto = { title: "Updated Widget" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "w-1", ...dto }));
+      await dashboards.updateWidget("dash-1", "w-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1/widgets/w-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.title).toBe("Updated Widget");
+    });
+
+    it("removeWidget sends DELETE to /api/v1/dashboards/:dashboardId/widgets/:widgetId", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await dashboards.removeWidget("dash-1", "w-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1/widgets/w-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("getWidgetData sends GET to /api/v1/dashboards/:dashboardId/widgets/:widgetId/data", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ labels: [], values: [] }));
+      await dashboards.getWidgetData("dash-1", "w-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/dashboards/dash-1/widgets/w-1/data",
+        expect.any(Object),
       );
     });
   });

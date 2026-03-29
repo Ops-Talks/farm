@@ -833,4 +833,171 @@ describe("SlosClient", () => {
     // The other SLO should still be visible
     expect(screen.getByText("Latency P99")).toBeInTheDocument();
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Uncovered Edge Cases
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  it("edit dialog for SLO with no componentId sets componentId to empty string", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    // mockSlo has componentId: null
+    mockList.mockResolvedValue({ data: [mockSlo], total: 1 });
+
+    const updatedSlo = { ...mockSlo, name: "Edited No Component" };
+    mockUpdate.mockResolvedValue(updatedSlo);
+
+    render(<SlosClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("API Availability")).toBeInTheDocument();
+    });
+
+    // Click Edit
+    const editBtn = screen.getByRole("button", { name: /edit/i });
+    await user.click(editBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit SLO")).toBeInTheDocument();
+    });
+
+    // componentId should be empty (since source is null)
+    const componentInput = screen.getByLabelText("Component ID");
+    expect(componentInput).toHaveValue("");
+
+    // Modify name and submit
+    const nameInput = screen.getByLabelText("Name");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Edited No Component");
+
+    const updateBtn = screen.getByRole("button", { name: "Update" });
+    await user.click(updateBtn);
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        "slo-1",
+        expect.objectContaining({ name: "Edited No Component" }),
+      );
+    });
+  });
+
+  it("edit dialog for SLO with componentId pre-fills component input", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    const sloWithComponent = {
+      ...mockSlo,
+      id: "slo-comp",
+      name: "SLO With Component",
+      componentId: "comp-abc-123",
+    };
+    mockList.mockResolvedValue({ data: [sloWithComponent], total: 1 });
+
+    const updatedSlo = { ...sloWithComponent, name: "Updated Component SLO" };
+    mockUpdate.mockResolvedValue(updatedSlo);
+
+    render(<SlosClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("SLO With Component")).toBeInTheDocument();
+    });
+
+    const editBtn = screen.getByRole("button", { name: /edit/i });
+    await user.click(editBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit SLO")).toBeInTheDocument();
+    });
+
+    // componentId should be pre-filled
+    const componentInput = screen.getByLabelText("Component ID");
+    expect(componentInput).toHaveValue("comp-abc-123");
+  });
+
+  it("handleSubmit edit with invalid targetPercent (NaN) does nothing", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    mockList.mockResolvedValue({ data: [mockSlo], total: 1 });
+
+    render(<SlosClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("API Availability")).toBeInTheDocument();
+    });
+
+    const editBtn = screen.getByRole("button", { name: /edit/i });
+    await user.click(editBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit SLO")).toBeInTheDocument();
+    });
+
+    // Set target to invalid value
+    const targetInput = screen.getByLabelText("Target Percent");
+    await user.clear(targetInput);
+    await user.type(targetInput, "not-a-number");
+
+    const updateBtn = screen.getByRole("button", { name: "Update" });
+    await user.click(updateBtn);
+
+    // Update should NOT have been called (early return due to NaN)
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("component ID input onChange works in create dialog", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    mockList.mockResolvedValue({ data: [], total: 0 });
+
+    render(<SlosClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No SLOs defined")).toBeInTheDocument();
+    });
+
+    const createButtons = screen.getAllByRole("button", {
+      name: /create slo/i,
+    });
+    await user.click(createButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Component ID")).toBeInTheDocument();
+    });
+
+    const componentInput = screen.getByLabelText("Component ID");
+    await user.type(componentInput, "comp-xyz");
+    expect(componentInput).toHaveValue("comp-xyz");
+  });
+
+  it("enabled checkbox onChange works in create dialog", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    mockList.mockResolvedValue({ data: [], total: 0 });
+
+    render(<SlosClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No SLOs defined")).toBeInTheDocument();
+    });
+
+    const createButtons = screen.getAllByRole("button", {
+      name: /create slo/i,
+    });
+    await user.click(createButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Enabled")).toBeInTheDocument();
+    });
+
+    // Default is checked
+    const enabledCheckbox = screen.getByLabelText("Enabled");
+    expect(enabledCheckbox).toBeChecked();
+
+    // Uncheck it
+    await user.click(enabledCheckbox);
+    expect(enabledCheckbox).not.toBeChecked();
+
+    // Check it again
+    await user.click(enabledCheckbox);
+    expect(enabledCheckbox).toBeChecked();
+  });
 });

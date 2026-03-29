@@ -46,4 +46,16 @@ describe("Dashboard entity", () => {
     expect(DashboardVisibility.PRIVATE).toBe("private");
     expect(DashboardVisibility.WORKSPACE).toBe("workspace");
   });
+
+  it("should resolve ApiProperty type callback for widgets", () => {
+    const metadata = Reflect.getMetadata(
+      "swagger/apiModelProperties",
+      Dashboard.prototype,
+      "widgets",
+    ) as { type?: () => unknown } | undefined;
+    expect(metadata).toBeDefined();
+    expect(typeof metadata!.type).toBe("function");
+    const resolved = metadata!.type!();
+    expect(resolved).toEqual([DashboardWidget]);
+  });
 });

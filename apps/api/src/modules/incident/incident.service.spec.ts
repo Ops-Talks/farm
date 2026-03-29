@@ -241,6 +241,44 @@ describe("IncidentService", () => {
       );
     });
 
+    it("should findAll with organizationId filter", async () => {
+      const qb = createQueryBuilderMock();
+      qb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockIncidentRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ organizationId: "org-uuid-1" });
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "incident.organizationId = :organizationId",
+        { organizationId: "org-uuid-1" },
+      );
+    });
+
+    it("should findAll with componentId filter", async () => {
+      const qb = createQueryBuilderMock();
+      qb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockIncidentRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ componentId: "comp-uuid-1" });
+
+      expect(qb.andWhere).toHaveBeenCalledWith("component.id = :componentId", {
+        componentId: "comp-uuid-1",
+      });
+    });
+
+    it("should findAll with environmentId filter", async () => {
+      const qb = createQueryBuilderMock();
+      qb.getManyAndCount.mockResolvedValue([[], 0]);
+      mockIncidentRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ environmentId: "env-uuid-1" });
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "environment.id = :environmentId",
+        { environmentId: "env-uuid-1" },
+      );
+    });
+
     it("should findAll with status filter", async () => {
       const qb = createQueryBuilderMock();
       qb.getManyAndCount.mockResolvedValue([[], 0]);
@@ -302,6 +340,34 @@ describe("IncidentService", () => {
 
       expect(result.title).toBe("Updated title");
       expect(result.affectedComponents).toEqual([newComponent]);
+      expect(mockIncidentRepo.save).toHaveBeenCalledWith(merged);
+    });
+
+    it("should update an incident and replace affected environments", async () => {
+      const existing = {
+        ...mockIncident,
+        affectedEnvironments: [mockEnvironment],
+      };
+      mockIncidentRepo.findOne.mockResolvedValue(existing);
+
+      const newEnvironment = { id: "env-uuid-2", name: "staging" };
+      mockEnvironmentRepo.findBy.mockResolvedValue([newEnvironment]);
+
+      const merged = {
+        ...existing,
+        title: "Updated title",
+        affectedEnvironments: [newEnvironment],
+      };
+      mockIncidentRepo.merge.mockReturnValue(merged);
+      mockIncidentRepo.save.mockResolvedValue(merged);
+
+      const result = await service.update("incident-uuid-1", {
+        title: "Updated title",
+        affectedEnvironmentIds: ["env-uuid-2"],
+      });
+
+      expect(result.affectedEnvironments).toEqual([newEnvironment]);
+      expect(mockEnvironmentRepo.findBy).toHaveBeenCalled();
       expect(mockIncidentRepo.save).toHaveBeenCalledWith(merged);
     });
   });

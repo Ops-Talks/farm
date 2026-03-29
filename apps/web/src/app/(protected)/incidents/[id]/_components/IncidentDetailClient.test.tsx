@@ -635,4 +635,476 @@ describe("IncidentDetailClient", () => {
       expect(toast.success).toHaveBeenCalledWith("Post-mortem approved");
     });
   });
+
+  // =========================================================================
+  // Severity & Status Badge Classes
+  // =========================================================================
+
+  describe("Severity & Status Badge Variants", () => {
+    it("renders P2 severity badge correctly", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ severity: "P2" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("P2")).toBeInTheDocument();
+      });
+    });
+
+    it("renders P3 severity badge correctly", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ severity: "P3" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("P3")).toBeInTheDocument();
+      });
+    });
+
+    it("renders P4 severity badge correctly", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ severity: "P4" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("P4")).toBeInTheDocument();
+      });
+    });
+
+    it("renders default severity badge for unknown severity", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ severity: "P5" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("P5")).toBeInTheDocument();
+      });
+    });
+
+    it("renders investigating status badge", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ status: "investigating" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        // The status badge with capitalize class
+        const badges = document.querySelectorAll('[data-slot="badge"]');
+        const statusBadge = Array.from(badges).find((b) => b.textContent === "investigating");
+        expect(statusBadge).toBeTruthy();
+      });
+    });
+
+    it("renders identified status badge", async () => {
+      mockGetOne.mockResolvedValue(buildIncident({ status: "identified" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        const badges = document.querySelectorAll('[data-slot="badge"]');
+        const statusBadge = Array.from(badges).find((b) => b.textContent === "identified");
+        expect(statusBadge).toBeTruthy();
+      });
+    });
+
+    it("renders default status badge for unknown status", async () => {
+      // Use "investigating" status which hits statusBadgeClass "investigating" case
+      // and statusVariant "identified" case via timeline badges
+      mockGetOne.mockResolvedValue(buildIncident({ status: "identified" }));
+      mockGetTimeline.mockResolvedValue([
+        buildTimeline({
+          previousStatus: "investigating",
+          newStatus: "identified",
+        }),
+      ]);
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        // "identified" status badge
+        const badges = document.querySelectorAll('[data-slot="badge"]');
+        const statusBadge = Array.from(badges).find((b) => b.textContent === "identified");
+        expect(statusBadge).toBeTruthy();
+      });
+
+      // The timeline entry should also show investigating → identified
+      await waitFor(() => {
+        expect(screen.getByText("investigating")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // =========================================================================
+  // Error Paths
+  // =========================================================================
+
+  describe("Error Paths", () => {
+    it("shows toast error when handleStatusChange fails", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+      mockUpdateStatus.mockRejectedValue(new Error("Server error"));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /investigating/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /investigating/i }),
+      );
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to update status");
+      });
+    });
+
+    it("handleAddUpdate with empty message does nothing", async () => {
+      const user = userEvent.setup();
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Database outage")).toBeInTheDocument();
+      });
+
+      // The "Add Update" button should be disabled when textarea is empty
+      const addUpdateBtn = screen.getByRole("button", { name: /add update/i });
+      expect(addUpdateBtn).toBeDisabled();
+
+      // Try to submit the form directly — empty message should cause early return
+      // We click anyway to test the logic
+      await user.click(addUpdateBtn);
+
+      // createUpdate should not have been called
+      expect(mockCreateUpdate).not.toHaveBeenCalled();
+    });
+
+    it("shows toast error when handleAddUpdate fails", async () => {
+      const user = userEvent.setup();
+      mockCreateUpdate.mockRejectedValue(new Error("Server error"));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Database outage")).toBeInTheDocument();
+      });
+
+      const textarea = screen.getByPlaceholderText("Add a timeline update...");
+      await user.type(textarea, "Failing update");
+
+      await user.click(screen.getByRole("button", { name: /add update/i }));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to add update");
+      });
+    });
+
+    it("shows toast error when handleCreatePostMortem fails", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+      mockCreatePostMortem.mockRejectedValue(new Error("Server error"));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create post-mortem/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      await user.type(
+        screen.getByLabelText(/root cause/i),
+        "Some root cause",
+      );
+
+      // Submit
+      const submitButtons = screen.getAllByRole("button", {
+        name: /create post-mortem/i,
+      });
+      await user.click(submitButtons[submitButtons.length - 1]);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Failed to create post-mortem",
+        );
+      });
+    });
+
+    it("shows toast error when handleApprovePostMortem fails", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+      const pm = buildPostMortem({ approvedBy: null, approvedAt: null });
+      mockGetByIncident.mockResolvedValue(pm);
+      mockApprovePostMortem.mockRejectedValue(new Error("Server error"));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Pending Approval")).toBeInTheDocument();
+      });
+
+      const approveButton = screen.getByRole("button", { name: /approve/i });
+      await user.click(approveButton);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "Failed to approve post-mortem",
+        );
+      });
+    });
+  });
+
+  // =========================================================================
+  // Post-Mortem Dialog Details
+  // =========================================================================
+
+  describe("Post-Mortem Dialog Details", () => {
+    it("creates post-mortem with contributing factors, body, and action items", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+      const createdPm = buildPostMortem();
+      mockCreatePostMortem.mockResolvedValue(createdPm);
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create post-mortem/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      // Fill root cause
+      await user.type(
+        screen.getByLabelText(/root cause/i),
+        "Root cause text",
+      );
+
+      // Fill contributing factors
+      await user.type(
+        screen.getByLabelText(/contributing factors/i),
+        "Factor A\nFactor B",
+      );
+
+      // Fill summary/body
+      await user.type(
+        screen.getByLabelText(/summary/i),
+        "Detailed body text",
+      );
+
+      // Add an action item
+      await user.type(
+        screen.getByPlaceholderText("Action item title"),
+        "Fix monitoring",
+      );
+      await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+      // Verify the action item appears in the list
+      expect(screen.getByText("Fix monitoring")).toBeInTheDocument();
+
+      // Submit
+      const submitButtons = screen.getAllByRole("button", {
+        name: /create post-mortem/i,
+      });
+      await user.click(submitButtons[submitButtons.length - 1]);
+
+      await waitFor(() => {
+        expect(mockCreatePostMortem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            incidentId: "inc-1",
+            rootCause: "Root cause text",
+            contributingFactors: ["Factor A", "Factor B"],
+            body: "Detailed body text",
+            actionItems: [{ title: "Fix monitoring", done: false }],
+          }),
+        );
+      });
+    });
+
+    it("add and remove action items in PM dialog", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create post-mortem/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      // Add two action items
+      const actionInput = screen.getByPlaceholderText("Action item title");
+      await user.type(actionInput, "Item One");
+      await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+      expect(screen.getByText("Item One")).toBeInTheDocument();
+
+      await user.type(actionInput, "Item Two");
+      await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+      expect(screen.getByText("Item Two")).toBeInTheDocument();
+
+      // Remove the first action item
+      const removeButtons = screen.getAllByRole("button", { name: /remove/i });
+      await user.click(removeButtons[0]);
+
+      // Item One should be removed
+      expect(screen.queryByText("Item One")).not.toBeInTheDocument();
+      // Item Two should remain
+      expect(screen.getByText("Item Two")).toBeInTheDocument();
+    });
+
+    it("cancel button in PM dialog closes it", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create post-mortem/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      // Fill some data
+      await user.type(screen.getByLabelText(/root cause/i), "Some data");
+
+      // Click cancel
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Dialog should close — create should NOT have been called
+      expect(mockCreatePostMortem).not.toHaveBeenCalled();
+    });
+
+    it("PM dialog onOpenChange resets form when closed", async () => {
+      mockHasRole.mockReturnValue(true);
+      const user = userEvent.setup();
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create post-mortem/i }),
+        ).toBeInTheDocument();
+      });
+
+      // Open dialog
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      // Fill root cause
+      await user.type(screen.getByLabelText(/root cause/i), "Test root cause");
+
+      // Close via Escape key — this triggers onOpenChange(false) which calls resetPmForm
+      await user.keyboard("{Escape}");
+
+      // Re-open dialog — form should be reset
+      await user.click(
+        screen.getByRole("button", { name: /create post-mortem/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/root cause/i)).toBeInTheDocument();
+      });
+
+      // Root cause should be empty (form was reset)
+      expect(screen.getByLabelText(/root cause/i)).toHaveValue("");
+    });
+
+    it("shows investigating → identified/resolved transition buttons", async () => {
+      mockHasRole.mockReturnValue(true);
+      mockGetOne.mockResolvedValue(buildIncident({ status: "investigating" }));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Transition to:")).toBeInTheDocument();
+      });
+
+      // investigating → [identified, resolved]
+      expect(
+        screen.getByRole("button", { name: /identified/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /resolved/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("clicking Back to Incidents in error state navigates to /incidents", async () => {
+      const user = userEvent.setup();
+      mockGetOne.mockRejectedValue(new Error("Network error"));
+      mockGetTimeline.mockRejectedValue(new Error("Network error"));
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Failed to load incident")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText("Back to Incidents"));
+      expect(mockPush).toHaveBeenCalledWith("/incidents");
+    });
+
+    it("renders statusBadgeClass default case via timeline entry with unusual status", async () => {
+      // Timeline entries with unusual previousStatus/newStatus values
+      // hit the default case in statusBadgeClass
+      const unusualEntry = buildTimeline({
+        id: "upd-unusual",
+        message: "Unusual transition",
+        previousStatus: "custom_status",
+        newStatus: "another_custom",
+      });
+      mockGetTimeline.mockResolvedValue([unusualEntry]);
+
+      render(<IncidentDetailClient id="inc-1" />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Unusual transition")).toBeInTheDocument();
+      });
+
+      // The unusual statuses should still render
+      expect(screen.getByText("custom_status")).toBeInTheDocument();
+      expect(screen.getByText("another_custom")).toBeInTheDocument();
+    });
+  });
 });

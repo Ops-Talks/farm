@@ -234,6 +234,91 @@ describe("WidgetService", () => {
       expect((result.data as { sloName: string }).sloName).toBe("latency");
     });
 
+    it("should return queue status data for QUEUE_STATUS type", async () => {
+      const queueWidget = {
+        ...mockWidget,
+        type: WidgetType.QUEUE_STATUS,
+        config: null,
+      };
+      mockWidgetRepository.findOne.mockResolvedValue(queueWidget);
+
+      const result = await service.getWidgetData("widget-uuid-1");
+
+      expect(result.type).toBe(WidgetType.QUEUE_STATUS);
+      expect(result.data).toHaveProperty("queues");
+      const data = result.data as {
+        queues: Array<{ name: string; depth: number; consumers: number }>;
+      };
+      expect(data.queues.length).toBeGreaterThan(0);
+      expect(data.queues[0]).toHaveProperty("name");
+      expect(data.queues[0]).toHaveProperty("depth");
+      expect(data.queues[0]).toHaveProperty("consumers");
+    });
+
+    it("should return alert summary data for ALERT_SUMMARY type", async () => {
+      const alertWidget = {
+        ...mockWidget,
+        type: WidgetType.ALERT_SUMMARY,
+        config: null,
+      };
+      mockWidgetRepository.findOne.mockResolvedValue(alertWidget);
+
+      const result = await service.getWidgetData("widget-uuid-1");
+
+      expect(result.type).toBe(WidgetType.ALERT_SUMMARY);
+      const data = result.data as {
+        total: number;
+        critical: number;
+        warning: number;
+        info: number;
+      };
+      expect(data.total).toBeDefined();
+      expect(data.critical).toBeDefined();
+      expect(data.warning).toBeDefined();
+      expect(data.info).toBeDefined();
+    });
+
+    it("should return team activity data for TEAM_ACTIVITY type", async () => {
+      const teamWidget = {
+        ...mockWidget,
+        type: WidgetType.TEAM_ACTIVITY,
+        config: null,
+      };
+      mockWidgetRepository.findOne.mockResolvedValue(teamWidget);
+
+      const result = await service.getWidgetData("widget-uuid-1");
+
+      expect(result.type).toBe(WidgetType.TEAM_ACTIVITY);
+      const data = result.data as {
+        events: Array<{ user: string; action: string; timestamp: string }>;
+      };
+      expect(data.events).toBeDefined();
+      expect(data.events.length).toBeGreaterThan(0);
+      expect(data.events[0]).toHaveProperty("user");
+      expect(data.events[0]).toHaveProperty("action");
+      expect(data.events[0]).toHaveProperty("timestamp");
+    });
+
+    it("should return uptime chart data for UPTIME_CHART type", async () => {
+      const uptimeWidget = {
+        ...mockWidget,
+        type: WidgetType.UPTIME_CHART,
+        config: null,
+      };
+      mockWidgetRepository.findOne.mockResolvedValue(uptimeWidget);
+
+      const result = await service.getWidgetData("widget-uuid-1");
+
+      expect(result.type).toBe(WidgetType.UPTIME_CHART);
+      const data = result.data as {
+        days: Array<{ date: string; uptimePercent: number }>;
+      };
+      expect(data.days).toBeDefined();
+      expect(data.days.length).toBeGreaterThan(0);
+      expect(data.days[0]).toHaveProperty("date");
+      expect(data.days[0]).toHaveProperty("uptimePercent");
+    });
+
     it("should return empty object for unknown widget type", async () => {
       const unknownWidget = {
         ...mockWidget,

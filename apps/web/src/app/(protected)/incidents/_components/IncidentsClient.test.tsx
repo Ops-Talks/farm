@@ -665,5 +665,151 @@ describe("IncidentsClient", () => {
         expect(screen.getByText(dateText)).toBeInTheDocument();
       });
     });
+
+    it("handleCreate with empty title does nothing", async () => {
+      const user = userEvent.setup();
+      mockHasRole.mockReturnValue(true);
+      mockList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<IncidentsClient />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create incident/i }),
+        ).toBeInTheDocument();
+      });
+
+      // Open the dialog
+      await user.click(
+        screen.getByRole("button", { name: /create incident/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Title")).toBeInTheDocument();
+      });
+
+      // Leave title empty (or clear it) — just click submit without filling
+      // The title field is required, but we test the handleCreate guard
+      // Type whitespace only
+      await user.type(screen.getByLabelText("Title"), "   ");
+      await user.clear(screen.getByLabelText("Title"));
+
+      // Submit — the submit button inside the dialog
+      const submitButtons = screen.getAllByRole("button", {
+        name: /create incident/i,
+      });
+      await user.click(submitButtons[submitButtons.length - 1]);
+
+      // Create should NOT have been called
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
+
+    it("previous page button navigates back", async () => {
+      const user = userEvent.setup();
+      // 25 total with PAGE_SIZE=20 -> 2 pages
+      mockList.mockResolvedValue({
+        data: Array.from({ length: 20 }, (_, i) =>
+          buildIncident({ id: `inc-${i}`, title: `Incident ${i}` }),
+        ),
+        total: 25,
+      });
+
+      render(<IncidentsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+      });
+
+      // Go to page 2
+      await user.click(screen.getByRole("button", { name: /next/i }));
+
+      await waitFor(() => {
+        expect(mockList).toHaveBeenCalledWith(
+          expect.objectContaining({ skip: 20 }),
+        );
+      });
+
+      // Now Previous should be enabled — click it
+      const prevButton = screen.getByRole("button", { name: /previous/i });
+      expect(prevButton).not.toBeDisabled();
+      await user.click(prevButton);
+
+      await waitFor(() => {
+        expect(mockList).toHaveBeenCalledWith(
+          expect.objectContaining({ skip: 0 }),
+        );
+      });
+    });
+
+    it("closing create dialog resets form fields", async () => {
+      const user = userEvent.setup();
+      mockHasRole.mockReturnValue(true);
+      mockList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<IncidentsClient />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create incident/i }),
+        ).toBeInTheDocument();
+      });
+
+      // Open dialog
+      await user.click(
+        screen.getByRole("button", { name: /create incident/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Title")).toBeInTheDocument();
+      });
+
+      // Fill in some data
+      await user.type(screen.getByLabelText("Title"), "Temp Title");
+
+      // Close dialog via Escape key — triggers onOpenChange(false) which resets form
+      await user.keyboard("{Escape}");
+
+      // Re-open dialog — form should be reset
+      await user.click(
+        screen.getByRole("button", { name: /create incident/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Title")).toBeInTheDocument();
+      });
+
+      // Title should be empty (form was reset via onOpenChange)
+      expect(screen.getByLabelText("Title")).toHaveValue("");
+    });
+
+    it("cancel button in create dialog closes without creating", async () => {
+      const user = userEvent.setup();
+      mockHasRole.mockReturnValue(true);
+      mockList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<IncidentsClient />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /create incident/i }),
+        ).toBeInTheDocument();
+      });
+
+      // Open dialog
+      await user.click(
+        screen.getByRole("button", { name: /create incident/i }),
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Title")).toBeInTheDocument();
+      });
+
+      // Click cancel
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Create should NOT have been called
+      expect(mockCreate).not.toHaveBeenCalled();
+    });
   });
 });

@@ -308,6 +308,106 @@ describe("SloCalculatorService", () => {
       expect(typeof result.currentPercent).toBe("number");
     });
 
+    it("should calculate budget for LATENCY metric type with SEVEN_DAYS window", async () => {
+      configGet.mockReturnValue("http://prometheus:9090");
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SloCalculatorService,
+          { provide: SloService, useValue: sloService },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      const calc = module.get<SloCalculatorService>(SloCalculatorService);
+
+      // Latency SLO: low latency = high compliance percentage
+      // extractPercentage for LATENCY: Math.min(100, Math.max(0, (1 - avg / 0.5) * 100))
+      // avg = 0.1 (100ms) -> (1 - 0.1/0.5) * 100 = 80%
+      const slo = buildSlo({
+        metricType: SloMetricType.LATENCY,
+        window: SloWindow.SEVEN_DAYS,
+        targetPercent: 70.0,
+      });
+      sloService.findOne.mockResolvedValue(slo);
+
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => ({
+          status: "success",
+          data: {
+            resultType: "matrix",
+            result: [
+              {
+                metric: {},
+                values: [[1704067200, "0.1"]],
+              },
+            ],
+          },
+        }),
+      });
+
+      const result = await calc.calculateBudget("slo-uuid-1");
+
+      expect(result.sloId).toBe("slo-uuid-1");
+      expect(result.currentPercent).toBe(80);
+      expect(typeof result.budgetRemaining).toBe("number");
+      // Verify fetch was called with the latency PromQL and 1h step (SEVEN_DAYS)
+      const mockFn = globalThis.fetch as jest.Mock;
+      const fetchUrl = String((mockFn.mock.calls as string[][])[0][0]);
+      expect(fetchUrl).toContain("histogram_quantile");
+      expect(fetchUrl).toContain("step=1h");
+    });
+
+    it("should calculate budget for ERROR_RATE metric type with NINETY_DAYS window", async () => {
+      configGet.mockReturnValue("http://prometheus:9090");
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SloCalculatorService,
+          { provide: SloService, useValue: sloService },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      const calc = module.get<SloCalculatorService>(SloCalculatorService);
+
+      // Error rate SLO: low error rate = high success percentage
+      // extractPercentage for ERROR_RATE: (1 - avg) * 100
+      // avg = 0.05 (5% errors) -> (1 - 0.05) * 100 = 95%
+      const slo = buildSlo({
+        metricType: SloMetricType.ERROR_RATE,
+        window: SloWindow.NINETY_DAYS,
+        targetPercent: 90.0,
+      });
+      sloService.findOne.mockResolvedValue(slo);
+
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => ({
+          status: "success",
+          data: {
+            resultType: "matrix",
+            result: [
+              {
+                metric: {},
+                values: [[1704067200, "0.05"]],
+              },
+            ],
+          },
+        }),
+      });
+
+      const result = await calc.calculateBudget("slo-uuid-1");
+
+      expect(result.sloId).toBe("slo-uuid-1");
+      expect(result.currentPercent).toBe(95);
+      expect(typeof result.budgetRemaining).toBe("number");
+      // Verify fetch was called with the error rate PromQL and 1d step (NINETY_DAYS)
+      const mockFn2 = globalThis.fetch as jest.Mock;
+      const fetchUrl = String((mockFn2.mock.calls as string[][])[0][0]);
+      expect(fetchUrl).toContain("http_requests_total");
+      expect(fetchUrl).toContain("step=1d");
+    });
+
     it("should fall back to simulated data when Prometheus returns empty results", async () => {
       configGet.mockReturnValue("http://prometheus:9090");
 

@@ -866,5 +866,795 @@ describe("DashboardsClient", () => {
         );
       });
     });
+
+    it("shows error toast when save (edit) fails", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockDashboardUpdate.mockRejectedValue(new Error("Server error"));
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Click edit button (first card action button)
+      const allButtons = screen.getAllByRole("button");
+      const cardButtons = allButtons.filter(
+        (btn) =>
+          !btn.textContent?.includes("Create Dashboard") &&
+          btn.closest('[data-slot="card"]'),
+      );
+      await user.click(cardButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Edit Dashboard")).toBeInTheDocument();
+      });
+
+      const saveBtn = screen.getByRole("button", { name: "Save Changes" });
+      await user.click(saveBtn);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to update dashboard");
+      });
+    });
+
+    it("shows error toast when dashboard delete fails", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockDashboardRemove.mockRejectedValue(new Error("Server error"));
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Click delete button (second card action button)
+      const allButtons = screen.getAllByRole("button");
+      const cardButtons = allButtons.filter(
+        (btn) =>
+          !btn.textContent?.includes("Create Dashboard") &&
+          btn.closest('[data-slot="card"]'),
+      );
+      await user.click(cardButtons[1]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Delete dashboard")).toBeInTheDocument();
+      });
+
+      const confirmBtn = screen.getByRole("button", { name: "Delete" });
+      await user.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to delete dashboard");
+      });
+    });
+
+    it("shows error toast when refreshSelected fails", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockCreateWidget.mockResolvedValue(mockWidget);
+      // refreshSelected calls getOne which fails
+      mockDashboardGetOne.mockRejectedValue(new Error("Server error"));
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Configure a new widget for this dashboard.")).toBeInTheDocument();
+      });
+
+      // Fill title
+      const titleInput = screen.getByLabelText("Title");
+      await user.type(titleInput, "Test Widget");
+
+      // Submit
+      const allAddBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(allAddBtns[allAddBtns.length - 1]);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to refresh dashboard");
+      });
+    });
+
+    it("shows error toast when widget creation fails", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockCreateWidget.mockRejectedValue(new Error("Server error"));
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Configure a new widget for this dashboard.")).toBeInTheDocument();
+      });
+
+      const titleInput = screen.getByLabelText("Title");
+      await user.type(titleInput, "Failing Widget");
+
+      const allAddBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(allAddBtns[allAddBtns.length - 1]);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to add widget");
+      });
+    });
+
+    it("shows error toast when widget delete fails", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboardWithWidgets],
+        total: 1,
+      });
+      mockRemoveWidget.mockRejectedValue(new Error("Server error"));
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByText("CPU Usage")).toBeInTheDocument();
+      });
+
+      // Click the delete button on the first widget card
+      const widgetCards = document.querySelectorAll('[data-slot="card"]');
+      const firstWidgetDeleteBtn = widgetCards[0].querySelector('[data-slot="button"]');
+      await user.click(firstWidgetDeleteBtn as HTMLElement);
+
+      // ConfirmDialog should appear
+      await waitFor(() => {
+        expect(screen.getByText("Delete widget")).toBeInTheDocument();
+      });
+
+      const confirmBtn = screen.getByRole("button", { name: "Delete" });
+      await user.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Failed to delete widget");
+      });
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Widget Type Icons
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  describe("Widget Type Icons", () => {
+    const widgetTypes = [
+      { type: "component_health" as const, label: "Component Health" },
+      { type: "deployment_feed" as const, label: "Deployment Feed" },
+      { type: "queue_status" as const, label: "Queue Status" },
+      { type: "slo_gauge" as const, label: "SLO Gauge" },
+      { type: "team_activity" as const, label: "Team Activity" },
+      { type: "uptime_chart" as const, label: "Uptime Chart" },
+    ];
+
+    for (const { type, label } of widgetTypes) {
+      it(`renders widget icon for type "${type}"`, async () => {
+        const user = userEvent.setup();
+        const dashWithWidget = {
+          ...mockDashboard,
+          widgets: [
+            {
+              ...mockWidget,
+              id: `widget-${type}`,
+              type,
+              title: `${label} Widget`,
+            },
+          ],
+        };
+        mockDashboardList.mockResolvedValue({
+          data: [dashWithWidget],
+          total: 1,
+        });
+
+        render(<DashboardsClient />);
+
+        await waitFor(() => {
+          expect(screen.getByText("Production Overview")).toBeInTheDocument();
+        });
+
+        // Enter builder mode
+        const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+        await user.click(card!);
+
+        // Verify widget renders with correct label badge
+        await waitFor(() => {
+          expect(screen.getByText(`${label} Widget`)).toBeInTheDocument();
+        });
+        expect(screen.getByText(label)).toBeInTheDocument();
+      });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Validation & Edge Cases
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  describe("Validation & Edge Cases", () => {
+    it("handleSaveDashboard with empty name shows toast error", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No dashboards")).toBeInTheDocument();
+      });
+
+      // Open create dialog
+      const createButtons = screen.getAllByRole("button", {
+        name: /create dashboard/i,
+      });
+      await user.click(createButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create a new custom dashboard.")).toBeInTheDocument();
+      });
+
+      // Leave name empty and submit
+      const submitBtn = screen.getByRole("button", { name: "Create" });
+      await user.click(submitBtn);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Name is required");
+      });
+
+      // create should NOT have been called
+      expect(mockDashboardCreate).not.toHaveBeenCalled();
+    });
+
+    it("handleSaveWidget with empty title shows toast error", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Configure a new widget for this dashboard.")).toBeInTheDocument();
+      });
+
+      // Leave title empty and submit
+      const allAddBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(allAddBtns[allAddBtns.length - 1]);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Widget title is required");
+      });
+
+      expect(mockCreateWidget).not.toHaveBeenCalled();
+    });
+
+    it("deleting the currently selected dashboard clears the builder", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockDashboardRemove.mockResolvedValue(undefined);
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open edit dialog from builder view (to get the dashboard dialog)
+      // The builder has an "Edit" button at the top
+      const editBtn = screen.getByRole("button", { name: /edit/i });
+      await user.click(editBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Edit Dashboard")).toBeInTheDocument();
+      });
+
+      // Close the edit dialog via Cancel
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Go back to list view
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+      const backBtn = screen.getByRole("button", { name: /back/i });
+      await user.click(backBtn);
+
+      // Now we're in list view again, select the dashboard and delete it
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode again
+      const card2 = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card2!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Go back and delete from list
+      await user.click(screen.getByRole("button", { name: /back/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Custom Dashboards")).toBeInTheDocument();
+      });
+
+      // Click delete button (second card action button)
+      const allButtons = screen.getAllByRole("button");
+      const cardButtons = allButtons.filter(
+        (btn) =>
+          !btn.textContent?.includes("Create Dashboard") &&
+          btn.closest('[data-slot="card"]'),
+      );
+      await user.click(cardButtons[1]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Delete dashboard")).toBeInTheDocument();
+      });
+
+      const confirmBtn = screen.getByRole("button", { name: "Delete" });
+      await user.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(mockDashboardRemove).toHaveBeenCalledWith("dash-1");
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Dashboard "Production Overview" deleted',
+        );
+      });
+    });
+
+    it("shows '0 widgets' for dashboard with no widgets", async () => {
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard], // widgets: []
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("0 widgets")).toBeInTheDocument();
+    });
+
+    it("shows '1 widget' (singular) for dashboard with one widget", async () => {
+      const dashWithOneWidget = {
+        ...mockDashboard,
+        widgets: [mockWidget],
+      };
+      mockDashboardList.mockResolvedValue({
+        data: [dashWithOneWidget],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("1 widget")).toBeInTheDocument();
+    });
+
+    it("widget grid inputs (X, Y, W, H) accept values", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("X")).toBeInTheDocument();
+      });
+
+      // Change grid inputs
+      const xInput = screen.getByLabelText("X");
+      await user.clear(xInput);
+      await user.type(xInput, "2");
+      expect(xInput).toHaveValue(2);
+
+      const yInput = screen.getByLabelText("Y");
+      await user.clear(yInput);
+      await user.type(yInput, "3");
+      expect(yInput).toHaveValue(3);
+
+      const wInput = screen.getByLabelText("W");
+      await user.clear(wInput);
+      await user.type(wInput, "6");
+      expect(wInput).toHaveValue(6);
+
+      const hInput = screen.getByLabelText("H");
+      await user.clear(hInput);
+      await user.type(hInput, "4");
+      expect(hInput).toHaveValue(4);
+    });
+
+    it("widget config textarea accepts JSON input", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Config (JSON)")).toBeInTheDocument();
+      });
+
+      const configTextarea = screen.getByLabelText("Config (JSON)");
+      await user.type(configTextarea, "test config");
+      expect(configTextarea).toHaveValue("test config");
+    });
+
+    it("dashboard dialog form inputs (name, description, visibility) work", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No dashboards")).toBeInTheDocument();
+      });
+
+      // Open create dialog
+      const createButtons = screen.getAllByRole("button", { name: /create dashboard/i });
+      await user.click(createButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Name")).toBeInTheDocument();
+      });
+
+      // Test name input
+      const nameInput = screen.getByLabelText("Name");
+      await user.type(nameInput, "Test Dashboard");
+      expect(nameInput).toHaveValue("Test Dashboard");
+
+      // Test description input
+      const descInput = screen.getByLabelText("Description");
+      await user.type(descInput, "Test Description");
+      expect(descInput).toHaveValue("Test Description");
+
+      // Test visibility select
+      const visibilitySelect = screen.getByLabelText("Visibility");
+      await user.selectOptions(visibilitySelect, "workspace");
+      expect(visibilitySelect).toHaveValue("workspace");
+    });
+
+    it("dashboard dialog cancel button closes without saving", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({ data: [], total: 0 });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("No dashboards")).toBeInTheDocument();
+      });
+
+      // Open create dialog
+      const createButtons = screen.getAllByRole("button", { name: /create dashboard/i });
+      await user.click(createButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create a new custom dashboard.")).toBeInTheDocument();
+      });
+
+      // Click cancel
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Dialog should close — create should NOT have been called
+      expect(mockDashboardCreate).not.toHaveBeenCalled();
+    });
+
+    it("edit dashboard in builder mode (openEditDialog from builder)", async () => {
+      const user = userEvent.setup();
+      const updatedDashboard = {
+        ...mockDashboard,
+        name: "Builder Edited",
+      };
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockDashboardUpdate.mockResolvedValue(updatedDashboard);
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Click "Edit" button in builder header
+      const editBtn = screen.getByRole("button", { name: /edit/i });
+      await user.click(editBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Edit Dashboard")).toBeInTheDocument();
+      });
+
+      // Verify pre-filled values
+      expect(screen.getByLabelText("Name")).toHaveValue("Production Overview");
+
+      // Modify name
+      const nameInput = screen.getByLabelText("Name");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Builder Edited");
+
+      // Submit
+      const saveBtn = screen.getByRole("button", { name: "Save Changes" });
+      await user.click(saveBtn);
+
+      await waitFor(() => {
+        expect(mockDashboardUpdate).toHaveBeenCalledWith(
+          "dash-1",
+          expect.objectContaining({ name: "Builder Edited" }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Dashboard "Builder Edited" updated',
+        );
+      });
+    });
+
+    it("widget dialog cancel button closes without adding widget", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Open add widget dialog
+      const addWidgetBtns = screen.getAllByRole("button", { name: /add widget/i });
+      await user.click(addWidgetBtns[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Configure a new widget for this dashboard.")).toBeInTheDocument();
+      });
+
+      // Click Cancel in widget dialog
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Widget should NOT have been created
+      expect(mockCreateWidget).not.toHaveBeenCalled();
+    });
+
+    it("builder edit dialog description and visibility inputs work", async () => {
+      const user = userEvent.setup();
+      const updatedDashboard = {
+        ...mockDashboard,
+        name: "Production Overview",
+        description: "Updated desc",
+        visibility: "private" as const,
+      };
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+      mockDashboardUpdate.mockResolvedValue(updatedDashboard);
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Click "Edit" button in builder header
+      const editBtn = screen.getByRole("button", { name: /edit/i });
+      await user.click(editBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Edit Dashboard")).toBeInTheDocument();
+      });
+
+      // Modify description
+      const descInput = screen.getByLabelText("Description");
+      await user.clear(descInput);
+      await user.type(descInput, "Updated desc");
+      expect(descInput).toHaveValue("Updated desc");
+
+      // Modify visibility
+      const visibilitySelect = screen.getByLabelText("Visibility");
+      await user.selectOptions(visibilitySelect, "private");
+      expect(visibilitySelect).toHaveValue("private");
+
+      // Submit
+      const saveBtn = screen.getByRole("button", { name: "Save Changes" });
+      await user.click(saveBtn);
+
+      await waitFor(() => {
+        expect(mockDashboardUpdate).toHaveBeenCalledWith(
+          "dash-1",
+          expect.objectContaining({
+            description: "Updated desc",
+            visibility: "private",
+          }),
+        );
+      });
+    });
+
+    it("builder edit dialog cancel button closes without saving", async () => {
+      const user = userEvent.setup();
+      mockDashboardList.mockResolvedValue({
+        data: [mockDashboard],
+        total: 1,
+      });
+
+      render(<DashboardsClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Production Overview")).toBeInTheDocument();
+      });
+
+      // Enter builder mode
+      const card = screen.getByText("Production Overview").closest('[data-slot="card"]');
+      await user.click(card!);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /back/i })).toBeInTheDocument();
+      });
+
+      // Click "Edit" in builder header
+      const editBtn = screen.getByRole("button", { name: /edit/i });
+      await user.click(editBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Edit Dashboard")).toBeInTheDocument();
+      });
+
+      // Click Cancel
+      const cancelBtn = screen.getByRole("button", { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Update should NOT have been called
+      expect(mockDashboardUpdate).not.toHaveBeenCalled();
+    });
   });
 });

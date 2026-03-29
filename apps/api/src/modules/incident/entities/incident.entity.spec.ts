@@ -85,4 +85,40 @@ describe("Incident entity", () => {
     expect(IncidentStatus.IDENTIFIED).toBe("identified");
     expect(IncidentStatus.RESOLVED).toBe("resolved");
   });
+
+  it("should resolve ApiProperty type callback for affectedComponents", () => {
+    const metadata = Reflect.getMetadata(
+      "swagger/apiModelProperties",
+      Incident.prototype,
+      "affectedComponents",
+    ) as { type?: () => unknown } | undefined;
+    expect(metadata).toBeDefined();
+    expect(typeof metadata!.type).toBe("function");
+    const resolved = metadata!.type!();
+    expect(resolved).toEqual([Component]);
+  });
+
+  it("should resolve ApiProperty type callback for affectedEnvironments", () => {
+    const metadata = Reflect.getMetadata(
+      "swagger/apiModelProperties",
+      Incident.prototype,
+      "affectedEnvironments",
+    ) as { type?: () => unknown } | undefined;
+    expect(metadata).toBeDefined();
+    expect(typeof metadata!.type).toBe("function");
+    const resolved = metadata!.type!();
+    expect(resolved).toEqual([Environment]);
+  });
+
+  it("should resolve ApiProperty type callback for updates", () => {
+    const metadata = Reflect.getMetadata(
+      "swagger/apiModelProperties",
+      Incident.prototype,
+      "updates",
+    ) as { type?: () => unknown } | undefined;
+    expect(metadata).toBeDefined();
+    expect(typeof metadata!.type).toBe("function");
+    const resolved = metadata!.type!();
+    expect(resolved).toEqual([IncidentUpdate]);
+  });
 });
