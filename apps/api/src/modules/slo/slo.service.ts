@@ -30,7 +30,10 @@ export class SloService {
    * @returns The created SLO
    * @throws ConflictException if an SLO with the same name already exists
    */
-  async create(createSloDto: CreateSloDto, organizationId?: string): Promise<Slo> {
+  async create(
+    createSloDto: CreateSloDto,
+    organizationId?: string,
+  ): Promise<Slo> {
     const existing = await this.sloRepository.findOne({
       where: { name: createSloDto.name },
     });

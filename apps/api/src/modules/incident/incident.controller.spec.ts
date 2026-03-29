@@ -81,7 +81,10 @@ describe("IncidentController", () => {
       title: "Database outage",
       severity: IncidentSeverity.P1,
     };
-    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
+    const req = {
+      user: { userId: "user-uuid-1" },
+      organizationId: "org-uuid-1",
+    };
 
     const result = await controller.create(req as any, dto);
 
@@ -122,7 +125,11 @@ describe("IncidentController", () => {
     const dto = { status: IncidentStatus.INVESTIGATING };
     const req = { user: { userId: "user-uuid-1" } };
 
-    const result = await controller.updateStatus(req as any, "incident-uuid-1", dto);
+    const result = await controller.updateStatus(
+      req as any,
+      "incident-uuid-1",
+      dto,
+    );
 
     expect(result.status).toBe(IncidentStatus.INVESTIGATING);
     expect(incidentService.updateStatus).toHaveBeenCalledWith(
@@ -142,7 +149,11 @@ describe("IncidentController", () => {
     const dto = { message: "Scaling replicas" };
     const req = { user: { userId: "user-uuid-1" } };
 
-    const result = await controller.createUpdate(req as any, "incident-uuid-1", dto);
+    const result = await controller.createUpdate(
+      req as any,
+      "incident-uuid-1",
+      dto,
+    );
 
     expect(result).toEqual(mockTimelineEntry);
     expect(incidentUpdateService.create).toHaveBeenCalledWith(

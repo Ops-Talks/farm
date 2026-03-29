@@ -71,7 +71,10 @@ describe("SloController", () => {
       organizationId: "org-uuid-1",
     };
     sloService.create.mockResolvedValue({ id: "slo-uuid-1", ...dto });
-    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
+    const req = {
+      user: { userId: "user-uuid-1" },
+      organizationId: "org-uuid-1",
+    };
 
     const result = await controller.create(req as any, dto);
 

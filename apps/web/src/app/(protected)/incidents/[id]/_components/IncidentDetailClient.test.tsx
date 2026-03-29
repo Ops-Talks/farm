@@ -3,19 +3,36 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // ---------------------------------------------------------------------------
-// Mock fns (declared before vi.mock so hoisted references work)
+// Mock fns — use vi.hoisted so they are available inside vi.mock factories
 // ---------------------------------------------------------------------------
 
-const mockGetOne = vi.fn();
-const mockGetTimeline = vi.fn();
-const mockUpdateStatus = vi.fn();
-const mockCreateUpdate = vi.fn();
-const mockGetByIncident = vi.fn();
-const mockCreatePostMortem = vi.fn();
-const mockApprovePostMortem = vi.fn();
-const mockPush = vi.fn();
-const mockHasRole = vi.fn();
-const mockUser = { id: "user-1", username: "admin", roles: ["admin"] };
+const {
+  mockGetOne,
+  mockGetTimeline,
+  mockUpdateStatus,
+  mockCreateUpdate,
+  mockGetByIncident,
+  mockCreatePostMortem,
+  mockApprovePostMortem,
+  mockPush,
+  mockHasRole,
+  mockAuthUser,
+} = vi.hoisted(() => ({
+  mockGetOne: vi.fn(),
+  mockGetTimeline: vi.fn(),
+  mockUpdateStatus: vi.fn(),
+  mockCreateUpdate: vi.fn(),
+  mockGetByIncident: vi.fn(),
+  mockCreatePostMortem: vi.fn(),
+  mockApprovePostMortem: vi.fn(),
+  mockPush: vi.fn(),
+  mockHasRole: vi.fn(),
+  mockAuthUser: { id: "user-1", username: "admin", roles: ["admin"] } as {
+    id: string;
+    username: string;
+    roles: string[];
+  },
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
@@ -39,7 +56,10 @@ vi.mock("@/lib/api-client", () => ({
 }));
 
 vi.mock("@/contexts/auth-context", () => ({
-  useAuth: () => ({ user: mockUser, hasRole: mockHasRole }),
+  useAuth: () => ({
+    user: mockAuthUser,
+    hasRole: mockHasRole,
+  }),
 }));
 
 vi.mock("sonner", () => ({
@@ -320,7 +340,6 @@ describe("IncidentDetailClient", () => {
         expect(mockUpdateStatus).toHaveBeenCalledWith("inc-1", {
           status: "investigating",
           message: "Status changed to investigating",
-          userId: "user-1",
         });
       });
 
@@ -424,7 +443,6 @@ describe("IncidentDetailClient", () => {
       await waitFor(() => {
         expect(mockCreateUpdate).toHaveBeenCalledWith("inc-1", {
           message: "Added a manual update",
-          authorId: "user-1",
         });
       });
 
@@ -611,7 +629,7 @@ describe("IncidentDetailClient", () => {
       await user.click(approveButton);
 
       await waitFor(() => {
-        expect(mockApprovePostMortem).toHaveBeenCalledWith("pm-1", "user-1");
+        expect(mockApprovePostMortem).toHaveBeenCalledWith("pm-1");
       });
 
       expect(toast.success).toHaveBeenCalledWith("Post-mortem approved");

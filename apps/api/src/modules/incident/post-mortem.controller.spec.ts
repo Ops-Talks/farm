@@ -60,7 +60,10 @@ describe("PostMortemController", () => {
       incidentId: "incident-uuid-1",
       rootCause: "Connection pool misconfiguration",
     };
-    const req = { user: { userId: "user-uuid-1" }, organizationId: "org-uuid-1" };
+    const req = {
+      user: { userId: "user-uuid-1" },
+      organizationId: "org-uuid-1",
+    };
 
     const result = await controller.create(req as any, dto);
 

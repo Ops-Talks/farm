@@ -40,7 +40,8 @@ export class SloBudgetResponseDto {
 
   @ApiProperty({
     example: 0.05,
-    description: "Total error budget in percentage points (100 - targetPercent)",
+    description:
+      "Total error budget in percentage points (100 - targetPercent)",
   })
   budgetTotal: number;
 

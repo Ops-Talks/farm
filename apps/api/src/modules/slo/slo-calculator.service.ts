@@ -56,7 +56,8 @@ export class SloCalculatorService {
     const targetPercent = Number(slo.targetPercent);
     const budgetTotal = Math.round((100 - targetPercent) * 10000) / 10000;
     const rawConsumed = Math.max(0, 100 - currentPercent);
-    const budgetConsumed = Math.round(Math.min(rawConsumed, budgetTotal) * 10000) / 10000;
+    const budgetConsumed =
+      Math.round(Math.min(rawConsumed, budgetTotal) * 10000) / 10000;
     const budgetRemaining =
       budgetTotal > 0
         ? Math.max(0, ((budgetTotal - budgetConsumed) / budgetTotal) * 100)
