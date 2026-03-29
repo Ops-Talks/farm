@@ -93,6 +93,9 @@ nav:
     - Kyverno Integration: user-guide/kyverno-integration.md
     - Keycloak SSO: user-guide/keycloak-sso.md
     - Istio Service Mesh: user-guide/istio-integration.md
+    - SLO Management: user-guide/slos.md
+    - Incident Management: user-guide/incidents.md
+    - Custom Dashboards: user-guide/dashboards.md
     - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -122,8 +125,8 @@ nav:
     - Health API: api-reference/health.md
     - Catalog API: api-reference/catalog.md
     - API Management:
-      - api-management.md
-      - api-gateway.md
+      - api-reference/api-management.md
+      - api-reference/api-gateway.md
     - Documentation API: api-reference/docs.md
     - Environments API: api-reference/environments.md
     - Deployments API: api-reference/deployments.md

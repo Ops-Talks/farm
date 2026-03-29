@@ -31,7 +31,7 @@ Every catalog component can store optional Helm chart metadata under the `helmCh
 The standard `catalog-info.yaml` file supports a `spec.helm` block that Farm reads during catalog sync:
 
 ```yaml
-apiVersion: backstage.io/v1alpha1
+apiVersion: farm.io/v1alpha1
 kind: Component
 metadata:
   name: payments-service

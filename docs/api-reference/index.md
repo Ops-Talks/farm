@@ -53,6 +53,9 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Kyverno](kyverno.md) | `/api/v1/kyverno` | PolicyReport reader and ClusterPolicy YAML export |
 | [Keycloak SSO](keycloak-sso.md) | `/api/v1/auth/keycloak`, `/api/v1/keycloak-sync` | OIDC login and group sync |
 | [Istio](istio.md) | `/api/v1/istio` | VirtualService, PeerAuthentication, traffic metrics |
+| [SLOs](slos.md) | `/api/v1/slos` | Service Level Objectives and error budget tracking |
+| [Incidents](incidents.md) | `/api/v1/incidents` | Incident lifecycle, timeline, and post-mortem |
+| [Dashboards](dashboards.md) | `/api/v1/dashboards` | Custom dashboard builder with widgets |
 
 ## Response Format
 
