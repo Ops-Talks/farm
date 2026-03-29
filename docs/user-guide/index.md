@@ -109,6 +109,18 @@ Farm integrates with [Keycloak](keycloak-sso.md) for enterprise SSO login, autom
 
 Farm surfaces [Istio](istio-integration.md) traffic metrics (RPS, error rate, P50/P95/P99 latency), mTLS and AuthorizationPolicy security posture, service topology, and canary VirtualService weight controls directly on each catalog component.
 
+### SLO Management
+
+Farm provides [Service Level Objective tracking](slos.md) for your catalog components. Define availability, latency, and error rate targets with automated error budget calculation. Burn-rate alerts notify you before SLO breaches occur.
+
+### Incident Management
+
+The [incident management](incidents.md) module coordinates your organization's response to production issues. Track incidents from detection through resolution with severity levels, timeline updates, status transitions, and structured post-mortem workflows.
+
+### Custom Dashboards
+
+Build [custom dashboards](dashboards.md) with configurable widget grids to visualize operational data. Combine metrics charts, status indicators, team activity feeds, and alert summaries into a single view tailored to your team's needs.
+
 ## Quick Links
 
 | Topic | Description |
@@ -126,4 +138,7 @@ Farm surfaces [Istio](istio-integration.md) traffic metrics (RPS, error rate, P5
 | [Kyverno Integration](kyverno-integration.md) | PolicyReport ingestion and ClusterPolicy export |
 | [Keycloak SSO](keycloak-sso.md) | Enterprise SSO login and group sync |
 | [Istio Service Mesh](istio-integration.md) | Traffic metrics, security posture, canary control |
+| [SLO Management](slos.md) | Service Level Objectives and error budget tracking |
+| [Incident Management](incidents.md) | Incident response, timeline, and post-mortem workflows |
+| [Custom Dashboards](dashboards.md) | Configurable widget grids for operational visibility |
 | [FAQ](faq.md) | Frequently asked questions |

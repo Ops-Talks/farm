@@ -126,6 +126,9 @@ Navigate to **Alerting** in the sidebar to see all configured rules. From this p
 | Environment ID | Optional link to an environment |
 | Enabled | Whether the rule is active |
 
+!!! tip "Related features"
+    For tracking compliance against formal service targets, see [SLO Management](slos.md). For coordinating incident response when alerts fire, see [Incident Management](incidents.md). Alerting rules define thresholds; SLOs define target budgets; incidents coordinate the human response.
+
 ---
 
 ## Real-time notifications

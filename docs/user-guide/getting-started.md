@@ -70,6 +70,7 @@ Once the application is running, verify it by accessing the following endpoints:
 
 - **Health Status**: `http://localhost:3000/api/health`
 - **Interactive Documentation**: `http://localhost:3000/api/docs`
+- **Web UI**: `http://localhost:3001`
 
 The Swagger UI provides a comprehensive and interactive view of all available REST API endpoints.
 

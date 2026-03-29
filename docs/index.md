@@ -16,6 +16,9 @@ Farm enables engineering teams to:
 - **Observe Systems**: Monitor metrics, traces, and logs from a unified hub with native PromQL, Jaeger, and Loki integration
 - **Run Pipelines**: Define and execute multi-stage pipelines with real-time log streaming via WebSocket
 - **Manage Alerting**: Create and manage PromQL-based alerting rules linked to catalog components or environments
+- **Track SLOs**: Define Service Level Objectives with error budget tracking and automated burn-rate alerts
+- **Manage Incidents**: Coordinate incident response with timeline tracking, status transitions, and post-mortem workflows
+- **Build Dashboards**: Create custom dashboards with configurable widget grids for real-time operational visibility
 - **Discover and Understand**: Provide visibility into the software ecosystem within your organization
 
 ## Who is this documentation for?
@@ -83,6 +86,7 @@ The API server starts on port 3000 by default. You can access:
 
 - **Health Endpoint**: `http://localhost:3000/api/health`
 - **Interactive API Documentation (Swagger)**: `http://localhost:3000/api/docs`
+- **Web UI**: `http://localhost:3001`
 
 ## License
 

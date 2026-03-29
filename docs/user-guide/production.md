@@ -45,7 +45,7 @@ openssl rand -hex 32
 
 | Variable | Recommended value | Description |
 |----------|-------------------|-------------|
-| `ALLOWED_ORIGINS` | `https://seudominio.com` | CORS allowed origins — never use `*` in production |
+| `ALLOWED_ORIGINS` | `https://yourdomain.com` | CORS allowed origins — never use `*` in production |
 | `JWT_EXPIRATION` | `900s` | Access token lifetime (15 min is more secure than the default 1 hour) |
 | `THROTTLE_TTL` | `60000` | Rate limit window in milliseconds |
 | `THROTTLE_LIMIT` | `30` | Max requests per window per IP |
@@ -83,7 +83,7 @@ Without Redis, pipeline execution queues and WebSocket notifications are disable
 | `OTEL_EXPORTER_ENDPOINT` | `http://tempo:4318/v1/traces` | OTLP HTTP trace exporter endpoint |
 | `OTEL_SERVICE_NAME` | `farm-api` | Service name in trace metadata |
 | `PROMETHEUS_URL` | `http://prometheus:9090` | Prometheus endpoint for PromQL proxy |
-| `GRAFANA_URL` | `https://grafana.seudominio.com` | Grafana base URL shown in the observability dashboard |
+| `GRAFANA_URL` | `https://grafana.yourdomain.com` | Grafana base URL shown in the observability dashboard |
 | `JAEGER_URL` | `http://jaeger:16686` | Jaeger/Tempo UI URL for trace links |
 | `LOKI_URL` | `http://loki:3100` | Loki endpoint for log aggregation proxy |
 
@@ -93,10 +93,10 @@ Without Redis, pipeline execution queues and WebSocket notifications are disable
 |----------|---------|-------------|
 | `GITHUB_CLIENT_ID` | `Ov23li...` | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | *(secret)* | GitHub OAuth App client secret |
-| `GITHUB_CALLBACK_URL` | `https://api.seudominio.com/api/v1/auth/github/callback` | GitHub redirect URI (must match OAuth App settings) |
+| `GITHUB_CALLBACK_URL` | `https://api.yourdomain.com/api/v1/auth/github/callback` | GitHub redirect URI (must match OAuth App settings) |
 | `GOOGLE_CLIENT_ID` | `123456-abc.apps.googleusercontent.com` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | *(secret)* | Google OAuth client secret |
-| `GOOGLE_CALLBACK_URL` | `https://api.seudominio.com/api/v1/auth/google/callback` | Google redirect URI (must match GCP credentials) |
+| `GOOGLE_CALLBACK_URL` | `https://api.yourdomain.com/api/v1/auth/google/callback` | Google redirect URI (must match GCP credentials) |
 
 Leave all six empty to disable social login. See the [OAuth Social Login](../developer-guide/setup.md#oauth-social-login) section for instructions on creating the OAuth Apps.
 
@@ -127,9 +127,9 @@ Credentials for ArgoCD, CircleCI, Jenkins, and Travis CI are stored per-organiza
 
 | Variable | Example | Description |
 |----------|---------|-------------|
-| `NEXT_PUBLIC_API_URL` | `https://api.seudominio.com/api` | Public API base URL used by the browser |
+| `NEXT_PUBLIC_API_URL` | `https://api.yourdomain.com/api` | Public API base URL used by the browser |
 | `API_INTERNAL_URL` | `http://api:3000/api` | Internal API URL used by Next.js SSR (Docker networking) |
-| `NEXT_PUBLIC_WS_URL` | `https://api.seudominio.com` | WebSocket server base URL |
+| `NEXT_PUBLIC_WS_URL` | `https://api.yourdomain.com` | WebSocket server base URL |
 | `NEXT_PUBLIC_APP_VERSION` | `1.0.0` | Version string displayed in the UI |
 | `NEXT_TELEMETRY_DISABLED` | `1` | Disables Next.js anonymous telemetry |
 
@@ -176,13 +176,13 @@ NODE_ENV=production
 JWT_SECRET=<openssl rand -hex 32 output>
 DATABASE_PASSWORD=strong_db_password
 DATABASE_POOL_SIZE=20
-ALLOWED_ORIGINS=https://seudominio.com
+ALLOWED_ORIGINS=https://yourdomain.com
 SWAGGER_USER=ops
 SWAGGER_PASSWORD=strong_swagger_password
 REDIS_HOST=redis
-NEXT_PUBLIC_API_URL=https://api.seudominio.com/api
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
 API_INTERNAL_URL=http://api:3000/api
-NEXT_PUBLIC_WS_URL=https://api.seudominio.com
+NEXT_PUBLIC_WS_URL=https://api.yourdomain.com
 ```
 
 ---
@@ -197,7 +197,7 @@ helm upgrade --install farm ./charts/farm \
   --set api.env.JWT_SECRET="$(openssl rand -hex 32)" \
   --set api.env.DATABASE_HOST=postgres.namespace.svc.cluster.local \
   --set api.env.DATABASE_PASSWORD=strongpassword \
-  --set api.env.ALLOWED_ORIGINS=https://seudominio.com \
+  --set api.env.ALLOWED_ORIGINS=https://yourdomain.com \
   -n farm --create-namespace
 ```
 
@@ -208,7 +208,7 @@ helm upgrade --install farm ./charts/farm \
 Verify the deployment is healthy after every release:
 
 ```bash
-curl -fsS https://api.seudominio.com/api/health
+curl -fsS https://api.yourdomain.com/api/health
 ```
 
 Expected response:
