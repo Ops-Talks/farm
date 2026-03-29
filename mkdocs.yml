@@ -143,6 +143,9 @@ nav:
     - Kyverno API: api-reference/kyverno.md
     - Keycloak SSO API: api-reference/keycloak-sso.md
     - Istio API: api-reference/istio.md
+    - SLO API: api-reference/slos.md
+    - Incident API: api-reference/incidents.md
+    - Dashboard API: api-reference/dashboards.md
 
 extra_css:
   - stylesheets/extra.css
