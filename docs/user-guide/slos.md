@@ -1,6 +1,6 @@
 # SLO Management
 
-Service Level Objectives (SLOs) let you define reliability targets for your catalog components and track error budget consumption over time. Farm calculates budget status automatically from Prometheus metrics (or simulated data when Prometheus is not configured).
+Service Level Objectives (SLOs) let you define reliability targets for your catalog components and track error budget consumption over time. Farm calculates budget status automatically from Prometheus metrics (or simulated data when Prometheus is unreachable or returns an empty result).
 
 ## Core Concepts
 
@@ -71,7 +71,7 @@ Click **View Budget** on any SLO to see detailed metrics: current performance pe
 | `latency` | Response time compliance over the SLO window | `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="<componentId>"}[<window>]))` |
 | `error_rate` | Error-free request ratio over the SLO window | `rate(http_requests_total{job="<componentId>",status!~"5.."}[<window>]) / rate(http_requests_total{job="<componentId>"}[<window>])` |
 
-If Prometheus is not configured (`PROMETHEUS_URL` not set), Farm generates simulated metrics for development and demonstration purposes.
+If Prometheus is unreachable or returns an error or empty result, Farm falls back to simulated metrics for development and demonstration purposes.
 
 ---
 
