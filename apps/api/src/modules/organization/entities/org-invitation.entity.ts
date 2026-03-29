@@ -57,8 +57,7 @@ export class OrgInvitation {
   role: string;
 
   @Column({
-    type: "varchar",
-    length: 30,
+    type: "timestamptz",
   })
   expiresAt: Date;
 
