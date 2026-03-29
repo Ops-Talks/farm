@@ -587,7 +587,10 @@ describe("OrganizationService — invitation management", () => {
       invitationRepo.findOne.mockResolvedValue(null);
       invitationRepo.create.mockReturnValue(mockPendingInvitation);
       invitationRepo.save.mockResolvedValue(mockPendingInvitation);
-      userRepo.findOne.mockResolvedValue({ id: inviterId, username: "inviter_user" });
+      userRepo.findOne.mockResolvedValue({
+        id: inviterId,
+        username: "inviter_user",
+      });
 
       await service.createInvitation(orgId, { email: inviteeEmail }, inviterId);
 
@@ -615,12 +618,11 @@ describe("OrganizationService — invitation management", () => {
 
       await service.createInvitation(orgId, { email: inviteeEmail }, inviterId);
 
-      expect(notificationsQueue.add).toHaveBeenCalledWith(
-        "email",
-        expect.objectContaining({
-          payload: expect.objectContaining({ inviterName: inviterId }),
-        }),
-      );
+      const [, jobData] = notificationsQueue.add.mock.calls[0] as [
+        string,
+        { payload: { inviterName: string } },
+      ];
+      expect(jobData.payload.inviterName).toBe(inviterId);
 
       process.env.NODE_ENV = originalEnv;
     });
@@ -799,7 +801,10 @@ describe("OrganizationService — invitation management", () => {
       };
       userOrgRepo.findOne.mockResolvedValue(mockMembership);
 
-      const result = await service.getMembership("inviter-uuid-1", "org-uuid-1");
+      const result = await service.getMembership(
+        "inviter-uuid-1",
+        "org-uuid-1",
+      );
 
       expect(result).toEqual(mockMembership);
       expect(userOrgRepo.findOne).toHaveBeenCalledWith({
