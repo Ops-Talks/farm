@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check api-build release web-dev web-build web-lint web-test web-e2e
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check api-build api-test release web-dev web-build web-lint web-test web-e2e
 
 help:
 	@echo "Available Targets:"
@@ -28,7 +28,7 @@ help:
 	@echo "  make test-cov   # Runs local tests with coverage"
 	@echo "  make lint       # Runs linter"
 	@echo "  make fmt        # Formats code using Prettier"
-	@echo "  make check-back  # Runs fmt, lint and all back-end tests"
+	@echo "  make check-back  # Runs fmt, lint, api-test, test-e2e and api-build"
 	@echo "  make check-front # Runs front-end lint, build and tests"
 	@echo "  make check      # Runs both check-back and check-front"
 	@echo "  make web-e2e    # Runs Playwright E2E tests (requires running dev server)"
@@ -92,7 +92,10 @@ lint:
 fmt:
 	npm run format -w apps/api
 
-check-back: fmt lint test-e2e api-build
+api-test:
+	npm run api:test
+
+check-back: fmt lint api-test test-e2e api-build
 
 api-build:
 	npm run api:build
