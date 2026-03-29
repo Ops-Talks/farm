@@ -56,12 +56,10 @@ export class OrgInvitation {
   @Column({ type: "varchar", length: 20, default: "member" })
   role: string;
 
-  @Column({
-    type: "timestamptz",
-  })
+  @Column()
   expiresAt: Date;
 
-  @Column({ type: "uuid", nullable: true })
+  @Column({ type: "varchar", length: 36, nullable: true })
   invitedByUserId: string | null;
 
   @CreateDateColumn()
