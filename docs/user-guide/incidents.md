@@ -72,7 +72,7 @@ Navigate to **Incidents** in the sidebar to see all incidents.
 | Affected Components | Optional catalog components impacted |
 | Affected Environments | Optional environments impacted |
 
-3. Click **Create**. A WebSocket event (`INCIDENT_CREATED`) is broadcast to all connected clients.
+3. Click **Create**. A WebSocket event (`incident.created`) is broadcast to all connected clients.
 
 ### Updating Status
 
@@ -80,7 +80,7 @@ Click the status transition buttons on the incident detail page. Each transition
 
 - Updates the incident status
 - Creates a timeline entry with an optional message
-- Broadcasts a WebSocket event (`INCIDENT_STATUS_CHANGED`)
+- Broadcasts a WebSocket event (`incident.status-changed`)
 
 ### Adding Timeline Updates
 
@@ -129,8 +129,8 @@ Farm broadcasts the following WebSocket events for incidents:
 
 | Event | Trigger |
 |---|---|
-| `INCIDENT_CREATED` | A new incident is created |
-| `INCIDENT_STATUS_CHANGED` | An incident transitions to a new status |
+| `incident.created` | A new incident is created |
+| `incident.status-changed` | An incident transitions to a new status |
 
 These events appear as toast notifications in the web UI for all connected users.
 
