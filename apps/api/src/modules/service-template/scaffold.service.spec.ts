@@ -439,22 +439,14 @@ describe("ScaffoldService", () => {
           VAR_A: "INVALID",
           VAR_B: "not-a-number",
         }),
-      ).toThrow(
-        expect.objectContaining({
-          message: expect.stringContaining("VAR_A must match pattern"),
-        }),
-      );
+      ).toThrow(/VAR_A must match pattern/);
 
       expect(() =>
         service.validateVariables(templateMultiPattern, {
           VAR_A: "INVALID",
           VAR_B: "not-a-number",
         }),
-      ).toThrow(
-        expect.objectContaining({
-          message: expect.stringContaining("VAR_B must match pattern"),
-        }),
-      );
+      ).toThrow(/VAR_B must match pattern/);
     });
   });
 

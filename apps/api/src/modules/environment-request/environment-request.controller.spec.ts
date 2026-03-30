@@ -10,7 +10,9 @@ import {
 } from "./entities/environment-request.entity";
 import { CreateEnvironmentRequestDto } from "./dto/create-environment-request.dto";
 import { UpdateEnvironmentRequestDto } from "./dto/update-environment-request.dto";
+import { ListEnvironmentRequestsQueryDto } from "./dto/list-environment-requests-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 const mockService = {
   create: jest.fn(),
@@ -48,7 +50,7 @@ describe("EnvironmentRequestController", () => {
     updatedAt: new Date("2024-01-01T00:00:00Z"),
   };
 
-  const mockRequest = {
+  const mockRequest: RequestWithOrg = {
     user: { userId: "user-uuid-1", username: "testuser", roles: ["admin"] },
     organizationId: "org-uuid-1",
   };
@@ -82,7 +84,7 @@ describe("EnvironmentRequestController", () => {
       };
       envService.create.mockResolvedValue(mockEnvRequest);
 
-      const result = await controller.create(mockRequest as any, dto);
+      const result = await controller.create(mockRequest, dto);
 
       expect(result).toEqual(mockEnvRequest);
       expect(envService.create).toHaveBeenCalledWith(
@@ -99,7 +101,7 @@ describe("EnvironmentRequestController", () => {
 
       const result = await controller.findAll(
         { skip: 0, take: 20 },
-        mockRequest as any,
+        mockRequest,
       );
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
@@ -114,7 +116,7 @@ describe("EnvironmentRequestController", () => {
 
       const result = await controller.findAll(
         { skip: undefined, take: undefined },
-        mockRequest as any,
+        mockRequest,
       );
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
@@ -125,8 +127,8 @@ describe("EnvironmentRequestController", () => {
     it("should default organizationId from request when not in query", async () => {
       envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
 
-      const query = { skip: 0, take: 20 } as any;
-      await controller.findAll(query, mockRequest as any);
+      const query: ListEnvironmentRequestsQueryDto = { skip: 0, take: 20 };
+      await controller.findAll(query, mockRequest);
 
       expect(query.organizationId).toBe("org-uuid-1");
       expect(envService.findAll).toHaveBeenCalledWith(
@@ -137,8 +139,12 @@ describe("EnvironmentRequestController", () => {
     it("should not override explicit organizationId in query", async () => {
       envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
 
-      const query = { skip: 0, take: 20, organizationId: "org-from-query" };
-      await controller.findAll(query as any, mockRequest as any);
+      const query: ListEnvironmentRequestsQueryDto = {
+        skip: 0,
+        take: 20,
+        organizationId: "org-from-query",
+      };
+      await controller.findAll(query, mockRequest);
 
       expect(query.organizationId).toBe("org-from-query");
     });
@@ -168,7 +174,7 @@ describe("EnvironmentRequestController", () => {
 
       const result = await controller.update(
         "req-uuid-1",
-        mockRequest as any,
+        mockRequest,
         updateDto,
       );
 
@@ -180,7 +186,7 @@ describe("EnvironmentRequestController", () => {
       const updateDto: UpdateEnvironmentRequestDto = {
         description: "Admin update",
       };
-      const adminReq = {
+      const adminReq: RequestWithOrg = {
         user: {
           userId: "admin-uuid-1",
           username: "admin",
@@ -193,17 +199,13 @@ describe("EnvironmentRequestController", () => {
         description: "Admin update",
       });
 
-      const result = await controller.update(
-        "req-uuid-1",
-        adminReq as any,
-        updateDto,
-      );
+      const result = await controller.update("req-uuid-1", adminReq, updateDto);
 
       expect(result.description).toBe("Admin update");
     });
 
     it("should throw ForbiddenException when user is not owner and not admin", async () => {
-      const otherUserReq = {
+      const otherUserReq: RequestWithOrg = {
         user: {
           userId: "other-user-uuid",
           username: "other",
@@ -213,7 +215,7 @@ describe("EnvironmentRequestController", () => {
       envService.findOne.mockResolvedValue(mockEnvRequest);
 
       await expect(
-        controller.update("req-uuid-1", otherUserReq as any, {
+        controller.update("req-uuid-1", otherUserReq, {
           description: "nope",
         }),
       ).rejects.toThrow(ForbiddenException);
@@ -241,11 +243,9 @@ describe("EnvironmentRequestController", () => {
       };
       envService.approve.mockResolvedValue(approved);
 
-      const result = await controller.approve(
-        "req-uuid-1",
-        mockRequest as any,
-        { comment: "Approved" },
-      );
+      const result = await controller.approve("req-uuid-1", mockRequest, {
+        comment: "Approved",
+      });
 
       expect(result.status).toBe(EnvironmentRequestStatus.ACTIVE);
       expect(envService.approve).toHaveBeenCalledWith(
@@ -262,7 +262,7 @@ describe("EnvironmentRequestController", () => {
       };
       envService.approve.mockResolvedValue(approved);
 
-      await controller.approve("req-uuid-1", mockRequest as any, {});
+      await controller.approve("req-uuid-1", mockRequest, {});
 
       expect(envService.approve).toHaveBeenCalledWith(
         "req-uuid-1",
@@ -282,7 +282,7 @@ describe("EnvironmentRequestController", () => {
       };
       envService.reject.mockResolvedValue(rejected);
 
-      const result = await controller.reject("req-uuid-1", mockRequest as any, {
+      const result = await controller.reject("req-uuid-1", mockRequest, {
         comment: "Not appropriate",
       });
 
@@ -301,7 +301,7 @@ describe("EnvironmentRequestController", () => {
       };
       envService.reject.mockResolvedValue(rejected);
 
-      await controller.reject("req-uuid-1", mockRequest as any, {});
+      await controller.reject("req-uuid-1", mockRequest, {});
 
       expect(envService.reject).toHaveBeenCalledWith(
         "req-uuid-1",

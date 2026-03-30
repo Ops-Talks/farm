@@ -131,7 +131,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "datetime" })
+  @Column({ nullable: true, type: "timestamp" })
   reviewedAt: Date | null;
 
   @ApiProperty({
@@ -140,7 +140,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "datetime" })
+  @Column({ nullable: true, type: "timestamp" })
   provisionedAt: Date | null;
 
   @ApiProperty({
@@ -149,7 +149,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "datetime" })
+  @Column({ nullable: true, type: "timestamp" })
   expiresAt: Date | null;
 
   @ApiProperty({
