@@ -169,7 +169,7 @@ Previews the file tree that would be generated without creating any resources. E
 | `targetRepository` | string            | Yes      | Target repository URL for the generated service  |
 | `variables`        | Record<string, string> | No  | Key-value pairs matching template variables       |
 
-**Response:** `200 OK`
+**Response:** `201 Created`
 
 ```json
 {
