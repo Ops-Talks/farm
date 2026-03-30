@@ -1092,3 +1092,128 @@ export interface UpdateLayoutItem {
 export interface UpdateLayoutDto {
   widgets: UpdateLayoutItem[];
 }
+
+// -- Service Templates (FARM-E57) --
+
+export interface TemplateVariable {
+  key: string;
+  label: string;
+  description: string;
+  default?: string;
+  required: boolean;
+  pattern?: string;
+}
+
+export interface ServiceTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  language: string;
+  framework: string;
+  tags: string[] | null;
+  repositoryUrl: string;
+  variables: TemplateVariable[] | null;
+  isBuiltIn: boolean;
+  organizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ScaffoldRequestStatus = "pending" | "in_progress" | "completed" | "failed";
+
+export interface ScaffoldRequest {
+  id: string;
+  templateId: string;
+  templateName: string;
+  targetRepository: string;
+  variables: Record<string, string> | null;
+  status: ScaffoldRequestStatus;
+  statusMessage: string | null;
+  requestedBy: string;
+  dryRun: boolean;
+  renderedFiles: string[] | null;
+  organizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateServiceTemplateDto {
+  name: string;
+  description?: string;
+  language: string;
+  framework: string;
+  tags?: string[];
+  repositoryUrl: string;
+  variables?: TemplateVariable[];
+  organizationId?: string;
+}
+
+export interface UpdateServiceTemplateDto {
+  name?: string;
+  description?: string;
+  language?: string;
+  framework?: string;
+  tags?: string[];
+  repositoryUrl?: string;
+  variables?: TemplateVariable[];
+}
+
+export interface CreateScaffoldRequestDto {
+  targetRepository: string;
+  variables?: Record<string, string>;
+  dryRun?: boolean;
+}
+
+// -- Environment Requests (FARM-E58) --
+
+export type EnvironmentRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "provisioning"
+  | "active"
+  | "expired";
+
+export type EnvironmentRequestType = "ephemeral" | "persistent";
+export type EnvironmentTier = "small" | "medium" | "large";
+
+export interface EnvironmentRequest {
+  id: string;
+  name: string;
+  description: string | null;
+  requestedBy: string;
+  type: EnvironmentRequestType;
+  tier: EnvironmentTier;
+  ttlHours: number;
+  status: EnvironmentRequestStatus;
+  statusMessage: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  provisionedAt: string | null;
+  expiresAt: string | null;
+  componentId: string | null;
+  environmentId: string | null;
+  organizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEnvironmentRequestDto {
+  name: string;
+  description?: string;
+  type: EnvironmentRequestType;
+  tier: EnvironmentTier;
+  ttlHours?: number;
+  componentId?: string;
+  organizationId?: string;
+}
+
+export interface UpdateEnvironmentRequestDto {
+  name?: string;
+  description?: string;
+  ttlHours?: number;
+}
+
+export interface ReviewEnvironmentRequestDto {
+  comment?: string;
+}

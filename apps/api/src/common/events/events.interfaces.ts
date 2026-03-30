@@ -19,6 +19,12 @@ export enum FarmEvent {
   API_HEALTH_CHANGED = "api.health.changed",
   INCIDENT_CREATED = "incident.created",
   INCIDENT_STATUS_CHANGED = "incident.status-changed",
+  SCAFFOLD_COMPLETED = "scaffold.completed",
+  SCAFFOLD_FAILED = "scaffold.failed",
+  ENV_REQUEST_CREATED = "env-request.created",
+  ENV_REQUEST_DECIDED = "env-request.decided",
+  ENV_REQUEST_PROVISIONED = "env-request.provisioned",
+  ENV_REQUEST_EXPIRED = "env-request.expired",
 }
 
 /**
@@ -87,5 +93,29 @@ export interface IncidentStatusChangedPayload {
   title: string;
   previousStatus: string;
   newStatus: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for scaffold completion/failure events.
+ */
+export interface ScaffoldEventPayload {
+  id: string;
+  templateName: string;
+  targetRepository: string;
+  status: string;
+  requestedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for environment request lifecycle events.
+ */
+export interface EnvironmentRequestEventPayload {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  requestedBy: string;
   timestamp: string;
 }

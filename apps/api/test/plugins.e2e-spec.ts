@@ -43,6 +43,8 @@ describe("Plugin Manager (e2e)", () => {
     "core-slo",
     "core-incidents",
     "core-dashboards",
+    "core-service-templates",
+    "core-environment-requests",
   ];
 
   describe("GET /api/plugins", () => {
@@ -60,7 +62,7 @@ describe("Plugin Manager (e2e)", () => {
       }[];
 
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins).toHaveLength(21);
+      expect(plugins).toHaveLength(23);
 
       for (const plugin of plugins) {
         expect(plugin.name).toBeDefined();

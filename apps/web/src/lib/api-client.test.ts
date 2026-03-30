@@ -37,6 +37,8 @@ import {
   incidents,
   postMortems,
   dashboards,
+  serviceTemplates,
+  environmentRequests,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -2654,6 +2656,255 @@ describe("api-client", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/v1/dashboards/dash-1/widgets/w-1/data",
         expect.any(Object),
+      );
+    });
+  });
+
+  describe("serviceTemplates", () => {
+    it("list sends GET to /api/v1/service-templates without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await serviceTemplates.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates",
+        expect.any(Object),
+      );
+    });
+
+    it("list appends all query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await serviceTemplates.list({
+        language: "typescript",
+        framework: "express",
+        organizationId: "org-1",
+        skip: 0,
+        take: 20,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("language=typescript");
+      expect(url).toContain("framework=express");
+      expect(url).toContain("organizationId=org-1");
+      expect(url).toContain("skip=0");
+      expect(url).toContain("take=20");
+    });
+
+    it("get sends GET to /api/v1/service-templates/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "tpl-1" }));
+      await serviceTemplates.get("tpl-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates/tpl-1",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/service-templates with body", async () => {
+      const dto = { name: "My Template", language: "typescript", framework: "express", repositoryUrl: "https://github.com/org/repo" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "tpl-new", ...dto }));
+      await serviceTemplates.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("My Template");
+      expect(body.language).toBe("typescript");
+      expect(body.framework).toBe("express");
+      expect(body.repositoryUrl).toBe("https://github.com/org/repo");
+    });
+
+    it("update sends PATCH to /api/v1/service-templates/:id with body", async () => {
+      const dto = { name: "Updated Template" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "tpl-1", ...dto }));
+      await serviceTemplates.update("tpl-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates/tpl-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("Updated Template");
+    });
+
+    it("remove sends DELETE to /api/v1/service-templates/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await serviceTemplates.remove("tpl-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates/tpl-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("scaffold sends POST to /api/v1/service-templates/:id/scaffold with body", async () => {
+      const dto = { targetRepository: "org/new-service", variables: { SERVICE_NAME: "my-svc" } };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "sr-1", status: "pending" }));
+      await serviceTemplates.scaffold("tpl-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates/tpl-1/scaffold",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.targetRepository).toBe("org/new-service");
+      expect(body.variables.SERVICE_NAME).toBe("my-svc");
+    });
+
+    it("scaffoldDryRun sends POST to /api/v1/service-templates/:id/scaffold/dry-run with body", async () => {
+      const dto = { targetRepository: "org/dry-run-svc" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "sr-2", status: "completed", dryRun: true }));
+      await serviceTemplates.scaffoldDryRun("tpl-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/service-templates/tpl-1/scaffold/dry-run",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.targetRepository).toBe("org/dry-run-svc");
+    });
+  });
+
+  describe("environmentRequests", () => {
+    it("list sends GET to /api/v1/environment-requests without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await environmentRequests.list();
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests",
+        expect.any(Object),
+      );
+    });
+
+    it("list appends all query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await environmentRequests.list({
+        status: "pending",
+        type: "ephemeral",
+        requestedBy: "user-1",
+        organizationId: "org-1",
+        skip: 0,
+        take: 20,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("status=pending");
+      expect(url).toContain("type=ephemeral");
+      expect(url).toContain("requestedBy=user-1");
+      expect(url).toContain("organizationId=org-1");
+      expect(url).toContain("skip=0");
+      expect(url).toContain("take=20");
+    });
+
+    it("get sends GET to /api/v1/environment-requests/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1" }));
+      await environmentRequests.get("req-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST to /api/v1/environment-requests with body", async () => {
+      const dto = { name: "feature-env", type: "ephemeral", tier: "small", ttlHours: 24 };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-new", ...dto }));
+      await environmentRequests.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("feature-env");
+      expect(body.type).toBe("ephemeral");
+      expect(body.tier).toBe("small");
+      expect(body.ttlHours).toBe(24);
+    });
+
+    it("update sends PATCH to /api/v1/environment-requests/:id with body", async () => {
+      const dto = { name: "updated-env", ttlHours: 48 };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", ...dto }));
+      await environmentRequests.update("req-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.name).toBe("updated-env");
+      expect(body.ttlHours).toBe(48);
+    });
+
+    it("remove sends DELETE to /api/v1/environment-requests/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await environmentRequests.remove("req-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("approve sends POST to /api/v1/environment-requests/:id/approve with body", async () => {
+      const dto = { comment: "Looks good" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", status: "approved" }));
+      await environmentRequests.approve("req-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1/approve",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.comment).toBe("Looks good");
+    });
+
+    it("approve sends POST with empty body when no dto provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", status: "approved" }));
+      await environmentRequests.approve("req-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1/approve",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body).toEqual({});
+    });
+
+    it("reject sends POST to /api/v1/environment-requests/:id/reject with body", async () => {
+      const dto = { comment: "Not enough resources" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", status: "rejected" }));
+      await environmentRequests.reject("req-1", dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1/reject",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body.comment).toBe("Not enough resources");
+    });
+
+    it("reject sends POST with empty body when no dto provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", status: "rejected" }));
+      await environmentRequests.reject("req-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1/reject",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body).toEqual({});
+    });
+
+    it("expire sends POST to /api/v1/environment-requests/:id/expire", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "req-1", status: "expired" }));
+      await environmentRequests.expire("req-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/environment-requests/req-1/expire",
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });

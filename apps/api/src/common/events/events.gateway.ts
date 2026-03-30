@@ -15,6 +15,8 @@ import {
   PipelineLogPayload,
   IncidentEventPayload,
   IncidentStatusChangedPayload,
+  ScaffoldEventPayload,
+  EnvironmentRequestEventPayload,
 } from "./events.interfaces";
 
 /**
@@ -126,5 +128,47 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   emitIncidentStatusChanged(payload: IncidentStatusChangedPayload): void {
     this.server?.emit(FarmEvent.INCIDENT_STATUS_CHANGED, payload);
+  }
+
+  /**
+   * Emits a scaffold.completed event to all connected clients.
+   */
+  emitScaffoldCompleted(payload: ScaffoldEventPayload): void {
+    this.server?.emit(FarmEvent.SCAFFOLD_COMPLETED, payload);
+  }
+
+  /**
+   * Emits a scaffold.failed event to all connected clients.
+   */
+  emitScaffoldFailed(payload: ScaffoldEventPayload): void {
+    this.server?.emit(FarmEvent.SCAFFOLD_FAILED, payload);
+  }
+
+  /**
+   * Emits an env-request.created event to all connected clients.
+   */
+  emitEnvRequestCreated(payload: EnvironmentRequestEventPayload): void {
+    this.server?.emit(FarmEvent.ENV_REQUEST_CREATED, payload);
+  }
+
+  /**
+   * Emits an env-request.decided event to all connected clients.
+   */
+  emitEnvRequestDecided(payload: EnvironmentRequestEventPayload): void {
+    this.server?.emit(FarmEvent.ENV_REQUEST_DECIDED, payload);
+  }
+
+  /**
+   * Emits an env-request.provisioned event to all connected clients.
+   */
+  emitEnvRequestProvisioned(payload: EnvironmentRequestEventPayload): void {
+    this.server?.emit(FarmEvent.ENV_REQUEST_PROVISIONED, payload);
+  }
+
+  /**
+   * Emits an env-request.expired event to all connected clients.
+   */
+  emitEnvRequestExpired(payload: EnvironmentRequestEventPayload): void {
+    this.server?.emit(FarmEvent.ENV_REQUEST_EXPIRED, payload);
   }
 }

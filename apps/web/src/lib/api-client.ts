@@ -84,6 +84,17 @@ import type {
   CreateWidgetDto,
   UpdateWidgetDto,
   UpdateLayoutDto,
+  // Service Templates (FARM-E57)
+  ServiceTemplate,
+  ScaffoldRequest,
+  CreateServiceTemplateDto,
+  UpdateServiceTemplateDto,
+  CreateScaffoldRequestDto,
+  // Environment Requests (FARM-E58)
+  EnvironmentRequest,
+  CreateEnvironmentRequestDto,
+  UpdateEnvironmentRequestDto,
+  ReviewEnvironmentRequestDto,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1789,5 +1800,141 @@ export const dashboards = {
     return request<Record<string, unknown>>(
       `/v1/dashboards/${dashboardId}/widgets/${widgetId}/data`,
     );
+  },
+};
+
+// -- Service Templates (FARM-E57) --
+
+export const serviceTemplates = {
+  /** List service templates with optional filters and pagination. */
+  list(params?: {
+    language?: string;
+    framework?: string;
+    organizationId?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<PaginatedResponse<ServiceTemplate>> {
+    const q = params
+      ? Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+          .join("&")
+      : "";
+    return request<PaginatedResponse<ServiceTemplate>>(`/v1/service-templates${q ? `?${q}` : ""}`);
+  },
+
+  /** Get a service template by ID. */
+  get(id: string): Promise<ServiceTemplate> {
+    return request<ServiceTemplate>(`/v1/service-templates/${id}`);
+  },
+
+  /** Create a new service template. */
+  create(dto: CreateServiceTemplateDto): Promise<ServiceTemplate> {
+    return request<ServiceTemplate>(`/v1/service-templates`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update a service template. */
+  update(id: string, dto: UpdateServiceTemplateDto): Promise<ServiceTemplate> {
+    return request<ServiceTemplate>(`/v1/service-templates/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete a service template. */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/service-templates/${id}`, { method: "DELETE" });
+  },
+
+  /** Scaffold a new service from a template. */
+  scaffold(templateId: string, dto: CreateScaffoldRequestDto): Promise<ScaffoldRequest> {
+    return request<ScaffoldRequest>(`/v1/service-templates/${templateId}/scaffold`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Dry-run scaffold to preview rendered file tree. */
+  scaffoldDryRun(templateId: string, dto: CreateScaffoldRequestDto): Promise<ScaffoldRequest> {
+    return request<ScaffoldRequest>(`/v1/service-templates/${templateId}/scaffold/dry-run`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+};
+
+// -- Environment Requests (FARM-E58) --
+
+export const environmentRequests = {
+  /** List environment requests with optional filters and pagination. */
+  list(params?: {
+    status?: string;
+    type?: string;
+    requestedBy?: string;
+    organizationId?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<PaginatedResponse<EnvironmentRequest>> {
+    const q = params
+      ? Object.entries(params)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+          .join("&")
+      : "";
+    return request<PaginatedResponse<EnvironmentRequest>>(
+      `/v1/environment-requests${q ? `?${q}` : ""}`,
+    );
+  },
+
+  /** Get an environment request by ID. */
+  get(id: string): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests/${id}`);
+  },
+
+  /** Create a new environment request. */
+  create(dto: CreateEnvironmentRequestDto): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Update an environment request (only while pending). */
+  update(id: string, dto: UpdateEnvironmentRequestDto): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Delete an environment request. */
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/environment-requests/${id}`, { method: "DELETE" });
+  },
+
+  /** Approve an environment request. */
+  approve(id: string, dto?: ReviewEnvironmentRequestDto): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify(dto ?? {}),
+    });
+  },
+
+  /** Reject an environment request. */
+  reject(id: string, dto?: ReviewEnvironmentRequestDto): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify(dto ?? {}),
+    });
+  },
+
+  /** Expire an active environment request. */
+  expire(id: string): Promise<EnvironmentRequest> {
+    return request<EnvironmentRequest>(`/v1/environment-requests/${id}/expire`, {
+      method: "POST",
+    });
   },
 };
