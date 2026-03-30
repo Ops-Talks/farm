@@ -19,6 +19,8 @@ Farm enables engineering teams to:
 - **Track SLOs**: Define Service Level Objectives with error budget tracking and automated burn-rate alerts
 - **Manage Incidents**: Coordinate incident response with timeline tracking, status transitions, and post-mortem workflows
 - **Build Dashboards**: Create custom dashboards with configurable widget grids for real-time operational visibility
+- **Scaffold Services**: Create new services from golden path templates with configurable variables and dry-run previews
+- **Self-Service Environments**: Request ephemeral or persistent deployment environments through an approval workflow with TTL management
 - **Discover and Understand**: Provide visibility into the software ecosystem within your organization
 
 ## Who is this documentation for?

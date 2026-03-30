@@ -42,6 +42,8 @@ import { GatewayModule } from "./modules/gateway/gateway.module";
 import { SloModule } from "./modules/slo/slo.module";
 import { IncidentModule } from "./modules/incident/incident.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
+import { ServiceTemplateModule } from "./modules/service-template/service-template.module";
+import { EnvironmentRequestModule } from "./modules/environment-request/environment-request.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -308,6 +310,24 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "Custom dashboard builder with configurable widget grid",
         },
         module: DashboardModule,
+      },
+      {
+        metadata: {
+          name: "core-service-templates",
+          version: "1.0.0",
+          description:
+            "Service templates and golden paths for developer self-service scaffolding",
+        },
+        module: ServiceTemplateModule,
+      },
+      {
+        metadata: {
+          name: "core-environment-requests",
+          version: "1.0.0",
+          description:
+            "Self-service environment provisioning with approval workflows",
+        },
+        module: EnvironmentRequestModule,
       },
     ]),
   ],

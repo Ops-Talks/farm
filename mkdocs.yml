@@ -96,6 +96,8 @@ nav:
     - SLO Management: user-guide/slos.md
     - Incident Management: user-guide/incidents.md
     - Custom Dashboards: user-guide/dashboards.md
+    - Service Templates: user-guide/service-templates.md
+    - Environment Requests: user-guide/environment-requests.md
     - Production Deployment: user-guide/production.md
     - FAQ: user-guide/faq.md
   - Developer Guide:
@@ -149,6 +151,8 @@ nav:
     - SLO API: api-reference/slos.md
     - Incident API: api-reference/incidents.md
     - Dashboard API: api-reference/dashboards.md
+    - Service Templates API: api-reference/service-templates.md
+    - Environment Requests API: api-reference/environment-requests.md
 
 extra_css:
   - stylesheets/extra.css

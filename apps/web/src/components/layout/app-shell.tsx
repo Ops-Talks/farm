@@ -45,6 +45,8 @@ import {
   Target,
   AlertTriangle,
   LayoutGrid,
+  Layers,
+  ServerCog,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
@@ -69,6 +71,8 @@ const navItems = [
   { href: "/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/compliance/policies", label: "Tag Policies", icon: Tag },
   { href: "/custom-dashboards", label: "Custom Dashboards", icon: LayoutGrid },
+  { href: "/service-templates", label: "Templates", icon: Layers },
+  { href: "/environment-requests", label: "Env Requests", icon: ServerCog },
 ] as { href: string; label: string; icon?: ElementType }[];
 
 function getInitials(name: string): string {
