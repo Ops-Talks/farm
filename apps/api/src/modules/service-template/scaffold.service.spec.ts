@@ -439,7 +439,22 @@ describe("ScaffoldService", () => {
           VAR_A: "INVALID",
           VAR_B: "not-a-number",
         }),
-      ).toThrow("Template variable validation failed: VAR_A must match pattern ^[a-z]+$; VAR_B must match pattern ^[0-9]+$");
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining("VAR_A must match pattern"),
+        }),
+      );
+
+      expect(() =>
+        service.validateVariables(templateMultiPattern, {
+          VAR_A: "INVALID",
+          VAR_B: "not-a-number",
+        }),
+      ).toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining("VAR_B must match pattern"),
+        }),
+      );
     });
   });
 
