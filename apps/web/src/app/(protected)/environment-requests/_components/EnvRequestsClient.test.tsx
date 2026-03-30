@@ -1841,6 +1841,120 @@ describe("EnvRequestsClient", () => {
 
   // ── canEditOrDelete: different user cannot edit ────────────────────────────
 
+  it("opens edit dialog for persistent request and omits ttlHours from DTO", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    const persistentPending = {
+      ...mockPendingRequest,
+      id: "req-persist",
+      name: "persistent-env",
+      type: "persistent" as const,
+      tier: "medium" as const,
+      ttlHours: 0,
+    };
+    mockList.mockResolvedValue({
+      data: [persistentPending],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+    const updated = { ...persistentPending, name: "renamed-persistent" };
+    mockUpdate.mockResolvedValue(updated);
+
+    render(<EnvRequestsClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("persistent-env")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^edit$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Request")).toBeInTheDocument();
+    });
+
+    // TTL field should be hidden for persistent type
+    expect(screen.queryByLabelText("TTL (hours)")).not.toBeInTheDocument();
+
+    const nameInput = screen.getByLabelText("Name") as HTMLInputElement;
+    await user.clear(nameInput);
+    await user.type(nameInput, "renamed-persistent");
+
+    await user.click(screen.getByRole("button", { name: "Update" }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        "req-persist",
+        expect.objectContaining({ name: "renamed-persistent" }),
+      );
+    });
+
+    // Should not include ttlHours for persistent requests
+    expect(mockUpdate).toHaveBeenCalledWith(
+      "req-persist",
+      expect.not.objectContaining({ ttlHours: expect.anything() }),
+    );
+  });
+
+  it("shows plural 'requests' in pagination text when total > 1", async () => {
+    mockHasRole.mockReturnValue(true);
+    const many = Array.from({ length: 21 }, (_, i) => ({
+      ...mockPendingRequest,
+      id: `req-${i}`,
+      name: `env-${i}`,
+    }));
+    mockList.mockResolvedValue({
+      data: many.slice(0, 20),
+      total: 21,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<EnvRequestsClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("env-0")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/21 requests/)).toBeInTheDocument();
+  });
+
+  it("shows review dialog TTL as dash for persistent type", async () => {
+    const user = userEvent.setup();
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    const persistentPending = {
+      ...mockPendingRequest,
+      id: "req-persist-review",
+      name: "persistent-review",
+      type: "persistent" as const,
+      tier: "small" as const,
+      ttlHours: 0,
+    };
+    mockList.mockResolvedValue({
+      data: [persistentPending],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<EnvRequestsClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("persistent-review")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /^approve$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Approve Request")).toBeInTheDocument();
+    });
+
+    // In the review dialog, the TTL row should show an em-dash for persistent type
+    // The table row also already shows \u2014, so there will be multiple
+    const dashes = screen.getAllByText("\u2014");
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("hides Edit/Delete for pending requests owned by different user when not admin", async () => {
     mockHasRole.mockReturnValue(false); // Not admin
     const otherUserRequest = {

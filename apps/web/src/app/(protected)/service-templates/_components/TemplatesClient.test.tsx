@@ -1274,6 +1274,62 @@ describe("TemplatesClient", () => {
     expect(screen.getByText("All done")).toBeInTheDocument();
   });
 
+  it("renders in_progress scaffold status badge", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue({
+      data: [mockTemplate],
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+    mockScaffold.mockResolvedValue({
+      id: "sr-progress",
+      templateId: "tpl-1",
+      templateName: "Node.js Starter",
+      targetRepository: "org/in-progress-svc",
+      variables: {},
+      status: "in_progress",
+      statusMessage: "Scaffolding in progress",
+      requestedBy: "user-1",
+      dryRun: false,
+      renderedFiles: null,
+      organizationId: null,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    });
+
+    render(<TemplatesClient />);
+    await waitFor(() => {
+      expect(screen.getByText("Node.js Starter")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /scaffold/i }));
+    await waitFor(() => {
+      expect(screen.getByText("Scaffold New Service")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(screen.getByText("Service Name")).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Target Repository/)).toBeInTheDocument();
+    });
+    await user.type(screen.getByLabelText(/Target Repository/), "org/in-progress-svc");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => {
+      expect(screen.getByText("Review Summary")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Scaffold" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Scaffold Request Created")).toBeInTheDocument();
+    });
+    expect(screen.getByText("in_progress")).toBeInTheDocument();
+    expect(screen.getByText("Scaffolding in progress")).toBeInTheDocument();
+  });
+
   it("renders scaffold result with failed status badge and closes scaffold dialog", async () => {
     const user = userEvent.setup();
     mockList.mockResolvedValue({
