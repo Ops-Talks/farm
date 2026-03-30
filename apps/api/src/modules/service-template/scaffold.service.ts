@@ -102,10 +102,12 @@ export class ScaffoldService {
   }
 
   /**
-   * Validates that all required template variables have been provided.
+   * Validates that all required template variables have been provided
+   * and that values match any defined regex patterns.
    * @param template - The service template containing variable definitions
    * @param providedVariables - Key-value pairs provided by the user
    * @throws BadRequestException listing all missing required variables
+   * @throws BadRequestException listing all pattern violations
    */
   validateVariables(
     template: ServiceTemplate,
@@ -127,6 +129,22 @@ export class ScaffoldService {
     if (missingVariables.length > 0) {
       throw new BadRequestException(
         `Missing required template variables: ${missingVariables.join(", ")}`,
+      );
+    }
+
+    const patternViolations = template.variables
+      .filter(
+        (v) =>
+          v.pattern &&
+          provided[v.key] !== undefined &&
+          provided[v.key] !== "" &&
+          !new RegExp(v.pattern).test(provided[v.key]),
+      )
+      .map((v) => `${v.key} must match pattern ${v.pattern}`);
+
+    if (patternViolations.length > 0) {
+      throw new BadRequestException(
+        `Template variable validation failed: ${patternViolations.join("; ")}`,
       );
     }
   }

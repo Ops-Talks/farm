@@ -94,7 +94,7 @@ GET /api/v1/environment-requests/:id
 PATCH /api/v1/environment-requests/:id
 ```
 
-Only requests in `pending` status can be updated.
+Only requests in `pending` status can be updated. The requesting user must be the owner of the request or have an `admin` role.
 
 **Request Body:**
 

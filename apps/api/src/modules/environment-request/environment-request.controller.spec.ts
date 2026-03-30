@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { ForbiddenException } from "@nestjs/common";
 import { EnvironmentRequestController } from "./environment-request.controller";
 import { EnvironmentRequestService } from "./environment-request.service";
 import {
@@ -48,7 +49,7 @@ describe("EnvironmentRequestController", () => {
   };
 
   const mockRequest = {
-    user: { userId: "user-uuid-1" },
+    user: { userId: "user-uuid-1", username: "testuser", roles: ["admin"] },
     organizationId: "org-uuid-1",
   };
 
@@ -96,7 +97,10 @@ describe("EnvironmentRequestController", () => {
     it("should list environment requests with pagination", async () => {
       envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
 
-      const result = await controller.findAll({ skip: 0, take: 20 });
+      const result = await controller.findAll(
+        { skip: 0, take: 20 },
+        mockRequest as any,
+      );
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toEqual([mockEnvRequest]);
@@ -108,14 +112,35 @@ describe("EnvironmentRequestController", () => {
     it("should default skip to 0 and take to 20 when query values are undefined", async () => {
       envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
 
-      const result = await controller.findAll({
-        skip: undefined,
-        take: undefined,
-      });
+      const result = await controller.findAll(
+        { skip: undefined, take: undefined },
+        mockRequest as any,
+      );
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.skip).toBe(0);
       expect(result.take).toBe(20);
+    });
+
+    it("should default organizationId from request when not in query", async () => {
+      envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
+
+      const query = { skip: 0, take: 20 } as any;
+      await controller.findAll(query, mockRequest as any);
+
+      expect(query.organizationId).toBe("org-uuid-1");
+      expect(envService.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: "org-uuid-1" }),
+      );
+    });
+
+    it("should not override explicit organizationId in query", async () => {
+      envService.findAll.mockResolvedValue([[mockEnvRequest], 1]);
+
+      const query = { skip: 0, take: 20, organizationId: "org-from-query" };
+      await controller.findAll(query as any, mockRequest as any);
+
+      expect(query.organizationId).toBe("org-from-query");
     });
   });
 
@@ -131,19 +156,67 @@ describe("EnvironmentRequestController", () => {
   });
 
   describe("PATCH /:id (update)", () => {
-    it("should update an environment request", async () => {
+    it("should update an environment request when user is owner", async () => {
       const updateDto: UpdateEnvironmentRequestDto = {
         description: "Updated description",
       };
+      envService.findOne.mockResolvedValue(mockEnvRequest);
       envService.update.mockResolvedValue({
         ...mockEnvRequest,
         description: "Updated description",
       });
 
-      const result = await controller.update("req-uuid-1", updateDto);
+      const result = await controller.update(
+        "req-uuid-1",
+        mockRequest as any,
+        updateDto,
+      );
 
       expect(result.description).toBe("Updated description");
       expect(envService.update).toHaveBeenCalledWith("req-uuid-1", updateDto);
+    });
+
+    it("should update an environment request when user is admin but not owner", async () => {
+      const updateDto: UpdateEnvironmentRequestDto = {
+        description: "Admin update",
+      };
+      const adminReq = {
+        user: {
+          userId: "admin-uuid-1",
+          username: "admin",
+          roles: ["admin"],
+        },
+      };
+      envService.findOne.mockResolvedValue(mockEnvRequest);
+      envService.update.mockResolvedValue({
+        ...mockEnvRequest,
+        description: "Admin update",
+      });
+
+      const result = await controller.update(
+        "req-uuid-1",
+        adminReq as any,
+        updateDto,
+      );
+
+      expect(result.description).toBe("Admin update");
+    });
+
+    it("should throw ForbiddenException when user is not owner and not admin", async () => {
+      const otherUserReq = {
+        user: {
+          userId: "other-user-uuid",
+          username: "other",
+          roles: ["user"],
+        },
+      };
+      envService.findOne.mockResolvedValue(mockEnvRequest);
+
+      await expect(
+        controller.update("req-uuid-1", otherUserReq as any, {
+          description: "nope",
+        }),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

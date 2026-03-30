@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
   Req,
+  ForbiddenException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -22,7 +23,6 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
 } from "@nestjs/swagger";
-import { Request } from "express";
 import { EnvironmentRequestService } from "./environment-request.service";
 import { CreateEnvironmentRequestDto } from "./dto/create-environment-request.dto";
 import { UpdateEnvironmentRequestDto } from "./dto/update-environment-request.dto";
@@ -34,6 +34,7 @@ import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing developer self-service environment requests
@@ -84,12 +85,12 @@ export class EnvironmentRequestController {
     type: EnvironmentRequest,
   })
   async create(
-    @Req() req: Request & { user: { userId: string }; organizationId?: string },
+    @Req() req: RequestWithOrg,
     @Body() dto: CreateEnvironmentRequestDto,
   ): Promise<EnvironmentRequest> {
     return await this.environmentRequestService.create(
       dto,
-      req.user.userId,
+      req.user!.userId,
       req.organizationId,
     );
   }
@@ -107,7 +108,11 @@ export class EnvironmentRequestController {
   })
   async findAll(
     @Query() query: ListEnvironmentRequestsQueryDto,
+    @Req() req: RequestWithOrg,
   ): Promise<PaginatedResponseDto<EnvironmentRequest>> {
+    if (req.organizationId && !query.organizationId) {
+      query.organizationId = req.organizationId;
+    }
     const [data, total] = await this.environmentRequestService.findAll(query);
     return new PaginatedResponseDto(
       data,
@@ -143,8 +148,10 @@ export class EnvironmentRequestController {
 
   /**
    * Updates an existing environment request.
-   * Only requests in PENDING status can be updated.
+   * Only requests in PENDING status can be updated. The requesting user
+   * must be the owner of the request or have an admin role.
    * @param id - The UUID of the environment request to update
+   * @param req - The incoming request containing the JWT user payload
    * @param dto - Fields to update
    * @returns The updated environment request
    */
@@ -165,8 +172,19 @@ export class EnvironmentRequestController {
   })
   async update(
     @Param("id") id: string,
+    @Req() req: RequestWithOrg,
     @Body() dto: UpdateEnvironmentRequestDto,
   ): Promise<EnvironmentRequest> {
+    const existing = await this.environmentRequestService.findOne(id);
+    const isOwner = req.user?.userId === existing.requestedBy;
+    const isAdmin = req.user?.roles?.includes("admin") ?? false;
+
+    if (!isOwner && !isAdmin) {
+      throw new ForbiddenException(
+        "Only the request owner or an admin can update this request",
+      );
+    }
+
     return await this.environmentRequestService.update(id, dto);
   }
 
@@ -222,12 +240,12 @@ export class EnvironmentRequestController {
   })
   async approve(
     @Param("id") id: string,
-    @Req() req: Request & { user: { userId: string } },
+    @Req() req: RequestWithOrg,
     @Body() dto: ReviewEnvironmentRequestDto,
   ): Promise<EnvironmentRequest> {
     return await this.environmentRequestService.approve(
       id,
-      req.user.userId,
+      req.user!.userId,
       dto.comment,
     );
   }
@@ -259,12 +277,12 @@ export class EnvironmentRequestController {
   })
   async reject(
     @Param("id") id: string,
-    @Req() req: Request & { user: { userId: string } },
+    @Req() req: RequestWithOrg,
     @Body() dto: ReviewEnvironmentRequestDto,
   ): Promise<EnvironmentRequest> {
     return await this.environmentRequestService.reject(
       id,
-      req.user.userId,
+      req.user!.userId,
       dto.comment,
     );
   }

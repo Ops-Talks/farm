@@ -342,6 +342,105 @@ describe("ScaffoldService", () => {
         BadRequestException,
       );
     });
+
+    it("should throw BadRequestException when value does not match pattern", () => {
+      const templateWithPattern: ServiceTemplate = {
+        ...mockTemplate,
+        variables: [
+          {
+            key: "SERVICE_NAME",
+            label: "Service Name",
+            description: "Name of the service",
+            required: true,
+            pattern: "^[a-z][a-z0-9-]*$",
+          },
+        ],
+      };
+
+      expect(() =>
+        service.validateVariables(templateWithPattern, {
+          SERVICE_NAME: "INVALID-NAME",
+        }),
+      ).toThrow(BadRequestException);
+
+      expect(() =>
+        service.validateVariables(templateWithPattern, {
+          SERVICE_NAME: "INVALID-NAME",
+        }),
+      ).toThrow("Template variable validation failed");
+    });
+
+    it("should pass when value matches pattern", () => {
+      const templateWithPattern: ServiceTemplate = {
+        ...mockTemplate,
+        variables: [
+          {
+            key: "SERVICE_NAME",
+            label: "Service Name",
+            description: "Name of the service",
+            required: true,
+            pattern: "^[a-z][a-z0-9-]*$",
+          },
+        ],
+      };
+
+      expect(() =>
+        service.validateVariables(templateWithPattern, {
+          SERVICE_NAME: "my-valid-service",
+        }),
+      ).not.toThrow();
+    });
+
+    it("should skip pattern validation for empty or undefined values", () => {
+      const templateWithPattern: ServiceTemplate = {
+        ...mockTemplate,
+        variables: [
+          {
+            key: "OPTIONAL_VAR",
+            label: "Optional",
+            description: "Optional var",
+            required: false,
+            pattern: "^[a-z]+$",
+          },
+        ],
+      };
+
+      expect(() =>
+        service.validateVariables(templateWithPattern, {}),
+      ).not.toThrow();
+      expect(() =>
+        service.validateVariables(templateWithPattern, { OPTIONAL_VAR: "" }),
+      ).not.toThrow();
+    });
+
+    it("should report multiple pattern violations", () => {
+      const templateMultiPattern: ServiceTemplate = {
+        ...mockTemplate,
+        variables: [
+          {
+            key: "VAR_A",
+            label: "A",
+            description: "A",
+            required: true,
+            pattern: "^[a-z]+$",
+          },
+          {
+            key: "VAR_B",
+            label: "B",
+            description: "B",
+            required: true,
+            pattern: "^[0-9]+$",
+          },
+        ],
+      };
+
+      expect(() =>
+        service.validateVariables(templateMultiPattern, {
+          VAR_A: "INVALID",
+          VAR_B: "not-a-number",
+        }),
+      ).toThrow("Template variable validation failed: VAR_A must match pattern ^[a-z]+$; VAR_B must match pattern ^[0-9]+$");
+    });
   });
 
   describe("generateFileTreePreview (via dry-run scaffold)", () => {
