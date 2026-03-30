@@ -1814,13 +1814,9 @@ export const serviceTemplates = {
     skip?: number;
     take?: number;
   }): Promise<PaginatedResponse<ServiceTemplate>> {
-    const q = params
-      ? Object.entries(params)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
-          .join("&")
-      : "";
-    return request<PaginatedResponse<ServiceTemplate>>(`/v1/service-templates${q ? `?${q}` : ""}`);
+    return request<PaginatedResponse<ServiceTemplate>>(
+      `/v1/service-templates${toQueryString(params ?? {})}`,
+    );
   },
 
   /** Get a service template by ID. */
@@ -1878,14 +1874,8 @@ export const environmentRequests = {
     skip?: number;
     take?: number;
   }): Promise<PaginatedResponse<EnvironmentRequest>> {
-    const q = params
-      ? Object.entries(params)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
-          .join("&")
-      : "";
     return request<PaginatedResponse<EnvironmentRequest>>(
-      `/v1/environment-requests${q ? `?${q}` : ""}`,
+      `/v1/environment-requests${toQueryString(params ?? {})}`,
     );
   },
 

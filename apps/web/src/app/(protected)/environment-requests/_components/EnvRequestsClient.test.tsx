@@ -742,10 +742,33 @@ describe("EnvRequestsClient", () => {
 
   // ── Edit / Delete visibility per row ──────────────────────────────────────
 
-  it("shows Edit/Delete for pending requests owned by current user", async () => {
+  it("shows Edit but not Delete for pending requests owned by non-admin user", async () => {
     mockHasRole.mockReturnValue(false); // Not admin
     mockList.mockResolvedValue({
       data: [mockPendingRequest], // requestedBy: "user-1" matches useAuth user.id
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<EnvRequestsClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("feature-branch-env")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByRole("button", { name: /^edit$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^delete$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows Edit and Delete for pending requests when admin", async () => {
+    mockHasRole.mockImplementation((role: string) => role === "admin");
+    mockList.mockResolvedValue({
+      data: [mockPendingRequest],
       total: 1,
       skip: 0,
       take: 20,
@@ -858,8 +881,8 @@ describe("EnvRequestsClient", () => {
   it("formats TTL correctly (hours and days)", async () => {
     mockList.mockResolvedValue({
       data: [
-        mockPendingRequest, // 24h → "1d"
-        mockActiveRequest,  // 168h → "7d"
+        mockPendingRequest, // ephemeral, 24h → "1d"
+        { ...mockPendingRequest, id: "req-2h", name: "short-env", ttlHours: 2 }, // ephemeral, 2h → "2h"
       ],
       total: 2,
       skip: 0,
@@ -873,7 +896,24 @@ describe("EnvRequestsClient", () => {
     });
 
     expect(screen.getByText("1d")).toBeInTheDocument();
-    expect(screen.getByText("7d")).toBeInTheDocument();
+    expect(screen.getByText("2h")).toBeInTheDocument();
+  });
+
+  it("shows dash for TTL on persistent requests", async () => {
+    mockList.mockResolvedValue({
+      data: [mockActiveRequest], // persistent type
+      total: 1,
+      skip: 0,
+      take: 20,
+    });
+
+    render(<EnvRequestsClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("staging-env")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("7d")).not.toBeInTheDocument();
   });
 
   it("handles review error with toast.error", async () => {
@@ -1144,7 +1184,6 @@ describe("EnvRequestsClient", () => {
       name: "persistent-env",
       type: "persistent" as const,
       tier: "large" as const,
-      ttlHours: 72,
     };
     mockCreate.mockResolvedValue(created);
 
@@ -1169,14 +1208,12 @@ describe("EnvRequestsClient", () => {
     const typeSelect = screen.getByLabelText("Type");
     await user.selectOptions(typeSelect, "persistent");
 
+    // TTL field should be hidden for persistent type
+    expect(screen.queryByLabelText("TTL (hours)")).not.toBeInTheDocument();
+
     // Change tier
     const tierSelect = screen.getByLabelText("Tier");
     await user.selectOptions(tierSelect, "large");
-
-    // Change TTL
-    const ttlInput = screen.getByLabelText("TTL (hours)");
-    await user.clear(ttlInput);
-    await user.type(ttlInput, "72");
 
     await user.click(screen.getByRole("button", { name: "Submit Request" }));
 
@@ -1186,10 +1223,13 @@ describe("EnvRequestsClient", () => {
           name: "persistent-env",
           type: "persistent",
           tier: "large",
-          ttlHours: 72,
         }),
       );
     });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.not.objectContaining({ ttlHours: expect.anything() }),
+    );
   });
 
   // ── Create: cancel dialog ────────────────────────────────────────────────

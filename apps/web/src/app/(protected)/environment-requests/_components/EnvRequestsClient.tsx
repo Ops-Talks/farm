@@ -242,8 +242,9 @@ export function EnvRequestsClient() {
     const name = formName.trim();
     if (!name || name.length < 2 || name.length > 100) return;
 
+    const isEphemeral = formType === "ephemeral";
     const ttl = parseInt(formTtlHours, 10);
-    if (isNaN(ttl) || ttl < 1 || ttl > 720) return;
+    if (isEphemeral && (isNaN(ttl) || ttl < 1 || ttl > 720)) return;
 
     setSubmitting(true);
     try {
@@ -251,7 +252,7 @@ export function EnvRequestsClient() {
         const dto: UpdateEnvironmentRequestDto = {
           name,
           description: formDescription.trim() || undefined,
-          ttlHours: ttl,
+          ...(editingRequest.type === "ephemeral" && { ttlHours: ttl }),
         };
         const updated = await environmentRequests.update(editingRequest.id, dto);
         setRequests((prev) =>
@@ -264,7 +265,7 @@ export function EnvRequestsClient() {
           description: formDescription.trim() || undefined,
           type: formType as CreateEnvironmentRequestDto["type"],
           tier: formTier,
-          ttlHours: ttl,
+          ...(isEphemeral && { ttlHours: ttl }),
         };
         const created = await environmentRequests.create(dto);
         setRequests((prev) => [created, ...prev]);
@@ -375,7 +376,7 @@ export function EnvRequestsClient() {
 
   // -- Row-level permissions helper -----------------------------------------
 
-  function canEditOrDelete(req: EnvironmentRequest): boolean {
+  function canEdit(req: EnvironmentRequest): boolean {
     if (req.status !== "pending") return false;
     return isAdmin || req.requestedBy === user?.id;
   }
@@ -463,7 +464,7 @@ export function EnvRequestsClient() {
                     </span>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
-                    {formatTtl(req.ttlHours)}
+                    {req.type === "ephemeral" ? formatTtl(req.ttlHours) : "\u2014"}
                   </TableCell>
                   <TableCell>
                     <span
@@ -504,25 +505,26 @@ export function EnvRequestsClient() {
                           </Button>
                         </>
                       )}
-                      {/* Requester or admin can edit/delete pending requests */}
-                      {canEditOrDelete(req) && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openEditDialog(req)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeletingId(req.id)}
-                          >
-                            Delete
-                          </Button>
-                        </>
+                      {/* Requester or admin can edit pending requests */}
+                      {canEdit(req) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openEditDialog(req)}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {/* Only admin can delete pending requests */}
+                      {req.status === "pending" && isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeletingId(req.id)}
+                        >
+                          Delete
+                        </Button>
                       )}
                       {/* Admin can expire active requests */}
                       {req.status === "active" && isAdmin && (
@@ -676,6 +678,8 @@ export function EnvRequestsClient() {
                 </>
               )}
 
+              {/* TTL only applies to ephemeral environments */}
+              {formType === "ephemeral" && (
               <div>
                 <label htmlFor="req-ttl" className="text-sm font-medium">
                   TTL (hours)
@@ -694,6 +698,7 @@ export function EnvRequestsClient() {
                   Between 1 and 720 hours (30 days)
                 </p>
               </div>
+              )}
             </div>
 
             <DialogFooter>
@@ -769,7 +774,9 @@ export function EnvRequestsClient() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">TTL</span>
                   <span className="font-mono text-xs">
-                    {formatTtl(reviewRequest.ttlHours)}
+                    {reviewRequest.type === "ephemeral"
+                      ? formatTtl(reviewRequest.ttlHours)
+                      : "\u2014"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
