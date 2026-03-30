@@ -182,9 +182,11 @@ export class EnvironmentRequestService {
       request.statusMessage = comment;
     }
     request.provisionedAt = now;
-    request.expiresAt = new Date(
-      now.getTime() + request.ttlHours * 60 * 60 * 1000,
-    );
+    if (typeof request.ttlHours === "number" && request.ttlHours > 0) {
+      request.expiresAt = new Date(
+        now.getTime() + request.ttlHours * 60 * 60 * 1000,
+      );
+    }
 
     this.logger.log(
       `Approved and provisioned environment request "${request.name}" by reviewer ${reviewerId}`,
