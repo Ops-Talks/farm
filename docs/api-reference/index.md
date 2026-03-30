@@ -56,6 +56,8 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [SLOs](slos.md) | `/api/v1/slos` | Service Level Objectives and error budget tracking |
 | [Incidents](incidents.md) | `/api/v1/incidents` | Incident lifecycle, timeline, and post-mortem |
 | [Dashboards](dashboards.md) | `/api/v1/dashboards` | Custom dashboard builder with widgets |
+| [Service Templates](service-templates.md) | `/api/v1/service-templates` | Golden path templates and service scaffolding |
+| [Environment Requests](environment-requests.md) | `/api/v1/environment-requests` | Self-service environment provisioning with approval workflow |
 
 ## Response Format
 

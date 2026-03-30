@@ -121,6 +121,14 @@ The [incident management](incidents.md) module coordinates your organization's r
 
 Build [custom dashboards](dashboards.md) with configurable widget grids to visualize operational data. Combine metrics charts, status indicators, team activity feeds, and alert summaries into a single view tailored to your team's needs.
 
+### Service Templates
+
+Scaffold new services from curated [golden path templates](service-templates.md). Select a template, fill in variables, preview the generated file tree with a dry run, and push a fully configured project to your target repository in minutes.
+
+### Environment Requests
+
+Request deployment environments through a [self-service workflow](environment-requests.md) with administrator approval. Choose between ephemeral and persistent environments, select a resource tier, set a TTL, and monitor provisioning status from submission to expiry.
+
 ## Quick Links
 
 | Topic | Description |
@@ -141,4 +149,6 @@ Build [custom dashboards](dashboards.md) with configurable widget grids to visua
 | [SLO Management](slos.md) | Service Level Objectives and error budget tracking |
 | [Incident Management](incidents.md) | Incident response, timeline, and post-mortem workflows |
 | [Custom Dashboards](dashboards.md) | Configurable widget grids for operational visibility |
+| [Service Templates](service-templates.md) | Scaffold new services from curated golden path templates |
+| [Environment Requests](environment-requests.md) | Self-service environment provisioning with approval workflows |
 | [FAQ](faq.md) | Frequently asked questions |
