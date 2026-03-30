@@ -136,11 +136,12 @@ POST /api/v1/environment-requests/:id/approve
 {
   "id": "uuid",
   "name": "feature-xyz-preview",
-  "status": "approved",
+  "status": "active",
   "statusMessage": "Approved for provisioning",
   "reviewedBy": "uuid",
-  "reviewComment": "Looks good, approved for 48h",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "provisionedAt": "2024-01-01T00:00:05.000Z",
+  "expiresAt": "2024-01-03T00:00:05.000Z",
+  "updatedAt": "2024-01-01T00:00:05.000Z"
 }
 ```
 

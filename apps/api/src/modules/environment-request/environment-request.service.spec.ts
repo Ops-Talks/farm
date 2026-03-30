@@ -326,7 +326,7 @@ describe("EnvironmentRequestService", () => {
   });
 
   describe("approve", () => {
-    it("should approve a pending request and set ACTIVE status", async () => {
+    it("should approve a pending request and set ACTIVE status via intermediate states", async () => {
       const pendingRequest = { ...mockRequest };
       repo.findOne.mockResolvedValue(pendingRequest);
       repo.save.mockImplementation((entity: EnvironmentRequest) =>
@@ -345,10 +345,34 @@ describe("EnvironmentRequestService", () => {
       expect(result.statusMessage).toBe("Looks good");
       expect(result.provisionedAt).toBeInstanceOf(Date);
       expect(result.expiresAt).toBeInstanceOf(Date);
+      // Three saves for state transitions: APPROVED, PROVISIONING, ACTIVE
+      expect(repo.save).toHaveBeenCalledTimes(3);
     });
 
-    it("should calculate expiresAt based on ttlHours", async () => {
-      const pendingRequest = { ...mockRequest, ttlHours: 48 };
+    it("should persist APPROVED then PROVISIONING then ACTIVE in order", async () => {
+      const pendingRequest = { ...mockRequest };
+      repo.findOne.mockResolvedValue(pendingRequest);
+      const savedStatuses: EnvironmentRequestStatus[] = [];
+      repo.save.mockImplementation((entity: EnvironmentRequest) => {
+        savedStatuses.push(entity.status);
+        return Promise.resolve(entity);
+      });
+
+      await service.approve("req-uuid-1", "reviewer-uuid-1");
+
+      expect(savedStatuses).toEqual([
+        EnvironmentRequestStatus.APPROVED,
+        EnvironmentRequestStatus.PROVISIONING,
+        EnvironmentRequestStatus.ACTIVE,
+      ]);
+    });
+
+    it("should calculate expiresAt based on ttlHours for ephemeral requests", async () => {
+      const pendingRequest = {
+        ...mockRequest,
+        type: EnvironmentType.EPHEMERAL,
+        ttlHours: 48,
+      };
       repo.findOne.mockResolvedValue(pendingRequest);
       repo.save.mockImplementation((entity: EnvironmentRequest) =>
         Promise.resolve(entity),
@@ -366,6 +390,24 @@ describe("EnvironmentRequestService", () => {
       // Verify the provisioned time is reasonable
       expect(result.provisionedAt!.getTime()).toBeGreaterThanOrEqual(before);
       expect(result.provisionedAt!.getTime()).toBeLessThanOrEqual(after);
+    });
+
+    it("should not set expiresAt for persistent requests", async () => {
+      const persistentRequest = {
+        ...mockRequest,
+        type: EnvironmentType.PERSISTENT,
+        ttlHours: 24,
+        expiresAt: null,
+      };
+      repo.findOne.mockResolvedValue(persistentRequest);
+      repo.save.mockImplementation((entity: EnvironmentRequest) =>
+        Promise.resolve(entity),
+      );
+
+      const result = await service.approve("req-uuid-1", "reviewer-uuid-1");
+
+      expect(result.status).toBe(EnvironmentRequestStatus.ACTIVE);
+      expect(result.expiresAt).toBeNull();
     });
 
     it("should not set statusMessage when comment is undefined", async () => {

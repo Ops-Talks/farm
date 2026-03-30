@@ -9,6 +9,7 @@ import { FindOptionsWhere, Repository } from "typeorm";
 import {
   EnvironmentRequest,
   EnvironmentRequestStatus,
+  EnvironmentType,
 } from "./entities/environment-request.entity";
 import { CreateEnvironmentRequestDto } from "./dto/create-environment-request.dto";
 import { UpdateEnvironmentRequestDto } from "./dto/update-environment-request.dto";
@@ -149,8 +150,10 @@ export class EnvironmentRequestService {
 
   /**
    * Approves a pending environment request and simulates provisioning.
-   * Transitions the request through APPROVED -> PROVISIONING -> ACTIVE
-   * and calculates the expiration time based on ttlHours.
+   * Persists each intermediate state transition:
+   * PENDING -> APPROVED -> PROVISIONING -> ACTIVE
+   * For ephemeral requests, calculates the expiration time based on ttlHours.
+   * Persistent requests do not receive an expiration timestamp.
    * @param id - The UUID of the environment request to approve
    * @param reviewerId - The ID of the admin approving the request
    * @param comment - Optional review comment
@@ -173,23 +176,40 @@ export class EnvironmentRequestService {
 
     const now = new Date();
 
-    // Simulate the full provisioning lifecycle:
-    // PENDING -> APPROVED -> PROVISIONING -> ACTIVE
-    request.status = EnvironmentRequestStatus.ACTIVE;
+    // Transition 1: PENDING -> APPROVED
+    request.status = EnvironmentRequestStatus.APPROVED;
     request.reviewedBy = reviewerId;
     request.reviewedAt = now;
     if (comment !== undefined) {
       request.statusMessage = comment;
     }
+    await this.environmentRequestRepository.save(request);
+    this.logger.log(
+      `Environment request "${request.name}" transitioned to APPROVED by reviewer ${reviewerId}`,
+    );
+
+    // Transition 2: APPROVED -> PROVISIONING
+    request.status = EnvironmentRequestStatus.PROVISIONING;
+    await this.environmentRequestRepository.save(request);
+    this.logger.log(
+      `Environment request "${request.name}" transitioned to PROVISIONING`,
+    );
+
+    // Transition 3: PROVISIONING -> ACTIVE
+    request.status = EnvironmentRequestStatus.ACTIVE;
     request.provisionedAt = now;
-    if (typeof request.ttlHours === "number" && request.ttlHours > 0) {
+    if (
+      request.type === EnvironmentType.EPHEMERAL &&
+      typeof request.ttlHours === "number" &&
+      request.ttlHours > 0
+    ) {
       request.expiresAt = new Date(
         now.getTime() + request.ttlHours * 60 * 60 * 1000,
       );
     }
 
     this.logger.log(
-      `Approved and provisioned environment request "${request.name}" by reviewer ${reviewerId}`,
+      `Environment request "${request.name}" transitioned to ACTIVE`,
     );
     return await this.environmentRequestRepository.save(request);
   }
