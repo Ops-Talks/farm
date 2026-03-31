@@ -74,11 +74,33 @@ describe("OperatorBindingService", () => {
           operatorName: createDto.operatorName,
           operatorNamespace: createDto.operatorNamespace,
           componentId: createDto.componentId,
+          organizationId: createDto.organizationId,
         },
       });
       expect(repo.create).toHaveBeenCalledWith(createDto);
       expect(repo.save).toHaveBeenCalledWith(mockBinding);
       expect(result).toEqual(mockBinding);
+    });
+
+    it("should create a binding without organizationId when not provided", async () => {
+      const dtoWithoutOrg = {
+        operatorName: "prometheus-operator.v0.65.1",
+        operatorNamespace: "monitoring",
+        componentId: "comp-uuid-1",
+      };
+      repo.findOne.mockResolvedValue(null);
+      repo.create.mockReturnValue(mockBinding);
+      repo.save.mockResolvedValue(mockBinding);
+
+      await service.create(dtoWithoutOrg);
+
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: {
+          operatorName: dtoWithoutOrg.operatorName,
+          operatorNamespace: dtoWithoutOrg.operatorNamespace,
+          componentId: dtoWithoutOrg.componentId,
+        },
+      });
     });
 
     it("should throw ConflictException when a duplicate binding exists", async () => {
@@ -165,6 +187,7 @@ describe("OperatorBindingService", () => {
           "prometheus-operator.v0.65.1",
           "monitoring",
           "comp-uuid-1",
+          "org-uuid-1",
         ),
       ).resolves.toBeUndefined();
 
@@ -173,6 +196,7 @@ describe("OperatorBindingService", () => {
           operatorName: "prometheus-operator.v0.65.1",
           operatorNamespace: "monitoring",
           componentId: "comp-uuid-1",
+          organizationId: "org-uuid-1",
         },
       });
       expect(repo.remove).toHaveBeenCalledWith(mockBinding);
@@ -182,12 +206,12 @@ describe("OperatorBindingService", () => {
       repo.findOne.mockResolvedValue(null);
 
       await expect(
-        service.remove("nonexistent-op", "default", "comp-uuid-999"),
+        service.remove("nonexistent-op", "default", "comp-uuid-999", "org-1"),
       ).rejects.toThrow(NotFoundException);
       await expect(
-        service.remove("nonexistent-op", "default", "comp-uuid-999"),
+        service.remove("nonexistent-op", "default", "comp-uuid-999", "org-1"),
       ).rejects.toThrow(
-        'Binding not found for operator "nonexistent-op" in namespace "default" with component "comp-uuid-999"',
+        'Binding not found for operator "nonexistent-op" in namespace "default" with component "comp-uuid-999" and organization "org-1"',
       );
       expect(repo.remove).not.toHaveBeenCalled();
     });

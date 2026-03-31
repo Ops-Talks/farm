@@ -11,6 +11,7 @@ import {
 import { KyvernoPolicyReportService } from "./kyverno-policy-report.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
+import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
 
 describe("KubernetesController", () => {
   let controller: KubernetesController;
@@ -301,14 +302,13 @@ describe("KubernetesController", () => {
   describe("createBinding", () => {
     it("should create an operator-component binding", async () => {
       const req: RequestWithOrg = { organizationId: "org-1" };
-      const dto = {
-        operatorName: "prometheus-operator.v0.65.1",
+      const body: CreateOperatorBindingBodyDto = {
         operatorNamespace: "monitoring",
         componentId: "comp-uuid-1",
       };
       const result = await controller.createBinding(
         "prometheus-operator.v0.65.1",
-        dto,
+        body,
         req,
       );
       expect(result).toEqual(mockBinding);
@@ -325,15 +325,17 @@ describe("KubernetesController", () => {
 
   describe("removeBinding", () => {
     it("should remove an operator-component binding", async () => {
+      const req: RequestWithOrg = { organizationId: "org-1" };
       const dto = {
         operatorNamespace: "monitoring",
         componentId: "comp-uuid-1",
       };
-      await controller.removeBinding("prometheus-operator.v0.65.1", dto);
+      await controller.removeBinding("prometheus-operator.v0.65.1", dto, req);
       expect(bindingService.remove).toHaveBeenCalledWith(
         "prometheus-operator.v0.65.1",
         "monitoring",
         "comp-uuid-1",
+        "org-1",
       );
     });
   });

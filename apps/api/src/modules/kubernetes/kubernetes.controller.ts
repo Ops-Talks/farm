@@ -36,7 +36,7 @@ import {
 } from "./kyverno-policy-report.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
-import { CreateOperatorBindingDto } from "./dto/create-operator-binding.dto";
+import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
 import { DeleteOperatorBindingDto } from "./dto/delete-operator-binding.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -312,7 +312,7 @@ export class KubernetesController {
    * Creates a binding between a Kubernetes operator and a catalog component.
    *
    * @param operatorName - The operator CSV name
-   * @param dto - Binding details (namespace, componentId)
+   * @param body - Binding details from the request body (namespace, componentId)
    * @param req - Request with organization context
    * @returns The created OperatorBinding entity
    */
@@ -329,11 +329,11 @@ export class KubernetesController {
   })
   async createBinding(
     @Param("name") operatorName: string,
-    @Body() dto: CreateOperatorBindingDto,
+    @Body() body: CreateOperatorBindingBodyDto,
     @Req() req: RequestWithOrg,
   ): Promise<OperatorBinding> {
     return this.operatorBindingService.create({
-      ...dto,
+      ...body,
       operatorName,
       organizationId: req.organizationId,
     });
