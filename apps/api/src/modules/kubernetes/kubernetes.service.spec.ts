@@ -21,6 +21,8 @@ let mockListSecrets: jest.Mock;
 let mockListCRDs: jest.Mock;
 let mockListRollouts: jest.Mock;
 let mockListNamespacedRollouts: jest.Mock;
+let mockListNodes: jest.Mock;
+let mockListClusterCustomObjectCSV: jest.Mock;
 
 jest.mock("@kubernetes/client-node", () => {
   return {
@@ -117,6 +119,27 @@ function fakeRollout(overrides: {
   };
 }
 
+function fakeNodeItem(overrides: {
+  name: string;
+  containerRuntimeVersion?: string;
+  kernelVersion?: string;
+  osImage?: string;
+  architecture?: string;
+}) {
+  return {
+    metadata: { name: overrides.name },
+    status: {
+      nodeInfo: {
+        containerRuntimeVersion:
+          overrides.containerRuntimeVersion ?? "containerd://1.6.20",
+        kernelVersion: overrides.kernelVersion ?? "5.15.0-generic",
+        osImage: overrides.osImage ?? "Ubuntu 22.04 LTS",
+        architecture: overrides.architecture ?? "amd64",
+      },
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -140,6 +163,7 @@ describe("KubernetesService", () => {
     mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
     mockListRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });
+    mockListNodes = jest.fn().mockResolvedValue({ items: [] });
     mockLoadFromFile = jest.fn();
     mockLoadFromCluster = jest.fn().mockImplementation(() => {
       throw new Error("not in cluster");
@@ -153,6 +177,7 @@ describe("KubernetesService", () => {
         return {
           listSecretForAllNamespaces: mockListSecrets,
           listNamespacedSecret: mockListSecrets,
+          listNode: mockListNodes,
         };
       }
       if (name === "ApiextensionsV1Api") {
@@ -973,6 +998,186 @@ describe("KubernetesService", () => {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // listNodeRuntimes (FARM-S241)
+  // -------------------------------------------------------------------------
+
+  describe("listNodeRuntimes", () => {
+    it("should return empty array when CoreV1Api is not initialized", async () => {
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("file not found");
+      });
+      const failModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: mockConfigService },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      const failedService =
+        failModule.get<KubernetesService>(KubernetesService);
+
+      const result = await failedService.listNodeRuntimes();
+      expect(result).toEqual([]);
+    });
+
+    it("should return runtime info for all nodes", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "node-1",
+            containerRuntimeVersion: "containerd://1.7.2",
+          }),
+          fakeNodeItem({
+            name: "node-2",
+            containerRuntimeVersion: "cri-o://1.28.0",
+          }),
+        ],
+      });
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].nodeName).toBe("node-1");
+      expect(result[1].nodeName).toBe("node-2");
+    });
+
+    it('should parse "containerd://1.7.2" correctly', async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "worker-1",
+            containerRuntimeVersion: "containerd://1.7.2",
+          }),
+        ],
+      });
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        nodeName: "worker-1",
+        runtimeName: "containerd",
+        runtimeVersion: "1.7.2",
+      });
+    });
+
+    it('should parse "cri-o://1.28.0" correctly', async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "worker-2",
+            containerRuntimeVersion: "cri-o://1.28.0",
+          }),
+        ],
+      });
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        nodeName: "worker-2",
+        runtimeName: "cri-o",
+        runtimeVersion: "1.28.0",
+      });
+    });
+
+    it("should handle nodes without containerRuntimeVersion", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "bare-node" },
+            status: { nodeInfo: {} },
+          },
+        ],
+      });
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        nodeName: "bare-node",
+        runtimeName: "unknown",
+        runtimeVersion: "unknown",
+      });
+    });
+
+    it("should handle API errors gracefully", async () => {
+      mockListNodes.mockRejectedValue(new Error("connection refused"));
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // getCrioMetrics (FARM-S241)
+  // -------------------------------------------------------------------------
+
+  describe("getCrioMetrics", () => {
+    it("should return available=false when CoreV1Api is not initialized", async () => {
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("file not found");
+      });
+      const failModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: mockConfigService },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      const failedService =
+        failModule.get<KubernetesService>(KubernetesService);
+
+      const result = await failedService.getCrioMetrics("node-1");
+
+      expect(result).toEqual({ nodeName: "node-1", available: false });
+    });
+
+    it("should return available=false when node runtime is not CRI-O", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "worker-1",
+            containerRuntimeVersion: "containerd://1.7.2",
+          }),
+        ],
+      });
+
+      const result = await service.getCrioMetrics("worker-1");
+
+      expect(result).toEqual({ nodeName: "worker-1", available: false });
+    });
+
+    it("should return available=true when CRI-O is detected", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "worker-crio",
+            containerRuntimeVersion: "cri-o://1.28.0",
+          }),
+        ],
+      });
+
+      const result = await service.getCrioMetrics("worker-crio");
+
+      expect(result).toEqual({ nodeName: "worker-crio", available: true });
+    });
+
+    it("should return available=false when listNodeRuntimes throws", async () => {
+      jest
+        .spyOn(service, "listNodeRuntimes")
+        .mockRejectedValue(new Error("unexpected failure"));
+
+      const result = await service.getCrioMetrics("worker-1");
+
+      expect(result).toEqual({ nodeName: "worker-1", available: false });
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1012,6 +1217,8 @@ describe("KubernetesService — additional branch coverage", () => {
     mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
     mockListRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });
+    mockListNodes = jest.fn().mockResolvedValue({ items: [] });
+    mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({ items: [] });
 
     mockCatalogService = {
       findAll: jest.fn().mockResolvedValue([[], 0]),
@@ -1386,4 +1593,551 @@ describe("KubernetesService — additional branch coverage", () => {
       expect(service.isEnabled()).toBe(false);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // listOperators (FARM-S237)
+  // -------------------------------------------------------------------------
+
+  describe("listOperators", () => {
+    it("should return empty array when CustomObjectsApi is not initialized", async () => {
+      mockLoadFromCluster = jest.fn().mockImplementation(() => {
+        throw new Error("not in cluster");
+      });
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("file not found");
+      });
+      mockMakeApiClient = jest.fn();
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should return mapped OperatorInfo array from CSV response", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "prometheus-operator.v0.65.1",
+              namespace: "monitoring",
+              creationTimestamp: "2024-01-01T00:00:00Z",
+            },
+            spec: {
+              displayName: "Prometheus Operator",
+              version: "0.65.1",
+              description: "Manages Prometheus instances",
+              provider: { name: "CoreOS" },
+              icon: [{ base64data: "abc123", mediatype: "image/png" }],
+              customresourcedefinitions: {
+                owned: [
+                  {
+                    name: "prometheuses.monitoring.coreos.com",
+                    version: "v1",
+                    kind: "Prometheus",
+                    description: "A Prometheus instance",
+                  },
+                ],
+              },
+            },
+            status: { phase: "Succeeded" },
+          },
+        ],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: "prometheus-operator.v0.65.1",
+        displayName: "Prometheus Operator",
+        version: "0.65.1",
+        namespace: "monitoring",
+        phase: "Succeeded",
+        description: "Manages Prometheus instances",
+        provider: "CoreOS",
+        createdAt: "2024-01-01T00:00:00Z",
+      });
+      expect(result[0].icon).toBe("data:image/png;base64,abc123");
+      expect(result[0].customResourceDefinitions).toHaveLength(1);
+      expect(result[0].customResourceDefinitions[0]).toMatchObject({
+        name: "prometheuses.monitoring.coreos.com",
+        version: "v1",
+        kind: "Prometheus",
+        description: "A Prometheus instance",
+      });
+    });
+
+    it("should handle 404 gracefully when OLM is not installed", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest.fn().mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should handle API errors gracefully and return empty array", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest
+        .fn()
+        .mockRejectedValue(new Error("Connection refused"));
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should extract customResourceDefinitions from spec.customresourcedefinitions.owned", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "test-operator.v1.0.0",
+              namespace: "default",
+              creationTimestamp: "2024-01-01T00:00:00Z",
+            },
+            spec: {
+              displayName: "Test Operator",
+              version: "1.0.0",
+              customresourcedefinitions: {
+                owned: [
+                  {
+                    name: "foos.example.com",
+                    version: "v1",
+                    kind: "Foo",
+                    description: "A Foo resource",
+                  },
+                  {
+                    name: "bars.example.com",
+                    version: "v1beta1",
+                    kind: "Bar",
+                    description: "A Bar resource",
+                  },
+                ],
+              },
+            },
+            status: { phase: "Succeeded" },
+          },
+        ],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result[0].customResourceDefinitions).toHaveLength(2);
+      expect(result[0].customResourceDefinitions[0].name).toBe(
+        "foos.example.com",
+      );
+      expect(result[0].customResourceDefinitions[0].kind).toBe("Foo");
+      expect(result[0].customResourceDefinitions[1].name).toBe(
+        "bars.example.com",
+      );
+      expect(result[0].customResourceDefinitions[1].kind).toBe("Bar");
+      expect(result[0].customResourceDefinitions[1].version).toBe("v1beta1");
+    });
+
+    it("should handle CSV with missing spec fields gracefully", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "bare-operator.v1.0.0",
+              namespace: "default",
+              creationTimestamp: "2024-01-01T00:00:00Z",
+            },
+            // No spec at all
+            status: { phase: "Succeeded" },
+          },
+        ],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].displayName).toBe("bare-operator.v1.0.0");
+      expect(result[0].version).toBe("unknown");
+      expect(result[0].description).toBe("");
+      expect(result[0].customResourceDefinitions).toEqual([]);
+      expect(result[0].icon).toBeUndefined();
+      expect(result[0].provider).toBeUndefined();
+    });
+
+    it('should set phase to "Unknown" when status.phase is undefined', async () => {
+      mockLoadFromCluster = jest.fn();
+      mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({
+        items: [
+          {
+            metadata: {
+              name: "no-phase-op.v1.0.0",
+              namespace: "default",
+              creationTimestamp: "2024-01-01T00:00:00Z",
+            },
+            spec: { displayName: "No Phase Op" },
+            // No status at all
+          },
+        ],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockListClusterCustomObjectCSV,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperators();
+
+      expect(result[0].phase).toBe("Unknown");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listOperatorCustomResources (FARM-S238)
+  // -------------------------------------------------------------------------
+
+  describe("listOperatorCustomResources", () => {
+    const csvWithCrds = {
+      metadata: {
+        name: "test-operator.v1.0.0",
+        namespace: "operators",
+        creationTimestamp: "2024-01-01T00:00:00Z",
+      },
+      spec: {
+        displayName: "Test Operator",
+        version: "1.0.0",
+        customresourcedefinitions: {
+          owned: [
+            {
+              name: "widgets.example.com",
+              version: "v1",
+              kind: "Widget",
+              description: "A Widget resource",
+            },
+          ],
+        },
+      },
+      status: { phase: "Succeeded" },
+    };
+
+    it("should return empty array when operator is not found", async () => {
+      mockLoadFromCluster = jest.fn();
+      // Return a CSV list that does NOT contain the operator we ask for
+      const mockClusterObj = jest.fn().mockResolvedValue({
+        items: [csvWithCrds],
+      });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "nonexistent-operator",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should return CR instances from discovered CRDs", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockClusterObj = jest
+        .fn()
+        // First call: listOperators → returns CSV list
+        .mockResolvedValueOnce({ items: [csvWithCrds] })
+        // Second call: list CRD instances for widgets.example.com
+        .mockResolvedValueOnce({
+          items: [
+            {
+              metadata: {
+                name: "my-widget",
+                namespace: "default",
+                creationTimestamp: "2024-06-01T12:00:00Z",
+              },
+              status: {
+                conditions: [
+                  {
+                    type: "Ready",
+                    status: "True",
+                    reason: "Available",
+                    message: "Widget is ready",
+                    lastTransitionTime: "2024-06-01T12:00:00Z",
+                  },
+                ],
+              },
+            },
+          ],
+        });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: "my-widget",
+        namespace: "default",
+        kind: "Widget",
+        apiVersion: "example.com/v1",
+      });
+      expect(result[0].conditions).toBeDefined();
+      expect(result[0].conditions![0].type).toBe("Ready");
+    });
+
+    it("should handle API errors when querying CR instances gracefully", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockClusterObj = jest
+        .fn()
+        // First call: listOperators → returns CSV list
+        .mockResolvedValueOnce({ items: [csvWithCrds] })
+        // Second call: CRD query fails
+        .mockRejectedValueOnce(new Error("Forbidden"));
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      // Should return empty since the CRD query failed gracefully
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when operator has no owned CRDs", async () => {
+      mockLoadFromCluster = jest.fn();
+      const csvNoCrds = {
+        metadata: {
+          name: "empty-operator.v1.0.0",
+          namespace: "operators",
+          creationTimestamp: "2024-01-01T00:00:00Z",
+        },
+        spec: {
+          displayName: "Empty Operator",
+          version: "1.0.0",
+          // No customresourcedefinitions
+        },
+        status: { phase: "Succeeded" },
+      };
+      const mockClusterObj = jest
+        .fn()
+        .mockResolvedValue({ items: [csvNoCrds] });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "empty-operator.v1.0.0",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should merge results from multiple owned CRDs", async () => {
+      mockLoadFromCluster = jest.fn();
+      const csvMultiCrd = {
+        metadata: {
+          name: "multi-operator.v2.0.0",
+          namespace: "operators",
+          creationTimestamp: "2024-01-01T00:00:00Z",
+        },
+        spec: {
+          displayName: "Multi Operator",
+          version: "2.0.0",
+          customresourcedefinitions: {
+            owned: [
+              {
+                name: "alphas.multi.io",
+                version: "v1",
+                kind: "Alpha",
+                description: "Alpha resource",
+              },
+              {
+                name: "betas.multi.io",
+                version: "v1beta1",
+                kind: "Beta",
+                description: "Beta resource",
+              },
+            ],
+          },
+        },
+        status: { phase: "Succeeded" },
+      };
+      const mockClusterObj = jest
+        .fn()
+        // First call: listOperators
+        .mockResolvedValueOnce({ items: [csvMultiCrd] })
+        // Second call: alphas
+        .mockResolvedValueOnce({
+          items: [
+            {
+              metadata: {
+                name: "alpha-1",
+                namespace: "default",
+                creationTimestamp: "2024-06-01T00:00:00Z",
+              },
+            },
+          ],
+        })
+        // Third call: betas
+        .mockResolvedValueOnce({
+          items: [
+            {
+              metadata: {
+                name: "beta-1",
+                namespace: "production",
+                creationTimestamp: "2024-06-02T00:00:00Z",
+              },
+            },
+            {
+              metadata: {
+                name: "beta-2",
+                namespace: "staging",
+                creationTimestamp: "2024-06-03T00:00:00Z",
+              },
+            },
+          ],
+        });
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "multi-operator.v2.0.0",
+      );
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toMatchObject({
+        name: "alpha-1",
+        kind: "Alpha",
+        apiVersion: "multi.io/v1",
+      });
+      expect(result[1]).toMatchObject({
+        name: "beta-1",
+        kind: "Beta",
+        apiVersion: "multi.io/v1beta1",
+      });
+      expect(result[2]).toMatchObject({
+        name: "beta-2",
+        kind: "Beta",
+      });
+    });
+  });
 });
+
+// ---------------------------------------------------------------------------

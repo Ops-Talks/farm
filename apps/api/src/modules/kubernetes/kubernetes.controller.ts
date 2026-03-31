@@ -1,10 +1,15 @@
 import {
   Controller,
   Get,
+  Post,
+  Delete,
   Param,
   Query,
+  Body,
+  Req,
   UseGuards,
   HttpStatus,
+  HttpCode,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -12,6 +17,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiParam,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import {
@@ -19,12 +25,21 @@ import {
   KubernetesWorkload,
   CrdResource,
   ArgoRolloutStatus,
+  OperatorInfo,
+  CustomResourceInstance,
+  NodeRuntimeInfo,
+  CrioStorageMetrics,
 } from "./kubernetes.service";
 import {
   KyvernoPolicyReportService,
   KyvernoPolicyReportResult,
 } from "./kyverno-policy-report.service";
+import { OperatorBindingService } from "./operator-binding.service";
+import { OperatorBinding } from "./entities/operator-binding.entity";
+import { CreateOperatorBindingDto } from "./dto/create-operator-binding.dto";
+import { DeleteOperatorBindingDto } from "./dto/delete-operator-binding.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for Kubernetes cluster discovery endpoints.
@@ -42,6 +57,7 @@ export class KubernetesController {
   constructor(
     private readonly kubernetesService: KubernetesService,
     private readonly kyvernoPolicyReportService: KyvernoPolicyReportService,
+    private readonly operatorBindingService: OperatorBindingService,
   ) {}
 
   /**
@@ -177,5 +193,198 @@ export class KubernetesController {
   })
   async listClusterPolicyReports(): Promise<KyvernoPolicyReportResult[]> {
     return this.kyvernoPolicyReportService.listClusterPolicyReports();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Operator Discovery (FARM-S237)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists all OLM-managed operators discovered in the cluster.
+   * Returns an empty array when OLM is not installed.
+   *
+   * @returns Array of operator descriptors
+   */
+  @Get("operators")
+  @ApiOperation({
+    summary: "List all discovered OLM operators in the cluster",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Returns all discovered OLM operators (ClusterServiceVersions).",
+  })
+  async listOperators(): Promise<OperatorInfo[]> {
+    return this.kubernetesService.listOperators();
+  }
+
+  /**
+   * Returns a single OLM operator by its CSV name.
+   * Returns null when the operator is not found.
+   *
+   * @param name - The ClusterServiceVersion name
+   * @returns The matching operator descriptor or null
+   */
+  @Get("operators/:name")
+  @ApiOperation({ summary: "Get a single OLM operator by CSV name" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns the operator matching the given name, or null.",
+  })
+  async getOperator(@Param("name") name: string): Promise<OperatorInfo | null> {
+    const operators = await this.kubernetesService.listOperators();
+    return operators.find((op) => op.name === name) ?? null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Custom Resource Inventory (FARM-S238)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists all custom resource instances managed by a specific operator.
+   * Discovers owned CRDs from the operator's CSV and queries each one.
+   *
+   * @param name - The operator CSV name
+   * @returns Array of custom resource instances
+   */
+  @Get("operators/:name/custom-resources")
+  @ApiOperation({
+    summary: "List custom resource instances managed by an operator",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns custom resource instances belonging to the operator.",
+  })
+  async listOperatorCustomResources(
+    @Param("name") name: string,
+  ): Promise<CustomResourceInstance[]> {
+    return this.kubernetesService.listOperatorCustomResources(name);
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRI-O Runtime Detection (FARM-S241)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists container runtime information for all cluster nodes.
+   * Extracts runtime name, version, kernel, OS, and architecture from each node.
+   *
+   * @returns Array of node runtime descriptors
+   */
+  @Get("runtime")
+  @ApiOperation({
+    summary: "List container runtime info for all cluster nodes",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns container runtime information for each node.",
+  })
+  async listNodeRuntimes(): Promise<NodeRuntimeInfo[]> {
+    return this.kubernetesService.listNodeRuntimes();
+  }
+
+  /**
+   * Returns CRI-O storage metrics for a specific node.
+   * Returns unavailable status when the node does not use CRI-O.
+   *
+   * @param nodeName - The Kubernetes node name
+   * @returns CRI-O storage metrics with availability info
+   */
+  @Get("runtime/:nodeName/metrics")
+  @ApiOperation({
+    summary: "Get CRI-O storage metrics for a specific node",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns CRI-O storage metrics for the specified node.",
+  })
+  async getCrioMetrics(
+    @Param("nodeName") nodeName: string,
+  ): Promise<CrioStorageMetrics> {
+    return this.kubernetesService.getCrioMetrics(nodeName);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Operator Bindings (FARM-T155 / FARM-T156)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates a binding between a Kubernetes operator and a catalog component.
+   *
+   * @param operatorName - The operator CSV name
+   * @param dto - Binding details (namespace, componentId)
+   * @param req - Request with organization context
+   * @returns The created OperatorBinding entity
+   */
+  @Post("operators/:name/binding")
+  @ApiOperation({ summary: "Bind an operator to a catalog component" })
+  @ApiParam({ name: "name", description: "Operator name" })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "Binding created successfully",
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Binding already exists",
+  })
+  async createBinding(
+    @Param("name") operatorName: string,
+    @Body() dto: CreateOperatorBindingDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<OperatorBinding> {
+    return this.operatorBindingService.create({
+      ...dto,
+      operatorName,
+      organizationId: req.organizationId,
+    });
+  }
+
+  /**
+   * Removes a binding between a Kubernetes operator and a catalog component.
+   *
+   * @param operatorName - The operator CSV name
+   * @param dto - Identifies the binding to remove (namespace, componentId)
+   */
+  @Delete("operators/:name/binding")
+  @ApiOperation({ summary: "Remove an operator-to-component binding" })
+  @ApiParam({ name: "name", description: "Operator name" })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: "Binding removed",
+  })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeBinding(
+    @Param("name") operatorName: string,
+    @Body() dto: DeleteOperatorBindingDto,
+  ): Promise<void> {
+    return this.operatorBindingService.remove(
+      operatorName,
+      dto.operatorNamespace,
+      dto.componentId,
+    );
+  }
+
+  /**
+   * Lists all bindings for a given operator.
+   *
+   * @param operatorName - The operator CSV name
+   * @param req - Request with organization context
+   * @returns Array of OperatorBinding entities with component relations
+   */
+  @Get("operators/:name/bindings")
+  @ApiOperation({ summary: "List bindings for an operator" })
+  @ApiParam({ name: "name", description: "Operator name" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all bindings for the specified operator.",
+  })
+  async listBindings(
+    @Param("name") operatorName: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<OperatorBinding[]> {
+    return this.operatorBindingService.findByOperator(
+      operatorName,
+      req.organizationId,
+    );
   }
 }
