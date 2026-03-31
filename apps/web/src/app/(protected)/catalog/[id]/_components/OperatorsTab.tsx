@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { kubernetes } from "@/lib/api-client";
-import type { CatalogComponent, OperatorInfo } from "@/types/api";
+import type { CatalogComponent } from "@/types/api";
 
 // Phase badge colour mapping.
 function phaseBadgeClass(phase: string): string {
@@ -38,32 +38,24 @@ interface OperatorsTabProps {
 }
 
 export function OperatorsTab({ component }: OperatorsTabProps) {
-  // Fetch all operators and filter those bound to this component.
-  // A more targeted API could be added but this reuses existing endpoints.
-  const { data: operators = [], isLoading } = useQuery({
+  // Fetch all operators and bindings for this component in parallel.
+  const { data: operators = [], isLoading: operatorsLoading } = useQuery({
     queryKey: ["operators"],
     queryFn: () => kubernetes.listOperators(),
   });
 
-  // For each operator, check if it has a binding to this component.
-  // We fetch all operator bindings in a single pass.
-  const { data: boundOperators = [], isLoading: bindingsLoading } = useQuery({
+  const { data: bindings = [], isLoading: bindingsLoading } = useQuery({
     queryKey: ["component-operator-bindings", component.id],
-    queryFn: async () => {
-      // Fetch bindings for all operators and filter by component ID
-      const results: OperatorInfo[] = [];
-      for (const op of operators) {
-        const bindings = await kubernetes.listOperatorBindings(op.name);
-        if (bindings.some((b) => b.componentId === component.id)) {
-          results.push(op);
-        }
-      }
-      return results;
-    },
-    enabled: operators.length > 0,
+    queryFn: () => kubernetes.listBindingsByComponent(component.id),
   });
 
-  if (isLoading || bindingsLoading) {
+  const isLoading = operatorsLoading || bindingsLoading;
+
+  // Join operators with bindings client-side — O(n) with a Set lookup.
+  const boundNames = new Set(bindings.map((b) => b.operatorName));
+  const boundOperators = operators.filter((op) => boundNames.has(op.name));
+
+  if (isLoading) {
     return <SectionSkeleton />;
   }
 

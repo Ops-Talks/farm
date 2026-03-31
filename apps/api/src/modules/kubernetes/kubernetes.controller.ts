@@ -389,4 +389,23 @@ export class KubernetesController {
       req.organizationId,
     );
   }
+
+  /**
+   * Lists all operator bindings for a given catalog component.
+   *
+   * @param componentId - The catalog component UUID
+   * @returns Array of OperatorBinding entities for the component
+   */
+  @Get("components/:componentId/bindings")
+  @ApiOperation({ summary: "List operator bindings for a catalog component" })
+  @ApiParam({ name: "componentId", description: "Catalog component UUID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all operator bindings for the specified component.",
+  })
+  async listBindingsByComponent(
+    @Param("componentId") componentId: string,
+  ): Promise<OperatorBinding[]> {
+    return this.operatorBindingService.findByComponent(componentId);
+  }
 }

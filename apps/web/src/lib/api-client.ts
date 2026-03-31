@@ -1083,6 +1083,13 @@ export const kubernetes = {
     );
   },
 
+  /** List all operator bindings for a catalog component. */
+  listBindingsByComponent(componentId: string): Promise<OperatorBinding[]> {
+    return request<OperatorBinding[]>(
+      `/v1/kubernetes/components/${encodeURIComponent(componentId)}/bindings`,
+    );
+  },
+
   /** Bind an operator to a catalog component. */
   createOperatorBinding(
     operatorName: string,
