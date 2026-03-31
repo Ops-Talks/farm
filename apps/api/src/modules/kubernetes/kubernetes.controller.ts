@@ -356,11 +356,13 @@ export class KubernetesController {
   async removeBinding(
     @Param("name") operatorName: string,
     @Body() dto: DeleteOperatorBindingDto,
+    @Req() req: RequestWithOrg,
   ): Promise<void> {
     return this.operatorBindingService.remove(
       operatorName,
       dto.operatorNamespace,
       dto.componentId,
+      req.organizationId,
     );
   }
 
