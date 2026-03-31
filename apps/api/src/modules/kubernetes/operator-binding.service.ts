@@ -36,6 +36,7 @@ export class OperatorBindingService {
         operatorName: dto.operatorName,
         operatorNamespace: dto.operatorNamespace,
         componentId: dto.componentId,
+        ...(dto.organizationId ? { organizationId: dto.organizationId } : {}),
       },
     });
 
