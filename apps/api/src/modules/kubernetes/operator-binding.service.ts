@@ -93,32 +93,34 @@ export class OperatorBindingService {
   }
 
   /**
-   * Removes a binding identified by operator name, namespace, and component.
+   * Removes a binding identified by operator name, namespace, component, and organization.
    *
    * @param operatorName - Operator name
    * @param operatorNamespace - Kubernetes namespace
    * @param componentId - Component UUID
+   * @param organizationId - Organization UUID to scope the binding
    * @throws NotFoundException if no matching binding exists
    */
   async remove(
     operatorName: string,
     operatorNamespace: string,
     componentId: string,
+    organizationId: string,
   ): Promise<void> {
     const binding = await this.bindingRepository.findOne({
-      where: { operatorName, operatorNamespace, componentId },
+      where: { operatorName, operatorNamespace, componentId, organizationId },
     });
 
     if (!binding) {
       throw new NotFoundException(
-        `Binding not found for operator "${operatorName}" in namespace "${operatorNamespace}" with component "${componentId}"`,
+        `Binding not found for operator "${operatorName}" in namespace "${operatorNamespace}" with component "${componentId}" and organization "${organizationId}"`,
       );
     }
 
     await this.bindingRepository.remove(binding);
 
     this.logger.log(
-      `Removed binding: operator="${operatorName}" namespace="${operatorNamespace}" component="${componentId}"`,
+      `Removed binding: operator="${operatorName}" namespace="${operatorNamespace}" component="${componentId}" organization="${organizationId}"`,
     );
   }
 }
