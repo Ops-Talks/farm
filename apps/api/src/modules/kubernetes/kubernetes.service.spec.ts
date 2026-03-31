@@ -1168,6 +1168,21 @@ describe("KubernetesService", () => {
       expect(result).toEqual({ nodeName: "worker-crio", available: true });
     });
 
+    it("should return available=true when CRI-O is detected (crio:// prefix)", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "worker-crio2",
+            containerRuntimeVersion: "crio://1.28.0",
+          }),
+        ],
+      });
+
+      const result = await service.getCrioMetrics("worker-crio2");
+
+      expect(result).toEqual({ nodeName: "worker-crio2", available: true });
+    });
+
     it("should return available=false when listNodeRuntimes throws", async () => {
       jest
         .spyOn(service, "listNodeRuntimes")

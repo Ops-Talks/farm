@@ -931,7 +931,7 @@ export class KubernetesService {
         return { nodeName, available: false };
       }
 
-      if (nodeRuntime.runtimeName !== "cri-o") {
+      if (!["cri-o", "crio"].includes(nodeRuntime.runtimeName)) {
         this.logger.debug(
           `Node "${nodeName}" does not use CRI-O runtime (uses "${nodeRuntime.runtimeName}")`,
         );
