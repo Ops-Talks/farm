@@ -271,7 +271,7 @@ export class KubernetesController {
    *
    * @returns Array of node runtime descriptors
    */
-  @Get("runtime")
+  @Get("nodes/runtimes")
   @ApiOperation({
     summary: "List container runtime info for all cluster nodes",
   })
@@ -290,7 +290,7 @@ export class KubernetesController {
    * @param nodeName - The Kubernetes node name
    * @returns CRI-O storage metrics with availability info
    */
-  @Get("runtime/:nodeName/metrics")
+  @Get("nodes/:nodeName/crio-metrics")
   @ApiOperation({
     summary: "Get CRI-O storage metrics for a specific node",
   })
@@ -316,7 +316,7 @@ export class KubernetesController {
    * @param req - Request with organization context
    * @returns The created OperatorBinding entity
    */
-  @Post("operators/:name/binding")
+  @Post("operators/:name/bindings")
   @ApiOperation({ summary: "Bind an operator to a catalog component" })
   @ApiParam({ name: "name", description: "Operator name" })
   @ApiResponse({
@@ -345,7 +345,7 @@ export class KubernetesController {
    * @param operatorName - The operator CSV name
    * @param dto - Identifies the binding to remove (namespace, componentId)
    */
-  @Delete("operators/:name/binding")
+  @Delete("operators/:name/bindings")
   @ApiOperation({ summary: "Remove an operator-to-component binding" })
   @ApiParam({ name: "name", description: "Operator name" })
   @ApiResponse({

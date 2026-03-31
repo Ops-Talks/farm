@@ -1089,8 +1089,8 @@ export const kubernetes = {
     data: { operatorNamespace: string; componentId: string },
   ): Promise<OperatorBinding> {
     return request<OperatorBinding>(
-      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/binding`,
-      { method: "POST", body: JSON.stringify({ ...data, operatorName }) },
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/bindings`,
+      { method: "POST", body: JSON.stringify(data) },
     );
   },
 
@@ -1100,20 +1100,20 @@ export const kubernetes = {
     data: { operatorNamespace: string; componentId: string },
   ): Promise<void> {
     return request<void>(
-      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/binding`,
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/bindings`,
       { method: "DELETE", body: JSON.stringify(data) },
     );
   },
 
   /** List container runtime info for all cluster nodes. */
   listNodeRuntimes(): Promise<NodeRuntimeInfo[]> {
-    return request<NodeRuntimeInfo[]>("/v1/kubernetes/runtime");
+    return request<NodeRuntimeInfo[]>("/v1/kubernetes/nodes/runtimes");
   },
 
   /** Fetch CRI-O storage metrics for a specific node. */
   getCrioMetrics(nodeName: string): Promise<CrioStorageMetrics> {
     return request<CrioStorageMetrics>(
-      `/v1/kubernetes/runtime/${encodeURIComponent(nodeName)}/metrics`,
+      `/v1/kubernetes/nodes/${encodeURIComponent(nodeName)}/crio-metrics`,
     );
   },
 };

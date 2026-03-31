@@ -3,12 +3,15 @@ import { ApiProperty } from "@nestjs/swagger";
 
 /**
  * DTO for creating a new operator-to-component binding.
+ * The operator name is supplied via the route path parameter and does not
+ * need to be included in the request body.
  */
 export class CreateOperatorBindingDto {
-  @ApiProperty({ example: "prometheus-operator" })
+  @ApiProperty({ required: false, example: "prometheus-operator" })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  operatorName: string;
+  operatorName?: string;
 
   @ApiProperty({ example: "monitoring" })
   @IsString()
