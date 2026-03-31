@@ -699,6 +699,74 @@ export interface KubernetesRollout {
   updatedAt: string;
 }
 
+// -- Operators & Runtime Info (Phase 16) --
+
+/** An OLM-managed operator discovered in the cluster. */
+export interface OperatorInfo {
+  name: string;
+  displayName: string;
+  version: string;
+  namespace: string;
+  phase: string;
+  description: string;
+  icon?: string;
+  provider?: string;
+  createdAt: string;
+  customResourceDefinitions: Array<{
+    name: string;
+    version: string;
+    kind: string;
+    description: string;
+  }>;
+}
+
+/** A custom resource instance managed by an operator. */
+export interface CustomResourceInstance {
+  name: string;
+  namespace: string;
+  kind: string;
+  apiVersion: string;
+  status?: Record<string, unknown>;
+  conditions?: Array<{
+    type: string;
+    status: string;
+    reason?: string;
+    message?: string;
+    lastTransitionTime?: string;
+  }>;
+  createdAt: string;
+}
+
+/** A binding between an operator and a catalog component. */
+export interface OperatorBinding {
+  id: string;
+  operatorName: string;
+  operatorNamespace: string;
+  componentId: string;
+  component?: CatalogComponent;
+  addedAt: string;
+  organizationId?: string;
+}
+
+/** Runtime info for a cluster node. */
+export interface NodeRuntimeInfo {
+  nodeName: string;
+  runtimeName: string;
+  runtimeVersion: string;
+  kernelVersion: string;
+  osImage: string;
+  architecture: string;
+}
+
+/** CRI-O storage metrics for a node. */
+export interface CrioStorageMetrics {
+  nodeName: string;
+  available: boolean;
+  imageLayers?: number;
+  cacheHitRate?: number;
+  storageUsageBytes?: number;
+}
+
 // -- Keycloak / Enterprise SSO (FARM-E41) --
 
 /** A stored Keycloak OIDC credential for an organisation. */

@@ -95,6 +95,12 @@ import type {
   CreateEnvironmentRequestDto,
   UpdateEnvironmentRequestDto,
   ReviewEnvironmentRequestDto,
+  // Operators & Runtime (Phase 16)
+  OperatorInfo,
+  CustomResourceInstance,
+  OperatorBinding,
+  NodeRuntimeInfo,
+  CrioStorageMetrics,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1046,6 +1052,68 @@ export const kubernetes = {
   }): Promise<KubernetesRollout[]> {
     return request<KubernetesRollout[]>(
       `/v1/kubernetes/rollouts${toQueryString(params ?? {})}`,
+    );
+  },
+
+  /** List OLM-managed operators discovered in the cluster. */
+  listOperators(): Promise<OperatorInfo[]> {
+    return request<OperatorInfo[]>("/v1/kubernetes/operators");
+  },
+
+  /** Get a single operator by name. */
+  getOperator(name: string): Promise<OperatorInfo | null> {
+    return request<OperatorInfo | null>(
+      `/v1/kubernetes/operators/${encodeURIComponent(name)}`,
+    );
+  },
+
+  /** List custom resource instances managed by a specific operator. */
+  listOperatorCustomResources(
+    operatorName: string,
+  ): Promise<CustomResourceInstance[]> {
+    return request<CustomResourceInstance[]>(
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/custom-resources`,
+    );
+  },
+
+  /** List catalog component bindings for an operator. */
+  listOperatorBindings(operatorName: string): Promise<OperatorBinding[]> {
+    return request<OperatorBinding[]>(
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/bindings`,
+    );
+  },
+
+  /** Bind an operator to a catalog component. */
+  createOperatorBinding(
+    operatorName: string,
+    data: { operatorNamespace: string; componentId: string },
+  ): Promise<OperatorBinding> {
+    return request<OperatorBinding>(
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/binding`,
+      { method: "POST", body: JSON.stringify({ ...data, operatorName }) },
+    );
+  },
+
+  /** Remove an operator-to-component binding. */
+  removeOperatorBinding(
+    operatorName: string,
+    data: { operatorNamespace: string; componentId: string },
+  ): Promise<void> {
+    return request<void>(
+      `/v1/kubernetes/operators/${encodeURIComponent(operatorName)}/binding`,
+      { method: "DELETE", body: JSON.stringify(data) },
+    );
+  },
+
+  /** List container runtime info for all cluster nodes. */
+  listNodeRuntimes(): Promise<NodeRuntimeInfo[]> {
+    return request<NodeRuntimeInfo[]>("/v1/kubernetes/runtime");
+  },
+
+  /** Fetch CRI-O storage metrics for a specific node. */
+  getCrioMetrics(nodeName: string): Promise<CrioStorageMetrics> {
+    return request<CrioStorageMetrics>(
+      `/v1/kubernetes/runtime/${encodeURIComponent(nodeName)}/metrics`,
     );
   },
 };
