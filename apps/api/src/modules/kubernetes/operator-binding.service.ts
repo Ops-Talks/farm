@@ -105,22 +105,27 @@ export class OperatorBindingService {
     operatorName: string,
     operatorNamespace: string,
     componentId: string,
-    organizationId: string,
+    organizationId?: string,
   ): Promise<void> {
-    const binding = await this.bindingRepository.findOne({
-      where: { operatorName, operatorNamespace, componentId, organizationId },
-    });
+    const where: Record<string, unknown> = {
+      operatorName,
+      operatorNamespace,
+      componentId,
+    };
+    if (organizationId) where.organizationId = organizationId;
+
+    const binding = await this.bindingRepository.findOne({ where });
 
     if (!binding) {
       throw new NotFoundException(
-        `Binding not found for operator "${operatorName}" in namespace "${operatorNamespace}" with component "${componentId}" and organization "${organizationId}"`,
+        `Binding not found for operator "${operatorName}" in namespace "${operatorNamespace}" with component "${componentId}"`,
       );
     }
 
     await this.bindingRepository.remove(binding);
 
     this.logger.log(
-      `Removed binding: operator="${operatorName}" namespace="${operatorNamespace}" component="${componentId}" organization="${organizationId}"`,
+      `Removed binding: operator="${operatorName}" namespace="${operatorNamespace}" component="${componentId}"`,
     );
   }
 }

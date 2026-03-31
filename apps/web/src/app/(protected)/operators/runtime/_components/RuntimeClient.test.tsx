@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import React from "react";
@@ -217,6 +218,143 @@ describe("RuntimeClient", () => {
     expect(
       screen.queryByText("Show CRI-O Metrics"),
     ).not.toBeInTheDocument();
+  });
+
+  // ── Unknown runtime badge ──────────────────────────────────────────────────
+
+  it("renders unknown runtime badge with gray fallback styling", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ runtimeName: "rkt" }),
+    ]);
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      const badge = screen.getByText("rkt");
+      expect(badge.className).toContain("bg-gray-500/20");
+    });
+  });
+
+  // ── CRI-O metrics: loading state ──────────────────────────────────────────
+
+  it("shows skeleton while CRI-O metrics are loading", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ nodeName: "crio-node", runtimeName: "cri-o" }),
+    ]);
+    mockGetCrioMetrics.mockReturnValue(new Promise(() => {}));
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Show CRI-O Metrics")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText("Show CRI-O Metrics"));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Show CRI-O Metrics")).not.toBeInTheDocument();
+    });
+  });
+
+  // ── CRI-O metrics: unavailable ─────────────────────────────────────────────
+
+  it("shows unavailable message when CRI-O metrics are not available", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ nodeName: "crio-node", runtimeName: "cri-o" }),
+    ]);
+    mockGetCrioMetrics.mockResolvedValue({ available: false });
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Show CRI-O Metrics")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText("Show CRI-O Metrics"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("CRI-O metrics unavailable"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // ── CRI-O metrics: all fields (KB path) ───────────────────────────────────
+
+  it("shows all CRI-O metrics with KB storage", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ nodeName: "crio-node", runtimeName: "cri-o" }),
+    ]);
+    mockGetCrioMetrics.mockResolvedValue({
+      available: true,
+      imageLayers: 42,
+      cacheHitRate: 0.85,
+      storageUsageBytes: 2048,
+    });
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Show CRI-O Metrics")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText("Show CRI-O Metrics"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Layers: 42")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Cache hit: 85.0%")).toBeInTheDocument();
+    expect(screen.getByText("Storage: 2.0 KB")).toBeInTheDocument();
+  });
+
+  // ── CRI-O metrics: partial data (MB path) ─────────────────────────────────
+
+  it("shows only available metrics fields with MB storage", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ nodeName: "crio-node", runtimeName: "cri-o" }),
+    ]);
+    mockGetCrioMetrics.mockResolvedValue({
+      available: true,
+      storageUsageBytes: 5242880,
+    });
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Show CRI-O Metrics")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText("Show CRI-O Metrics"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Storage: 5.0 MB")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Layers:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cache hit:/)).not.toBeInTheDocument();
+  });
+
+  // ── CRI-O metrics: GB path ────────────────────────────────────────────────
+
+  it("formats storage in GB for large values", async () => {
+    mockListNodeRuntimes.mockResolvedValue([
+      makeNode({ nodeName: "crio-node", runtimeName: "cri-o" }),
+    ]);
+    mockGetCrioMetrics.mockResolvedValue({
+      available: true,
+      storageUsageBytes: 2147483648,
+    });
+
+    render(<RuntimeClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("Show CRI-O Metrics")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText("Show CRI-O Metrics"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Storage: 2.00 GB")).toBeInTheDocument();
+    });
   });
 });
 

@@ -211,7 +211,7 @@ describe("OperatorBindingService", () => {
       await expect(
         service.remove("nonexistent-op", "default", "comp-uuid-999", "org-1"),
       ).rejects.toThrow(
-        'Binding not found for operator "nonexistent-op" in namespace "default" with component "comp-uuid-999" and organization "org-1"',
+        'Binding not found for operator "nonexistent-op" in namespace "default" with component "comp-uuid-999"',
       );
       expect(repo.remove).not.toHaveBeenCalled();
     });

@@ -359,14 +359,18 @@ describe("KubernetesController", () => {
     it("should return all bindings for a catalog component", async () => {
       const result = await controller.listBindingsByComponent("comp-uuid-1");
       expect(result).toEqual([mockBinding]);
-      expect(bindingService.findByComponent).toHaveBeenCalledWith("comp-uuid-1");
+      expect(bindingService.findByComponent).toHaveBeenCalledWith(
+        "comp-uuid-1",
+      );
     });
 
     it("should return an empty array when the component has no bindings", async () => {
       bindingService.findByComponent.mockResolvedValue([]);
       const result = await controller.listBindingsByComponent("comp-uuid-none");
       expect(result).toEqual([]);
-      expect(bindingService.findByComponent).toHaveBeenCalledWith("comp-uuid-none");
+      expect(bindingService.findByComponent).toHaveBeenCalledWith(
+        "comp-uuid-none",
+      );
     });
   });
 });

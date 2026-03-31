@@ -8,7 +8,7 @@ import type { CatalogComponent } from "@/types/api";
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockListOperators = vi.fn();
-const mockListOperatorBindings = vi.fn();
+const mockListBindingsByComponent = vi.fn();
 
 vi.mock("next/link", () => ({
   default: ({
@@ -23,8 +23,8 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/api-client", () => ({
   kubernetes: {
     listOperators: (...args: unknown[]) => mockListOperators(...args),
-    listOperatorBindings: (...args: unknown[]) =>
-      mockListOperatorBindings(...args),
+    listBindingsByComponent: (...args: unknown[]) =>
+      mockListBindingsByComponent(...args),
   },
 }));
 
@@ -71,6 +71,7 @@ describe("OperatorsTab", () => {
 
   it("shows loading skeleton while operators are being fetched", () => {
     mockListOperators.mockReturnValue(new Promise(() => {}));
+    mockListBindingsByComponent.mockReturnValue(new Promise(() => {}));
 
     render(<OperatorsTab component={buildComponent()} />, {
       wrapper: createWrapper(),
@@ -84,6 +85,7 @@ describe("OperatorsTab", () => {
 
   it("shows empty state when no operators are bound", async () => {
     mockListOperators.mockResolvedValue([]);
+    mockListBindingsByComponent.mockResolvedValue([]);
 
     render(<OperatorsTab component={buildComponent()} />, {
       wrapper: createWrapper(),
@@ -109,7 +111,7 @@ describe("OperatorsTab", () => {
     };
 
     mockListOperators.mockResolvedValue([operator]);
-    mockListOperatorBindings.mockResolvedValue([
+    mockListBindingsByComponent.mockResolvedValue([
       { id: "b1", operatorName: "prometheus-operator", componentId: "comp-1" },
     ]);
 
@@ -128,6 +130,122 @@ describe("OperatorsTab", () => {
     expect(link).toHaveAttribute("href", "/operators/prometheus-operator");
   });
 
+  it("renders operator with Failed phase badge", async () => {
+    const operator = {
+      name: "failing-operator",
+      displayName: "Failing Operator",
+      version: "1.0.0",
+      namespace: "operators",
+      phase: "Failed",
+      description: "Broken",
+      createdAt: "2025-01-01T00:00:00Z",
+      customResourceDefinitions: [],
+    };
+
+    mockListOperators.mockResolvedValue([operator]);
+    mockListBindingsByComponent.mockResolvedValue([
+      { id: "b1", operatorName: "failing-operator", componentId: "comp-1" },
+    ]);
+
+    render(<OperatorsTab component={buildComponent()} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Failing Operator")).toBeInTheDocument();
+    });
+
+    const badge = screen.getByText("Failed");
+    expect(badge.className).toContain("bg-red-500/20");
+  });
+
+  it("renders operator with Pending phase badge", async () => {
+    const operator = {
+      name: "pending-operator",
+      displayName: "Pending Operator",
+      version: "1.0.0",
+      namespace: "operators",
+      phase: "Pending",
+      description: "Waiting",
+      createdAt: "2025-01-01T00:00:00Z",
+      customResourceDefinitions: [],
+    };
+
+    mockListOperators.mockResolvedValue([operator]);
+    mockListBindingsByComponent.mockResolvedValue([
+      { id: "b1", operatorName: "pending-operator", componentId: "comp-1" },
+    ]);
+
+    render(<OperatorsTab component={buildComponent()} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Pending Operator")).toBeInTheDocument();
+    });
+
+    const badge = screen.getByText("Pending");
+    expect(badge.className).toContain("bg-yellow-500/20");
+  });
+
+  it("renders operator with Installing phase badge", async () => {
+    const operator = {
+      name: "installing-operator",
+      displayName: "Installing Operator",
+      version: "2.0.0",
+      namespace: "operators",
+      phase: "Installing",
+      description: "In progress",
+      createdAt: "2025-01-01T00:00:00Z",
+      customResourceDefinitions: [],
+    };
+
+    mockListOperators.mockResolvedValue([operator]);
+    mockListBindingsByComponent.mockResolvedValue([
+      { id: "b1", operatorName: "installing-operator", componentId: "comp-1" },
+    ]);
+
+    render(<OperatorsTab component={buildComponent()} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Installing Operator")).toBeInTheDocument();
+    });
+
+    const badge = screen.getByText("Installing");
+    expect(badge.className).toContain("bg-yellow-500/20");
+  });
+
+  it("renders operator with unknown phase badge", async () => {
+    const operator = {
+      name: "unknown-operator",
+      displayName: "Unknown Operator",
+      version: "1.0.0",
+      namespace: "operators",
+      phase: "SomeUnknown",
+      description: "Mystery",
+      createdAt: "2025-01-01T00:00:00Z",
+      customResourceDefinitions: [],
+    };
+
+    mockListOperators.mockResolvedValue([operator]);
+    mockListBindingsByComponent.mockResolvedValue([
+      { id: "b1", operatorName: "unknown-operator", componentId: "comp-1" },
+    ]);
+
+    render(<OperatorsTab component={buildComponent()} />, {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Unknown Operator")).toBeInTheDocument();
+    });
+
+    const badge = screen.getByText("SomeUnknown");
+    expect(badge.className).toContain("bg-gray-500/20");
+  });
+
   it("does not show operators not bound to the component", async () => {
     const operator = {
       name: "prometheus-operator",
@@ -141,14 +259,8 @@ describe("OperatorsTab", () => {
     };
 
     mockListOperators.mockResolvedValue([operator]);
-    // Binding is for a different component
-    mockListOperatorBindings.mockResolvedValue([
-      {
-        id: "b1",
-        operatorName: "prometheus-operator",
-        componentId: "other-comp",
-      },
-    ]);
+    // No bindings for this component
+    mockListBindingsByComponent.mockResolvedValue([]);
 
     render(<OperatorsTab component={buildComponent()} />, {
       wrapper: createWrapper(),
