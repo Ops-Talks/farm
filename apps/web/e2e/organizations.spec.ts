@@ -387,8 +387,10 @@ test("admin can add a member to the organization", async ({ page }) => {
   await page.getByRole("button", { name: "Add Member" }).click();
 
   // After the POST resolves the component reloads the member list; the new
-  // member's username should now appear in the refreshed table
-  await expect(page.getByText(MOCK_MEMBER.username)).toBeVisible({
+  // member's username should now appear in the refreshed table.
+  // Use { exact: true } to avoid matching the toast ("member-user added to
+  // organization.") that appears simultaneously.
+  await expect(page.getByText(MOCK_MEMBER.username, { exact: true })).toBeVisible({
     timeout: 10_000,
   });
 });

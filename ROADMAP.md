@@ -430,56 +430,56 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 16: Kubernetes Operators `TODO`
+## Phase 16: Kubernetes Operators `DONE`
 
-### FARM-E59: Kubernetes Operators Integration `TODO`
+### FARM-E59: Kubernetes Operators Integration `DONE`
 
 > Extend Farm's existing Kubernetes integration to surface Operators as first-class infrastructure components alongside Helm releases. Operators installed via OLM (Operator Lifecycle Manager) are discovered automatically, their managed Custom Resources are inventoried, and each Operator can be linked to a catalog component for full traceability.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S237 | Story | Operator discovery via OLM ClusterServiceVersions with status (healthy / degraded / failing) | `TODO` |
-| FARM-S238 | Story | Custom Resource inventory -- list CR instances per operator with spec and status conditions | `TODO` |
-| FARM-S239 | Story | Operator-to-component binding -- link installed operators to catalog components | `TODO` |
-| FARM-S240 | Story | Frontend Operators browser -- list operators, CR viewer, component link | `TODO` |
-| FARM-S241 | Story | CRI-O container runtime visibility -- detect runtime per node, surface version info and storage metrics | `TODO` |
+| FARM-S237 | Story | Operator discovery via OLM ClusterServiceVersions with status (healthy / degraded / failing) | `DONE` |
+| FARM-S238 | Story | Custom Resource inventory -- list CR instances per operator with spec and status conditions | `DONE` |
+| FARM-S239 | Story | Operator-to-component binding -- link installed operators to catalog components | `DONE` |
+| FARM-S240 | Story | Frontend Operators browser -- list operators, CR viewer, component link | `DONE` |
+| FARM-S241 | Story | CRI-O container runtime visibility -- detect runtime per node, surface version info and storage metrics | `DONE` |
 
 #### FARM-S237 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T151 | Task | OLM adapter in `KubernetesService`: list `ClusterServiceVersions` across all namespaces via `/apis/operators.coreos.com/v1alpha1/clusterserviceversions`; map to `OperatorInfo` (name, displayName, version, namespace, phase, description) | `TODO` |
-| FARM-T152 | Task | `GET /api/kubernetes/operators` endpoint returning all discovered operators with phase badge (Succeeded / Failed / Pending); unit + e2e tests | `TODO` |
+| FARM-T151 | Task | OLM adapter in `KubernetesService`: list `ClusterServiceVersions` across all namespaces via `/apis/operators.coreos.com/v1alpha1/clusterserviceversions`; map to `OperatorInfo` (name, displayName, version, namespace, phase, description) | `DONE` |
+| FARM-T152 | Task | `GET /api/kubernetes/operators` endpoint returning all discovered operators with phase badge (Succeeded / Failed / Pending); unit + e2e tests | `DONE` |
 
 #### FARM-S238 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T153 | Task | CRD discovery: extract `spec.customresourcedefinitions.owned` from each CSV; query `/apis/{group}/{version}/{plural}` for CR instances via `KubernetesService` | `TODO` |
-| FARM-T154 | Task | `GET /api/kubernetes/operators/:name/custom-resources` returning CR instances (name, namespace, kind, status conditions); unit + e2e tests | `TODO` |
+| FARM-T153 | Task | CRD discovery: extract `spec.customresourcedefinitions.owned` from each CSV; query `/apis/{group}/{version}/{plural}` for CR instances via `KubernetesService` | `DONE` |
+| FARM-T154 | Task | `GET /api/kubernetes/operators/:name/custom-resources` returning CR instances (name, namespace, kind, status conditions); unit + e2e tests | `DONE` |
 
 #### FARM-S239 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T155 | Task | `OperatorBinding` entity (`operatorName`, `operatorNamespace`, `componentId` FK → Component, `addedAt`); unique constraint on `(operatorName, operatorNamespace, componentId)`; TypeORM migration | `TODO` |
-| FARM-T156 | Task | `POST /api/kubernetes/operators/:name/binding` and `DELETE /api/kubernetes/operators/:name/binding` to associate / disassociate an operator with a catalog component; unit + e2e tests | `TODO` |
+| FARM-T155 | Task | `OperatorBinding` entity (`operatorName`, `operatorNamespace`, `componentId` FK → Component, `addedAt`); unique constraint on `(operatorName, operatorNamespace, componentId)`; TypeORM migration | `DONE` |
+| FARM-T156 | Task | `POST /api/kubernetes/operators/:name/binding` and `DELETE /api/kubernetes/operators/:name/binding` to associate / disassociate an operator with a catalog component; unit + e2e tests | `DONE` |
 
 #### FARM-S240 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T157 | Task | Operators list page at `/operators` with status badge, version, description, and linked component chip; reuse `FilterTabs` and `EmptyState` shared components | `TODO` |
-| FARM-T158 | Task | Operator detail panel: installed CRDs list, CR instances table with status conditions, binding selector to link/unlink a catalog component | `TODO` |
-| FARM-T159 | Task | Add "Operators" section to Component detail overview tab when one or more operators are bound to the component; show operator name, phase, and link to detail panel | `TODO` |
+| FARM-T157 | Task | Operators list page at `/operators` with status badge, version, description, and linked component chip; reuse `FilterTabs` and `EmptyState` shared components | `DONE` |
+| FARM-T158 | Task | Operator detail panel: installed CRDs list, CR instances table with status conditions, binding selector to link/unlink a catalog component | `DONE` |
+| FARM-T159 | Task | Add "Operators" section to Component detail overview tab when one or more operators are bound to the component; show operator name, phase, and link to detail panel | `DONE` |
 
 #### FARM-S241 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T169 | Task | Detect CRI-O via Kubernetes Node `.status.nodeInfo.containerRuntimeVersion` (value starts with `crio://`); `GET /api/kubernetes/runtime` returning runtime type, version, and count per node | `TODO` |
-| FARM-T170 | Task | Surface CRI-O storage stats by scraping the CRI-O metrics endpoint (port 9090 default) via `KubernetesService` pod proxy: image layer cache hit rate, storage usage per node | `TODO` |
-| FARM-T171 | Task | Frontend: runtime info badge per node in the Kubernetes section (runtime name + version); dedicated "Runtime" card in cluster overview showing dominant runtime and version distribution across nodes | `TODO` |
+| FARM-T169 | Task | Detect CRI-O via Kubernetes Node `.status.nodeInfo.containerRuntimeVersion` (value starts with `crio://`); `GET /api/kubernetes/runtime` returning runtime type, version, and count per node | `DONE` |
+| FARM-T170 | Task | Surface CRI-O storage stats by scraping the CRI-O metrics endpoint (port 9090 default) via `KubernetesService` pod proxy: image layer cache hit rate, storage usage per node | `DONE` |
+| FARM-T171 | Task | Frontend: runtime info badge per node in the Kubernetes section (runtime name + version); dedicated "Runtime" card in cluster overview showing dominant runtime and version distribution across nodes | `DONE` |
 
 ---
 
@@ -947,6 +947,55 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 ---
 
+## Phase 24: User Profile Management `TODO`
+
+### FARM-E70: User Profile Management `TODO`
+
+> Allow authenticated users to view and update their own profile from the frontend. Adds `firstName`, `lastName`, and `gender` columns to the `User` entity, exposes a `GET /api/auth/profile` and `PATCH /api/auth/profile` endpoint for general fields, a separate `PATCH /api/auth/profile/password` endpoint for password changes (requiring current password confirmation), and a dedicated frontend profile page accessible from the user menu inside the protected area.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S285 | Story | Backend -- extend User entity with `firstName`, `lastName`, and `gender` fields; add profile endpoints | `TODO` |
+| FARM-S286 | Story | Backend -- password change endpoint with current password verification | `TODO` |
+| FARM-S287 | Story | Frontend -- profile page with editable fields (first name, last name, gender, email) | `TODO` |
+| FARM-S288 | Story | Frontend -- password change form with current password confirmation and validation feedback | `TODO` |
+
+#### FARM-S285 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T257 | Task | Add `firstName` (`varchar`, nullable), `lastName` (`varchar`, nullable), and `gender` (`enum: male, female, non_binary`, nullable) columns to `User` entity; create TypeORM migration | `TODO` |
+| FARM-T258 | Task | Create `UpdateProfileDto` with `@IsOptional()` fields: `firstName`, `lastName`, `gender` (`@IsEnum(Gender)`), `email` (`@IsEmail()`); apply `whitelist: true` so `password` and `roles` cannot be set through this DTO | `TODO` |
+| FARM-T259 | Task | `GET /api/auth/profile` returns the authenticated user's own profile (exclude `password`, `refreshToken`); unit + e2e tests | `TODO` |
+| FARM-T260 | Task | `PATCH /api/auth/profile` updates `firstName`, `lastName`, `gender`, and `email` for the authenticated user; validate unique email constraint; unit + e2e tests | `TODO` |
+
+#### FARM-S286 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T261 | Task | Create `ChangePasswordDto` with `currentPassword`, `newPassword` (`@MinLength(8)`), and `confirmPassword`; add custom validator ensuring `newPassword === confirmPassword` | `TODO` |
+| FARM-T262 | Task | `PATCH /api/auth/profile/password` verifies `currentPassword` against stored hash with bcrypt, hashes and persists `newPassword`, invalidates existing refresh tokens; unit + e2e tests | `TODO` |
+
+#### FARM-S287 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T263 | Task | Add `/profile` route inside the protected layout; add "Profile" link to user dropdown menu in the app shell | `TODO` |
+| FARM-T264 | Task | `ProfileForm` component: editable fields for first name, last name, email, and gender (`Select` with options Male, Female, Non-Binary); pre-populated from `GET /api/auth/profile`; submit via `PATCH /api/auth/profile`; display success/error toast | `TODO` |
+| FARM-T265 | Task | `ProfileForm` unit tests: render with pre-filled data, submit updated values, display validation errors, handle API failure | `TODO` |
+| FARM-T266 | Task | Add `profile` methods (`getProfile`, `updateProfile`) to `api-client.ts`; unit tests | `TODO` |
+
+#### FARM-S288 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T267 | Task | `ChangePasswordForm` component: current password, new password, confirm password fields with client-side validation (min 8 chars, match confirmation); submit via `PATCH /api/auth/profile/password`; display success/error toast | `TODO` |
+| FARM-T268 | Task | `ChangePasswordForm` unit tests: submit valid change, display mismatch error, display wrong current password API error, enforce minimum length | `TODO` |
+| FARM-T269 | Task | Add `changePassword` method to `api-client.ts`; unit tests | `TODO` |
+| FARM-T270 | Task | Playwright E2E: navigate to profile page, update name and gender, verify persistence after reload; change password, log out, log in with new password | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -969,7 +1018,7 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 13: Observability 2.0 | 3 | 12 | `DONE` |
 | Phase 14: AI / Intelligence | 3 | 12 | `DEFERRED` |
 | Phase 15: Developer Self-Service | 2 | 10 | `DONE` |
-| Phase 16: Kubernetes Operators | 1 | 5 | `TODO` |
+| Phase 16: Kubernetes Operators | 1 | 5 | `DONE` |
 | Phase 17: Container Registry Integration | 1 | 6 | `TODO` |
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `TODO` |
 | Phase 19: FinOps | 2 | 7 | `TODO` |
@@ -977,4 +1026,5 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `TODO` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
-| **Total** | **71** | **274** | |
+| Phase 24: User Profile Management | 1 | 4 | `TODO` |
+| **Total** | **72** | **278** | |

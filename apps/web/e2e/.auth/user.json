@@ -19,7 +19,7 @@
         },
         {
           "name": "farm_user",
-          "value": "{\"id\":\"e2e-user-id\",\"username\":\"e2e-admin\",\"email\":\"e2e-admin@example.com\",\"displayName\":\"E2E Admin\",\"roles\":[\"admin\"],\"createdAt\":\"2026-03-30T00:04:49.102Z\",\"updatedAt\":\"2026-03-30T00:04:49.102Z\"}"
+          "value": "{\"id\":\"e2e-user-id\",\"username\":\"e2e-admin\",\"email\":\"e2e-admin@example.com\",\"displayName\":\"E2E Admin\",\"roles\":[\"admin\"],\"createdAt\":\"2026-03-31T21:57:16.586Z\",\"updatedAt\":\"2026-03-31T21:57:16.586Z\"}"
         }
       ]
     }

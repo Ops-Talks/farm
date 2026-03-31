@@ -26,6 +26,7 @@ import { IstioSecurityTab } from "./IstioSecurityTab";
 import { IstioCanaryTab } from "./IstioCanaryTab";
 import { ApiSpecsTab } from "./ApiSpecsTab";
 import { GatewayRoutesTab } from "./GatewayRoutesTab";
+import { OperatorsTab } from "./OperatorsTab";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -280,6 +281,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="api-specs">API Specs</TabsTrigger>
           {/* Gateway Routes tab (FARM-E48) */}
           <TabsTrigger value="gateway">Gateway Routes</TabsTrigger>
+          <TabsTrigger value="operators">Operators</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -574,6 +576,13 @@ export function ComponentDetailClient() {
              * local development to test the admin UI.
              */}
             <GatewayRoutesTab componentId={component.id} isAdmin={false} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Operators tab (Phase 16) ──────────────────────────────────── */}
+        <TabsContent value="operators">
+          <ErrorBoundary>
+            <OperatorsTab component={component} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

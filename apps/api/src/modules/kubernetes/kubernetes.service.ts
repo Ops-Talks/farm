@@ -38,6 +38,97 @@ export interface CrdResource {
 }
 
 /**
+ * Represents an OLM-managed operator discovered via ClusterServiceVersion resources.
+ */
+export interface OperatorInfo {
+  /** CSV name, e.g. "prometheus-operator.v0.65.1" */
+  name: string;
+  /** Human-readable display name from the CSV spec */
+  displayName: string;
+  /** Semantic version string */
+  version: string;
+  /** Namespace where the CSV is installed */
+  namespace: string;
+  /** CSV phase: "Succeeded" | "Failed" | "Pending" | "InstallReady" | "Replacing" | "Deleting" | "Unknown" */
+  phase: string;
+  /** Short description from the CSV spec */
+  description: string;
+  /** Base64-encoded icon data URI (optional) */
+  icon?: string;
+  /** Provider name from the CSV spec (optional) */
+  provider?: string;
+  /** ISO-8601 creation timestamp */
+  createdAt: string;
+  /** CRDs owned by this operator */
+  customResourceDefinitions: Array<{
+    name: string;
+    version: string;
+    kind: string;
+    description: string;
+  }>;
+}
+
+/**
+ * Represents a single instance of a custom resource managed by an operator.
+ */
+export interface CustomResourceInstance {
+  /** Resource name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Resource kind, e.g. "Prometheus" */
+  kind: string;
+  /** Full API version, e.g. "monitoring.coreos.com/v1" */
+  apiVersion: string;
+  /** Arbitrary status fields from the resource (optional) */
+  status?: Record<string, unknown>;
+  /** Standard Kubernetes conditions array (optional) */
+  conditions?: Array<{
+    type: string;
+    status: string;
+    reason?: string;
+    message?: string;
+    lastTransitionTime?: string;
+  }>;
+  /** ISO-8601 creation timestamp */
+  createdAt: string;
+}
+
+/**
+ * Container runtime information for a Kubernetes node.
+ */
+export interface NodeRuntimeInfo {
+  /** Node name */
+  nodeName: string;
+  /** Runtime name, e.g. "containerd", "cri-o", "docker" */
+  runtimeName: string;
+  /** Runtime version string */
+  runtimeVersion: string;
+  /** Kernel version reported by the node */
+  kernelVersion: string;
+  /** OS image description */
+  osImage: string;
+  /** CPU architecture, e.g. "amd64", "arm64" */
+  architecture: string;
+}
+
+/**
+ * CRI-O storage metrics for a specific node.
+ */
+export interface CrioStorageMetrics {
+  /** Node name */
+  nodeName: string;
+  /** Whether CRI-O metrics are available on this node */
+  available: boolean;
+  /** Number of image layers cached on the node (optional) */
+  imageLayers?: number;
+  /** Cache hit rate percentage (optional) */
+  cacheHitRate?: number;
+  /** Total storage usage in bytes (optional) */
+  storageUsageBytes?: number;
+}
+
+/**
  * Represents the status of an Argo Rollout custom resource.
  */
 export interface ArgoRolloutStatus {
@@ -99,6 +190,44 @@ interface RawRolloutList {
   items?: RawArgoRollout[];
   [key: string]: unknown;
 }
+/**
+ * Raw shape of an OLM ClusterServiceVersion returned by the CustomObjectsApi.
+ */
+interface RawClusterServiceVersion {
+  metadata?: {
+    name?: string;
+    namespace?: string;
+    creationTimestamp?: string;
+  };
+  spec?: {
+    displayName?: string;
+    description?: string;
+    version?: string;
+    icon?: Array<{ base64data?: string; mediatype?: string }>;
+    provider?: { name?: string };
+    customresourcedefinitions?: {
+      owned?: Array<{
+        name?: string;
+        version?: string;
+        kind?: string;
+        description?: string;
+      }>;
+    };
+  };
+  status?: {
+    phase?: string;
+  };
+  [key: string]: unknown;
+}
+
+/**
+ * Raw list response from the CustomObjectsApi for ClusterServiceVersion resources.
+ */
+interface RawCsvList {
+  items?: RawClusterServiceVersion[];
+  [key: string]: unknown;
+}
+
 const WELL_KNOWN_OPERATOR_GROUPS: Record<string, string> = {
   "monitoring.coreos.com": "Prometheus Operator",
   "cert-manager.io": "Cert-Manager",
@@ -530,5 +659,314 @@ export class KubernetesService {
       analysisRunResults: analysisRuns.length ? analysisRuns : undefined,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Operator Discovery (FARM-S237)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists all OLM-managed operators by querying ClusterServiceVersion resources.
+   * Returns an empty array gracefully when OLM is not installed (HTTP 404).
+   *
+   * @returns Array of OperatorInfo descriptors; empty array when disabled or on error
+   */
+  async listOperators(): Promise<OperatorInfo[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn("Kubernetes not enabled; returning empty operator list");
+      return [];
+    }
+
+    try {
+      const response = (await this.customObjectsApi.listClusterCustomObject({
+        group: "operators.coreos.com",
+        version: "v1alpha1",
+        plural: "clusterserviceversions",
+      })) as RawCsvList;
+
+      const items: RawClusterServiceVersion[] = response.items ?? [];
+      return items.map((csv) => this.parseCsv(csv));
+    } catch (error) {
+      // 404 means OLM is not installed — degrade gracefully.
+      const status = (error as { response?: { statusCode?: number } })?.response
+        ?.statusCode;
+      if (status === 404) {
+        this.logger.debug(
+          "OLM not installed in this cluster; returning empty operator list",
+        );
+        return [];
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list operators: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Parses a raw OLM ClusterServiceVersion into an OperatorInfo descriptor.
+   *
+   * @param csv - Raw CSV object from CustomObjectsApi
+   * @returns Typed OperatorInfo
+   */
+  private parseCsv(csv: RawClusterServiceVersion): OperatorInfo {
+    const spec = csv.spec ?? {};
+    const ownedCrds = spec.customresourcedefinitions?.owned ?? [];
+    const icon = spec.icon?.[0];
+
+    return {
+      name: csv.metadata?.name ?? "unknown",
+      displayName: spec.displayName ?? csv.metadata?.name ?? "unknown",
+      version: spec.version ?? "unknown",
+      namespace: csv.metadata?.namespace ?? "default",
+      phase: csv.status?.phase ?? "Unknown",
+      description: spec.description ?? "",
+      icon: icon?.base64data
+        ? `data:${icon.mediatype ?? "image/png"};base64,${icon.base64data}`
+        : undefined,
+      provider: spec.provider?.name,
+      createdAt: csv.metadata?.creationTimestamp ?? new Date().toISOString(),
+      customResourceDefinitions: ownedCrds.map((crd) => ({
+        name: crd.name ?? "unknown",
+        version: crd.version ?? "unknown",
+        kind: crd.kind ?? "Unknown",
+        description: crd.description ?? "",
+      })),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Custom Resource Inventory (FARM-S238)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists all custom resource instances owned by a specific OLM operator.
+   * Discovers the operator's owned CRDs via its ClusterServiceVersion, then
+   * queries each CRD's resources across all namespaces.
+   *
+   * @param operatorName - The CSV name of the operator to query
+   * @returns Array of CustomResourceInstance objects; empty array when not found or on error
+   */
+  async listOperatorCustomResources(
+    operatorName: string,
+  ): Promise<CustomResourceInstance[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty custom resource list",
+      );
+      return [];
+    }
+
+    try {
+      const operators = await this.listOperators();
+      const operator = operators.find((op) => op.name === operatorName);
+
+      if (!operator) {
+        this.logger.warn(`Operator "${operatorName}" not found`);
+        return [];
+      }
+
+      const instances: CustomResourceInstance[] = [];
+
+      for (const crd of operator.customResourceDefinitions) {
+        try {
+          // Derive group and plural from the CRD name (format: "plural.group")
+          const dotIndex = crd.name.indexOf(".");
+          const plural =
+            dotIndex > 0 ? crd.name.substring(0, dotIndex) : crd.name;
+          const group = dotIndex > 0 ? crd.name.substring(dotIndex + 1) : "";
+
+          const response = (await this.customObjectsApi.listClusterCustomObject(
+            {
+              group,
+              version: crd.version,
+              plural,
+            },
+          )) as { items?: Array<Record<string, unknown>> };
+
+          const items = response.items ?? [];
+          for (const item of items) {
+            instances.push(
+              this.parseCustomResourceInstance(
+                item,
+                crd.kind,
+                group,
+                crd.version,
+              ),
+            );
+          }
+        } catch (error) {
+          const errStatus = (error as { response?: { statusCode?: number } })
+            ?.response?.statusCode;
+          if (errStatus === 404) {
+            this.logger.debug(
+              `CRD "${crd.name}" not found in cluster; skipping`,
+            );
+            continue;
+          }
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.warn(
+            `Failed to list custom resources for CRD "${crd.name}": ${message}`,
+          );
+        }
+      }
+
+      return instances;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to list operator custom resources: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Parses a raw custom resource object into a CustomResourceInstance.
+   *
+   * @param raw - Raw API object from CustomObjectsApi
+   * @param kind - Resource kind name
+   * @param group - API group
+   * @param version - API version
+   * @returns Typed CustomResourceInstance
+   */
+  private parseCustomResourceInstance(
+    raw: Record<string, unknown>,
+    kind: string,
+    group: string,
+    version: string,
+  ): CustomResourceInstance {
+    const metadata = (raw.metadata ?? {}) as Record<string, unknown>;
+    const status = (raw.status ?? {}) as Record<string, unknown>;
+    const conditions = (status.conditions ?? []) as Array<
+      Record<string, unknown>
+    >;
+
+    return {
+      name: (metadata.name as string) ?? "unknown",
+      namespace: (metadata.namespace as string) ?? "default",
+      kind,
+      apiVersion: `${group}/${version}`,
+      status: Object.keys(status).length > 0 ? status : undefined,
+      conditions:
+        conditions.length > 0
+          ? conditions.map((c) => ({
+              type: (c.type as string) ?? "Unknown",
+              status: (c.status as string) ?? "Unknown",
+              reason: c.reason as string | undefined,
+              message: c.message as string | undefined,
+              lastTransitionTime: c.lastTransitionTime as string | undefined,
+            }))
+          : undefined,
+      createdAt:
+        (metadata.creationTimestamp as string) ?? new Date().toISOString(),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRI-O Runtime Detection (FARM-S241)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Lists container runtime information for all nodes in the cluster.
+   * Parses the containerRuntimeVersion field from each node's status to
+   * extract the runtime name and version.
+   *
+   * @returns Array of NodeRuntimeInfo objects; empty array when disabled or on error
+   */
+  async listNodeRuntimes(): Promise<NodeRuntimeInfo[]> {
+    if (!this.isEnabled() || !this.coreV1Api) {
+      this.logger.warn("Kubernetes not enabled; returning empty runtime list");
+      return [];
+    }
+
+    try {
+      const response = await this.coreV1Api.listNode();
+      const items = response.items ?? [];
+
+      return items.map((node) => {
+        const nodeInfo = node.status?.nodeInfo;
+        const runtimeVersion =
+          nodeInfo?.containerRuntimeVersion ?? "unknown://unknown";
+        const [runtimeName, version] =
+          this.parseContainerRuntimeVersion(runtimeVersion);
+
+        return {
+          nodeName: node.metadata?.name ?? "unknown",
+          runtimeName,
+          runtimeVersion: version,
+          kernelVersion: nodeInfo?.kernelVersion ?? "unknown",
+          osImage: nodeInfo?.osImage ?? "unknown",
+          architecture: nodeInfo?.architecture ?? "unknown",
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to list node runtimes: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Retrieves CRI-O storage metrics for a specific node.
+   * Verifies the node exists and uses the CRI-O runtime.  Metrics fields
+   * (imageLayers, cacheHitRate, storageUsageBytes) require a dedicated
+   * monitoring agent and are only populated when available.
+   *
+   * @param nodeName - Name of the Kubernetes node
+   * @returns CrioStorageMetrics with availability info
+   */
+  async getCrioMetrics(nodeName: string): Promise<CrioStorageMetrics> {
+    if (!this.isEnabled() || !this.coreV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning unavailable CRI-O metrics",
+      );
+      return { nodeName, available: false };
+    }
+
+    try {
+      const runtimes = await this.listNodeRuntimes();
+      const nodeRuntime = runtimes.find((r) => r.nodeName === nodeName);
+
+      if (!nodeRuntime) {
+        this.logger.warn(`Node "${nodeName}" not found`);
+        return { nodeName, available: false };
+      }
+
+      if (!["cri-o", "crio"].includes(nodeRuntime.runtimeName)) {
+        this.logger.debug(
+          `Node "${nodeName}" does not use CRI-O runtime (uses "${nodeRuntime.runtimeName}")`,
+        );
+        return { nodeName, available: false };
+      }
+
+      // CRI-O is detected. Direct metrics scraping requires a dedicated
+      // monitoring agent (e.g. Prometheus node exporter). Return availability.
+      return { nodeName, available: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to get CRI-O metrics for node "${nodeName}": ${message}`,
+      );
+      return { nodeName, available: false };
+    }
+  }
+
+  /**
+   * Parses a containerRuntimeVersion string into [runtimeName, version].
+   * The format is typically "containerd://1.6.20" or "cri-o://1.28.0".
+   *
+   * @param containerRuntimeVersion - Raw version string from node status
+   * @returns Tuple of [runtimeName, version]
+   */
+  private parseContainerRuntimeVersion(
+    containerRuntimeVersion: string,
+  ): [string, string] {
+    const separatorIndex = containerRuntimeVersion.indexOf("://");
+    if (separatorIndex === -1) {
+      return [containerRuntimeVersion, "unknown"];
+    }
+    return [
+      containerRuntimeVersion.substring(0, separatorIndex),
+      containerRuntimeVersion.substring(separatorIndex + 3),
+    ];
   }
 }

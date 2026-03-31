@@ -78,6 +78,18 @@ vi.mock(
   "@/app/(protected)/catalog/[id]/_components/IstioCanaryTab",
   () => ({ IstioCanaryTab: () => <div data-testid="istio-canary-stub" /> }),
 );
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/ApiSpecsTab",
+  () => ({ ApiSpecsTab: () => <div data-testid="api-specs-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/GatewayRoutesTab",
+  () => ({ GatewayRoutesTab: () => <div data-testid="gateway-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/OperatorsTab",
+  () => ({ OperatorsTab: () => <div data-testid="operators-stub" /> }),
+);
 
 import { ComponentDetailClient } from "@/app/(protected)/catalog/[id]/_components/ComponentDetailClient";
 

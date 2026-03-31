@@ -32,6 +32,7 @@ export class AppsV1Api {
 export class CoreV1Api {
   listSecretForAllNamespaces = jest.fn().mockResolvedValue({ items: [] });
   listNamespacedSecret = jest.fn().mockResolvedValue({ items: [] });
+  listNode = jest.fn().mockResolvedValue({ items: [] });
 }
 
 export class ApiextensionsV1Api {
