@@ -48,7 +48,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # The second command patches picomatch inside npm's own bundled dependencies
 # to >=4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
 RUN npm install -g npm@latest \
- && PICO_DIR=$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d) \
+ && PICO_DIR=$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d -print -quit) \
+ && if [ -z "$PICO_DIR" ]; then echo "Error: picomatch directory not found in npm installation." >&2; exit 1; fi \
  && cd "$PICO_DIR" \
  && npm pack picomatch@4.0.4 --quiet \
  && tar xzf picomatch-4.0.4.tgz --strip-components=1 \
