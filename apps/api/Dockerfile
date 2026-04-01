@@ -40,7 +40,14 @@ ENV NODE_ENV=production
 # Update npm to the latest version so its bundled tar dependency meets the
 # minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
 # CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
-RUN npm install -g npm@latest
+# The second command patches picomatch inside npm's own bundled dependencies
+# to >=4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
+RUN npm install -g npm@latest \
+ && PICO_DIR=$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d) \
+ && cd "$PICO_DIR" \
+ && npm pack picomatch@4.0.4 --quiet \
+ && tar xzf picomatch-4.0.4.tgz --strip-components=1 \
+ && rm picomatch-4.0.4.tgz
 
 # Upgrade zlib to >=1.3.2-r0 to fix CVE-2026-22184 (arbitrary code execution
 # via buffer overflow in the untgz utility). The version constraint is explicit

@@ -12,8 +12,18 @@ on:
 
 jobs:
   trivy:
-    name: Trivy Image Scan
+    name: Trivy — ${{ matrix.app }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, web]
+        include:
+          - app: api
+            dockerfile: apps/api/Dockerfile
+          - app: web
+            dockerfile: apps/web/Dockerfile
 
     permissions:
       contents: read
@@ -27,23 +37,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build API Docker image
+      - name: Build ${{ matrix.app }} Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/api/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: false
           load: true
-          tags: farm-api:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: farm-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
       # Step 1: generate SARIF covering both CRITICAL and HIGH for the
       # GitHub Security tab (visibility only — never blocks the build).
       - name: Run Trivy — SARIF report (CRITICAL + HIGH)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: farm-api:${{ github.sha }}
+          image-ref: farm-${{ matrix.app }}:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
@@ -56,7 +66,7 @@ jobs:
       - name: Run Trivy — gate (CRITICAL only)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: farm-api:${{ github.sha }}
+          image-ref: farm-${{ matrix.app }}:${{ github.sha }}
           format: table
           severity: CRITICAL
           exit-code: '1'
@@ -71,12 +81,12 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
-          category: trivy
+          category: trivy-${{ matrix.app }}
 
       - name: Upload Trivy scan artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trivy-results-${{ github.sha }}
+          name: trivy-results-${{ matrix.app }}-${{ github.sha }}
           path: trivy-results.sarif
           retention-days: 30
