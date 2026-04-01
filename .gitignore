@@ -33,4 +33,5 @@ lerna-debug.log*
 test-results/
 playwright-report/
 e2e/.auth/
+apps/web/e2e/.auth/
 GIT_COMMIT.md
