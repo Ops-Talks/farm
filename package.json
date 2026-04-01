@@ -22,9 +22,7 @@
     "picomatch": "^4.0.4"
   },
   "overrides": {
-    "@angular-devkit/core": {
-      "picomatch": "4.0.4"
-    },
+    "@angular-devkit/core": "19.2.23",
     "@nestjs/core": {
       "path-to-regexp": "8.4.0"
     },
