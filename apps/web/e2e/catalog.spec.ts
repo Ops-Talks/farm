@@ -193,9 +193,15 @@ test("authenticated user can click a component to view its detail page", async (
   await mockCatalogRoutes(page);
 
   await page.goto("/catalog");
+  // Wait for all network requests (API calls, Next.js prefetch) to settle so
+  // the page is fully hydrated before interacting with Link elements.  WebKit
+  // can fail to navigate if the Next.js router handlers have not attached yet.
+  await page.waitForLoadState("networkidle");
 
   // Click the component name link in the table
-  await page.getByRole("link", { name: MOCK_COMPONENT.name }).click();
+  const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
+  await expect(link).toHaveAttribute("href", `/catalog/${MOCK_COMPONENT.id}`);
+  await link.click();
 
   // Should navigate to the detail page
   await expect(page).toHaveURL(

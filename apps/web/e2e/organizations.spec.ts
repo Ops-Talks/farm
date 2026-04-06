@@ -213,10 +213,12 @@ test("authenticated user can navigate to /organizations and see heading + org ca
     page.getByRole("heading", { name: "Organizations" }),
   ).toBeVisible();
 
-  // Org card fields
-  await expect(page.getByText(MOCK_ORG.name)).toBeVisible();
-  await expect(page.getByText(MOCK_ORG.slug)).toBeVisible();
-  await expect(page.getByText(MOCK_ORG.description)).toBeVisible();
+  // Org card fields — scoped to #main-content to avoid matching the sidebar
+  // org-switcher button which also contains the current org name.
+  const main = page.locator("#main-content");
+  await expect(main.getByText(MOCK_ORG.name)).toBeVisible();
+  await expect(main.getByText(MOCK_ORG.slug)).toBeVisible();
+  await expect(main.getByText(MOCK_ORG.description)).toBeVisible();
 });
 
 /**
