@@ -7,12 +7,11 @@ WORKDIR /app
 # Copy root workspace manifest and lockfile for layer caching.
 COPY package.json package-lock.json ./
 
-# Copy only the workspace package.json files needed by the API.
-# Unneeded workspaces get a minimal stub so npm ci can resolve the lockfile.
+# Copy every workspace package.json so npm understands the workspace graph.
 COPY packages/types/package.json         ./packages/types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
-RUN mkdir -p apps/web && printf '{"name":"web","version":"0.0.0","private":true}' > apps/web/package.json
+COPY apps/web/package.json               ./apps/web/
 
 RUN npm ci --ignore-scripts
 
@@ -57,14 +56,12 @@ RUN npm install -g npm@latest \
 # required version is not available in the Alpine repositories.
 RUN apk add --no-cache "zlib>=1.3.2-r0"
 
-# Install only production dependencies for the API workspace.
-# The web workspace gets a stub so npm ci can resolve the lockfile without
-# pulling in Next.js, React, or any other frontend-only packages.
+# Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
 COPY packages/types/package.json         ./packages/types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
-RUN mkdir -p apps/web && printf '{"name":"web","version":"0.0.0","private":true}' > apps/web/package.json
+COPY apps/web/package.json               ./apps/web/
 
 RUN npm ci --omit=dev --ignore-scripts
 
