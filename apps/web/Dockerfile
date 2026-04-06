@@ -55,6 +55,12 @@ RUN npm install -g npm@latest \
  && tar xzf picomatch-4.0.4.tgz --strip-components=1 \
  && rm picomatch-4.0.4.tgz
 
+# Upgrade zlib to >=1.3.2-r0 to fix CVE-2026-27171 (DoS via infinite loop in
+# CRC32 combine functions) and CVE-2026-22184 (arbitrary code execution via
+# buffer overflow). The version constraint is explicit so the build fails if the
+# required version is not available in the Alpine repositories.
+RUN apk add --no-cache "zlib>=1.3.2-r0"
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
