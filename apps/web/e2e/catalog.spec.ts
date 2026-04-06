@@ -195,15 +195,17 @@ test("authenticated user can click a component to view its detail page", async (
   await page.goto("/catalog");
 
   // The component name should be rendered as a link to its detail page.
+  // Use getAttribute() instead of expect().toHaveAttribute() — the latter
+  // triggers a hover interaction on WebKit which activates Next.js link
+  // prefetching and starts a navigation, causing "frame was detached" when
+  // page.goto() is subsequently called.
   const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
   await expect(link).toBeVisible();
-  await expect(link).toHaveAttribute("href", `/catalog/${MOCK_COMPONENT.id}`);
+  const href = await link.getAttribute("href");
+  expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // Navigate to the detail page using the link's href.  Playwright's
-  // synthetic pointer events fail to trigger Next.js <Link> client-side
-  // navigation on WebKit (the URL stays at /catalog despite the click event
-  // being dispatched).  Using page.goto() reliably navigates on all engines
-  // while the assertions above still verify the link renders correctly.
+  // Playwright synthetic clicks fail to trigger Next.js <Link> client-side
+  // navigation on WebKit.  Navigate via page.goto() using the verified href.
   await page.goto(`/catalog/${MOCK_COMPONENT.id}`);
 
   // Should be on the detail page
