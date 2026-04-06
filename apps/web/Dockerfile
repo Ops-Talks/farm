@@ -6,11 +6,12 @@ WORKDIR /app
 # Copy root workspace manifest and lockfile first for layer caching.
 COPY package.json package-lock.json ./
 
-# Copy every workspace package.json so npm understands the workspace graph.
+# Copy only the workspace package.json files needed by the Web app.
+# Unneeded workspaces get a minimal stub so npm ci can resolve the lockfile.
 COPY packages/types/package.json        ./packages/types/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/web/package.json              ./apps/web/
-COPY apps/api/package.json              ./apps/api/
+RUN mkdir -p apps/api && printf '{"name":"farm","version":"0.0.0","private":true}' > apps/api/package.json
 
 RUN npm ci --ignore-scripts
 

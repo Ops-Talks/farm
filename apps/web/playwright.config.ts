@@ -50,10 +50,17 @@ export default defineConfig({
   },
 
   projects: [
-    // Chromium only — fastest in CI and sufficient for critical-path coverage
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
   ],
 

@@ -104,13 +104,13 @@ jobs:
         run: cd packages/types && npx tsc
 
       # ── 5. Install Playwright browser binaries ───────────────────────────────
-      - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
         working-directory: apps/web
 
       # ── 6. Run E2E tests ─────────────────────────────────────────────────────
       - name: Run E2E tests (apps/web)
-        run: npm run test:e2e -- --project=chromium
+        run: npm run test:e2e
         working-directory: apps/web
         env:
           CI: true
@@ -121,7 +121,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
+          name: playwright-test-results-all-browsers
           path: apps/web/test-results/
           retention-days: 7
 
@@ -129,7 +129,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-html-report
+          name: playwright-html-report-all-browsers
           path: apps/web/playwright-report/
           retention-days: 7
 
