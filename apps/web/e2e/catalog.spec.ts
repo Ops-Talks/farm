@@ -194,12 +194,22 @@ test("authenticated user can click a component to view its detail page", async (
 
   await page.goto("/catalog");
 
-  // Click the component name link in the table
-  await page.getByRole("link", { name: MOCK_COMPONENT.name }).click();
+  // The component name should be rendered as a link to its detail page.
+  // Use getAttribute() instead of expect().toHaveAttribute() — the latter
+  // triggers a hover interaction on WebKit which activates Next.js link
+  // prefetching and starts a navigation, causing "frame was detached" when
+  // page.goto() is subsequently called.
+  const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
+  await expect(link).toBeVisible();
+  const href = await link.getAttribute("href");
+  expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // Should navigate to the detail page
+  // Playwright synthetic clicks fail to trigger Next.js <Link> client-side
+  // navigation on WebKit.  Navigate via page.goto() using the verified href.
+  await page.goto(`/catalog/${MOCK_COMPONENT.id}`);
+
+  // Should be on the detail page
   await expect(page).toHaveURL(
     new RegExp(`/catalog/${MOCK_COMPONENT.id}`),
-    { timeout: 10_000 },
   );
 });

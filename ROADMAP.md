@@ -798,25 +798,25 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 
 ---
 
-## Phase 22: CI/CD Hardening `TODO`
+## Phase 22: CI/CD Hardening `DONE`
 
-### FARM-E67: CI Pipeline Hardening `TODO`
+### FARM-E67: CI Pipeline Hardening `DONE`
 
 Hardens the GitHub Actions CI pipeline with three gaps identified in the current setup: the API TypeScript build is never validated in the normal CI flow; database migrations are never exercised against a real PostgreSQL instance (e2e tests use SQLite with `synchronize: true`); and Playwright E2E tests only run on Chromium.
 
 | ID | Type | Description | Status |
 |----|------|-------------|--------|
-| FARM-S270 | Story | API build validation in `ci.yml` -- add a `npm run build -w apps/api` step to the `api` job so every PR verifies the TypeScript compiles to `dist/` cleanly | `TODO` |
-| FARM-S271 | Story | Migration integrity job -- new `migrations` job in `ci.yml` with a PostgreSQL 16 service container; runs `npm run migration:run -w apps/api` against a real database to catch constraint errors, type mismatches, and dialect incompatibilities invisible to SQLite | `TODO` |
-| FARM-S272 | Story | Playwright cross-browser support -- extend `web-ci.yml` and `playwright.config.ts` to run E2E tests on Chromium, Firefox, and WebKit; upload per-browser artifacts on failure | `TODO` |
+| FARM-S270 | Story | API build validation in `ci.yml` -- add a `npm run build -w apps/api` step to the `api` job so every PR verifies the TypeScript compiles to `dist/` cleanly | `DONE` |
+| FARM-S271 | Story | Migration integrity job -- new `migrations` job in `ci.yml` with a PostgreSQL 16 service container; runs `npm run migration:run -w apps/api` against a real database to catch constraint errors, type mismatches, and dialect incompatibilities invisible to SQLite | `DONE` |
+| FARM-S272 | Story | Playwright cross-browser support -- extend `web-ci.yml` and `playwright.config.ts` to run E2E tests on Chromium, Firefox, and WebKit; upload per-browser artifacts on failure | `DONE` |
 
 #### FARM-E67 Tasks
 
 | ID | Type | Description | Status |
 |----|------|-------------|--------|
-| FARM-T234 | Task | Add `- name: Build API` step (`run: npm run build -w apps/api`) to the `api` job in `ci.yml`, after the E2E tests step and before the Codecov upload; no additional secrets or services required | `TODO` |
-| FARM-T235 | Task | Add `migrations` job to `ci.yml`: PostgreSQL 16-alpine service container with health check; steps: checkout, Node 20, `npm ci`, `npm run build -w apps/api`, `npm run migration:run -w apps/api`; env vars use the same dummy credentials already used in `dast.yml` (`DATABASE_SYNC: "false"`); job runs in parallel with `api` and `lighthouse` | `TODO` |
-| FARM-T236 | Task | Add Firefox and WebKit projects to `apps/web/playwright.config.ts`; update `web-ci.yml` `e2e` job to install all browsers (`npx playwright install --with-deps`) and run tests without `--project=chromium` filter; upload separate artifacts per browser on failure | `TODO` |
+| FARM-T234 | Task | Add `- name: Build API` step (`run: npm run build -w apps/api`) to the `api` job in `ci.yml`, after the E2E tests step and before the Codecov upload; no additional secrets or services required | `DONE` |
+| FARM-T235 | Task | Add `migrations` job to `ci.yml`: PostgreSQL 16-alpine service container with health check; steps: checkout, Node 20, `npm ci`, `npm run build -w apps/api`, `npm run migration:run -w apps/api`; env vars use the same dummy credentials already used in `dast.yml` (`DATABASE_SYNC: "false"`); job runs in parallel with `api` and `lighthouse` | `DONE` |
+| FARM-T236 | Task | Add Firefox and WebKit projects to `apps/web/playwright.config.ts`; update `web-ci.yml` `e2e` job to install all browsers (`npx playwright install --with-deps`) and run tests without `--project=chromium` filter; upload separate artifacts per browser on failure | `DONE` |
 
 ---
 
@@ -1024,7 +1024,7 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 19: FinOps | 2 | 7 | `TODO` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
-| Phase 22: CI/CD Hardening | 1 | 3 | `TODO` |
+| Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `TODO` |
 | **Total** | **72** | **278** | |
