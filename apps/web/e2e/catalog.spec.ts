@@ -204,12 +204,19 @@ test("authenticated user can click a component to view its detail page", async (
   const href = await link.getAttribute("href");
   expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // Playwright synthetic clicks fail to trigger Next.js <Link> client-side
-  // navigation on WebKit.  Navigate via page.goto() using the verified href.
-  await page.goto(`/catalog/${MOCK_COMPONENT.id}`);
+  // On WebKit, page.goto() can race with pending Next.js client-side
+  // navigations (prefetch, RSC streaming) and fail with "frame was detached".
+  // Use window.location.assign() via page.evaluate() so the navigation is
+  // initiated from within the page context, avoiding the Playwright protocol
+  // navigation conflict.
+  await page.evaluate(
+    (id) => window.location.assign(`/catalog/${id}`),
+    MOCK_COMPONENT.id,
+  );
 
   // Should be on the detail page
   await expect(page).toHaveURL(
     new RegExp(`/catalog/${MOCK_COMPONENT.id}`),
+    { timeout: 10_000 },
   );
 });
