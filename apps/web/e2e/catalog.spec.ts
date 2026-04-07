@@ -205,26 +205,16 @@ test("authenticated user can click a component to view its detail page", async (
   expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
   // Click the link to trigger Next.js client-side navigation.
+  //
+  // On WebKit the RSC payload fetch fails ("TypeError: Load failed") and
+  // Next.js falls back to full browser navigation, which can take 15-20 s
+  // on slow CI runners.  A generous timeout accommodates that fallback path
+  // without issuing a competing page.goto() (which would cause Playwright's
+  // "Navigation interrupted by another navigation" error).
   await link.click();
-
-  // Wait for the URL to change.  On WebKit the RSC flight response can be
-  // lost on slow CI runners, preventing the client-side navigation from
-  // completing.  In that case, fall back to page.goto() with waitUntil
-  // "commit" — the Server Component is trivial (just renders the client
-  // component, no server-side data fetching) so the dev server responds
-  // quickly and streaming issues that caused earlier "frame detached"
-  // errors are avoided by not waiting for full page load.
-  try {
-    await page.waitForURL(`**/catalog/${MOCK_COMPONENT.id}`, {
-      timeout: 5_000,
-    });
-  } catch {
-    await page.goto(`/catalog/${MOCK_COMPONENT.id}`, {
-      waitUntil: "commit",
-    });
-  }
 
   await expect(page).toHaveURL(
     new RegExp(`/catalog/${MOCK_COMPONENT.id}`),
+    { timeout: 30_000 },
   );
 });
