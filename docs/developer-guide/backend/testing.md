@@ -18,8 +18,25 @@ farm/
       src/
         **/*.spec.ts          # Unit tests (co-located with source)
       test/
-        app.e2e-spec.ts       # End-to-end tests
-        jest-e2e.json         # E2E Jest configuration
+        app.e2e-spec.ts                    # Health and app bootstrap
+        auth.e2e-spec.ts                   # Authentication endpoints
+        catalog.e2e-spec.ts                # Catalog CRUD
+        catalog-yaml.e2e-spec.ts           # YAML-driven component registration
+        documentation.e2e-spec.ts          # Documentation CRUD
+        environments.e2e-spec.ts           # Environments CRUD
+        deployments.e2e-spec.ts            # Deployments CRUD and matrix
+        teams.e2e-spec.ts                  # Teams CRUD and membership
+        organizations.e2e-spec.ts          # Organizations and RBAC
+        plugins.e2e-spec.ts                # Plugin registry
+        dashboards.e2e-spec.ts             # Custom dashboard builder
+        slos.e2e-spec.ts                   # SLO and error budget
+        incidents.e2e-spec.ts              # Incident lifecycle
+        service-templates.e2e-spec.ts      # Service scaffolding templates
+        environment-requests.e2e-spec.ts   # Environment request approval flow
+        gateway.e2e-spec.ts                # API gateway routes
+        api-specs.e2e-spec.ts              # API spec lifecycle
+        istio.e2e-spec.ts                  # Istio service mesh integration
+        jest-e2e.json                      # E2E Jest configuration
 ```
 
 ## Running Tests
@@ -218,10 +235,10 @@ The project enforces coverage thresholds via Jest configuration in `package.json
 
 | Type | Threshold |
 |------|-----------|
-| Statements | 70% |
-| Branches | 65% |
-| Functions | 70% |
-| Lines | 70% |
+| Statements | 80% |
+| Branches | 80% |
+| Functions | 80% |
+| Lines | 80% |
 
 Running `npm run test:cov` will fail if coverage drops below these thresholds.
 

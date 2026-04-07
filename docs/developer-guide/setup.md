@@ -35,11 +35,8 @@ cd farm
 ### 2. Install Dependencies
 
 ```bash
-# Backend dependencies
+# Install all workspace dependencies (API + Web)
 npm install
-
-# Frontend dependencies
-cd web && npm install && cd ..
 ```
 
 Copy the example environment file and adjust values as needed:
@@ -109,10 +106,10 @@ For local development with hot-reload, start the database with Docker and run th
 docker compose up -d postgres
 
 # Start backend (port 3000)
-npm run start:dev
+npm run start:dev -w apps/api
 
-# Start frontend (port 3000, separate terminal)
-cd web && npm run dev
+# Start frontend (port 3001, separate terminal)
+npm run web:dev
 ```
 
 #### Running Documentation Server
@@ -135,19 +132,36 @@ farm/
       src/
         app.module.ts      # Root application module
         main.ts            # Application entry point
-        common/            # Shared utilities (filters, health, logger)
-        config/            # Environment configuration
+        common/            # Shared utilities (filters, guards, health, logger)
+        config/            # Environment configuration with Joi validation
         database/          # Seeds and database utilities
         migrations/        # TypeORM migrations
         modules/           # Feature modules
-          auth/            # Authentication module
-          catalog/         # Catalog module
-          documentation/   # Documentation module
-          environments/    # Environments and Deployments module
-          teams/           # Teams and Ownership module
-          audit-log/       # Audit log module
-          plugin-manager/  # Plugin manager module
-      test/                # End-to-end tests
+          auth/            # Authentication, JWT, OAuth (GitHub, Google), Keycloak OIDC
+          catalog/         # Software component catalog with YAML discovery
+          documentation/   # Markdown documentation with tree navigation
+          environments/    # Environments and deployment tracking
+          teams/           # Teams and ownership management
+          organization/    # Multi-tenant org isolation and RBAC
+          audit-log/       # Immutable audit trail
+          plugin-manager/  # Plugin registry and discovery
+          analytics/       # Catalog health, DORA metrics, usage reports
+          alerting/        # PromQL-based alerting rules
+          dashboard/       # Custom dashboard builder with widgets
+          slo/             # Service Level Objectives and error budgets
+          incident/        # Incident lifecycle and post-mortem
+          pipelines/       # Multi-stage pipeline execution with WebSocket streaming
+          service-template/ # Golden path templates and service scaffolding
+          environment-request/ # Environment provisioning approval workflow
+          helm/            # Helm release discovery and sync
+          kubernetes/      # Kubernetes workload, CRD, Rollout, Kyverno discovery
+          istio/           # Istio service mesh traffic and security
+          integrations/    # CI/CD integrations (ArgoCD, CircleCI, Jenkins, TravisCI)
+          cloud/           # AWS, GCP, Azure resource discovery and cost
+          tag-policy/      # Tag governance and compliance
+          gateway/         # API gateway (Kong, AWS API Gateway) integration
+          api-specs/       # API specification lifecycle and consumer tracking
+      test/                # End-to-end tests (supertest + SQLite in-memory)
     web/                   # Next.js frontend
       src/
         app/               # App Router pages
@@ -155,7 +169,7 @@ farm/
         contexts/          # Context providers
         lib/               # API client, WebSocket, utilities
         types/             # TypeScript types
-      vitest.config.ts     # Vitest configuration
+      e2e/                 # Playwright browser-level E2E tests
   docs/                    # MkDocs documentation source
 ```
 
@@ -163,29 +177,29 @@ farm/
 
 ### Backend
 
+Run these from the monorepo root, or from within `apps/api/` directly.
+
 | Script | Description |
 |--------|-------------|
-| `npm run start` | Start the application |
-| `npm run start:dev` | Start with hot-reload |
-| `npm run start:debug` | Start with debugging enabled |
-| `npm run build` | Build the application |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format code with Prettier |
-| `npm run test` | Run unit tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:cov` | Run tests with coverage |
-| `npm run test:e2e` | Run end-to-end tests |
+| `npm run api:dev` | Start API with hot-reload (root workspace command) |
+| `npm run api:build` | Build the API |
+| `npm run api:test` | Run API unit tests |
+| `npm run api:test:e2e` | Run API E2E tests |
+| `npm run start:dev` (in apps/api) | Start with hot-reload (run from within apps/api/) |
+| `npm run lint` (in apps/api) | Run ESLint |
+| `npm run format` (in apps/api) | Format code with Prettier |
 
 ### Frontend
 
 | Script | Description |
 |--------|-------------|
-| `cd web && npm run dev` | Start dev server with hot-reload |
-| `cd web && npm run build` | Build for production |
-| `cd web && npm run lint` | Run ESLint |
-| `cd web && npm test` | Run Vitest tests |
-| `cd web && npm run test:watch` | Run tests in watch mode |
-| `cd web && npm run test:coverage` | Run tests with coverage |
+| `make web-dev` | Start dev server with hot-reload |
+| `make web-build` | Build for production |
+| `make web-lint` | Run ESLint |
+| `make web-test` | Run Vitest tests |
+| `npm run web:dev` | Start dev server (direct npm workspace command) |
+| `npm run web:build` | Build for production (direct) |
+| `npm run web:test` | Run Vitest tests (direct) |
 
 ## Makefile Targets
 
@@ -322,11 +336,6 @@ npm run start:debug
 | `TEAMS_WEBHOOK_URL` | *(empty)* | Microsoft Teams webhook URL for notifications (leave empty to disable) |
 | `PLUGINS_DIR` | `./plugins` | Directory for external runtime plugins |
 | `KUBECONFIG_PATH` | *(empty)* | Path to a kubeconfig file; leave empty to use in-cluster config (Kubernetes, Helm, and CRD features) |
-| `AWS_ACCESS_KEY_ID` | *(empty)* | AWS IAM access key ID — only needed when using a single global AWS credential instead of per-org credentials |
-| `AWS_SECRET_ACCESS_KEY` | *(empty)* | AWS IAM secret access key — paired with `AWS_ACCESS_KEY_ID` |
-| `AWS_REGION` | `us-east-1` | Default AWS region for cloud discovery and deployments |
-| `GCP_PROJECT_ID` | *(empty)* | Default GCP project ID — only needed for global GCP credential fallback |
-| `AZURE_SUBSCRIPTION_ID` | *(empty)* | Default Azure subscription ID — only needed for global Azure credential fallback |
 
 ### Frontend
 
@@ -396,7 +405,7 @@ When running via Docker Compose, add the variables to the `api` service environm
 If port 3000 is already in use:
 
 ```bash
-PORT=3001 npm run start:dev
+PORT=3001 npm run api:dev
 ```
 
 ### Dependency Issues
@@ -409,10 +418,11 @@ npm install
 ### Frontend Build Errors
 
 ```bash
-cd web
+cd apps/web
 rm -rf node_modules .next
+cd ../..
 npm install
-npm run build
+npm run web:build
 ```
 
 ### Docker Port Conflicts

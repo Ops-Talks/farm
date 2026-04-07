@@ -18,7 +18,7 @@ Yes! Farm is open-source software licensed under the AGPL-3.0 license.
 
 ### Which technologies does Farm use?
 
-Farm's backend is built with NestJS and TypeScript. The documentation is managed with MkDocs and the Material for MkDocs theme.
+Farm's backend is built with NestJS 11 and TypeScript, with PostgreSQL as the primary database and Redis for caching and queues. The frontend is a Next.js 16 application. The documentation is managed with MkDocs and the Material for MkDocs theme.
 
 ### How do I install Farm?
 

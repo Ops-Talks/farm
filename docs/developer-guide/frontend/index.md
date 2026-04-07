@@ -58,11 +58,11 @@ web/
 ## Quick Start
 
 ```bash
-# Install frontend dependencies
-cd web && npm install
+# Install all workspace dependencies (including the frontend)
+npm install
 
-# Start development server
-npm run dev
+# Start development server (from monorepo root)
+npm run web:dev
 
 # Or via Makefile
 make web-dev

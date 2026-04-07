@@ -19,26 +19,34 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
                     |  (Express/HTTP)  |
                     +--------+---------+
                              |
-     +----------+------------+-----------+------------+--------+--------+
-     |          |            |           |            |        |        |
-     v          v            v           v            v        v        v
- +--------+ +--------+ +-----------+ +---------+ +--------+ +------+ +-----------+
- |  Auth  | |Catalog | |  Docs     | |  Envs   | |Plugin  | |Teams | | AuditLog  |
- | Module | | Module | |  Module   | | Module  | |Manager | |Module| |  Module   |
- +--------+ +--------+ +-----------+ +---------+ +--------+ +------+ +-----------+
-     |          |            |           |            |        |        |
-     +----------+------------+-----------+------------+--------+--------+
+     +----------+-------+--------+-------+----------+--------+---------+
+     |          |       |        |       |          |        |         |
+     v          v       v        v       v          v        v         v
+  +------+ +-------+ +------+ +-----+ +-------+ +------+ +-----+ +--------+
+  | Auth | |Catalog| | Docs | | Env | |Pipelin| | SLOs | | K8s | |  ...   |
+  +------+ +-------+ +------+ +-----+ +-------+ +------+ +-----+ +--------+
                              |
                              v
                     +------------------+
                     |  Common Layer    |
-                    | (Filters/Pipes)  |
+                    | (Filters/Pipes/  |
+                    |  Guards/Logger)  |
                     +------------------+
+                             |
+                             v
+              +--------------+--------------+
+              |                             |
+     +--------+--------+        +----------+---------+
+     |   PostgreSQL 16  |        |    Redis Cache      |
+     | (TypeORM, UUID   |        |  (BullMQ queues,    |
+     |  primary keys,   |        |   response cache)   |
+     |  migrations)     |        +--------------------+
+     +------------------+
 ```
 
 ## Module Structure
 
-Farm consists of the following modules and layers:
+Farm consists of 24 feature modules and a shared common layer. All feature modules live under `apps/api/src/modules/`.
 
 ### Common Layer
 
@@ -76,25 +84,15 @@ The root module that bootstraps the application and imports all feature modules.
 
 ### Auth Module
 
-Handles user authentication and management.
+Handles user authentication, OAuth, and Keycloak OIDC integration.
 
 **Responsibilities:**
 
 - User registration with password strength validation
-- User login and JWT token generation
-- Refresh token mechanism with token rotation
-- User listing
-
-**Components:**
-
-| Component | Purpose |
-|-----------|---------|
-| `AuthController` | HTTP endpoints for auth operations |
-| `AuthService` | Business logic for authentication |
-| `User` entity | User data structure |
-| `RegisterUserDto` | Registration request validation |
-| `LoginDto` | Login request validation |
-| `RefreshTokenDto` | Refresh token request validation |
+- JWT login and refresh token rotation (40-byte hex, stored hashed)
+- OAuth 2.0 social login (GitHub, Google) via Passport strategies
+- Keycloak OIDC login and hourly group-to-team synchronization
+- User listing (admin only)
 
 ### Catalog Module
 
@@ -104,34 +102,11 @@ Manages the software component catalog, serving Dev, Infra, Data, and Security t
 
 - Component CRUD operations
 - Component lifecycle management (experimental, development, production, deprecated, end_of_life)
-- Component metadata storage
-- YAML-driven component registration
-- Discovery of components from git repositories
-
-**Component Kind Groups:**
-
-The catalog organizes 23 component kinds across four domain groups, enabling multi-team usage:
-
-| Domain Group | Audience | Component Kinds |
-|-------------|----------|-----------------|
-| `dev` | Development teams | service, library, website, api, component, system, domain, resource |
-| `infra` | Infrastructure / SRE teams | pipeline, queue, database, storage, cluster, network |
-| `data` | Data engineering teams | dataset, data_pipeline, ml_model |
-| `security` | Security teams | secret, policy, certificate |
+- YAML-driven component registration and remote discovery (`catalog-info.yaml`)
+- 23 component kinds across four domain groups: `dev`, `infra`, `data`, `security`
+- Component dependency tracking (ManyToMany self-referential)
 
 Use the `kindGroup` query parameter on catalog endpoints to filter components by domain (e.g., `GET /api/v1/catalog/components?kindGroup=infra`).
-
-**Components:**
-
-| Component | Purpose |
-|-----------|---------|
-| `CatalogController` | HTTP endpoints for catalog operations, including discovery |
-| `CatalogService` | Business logic for catalog management and discovery |
-| `Component` entity | Component data structure with dependency relations |
-| `CreateComponentDto` | Create request validation |
-| `UpdateComponentDto` | Update request validation |
-| `CreateLocationDto` | DTO for triggering discovery |
-| `RegisterComponentYamlDto` | DTO for manual YAML registration |
 
 ### Documentation Module
 
@@ -139,82 +114,118 @@ Manages technical documentation associated with components.
 
 **Responsibilities:**
 
-- Documentation CRUD operations
-- Filtering by component
-- Version management
+- Documentation CRUD with content fetched from URLs or provided inline
 - Markdown rendering with HTML sanitization
-- Navigation tree building (parentId / order hierarchy)
+- Navigation tree building (`parentId` / `order` hierarchy)
 - Title-based search with relevance scoring
-
-**Components:**
-
-| Component | Purpose |
-|-----------|---------|
-| `DocumentationController` | HTTP endpoints for documentation operations |
-| `DocumentationService` | Business logic for documentation management |
-| `Documentation` entity | Documentation data structure |
-| `CreateDocumentationDto` | Create request validation |
-| `UpdateDocumentationDto` | Update request validation |
 
 ### Environments Module
 
-Manages deployment environments and tracks component deployments across those environments.
+Manages deployment environments and tracks component deployments.
 
 **Responsibilities:**
 
-- Environment CRUD operations (development, staging, production, sandbox)
-- Deployment recording and status tracking
-- Deployment status machine (pending, in_progress, succeeded, failed, rolled_back)
-- Component-Environment deployment matrix
-- Latest deployment lookup per component
-
-**Components:**
-
-| Component | Purpose |
-|-----------|---------|
-| `EnvironmentsController` | HTTP endpoints for environment management |
-| `EnvironmentsService` | Business logic for environments with name uniqueness validation |
-| `Environment` entity | Environment data structure with type, order, and metadata |
-| `DeploymentsController` | HTTP endpoints for deployment tracking, matrix, and latest views |
-| `DeploymentsService` | Business logic for deployments with status transition validation |
-| `Deployment` entity | Deployment data structure linking components to environments |
-| `CreateEnvironmentDto` | Environment create request validation |
-| `UpdateEnvironmentDto` | Environment update request validation |
-| `CreateDeploymentDto` | Deployment create request validation |
-| `UpdateDeploymentDto` | Deployment update request validation |
+- Environment CRUD (development, staging, production, sandbox)
+- Deployment recording with status state machine (pending, in_progress, succeeded, failed, rolled_back)
+- Deployment matrix view and latest-deployment lookup
 
 ### Teams Module
 
-The Teams module provides team ownership and membership management. Teams are categorized by type (dev, infra, security, data, platform, other) and can be associated with catalog components.
+Team ownership and membership management.
 
-| Component | Purpose |
-|-----------|---------|
-| `TeamsController` | HTTP endpoints for team CRUD and member management |
-| `TeamsService` | Business logic for teams with name uniqueness and member operations |
-| `Team` entity | Team data structure with type, members (ManyToMany to User), and metadata |
-| `CreateTeamDto` | Team create request validation |
-| `UpdateTeamDto` | Team update request validation |
+**Responsibilities:**
 
-### Audit Log Module
-
-The Audit Log module records an immutable trail of significant system actions (create, update, delete operations across all resources). It is registered as the `core-audit-log` plugin and lives at `apps/api/src/modules/audit-log/`.
-
-| Component | Purpose |
-|-----------|---------|
-| `AuditLogController` | HTTP endpoints for querying the audit log |
-| `AuditLogService` | Business logic for recording and retrieving audit entries |
-| `AuditLog` entity | Audit entry data structure (actor, action, resource, timestamp) |
+- Team CRUD (types: dev, infra, security, data, platform, other)
+- User membership management (ManyToMany join table)
+- Component ownership association
 
 ### Organization Module
 
-The Organization module provides multi-tenant isolation and org-level role management. It is registered as the `core-organization` plugin at `apps/api/src/modules/organization/`.
+Multi-tenant org isolation and org-level role management.
 
-| Component | Purpose |
-|-----------|---------|
-| `OrganizationController` | REST endpoints for org CRUD and membership |
-| `OrganizationService` | Business logic: create org, manage members, assert roles |
-| `Organization` entity | Org data (name, slug, ownerId) |
-| `UserOrganization` entity | Join table: userId + organizationId + OrgRole |
+**Responsibilities:**
+
+- Organization CRUD (name, slug, ownerId)
+- Member invite and role management (OWNER, ADMIN, MEMBER)
+- `OrgContextInterceptor` stamps `req.organizationId` from `X-Organization-Id` header
+
+### Audit Log Module
+
+Immutable audit trail of all resource mutations across the platform.
+
+### Plugin Manager Module
+
+Plugin registry and discovery, including `plugin.json` manifest processing for menu and route contributions.
+
+### Analytics Module
+
+Catalog health dashboards, DORA engineering metrics, platform usage reports, and CSV export.
+
+### Alerting Module
+
+PromQL-based alerting rule management. Rules can be linked to catalog components or environments.
+
+### Dashboard Module
+
+Custom dashboard builder with configurable widget grids. Supports multiple widget types with per-dashboard layout persistence.
+
+### SLO Module
+
+Service Level Objectives definition with error budget tracking and automated burn-rate alerts.
+
+### Incident Module
+
+Incident lifecycle management: creation, status transitions, timeline updates, and post-mortem link tracking.
+
+### Pipelines Module
+
+Multi-stage pipeline definition and execution. Runs stream real-time logs to clients via Socket.IO WebSocket.
+
+### Service Template Module
+
+Golden path template management with variable substitution, dry-run scaffold preview, and VCS push (GitHub).
+
+### Environment Request Module
+
+Self-service environment provisioning workflow: request, approval/rejection, TTL management.
+
+### Helm Module
+
+Helm release discovery and sync from connected Kubernetes clusters via `KUBECONFIG_PATH`.
+
+### Kubernetes Module
+
+Kubernetes workload discovery, CRD listing, Argo Rollout status, and Kyverno PolicyReport / ClusterPolicyReport reader.
+
+### Istio Module
+
+Istio detection, VirtualService listing and traffic weight management, PeerAuthentication / AuthorizationPolicy listing, and Prometheus-backed traffic metrics (RPS, error rate, P99 latency).
+
+### Integrations Module
+
+CI/CD platform integrations:
+
+- **ArgoCD**: Application listing, detail, and sync trigger
+- **CircleCI**: Pipeline listing and trigger
+- **Jenkins**: Job listing and build trigger
+- **TravisCI**: Repository and build listing
+- **Webhook Receiver**: Inbound webhook endpoint for external CI/CD push events
+
+### Cloud Module
+
+AWS, GCP, and Azure cloud resource discovery, monthly cost aggregation, and secret resolution from provider vaults.
+
+### Tag Policy Module
+
+Tag governance rules (required tags, allowed values) with compliance audit and ClusterPolicy YAML export for Kyverno.
+
+### Gateway Module
+
+API gateway integration: Kong and AWS API Gateway route discovery, health checks, and sync.
+
+### API Specs Module
+
+API specification lifecycle: OpenAPI / AsyncAPI spec ingestion, version diff, breaking-change detection, and consumer tracking.
 
 ## Multi-Tenancy and RBAC
 

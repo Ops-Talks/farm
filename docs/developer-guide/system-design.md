@@ -10,11 +10,13 @@ Farm is an open-source full stack portal providing a centralized hub for managin
 
 ### Goals
 
-- Provide a simple, easy-to-deploy full stack portal
-- Enable teams to catalog and discover software components
+- Provide an easy-to-deploy internal developer portal
+- Enable teams to catalog and discover software components across Dev, Infra, Data, and Security domains
 - Associate documentation with software components
-- Support user authentication and access management
-- Maintain a clean, modular codebase
+- Support user authentication, OAuth, Keycloak OIDC, and role-based access management
+- Provide observability, SLO, incident, and alerting integrations
+- Support self-service workflows (environment requests, service templates, golden paths)
+- Maintain a clean, pluggable, multi-tenant codebase
 
 ### Non-Goals
 
@@ -26,59 +28,45 @@ Farm is an open-source full stack portal providing a centralized hub for managin
 ### High-Level Overview
 
 ```
-+------------------------------------------------------------------+
-|                          Clients                                  |
-|  (Web Applications, CLI Tools, Scripts, CI/CD Pipelines)         |
-+----------------------------------+-------------------------------+
-                                   |
-                                   | HTTP/REST
-                                   v
-+------------------------------------------------------------------+
-|                       Farm API Server                             |
-|  +------------------------------------------------------------+  |
-|  |                    NestJS Application                       |  |
-|  |  +--------+ +--------+ +-------+ +------+ +---------+     |  |
-|  |  |  Auth  | |Catalog | | Docs  | | Envs | | Plugin  |     |  |
-|  |  | Module | | Module | |Module | |Module| | Manager |     |  |
-|  |  +---+----+ +---+----+ +---+---+ +--+---+ +----+----+     |  |
-|  |      |          |          |         |          |           |  |
-|  |  +---v----------v----------v---------v----------v------+   |  |
-|  |  |               PostgreSQL Database                   |   |  |
-|  |  |    (users, components, documentation, environments, |   |  |
-|  |  |     deployments, migrations)                        |   |  |
-|  |  +-----------------------------------------------------+   |  |
-|  +------------------------------------------------------------+  |
-+------------------------------------------------------------------+
-```
-
-### Component Architecture
-
-```
-+------------------------------------------------------------------+
-|                         App Module                                |
-|  +------------------------------------------------------------+  |
-|  |  AppController          AppService                         |  |
-|  |  - GET /api/health      - getHealth()                      |  |
-|  +------------------------------------------------------------+  |
-+----------------------------------+-------------------------------+
-                                   |
-     +----------+------------------+------------------+----------+
-     |          |                  |                  |          |
-     v          v                  v                  v          v
-+----------+ +----------+ +-------------+ +------------+ +--------+
-|   Auth   | | Catalog  | |Documentation| |Environments| |Plugin  |
-|  Module  | |  Module  | |   Module    | |   Module   | |Manager |
-|          | |          | |             | |            | |        |
-| AuthCtrl | | CatCtrl  | |  DocCtrl    | | EnvCtrl    | |Registry|
-| AuthSvc  | | CatSvc   | |  DocSvc     | | EnvSvc     | |        |
-| User     | | Component| |  Doc Entity | | DeployCtrl | |        |
-| DTOs     | | DTOs     | |  DTOs       | | DeploySvc  | |        |
-|          | |          | |             | | Env Entity | |        |
-|          | |          | |             | | Deploy Ent | |        |
-+----------+ +----------+ +-------------+ +------------+ +--------+
++-----------------------------------------------------------------------+
+|                            Clients                                     |
+|   (Next.js Web App, CLI Tools, Scripts, CI/CD Pipelines, Webhooks)    |
++--------------------------------------+--------------------------------+
+                                       |
+                              HTTP/REST + WebSocket
+                                       v
++-----------------------------------------------------------------------+
+|                         Farm API Server (NestJS)                       |
+|                                                                        |
+|  Core        : Auth, Catalog, Documentation, Environments, Teams       |
+|  Observability: Analytics, Alerting, Dashboard, SLO, Incident         |
+|  Operations  : Pipelines, ServiceTemplate, EnvRequest, Helm           |
+|  Platform    : Kubernetes, Istio, Integrations, Cloud, Gateway        |
+|  Governance  : Organization, AuditLog, TagPolicy, ApiSpecs            |
+|  Infrastructure: PluginManager                                         |
+|                                                                        |
+|  +---------------+  +-------------------+  +-----------------------+  |
+|  |  PostgreSQL   |  |   Redis (cache/   |  |  External Services    |  |
+|  |   (primary    |  |   BullMQ queues)  |  |  (GitHub, ArgoCD,     |  |
+|  |   datastore)  |  |                   |  |   CircleCI, AWS, etc.)|  |
+|  +---------------+  +-------------------+  +-----------------------+  |
++-----------------------------------------------------------------------+
 ```
 
 ## Module Design
+
+Farm is organized into 28 feature modules grouped by concern. Each module follows the NestJS standard structure: controller, service, entities, and DTOs. Modules are registered as plugins through `PluginManagerModule.forRoot()` in `src/app.module.ts`.
+
+| Group | Modules |
+|-------|---------|
+| Core | Auth, Catalog, Documentation, Environments, Teams, Organization, Audit Log |
+| Observability / Analytics | Analytics, Alerting, Dashboard, SLO, Incident |
+| Operations | Pipelines, Service Template, Environment Request, Helm |
+| Platform | Kubernetes (+ Kyverno), Istio, Integrations (ArgoCD / CircleCI / Jenkins / TravisCI / Webhooks), Cloud, Gateway |
+| Governance | Tag Policy, API Specs |
+| Infrastructure | Plugin Manager |
+
+For the full module-by-module reference including responsibilities, see [Backend Architecture](./backend/architecture.md).
 
 ### Auth Module
 
@@ -124,7 +112,7 @@ Client -> AuthController.findAll() -> AuthService.findAll() -> TypeORM Repositor
 | Component Entity | Component data structure with dependency relations |
 | ComponentKind Enum | Types of components (23 kinds across 4 domains) |
 | ComponentKindGroup Enum | Domain grouping (dev, infra, data, security) |
-| ComponentLifecycle Enum | Lifecycle stages (planned, experimental, production, deprecated, decommissioned) |
+| ComponentLifecycle Enum | Lifecycle stages (experimental, development, production, deprecated, end_of_life) |
 | CreateComponentDto | Validation for create requests |
 | UpdateComponentDto | Validation for update requests |
 | CreateLocationDto | DTO for triggering git discovery |
@@ -222,7 +210,7 @@ class User {
 class Component {
   id: string;                     // UUID
   name: string;                   // Component name
-  kind: ComponentKind;            // Type of component (20 kinds across 4 domains)
+  kind: ComponentKind;            // Type of component (23 kinds across 4 domains)
   description: string;            // Description
   owner: string;                  // Owner team/individual
   lifecycle: ComponentLifecycle;  // Lifecycle stage
@@ -336,6 +324,8 @@ Standard HTTP status codes are used for error responses:
 
 - Passwords are hashed with bcrypt before storage
 - JWT-based authentication with Passport.js
+- OAuth 2.0 social login (GitHub, Google) via Passport strategies
+- Keycloak OIDC login with hourly group-to-team synchronization
 - Role-based access control (RBAC) with `@Roles()` decorator
 - All mutation endpoints require `admin` role
 - Refresh token rotation with replay attack detection
@@ -347,21 +337,20 @@ Standard HTTP status codes are used for error responses:
 ### Future Improvements
 
 - Add API key support for service-to-service communication
-- Support OAuth/SAML integration
 
 ## Scalability Considerations
 
 ### Current State
 
-- PostgreSQL for production, SQLite for testing
-- Single-instance deployment with Docker support
+- PostgreSQL for production, SQLite in-memory for testing
+- Redis for BullMQ job queues and response caching
+- Single-instance deployment with Docker Compose support
 - TypeORM migrations for schema management
 
 ### Future Improvements
 
-- Redis caching layer
-- Horizontal scaling with load balancing
-- Event-driven architecture for real-time updates
+- Horizontal scaling with load balancer
+- Event-driven architecture for additional real-time workloads
 
 ## Technology Choices
 
@@ -388,11 +377,11 @@ Standard HTTP status codes are used for error responses:
 Developer Machine
        |
        v
-+------------------+
-|  Farm Server     |
-|  (npm start:dev) |
-|  Port 3000       |
-+------------------+
++---------------------------+
+|  Farm API Server          |
+|  (npm run start:dev       |
+|   -w apps/api, Port 3000) |
++---------------------------+
 ```
 
 ### Production (Future)
@@ -425,4 +414,4 @@ Developer Machine
 
 ## Conclusion
 
-Farm is designed as a simple, modular full stack portal that can grow with organizational needs. The current implementation provides core functionality with a clear path for future enhancements including database integration, improved security, and scalability features.
+Farm is designed as a modular, pluggable internal developer portal built on NestJS and Next.js. The platform's 28 feature modules cover the full lifecycle of software components — from catalog and documentation through observability, operations, platform integrations, and governance — with a clear path for continued expansion.
