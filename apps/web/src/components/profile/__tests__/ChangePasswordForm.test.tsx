@@ -174,4 +174,21 @@ describe("ChangePasswordForm", () => {
     });
     expect(mockChangePassword).not.toHaveBeenCalled();
   });
+
+  it("shows 'Changing...' on the submit button while the request is in progress", async () => {
+    // Return a promise that never resolves to keep submitting=true
+    mockChangePassword.mockReturnValueOnce(new Promise(() => {}));
+
+    render(<ChangePasswordForm />);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Current Password"), "oldpass123");
+    await user.type(screen.getByLabelText("New Password"), "newpass456");
+    await user.type(screen.getByLabelText("Confirm New Password"), "newpass456");
+    await user.click(screen.getByRole("button", { name: /change password/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /changing\.\.\./i })).toBeDisabled();
+    });
+  });
 });

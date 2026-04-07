@@ -20,6 +20,9 @@ const mockAuthService = {
   refresh: jest.fn(),
   findAll: jest.fn(),
   findOrCreateOAuthUser: jest.fn(),
+  getProfile: jest.fn(),
+  updateProfile: jest.fn(),
+  changePassword: jest.fn(),
 };
 
 const mockKeycloakOidcService = {
@@ -84,6 +87,49 @@ describe("AuthController", () => {
   it("findAll should return users", async () => {
     service.findAll.mockResolvedValue([{ id: "1" }]);
     expect(await controller.findAll()).toEqual([{ id: "1" }]);
+  });
+
+  describe("getProfile", () => {
+    it("should return the user profile for the authenticated user", async () => {
+      const mockUser = { id: "u1", username: "alice", email: "alice@example.com" };
+      service.getProfile.mockResolvedValue(mockUser);
+
+      const mockReq = { user: { userId: "u1" } };
+      const result = await controller.getProfile(mockReq as never);
+
+      expect(result).toEqual(mockUser);
+      expect(service.getProfile).toHaveBeenCalledWith("u1");
+    });
+  });
+
+  describe("updateProfile", () => {
+    it("should update and return the user profile", async () => {
+      const mockUser = { id: "u1", username: "alice", email: "new@example.com" };
+      service.updateProfile.mockResolvedValue(mockUser);
+
+      const mockReq = { user: { userId: "u1" } };
+      const dto = { email: "new@example.com", firstName: "Alice" };
+      const result = await controller.updateProfile(mockReq as never, dto as never);
+
+      expect(result).toEqual(mockUser);
+      expect(service.updateProfile).toHaveBeenCalledWith("u1", dto);
+    });
+  });
+
+  describe("changePassword", () => {
+    it("should call authService.changePassword with user id and dto", async () => {
+      service.changePassword.mockResolvedValue(undefined);
+
+      const mockReq = { user: { userId: "u1" } };
+      const dto = {
+        currentPassword: "old",
+        newPassword: "new123456",
+        confirmPassword: "new123456",
+      };
+      await controller.changePassword(mockReq as never, dto as never);
+
+      expect(service.changePassword).toHaveBeenCalledWith("u1", dto);
+    });
   });
 
   describe("refresh", () => {

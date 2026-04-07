@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 // Hoisted configurable mock state — available inside vi.mock() factories.
 // ---------------------------------------------------------------------------
 const mockPathnameReturn = vi.hoisted(() => vi.fn(() => "/dashboard"));
+const mockRouterPush = vi.hoisted(() => vi.fn());
 const mockTheme = vi.hoisted(() => ({ current: "light" as string }));
 const mockSetTheme = vi.hoisted(() => vi.fn());
 const mockAuthUser = vi.hoisted(() => ({
@@ -34,7 +35,7 @@ vi.mock("@/contexts/auth-context", () => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockRouterPush,
     replace: vi.fn(),
     back: vi.fn(),
     forward: vi.fn(),
@@ -281,6 +282,22 @@ describe("AppShell", () => {
       (link) => link.getAttribute("aria-current") === "page",
     );
     expect(activeLinks.length).toBeGreaterThan(0);
+  });
+
+  it("should navigate to /profile when Profile menu item is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const userTrigger = screen.getByRole("button", { name: /Admin User/i });
+    await user.click(userTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText("Profile")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Profile"));
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/profile");
   });
 
 });

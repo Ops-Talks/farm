@@ -195,4 +195,127 @@ describe("ProfileForm", () => {
     // The API must NOT have been called because validation failed
     expect(mockUpdateProfile).not.toHaveBeenCalled();
   });
+
+  it("loads profile with missing optional fields using fallback empty values", async () => {
+    mockGetProfile.mockResolvedValueOnce({
+      ...MOCK_PROFILE,
+      firstName: null,
+      lastName: null,
+      gender: null,
+    });
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    });
+
+    expect(screen.getByLabelText<HTMLInputElement>("First Name").value).toBe("");
+    expect(screen.getByLabelText<HTMLInputElement>("Last Name").value).toBe("");
+    expect(screen.getByLabelText<HTMLSelectElement>("Gender").value).toBe("");
+  });
+
+  it("shows specific ApiError message when updateProfile throws ApiError", async () => {
+    const { ApiError } = await import("@/lib/api-client") as {
+      ApiError: new (status: number, body: { message: string }) => Error;
+    };
+    mockGetProfile.mockResolvedValueOnce(MOCK_PROFILE);
+    mockUpdateProfile.mockRejectedValueOnce(
+      new ApiError(409, { message: "Email already in use" }),
+    );
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Email already in use");
+    });
+  });
+
+  it("shows 'Saving...' on the submit button while the update is in progress", async () => {
+    mockGetProfile.mockResolvedValueOnce(MOCK_PROFILE);
+    // Return a promise that never resolves to keep submitting=true
+    mockUpdateProfile.mockReturnValueOnce(new Promise(() => {}));
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /saving\.\.\./i })).toBeDisabled();
+    });
+  });
+
+  it("shows validation error when first name exceeds 100 characters", async () => {
+    mockGetProfile.mockResolvedValueOnce(MOCK_PROFILE);
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("First Name")).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const firstNameInput = screen.getByLabelText("First Name");
+    await user.clear(firstNameInput);
+    await user.type(firstNameInput, "A".repeat(101));
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/100 characters or fewer/i)).toBeInTheDocument();
+    });
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("shows validation error when last name exceeds 100 characters", async () => {
+    mockGetProfile.mockResolvedValueOnce(MOCK_PROFILE);
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const lastNameInput = screen.getByLabelText("Last Name");
+    await user.clear(lastNameInput);
+    await user.type(lastNameInput, "B".repeat(101));
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/100 characters or fewer/i)).toBeInTheDocument();
+    });
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("does not include gender in the payload when gender is not selected", async () => {
+    mockGetProfile.mockResolvedValueOnce({ ...MOCK_PROFILE, gender: null });
+    mockUpdateProfile.mockResolvedValueOnce(MOCK_PROFILE);
+
+    render(<ProfileForm />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(mockUpdateProfile).toHaveBeenCalled();
+    });
+
+    const payload = mockUpdateProfile.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload.gender).toBeUndefined();
+  });
 });
