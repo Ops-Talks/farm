@@ -194,25 +194,16 @@ test("authenticated user can click a component to view its detail page", async (
 
   await page.goto("/catalog");
 
-  // The component name should be rendered as a link to its detail page.
-  // Use getAttribute() instead of expect().toHaveAttribute() — the latter
-  // triggers a hover interaction on WebKit which activates Next.js link
-  // prefetching and starts a navigation, causing "frame was detached" when
-  // page.goto() is subsequently called.
   const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
   await expect(link).toBeVisible();
   const href = await link.getAttribute("href");
   expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // On WebKit, page.goto() can race with pending Next.js client-side
-  // navigations (prefetch, RSC streaming) and fail with "frame was detached".
-  // Use window.location.assign() via page.evaluate() so the navigation is
-  // initiated from within the page context, avoiding the Playwright protocol
-  // navigation conflict.
-  await page.evaluate(
-    (id) => window.location.assign(`/catalog/${id}`),
-    MOCK_COMPONENT.id,
-  );
+  // Click the link to trigger Next.js client-side navigation.  Full-page
+  // navigation (page.goto / window.location) causes the Next.js server to
+  // SSR the detail page, issuing API calls that page.route() mocks cannot
+  // intercept.  On WebKit the SSR failure redirects back to /catalog.
+  await link.click();
 
   // Should be on the detail page
   await expect(page).toHaveURL(
