@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -83,7 +83,7 @@ jobs:
           category: trivy-${{ matrix.app }}
 
       - name: Upload Trivy scan artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: trivy-results-${{ matrix.app }}-${{ github.sha }}

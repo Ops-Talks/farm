@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { kubernetes, catalog } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import type {
-  OperatorInfo,
   CustomResourceInstance,
   OperatorBinding,
   CatalogComponent,
