@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.5] - 2026-04-07
+
+### Fixed
+- **sast**: Vulnerabilites.
+- **webci**: E2E pipeline.
+- **webci**: E2E pipeline.
+- **webci**: E2E pipeline.
+- **webci**: E2E pipeline.
+- **webci**: E2E pipeline.
+- **e2e**: use getAttribute() to avoid WebKit prefetch race before page.goto().
+- **e2e**: use page.goto() for WebKit-reliable catalog detail navigation.
+- **e2e**: fix WebKit Playwright failures in catalog and organizations tests.
+- **docker**: replace workspace stubs with real COPY in API and Web Dockerfiles.
+- **cves**: override lodash 4.18.1 / lodash-es 4.18.1, upgrade zlib in web Dockerfile.
+
 ## [0.14.4] - 2026-04-06
 
 ### Changed
