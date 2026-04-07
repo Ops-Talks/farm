@@ -29,12 +29,12 @@ import { toast } from "sonner";
 // ---------------------------------------------------------------------------
 
 const profileSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  firstName: z.string().max(100, "First name must be 100 characters or fewer").optional(),
+  lastName: z.string().max(100, "Last name must be 100 characters or fewer").optional(),
   // Email is required and must be a valid address.
   email: z.string().min(1, "Email is required").email("Must be a valid email address"),
-  // Gender is a plain string from the <select> — empty string means "not set".
-  gender: z.string().optional(),
+  // Gender is selected from a fixed set of values; empty string means "not set".
+  gender: z.union([z.enum(["male", "female", "non_binary"]), z.literal("")]).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;

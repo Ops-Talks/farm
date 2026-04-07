@@ -46,9 +46,9 @@ async function mockProfileRoutes(page: import("@playwright/test").Page) {
     }),
   );
 
-  // PATCH /auth/profile/password must be registered BEFORE the more general
-  // /auth/profile pattern (Playwright resolves routes in LIFO order — last
-  // registered wins, so more-specific routes are added last).
+  // PATCH /auth/profile/password is stubbed explicitly for the password
+  // change flow. This glob does not overlap with **/api/v1/auth/profile,
+  // so registration order between these two routes does not matter here.
   await page.route("**/api/v1/auth/profile/password", (route) =>
     route.fulfill({ status: 204, body: "" }),
   );
@@ -73,11 +73,13 @@ async function mockProfileRoutes(page: import("@playwright/test").Page) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Inject mock auth tokens before each test
+// Inject mock auth tokens only for authenticated scenarios
 // ---------------------------------------------------------------------------
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.toLowerCase().includes("unauthenticated")) {
+    return;
+  }
   await setupAuthStorage(page);
 });
 

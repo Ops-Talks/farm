@@ -6,7 +6,7 @@ For interactive documentation, including all available endpoints, data models, a
 
 ## Endpoints
 
-### POST /auth/register
+### POST /api/v1/auth/register
 
 Registers a new user account.
 
@@ -30,7 +30,7 @@ Registers a new user account.
 
 ---
 
-### POST /auth/login
+### POST /api/v1/auth/login
 
 Authenticates a user and returns an access token along with a refresh token.
 
@@ -51,7 +51,7 @@ Authenticates a user and returns an access token along with a refresh token.
 
 ---
 
-### POST /auth/refresh
+### POST /api/v1/auth/refresh
 
 Refreshes an access token using a valid refresh token. The refresh token is rotated on each use.
 
@@ -72,7 +72,7 @@ Refreshes an access token using a valid refresh token. The refresh token is rota
 
 ---
 
-### GET /auth/users
+### GET /api/v1/auth/users
 
 Returns all registered users. Requires the `admin` role.
 
@@ -86,7 +86,7 @@ Returns all registered users. Requires the `admin` role.
 
 ---
 
-### GET /auth/profile
+### GET /api/v1/auth/profile
 
 Returns the profile of the currently authenticated user.
 
@@ -116,7 +116,7 @@ Returns the profile of the currently authenticated user.
 
 ---
 
-### PATCH /auth/profile
+### PATCH /api/v1/auth/profile
 
 Updates the profile of the currently authenticated user. All fields are optional; only provided fields are updated.
 
@@ -140,7 +140,7 @@ Updates the profile of the currently authenticated user. All fields are optional
 
 ---
 
-### PATCH /auth/profile/password
+### PATCH /api/v1/auth/profile/password
 
 Changes the password of the currently authenticated user. All existing sessions are invalidated on success by clearing the stored refresh token.
 
@@ -174,7 +174,7 @@ Authentication uses JSON Web Tokens (JWT). A successful login returns an access 
 
 ### Refresh Tokens
 
-Refresh tokens are 40 random bytes (hex-encoded), stored as bcrypt hashes. The `POST /auth/refresh` endpoint accepts a valid refresh token and returns a new access token along with a rotated refresh token. Old refresh tokens are invalidated on each use to prevent replay attacks.
+Refresh tokens are 40 random bytes (hex-encoded), stored as bcrypt hashes. The `POST /api/v1/auth/refresh` endpoint accepts a valid refresh token and returns a new access token along with a rotated refresh token. Old refresh tokens are invalidated on each use to prevent replay attacks.
 
 ### Rate Limiting
 
