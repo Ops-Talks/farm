@@ -8,25 +8,60 @@ Farm uses **Vitest** as the test runner with **React Testing Library** for compo
 
 ## Test Structure
 
+Tests are co-located with the source files they cover under `apps/web/src/`:
+
 ```
-web/
-  src/__tests__/
-    setup.ts                          # Global test setup (matchers, mocks)
-    lib/
-      api-client.test.ts              # API client unit tests
-      ws-client.test.ts               # WebSocket client unit tests
-    contexts/
-      auth-context.test.tsx           # AuthProvider tests
+apps/web/
+  src/
+    app/
+      login/
+        page.test.tsx
+      (protected)/
+        catalog/
+          page.test.tsx
+          _components/
+            CatalogClient.test.tsx
+            ...
+        catalog/[id]/
+          _components/
+            ComponentDetailClient.test.tsx
+            IstioTrafficTab.test.tsx
+            KyvernoPolicyTab.test.tsx
+            ...
+        alerting-rules/...
+        analytics/...
+        compliance/...
+        custom-dashboards/...
+        dashboard/...
+        deployments/...
+        environment-requests/...
+        environments/...
+        incidents/...
+        integrations/...
+        operators/...
+        organizations/...
+        pipelines/...
+        service-templates/...
+        slos/...
+        teams/...
     components/
-      auth-guard.test.tsx             # AuthGuard component tests
-      dashboard.test.tsx              # Dashboard widget tests
-    pages/
-      login.test.tsx                  # Login page tests
-      catalog.test.tsx                # Catalog page tests
-      deployments.test.tsx            # Deployment matrix tests
-      teams.test.tsx                  # Teams page tests
-      queues.test.tsx                 # Queues page tests
-      observability.test.tsx          # Observability page tests
+      layout/
+        app-shell.test.tsx
+        ...
+    lib/
+      api-client.test.ts
+      ws-client.test.ts
+    contexts/
+      auth-context.test.tsx
+  e2e/
+    auth.spec.ts
+    catalog.spec.ts
+    deployments.spec.ts
+    docs.spec.ts
+    environments.spec.ts
+    organizations.spec.ts
+    pipelines.spec.ts
+    teams.spec.ts
 ```
 
 ## Running Tests
@@ -34,21 +69,23 @@ web/
 ### All Tests
 
 ```bash
-cd web && npm test
-# Or via Makefile
+# Via Makefile (recommended)
 make web-test
+
+# Direct npm workspace command
+npm run web:test
 ```
 
 ### Watch Mode
 
 ```bash
-cd web && npm run test:watch
+cd apps/web && npx vitest --watch
 ```
 
 ### With Coverage
 
 ```bash
-cd web && npm run test:coverage
+cd apps/web && npx vitest --coverage
 ```
 
 ### Full Frontend Check
@@ -57,7 +94,7 @@ cd web && npm run test:coverage
 make check-front
 ```
 
-This runs lint, build, and tests.
+This runs lint, build, tests, and Playwright E2E tests.
 
 ## Configuration
 
@@ -210,20 +247,7 @@ Each test should work in isolation. Use `beforeEach` with `vi.clearAllMocks()` t
 
 ## Current Coverage
 
-| Area | Test File | Tests |
-|------|-----------|-------|
-| API Client | `api-client.test.ts` | 40 |
-| WebSocket Client | `ws-client.test.ts` | 4 |
-| Auth Context | `auth-context.test.tsx` | 6 |
-| Auth Guard | `auth-guard.test.tsx` | 5 |
-| Dashboard Widgets | `dashboard.test.tsx` | 7 |
-| Login Page | `login.test.tsx` | 5 |
-| Catalog Page | `catalog.test.tsx` | 8 |
-| Deployments Page | `deployments.test.tsx` | 7 |
-| Teams Page | `teams.test.tsx` | 8 |
-| Queues Page | `queues.test.tsx` | 6 |
-| Observability Page | `observability.test.tsx` | 5 |
-| **Total** | **11 files** | **101** |
+The test suite covers 114+ test files with 1700+ assertions spanning all major feature areas: catalog, authentication, teams, environments, pipelines, SLOs, incidents, alerting rules, analytics, compliance (tag policies, Kyverno), dashboards, service templates, environment requests, Istio, operators (Kubernetes), CI/CD integrations, and the API client layer. Run `make web-test` to see the current count.
 
 ## End-to-End Tests (Playwright)
 
@@ -318,11 +342,11 @@ test.describe("Page — unauthenticated access", () => {
 | Spec | Tests | Flows covered |
 |------|-------|---------------|
 | `auth.spec.ts` | 5 | Login, invalid credentials, refresh, logout, redirect |
-| `catalog.spec.ts` | 8 | List, create, detail, delete |
+| `catalog.spec.ts` | 5 | List, create, detail, YAML registration |
 | `deployments.spec.ts` | 4 | List, matrix view |
-| `teams.spec.ts` | 7 | List, create, detail, member management |
+| `teams.spec.ts` | 4 | List, create, detail, member management |
 | `environments.spec.ts` | 9 | Helm releases, Rollouts, ArgoCD apps, sync actions |
 | `organizations.spec.ts` | 10 | List, create, settings, member add/remove |
 | `pipelines.spec.ts` | 10 | List, create, detail, runs tab, trigger |
 | `docs.spec.ts` | 9 | Tree navigation, content rendering, search, create form |
-| **Total** | **62** | |
+| **Total** | **56** | |

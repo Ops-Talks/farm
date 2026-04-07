@@ -35,22 +35,27 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | API | Base Path | Description |
 |-----|-----------|-------------|
 | [Health](health.md) | `/api/health` | Health check endpoints |
-| [Auth](auth.md) | `/api/v1/auth` | User registration and login |
+| [Auth](auth.md) | `/api/v1/auth` | User registration, login, token refresh, OAuth |
 | [Catalog](catalog.md) | `/api/v1/catalog` | Software component catalog |
+| [API Management](api-management.md) | `/api/v1/catalog/components/:id/api-specs`, `/api/v1/api-specs` | API specification lifecycle, diff, and consumer tracking |
+| [API Gateway](api-gateway.md) | `/api/v1/gateway` | Kong and AWS API Gateway route discovery and health |
 | [Documentation](docs.md) | `/api/v1/docs` | Technical documentation |
 | [Environments](environments.md) | `/api/v1/environments` | Deployment environments |
 | [Deployments](deployments.md) | `/api/v1/deployments` | Component deployment tracking |
 | [Teams](teams.md) | `/api/v1/teams` | Team ownership and membership |
 | [Organizations](organizations.md) | `/api/v1/organizations` | Organization and member management |
 | [Plugins](plugins.md) | `/api/v1/plugins` | Plugin registry |
-| [Audit Log](audit-log.md) | `/api/v1/audit-log` | Immutable audit trail for system actions |
+| [Audit Log](audit-log.md) | `/api/v1/audit-logs` | Immutable audit trail for system actions |
+| [Alerting Rules](observability.md) | `/api/v1/alerting-rules` | PromQL-based alerting rules linked to components or environments |
 | [Analytics](analytics.md) | `/api/v1/analytics` | Catalog health, DORA metrics, usage reports |
+| [Observability](observability.md) | `/api/v1/observability` | Prometheus, Jaeger, and Loki proxy endpoints |
 | [Helm](helm.md) | `/api/v1/helm` | Helm release discovery and sync |
-| [Kubernetes](kubernetes.md) | `/api/v1/kubernetes` | Kubernetes workload and CRD discovery |
+| [Kubernetes](kubernetes.md) | `/api/v1/kubernetes` | Kubernetes workload, CRD, and Rollout discovery |
+| [Pipelines](pipelines.md) | `/api/v1/pipelines` | Multi-stage pipeline definition, execution, and log streaming |
 | [CI/CD Integrations](cicd.md) | `/api/v1/argocd`, `/api/v1/circleci`, `/api/v1/jenkins`, `/api/v1/travisci` | External CI/CD platform integrations |
 | [Cloud Integrations](cloud.md) | `/api/v1/cloud` | AWS, GCP, Azure resource discovery and cost |
 | [Tag Governance](tag-governance.md) | `/api/v1/tag-policies`, `/api/v1/violations` | Tag policy CRUD, compliance audit, ClusterPolicy export |
-| [Kyverno](kyverno.md) | `/api/v1/kyverno` | PolicyReport reader and ClusterPolicy YAML export |
+| [Kyverno](kyverno.md) | `/api/v1/kubernetes/policy-reports`, `/api/v1/kubernetes/cluster-policy-reports` | PolicyReport reader and ClusterPolicy YAML export |
 | [Keycloak SSO](keycloak-sso.md) | `/api/v1/auth/keycloak`, `/api/v1/keycloak-sync` | OIDC login and group sync |
 | [Istio](istio.md) | `/api/v1/istio` | VirtualService, PeerAuthentication, traffic metrics |
 | [SLOs](slos.md) | `/api/v1/slos` | Service Level Objectives and error budget tracking |
@@ -66,8 +71,9 @@ All responses are JSON formatted. Successful responses include the requested dat
 ```json
 {
   "statusCode": 404,
-  "message": "Component with ID \"abc\" not found",
-  "error": "Not Found"
+  "timestamp": "2025-01-01T00:00:00.000Z",
+  "path": "/api/v1/catalog/components/abc",
+  "message": "Component with ID \"abc\" not found"
 }
 ```
 

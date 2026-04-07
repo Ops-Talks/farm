@@ -173,6 +173,28 @@ apps/api/src/modules/
       new-feature.entity.ts
 ```
 
+After creating the module, register it in `apps/api/src/app.module.ts` inside `PluginManagerModule.forRoot()`:
+
+```typescript
+{
+  metadata: {
+    name: "core-new-feature",
+    version: "1.0.0",
+    description: "Brief description of what this module does",
+  },
+  module: NewFeatureModule,
+},
+```
+
+Without this step, the module will not be loaded by the application.
+
+If the module introduces new entities, generate and run a migration:
+
+```bash
+npm run migration:generate -w apps/api
+npm run migration:run -w apps/api
+```
+
 ### Controller Guidelines
 
 - Use appropriate HTTP methods
