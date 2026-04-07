@@ -955,44 +955,44 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S285 | Story | Backend -- extend User entity with `firstName`, `lastName`, and `gender` fields; add profile endpoints | `TODO` |
-| FARM-S286 | Story | Backend -- password change endpoint with current password verification | `TODO` |
-| FARM-S287 | Story | Frontend -- profile page with editable fields (first name, last name, gender, email) | `TODO` |
-| FARM-S288 | Story | Frontend -- password change form with current password confirmation and validation feedback | `TODO` |
+| FARM-S289 | Story | Backend -- extend User entity with `firstName`, `lastName`, and `gender` fields; add profile endpoints | `TODO` |
+| FARM-S290 | Story | Backend -- password change endpoint with current password verification | `TODO` |
+| FARM-S291 | Story | Frontend -- profile page with editable fields (first name, last name, gender, email) | `TODO` |
+| FARM-S292 | Story | Frontend -- password change form with current password confirmation and validation feedback | `TODO` |
 
-#### FARM-S285 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T257 | Task | Add `firstName` (`varchar`, nullable), `lastName` (`varchar`, nullable), and `gender` (`enum: male, female, non_binary`, nullable) columns to `User` entity; create TypeORM migration | `TODO` |
-| FARM-T258 | Task | Create `UpdateProfileDto` with `@IsOptional()` fields: `firstName`, `lastName`, `gender` (`@IsEnum(Gender)`), `email` (`@IsEmail()`); apply `whitelist: true` so `password` and `roles` cannot be set through this DTO | `TODO` |
-| FARM-T259 | Task | `GET /api/auth/profile` returns the authenticated user's own profile (exclude `password`, `refreshToken`); unit + e2e tests | `TODO` |
-| FARM-T260 | Task | `PATCH /api/auth/profile` updates `firstName`, `lastName`, `gender`, and `email` for the authenticated user; validate unique email constraint; unit + e2e tests | `TODO` |
-
-#### FARM-S286 Tasks
+#### FARM-S289 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T261 | Task | Create `ChangePasswordDto` with `currentPassword`, `newPassword` (`@MinLength(8)`), and `confirmPassword`; add custom validator ensuring `newPassword === confirmPassword` | `TODO` |
-| FARM-T262 | Task | `PATCH /api/auth/profile/password` verifies `currentPassword` against stored hash with bcrypt, hashes and persists `newPassword`, invalidates existing refresh tokens; unit + e2e tests | `TODO` |
+| FARM-T271 | Task | Add `firstName` (`varchar`, nullable), `lastName` (`varchar`, nullable), and `gender` (`enum: male, female, non_binary`, nullable) columns to `User` entity; create TypeORM migration | `TODO` |
+| FARM-T272 | Task | Create `UpdateProfileDto` with `@IsOptional()` fields: `firstName`, `lastName`, `gender` (`@IsEnum(Gender)`), `email` (`@IsEmail()`); apply `whitelist: true` so `password` and `roles` cannot be set through this DTO | `TODO` |
+| FARM-T273 | Task | `GET /api/auth/profile` returns the authenticated user's own profile (exclude `password`, `refreshToken`); unit + e2e tests | `TODO` |
+| FARM-T274 | Task | `PATCH /api/auth/profile` updates `firstName`, `lastName`, `gender`, and `email` for the authenticated user; validate unique email constraint; unit + e2e tests | `TODO` |
 
-#### FARM-S287 Tasks
-
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T263 | Task | Add `/profile` route inside the protected layout; add "Profile" link to user dropdown menu in the app shell | `TODO` |
-| FARM-T264 | Task | `ProfileForm` component: editable fields for first name, last name, email, and gender (`Select` with options Male, Female, Non-Binary); pre-populated from `GET /api/auth/profile`; submit via `PATCH /api/auth/profile`; display success/error toast | `TODO` |
-| FARM-T265 | Task | `ProfileForm` unit tests: render with pre-filled data, submit updated values, display validation errors, handle API failure | `TODO` |
-| FARM-T266 | Task | Add `profile` methods (`getProfile`, `updateProfile`) to `api-client.ts`; unit tests | `TODO` |
-
-#### FARM-S288 Tasks
+#### FARM-S290 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T267 | Task | `ChangePasswordForm` component: current password, new password, confirm password fields with client-side validation (min 8 chars, match confirmation); submit via `PATCH /api/auth/profile/password`; display success/error toast | `TODO` |
-| FARM-T268 | Task | `ChangePasswordForm` unit tests: submit valid change, display mismatch error, display wrong current password API error, enforce minimum length | `TODO` |
-| FARM-T269 | Task | Add `changePassword` method to `api-client.ts`; unit tests | `TODO` |
-| FARM-T270 | Task | Playwright E2E: navigate to profile page, update name and gender, verify persistence after reload; change password, log out, log in with new password | `TODO` |
+| FARM-T275 | Task | Create `ChangePasswordDto` with `currentPassword`, `newPassword` (`@MinLength(8)`), and `confirmPassword`; add custom validator ensuring `newPassword === confirmPassword` | `TODO` |
+| FARM-T276 | Task | `PATCH /api/auth/profile/password` verifies `currentPassword` against stored hash with bcrypt, hashes and persists `newPassword`, invalidates existing refresh tokens; unit + e2e tests | `TODO` |
+
+#### FARM-S291 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T277 | Task | Add `/profile` route inside the protected layout; add "Profile" link to user dropdown menu in the app shell | `TODO` |
+| FARM-T278 | Task | `ProfileForm` component: editable fields for first name, last name, email, and gender (`Select` with options Male, Female, Non-Binary); pre-populated from `GET /api/auth/profile`; submit via `PATCH /api/auth/profile`; display success/error toast | `TODO` |
+| FARM-T279 | Task | `ProfileForm` unit tests: render with pre-filled data, submit updated values, display validation errors, handle API failure | `TODO` |
+| FARM-T280 | Task | Add `profile` methods (`getProfile`, `updateProfile`) to `api-client.ts`; unit tests | `TODO` |
+
+#### FARM-S292 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T281 | Task | `ChangePasswordForm` component: current password, new password, confirm password fields with client-side validation (min 8 chars, match confirmation); submit via `PATCH /api/auth/profile/password`; display success/error toast | `TODO` |
+| FARM-T282 | Task | `ChangePasswordForm` unit tests: submit valid change, display mismatch error, display wrong current password API error, enforce minimum length | `TODO` |
+| FARM-T283 | Task | Add `changePassword` method to `api-client.ts`; unit tests | `TODO` |
+| FARM-T284 | Task | Playwright E2E: navigate to profile page, update name and gender, verify persistence after reload; change password, log out, log in with new password | `TODO` |
 
 ---
 
