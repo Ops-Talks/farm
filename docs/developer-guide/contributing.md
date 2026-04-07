@@ -173,7 +173,7 @@ apps/api/src/modules/
       new-feature.entity.ts
 ```
 
-After creating the module, register it in `app.module.ts` inside `PluginManagerModule.forRoot()`:
+After creating the module, register it in `apps/api/src/app.module.ts` inside `PluginManagerModule.forRoot()`:
 
 ```typescript
 {

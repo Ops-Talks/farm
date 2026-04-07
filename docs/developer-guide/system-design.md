@@ -55,7 +55,7 @@ Farm is an open-source full stack portal providing a centralized hub for managin
 
 ## Module Design
 
-Farm is organized into 28 feature modules grouped by concern. Each module follows the NestJS standard structure: controller, service, entities, and DTOs. Modules are registered as plugins through `PluginManagerModule.forRoot()` in `src/app.module.ts`.
+Farm is organized into 24 modules grouped by concern. The API feature modules follow the NestJS standard structure: controller, service, entities, and DTOs. In the monorepo, 23 feature plugins are registered through `PluginManagerModule.forRoot()` in `apps/api/src/app.module.ts`; the `Plugin Manager` module itself is part of the supporting infrastructure and is included in the architecture overview below rather than counted as a registered plugin.
 
 | Group | Modules |
 |-------|---------|
@@ -112,7 +112,7 @@ Client -> AuthController.findAll() -> AuthService.findAll() -> TypeORM Repositor
 | Component Entity | Component data structure with dependency relations |
 | ComponentKind Enum | Types of components (23 kinds across 4 domains) |
 | ComponentKindGroup Enum | Domain grouping (dev, infra, data, security) |
-| ComponentLifecycle Enum | Lifecycle stages (experimental, development, production, deprecated, end_of_life) |
+| ComponentLifecycle Enum | Lifecycle stages (planned, experimental, production, deprecated, decommissioned) |
 | CreateComponentDto | Validation for create requests |
 | UpdateComponentDto | Validation for update requests |
 | CreateLocationDto | DTO for triggering git discovery |

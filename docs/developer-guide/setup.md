@@ -102,14 +102,14 @@ This starts the API and PostgreSQL database. Use when working on backend feature
 For local development with hot-reload, start the database with Docker and run the backend and frontend locally:
 
 ```bash
-# Start PostgreSQL
-docker compose up -d postgres
+# Start PostgreSQL and Redis
+docker compose up -d postgres redis
 
 # Start backend (port 3000)
 npm run start:dev -w apps/api
 
 # Start frontend (port 3001, separate terminal)
-npm run web:dev
+npm run web:dev -- --port 3001
 ```
 
 #### Running Documentation Server
@@ -162,7 +162,7 @@ farm/
           gateway/         # API gateway (Kong, AWS API Gateway) integration
           api-specs/       # API specification lifecycle and consumer tracking
       test/                # End-to-end tests (supertest + SQLite in-memory)
-    web/                   # Next.js frontend
+    apps/web/              # Next.js frontend
       src/
         app/               # App Router pages
         components/        # React components

@@ -22,9 +22,9 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
      +----------+-------+--------+-------+----------+--------+---------+
      |          |       |        |       |          |        |         |
      v          v       v        v       v          v        v         v
-  +------+ +-------+ +------+ +-----+ +-------+ +------+ +-----+ +--------+
-  | Auth | |Catalog| | Docs | | Env | |Pipelin| | SLOs | | K8s | |  ...   |
-  +------+ +-------+ +------+ +-----+ +-------+ +------+ +-----+ +--------+
+  +------+ +-------+ +------+ +-----+ +--------+ +------+ +-----+ +--------+
+  | Auth | |Catalog| | Docs | | Env | |Pipeline| | SLOs | | K8s | |  ...   |
+  +------+ +-------+ +------+ +-----+ +--------+ +------+ +-----+ +--------+
                              |
                              v
                     +------------------+
@@ -101,7 +101,7 @@ Manages the software component catalog, serving Dev, Infra, Data, and Security t
 **Responsibilities:**
 
 - Component CRUD operations
-- Component lifecycle management (experimental, development, production, deprecated, end_of_life)
+- Component lifecycle management (planned, experimental, production, deprecated, decommissioned)
 - YAML-driven component registration and remote discovery (`catalog-info.yaml`)
 - 23 component kinds across four domain groups: `dev`, `infra`, `data`, `security`
 - Component dependency tracking (ManyToMany self-referential)
