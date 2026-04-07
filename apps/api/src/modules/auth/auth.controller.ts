@@ -3,6 +3,7 @@ import {
   Post,
   Body,
   Get,
+  Patch,
   Req,
   Res,
   Param,
@@ -34,6 +35,8 @@ import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { LoginResponseDto } from "./dto/login-response.dto";
 import { RefreshResponseDto } from "./dto/refresh-response.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 import { User } from "./entities/user.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -192,6 +195,94 @@ export class AuthController {
   })
   async findAll(): Promise<User[]> {
     return await this.authService.findAll();
+  }
+
+  /**
+   * Returns the profile of the currently authenticated user.
+   * @param req - Express request carrying the JWT payload
+   * @returns The authenticated user entity
+   */
+  @Get("profile")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Get current user profile" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns the authenticated user profile.",
+    type: User,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Unauthorized.",
+    type: ErrorResponseDto,
+  })
+  async getProfile(
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<User> {
+    return this.authService.getProfile(req.user.userId);
+  }
+
+  /**
+   * Updates the profile of the currently authenticated user.
+   * @param req - Express request carrying the JWT payload
+   * @param dto - Profile fields to update
+   * @returns The updated user entity
+   */
+  @Patch("profile")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Update current user profile" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Profile updated successfully.",
+    type: User,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Unauthorized.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Email already in use.",
+    type: ErrorResponseDto,
+  })
+  async updateProfile(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: UpdateProfileDto,
+  ): Promise<User> {
+    return this.authService.updateProfile(req.user.userId, dto);
+  }
+
+  /**
+   * Changes the password of the currently authenticated user.
+   * Invalidates all existing sessions upon success.
+   * @param req - Express request carrying the JWT payload
+   * @param dto - Current password, new password, and confirmation
+   */
+  @Patch("profile/password")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Change current user password" })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: "Password changed successfully.",
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: "Passwords do not match.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Unauthorized or wrong current password.",
+    type: ErrorResponseDto,
+  })
+  async changePassword(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    await this.authService.changePassword(req.user.userId, dto);
   }
 
   /**

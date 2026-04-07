@@ -281,6 +281,34 @@ function toQueryString(params: Record<string, unknown> | object): string {
   return `?${qs}`;
 }
 
+// -- Auth profile types (Phase 24) --
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  roles: string[];
+  firstName: string | null;
+  lastName: string | null;
+  gender: 'male' | 'female' | 'non_binary' | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateProfileData {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  gender?: 'male' | 'female' | 'non_binary';
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // -- Auth API --
 
 export const auth = {
@@ -320,6 +348,30 @@ export const auth = {
   keycloakSync(orgId: string): Promise<{ queued: boolean }> {
     return request<{ queued: boolean }>(`/v1/auth/keycloak/sync/${encodeURIComponent(orgId)}`, {
       method: "POST",
+    });
+  },
+
+  /** Fetch the authenticated user's own profile (Phase 24). */
+  getProfile(): Promise<UserProfile> {
+    return request<UserProfile>('/v1/auth/profile');
+  },
+
+  /** Update the authenticated user's own profile (Phase 24). */
+  updateProfile(data: UpdateProfileData): Promise<UserProfile> {
+    return request<UserProfile>('/v1/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Change the authenticated user's password (Phase 24).
+   * Returns 204 No Content on success — the Promise resolves to void.
+   */
+  changePassword(data: ChangePasswordData): Promise<void> {
+    return request<void>('/v1/auth/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   },
 };

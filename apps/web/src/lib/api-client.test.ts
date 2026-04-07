@@ -133,7 +133,97 @@ describe("api-client", () => {
       const result = await auth.getUsers();
       expect(result).toHaveLength(1);
     });
-  });
+
+    // -- Phase 24: Profile management methods --
+
+    it("getProfile calls GET /api/v1/auth/profile", async () => {
+      const profile = {
+        id: "u1",
+        username: "admin",
+        email: "admin@example.com",
+        displayName: "Admin",
+        roles: ["admin"],
+        firstName: "Alice",
+        lastName: "Smith",
+        gender: "female",
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-02T00:00:00Z",
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(profile));
+      const result = await auth.getProfile();
+      expect(result).toEqual(profile);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/profile",
+        expect.any(Object),
+      );
+    });
+
+    it("updateProfile calls PATCH /api/v1/auth/profile with body", async () => {
+      const updated = {
+        id: "u1",
+        username: "admin",
+        email: "new@example.com",
+        displayName: "Admin",
+        roles: ["admin"],
+        firstName: "Alice",
+        lastName: "Jones",
+        gender: null,
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-06-01T00:00:00Z",
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(updated));
+      const result = await auth.updateProfile({
+        firstName: "Alice",
+        lastName: "Jones",
+        email: "new@example.com",
+      });
+      expect(result).toEqual(updated);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/profile",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body).toEqual({
+        firstName: "Alice",
+        lastName: "Jones",
+        email: "new@example.com",
+      });
+    });
+
+    it("changePassword calls PATCH /api/v1/auth/profile/password", async () => {
+      // API returns 204 No Content
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await auth.changePassword({
+        currentPassword: "old-pass",
+        newPassword: "new-pass-123",
+        confirmPassword: "new-pass-123",
+      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/profile/password",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse(
+        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+      );
+      expect(body).toEqual({
+        currentPassword: "old-pass",
+        newPassword: "new-pass-123",
+        confirmPassword: "new-pass-123",
+      });
+    });
+
+    it("changePassword resolves to undefined on 204", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      const result = await auth.changePassword({
+        currentPassword: "p",
+        newPassword: "newpass1",
+        confirmPassword: "newpass1",
+      });
+      expect(result).toBeUndefined();
+    });
+  }); // end describe("auth")
 
   describe("request error handling", () => {
     it("should throw ApiError on non-ok response", async () => {

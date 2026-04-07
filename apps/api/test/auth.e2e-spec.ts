@@ -271,3 +271,172 @@ describe("Auth Lifecycle (e2e)", () => {
       .expect(403);
   });
 });
+
+describe("User Profile Management (e2e)", () => {
+  let app: INestApplication<App>;
+
+  const profileUser = {
+    username: "profile_e2e_user",
+    email: "profile_e2e@test.com",
+    password: "ProfilePass1",
+    displayName: "Profile E2E User",
+  };
+
+  let token: string;
+
+  beforeAll(async () => {
+    app = await createE2EApp();
+
+    // Register the test user
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .send(profileUser)
+      .expect(201);
+
+    // Login to obtain a token
+    const loginRes = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: profileUser.username, password: profileUser.password })
+      .expect(200);
+
+    token = (loginRes.body as { token: string }).token;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe("GET /api/v1/auth/profile", () => {
+    it("should return the authenticated user profile (200)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/auth/profile")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body = res.body as UserResponse;
+      expect(body.username).toBe(profileUser.username);
+      expect(body.email).toBe(profileUser.email);
+      expect(body.displayName).toBe(profileUser.displayName);
+      expect(body).not.toHaveProperty("password");
+    });
+
+    it("should return 401 when unauthenticated", async () => {
+      await request(app.getHttpServer())
+        .get("/api/v1/auth/profile")
+        .expect(401);
+    });
+  });
+
+  describe("PATCH /api/v1/auth/profile", () => {
+    it("should update profile fields and return the updated user (200)", async () => {
+      const res = await request(app.getHttpServer())
+        .patch("/api/v1/auth/profile")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ firstName: "Jane", lastName: "Smith", gender: "female" })
+        .expect(200);
+
+      const body = res.body as UserResponse & {
+        firstName: string;
+        lastName: string;
+        gender: string;
+      };
+      expect(body.firstName).toBe("Jane");
+      expect(body.lastName).toBe("Smith");
+      expect(body.gender).toBe("female");
+      expect(body.username).toBe(profileUser.username);
+    });
+
+    it("should return 409 when updating to an email already taken by another user", async () => {
+      // Register a second user whose email we will try to steal
+      const secondUser = {
+        username: "profile_e2e_user2",
+        email: "profile_e2e2@test.com",
+        password: "ProfilePass2",
+        displayName: "Profile E2E User 2",
+      };
+
+      await request(app.getHttpServer())
+        .post("/api/v1/auth/register")
+        .send(secondUser)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch("/api/v1/auth/profile")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ email: secondUser.email })
+        .expect(409);
+    });
+  });
+
+  describe("PATCH /api/v1/auth/profile/password", () => {
+    it("should change the password and return 204", async () => {
+      await request(app.getHttpServer())
+        .patch("/api/v1/auth/profile/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          currentPassword: profileUser.password,
+          newPassword: "NewProfilePass1",
+          confirmPassword: "NewProfilePass1",
+        })
+        .expect(204);
+
+      // Verify old password no longer works for login
+      await request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send({
+          username: profileUser.username,
+          password: profileUser.password,
+        })
+        .expect(401);
+
+      // Verify new password works
+      await request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send({
+          username: profileUser.username,
+          password: "NewProfilePass1",
+        })
+        .expect(200);
+    });
+
+    it("should return 401 when the current password is wrong", async () => {
+      // Re-login with the updated password to obtain a fresh token
+      const loginRes = await request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send({ username: profileUser.username, password: "NewProfilePass1" })
+        .expect(200);
+
+      const freshToken = (loginRes.body as { token: string }).token;
+
+      await request(app.getHttpServer())
+        .patch("/api/v1/auth/profile/password")
+        .set("Authorization", `Bearer ${freshToken}`)
+        .send({
+          currentPassword: "WrongCurrentPass1",
+          newPassword: "AnotherPass1",
+          confirmPassword: "AnotherPass1",
+        })
+        .expect(401);
+    });
+
+    it("should return 400 when newPassword and confirmPassword do not match", async () => {
+      // Re-login with the updated password to obtain a fresh token
+      const loginRes = await request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send({ username: profileUser.username, password: "NewProfilePass1" })
+        .expect(200);
+
+      const freshToken = (loginRes.body as { token: string }).token;
+
+      await request(app.getHttpServer())
+        .patch("/api/v1/auth/profile/password")
+        .set("Authorization", `Bearer ${freshToken}`)
+        .send({
+          currentPassword: "NewProfilePass1",
+          newPassword: "AnotherPass1",
+          confirmPassword: "MismatchedPass1",
+        })
+        .expect(400);
+    });
+  });
+});

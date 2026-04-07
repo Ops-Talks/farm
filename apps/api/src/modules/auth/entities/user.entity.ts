@@ -35,6 +35,22 @@ export class User {
   @Column()
   displayName: string;
 
+  @ApiProperty({ example: "John", required: false })
+  @Column({ nullable: true, type: "varchar" })
+  firstName: string | null;
+
+  @ApiProperty({ example: "Doe", required: false })
+  @Column({ nullable: true, type: "varchar" })
+  lastName: string | null;
+
+  @ApiProperty({
+    example: "male",
+    enum: ["male", "female", "non_binary"],
+    required: false,
+  })
+  @Column({ nullable: true, type: "varchar" })
+  gender: "male" | "female" | "non_binary" | null;
+
   @Exclude()
   @Column()
   password: string;
@@ -52,8 +68,8 @@ export class User {
   roles: string[];
 
   @Exclude()
-  @Column({ nullable: true })
-  refreshToken: string;
+  @Column({ nullable: true, type: "varchar" })
+  refreshToken: string | null;
 
   @ApiProperty({
     example: "github",
