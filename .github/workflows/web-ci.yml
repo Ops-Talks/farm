@@ -18,11 +18,11 @@ jobs:
     steps:
       # ── 1. Source ────────────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ── 2. Node.js ───────────────────────────────────────────────────────────
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm' # caches ~/.npm based on package-lock.json
@@ -63,12 +63,13 @@ jobs:
 
       # ── 6b. Upload test results to Codecov ───────────────────────────────────
       - name: Upload unit test results to Codecov
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         if: always()
         with:
           files: ./apps/web/coverage/junit.xml
           flags: web
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
 
       # ── 7. Build ─────────────────────────────────────────────────────────────
       - name: Build (apps/web)
@@ -86,11 +87,11 @@ jobs:
     steps:
       # ── 1. Source ────────────────────────────────────────────────────────────
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ── 2. Node.js ───────────────────────────────────────────────────────────
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'npm'
@@ -119,7 +120,7 @@ jobs:
       # ── 7. Upload test artefacts on failure ──────────────────────────────────
       - name: Upload Playwright test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-test-results-all-browsers
           path: apps/web/test-results/
@@ -127,7 +128,7 @@ jobs:
 
       - name: Upload Playwright HTML report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-html-report-all-browsers
           path: apps/web/playwright-report/

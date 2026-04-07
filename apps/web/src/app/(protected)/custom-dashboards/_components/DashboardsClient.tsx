@@ -101,11 +101,11 @@ function widgetTypeLabel(type: WidgetType): string {
 /* ------------------------------------------------------------------ */
 
 export function DashboardsClient() {
-  const { user } = useAuth();
+  useAuth();
 
   /* ---- list state ---- */
   const [dashboardsList, setDashboardsList] = useState<Dashboard[]>([]);
-  const [total, setTotal] = useState(0);
+  const [, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   /* ---- create / edit dashboard dialog ---- */

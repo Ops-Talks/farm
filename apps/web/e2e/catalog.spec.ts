@@ -194,22 +194,27 @@ test("authenticated user can click a component to view its detail page", async (
 
   await page.goto("/catalog");
 
-  // The component name should be rendered as a link to its detail page.
-  // Use getAttribute() instead of expect().toHaveAttribute() — the latter
-  // triggers a hover interaction on WebKit which activates Next.js link
-  // prefetching and starts a navigation, causing "frame was detached" when
-  // page.goto() is subsequently called.
+  // Wait for Next.js background prefetch requests (<Link> targets visible in
+  // the viewport) to settle.  If a prefetch is still in-flight when the click
+  // fires, WebKit can silently drop the navigation.
+  await page.waitForLoadState("networkidle");
+
   const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
   await expect(link).toBeVisible();
   const href = await link.getAttribute("href");
   expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // Playwright synthetic clicks fail to trigger Next.js <Link> client-side
-  // navigation on WebKit.  Navigate via page.goto() using the verified href.
-  await page.goto(`/catalog/${MOCK_COMPONENT.id}`);
+  // Click the link to trigger Next.js client-side navigation.
+  //
+  // On WebKit the RSC payload fetch fails ("TypeError: Load failed") and
+  // Next.js falls back to full browser navigation, which can take 15-20 s
+  // on slow CI runners.  A generous timeout accommodates that fallback path
+  // without issuing a competing page.goto() (which would cause Playwright's
+  // "Navigation interrupted by another navigation" error).
+  await link.click();
 
-  // Should be on the detail page
   await expect(page).toHaveURL(
     new RegExp(`/catalog/${MOCK_COMPONENT.id}`),
+    { timeout: 30_000 },
   );
 });
