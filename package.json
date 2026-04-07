@@ -36,6 +36,9 @@
       "path-to-regexp": "8.4.0"
     },
     "lodash": "4.18.1",
-    "lodash-es": "4.18.1"
+    "lodash-es": "4.18.1",
+    "release-it": {
+      "undici": "6.24.1"
+    }
   }
 }
