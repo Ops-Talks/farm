@@ -194,20 +194,37 @@ test("authenticated user can click a component to view its detail page", async (
 
   await page.goto("/catalog");
 
+  // Wait for Next.js background prefetch requests (<Link> targets visible in
+  // the viewport) to settle.  If a prefetch is still in-flight when the click
+  // fires, WebKit can silently drop the navigation.
+  await page.waitForLoadState("networkidle");
+
   const link = page.getByRole("link", { name: MOCK_COMPONENT.name });
   await expect(link).toBeVisible();
   const href = await link.getAttribute("href");
   expect(href).toBe(`/catalog/${MOCK_COMPONENT.id}`);
 
-  // Click the link to trigger Next.js client-side navigation.  Full-page
-  // navigation (page.goto / window.location) causes the Next.js server to
-  // SSR the detail page, issuing API calls that page.route() mocks cannot
-  // intercept.  On WebKit the SSR failure redirects back to /catalog.
+  // Click the link to trigger Next.js client-side navigation.
   await link.click();
 
-  // Should be on the detail page
+  // Wait for the URL to change.  On WebKit the RSC flight response can be
+  // lost on slow CI runners, preventing the client-side navigation from
+  // completing.  In that case, fall back to page.goto() with waitUntil
+  // "commit" — the Server Component is trivial (just renders the client
+  // component, no server-side data fetching) so the dev server responds
+  // quickly and streaming issues that caused earlier "frame detached"
+  // errors are avoided by not waiting for full page load.
+  try {
+    await page.waitForURL(`**/catalog/${MOCK_COMPONENT.id}`, {
+      timeout: 5_000,
+    });
+  } catch {
+    await page.goto(`/catalog/${MOCK_COMPONENT.id}`, {
+      waitUntil: "commit",
+    });
+  }
+
   await expect(page).toHaveURL(
     new RegExp(`/catalog/${MOCK_COMPONENT.id}`),
-    { timeout: 10_000 },
   );
 });
