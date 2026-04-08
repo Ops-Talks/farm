@@ -1,4 +1,5 @@
 import { NestFactory, Reflector } from "@nestjs/core";
+import * as express from "express";
 import {
   ValidationPipe,
   ClassSerializerInterceptor,
@@ -22,7 +23,15 @@ initTracing();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    // Disable the default 100 kb body-parser so we can apply per-path limits.
+    bodyParser: false,
   });
+
+  // OTLP trace payloads from the browser SDK can be large (many batched spans).
+  app.use("/api/v1/traces/ingest", express.json({ limit: "10mb" }));
+  // Standard limit for all other routes.
+  app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
   const configService = app.get(ConfigService);
   const env = configService.get<string>("env") || "development";

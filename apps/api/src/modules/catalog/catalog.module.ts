@@ -8,6 +8,12 @@ import {
   CatalogDiscoveryProcessor,
   CATALOG_DISCOVERY_QUEUE,
 } from "./processors/catalog-discovery.processor";
+import {
+  ContainerImageSyncProcessor,
+  CONTAINER_IMAGE_SYNC_QUEUE,
+} from "./processors/container-image-sync.processor";
+import { ContainerImageSyncScheduler } from "./processors/container-image-sync.scheduler";
+import { RegistryModule } from "../registry/registry.module";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -20,10 +26,23 @@ const isTest = process.env.NODE_ENV === "test";
     TypeOrmModule.forFeature([Component]),
     ...(isTest
       ? []
-      : [BullModule.registerQueue({ name: CATALOG_DISCOVERY_QUEUE })]),
+      : [
+          BullModule.registerQueue({ name: CATALOG_DISCOVERY_QUEUE }),
+          BullModule.registerQueue({ name: CONTAINER_IMAGE_SYNC_QUEUE }),
+          RegistryModule,
+        ]),
   ],
   controllers: [CatalogController],
-  providers: [CatalogService, ...(isTest ? [] : [CatalogDiscoveryProcessor])],
+  providers: [
+    CatalogService,
+    ...(isTest
+      ? []
+      : [
+          CatalogDiscoveryProcessor,
+          ContainerImageSyncProcessor,
+          ContainerImageSyncScheduler,
+        ]),
+  ],
   exports: [CatalogService],
 })
 export class CatalogModule {}

@@ -25,6 +25,7 @@ export enum FarmEvent {
   ENV_REQUEST_DECIDED = "env-request.decided",
   ENV_REQUEST_PROVISIONED = "env-request.provisioned",
   ENV_REQUEST_EXPIRED = "env-request.expired",
+  CONTAINER_VULNERABILITY_FOUND = "container:vulnerability-found",
 }
 
 /**
@@ -117,5 +118,17 @@ export interface EnvironmentRequestEventPayload {
   type: string;
   status: string;
   requestedBy: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for container vulnerability detection events.
+ */
+export interface ContainerVulnerabilityFoundPayload {
+  componentId: string;
+  componentName: string;
+  criticalCount: number;
+  image: string;
+  tag: string;
   timestamp: string;
 }

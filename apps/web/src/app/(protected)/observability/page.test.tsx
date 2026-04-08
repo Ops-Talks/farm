@@ -7,6 +7,10 @@ const mockSummary = vi.fn();
 const mockGetTraceServices = vi.fn();
 const mockGetTraces = vi.fn();
 const mockGetLogs = vi.fn();
+const mockGetDragonflyStatus = vi.fn();
+const mockGetDragonflyMetrics = vi.fn();
+const mockGetDragonflyTasks = vi.fn();
+const mockGetDragonflyPeers = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   health: { check: () => mockHealthCheck() },
@@ -17,6 +21,12 @@ vi.mock("@/lib/api-client", () => ({
     getLogs: () => mockGetLogs(),
     queryRange: vi.fn(),
     queryInstant: vi.fn(),
+  },
+  kubernetes: {
+    getDragonflyStatus: () => mockGetDragonflyStatus(),
+    getDragonflyMetrics: () => mockGetDragonflyMetrics(),
+    getDragonflyTasks: () => mockGetDragonflyTasks(),
+    getDragonflyPeers: () => mockGetDragonflyPeers(),
   },
 }));
 
@@ -60,6 +70,20 @@ describe("ObservabilityPage", () => {
     // Default mocks for tabs that auto-fetch on mount
     mockGetTraceServices.mockResolvedValue({ data: [] });
     mockGetTraces.mockResolvedValue({ data: [], total: 0, limit: 50, offset: 0, errors: null });
+    mockGetDragonflyStatus.mockResolvedValue({
+      status: "healthy",
+      version: "2.1.0",
+      components: [],
+    });
+    mockGetDragonflyMetrics.mockResolvedValue({
+      totalTasks: 0,
+      succeededTasks: 0,
+      failedTasks: 0,
+      activeTasks: 0,
+      totalPeers: 0,
+    });
+    mockGetDragonflyTasks.mockResolvedValue([]);
+    mockGetDragonflyPeers.mockResolvedValue([]);
   });
 
   it("should render heading and tabs", async () => {
@@ -148,6 +172,23 @@ describe("ObservabilityPage", () => {
     await user.click(screen.getByText("Logs"));
     await waitFor(() => {
       expect(screen.getByText("Run Query")).toBeInTheDocument();
+    });
+  });
+
+  it("should switch to Dragonfly tab", async () => {
+    const user = userEvent.setup();
+    mockHealthCheck.mockResolvedValue(healthData);
+    mockSummary.mockResolvedValue(fullSummary);
+
+    render(<ObservabilityPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Overall Status")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Dragonfly"));
+    await waitFor(() => {
+      expect(screen.getByText("Dragonfly P2P CDN")).toBeInTheDocument();
     });
   });
 

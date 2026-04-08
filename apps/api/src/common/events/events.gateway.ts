@@ -17,6 +17,7 @@ import {
   IncidentStatusChangedPayload,
   ScaffoldEventPayload,
   EnvironmentRequestEventPayload,
+  ContainerVulnerabilityFoundPayload,
 } from "./events.interfaces";
 
 /**
@@ -170,5 +171,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   emitEnvRequestExpired(payload: EnvironmentRequestEventPayload): void {
     this.server?.emit(FarmEvent.ENV_REQUEST_EXPIRED, payload);
+  }
+
+  /**
+   * Emits a container:vulnerability-found event to all connected clients.
+   */
+  emitContainerVulnerabilityFound(payload: ContainerVulnerabilityFoundPayload): void {
+    this.server?.emit(FarmEvent.CONTAINER_VULNERABILITY_FOUND, payload);
   }
 }

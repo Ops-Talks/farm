@@ -34,6 +34,7 @@ import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { RegisterComponentYamlDto } from "./dto/register-component-yaml.dto";
 import { CreateLocationDto } from "./dto/create-location.dto";
+import { SetContainerImageDto } from "./dto/set-container-image.dto";
 import { Component, ComponentKindGroup } from "./entities/component.entity";
 import { ListComponentsQueryDto } from "./dto/list-components-query.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -288,5 +289,24 @@ export class CatalogController {
   async remove(@Param("id") id: string): Promise<void> {
     await this.catalogService.remove(id);
     await this.cacheManager.clear();
+  }
+
+  /**
+   * Sets or updates container image metadata for a component.
+   * @param id - The UUID of the component
+   * @param dto - Container image metadata to set
+   * @returns The updated component
+   */
+  @Post("components/:id/container-image")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Set or update container image metadata for a component" })
+  @ApiParam({ name: "id", description: "Component UUID" })
+  @ApiOkResponse({ description: "Container image metadata updated", type: Component })
+  @ApiResponse({ status: 404, description: "Component not found", type: ErrorResponseDto })
+  async setContainerImage(
+    @Param("id") id: string,
+    @Body() dto: SetContainerImageDto,
+  ): Promise<Component> {
+    return this.catalogService.setContainerImage(id, dto);
   }
 }

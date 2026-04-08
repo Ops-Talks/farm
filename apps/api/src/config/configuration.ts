@@ -110,6 +110,11 @@ export const configuration = () => ({
       secretAccessKey: process.env.GATEWAY_AWS_SECRET_ACCESS_KEY || "",
     },
   },
+  registry: {
+    type: process.env.REGISTRY_TYPE || "",
+    url: process.env.REGISTRY_URL || "",
+    credentials: process.env.REGISTRY_CREDENTIALS || "",
+  },
 });
 
 /**
@@ -185,4 +190,11 @@ export const validationSchema = Joi.object({
   GATEWAY_AWS_REGION: Joi.string().allow("").default(""),
   GATEWAY_AWS_ACCESS_KEY_ID: Joi.string().allow("").default(""),
   GATEWAY_AWS_SECRET_ACCESS_KEY: Joi.string().allow("").default(""),
+  // Registry integration (all optional)
+  REGISTRY_TYPE: Joi.string()
+    .valid("ecr", "gcr", "dockerhub", "harbor", "")
+    .allow("")
+    .default(""),
+  REGISTRY_URL: Joi.string().allow("").default(""),
+  REGISTRY_CREDENTIALS: Joi.string().allow("").default(""),
 });

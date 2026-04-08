@@ -84,7 +84,7 @@ services:
     command: ["-config.file=/etc/tempo/config.yaml"]
 
   grafana:
-    image: grafana/grafana:11.6.0
+    image: grafana/grafana:11.6.14
     container_name: farm-grafana
     restart: always
     ports:

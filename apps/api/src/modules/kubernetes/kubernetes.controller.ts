@@ -29,6 +29,10 @@ import {
   CustomResourceInstance,
   NodeRuntimeInfo,
   CrioStorageMetrics,
+  DragonflyInstallStatus,
+  DragonflyTask,
+  DragonflyPeer,
+  DragonflyTaskMetrics,
 } from "./kubernetes.service";
 import {
   KyvernoPolicyReportService,
@@ -407,5 +411,69 @@ export class KubernetesController {
     @Param("componentId") componentId: string,
   ): Promise<OperatorBinding[]> {
     return this.operatorBindingService.findByComponent(componentId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dragonfly P2P CDN (FARM-S245 / FARM-S246)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of the Dragonfly P2P CDN in the cluster.
+   *
+   * @returns Dragonfly installation status with component breakdown
+   */
+  @Get("dragonfly/status")
+  @ApiOperation({ summary: "Get Dragonfly P2P CDN installation status" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Dragonfly installation status and component breakdown.",
+  })
+  async getDragonflyStatus(): Promise<DragonflyInstallStatus> {
+    return this.kubernetesService.getDragonflyStatus();
+  }
+
+  /**
+   * Returns recent Dragonfly P2P pull tasks.
+   *
+   * @returns List of recent P2P pull tasks
+   */
+  @Get("dragonfly/tasks")
+  @ApiOperation({ summary: "Get recent Dragonfly P2P pull tasks" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "List of recent P2P pull tasks.",
+  })
+  async getDragonflyTasks(): Promise<DragonflyTask[]> {
+    return this.kubernetesService.getDragonflyTasks();
+  }
+
+  /**
+   * Returns active Dragonfly peer nodes.
+   *
+   * @returns List of active Dragonfly peers
+   */
+  @Get("dragonfly/peers")
+  @ApiOperation({ summary: "Get active Dragonfly peers" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "List of active Dragonfly peers.",
+  })
+  async getDragonflyPeers(): Promise<DragonflyPeer[]> {
+    return this.kubernetesService.getDragonflyPeers();
+  }
+
+  /**
+   * Returns aggregated Dragonfly P2P task metrics from the Manager.
+   *
+   * @returns Aggregated task counters from the Dragonfly Manager
+   */
+  @Get("dragonfly/metrics")
+  @ApiOperation({ summary: "Get aggregated Dragonfly P2P task metrics" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Aggregated task counters from the Dragonfly Manager.",
+  })
+  async getDragonflyMetrics(): Promise<DragonflyTaskMetrics> {
+    return this.kubernetesService.getDragonflyMetrics();
   }
 }

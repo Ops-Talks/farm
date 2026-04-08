@@ -16,6 +16,7 @@ import { catalog, deployments } from "@/lib/api-client";
 import type { CatalogComponent, Deployment } from "@/types/api";
 import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
+import { ContainerImageCard } from "./ContainerImageCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
 import { CICDTab } from "./CICDTab";
 import { CloudResourcesTab } from "./CloudResourcesTab";
@@ -27,6 +28,8 @@ import { IstioCanaryTab } from "./IstioCanaryTab";
 import { ApiSpecsTab } from "./ApiSpecsTab";
 import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { OperatorsTab } from "./OperatorsTab";
+import { ContainerSecurityTab } from "./ContainerSecurityTab";
+import { HarborReplicationTable } from "./HarborReplicationTable";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -282,6 +285,7 @@ export function ComponentDetailClient() {
           {/* Gateway Routes tab (FARM-E48) */}
           <TabsTrigger value="gateway">Gateway Routes</TabsTrigger>
           <TabsTrigger value="operators">Operators</TabsTrigger>
+          <TabsTrigger value="container-security">Container Security</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -427,6 +431,14 @@ export function ComponentDetailClient() {
               {/* Repository card — only shown when repositoryUrl is present */}
               {component.repositoryUrl && (
                 <RepositoryCard repositoryUrl={component.repositoryUrl} />
+              )}
+
+              {/* Container image */}
+              <ContainerImageCard containerImage={component.containerImage} />
+
+              {/* Harbor replication rules — only for Harbor registries */}
+              {component.containerImage?.registry === "harbor" && (
+                <HarborReplicationTable />
               )}
 
               {/* Dependencies */}
@@ -583,6 +595,13 @@ export function ComponentDetailClient() {
         <TabsContent value="operators">
           <ErrorBoundary>
             <OperatorsTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Container Security tab ──────────────────────────────────── */}
+        <TabsContent value="container-security">
+          <ErrorBoundary>
+            <ContainerSecurityTab component={component} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

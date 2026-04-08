@@ -40,6 +40,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-istio",
     "core-api-specs",
     "core-gateway",
+    "core-registry",
     "core-slo",
     "core-incidents",
     "core-dashboards",
@@ -48,7 +49,7 @@ describe("Plugin Manager (e2e)", () => {
   ];
 
   describe("GET /api/plugins", () => {
-    it("should return all 21 core plugins with name, version, and description", async () => {
+    it("should return all 24 core plugins with name, version, and description", async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/plugins")
         .set("Authorization", `Bearer ${adminToken}`)
@@ -62,7 +63,7 @@ describe("Plugin Manager (e2e)", () => {
       }[];
 
       expect(Array.isArray(plugins)).toBe(true);
-      expect(plugins).toHaveLength(23);
+      expect(plugins).toHaveLength(24);
 
       for (const plugin of plugins) {
         expect(plugin.name).toBeDefined();

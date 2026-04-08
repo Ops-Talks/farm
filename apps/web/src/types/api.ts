@@ -46,6 +46,57 @@ export interface HelmChart {
   valuesRef?: string;
 }
 
+// -- Container image metadata attached to a catalog component --
+
+export interface ContainerImageMetadata {
+  /** Registry type identifier, e.g. "ecr", "gcr", "dockerhub" */
+  registry: string;
+  /** Image name/path, e.g. "myorg/myapp" */
+  image: string;
+  /** Latest resolved tag, e.g. "1.2.3" */
+  latestTag?: string;
+  /** Image digest, e.g. "sha256:abc123..." */
+  digest?: string;
+  /** When the image was last pushed */
+  pushedAt?: string;
+}
+
+// -- Container vulnerability (FARM-S244) --
+
+export type VulnerabilitySeverity =
+  | 'CRITICAL'
+  | 'HIGH'
+  | 'MEDIUM'
+  | 'LOW'
+  | 'INFORMATIONAL'
+  | 'UNDEFINED';
+
+export interface ContainerVulnerability {
+  id: string;
+  componentId: string;
+  registry: string;
+  image: string;
+  tag: string;
+  severity: VulnerabilitySeverity;
+  cveId: string;
+  packageName: string;
+  installedVersion?: string | null;
+  fixedVersion?: string | null;
+  description?: string | null;
+  scannedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VulnerabilitySummary {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  informational: number;
+  total: number;
+}
+
 export interface CatalogComponent {
   id: string;
   name: string;
@@ -67,6 +118,8 @@ export interface CatalogComponent {
   vcsUrl?: string;
   /** Optional Helm chart configuration (FARM-E36) */
   helmChart?: HelmChart;
+  /** Container image metadata (FARM-S243) */
+  containerImage?: ContainerImageMetadata | null;
   /** Optional Kubernetes namespace for Istio service mesh integration (FARM-E42) */
   namespace?: string;
   createdAt: string;
@@ -767,6 +820,47 @@ export interface CrioStorageMetrics {
   storageUsageBytes?: number;
 }
 
+// -- Dragonfly P2P CDN (FARM-S245 / FARM-S246) --
+
+export interface DragonflyComponentInfo {
+  component: "manager" | "scheduler" | "dfdaemon";
+  namespace: string;
+  version: string;
+  readyReplicas: number;
+  totalReplicas: number;
+  workloadKind: "Deployment" | "DaemonSet";
+}
+
+export interface DragonflyInstallStatus {
+  status: "not-installed" | "degraded" | "healthy";
+  version: string | null;
+  components: DragonflyComponentInfo[];
+}
+
+export interface DragonflyTaskMetrics {
+  totalTasks: number;
+  succeededTasks: number;
+  failedTasks: number;
+  activeTasks: number;
+  totalPeers: number;
+}
+
+export interface DragonflyTask {
+  image: string;
+  peerCount: number;
+  bytesTransferred: number;
+  accelerationRatio: number;
+  durationSeconds: number;
+  status: "succeeded" | "failed" | "running";
+}
+
+export interface DragonflyPeer {
+  peerId: string;
+  ip: string;
+  status: "active" | "idle";
+  taskCount: number;
+}
+
 // -- Keycloak / Enterprise SSO (FARM-E41) --
 
 /** A stored Keycloak OIDC credential for an organisation. */
@@ -1284,4 +1378,16 @@ export interface UpdateEnvironmentRequestDto {
 
 export interface ReviewEnvironmentRequestDto {
   comment?: string;
+}
+
+/** A Harbor replication policy (rule). */
+export interface HarborReplicationPolicy {
+  id: number;
+  name: string;
+  srcRegistry: string;
+  destRegistry: string;
+  filters: string[];
+  triggerType: string;
+  enabled: boolean;
+  lastExecutionStatus: string | null;
 }
