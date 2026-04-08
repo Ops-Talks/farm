@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { health as healthApi, observability as obsApi } from "@/lib/api-client";
+import { health as healthApi, observability as obsApi, kubernetes } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
-import type { HealthStatus, ObservabilitySummary } from "@/types/api";
+import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer } from "@/types/api";
 // HealthTab is the default active tab — keep it statically imported to avoid
 // a loading flash on first render.
 import { HealthTab } from "./health-tab";
@@ -51,13 +51,25 @@ const LogsTab = dynamic(
   },
 );
 
-type TabId = "health" | "metrics" | "traces" | "logs";
+/** DragonflyTab: Dragonfly P2P CDN status and metrics */
+const DragonflyTab = dynamic(
+  () => import("./dragonfly-tab").then((m) => ({ default: m.DragonflyTab })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md" />
+    ),
+  },
+);
+
+type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "health", label: "Health" },
   { id: "metrics", label: "Metrics" },
   { id: "traces", label: "Traces" },
   { id: "logs", label: "Logs" },
+  { id: "dragonfly", label: "Dragonfly" },
 ];
 
 export function ObservabilityClient() {
@@ -67,13 +79,35 @@ export function ObservabilityClient() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const fetchData = useCallback(async () => {
+  // Dragonfly state
+  const [dragonflyStatus, setDragonflyStatus] = useState<DragonflyInstallStatus | null>(null);
+  const [dragonflyMetrics, setDragonflyMetrics] = useState<DragonflyTaskMetrics | null>(null);
+  const [dragonflyTasks, setDragonflyTasks] = useState<DragonflyTask[]>([]);
+  const [dragonflyPeers, setDragonflyPeers] = useState<DragonflyPeer[]>([]);
+
+  const fetchData = useCallback(async (fetchDragonfly: boolean) => {
     // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
     // not prevent the health data from rendering.
-    const [healthResult, summaryResult] = await Promise.allSettled([
+    const corePromises = Promise.allSettled([
       healthApi.check(),
       obsApi.summary(),
     ]);
+
+    const dragonflyPromises = fetchDragonfly
+      ? Promise.allSettled([
+          kubernetes.getDragonflyStatus(),
+          kubernetes.getDragonflyMetrics(),
+          kubernetes.getDragonflyTasks(),
+          kubernetes.getDragonflyPeers(),
+        ])
+      : Promise.resolve(null);
+
+    const [coreResults, dragonflyResults] = await Promise.all([
+      corePromises,
+      dragonflyPromises,
+    ]);
+
+    const [healthResult, summaryResult] = coreResults;
 
     if (healthResult.status === "fulfilled") {
       setHealthData(healthResult.value);
@@ -89,16 +123,50 @@ export function ObservabilityClient() {
       setSummary(null);
     }
 
+    if (dragonflyResults) {
+      const [
+        dragonflyStatusResult,
+        dragonflyMetricsResult,
+        dragonflyTasksResult,
+        dragonflyPeersResult,
+      ] = dragonflyResults;
+
+      if (dragonflyStatusResult.status === "fulfilled") {
+        setDragonflyStatus(dragonflyStatusResult.value);
+      } else {
+        console.warn("Dragonfly status unavailable:", dragonflyStatusResult.reason);
+        setDragonflyStatus(null);
+      }
+
+      if (dragonflyMetricsResult.status === "fulfilled") {
+        setDragonflyMetrics(dragonflyMetricsResult.value);
+      } else {
+        setDragonflyMetrics(null);
+      }
+
+      if (dragonflyTasksResult.status === "fulfilled") {
+        setDragonflyTasks(dragonflyTasksResult.value);
+      } else {
+        setDragonflyTasks([]);
+      }
+
+      if (dragonflyPeersResult.status === "fulfilled") {
+        setDragonflyPeers(dragonflyPeersResult.value);
+      } else {
+        setDragonflyPeers([]);
+      }
+    }
+
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-    const interval = setInterval(() => void fetchData(), 10000);
+    void fetchData(activeTab === "dragonfly");
+    const interval = setInterval(() => void fetchData(activeTab === "dragonfly"), 10000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, activeTab]);
 
   if (loading) {
     return (
@@ -126,7 +194,7 @@ export function ObservabilityClient() {
           <Badge variant="outline" className="text-xs">
             Updated: {lastUpdated.toLocaleTimeString()}
           </Badge>
-          <Button size="sm" variant="ghost" onClick={fetchData}>
+          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly")}>
             Refresh
           </Button>
         </div>
@@ -146,6 +214,14 @@ export function ObservabilityClient() {
         {activeTab === "metrics" && <MetricsTab summary={summary} />}
         {activeTab === "traces" && <TracesTab />}
         {activeTab === "logs" && <LogsTab />}
+        {activeTab === "dragonfly" && (
+          <DragonflyTab
+            status={dragonflyStatus}
+            metrics={dragonflyMetrics}
+            tasks={dragonflyTasks}
+            peers={dragonflyPeers}
+          />
+        )}
       </div>
     </div>
     </ErrorBoundary>

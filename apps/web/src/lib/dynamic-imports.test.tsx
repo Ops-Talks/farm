@@ -93,6 +93,12 @@ vi.mock("@/lib/api-client", () => ({
     queryRange: vi.fn(),
     queryInstant: vi.fn(),
   },
+  kubernetes: {
+    getDragonflyStatus: vi.fn().mockResolvedValue({ status: "not-installed", version: null, components: [] }),
+    getDragonflyMetrics: vi.fn().mockResolvedValue({ totalTasks: 0, succeededTasks: 0, failedTasks: 0, activeTasks: 0, totalPeers: 0 }),
+    getDragonflyTasks: vi.fn().mockResolvedValue([]),
+    getDragonflyPeers: vi.fn().mockResolvedValue([]),
+  },
   pipelines: {
     get: (...args: unknown[]) => mockPipelinesGet(...args),
     trigger: vi.fn(),

@@ -34,6 +34,8 @@ describe("CatalogService", () => {
     links: [],
     metadata: {},
     helmChart: null,
+    argocdApp: null,
+    containerImage: null,
     dependencies: [],
     createdAt: new Date(),
     updatedAt: new Date(),

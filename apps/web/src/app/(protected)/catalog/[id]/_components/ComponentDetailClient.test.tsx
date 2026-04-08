@@ -35,6 +35,9 @@ vi.mock("@/lib/api-client", () => ({
   deployments: {
     list: (...args: unknown[]) => mockListDeployments(...args),
   },
+  registry: {
+    listHarborReplications: vi.fn().mockResolvedValue([]),
+  },
 }));
 
 vi.mock("@/lib/otel-spans", () => ({
@@ -89,6 +92,10 @@ vi.mock(
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/OperatorsTab",
   () => ({ OperatorsTab: () => <div data-testid="operators-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/HarborReplicationTable",
+  () => ({ HarborReplicationTable: () => <div data-testid="harbor-replication-table" /> }),
 );
 
 import { ComponentDetailClient } from "@/app/(protected)/catalog/[id]/_components/ComponentDetailClient";
@@ -333,6 +340,38 @@ describe("ComponentDetailClient", () => {
         expect(screen.getByRole("link", { name: /View Repository/ })).toBeInTheDocument();
       });
       expect(screen.queryByRole("link", { name: /View on GitHub/ })).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // HarborReplicationTable integration tests
+  // ---------------------------------------------------------------------------
+  describe("HarborReplicationTable integration", () => {
+    it("renders HarborReplicationTable when registry is harbor", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({
+          containerImage: { registry: "harbor", image: "myorg/myapp" },
+        }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("harbor-replication-table")).toBeInTheDocument();
+      });
+    });
+
+    it("does not render HarborReplicationTable when registry is not harbor", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({
+          containerImage: { registry: "ecr", image: "myorg/myapp" },
+        }),
+      );
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { name: "auth-service" })).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId("harbor-replication-table")).not.toBeInTheDocument();
     });
   });
 });

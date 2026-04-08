@@ -156,6 +156,84 @@ export interface ArgoRolloutStatus {
 }
 
 /**
+ * Information about a single Dragonfly component pod group.
+ */
+export interface DragonflyComponentInfo {
+  /** Component role: "manager" | "scheduler" | "dfdaemon" */
+  component: "manager" | "scheduler" | "dfdaemon";
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Container image version extracted from the pod spec */
+  version: string;
+  /** Number of ready replicas */
+  readyReplicas: number;
+  /** Total desired replicas */
+  totalReplicas: number;
+  /** Workload kind: "Deployment" | "DaemonSet" */
+  workloadKind: "Deployment" | "DaemonSet";
+}
+
+/**
+ * Overall Dragonfly installation status.
+ */
+export interface DragonflyInstallStatus {
+  /** Overall health: "not-installed" | "degraded" | "healthy" */
+  status: "not-installed" | "degraded" | "healthy";
+  /** Dragonfly version (from the first component found), or null when not installed */
+  version: string | null;
+  /** Detected components */
+  components: DragonflyComponentInfo[];
+}
+
+/**
+ * P2P task counters and peer metrics scraped from the Dragonfly Manager.
+ */
+export interface DragonflyTaskMetrics {
+  /** Total P2P pull tasks since startup */
+  totalTasks: number;
+  /** Succeeded tasks */
+  succeededTasks: number;
+  /** Failed tasks */
+  failedTasks: number;
+  /** Currently active (in-progress) tasks */
+  activeTasks: number;
+  /** Total active peers across all tasks */
+  totalPeers: number;
+}
+
+/**
+ * A single recent P2P pull task scraped from Dragonfly metrics.
+ */
+export interface DragonflyTask {
+  /** Image reference, e.g. "docker.io/library/nginx:latest" */
+  image: string;
+  /** Number of peers involved in this pull */
+  peerCount: number;
+  /** Bytes transferred via P2P */
+  bytesTransferred: number;
+  /** Ratio of P2P bytes to total bytes (0–1) */
+  accelerationRatio: number;
+  /** Duration in seconds */
+  durationSeconds: number;
+  /** Task status: "succeeded" | "failed" | "running" */
+  status: "succeeded" | "failed" | "running";
+}
+
+/**
+ * An active Dragonfly peer node.
+ */
+export interface DragonflyPeer {
+  /** Peer identifier */
+  peerId: string;
+  /** Peer IP address */
+  ip: string;
+  /** Peer status: "active" | "idle" */
+  status: "active" | "idle";
+  /** Number of active tasks on this peer */
+  taskCount: number;
+}
+
+/**
  * Raw shape of an Argo Rollout object returned by the CustomObjectsApi.
  * Only the fields consumed by this service are declared; additional cluster
  * fields are captured by the index signature.
@@ -983,5 +1061,303 @@ export class KubernetesService {
       containerRuntimeVersion.substring(0, separatorIndex),
       containerRuntimeVersion.substring(separatorIndex + 3),
     ];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dragonfly P2P CDN Detection (FARM-S245)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of the Dragonfly P2P CDN components.
+   * Discovers Deployments and DaemonSets labelled with
+   * "app.kubernetes.io/name=dragonfly" and classifies them as manager,
+   * scheduler, or dfdaemon based on their name.
+   *
+   * @returns DragonflyInstallStatus with component breakdown
+   */
+  async getDragonflyStatus(): Promise<DragonflyInstallStatus> {
+    const notInstalled: DragonflyInstallStatus = {
+      status: "not-installed",
+      version: null,
+      components: [],
+    };
+
+    if (!this.isEnabled() || !this.appsV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning not-installed Dragonfly status",
+      );
+      return notInstalled;
+    }
+
+    try {
+      const labelSelector = "app.kubernetes.io/name=dragonfly";
+      const [deploymentsRes, daemonSetsRes] = await Promise.all([
+        this.appsV1Api.listDeploymentForAllNamespaces({
+          labelSelector,
+        }),
+        this.appsV1Api.listDaemonSetForAllNamespaces({
+          labelSelector,
+        }),
+      ]);
+
+      const components: DragonflyComponentInfo[] = [];
+
+      for (const item of deploymentsRes.items ?? []) {
+        const name = item.metadata?.name ?? "";
+        const component = this.resolveDragonflyComponent(name);
+        if (!component) continue;
+
+        const image =
+          item.spec?.template?.spec?.containers?.[0]?.image ??
+          "unknown:unknown";
+        const version = this.extractImageTag(image);
+
+        components.push({
+          component,
+          namespace: item.metadata?.namespace ?? "default",
+          version,
+          readyReplicas: item.status?.readyReplicas ?? 0,
+          totalReplicas: item.spec?.replicas ?? 0,
+          workloadKind: "Deployment",
+        });
+      }
+
+      for (const item of daemonSetsRes.items ?? []) {
+        const name = item.metadata?.name ?? "";
+        const component = this.resolveDragonflyComponent(name);
+        if (!component) continue;
+
+        const image =
+          item.spec?.template?.spec?.containers?.[0]?.image ??
+          "unknown:unknown";
+        const version = this.extractImageTag(image);
+
+        const desired =
+          (item.status as { desiredNumberScheduled?: number })
+            ?.desiredNumberScheduled ?? 0;
+        const ready =
+          (item.status as { numberReady?: number })?.numberReady ?? 0;
+
+        components.push({
+          component,
+          namespace: item.metadata?.namespace ?? "default",
+          version,
+          readyReplicas: ready,
+          totalReplicas: desired,
+          workloadKind: "DaemonSet",
+        });
+      }
+
+      if (components.length === 0) {
+        return notInstalled;
+      }
+
+      const allReady = components.every(
+        (c) => c.readyReplicas === c.totalReplicas,
+      );
+      const overallStatus: "healthy" | "degraded" = allReady
+        ? "healthy"
+        : "degraded";
+
+      return {
+        status: overallStatus,
+        version: components[0].version,
+        components,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to get Dragonfly status: ${message}`);
+      return notInstalled;
+    }
+  }
+
+  /**
+   * Resolves the Dragonfly component role from a workload name.
+   * Returns null when the name does not match any known component.
+   *
+   * @param name - Kubernetes resource name
+   * @returns Component role or null
+   */
+  private resolveDragonflyComponent(
+    name: string,
+  ): "manager" | "scheduler" | "dfdaemon" | null {
+    if (name.includes("manager")) return "manager";
+    if (name.includes("scheduler")) return "scheduler";
+    if (name.includes("dfdaemon") || name.includes("dfget")) return "dfdaemon";
+    return null;
+  }
+
+  /**
+   * Extracts the image tag from a container image reference.
+   * Handles registry ports (e.g. `registry:5000/image:tag`) and digest
+   * references (`image@sha256:...`). Returns the tag portion after the last
+   * `:` that follows the last `/`, or `"unknown"` when no tag is present.
+   *
+   * @param imageRef - Full container image reference
+   * @returns The tag string, or "unknown"
+   */
+  private extractImageTag(imageRef: string): string {
+    // Strip any digest suffix (e.g. @sha256:..., @sha384:..., @sha512:...)
+    const withoutDigest = imageRef.split("@")[0];
+    // The tag is after the last ":" that comes after the last "/"
+    const lastSlash = withoutDigest.lastIndexOf("/");
+    const tagPortion =
+      lastSlash >= 0 ? withoutDigest.substring(lastSlash) : withoutDigest;
+    const colonIdx = tagPortion.lastIndexOf(":");
+    if (colonIdx < 0) return "unknown";
+    return tagPortion.substring(colonIdx + 1) || "unknown";
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dragonfly P2P Metrics (FARM-S246)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Retrieves aggregated P2P task counters from the Dragonfly Manager pod.
+   * Scrapes Prometheus metrics via the Kubernetes pod proxy endpoint and
+   * parses the text format to extract task and peer counters.
+   *
+   * @returns DragonflyTaskMetrics with zero values when not available
+   */
+  async getDragonflyMetrics(): Promise<DragonflyTaskMetrics> {
+    const emptyMetrics: DragonflyTaskMetrics = {
+      totalTasks: 0,
+      succeededTasks: 0,
+      failedTasks: 0,
+      activeTasks: 0,
+      totalPeers: 0,
+    };
+
+    if (!this.isEnabled() || !this.coreV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning zero Dragonfly metrics",
+      );
+      return emptyMetrics;
+    }
+
+    try {
+      const podsRes = await this.coreV1Api.listPodForAllNamespaces({
+        labelSelector:
+          "app.kubernetes.io/name=dragonfly,app.kubernetes.io/component=manager",
+      });
+
+      const pods = podsRes.items ?? [];
+      if (pods.length === 0) {
+        this.logger.warn(
+          "No Dragonfly manager pod found; returning zero metrics",
+        );
+        return emptyMetrics;
+      }
+
+      const pod = pods[0];
+      const podName = pod.metadata?.name ?? "";
+      const namespace = pod.metadata?.namespace ?? "default";
+
+      const rawBody = await this.coreV1Api.connectGetNamespacedPodProxy({
+        name: podName,
+        namespace,
+        path: "/metrics",
+      });
+
+      const metricsText =
+        typeof rawBody === "string" ? rawBody : JSON.stringify(rawBody);
+
+      const parseMetric = (metricName: string): number => {
+        const escapedMetricName = metricName.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&",
+        );
+        const metricPattern = new RegExp(
+          `^${escapedMetricName}(?:\\{[^}]*\\})?\\s+([^\\s]+)`,
+        );
+
+        return metricsText.split("\n").reduce((total, line) => {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine.startsWith("#")) {
+            return total;
+          }
+
+          const match = trimmedLine.match(metricPattern);
+          if (!match) {
+            return total;
+          }
+
+          const value = Number.parseFloat(match[1]);
+          return Number.isFinite(value) ? total + value : total;
+        }, 0);
+      };
+
+      const totalTasks = parseMetric("dragonfly_manager_peer_task_total");
+      const succeededTasks = parseMetric(
+        "dragonfly_manager_peer_task_succeeded_total",
+      );
+      const failedTasks = parseMetric(
+        "dragonfly_manager_peer_task_failed_total",
+      );
+      const totalPeers = parseMetric("dragonfly_manager_peer_total");
+
+      return {
+        totalTasks,
+        succeededTasks,
+        failedTasks,
+        activeTasks: totalTasks - succeededTasks - failedTasks,
+        totalPeers,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to get Dragonfly metrics: ${message}`);
+      return emptyMetrics;
+    }
+  }
+
+  /**
+   * Returns recent Dragonfly P2P pull tasks.
+   * Dragonfly Prometheus metrics do not expose individual tasks as separate
+   * time series; this method returns an empty array unless a future scraping
+   * strategy is implemented.
+   *
+   * @returns Array of DragonflyTask objects (currently always empty)
+   */
+  getDragonflyTasks(): Promise<DragonflyTask[]> {
+    if (!this.isEnabled()) {
+      return Promise.resolve([]);
+    }
+
+    // Individual task data is not exposed via standard Prometheus metrics.
+    // Return empty until a dedicated task API or log scraping is available.
+    return Promise.resolve([]);
+  }
+
+  /**
+   * Lists active Dragonfly peer nodes by discovering dfdaemon pods.
+   * Maps each running pod to a DragonflyPeer descriptor.
+   *
+   * @returns Array of DragonflyPeer objects; empty when not available
+   */
+  async getDragonflyPeers(): Promise<DragonflyPeer[]> {
+    if (!this.isEnabled() || !this.coreV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty Dragonfly peers list",
+      );
+      return [];
+    }
+
+    try {
+      const podsRes = await this.coreV1Api.listPodForAllNamespaces({
+        labelSelector:
+          "app.kubernetes.io/name=dragonfly,app.kubernetes.io/component=dfdaemon",
+      });
+
+      return (podsRes.items ?? []).map((pod) => ({
+        peerId: pod.metadata?.name ?? "unknown",
+        ip: pod.status?.podIP ?? "unknown",
+        status: pod.status?.phase === "Running" ? "active" : "idle",
+        taskCount: 0,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to get Dragonfly peers: ${message}`);
+      return [];
+    }
   }
 }

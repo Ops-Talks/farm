@@ -27,12 +27,15 @@ export class KubeConfig {
 
 export class AppsV1Api {
   listDeploymentForAllNamespaces = jest.fn().mockResolvedValue({ items: [] });
+  listDaemonSetForAllNamespaces = jest.fn().mockResolvedValue({ items: [] });
 }
 
 export class CoreV1Api {
   listSecretForAllNamespaces = jest.fn().mockResolvedValue({ items: [] });
   listNamespacedSecret = jest.fn().mockResolvedValue({ items: [] });
   listNode = jest.fn().mockResolvedValue({ items: [] });
+  listPodForAllNamespaces = jest.fn().mockResolvedValue({ items: [] });
+  connectGetNamespacedPodProxy = jest.fn().mockResolvedValue("");
 }
 
 export class ApiextensionsV1Api {

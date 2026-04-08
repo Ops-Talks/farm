@@ -24,6 +24,9 @@ let mockListRollouts: jest.Mock;
 let mockListNamespacedRollouts: jest.Mock;
 let mockListNodes: jest.Mock;
 let mockListClusterCustomObjectCSV: jest.Mock;
+let mockListDaemonSets: jest.Mock;
+let mockListPods: jest.Mock;
+let mockConnectPodProxy: jest.Mock;
 
 jest.mock("@kubernetes/client-node", () => {
   return {
@@ -168,6 +171,9 @@ describe("KubernetesService", () => {
     mockListRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNodes = jest.fn().mockResolvedValue({ items: [] });
+    mockListDaemonSets = jest.fn().mockResolvedValue({ items: [] });
+    mockListPods = jest.fn().mockResolvedValue({ items: [] });
+    mockConnectPodProxy = jest.fn().mockResolvedValue("");
     mockLoadFromFile = jest.fn();
     mockGetCurrentCluster = jest
       .fn()
@@ -178,13 +184,18 @@ describe("KubernetesService", () => {
     mockMakeApiClient = jest.fn().mockImplementation((ApiClass: object) => {
       const name = (ApiClass as { name?: string }).name ?? "";
       if (name === "AppsV1Api") {
-        return { listDeploymentForAllNamespaces: mockListDeployments };
+        return {
+          listDeploymentForAllNamespaces: mockListDeployments,
+          listDaemonSetForAllNamespaces: mockListDaemonSets,
+        };
       }
       if (name === "CoreV1Api") {
         return {
           listSecretForAllNamespaces: mockListSecrets,
           listNamespacedSecret: mockListSecrets,
           listNode: mockListNodes,
+          listPodForAllNamespaces: mockListPods,
+          connectGetNamespacedPodProxy: mockConnectPodProxy,
         };
       }
       if (name === "ApiextensionsV1Api") {
@@ -1248,6 +1259,447 @@ describe("KubernetesService", () => {
       expect(result).toEqual({ nodeName: "worker-1", available: false });
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Dragonfly (FARM-S245 / FARM-S246)
+  // -------------------------------------------------------------------------
+
+  describe("Dragonfly", () => {
+    describe("getDragonflyStatus", () => {
+      it("should return not-installed when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.getDragonflyStatus();
+
+        expect(result).toEqual({
+          status: "not-installed",
+          version: null,
+          components: [],
+        });
+      });
+
+      it("should return not-installed when no matching deployments or daemonsets exist", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({ items: [] });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result).toEqual({
+          status: "not-installed",
+          version: null,
+          components: [],
+        });
+      });
+
+      it("should return healthy when manager and scheduler are fully ready", async () => {
+        mockListDeployments.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager", namespace: "dragonfly" },
+              spec: {
+                replicas: 1,
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/manager:v2.1.0" }],
+                  },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+            {
+              metadata: {
+                name: "dragonfly-scheduler",
+                namespace: "dragonfly",
+              },
+              spec: {
+                replicas: 2,
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/scheduler:v2.1.0" }],
+                  },
+                },
+              },
+              status: { readyReplicas: 2 },
+            },
+          ],
+        });
+        mockListDaemonSets.mockResolvedValue({ items: [] });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("healthy");
+        expect(result.version).toBe("v2.1.0");
+        expect(result.components).toHaveLength(2);
+        expect(result.components[0].component).toBe("manager");
+        expect(result.components[1].component).toBe("scheduler");
+      });
+
+      it("should return degraded when manager has fewer ready replicas than desired", async () => {
+        mockListDeployments.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager", namespace: "dragonfly" },
+              spec: {
+                replicas: 3,
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/manager:v2.0.0" }],
+                  },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+          ],
+        });
+        mockListDaemonSets.mockResolvedValue({ items: [] });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("degraded");
+        expect(result.components[0].readyReplicas).toBe(1);
+        expect(result.components[0].totalReplicas).toBe(3);
+      });
+    });
+
+    describe("getDragonflyMetrics", () => {
+      it("should return zero metrics when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
+
+      it("should return zero metrics when no manager pod is found", async () => {
+        mockListPods.mockResolvedValue({ items: [] });
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
+    });
+
+    describe("getDragonflyPeers", () => {
+      it("should return empty array when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.getDragonflyPeers();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should map running dfdaemon pods to active peers", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "dragonfly-dfdaemon-abc12",
+                namespace: "dragonfly",
+              },
+              status: { podIP: "10.0.0.5", phase: "Running" },
+            },
+            {
+              metadata: {
+                name: "dragonfly-dfdaemon-def34",
+                namespace: "dragonfly",
+              },
+              status: { podIP: "10.0.0.6", phase: "Pending" },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toHaveLength(2);
+        expect(result[0]).toEqual({
+          peerId: "dragonfly-dfdaemon-abc12",
+          ip: "10.0.0.5",
+          status: "active",
+          taskCount: 0,
+        });
+        expect(result[1]).toEqual({
+          peerId: "dragonfly-dfdaemon-def34",
+          ip: "10.0.0.6",
+          status: "idle",
+          taskCount: 0,
+        });
+      });
+
+      it("should return empty array on coreV1Api error", async () => {
+        mockListPods.mockRejectedValue(new Error("network failure"));
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("getDragonflyTasks", () => {
+      it("should return empty array when enabled (tasks not exposed via metrics)", async () => {
+        const result = await service.getDragonflyTasks();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("getDragonflyStatus — DaemonSet path", () => {
+      it("should include dfdaemon DaemonSet components in status", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-dfdaemon", namespace: "dragonfly" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/dfdaemon:v2.1.0" }],
+                  },
+                },
+              },
+              status: { desiredNumberScheduled: 3, numberReady: 3 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("healthy");
+        expect(result.components).toHaveLength(1);
+        expect(result.components[0].component).toBe("dfdaemon");
+        expect(result.components[0].workloadKind).toBe("DaemonSet");
+        expect(result.components[0].totalReplicas).toBe(3);
+        expect(result.components[0].readyReplicas).toBe(3);
+      });
+
+      it("should be degraded when DaemonSet has fewer ready than desired", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-dfdaemon", namespace: "dragonfly" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/dfdaemon:v2.1.0" }],
+                  },
+                },
+              },
+              status: { desiredNumberScheduled: 5, numberReady: 2 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("degraded");
+        expect(result.components[0].readyReplicas).toBe(2);
+        expect(result.components[0].totalReplicas).toBe(5);
+      });
+
+      it("should skip DaemonSets whose name does not match any component", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "some-other-daemonset", namespace: "default" },
+              spec: {
+                template: {
+                  spec: { containers: [{ image: "nginx:latest" }] },
+                },
+              },
+              status: { desiredNumberScheduled: 1, numberReady: 1 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("not-installed");
+      });
+
+      it("should return not-installed on k8s API error", async () => {
+        mockListDeployments.mockRejectedValue(new Error("k8s api error"));
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("not-installed");
+      });
+    });
+
+    describe("getDragonflyMetrics — with manager pod", () => {
+      it("should parse prometheus metrics from manager pod proxy", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        const metricsText = [
+          "# HELP dragonfly_manager_peer_task_total Total peer tasks",
+          "# TYPE dragonfly_manager_peer_task_total counter",
+          "dragonfly_manager_peer_task_total 100",
+          "dragonfly_manager_peer_task_succeeded_total 80",
+          "dragonfly_manager_peer_task_failed_total 5",
+          "dragonfly_manager_peer_total 20",
+          "",
+          "# comment line ignored",
+          "  ",
+        ].join("\n");
+        mockConnectPodProxy.mockResolvedValue(metricsText);
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(100);
+        expect(result.succeededTasks).toBe(80);
+        expect(result.failedTasks).toBe(5);
+        expect(result.activeTasks).toBe(15);
+        expect(result.totalPeers).toBe(20);
+      });
+
+      it("should handle non-string proxy response by stringifying", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        // Return an object instead of string
+        mockConnectPodProxy.mockResolvedValue({ body: "not-a-string" });
+
+        const result = await service.getDragonflyMetrics();
+
+        // Should not throw; metrics will be zero since JSON doesn't match metric patterns
+        expect(result.totalTasks).toBe(0);
+      });
+
+      it("should return zero metrics on connectGetNamespacedPodProxy error", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        mockConnectPodProxy.mockRejectedValue(new Error("proxy failed"));
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
+
+      it("should sum metrics across multiple matching lines", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        // Metrics with label variants (multiple lines for same metric)
+        const metricsText = [
+          'dragonfly_manager_peer_task_total{type="http"} 60',
+          'dragonfly_manager_peer_task_total{type="grpc"} 40',
+          "dragonfly_manager_peer_task_succeeded_total 0",
+          "dragonfly_manager_peer_task_failed_total 0",
+          "dragonfly_manager_peer_total 0",
+          "not_matching_line invalid_value_NaN",
+        ].join("\n");
+        mockConnectPodProxy.mockResolvedValue(metricsText);
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(100);
+      });
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1284,6 +1736,9 @@ describe("KubernetesService — additional branch coverage", () => {
 
   beforeEach(() => {
     mockListDeployments = jest.fn().mockResolvedValue({ items: [] });
+    mockListDaemonSets = jest.fn().mockResolvedValue({ items: [] });
+    mockListPods = jest.fn().mockResolvedValue({ items: [] });
+    mockConnectPodProxy = jest.fn().mockResolvedValue("");
     mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
     mockListRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });

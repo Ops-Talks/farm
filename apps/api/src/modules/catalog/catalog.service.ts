@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Logger,
   Optional,
+  Inject,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, In } from "typeorm";
@@ -23,8 +24,10 @@ import {
 } from "./entities/component.entity";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
+import { SetContainerImageDto } from "./dto/set-container-image.dto";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { RegistryService } from "../registry/registry.service";
 
 /**
  * Interface representing the structure of a catalog-info.yaml file.
@@ -70,6 +73,9 @@ export class CatalogService {
     @Optional()
     @InjectMetric("component_operations_total")
     private readonly componentOperationsTotal?: Counter<string>,
+    @Optional()
+    @Inject(RegistryService)
+    private readonly registryService?: RegistryService,
   ) {}
 
   /**
@@ -403,5 +409,86 @@ export class CatalogService {
     });
 
     this.componentOperationsTotal?.inc({ operation: "delete" });
+  }
+
+  /**
+   * Sets or updates the container image metadata for a component.
+   * @param id - The UUID of the component to update
+   * @param dto - Container image metadata to set
+   * @returns The updated component
+   * @throws NotFoundException if no component with the given ID exists
+   */
+  async setContainerImage(
+    id: string,
+    dto: SetContainerImageDto,
+  ): Promise<Component> {
+    const component = await this.findOne(id);
+    component.containerImage = {
+      registry: dto.registry,
+      image: dto.image,
+      latestTag: dto.latestTag,
+      digest: dto.digest,
+      pushedAt: dto.pushedAt ? new Date(dto.pushedAt) : undefined,
+    };
+    return this.componentRepository.save(component);
+  }
+
+  /**
+   * Syncs container image latestTag and digest from the configured registry adapter.
+   * No-ops gracefully if no registry adapter is configured or no image is set.
+   * @param id - The UUID of the component to sync
+   * @returns The updated component
+   * @throws NotFoundException if the component does not exist or has no containerImage set
+   */
+  async syncContainerImage(id: string): Promise<Component> {
+    const component = await this.findOne(id);
+    if (!component.containerImage) {
+      throw new NotFoundException(
+        `Component ${id} has no container image configured`,
+      );
+    }
+
+    if (!this.registryService) {
+      this.logger.warn(
+        `No registry service available, skipping sync for component ${id}`,
+      );
+      return component;
+    }
+
+    try {
+      const tags = await this.registryService.listTags(
+        component.containerImage.image,
+      );
+      const latest = tags[0]; // first tag returned (most recent)
+      if (latest) {
+        component.containerImage = {
+          ...component.containerImage,
+          latestTag: latest.tag ?? component.containerImage.latestTag,
+          digest: latest.digest ?? component.containerImage.digest,
+          pushedAt: latest.pushedAt ?? component.containerImage.pushedAt,
+        };
+        await this.componentRepository.save(component);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Registry sync failed for component ${id}: ${msg}`);
+    }
+
+    return (await this.componentRepository.findOne({
+      where: { id },
+      relations: ["dependencies"],
+    })) as Component;
+  }
+
+  /**
+   * Returns all components that have a containerImage configured.
+   * Used by the sync scheduler to build the job queue.
+   * @returns Components with containerImage set
+   */
+  async findAllWithContainerImage(): Promise<Component[]> {
+    return this.componentRepository
+      .createQueryBuilder("c")
+      .where("c.containerImage IS NOT NULL")
+      .getMany();
   }
 }

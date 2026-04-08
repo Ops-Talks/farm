@@ -113,6 +113,22 @@ export interface HelmChartMetadata {
 }
 
 /**
+ * Container image metadata associated with a catalog component.
+ */
+export interface ContainerImageMetadata {
+  /** Registry type identifier, e.g. "ecr", "gcr", "dockerhub" */
+  registry: string;
+  /** Image name/path, e.g. "myorg/myapp" or "123456789.dkr.ecr.us-east-1.amazonaws.com/myapp" */
+  image: string;
+  /** Latest resolved tag, e.g. "1.2.3" or "latest" */
+  latestTag?: string;
+  /** Image digest, e.g. "sha256:abc123..." */
+  digest?: string;
+  /** When the image was last pushed to the registry */
+  pushedAt?: Date;
+}
+
+/**
  * Represents an external link associated with a component.
  */
 export class ComponentLink {
@@ -236,6 +252,14 @@ export class Component {
   })
   @Column({ nullable: true, type: "varchar" })
   argocdApp: string | null;
+
+  @ApiProperty({
+    description: "Container image metadata associated with this component",
+    required: false,
+    nullable: true,
+  })
+  @Column("simple-json", { nullable: true })
+  containerImage: ContainerImageMetadata | null;
 
   @ApiProperty({
     type: () => [Component],

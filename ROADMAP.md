@@ -483,68 +483,68 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 17: Container Registry Integration `TODO`
+## Phase 17: Container Registry Integration `DONE`
 
-### FARM-E60: Container Registry Integration `TODO`
+### FARM-E60: Container Registry Integration `DONE`
 
 > Surface container image metadata and vulnerability scan results inside Farm alongside each catalog component. A pluggable adapter interface supports AWS ECR, GCP Artifact Registry, Docker Hub, and Harbor as first-class implementations. Platform engineers get a single place to answer "what image is running, when was it pushed, and does it have critical CVEs?" without leaving the portal.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S242 | Story | Registry adapter interface with ECR, GCP Artifact Registry, and Docker Hub implementations | `TODO` |
-| FARM-S243 | Story | Container image metadata on components -- registry, image name, latest tag, digest, and pushed date synced from adapter | `TODO` |
-| FARM-S244 | Story | Vulnerability surface -- pull CVE scan results from registry, surface critical/high counts in component detail and a dedicated security sub-tab | `TODO` |
-| FARM-S245 | Story | Dragonfly (d7y.io) cluster detection and health monitoring -- detect Manager, Scheduler, and dfget daemon components; surface version and health status | `TODO` |
-| FARM-S246 | Story | Dragonfly P2P pull task metrics and peer topology -- show active P2P tasks, acceleration stats, and peer distribution per image pull | `TODO` |
-| FARM-S247 | Story | Harbor adapter -- HarborAdapter implementing IRegistryAdapter with native Trivy scan results and replication rules visibility | `TODO` |
+| FARM-S242 | Story | Registry adapter interface with ECR, GCP Artifact Registry, and Docker Hub implementations | `DONE` |
+| FARM-S243 | Story | Container image metadata on components -- registry, image name, latest tag, digest, and pushed date synced from adapter | `DONE` |
+| FARM-S244 | Story | Vulnerability surface -- pull CVE scan results from registry, surface critical/high counts in component detail and a dedicated security sub-tab | `DONE` |
+| FARM-S245 | Story | Dragonfly (d7y.io) cluster detection and health monitoring -- detect Manager, Scheduler, and dfget daemon components; surface version and health status | `DONE` |
+| FARM-S246 | Story | Dragonfly P2P pull task metrics and peer topology -- show active P2P tasks, acceleration stats, and peer distribution per image pull | `DONE` |
+| FARM-S247 | Story | Harbor adapter -- HarborAdapter implementing IRegistryAdapter with native Trivy scan results and replication rules visibility | `DONE` |
 
 #### FARM-S242 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T160 | Task | Define `IRegistryAdapter` interface (`listRepositories()`, `listTags(repo)`, `getManifest(repo, tag)`, `getScanResults(repo, tag)`); config env vars `REGISTRY_TYPE`, `REGISTRY_URL`, `REGISTRY_CREDENTIALS` | `TODO` |
-| FARM-T161 | Task | `EcrAdapter` (AWS SDK v3), `GcrAdapter` (Artifact Registry REST API), `DockerHubAdapter` (Docker Hub API v2 with token auth); each implementing `IRegistryAdapter` | `TODO` |
-| FARM-T162 | Task | `RegistryModule` with conditional adapter registration based on `REGISTRY_TYPE`; `GET /api/registry/repositories` and `GET /api/registry/repositories/:name/tags` endpoints; unit + e2e tests | `TODO` |
+| FARM-T160 | Task | Define `IRegistryAdapter` interface (`listRepositories()`, `listTags(repo)`, `getManifest(repo, tag)`, `getScanResults(repo, tag)`); config env vars `REGISTRY_TYPE`, `REGISTRY_URL`, `REGISTRY_CREDENTIALS` | `DONE` |
+| FARM-T161 | Task | `EcrAdapter` (AWS SDK v3), `GcrAdapter` (Artifact Registry REST API), `DockerHubAdapter` (Docker Hub API v2 with token auth); each implementing `IRegistryAdapter` | `DONE` |
+| FARM-T162 | Task | `RegistryModule` with conditional adapter registration based on `REGISTRY_TYPE`; `GET /api/registry/repositories` and `GET /api/registry/repositories/:name/tags` endpoints; unit + e2e tests | `DONE` |
 
 #### FARM-S243 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T163 | Task | Add `containerImage` JSONB column to `Component` entity (`registry`, `image`, `latestTag`, `digest`, `pushedAt`); TypeORM migration | `TODO` |
-| FARM-T164 | Task | `POST /api/catalog/components/:id/container-image` to set or sync image metadata from registry; BullMQ job (every 15 min) to refresh `latestTag` and `digest` automatically | `TODO` |
-| FARM-T165 | Task | Container image card in Component detail overview tab: registry badge, image name, latest tag, digest (truncated), pushed date | `TODO` |
+| FARM-T163 | Task | Add `containerImage` JSONB column to `Component` entity (`registry`, `image`, `latestTag`, `digest`, `pushedAt`); TypeORM migration | `DONE` |
+| FARM-T164 | Task | `POST /api/catalog/components/:id/container-image` to set or sync image metadata from registry; BullMQ job (every 15 min) to refresh `latestTag` and `digest` automatically | `DONE` |
+| FARM-T165 | Task | Container image card in Component detail overview tab: registry badge, image name, latest tag, digest (truncated), pushed date | `DONE` |
 
 #### FARM-S244 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T166 | Task | `ContainerVulnerability` entity (`componentId`, `registry`, `image`, `tag`, `severity`: critical/high/medium/low, `cveId`, `packageName`, `fixedVersion`, `scannedAt`); TypeORM migration | `TODO` |
-| FARM-T167 | Task | Vulnerability sync BullMQ job: fetch scan results from adapter, upsert `ContainerVulnerability` rows, emit WebSocket `container:vulnerability-found` event on new critical findings | `TODO` |
-| FARM-T168 | Task | Vulnerabilities summary card in Component detail: critical/high/medium/low counts with color badges; full CVE table in dedicated "Security" sub-tab with severity filter and fixed-version column | `TODO` |
+| FARM-T166 | Task | `ContainerVulnerability` entity (`componentId`, `registry`, `image`, `tag`, `severity`: critical/high/medium/low, `cveId`, `packageName`, `fixedVersion`, `scannedAt`); TypeORM migration | `DONE` |
+| FARM-T167 | Task | Vulnerability sync BullMQ job: fetch scan results from adapter, upsert `ContainerVulnerability` rows, emit WebSocket `container:vulnerability-found` event on new critical findings | `DONE` |
+| FARM-T168 | Task | Vulnerabilities summary card in Component detail: critical/high/medium/low counts with color badges; full CVE table in dedicated "Security" sub-tab with severity filter and fixed-version column | `DONE` |
 
 #### FARM-S245 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T172 | Task | Dragonfly detection: query Kubernetes for `Deployment` or `DaemonSet` resources with label `app.kubernetes.io/name=dragonfly`; identify Manager, Scheduler, and dfget (dfdaemon) pods; map to `DragonflyInfo` (component, namespace, version, ready replicas) | `TODO` |
-| FARM-T173 | Task | `GET /api/kubernetes/dragonfly/status` returning installation status (not-installed / degraded / healthy), component breakdown, and version; unit + e2e tests | `TODO` |
-| FARM-T174 | Task | Frontend: Dragonfly health card in the Kubernetes section showing overall status badge, component list (Manager / Scheduler / dfget), and version | `TODO` |
+| FARM-T172 | Task | Dragonfly detection: query Kubernetes for `Deployment` or `DaemonSet` resources with label `app.kubernetes.io/name=dragonfly`; identify Manager, Scheduler, and dfget (dfdaemon) pods; map to `DragonflyInfo` (component, namespace, version, ready replicas) | `DONE` |
+| FARM-T173 | Task | `GET /api/kubernetes/dragonfly/status` returning installation status (not-installed / degraded / healthy), component breakdown, and version; unit + e2e tests | `DONE` |
+| FARM-T174 | Task | Frontend: Dragonfly health card in the Kubernetes section showing overall status badge, component list (Manager / Scheduler / dfget), and version | `DONE` |
 
 #### FARM-S246 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T175 | Task | Scrape Dragonfly Manager metrics endpoint (`/metrics`) via `KubernetesService` pod proxy; parse P2P task counters (total tasks, succeeded, failed, in-progress) and peer counts | `TODO` |
-| FARM-T176 | Task | `GET /api/kubernetes/dragonfly/tasks` returning recent P2P pull tasks (image, peer count, bytes transferred, acceleration ratio, duration); `GET /api/kubernetes/dragonfly/peers` returning active peer list | `TODO` |
-| FARM-T177 | Task | Frontend: Dragonfly pull metrics panel with task table (image, peers, acceleration ratio badge, status) and a sparkline chart of P2P vs. direct-pull bytes over the last 24 hours | `TODO` |
+| FARM-T175 | Task | Scrape Dragonfly Manager metrics endpoint (`/metrics`) via `KubernetesService` pod proxy; parse P2P task counters (total tasks, succeeded, failed, in-progress) and peer counts | `DONE` |
+| FARM-T176 | Task | `GET /api/kubernetes/dragonfly/tasks` returning recent P2P pull tasks (image, peer count, bytes transferred, acceleration ratio, duration); `GET /api/kubernetes/dragonfly/peers` returning active peer list | `DONE` |
+| FARM-T177 | Task | Frontend: Dragonfly pull metrics panel with task table (image, peers, acceleration ratio badge, status) and a sparkline chart of P2P vs. direct-pull bytes over the last 24 hours | `DONE` |
 
 #### FARM-S247 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T178 | Task | `HarborAdapter` implementing `IRegistryAdapter` using Harbor API v2 (`/api/v2.0/repositories`, `/api/v2.0/projects/{project}/repositories/{repository}/artifacts/{reference}/scan`); config via `REGISTRY_TYPE=harbor`, `HARBOR_URL`, `HARBOR_USERNAME`, `HARBOR_PASSWORD`; unit + e2e tests | `TODO` |
-| FARM-T179 | Task | Harbor replication rules: `GET /api/registry/harbor/replications` listing active replication rules (source registry, destination registry, filter, trigger type, last execution status) via Harbor API v2 `/api/v2.0/replication/policies` | `TODO` |
-| FARM-T180 | Task | Frontend: Harbor badge in the registry adapter selector; replication rules table in the Container Registry section showing source → destination with trigger type and last execution status badge | `TODO` |
+| FARM-T178 | Task | `HarborAdapter` implementing `IRegistryAdapter` using Harbor API v2 (`/api/v2.0/repositories`, `/api/v2.0/projects/{project}/repositories/{repository}/artifacts/{reference}/scan`); config via `REGISTRY_TYPE=harbor`, `HARBOR_URL`, `HARBOR_USERNAME`, `HARBOR_PASSWORD`; unit + e2e tests | `DONE` |
+| FARM-T179 | Task | Harbor replication rules: `GET /api/registry/harbor/replications` listing active replication rules (source registry, destination registry, filter, trigger type, last execution status) via Harbor API v2 `/api/v2.0/replication/policies` | `DONE` |
+| FARM-T180 | Task | Frontend: Harbor badge in the registry adapter selector; replication rules table in the Container Registry section showing source → destination with trigger type and last execution status badge | `DONE` |
 
 ---
 
@@ -634,31 +634,115 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S255 | Story | InfracostExecutor pipeline stage -- run `infracost diff` in CI, store cost delta JSON in pipeline run metadata | `TODO` |
-| FARM-S256 | Story | Component cost estimate -- persist latest Infracost estimate per component with monthly cost breakdown and history | `TODO` |
-| FARM-S257 | Story | Cost change alerting -- configurable `costBudgetUsd` per component; WebSocket alert when a pipeline run delta exceeds the threshold | `TODO` |
+| FARM-S255 | Story | Pipeline infrastructure for Infracost: `metadata` JSONB column on `PipelineRun`, `'infracost'` stage type added to `PipelineStage.type` union, `InfracostExecutor` wired in `PipelinesModule` | `TODO` |
+| FARM-S293 | Story | `InfracostExecutor` implementation: binary availability check, spawn `infracost diff`, stream logs, parse JSON output, persist result to `run.metadata.infracost` | `TODO` |
+| FARM-S294 | Story | Component cost estimate backend: `CostEstimate` entity, `FinOpsModule` with `FinOpsService.upsertCostEstimate()`, `GET /api/catalog/components/:id/cost-estimate` endpoint | `TODO` |
+| FARM-S257 | Story | Infracost cost alerting backend: `costBudgetUsd` field on `Component`, `cost:budget-exceeded` WebSocket event, budget check in `InfracostExecutor` | `TODO` |
+| FARM-S295 | Story | Infracost frontend integration: `getCostEstimate()` in `api-client.ts`, `CostEstimateCard` component, budget exceeded warning banner in Component detail | `TODO` |
 
 #### FARM-S255 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T197 | Task | `InfracostExecutor` implementing the pipeline stage executor interface: run `infracost diff --path . --format json` via `spawn`; parse `totalMonthlyCost`, `diffMonthlyCost`, and `projects[]`; store result in pipeline run `metadata.infracost`; unit tests | `TODO` |
-| FARM-T198 | Task | Add `infracost` to `PipelineStageKind` enum; stage config fields: `terraformDir` (path, default `.`), `costThreshold` (optional USD decimal, triggers warning log if exceeded); update Swagger docs | `TODO` |
+| FARM-T285 | Task | Add `metadata` JSONB nullable column to `PipelineRun` entity; generate TypeORM migration `AddPipelineRunMetadata` | `TODO` |
+| FARM-T286 | Task | Add `'infracost'` to `PipelineStage.type` union; provide `InfracostExecutor` in `PipelinesModule` providers; add `else if (stage.type === 'infracost')` branch to `PipelineProcessor` | `TODO` |
 
-#### FARM-S256 Tasks
+##### FARM-T285 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T199 | Task | `CostEstimate` entity (`componentId` FK → Component, `estimatedMonthlyCost` decimal, `currency` varchar default USD, `pipelineRunId` FK nullable, `breakdown` JSONB, `measuredAt`); TypeORM migration | `TODO` |
-| FARM-T200 | Task | `upsertCostEstimate(componentId, data)` in a new `FinOpsService`; `GET /api/catalog/components/:id/cost-estimate` endpoint; called by `InfracostExecutor` on successful run; unit + e2e tests | `TODO` |
+| FARM-ST211 | Sub-task | Add `@Column({ type: 'simple-json', nullable: true }) metadata: Record<string, unknown> \| null` to `PipelineRun` entity | `TODO` |
+| FARM-ST212 | Sub-task | Run `npm run migration:generate` to produce `AddPipelineRunMetadata` migration; verify generated up/down SQL | `TODO` |
+
+##### FARM-T286 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST213 | Sub-task | Extend `PipelineStage.type` union in `pipeline.entity.ts` to include `'infracost'` | `TODO` |
+| FARM-ST214 | Sub-task | Add `InfracostExecutor` to `PipelinesModule` `providers` array and inject into `PipelineProcessor` via `@Optional()` | `TODO` |
+| FARM-ST215 | Sub-task | Add `else if (stage.type === 'infracost' && this.infracostExecutor)` branch to `PipelineProcessor` stage dispatch (after the existing `'build'` branch) | `TODO` |
+
+#### FARM-S293 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T197 | Task | `InfracostExecutor.execute()`: check binary availability, spawn `infracost diff --path <terraformDir> --format json`, stream log lines via `emitLog`, parse stdout JSON, persist result to `run.metadata.infracost`; unit tests | `TODO` |
+| FARM-T198 | Task | `InfracostStageConfig` interface (`terraformDir` default `'.'`, optional `costThreshold: number`); update `@ApiProperty` examples on `PipelineStage` to document `infracost` type | `TODO` |
+
+##### FARM-T197 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST216 | Sub-task | Define `InfracostStageConfig` interface and `InfracostResult` interface (`totalMonthlyCost`, `diffMonthlyCost`, `currency`, `projects: InfracostProject[]`) | `TODO` |
+| FARM-ST217 | Sub-task | Implement `isInfracostAvailable()` using `execFile('infracost', ['--version'])` — same pattern as `BuildStageExecutor.isEngineAvailable()` | `TODO` |
+| FARM-ST218 | Sub-task | Spawn `infracost diff --path <terraformDir> --format json`; stream each stdout line via `emitLog` callback; collect full stdout for parsing | `TODO` |
+| FARM-ST219 | Sub-task | Parse collected stdout JSON into `InfracostResult`; handle malformed output and non-zero exit code gracefully with a descriptive error message | `TODO` |
+| FARM-ST220 | Sub-task | Persist parsed result to `run.metadata.infracost` via `PipelineRun` repository `save()`; return `{ success: true, output }` | `TODO` |
+| FARM-ST221 | Sub-task | Unit tests: mock `execFile`, assert `InfracostResult` shape, verify metadata persistence, test graceful failure path when binary missing or JSON invalid | `TODO` |
+
+#### FARM-S294 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T199 | Task | `CostEstimate` entity (`componentId` FK → Component, `estimatedMonthlyCost` decimal, `currency` default `'USD'`, `pipelineRunId` FK nullable, `breakdown` JSONB, `measuredAt`); TypeORM migration | `TODO` |
+| FARM-T200 | Task | Create `FinOpsModule` with `FinOpsService`; implement `upsertCostEstimate(componentId, data)`; add `GET /api/catalog/components/:id/cost-estimate` to `CatalogController`; call `upsertCostEstimate` from `InfracostExecutor` on success; unit + e2e tests | `TODO` |
+
+##### FARM-T199 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST222 | Sub-task | Define `CostEstimate` entity with UUID PK, `componentId` FK, `pipelineRunId` FK (nullable), `estimatedMonthlyCost` decimal, `currency` varchar, `breakdown` simple-json, and `measuredAt` timestamp | `TODO` |
+| FARM-ST223 | Sub-task | Generate TypeORM migration `CreateCostEstimateTable`; verify up/down SQL | `TODO` |
+
+##### FARM-T200 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST224 | Sub-task | Create `FinOpsModule` importing `TypeOrmModule.forFeature([CostEstimate, ActualCost])`; provide `FinOpsService`; register in `AppModule` | `TODO` |
+| FARM-ST225 | Sub-task | Implement `FinOpsService.upsertCostEstimate(componentId, data)`: find-or-create `CostEstimate` by `componentId`, update fields, `save` | `TODO` |
+| FARM-ST226 | Sub-task | Add `GET /api/catalog/components/:id/cost-estimate` endpoint to `CatalogController`; inject `FinOpsService` via constructor | `TODO` |
+| FARM-ST227 | Sub-task | Call `FinOpsService.upsertCostEstimate()` from `InfracostExecutor.execute()` after a successful parse | `TODO` |
+| FARM-ST228 | Sub-task | Unit tests for `FinOpsService.upsertCostEstimate()` (find-or-create path); e2e test asserting `GET /api/catalog/components/:id/cost-estimate` returns persisted data | `TODO` |
 
 #### FARM-S257 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T201 | Task | `costBudgetUsd` nullable decimal column on `Component` entity; included in `UpdateComponentDto` so it can be set via `PATCH /api/catalog/components/:id`; migration | `TODO` |
-| FARM-T202 | Task | Budget check in `InfracostExecutor`: when `diffMonthlyCost > costBudgetUsd`, emit WebSocket `cost:budget-exceeded` event with `{ componentId, delta, pipelineRunId }` via `EventsGateway` | `TODO` |
-| FARM-T203 | Task | Frontend: cost estimate card in Component detail overview tab showing estimated monthly cost, diff from previous run (green/red delta badge), last updated timestamp; budget exceeded warning banner when threshold is breached | `TODO` |
+| FARM-T201 | Task | `costBudgetUsd` nullable decimal column on `Component` entity; add optional `costBudgetUsd` to `UpdateComponentDto`; TypeORM migration (shared with FARM-T210) | `TODO` |
+| FARM-T202 | Task | Add `COST_BUDGET_EXCEEDED` to `FarmEvent`, `CostBudgetExceededPayload` interface, and `emitCostBudgetExceeded()` to `EventsGateway`; implement budget check in `InfracostExecutor` post-parse; unit tests | `TODO` |
+
+##### FARM-T201 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST229 | Sub-task | Add `@Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) costBudgetUsd: number \| null` to `Component` entity | `TODO` |
+| FARM-ST230 | Sub-task | Add optional `@IsOptional() @IsNumber() costBudgetUsd?: number` to `UpdateComponentDto` with `@ApiPropertyOptional` decorator | `TODO` |
+| FARM-ST231 | Sub-task | Generate migration `AddCostBudgetUsdToComponent`; this single migration satisfies both FARM-T201 (Infracost) and FARM-T210 (OpenCost) | `TODO` |
+
+##### FARM-T202 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST232 | Sub-task | Add `COST_BUDGET_EXCEEDED = 'cost:budget-exceeded'` to `FarmEvent` enum in `events.interfaces.ts` | `TODO` |
+| FARM-ST233 | Sub-task | Define `CostBudgetExceededPayload` interface (`componentId`, `delta`, `pipelineRunId`, `timestamp`) in `events.interfaces.ts` | `TODO` |
+| FARM-ST234 | Sub-task | Add `emitCostBudgetExceeded(payload: CostBudgetExceededPayload)` method to `EventsGateway` | `TODO` |
+| FARM-ST235 | Sub-task | In `InfracostExecutor.execute()` post-parse: load `component.costBudgetUsd` from `ComponentRepository`; call `eventsGateway.emitCostBudgetExceeded()` when `diffMonthlyCost > costBudgetUsd` | `TODO` |
+| FARM-ST236 | Sub-task | Unit tests: verify event emitted when delta exceeds threshold; verify no event when under threshold or `costBudgetUsd` is null | `TODO` |
+
+#### FARM-S295 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T203 | Task | Add `getCostEstimate()` to `api-client.ts`; `CostEstimateCard` component (monthly cost chip, green/red delta badge, timestamp); dismissible budget exceeded warning banner; integration in Component detail overview tab; unit tests | `TODO` |
+
+##### FARM-T203 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST237 | Sub-task | Add `getCostEstimate(componentId: string): Promise<CostEstimate>` to `api-client.ts`; unit test with mocked fetch | `TODO` |
+| FARM-ST238 | Sub-task | `CostEstimateCard` component: estimated monthly cost chip, green/red `diffMonthlyCost` delta badge, `measuredAt` relative timestamp | `TODO` |
+| FARM-ST239 | Sub-task | Budget exceeded warning banner: rendered when `diffMonthlyCost > costBudgetUsd`; dismissible with local state | `TODO` |
+| FARM-ST240 | Sub-task | Integrate `CostEstimateCard` and optional warning banner into Component detail overview tab; unit tests for both components | `TODO` |
 
 ---
 
@@ -668,39 +752,126 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S258 | Story | OpenCost adapter -- connect to OpenCost `/model/allocation` API; query actual cost by `app` label matching component name | `TODO` |
-| FARM-S259 | Story | Real cost per component -- CPU, memory, storage, and network cost breakdown synced daily; history endpoint for sparklines | `TODO` |
-| FARM-S260 | Story | Cost dashboard -- team-level and namespace-level cost aggregation; top-N most expensive components table | `TODO` |
-| FARM-S261 | Story | Actual cost alerts -- budget threshold per component; alert and notification panel entry when monthly actual spend exceeds budget | `TODO` |
+| FARM-S258 | Story | FinOps module bootstrap and OpenCost adapter: `CostController` at `/api/cost`, `OPENCOST_URL` config, `OpenCostService`, `GET /api/cost/components/:id/actual` endpoint | `TODO` |
+| FARM-S296 | Story | ActualCost sync backend: `ActualCost` entity, BullMQ daily sync job for all components with active deployments, `GET /api/cost/components/:id/history` endpoint | `TODO` |
+| FARM-S297 | Story | Cost summary API endpoints: `GET /api/cost/teams/:id/summary` and `GET /api/cost/summary?limit=N` | `TODO` |
+| FARM-S260 | Story | Cost dashboard frontend: `/cost` page with "By Component" sortable table (sparkline, budget bar) and "By Team" cost cards; sidebar nav entry | `TODO` |
+| FARM-S261 | Story | Actual cost alerting backend: post-sync budget check, `cost:actual-budget-exceeded` WebSocket event, alerting record creation | `TODO` |
+| FARM-S298 | Story | Actual cost alerting frontend: `CostBudgetBar` component, red border on component card when budget exceeded, notification panel entry | `TODO` |
 
 #### FARM-S258 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T204 | Task | `OpenCostService`: `OPENCOST_URL` env var; `getAllocation(labelSelector, window)` method calling `/model/allocation?window=7d&aggregate=label:app&filterLabels=app:<value>`; unit tests with mocked `globalThis.fetch` | `TODO` |
-| FARM-T205 | Task | `GET /api/cost/components/:id/actual` returning 7d and 30d actual cost breakdown (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`) by querying OpenCost with the component `name` as label value; e2e tests | `TODO` |
+| FARM-T287 | Task | Add `CostController` class with `@Controller('cost')` to `FinOpsModule`; add `OPENCOST_URL` to Joi config schema (default `http://localhost:9090`) | `TODO` |
+| FARM-T204 | Task | `OpenCostService.getAllocation(labelSelector, window)` using `globalThis.fetch`; unit tests with capture-and-restore mock pattern | `TODO` |
+| FARM-T205 | Task | `GET /api/cost/components/:id/actual` returning 7d and 30d cost breakdown (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`); e2e tests | `TODO` |
 
-#### FARM-S259 Tasks
+##### FARM-T287 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T206 | Task | `ActualCost` entity (`componentId` FK, `window` varchar, `cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost` decimals, `currency`, `syncedAt`); BullMQ daily sync job refreshing costs for all components with an active deployment; TypeORM migration | `TODO` |
-| FARM-T207 | Task | `GET /api/cost/components/:id/history` returning daily cost series for the last 30 days for sparkline rendering; unit + e2e tests | `TODO` |
+| FARM-ST241 | Sub-task | Create `CostController` with `@Controller('cost')` and `@UseGuards(JwtAuthGuard)`; add to `FinOpsModule` controllers array | `TODO` |
+| FARM-ST242 | Sub-task | Add `OPENCOST_URL: Joi.string().uri().default('http://localhost:9090')` to config validation schema in `src/config/configuration.ts` | `TODO` |
+
+##### FARM-T204 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST243 | Sub-task | Define `OpenCostAllocation` TypeScript interface (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`, `currency`) | `TODO` |
+| FARM-ST244 | Sub-task | Implement `getAllocation(labelSelector, window)` building URL `/model/allocation?window=<window>&aggregate=label:app&filterLabels=app:<labelSelector>`; parse and return typed response | `TODO` |
+| FARM-ST245 | Sub-task | Unit tests: use capture-and-restore `globalThis.fetch` pattern; assert allocation parsing; test HTTP error and empty-response handling | `TODO` |
+
+##### FARM-T205 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST246 | Sub-task | Implement endpoint: look up `Component.name` by id, call `OpenCostService.getAllocation` for `7d` and `30d` windows, return combined DTO | `TODO` |
+| FARM-ST247 | Sub-task | E2e tests with mocked `OpenCostService`; assert both `sevenDay` and `thirtyDay` fields present in response | `TODO` |
+
+#### FARM-S296 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T206 | Task | `ActualCost` entity (`componentId` FK, `window` varchar, cost decimal fields, `currency`, `syncedAt`); BullMQ daily sync job refreshing all components with an active deployment; TypeORM migration | `TODO` |
+| FARM-T207 | Task | `GET /api/cost/components/:id/history` returning last 30 `ActualCost` records ordered by `syncedAt` DESC for sparkline rendering; unit + e2e tests | `TODO` |
+
+##### FARM-T206 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST248 | Sub-task | Define `ActualCost` entity with UUID PK, `componentId` FK, `window` varchar, decimal cost columns, `currency` varchar, `syncedAt` timestamp | `TODO` |
+| FARM-ST249 | Sub-task | Generate TypeORM migration `CreateActualCostTable`; verify up/down SQL | `TODO` |
+| FARM-ST250 | Sub-task | Implement `ActualCostSyncProcessor` BullMQ job: query all `Component` IDs with at least one active `Deployment`, call `OpenCostService.getAllocation('30d')` per component, upsert `ActualCost` record | `TODO` |
+| FARM-ST251 | Sub-task | Register BullMQ CRON schedule in `FinOpsModule` (configurable via `COST_SYNC_CRON` env var, default `0 3 * * *`) | `TODO` |
+
+##### FARM-T207 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST252 | Sub-task | Implement `GET /api/cost/components/:id/history` in `CostController`: query `ActualCost` by `componentId` ordered by `syncedAt` DESC, limit 30 | `TODO` |
+| FARM-ST253 | Sub-task | Unit test for repository query ordering; e2e test asserting response array shape | `TODO` |
+
+#### FARM-S297 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T208 | Task | `GET /api/cost/teams/:id/summary` aggregating latest `ActualCost` for all team components; `GET /api/cost/summary?limit=N` (default 10) returning top-N most expensive components platform-wide; unit + e2e tests | `TODO` |
+
+##### FARM-T208 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST254 | Sub-task | Implement `GET /api/cost/teams/:id/summary`: load team's components, join with latest `ActualCost` per component, return `{ teamId, totalCost, currency, components[] }` | `TODO` |
+| FARM-ST255 | Sub-task | Implement `GET /api/cost/summary?limit=N`: join latest `ActualCost` rows with `Component`, order by `totalCost` DESC, limit N | `TODO` |
+| FARM-ST256 | Sub-task | Unit tests for aggregation queries; e2e tests for both endpoints asserting response shape | `TODO` |
 
 #### FARM-S260 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T208 | Task | `GET /api/cost/teams/:id/summary` aggregating `ActualCost` rows for all components owned by team; `GET /api/cost/summary` returning top-N most expensive components platform-wide; unit + e2e tests | `TODO` |
-| FARM-T209 | Task | Cost dashboard page at `/cost` with two views: "By Component" (sortable table with monthly cost, trend sparkline, budget usage bar) and "By Team" (team cost cards); `FilterTabs` for view switching | `TODO` |
+| FARM-T209 | Task | `/cost` page with `FilterTabs` ("By Component" / "By Team"); "By Component" sortable table with monthly cost, 30d sparkline, budget usage bar; "By Team" team cost cards; add cost methods to `api-client.ts`; sidebar nav entry; unit tests | `TODO` |
+
+##### FARM-T209 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST257 | Sub-task | Add `/cost` route under protected layout; add "Cost" link to sidebar nav | `TODO` |
+| FARM-ST258 | Sub-task | Add `getPlatformCostSummary(limit?)`, `getTeamCostSummary(teamId)`, `getComponentCostHistory(componentId)` to `api-client.ts`; unit tests | `TODO` |
+| FARM-ST259 | Sub-task | "By Component" tab: sortable table (name, monthly cost, 30d sparkline column, budget usage progress bar) using `getPlatformCostSummary` and `getComponentCostHistory` | `TODO` |
+| FARM-ST260 | Sub-task | "By Team" tab: team cost cards with total monthly cost and top-3 most expensive components list, using `getTeamCostSummary` | `TODO` |
+| FARM-ST261 | Sub-task | Unit tests for `/cost` page, `FilterTabs` switching, and "By Component" table column sorting | `TODO` |
 
 #### FARM-S261 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T210 | Task | `costBudgetUsd` on `Component` (shared with FARM-T201) used by OpenCost budget checks; single migration covers both Infracost and OpenCost budget field if not yet added | `TODO` |
-| FARM-T211 | Task | Post-sync budget check in `FinOpsService`: when 30d `ActualCost.totalCost > costBudgetUsd`, emit WebSocket `cost:actual-budget-exceeded` and create an alerting record; unit tests | `TODO` |
-| FARM-T212 | Task | Frontend: budget progress bar in cost dashboard (`$340 of $500 monthly budget used`); red border on component card when budget exceeded; notification panel entry for budget breach events | `TODO` |
+| FARM-T210 | Task | `costBudgetUsd` on `Component` — shared migration with FARM-T201/ST231; no new migration required if FARM-S257 was implemented first | `TODO` |
+| FARM-T211 | Task | Add `COST_ACTUAL_BUDGET_EXCEEDED` to `FarmEvent`, `CostActualBudgetExceededPayload` interface, and `emitCostActualBudgetExceeded()` to `EventsGateway`; post-sync budget check in `ActualCostSyncProcessor`; create alerting record; unit tests | `TODO` |
+
+##### FARM-T211 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST262 | Sub-task | Add `COST_ACTUAL_BUDGET_EXCEEDED = 'cost:actual-budget-exceeded'` to `FarmEvent` enum | `TODO` |
+| FARM-ST263 | Sub-task | Define `CostActualBudgetExceededPayload` interface (`componentId`, `totalCost`, `budgetUsd`, `timestamp`); add `emitCostActualBudgetExceeded()` to `EventsGateway` | `TODO` |
+| FARM-ST264 | Sub-task | After each `ActualCost` upsert in `ActualCostSyncProcessor`: compare 30d `totalCost` vs `component.costBudgetUsd`; emit event and call `AlertingService.createAlert()` if exceeded | `TODO` |
+| FARM-ST265 | Sub-task | Unit tests: verify event emitted on breach; verify alerting record created; verify no event when under threshold or `costBudgetUsd` is null | `TODO` |
+
+#### FARM-S298 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T212 | Task | `CostBudgetBar` component (text label + percentage fill bar with color transitions); conditional red border on component detail card when budget exceeded; notification panel entry for `cost:actual-budget-exceeded`; unit tests | `TODO` |
+
+##### FARM-T212 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST266 | Sub-task | `CostBudgetBar` component: `$X of $Y monthly budget used` label, percentage fill bar with green → yellow → red color transition at 75% and 100% thresholds | `TODO` |
+| FARM-ST267 | Sub-task | Conditional red border and warning icon on component detail card header when 30d `totalCost > costBudgetUsd` | `TODO` |
+| FARM-ST268 | Sub-task | Subscribe to `cost:actual-budget-exceeded` WebSocket event in notification panel; render entry with component name, overage amount, and timestamp | `TODO` |
+| FARM-ST269 | Sub-task | Unit tests for `CostBudgetBar` (percentage calculation, color thresholds), red border condition logic, and notification panel entry render | `TODO` |
 
 ---
 
@@ -947,52 +1118,52 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 ---
 
-## Phase 24: User Profile Management `TODO`
+## Phase 24: User Profile Management `DONE`
 
-### FARM-E70: User Profile Management `TODO`
+### FARM-E70: User Profile Management `DONE`
 
 > Allow authenticated users to view and update their own profile from the frontend. Adds `firstName`, `lastName`, and `gender` columns to the `User` entity, exposes a `GET /api/auth/profile` and `PATCH /api/auth/profile` endpoint for general fields, a separate `PATCH /api/auth/profile/password` endpoint for password changes (requiring current password confirmation), and a dedicated frontend profile page accessible from the user menu inside the protected area.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S289 | Story | Backend -- extend User entity with `firstName`, `lastName`, and `gender` fields; add profile endpoints | `TODO` |
-| FARM-S290 | Story | Backend -- password change endpoint with current password verification | `TODO` |
-| FARM-S291 | Story | Frontend -- profile page with editable fields (first name, last name, gender, email) | `TODO` |
-| FARM-S292 | Story | Frontend -- password change form with current password confirmation and validation feedback | `TODO` |
+| FARM-S289 | Story | Backend -- extend User entity with `firstName`, `lastName`, and `gender` fields; add profile endpoints | `DONE` |
+| FARM-S290 | Story | Backend -- password change endpoint with current password verification | `DONE` |
+| FARM-S291 | Story | Frontend -- profile page with editable fields (first name, last name, gender, email) | `DONE` |
+| FARM-S292 | Story | Frontend -- password change form with current password confirmation and validation feedback | `DONE` |
 
 #### FARM-S289 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T271 | Task | Add `firstName` (`varchar`, nullable), `lastName` (`varchar`, nullable), and `gender` (`enum: male, female, non_binary`, nullable) columns to `User` entity; create TypeORM migration | `TODO` |
-| FARM-T272 | Task | Create `UpdateProfileDto` with `@IsOptional()` fields: `firstName`, `lastName`, `gender` (`@IsEnum(Gender)`), `email` (`@IsEmail()`); apply `whitelist: true` so `password` and `roles` cannot be set through this DTO | `TODO` |
-| FARM-T273 | Task | `GET /api/auth/profile` returns the authenticated user's own profile (exclude `password`, `refreshToken`); unit + e2e tests | `TODO` |
-| FARM-T274 | Task | `PATCH /api/auth/profile` updates `firstName`, `lastName`, `gender`, and `email` for the authenticated user; validate unique email constraint; unit + e2e tests | `TODO` |
+| FARM-T271 | Task | Add `firstName` (`varchar`, nullable), `lastName` (`varchar`, nullable), and `gender` (`enum: male, female, non_binary`, nullable) columns to `User` entity; create TypeORM migration | `DONE` |
+| FARM-T272 | Task | Create `UpdateProfileDto` with `@IsOptional()` fields: `firstName`, `lastName`, `gender` (`@IsEnum(Gender)`), `email` (`@IsEmail()`); apply `whitelist: true` so `password` and `roles` cannot be set through this DTO | `DONE` |
+| FARM-T273 | Task | `GET /api/auth/profile` returns the authenticated user's own profile (exclude `password`, `refreshToken`); unit + e2e tests | `DONE` |
+| FARM-T274 | Task | `PATCH /api/auth/profile` updates `firstName`, `lastName`, `gender`, and `email` for the authenticated user; validate unique email constraint; unit + e2e tests | `DONE` |
 
 #### FARM-S290 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T275 | Task | Create `ChangePasswordDto` with `currentPassword`, `newPassword` (`@MinLength(8)`), and `confirmPassword`; add custom validator ensuring `newPassword === confirmPassword` | `TODO` |
-| FARM-T276 | Task | `PATCH /api/auth/profile/password` verifies `currentPassword` against stored hash with bcrypt, hashes and persists `newPassword`, invalidates existing refresh tokens; unit + e2e tests | `TODO` |
+| FARM-T275 | Task | Create `ChangePasswordDto` with `currentPassword`, `newPassword` (`@MinLength(8)`), and `confirmPassword`; add custom validator ensuring `newPassword === confirmPassword` | `DONE` |
+| FARM-T276 | Task | `PATCH /api/auth/profile/password` verifies `currentPassword` against stored hash with bcrypt, hashes and persists `newPassword`, invalidates existing refresh tokens; unit + e2e tests | `DONE` |
 
 #### FARM-S291 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T277 | Task | Add `/profile` route inside the protected layout; add "Profile" link to user dropdown menu in the app shell | `TODO` |
-| FARM-T278 | Task | `ProfileForm` component: editable fields for first name, last name, email, and gender (`Select` with options Male, Female, Non-Binary); pre-populated from `GET /api/auth/profile`; submit via `PATCH /api/auth/profile`; display success/error toast | `TODO` |
-| FARM-T279 | Task | `ProfileForm` unit tests: render with pre-filled data, submit updated values, display validation errors, handle API failure | `TODO` |
-| FARM-T280 | Task | Add `profile` methods (`getProfile`, `updateProfile`) to `api-client.ts`; unit tests | `TODO` |
+| FARM-T277 | Task | Add `/profile` route inside the protected layout; add "Profile" link to user dropdown menu in the app shell | `DONE` |
+| FARM-T278 | Task | `ProfileForm` component: editable fields for first name, last name, email, and gender (`Select` with options Male, Female, Non-Binary); pre-populated from `GET /api/auth/profile`; submit via `PATCH /api/auth/profile`; display success/error toast | `DONE` |
+| FARM-T279 | Task | `ProfileForm` unit tests: render with pre-filled data, submit updated values, display validation errors, handle API failure | `DONE` |
+| FARM-T280 | Task | Add `profile` methods (`getProfile`, `updateProfile`) to `api-client.ts`; unit tests | `DONE` |
 
 #### FARM-S292 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T281 | Task | `ChangePasswordForm` component: current password, new password, confirm password fields with client-side validation (min 8 chars, match confirmation); submit via `PATCH /api/auth/profile/password`; display success/error toast | `TODO` |
-| FARM-T282 | Task | `ChangePasswordForm` unit tests: submit valid change, display mismatch error, display wrong current password API error, enforce minimum length | `TODO` |
-| FARM-T283 | Task | Add `changePassword` method to `api-client.ts`; unit tests | `TODO` |
-| FARM-T284 | Task | Playwright E2E: navigate to profile page, update name and gender, verify persistence after reload; change password, log out, log in with new password | `TODO` |
+| FARM-T281 | Task | `ChangePasswordForm` component: current password, new password, confirm password fields with client-side validation (min 8 chars, match confirmation); submit via `PATCH /api/auth/profile/password`; display success/error toast | `DONE` |
+| FARM-T282 | Task | `ChangePasswordForm` unit tests: submit valid change, display mismatch error, display wrong current password API error, enforce minimum length | `DONE` |
+| FARM-T283 | Task | Add `changePassword` method to `api-client.ts`; unit tests | `DONE` |
+| FARM-T284 | Task | Playwright E2E: navigate to profile page, update name and gender, verify persistence after reload; change password, log out, log in with new password | `DONE` |
 
 ---
 
@@ -1019,12 +1190,12 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 14: AI / Intelligence | 3 | 12 | `DEFERRED` |
 | Phase 15: Developer Self-Service | 2 | 10 | `DONE` |
 | Phase 16: Kubernetes Operators | 1 | 5 | `DONE` |
-| Phase 17: Container Registry Integration | 1 | 6 | `TODO` |
+| Phase 17: Container Registry Integration | 1 | 6 | `DONE` |
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `TODO` |
-| Phase 19: FinOps | 2 | 7 | `TODO` |
+| Phase 19: FinOps | 2 | 11 | `TODO` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
-| Phase 24: User Profile Management | 1 | 4 | `TODO` |
-| **Total** | **72** | **278** | |
+| Phase 24: User Profile Management | 1 | 4 | `DONE` |
+| **Total** | **72** | **282** | |

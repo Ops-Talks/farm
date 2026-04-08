@@ -101,6 +101,16 @@ import type {
   OperatorBinding,
   NodeRuntimeInfo,
   CrioStorageMetrics,
+  // Container vulnerabilities (FARM-S244)
+  ContainerVulnerability,
+  VulnerabilitySummary,
+  // Dragonfly P2P CDN (FARM-S245 / FARM-S246)
+  DragonflyInstallStatus,
+  DragonflyTaskMetrics,
+  DragonflyTask,
+  DragonflyPeer,
+  // Harbor replication (FARM-S247 / T180)
+  HarborReplicationPolicy,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1175,6 +1185,26 @@ export const kubernetes = {
       `/v1/kubernetes/nodes/${encodeURIComponent(nodeName)}/crio-metrics`,
     );
   },
+
+  /** Get Dragonfly P2P CDN installation status from the cluster. */
+  getDragonflyStatus(): Promise<DragonflyInstallStatus> {
+    return request<DragonflyInstallStatus>("/v1/kubernetes/dragonfly/status");
+  },
+
+  /** Get aggregated Dragonfly P2P task metrics. */
+  getDragonflyMetrics(): Promise<DragonflyTaskMetrics> {
+    return request<DragonflyTaskMetrics>("/v1/kubernetes/dragonfly/metrics");
+  },
+
+  /** Get recent Dragonfly P2P pull tasks. */
+  getDragonflyTasks(): Promise<DragonflyTask[]> {
+    return request<DragonflyTask[]>("/v1/kubernetes/dragonfly/tasks");
+  },
+
+  /** Get active Dragonfly peers. */
+  getDragonflyPeers(): Promise<DragonflyPeer[]> {
+    return request<DragonflyPeer[]>("/v1/kubernetes/dragonfly/peers");
+  },
 };
 
 // -- Integration Credentials API (FARM-E35) --
@@ -2053,5 +2083,37 @@ export const environmentRequests = {
     return request<EnvironmentRequest>(`/v1/environment-requests/${id}/expire`, {
       method: "POST",
     });
+  },
+};
+
+// -- Registry & Container Vulnerability API (FARM-S244) --
+
+export const registry = {
+  /** List vulnerabilities for a component, optionally filtered by severity. */
+  listVulnerabilities(componentId: string, severity?: string): Promise<ContainerVulnerability[]> {
+    const qs = severity ? `?severity=${encodeURIComponent(severity)}` : '';
+    return request<ContainerVulnerability[]>(
+      `/v1/registry/components/${encodeURIComponent(componentId)}/vulnerabilities${qs}`,
+    );
+  },
+
+  /** Get vulnerability summary counts for a component. */
+  getVulnerabilitySummary(componentId: string): Promise<VulnerabilitySummary> {
+    return request<VulnerabilitySummary>(
+      `/v1/registry/components/${encodeURIComponent(componentId)}/vulnerabilities/summary`,
+    );
+  },
+
+  /** Trigger a vulnerability sync for a component. */
+  syncVulnerabilities(componentId: string): Promise<{ queued: boolean; count?: number }> {
+    return request<{ queued: boolean; count?: number }>(
+      `/v1/registry/components/${encodeURIComponent(componentId)}/vulnerabilities/sync`,
+      { method: 'POST' },
+    );
+  },
+
+  /** List Harbor replication policies. Returns empty array for non-Harbor adapters. */
+  listHarborReplications(): Promise<HarborReplicationPolicy[]> {
+    return request<HarborReplicationPolicy[]>('/v1/registry/harbor/replications');
   },
 };

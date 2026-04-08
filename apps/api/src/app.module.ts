@@ -39,6 +39,7 @@ import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { IstioModule } from "./modules/istio/istio.module";
 import { ApiSpecsModule } from "./modules/api-specs/api-specs.module";
 import { GatewayModule } from "./modules/gateway/gateway.module";
+import { RegistryModule } from "./modules/registry/registry.module";
 import { SloModule } from "./modules/slo/slo.module";
 import { IncidentModule } from "./modules/incident/incident.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
@@ -284,6 +285,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           description: "API Gateway integration (Kong, AWS)",
         },
         module: GatewayModule,
+      },
+      {
+        metadata: {
+          name: "core-registry",
+          version: "1.0.0",
+          description:
+            "Container registry integration (ECR, GCP Artifact Registry, Docker Hub, Harbor)",
+        },
+        module: RegistryModule,
       },
       {
         metadata: {
