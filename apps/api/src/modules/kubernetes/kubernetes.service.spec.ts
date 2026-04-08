@@ -15,6 +15,7 @@ import { EventsGateway } from "../../common/events/events.gateway";
 // ---------------------------------------------------------------------------
 let mockLoadFromFile: jest.Mock;
 let mockLoadFromCluster: jest.Mock;
+let mockGetCurrentCluster: jest.Mock;
 let mockMakeApiClient: jest.Mock;
 let mockListDeployments: jest.Mock;
 let mockListSecrets: jest.Mock;
@@ -32,6 +33,9 @@ jest.mock("@kubernetes/client-node", () => {
       },
       get loadFromCluster() {
         return mockLoadFromCluster;
+      },
+      get getCurrentCluster() {
+        return mockGetCurrentCluster;
       },
       get makeApiClient() {
         return mockMakeApiClient;
@@ -165,6 +169,9 @@ describe("KubernetesService", () => {
     mockListNamespacedRollouts = jest.fn().mockResolvedValue({ items: [] });
     mockListNodes = jest.fn().mockResolvedValue({ items: [] });
     mockLoadFromFile = jest.fn();
+    mockGetCurrentCluster = jest
+      .fn()
+      .mockReturnValue({ server: "https://kubernetes.default.svc" });
     mockLoadFromCluster = jest.fn().mockImplementation(() => {
       throw new Error("not in cluster");
     });
@@ -656,6 +663,54 @@ describe("KubernetesService", () => {
 
       const inClusterService = module.get<KubernetesService>(KubernetesService);
       expect(inClusterService.isEnabled()).toBe(true);
+    });
+
+    it("should disable service when kubeconfig produces an invalid server URL", async () => {
+      // loadFromCluster succeeds but the cluster server URL is not a valid URL,
+      // which happens when KUBERNETES_SERVICE_HOST/PORT env vars are unset.
+      mockLoadFromCluster = jest.fn();
+      mockGetCurrentCluster = jest
+        .fn()
+        .mockReturnValue({ server: "https://undefined:undefined" });
+
+      const inClusterConfig = {
+        get: (key: string) =>
+          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: inClusterConfig },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const disabledService = module.get<KubernetesService>(KubernetesService);
+      expect(disabledService.isEnabled()).toBe(false);
+    });
+
+    it("should disable service when getCurrentCluster returns null", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+      const inClusterConfig = {
+        get: (key: string) =>
+          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: inClusterConfig },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const disabledService = module.get<KubernetesService>(KubernetesService);
+      expect(disabledService.isEnabled()).toBe(false);
     });
   });
 

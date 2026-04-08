@@ -296,6 +296,21 @@ export class KubernetesService {
         this.logger.log("Kubernetes client initialized from in-cluster config");
       }
 
+      // Validate the server URL before creating API clients. loadFromCluster()
+      // can succeed outside a real cluster (reads KUBERNETES_SERVICE_HOST /
+      // KUBERNETES_SERVICE_PORT) but produce an invalid URL that causes every
+      // subsequent API call to throw "Invalid URL" inside the HTTP client.
+      const cluster = kubeconfig.getCurrentCluster();
+      const serverUrl = cluster?.server ?? "";
+      try {
+        new URL(serverUrl);
+      } catch {
+        this.logger.warn(
+          `Kubernetes client initialization failed (service disabled): invalid server URL "${serverUrl}"`,
+        );
+        return false;
+      }
+
       this.appsV1Api = kubeconfig.makeApiClient(k8s.AppsV1Api);
       this.coreV1Api = kubeconfig.makeApiClient(k8s.CoreV1Api);
       this.apiExtensionsV1Api = kubeconfig.makeApiClient(
