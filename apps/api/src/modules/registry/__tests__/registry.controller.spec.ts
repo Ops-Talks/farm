@@ -163,12 +163,14 @@ const mockComponent = {
 describe("RegistryController — additional endpoints", () => {
   afterEach(() => jest.clearAllMocks());
 
-  async function buildController(opts: {
-    withVulnService?: boolean;
-    withQueue?: boolean;
-    withComponentRepo?: boolean;
-    componentRepoResult?: Component | null;
-  } = {}) {
+  async function buildController(
+    opts: {
+      withVulnService?: boolean;
+      withQueue?: boolean;
+      withComponentRepo?: boolean;
+      componentRepoResult?: Component | null;
+    } = {},
+  ) {
     const {
       withVulnService = true,
       withQueue = false,
@@ -180,14 +182,23 @@ describe("RegistryController — additional endpoints", () => {
       listRepositories: jest.fn().mockResolvedValue([]),
       listTags: jest.fn().mockResolvedValue([]),
       getManifest: jest.fn().mockResolvedValue({}),
-      getScanResults: jest.fn().mockResolvedValue({ status: "COMPLETE", vulnerabilities: [] }),
+      getScanResults: jest
+        .fn()
+        .mockResolvedValue({ status: "COMPLETE", vulnerabilities: [] }),
       listHarborReplications: jest.fn().mockResolvedValue(mockPolicies),
     };
 
     const mockVulnSvc = withVulnService
       ? {
           findByComponent: jest.fn().mockResolvedValue([mockVulnerability]),
-          getSummary: jest.fn().mockResolvedValue({ critical: 0, high: 1, medium: 0, low: 0, informational: 0, total: 1 }),
+          getSummary: jest.fn().mockResolvedValue({
+            critical: 0,
+            high: 1,
+            medium: 0,
+            low: 0,
+            informational: 0,
+            total: 1,
+          }),
           syncForComponent: jest.fn().mockResolvedValue([mockVulnerability]),
         }
       : null;
@@ -243,7 +254,9 @@ describe("RegistryController — additional endpoints", () => {
 
       const result = await controller.listHarborReplications();
 
-      expect(mockRegistryService.listHarborReplications).toHaveBeenCalledTimes(1);
+      expect(mockRegistryService.listHarborReplications).toHaveBeenCalledTimes(
+        1,
+      );
       expect(result).toEqual(mockPolicies);
     });
   });
@@ -260,7 +273,10 @@ describe("RegistryController — additional endpoints", () => {
     it("filters by severity when provided", async () => {
       const { controller, mockVulnSvc } = await buildController();
 
-      await controller.listVulnerabilities("comp-1", VulnerabilitySeverity.HIGH);
+      await controller.listVulnerabilities(
+        "comp-1",
+        VulnerabilitySeverity.HIGH,
+      );
 
       expect(mockVulnSvc!.findByComponent).toHaveBeenCalledWith(
         "comp-1",
@@ -289,15 +305,17 @@ describe("RegistryController — additional endpoints", () => {
     it("throws ServiceUnavailableException when vulnService is absent", async () => {
       const { controller } = await buildController({ withVulnService: false });
 
-      await expect(controller.getVulnerabilitySummary("comp-1")).rejects.toThrow(
-        ServiceUnavailableException,
-      );
+      await expect(
+        controller.getVulnerabilitySummary("comp-1"),
+      ).rejects.toThrow(ServiceUnavailableException);
     });
   });
 
   describe("syncVulnerabilities()", () => {
     it("throws ServiceUnavailableException when componentRepo is absent", async () => {
-      const { controller } = await buildController({ withComponentRepo: false });
+      const { controller } = await buildController({
+        withComponentRepo: false,
+      });
 
       await expect(controller.syncVulnerabilities("comp-1")).rejects.toThrow(
         ServiceUnavailableException,
@@ -313,16 +331,23 @@ describe("RegistryController — additional endpoints", () => {
     });
 
     it("throws NotFoundException when component is not found", async () => {
-      const { controller } = await buildController({ componentRepoResult: null });
+      const { controller } = await buildController({
+        componentRepoResult: null,
+      });
 
-      await expect(controller.syncVulnerabilities("comp-missing")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.syncVulnerabilities("comp-missing"),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("throws BadRequestException when component has no containerImage", async () => {
-      const noImageComponent = { ...mockComponent, containerImage: null } as unknown as Component;
-      const { controller } = await buildController({ componentRepoResult: noImageComponent });
+      const noImageComponent = {
+        ...mockComponent,
+        containerImage: null,
+      } as unknown as Component;
+      const { controller } = await buildController({
+        componentRepoResult: noImageComponent,
+      });
 
       await expect(controller.syncVulnerabilities("comp-1")).rejects.toThrow(
         BadRequestException,
@@ -330,7 +355,9 @@ describe("RegistryController — additional endpoints", () => {
     });
 
     it("enqueues job and returns queued:true when queue is available", async () => {
-      const { controller, mockQueue } = await buildController({ withQueue: true });
+      const { controller, mockQueue } = await buildController({
+        withQueue: true,
+      });
 
       const result = await controller.syncVulnerabilities("comp-1");
 
@@ -343,7 +370,9 @@ describe("RegistryController — additional endpoints", () => {
     });
 
     it("runs inline sync and returns queued:false when queue is absent", async () => {
-      const { controller, mockVulnSvc } = await buildController({ withQueue: false });
+      const { controller, mockVulnSvc } = await buildController({
+        withQueue: false,
+      });
 
       const result = await controller.syncVulnerabilities("comp-1");
 

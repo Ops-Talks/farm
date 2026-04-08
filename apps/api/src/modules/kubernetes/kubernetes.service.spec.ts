@@ -1607,7 +1607,10 @@ describe("KubernetesService", () => {
         mockListPods.mockResolvedValue({
           items: [
             {
-              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-manager-abc",
+                namespace: "dragonfly",
+              },
               status: { phase: "Running" },
             },
           ],
@@ -1638,7 +1641,10 @@ describe("KubernetesService", () => {
         mockListPods.mockResolvedValue({
           items: [
             {
-              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-manager-abc",
+                namespace: "dragonfly",
+              },
               status: { phase: "Running" },
             },
           ],
@@ -1656,7 +1662,10 @@ describe("KubernetesService", () => {
         mockListPods.mockResolvedValue({
           items: [
             {
-              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-manager-abc",
+                namespace: "dragonfly",
+              },
               status: { phase: "Running" },
             },
           ],
@@ -1678,7 +1687,10 @@ describe("KubernetesService", () => {
         mockListPods.mockResolvedValue({
           items: [
             {
-              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-manager-abc",
+                namespace: "dragonfly",
+              },
               status: { phase: "Running" },
             },
           ],

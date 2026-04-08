@@ -429,9 +429,7 @@ describe("HarborAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce(
         okResponse({
           "report/v1": {
-            vulnerabilities: [
-              { id: "CVE-L", severity: "low", package: "pkg" },
-            ],
+            vulnerabilities: [{ id: "CVE-L", severity: "low", package: "pkg" }],
           },
         }),
       ) as unknown as typeof globalThis.fetch;

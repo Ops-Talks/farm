@@ -5,22 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.0] - 2026-04-08
 
 ### Added
-- **registry**: FARM-S242 — container registry adapter interface (`IRegistryAdapter`) with `EcrAdapter` (AWS ECR via SDK v3), `GcrAdapter` (GCP Artifact Registry REST API), and `DockerHubAdapter` (Docker Hub API v2 with token auth).
-- **registry**: `RegistryModule` with conditional adapter registration based on `REGISTRY_TYPE` env var; endpoints `GET /api/v1/registry/repositories`, `GET /api/v1/registry/repositories/:name/tags`, `GET /api/v1/registry/repositories/:name/manifest/:tag`, `GET /api/v1/registry/repositories/:name/scan/:tag`.
-- **config**: New env vars `REGISTRY_TYPE` (ecr | gcr | dockerhub | harbor), `REGISTRY_URL`, `REGISTRY_CREDENTIALS` for container registry integration.
-- **catalog**: FARM-S243 — `containerImage` `simple-json` field on `Component` entity with TypeORM migration; `POST /api/v1/catalog/components/:id/container-image` endpoint to set or update image metadata; BullMQ `ContainerImageSyncProcessor` and `ContainerImageSyncScheduler` (every 15 min) to refresh `latestTag` and `digest` from the configured registry adapter.
-- **web**: FARM-S243 — `ContainerImageCard` component in the catalog component detail Overview tab sidebar showing registry badge, image name, tag, truncated digest, and pushed date.
-- **registry**: FARM-S244 — `ContainerVulnerability` entity with composite unique index on `(componentId, cveId, tag)`; TypeORM migration `1774600000002`; `VulnerabilityService` with `findByComponent()`, `getSummary()`, and `syncForComponent()` (upsert CVEs + WebSocket `container:vulnerability-found` on new critical findings); `VulnerabilitySyncProcessor` (BullMQ) and `VulnerabilitySyncScheduler` (cron every 15 min); endpoints `GET /api/v1/registry/components/:id/vulnerabilities`, `GET /api/v1/registry/components/:id/vulnerabilities/summary`, `POST /api/v1/registry/components/:id/vulnerabilities/sync`.
-- **web**: FARM-S244 — `ContainerSecurityTab` in component detail with severity summary cards (critical/high/medium/low counts), CVE table with severity filter, inline sync button, and loading/empty states.
-- **kubernetes**: FARM-S245 — Dragonfly cluster detection via `KubernetesService`: `getDragonflyStatus()` lists Deployments and DaemonSets with label `app.kubernetes.io/name=dragonfly`, classifies components (manager/scheduler/dfdaemon), and returns overall health (`not-installed | degraded | healthy`); `GET /api/v1/kubernetes/dragonfly/status` endpoint.
-- **kubernetes**: FARM-S246 — Dragonfly P2P metrics: `getDragonflyMetrics()` scrapes Prometheus metrics from the Manager pod via Kubernetes pod proxy; `getDragonflyPeers()` lists dfdaemon pods; endpoints `GET /api/v1/kubernetes/dragonfly/metrics`, `GET /api/v1/kubernetes/dragonfly/tasks`, `GET /api/v1/kubernetes/dragonfly/peers`.
-- **web**: FARM-S245/S246 — "Dragonfly" tab in the Observability page: `DragonflyStatusCard` showing installation status badge, version, and per-component replica health; `DragonflyMetricsPanel` with task counters, success rate, active peers, task table with acceleration ratio badges, and peer list.
-- **registry**: FARM-S247 — `HarborAdapter` implementing `IRegistryAdapter` using Harbor API v2; `HARBOR = 'harbor'` added to `RegistryType` enum; Basic Auth from `registry.credentials` JSON (`username`/`password`); supports `listRepositories()`, `listTags()`, `getManifest()`, `getScanResults()` (native Trivy vuln scan via additions endpoint), and `listReplicationPolicies()`.
-- **registry**: FARM-S247 — `GET /api/v1/registry/harbor/replications` endpoint returning active Harbor replication policies (source, destination, trigger type, last execution status); returns `[]` for non-Harbor adapters.
-- **web**: FARM-S247 — "Harbor" badge in `ContainerImageCard`; `HarborReplicationTable` component showing replication rules (source → destination, trigger type, last run status badge, enabled/disabled) rendered in component detail sidebar when `registry === 'harbor'`.
+- **container-resgistries**: Add Container Registries support.
+- **container-resgistries**: Add Container Registries support.
+
+### Fixed
+- **lint**: resolve all 16 ESLint errors in SAST pipeline.
+- address validation feedback — flexible digest stripping, precise ECR host check.
+- address PR review feedback — normalize image refs, fix adapters, parseMetric, conditional Dragonfly polling.
+- **k8s**: Wrong behavior generate errors at API.
 
 ## [0.15.0] - 2026-04-07
 

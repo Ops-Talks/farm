@@ -134,7 +134,9 @@ describe("RegistryService", () => {
 // normalizeImage branch coverage
 // ---------------------------------------------------------------------------
 
-function buildServiceWithAdapter(adapter: IRegistryAdapter | null): Promise<RegistryService> {
+function buildServiceWithAdapter(
+  adapter: IRegistryAdapter | null,
+): Promise<RegistryService> {
   return Test.createTestingModule({
     providers: [
       RegistryService,
@@ -154,7 +156,9 @@ function makeAdapter(
     listRepositories: jest.fn().mockResolvedValue([]),
     listTags: jest.fn().mockResolvedValue([]),
     getManifest: jest.fn().mockResolvedValue({}),
-    getScanResults: jest.fn().mockResolvedValue({ status: "COMPLETE", vulnerabilities: [] }),
+    getScanResults: jest
+      .fn()
+      .mockResolvedValue({ status: "COMPLETE", vulnerabilities: [] }),
     ...overrides,
   };
 }
@@ -211,7 +215,10 @@ describe("RegistryService — normalizeImage branches", () => {
         "123456789.dkr.ecr.us-east-1.amazonaws.com/my-service",
         "stable",
       );
-      expect(adapter.getScanResults).toHaveBeenCalledWith("my-service", "stable");
+      expect(adapter.getScanResults).toHaveBeenCalledWith(
+        "my-service",
+        "stable",
+      );
     });
   });
 
@@ -239,7 +246,9 @@ describe("RegistryService — normalizeImage branches", () => {
     });
 
     it("strips registry-1.docker.io/ prefix", () => {
-      const result = service.normalizeImage("registry-1.docker.io/myns/myapp:v2");
+      const result = service.normalizeImage(
+        "registry-1.docker.io/myns/myapp:v2",
+      );
       expect(result).toBe("myns/myapp");
     });
 
@@ -287,9 +296,7 @@ describe("RegistryService — normalizeImage branches", () => {
     });
 
     it("strips host with port and returns project/repo", () => {
-      const result = service.normalizeImage(
-        "harbor.local:5000/proj/app:v3",
-      );
+      const result = service.normalizeImage("harbor.local:5000/proj/app:v3");
       expect(result).toBe("proj/app");
     });
 
@@ -353,14 +360,17 @@ describe("RegistryService — listHarborReplications", () => {
   });
 
   it("returns [] when adapter is non-Harbor (ECR)", async () => {
-    const service = await buildServiceWithAdapter(makeAdapter(RegistryType.ECR));
+    const service = await buildServiceWithAdapter(
+      makeAdapter(RegistryType.ECR),
+    );
     expect(await service.listHarborReplications()).toEqual([]);
   });
 
   it("returns [] when Harbor adapter has no listReplicationPolicies method", async () => {
     const harborAdapter = makeAdapter(RegistryType.HARBOR);
     // Remove the method to test the typeof guard
-    (harborAdapter as Record<string, unknown>).listReplicationPolicies = undefined;
+    (harborAdapter as Record<string, unknown>).listReplicationPolicies =
+      undefined;
     const service = await buildServiceWithAdapter(harborAdapter);
     expect(await service.listHarborReplications()).toEqual([]);
   });
