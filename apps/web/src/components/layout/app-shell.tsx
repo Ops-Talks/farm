@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { memo, useCallback, useMemo, useState, type ReactNode, type ElementType } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,7 @@ import {
   Layers,
   ServerCog,
   Cpu,
+  UserCircle,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
@@ -156,6 +158,7 @@ const NavItem = memo(function NavItem({
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   // Controls the mobile hamburger Sheet open/close state (ST188)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -301,6 +304,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <p className="text-sm font-medium">{user?.displayName}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <UserCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+                Profile
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>
                 Roles: {user?.roles.join(", ")}

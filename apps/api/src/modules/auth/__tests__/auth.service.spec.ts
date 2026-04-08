@@ -4,9 +4,16 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { User } from "../entities/user.entity";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
-import { ConflictException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
+import { UpdateProfileDto, GenderEnum } from "../dto/update-profile.dto";
+import { ChangePasswordDto } from "../dto/change-password.dto";
 
 // jest will hoist this mock above imports
 jest.mock("bcrypt", () => ({
@@ -197,6 +204,153 @@ describe("AuthService", () => {
     it("should return all users", async () => {
       repo.find.mockResolvedValue([{ id: "1" }]);
       expect(await service.findAll()).toEqual([{ id: "1" }]);
+    });
+  });
+
+  describe("getProfile", () => {
+    it("should return the user when found", async () => {
+      const user = { id: "1", username: "u", email: "u@test.com" };
+      repo.findOne.mockResolvedValue(user);
+      const result = await service.getProfile("1");
+      expect(result).toEqual(user);
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: "1" } });
+    });
+
+    it("should throw NotFoundException when user not found", async () => {
+      repo.findOne.mockResolvedValue(undefined);
+      await expect(service.getProfile("nonexistent")).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe("updateProfile", () => {
+    const existingUser = {
+      id: "1",
+      username: "u",
+      email: "u@test.com",
+      firstName: null,
+      lastName: null,
+      gender: null,
+    };
+
+    it("should update and return the user on success", async () => {
+      repo.findOne.mockResolvedValueOnce(existingUser);
+      const updated = {
+        ...existingUser,
+        firstName: "John",
+        lastName: "Doe",
+        gender: "male",
+      };
+      repo.save.mockResolvedValue(updated);
+
+      const dto: UpdateProfileDto = {
+        firstName: "John",
+        lastName: "Doe",
+        gender: GenderEnum.MALE,
+      };
+
+      const result = await service.updateProfile("1", dto);
+      expect(result).toEqual(updated);
+      expect(repo.save).toHaveBeenCalled();
+    });
+
+    it("should throw NotFoundException when user not found", async () => {
+      repo.findOne.mockResolvedValue(undefined);
+      await expect(
+        service.updateProfile("nonexistent", {}),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("should throw ConflictException when new email is already taken", async () => {
+      repo.findOne
+        .mockResolvedValueOnce(existingUser) // first call: load the user
+        .mockResolvedValueOnce({ id: "2", email: "taken@test.com" }); // second call: email check
+
+      const dto: UpdateProfileDto = { email: "taken@test.com" };
+      await expect(service.updateProfile("1", dto)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it("should not check email uniqueness when email is unchanged", async () => {
+      repo.findOne.mockResolvedValueOnce(existingUser);
+      repo.save.mockResolvedValue(existingUser);
+
+      await service.updateProfile("1", { email: existingUser.email });
+      // Only one findOne call — the email uniqueness check is skipped
+      expect(repo.findOne).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("changePassword", () => {
+    const user = {
+      id: "1",
+      username: "u",
+      password: "hashed-old",
+      refreshToken: "some-token",
+    };
+
+    it("should change the password and clear the refresh token", async () => {
+      repo.findOne.mockResolvedValue({ ...user });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      repo.save.mockResolvedValue({
+        ...user,
+        password: "NewPass1!",
+        refreshToken: null,
+      });
+
+      const dto: ChangePasswordDto = {
+        currentPassword: "OldPass1!",
+        newPassword: "NewPass1!",
+        confirmPassword: "NewPass1!",
+      };
+
+      await expect(service.changePassword("1", dto)).resolves.toBeUndefined();
+      expect(repo.save).toHaveBeenCalled();
+    });
+
+    it("should throw NotFoundException when user not found", async () => {
+      repo.findOne.mockResolvedValue(undefined);
+
+      const dto: ChangePasswordDto = {
+        currentPassword: "OldPass1!",
+        newPassword: "NewPass1!",
+        confirmPassword: "NewPass1!",
+      };
+
+      await expect(
+        service.changePassword("nonexistent", dto),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("should throw BadRequestException when passwords do not match", async () => {
+      const dto: ChangePasswordDto = {
+        currentPassword: "OldPass1!",
+        newPassword: "NewPass1!",
+        confirmPassword: "DifferentPass1!",
+      };
+
+      await expect(service.changePassword("1", dto)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      // findOne should never be called — validation fails first
+      expect(repo.findOne).not.toHaveBeenCalled();
+    });
+
+    it("should throw UnauthorizedException when current password is wrong", async () => {
+      repo.findOne.mockResolvedValue({ ...user });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+
+      const dto: ChangePasswordDto = {
+        currentPassword: "WrongPass1!",
+        newPassword: "NewPass1!",
+        confirmPassword: "NewPass1!",
+      };
+
+      await expect(service.changePassword("1", dto)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
   });
 });

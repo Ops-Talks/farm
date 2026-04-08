@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -11,6 +13,8 @@ import { randomBytes } from "crypto";
 import { User } from "./entities/user.entity";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
+import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
 /**
  * Service handling authentication and user-related business logic.
@@ -155,6 +159,74 @@ export class AuthService {
    */
   async findAll(): Promise<User[]> {
     return await this.userRepository.find();
+  }
+
+  /**
+   * Retrieves the profile of the authenticated user by their ID.
+   * @param userId - The authenticated user's UUID
+   * @returns The user entity
+   * @throws NotFoundException if no user exists with the given ID
+   */
+  async getProfile(userId: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+    return user;
+  }
+
+  /**
+   * Updates the profile of the authenticated user.
+   * @param userId - The authenticated user's UUID
+   * @param dto - Fields to update (firstName, lastName, email, gender)
+   * @returns The updated user entity
+   * @throws NotFoundException if no user exists with the given ID
+   * @throws ConflictException if the new email is already taken by another account
+   */
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+
+    // Check email uniqueness if changing email
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (existing) throw new ConflictException("Email already in use");
+    }
+
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+    if (dto.email !== undefined) user.email = dto.email;
+    if (dto.gender !== undefined)
+      user.gender = dto.gender as "male" | "female" | "non_binary";
+
+    return this.userRepository.save(user);
+  }
+
+  /**
+   * Changes the password of the authenticated user.
+   * Invalidates all existing sessions by clearing the stored refresh token.
+   * @param userId - The authenticated user's UUID
+   * @param dto - Current password, new password, and confirmation
+   * @throws NotFoundException if no user exists with the given ID
+   * @throws BadRequestException if newPassword and confirmPassword do not match
+   * @throws UnauthorizedException if the current password is incorrect
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException("Passwords do not match");
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!valid)
+      throw new UnauthorizedException("Current password is incorrect");
+
+    // Assign plain text — @BeforeUpdate hook will hash it
+    user.password = dto.newPassword;
+    user.refreshToken = null;
+    await this.userRepository.save(user);
   }
 
   /**
