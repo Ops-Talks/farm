@@ -1500,6 +1500,204 @@ describe("KubernetesService", () => {
           taskCount: 0,
         });
       });
+
+      it("should return empty array on coreV1Api error", async () => {
+        mockListPods.mockRejectedValue(new Error("network failure"));
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("getDragonflyTasks", () => {
+      it("should return empty array when enabled (tasks not exposed via metrics)", async () => {
+        const result = await service.getDragonflyTasks();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe("getDragonflyStatus — DaemonSet path", () => {
+      it("should include dfdaemon DaemonSet components in status", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-dfdaemon", namespace: "dragonfly" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/dfdaemon:v2.1.0" }],
+                  },
+                },
+              },
+              status: { desiredNumberScheduled: 3, numberReady: 3 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("healthy");
+        expect(result.components).toHaveLength(1);
+        expect(result.components[0].component).toBe("dfdaemon");
+        expect(result.components[0].workloadKind).toBe("DaemonSet");
+        expect(result.components[0].totalReplicas).toBe(3);
+        expect(result.components[0].readyReplicas).toBe(3);
+      });
+
+      it("should be degraded when DaemonSet has fewer ready than desired", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-dfdaemon", namespace: "dragonfly" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "dragonflyoss/dfdaemon:v2.1.0" }],
+                  },
+                },
+              },
+              status: { desiredNumberScheduled: 5, numberReady: 2 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("degraded");
+        expect(result.components[0].readyReplicas).toBe(2);
+        expect(result.components[0].totalReplicas).toBe(5);
+      });
+
+      it("should skip DaemonSets whose name does not match any component", async () => {
+        mockListDeployments.mockResolvedValue({ items: [] });
+        mockListDaemonSets.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "some-other-daemonset", namespace: "default" },
+              spec: {
+                template: {
+                  spec: { containers: [{ image: "nginx:latest" }] },
+                },
+              },
+              status: { desiredNumberScheduled: 1, numberReady: 1 },
+            },
+          ],
+        });
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("not-installed");
+      });
+
+      it("should return not-installed on k8s API error", async () => {
+        mockListDeployments.mockRejectedValue(new Error("k8s api error"));
+
+        const result = await service.getDragonflyStatus();
+
+        expect(result.status).toBe("not-installed");
+      });
+    });
+
+    describe("getDragonflyMetrics — with manager pod", () => {
+      it("should parse prometheus metrics from manager pod proxy", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        const metricsText = [
+          "# HELP dragonfly_manager_peer_task_total Total peer tasks",
+          "# TYPE dragonfly_manager_peer_task_total counter",
+          "dragonfly_manager_peer_task_total 100",
+          "dragonfly_manager_peer_task_succeeded_total 80",
+          "dragonfly_manager_peer_task_failed_total 5",
+          "dragonfly_manager_peer_total 20",
+          "",
+          "# comment line ignored",
+          "  ",
+        ].join("\n");
+        mockConnectPodProxy.mockResolvedValue(metricsText);
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(100);
+        expect(result.succeededTasks).toBe(80);
+        expect(result.failedTasks).toBe(5);
+        expect(result.activeTasks).toBe(15);
+        expect(result.totalPeers).toBe(20);
+      });
+
+      it("should handle non-string proxy response by stringifying", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        // Return an object instead of string
+        mockConnectPodProxy.mockResolvedValue({ body: "not-a-string" });
+
+        const result = await service.getDragonflyMetrics();
+
+        // Should not throw; metrics will be zero since JSON doesn't match metric patterns
+        expect(result.totalTasks).toBe(0);
+      });
+
+      it("should return zero metrics on connectGetNamespacedPodProxy error", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        mockConnectPodProxy.mockRejectedValue(new Error("proxy failed"));
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
+
+      it("should sum metrics across multiple matching lines", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-manager-abc", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        // Metrics with label variants (multiple lines for same metric)
+        const metricsText = [
+          'dragonfly_manager_peer_task_total{type="http"} 60',
+          'dragonfly_manager_peer_task_total{type="grpc"} 40',
+          "dragonfly_manager_peer_task_succeeded_total 0",
+          "dragonfly_manager_peer_task_failed_total 0",
+          "dragonfly_manager_peer_total 0",
+          "not_matching_line invalid_value_NaN",
+        ].join("\n");
+        mockConnectPodProxy.mockResolvedValue(metricsText);
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(100);
+      });
     });
   });
 });

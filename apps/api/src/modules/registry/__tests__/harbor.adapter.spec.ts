@@ -408,5 +408,53 @@ describe("HarborAdapter", () => {
 
       expect(result.vulnerabilities[0].severity).toBe("UNDEFINED");
     });
+
+    it("should map MEDIUM severity correctly", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValueOnce(
+        okResponse({
+          "report/v1": {
+            vulnerabilities: [
+              { id: "CVE-M", severity: "Medium", package: "pkg" },
+            ],
+          },
+        }),
+      ) as unknown as typeof globalThis.fetch;
+
+      const result = await adapter.getScanResults("proj/repo", "tag");
+
+      expect(result.vulnerabilities[0].severity).toBe("MEDIUM");
+    });
+
+    it("should map LOW severity correctly", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValueOnce(
+        okResponse({
+          "report/v1": {
+            vulnerabilities: [
+              { id: "CVE-L", severity: "low", package: "pkg" },
+            ],
+          },
+        }),
+      ) as unknown as typeof globalThis.fetch;
+
+      const result = await adapter.getScanResults("proj/repo", "tag");
+
+      expect(result.vulnerabilities[0].severity).toBe("LOW");
+    });
+  });
+
+  describe("invalid JSON credentials", () => {
+    it("uses empty credentials when credentials JSON is invalid", () => {
+      const badConfigService = {
+        get: jest.fn((key: string) => {
+          if (key === "registry.credentials") return "NOT_VALID_JSON{{{";
+          if (key === "registry.url") return mockBaseUrl;
+          return "";
+        }),
+      } as unknown as import("@nestjs/config").ConfigService;
+
+      // Should not throw; adapter initializes with empty credentials
+      const badAdapter = new HarborAdapter(badConfigService);
+      expect(badAdapter.type).toBe(RegistryType.HARBOR);
+    });
   });
 });
