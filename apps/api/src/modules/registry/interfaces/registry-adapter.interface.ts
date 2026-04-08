@@ -41,6 +41,8 @@ export interface IRegistryAdapter {
   listTags(repo: string): Promise<TagDto[]>;
   getManifest(repo: string, tag: string): Promise<ManifestDto>;
   getScanResults(repo: string, tag: string): Promise<ScanResultDto>;
+  /** Harbor-specific: lists replication policies. Only implemented by HarborAdapter. */
+  listReplicationPolicies?(): Promise<HarborReplicationPolicy[]>;
 }
 
 /** A Harbor replication policy (rule). */

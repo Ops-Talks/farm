@@ -1109,7 +1109,7 @@ export class KubernetesService {
 
         const image =
           item.spec?.template?.spec?.containers?.[0]?.image ?? "unknown:unknown";
-        const version = image.split(":")[1] ?? "unknown";
+        const version = this.extractImageTag(image);
 
         components.push({
           component,
@@ -1128,7 +1128,7 @@ export class KubernetesService {
 
         const image =
           item.spec?.template?.spec?.containers?.[0]?.image ?? "unknown:unknown";
-        const version = image.split(":")[1] ?? "unknown";
+        const version = this.extractImageTag(image);
 
         const desired =
           (item.status as { desiredNumberScheduled?: number })
@@ -1185,6 +1185,26 @@ export class KubernetesService {
     return null;
   }
 
+  /**
+   * Extracts the image tag from a container image reference.
+   * Handles registry ports (e.g. `registry:5000/image:tag`) and digest
+   * references (`image@sha256:...`). Returns the tag portion after the last
+   * `:` that follows the last `/`, or `"unknown"` when no tag is present.
+   *
+   * @param imageRef - Full container image reference
+   * @returns The tag string, or "unknown"
+   */
+  private extractImageTag(imageRef: string): string {
+    // Strip any @sha256:... digest suffix
+    const withoutDigest = imageRef.replace(/@sha256:[a-fA-F0-9]+$/, "");
+    // The tag is after the last ":" that comes after the last "/"
+    const lastSlash = withoutDigest.lastIndexOf("/");
+    const tagPortion = lastSlash >= 0 ? withoutDigest.substring(lastSlash) : withoutDigest;
+    const colonIdx = tagPortion.lastIndexOf(":");
+    if (colonIdx < 0) return "unknown";
+    return tagPortion.substring(colonIdx + 1) || "unknown";
+  }
+
   // ---------------------------------------------------------------------------
   // Dragonfly P2P Metrics (FARM-S246)
   // ---------------------------------------------------------------------------
@@ -1238,16 +1258,28 @@ export class KubernetesService {
         typeof rawBody === "string" ? rawBody : JSON.stringify(rawBody);
 
       const parseMetric = (metricName: string): number => {
-        const line = metricsText
-          .split("\n")
-          .find(
-            (l) =>
-              l.startsWith(metricName) &&
-              !l.startsWith("#") &&
-              l.charAt(metricName.length) === " ",
-          );
-        if (!line) return 0;
-        return parseFloat(line.split(" ")[1]) || 0;
+        const escapedMetricName = metricName.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&",
+        );
+        const metricPattern = new RegExp(
+          `^${escapedMetricName}(?:\\{[^}]*\\})?\\s+([^\\s]+)`,
+        );
+
+        return metricsText.split("\n").reduce((total, line) => {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine.startsWith("#")) {
+            return total;
+          }
+
+          const match = trimmedLine.match(metricPattern);
+          if (!match) {
+            return total;
+          }
+
+          const value = Number.parseFloat(match[1]);
+          return Number.isFinite(value) ? total + value : total;
+        }, 0);
       };
 
       const totalTasks = parseMetric("dragonfly_manager_peer_task_total");

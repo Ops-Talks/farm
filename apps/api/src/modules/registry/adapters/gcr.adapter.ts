@@ -71,24 +71,25 @@ export class GcrAdapter implements IRegistryAdapter {
   readonly type = RegistryType.GCR;
 
   private readonly logger = new Logger(GcrAdapter.name);
-  private readonly credentialsJson: string;
+  private readonly parsedCredentials: Record<string, unknown> | undefined;
   private readonly location: string;
   private readonly projectId: string;
   private readonly baseUrl = 'https://artifactregistry.googleapis.com/v1';
 
   constructor(private readonly config: ConfigService) {
-    this.credentialsJson = config.get<string>('registry.credentials') ?? '';
+    const credentialsJson = config.get<string>('registry.credentials') ?? '';
     this.location = config.get<string>('registry.url') ?? 'us-central1';
 
-    let parsedCredentials: GcpCredentials = { project_id: '' };
-    if (this.credentialsJson) {
+    let parsed: GcpCredentials = { project_id: '' };
+    if (credentialsJson) {
       try {
-        parsedCredentials = JSON.parse(this.credentialsJson) as GcpCredentials;
+        parsed = JSON.parse(credentialsJson) as GcpCredentials;
+        this.parsedCredentials = parsed as unknown as Record<string, unknown>;
       } catch {
         this.logger.error('Failed to parse GCP credentials JSON');
       }
     }
-    this.projectId = parsedCredentials.project_id ?? '';
+    this.projectId = parsed.project_id ?? '';
   }
 
   /**
@@ -97,9 +98,7 @@ export class GcrAdapter implements IRegistryAdapter {
   private async getAccessToken(): Promise<string> {
     const auth = new GoogleAuth({
       scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-      credentials: this.credentialsJson
-        ? (JSON.parse(this.credentialsJson) as Record<string, unknown>)
-        : undefined,
+      credentials: this.parsedCredentials,
     });
     const token = await auth.getAccessToken();
     return token ?? '';

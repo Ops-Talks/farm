@@ -10,7 +10,7 @@ export class AddContainerVulnerabilities1774600000002 implements MigrationInterf
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE "container_vulnerabilities" (
-        "id"               uuid NOT NULL DEFAULT gen_random_uuid(),
+        "id"               uuid NOT NULL DEFAULT uuid_generate_v4(),
         "componentId"      varchar NOT NULL,
         "registry"         varchar NOT NULL,
         "image"            varchar NOT NULL,

@@ -85,24 +85,29 @@ export function ObservabilityClient() {
   const [dragonflyTasks, setDragonflyTasks] = useState<DragonflyTask[]>([]);
   const [dragonflyPeers, setDragonflyPeers] = useState<DragonflyPeer[]>([]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (fetchDragonfly: boolean) => {
     // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
     // not prevent the health data from rendering.
-    const [
-      healthResult,
-      summaryResult,
-      dragonflyStatusResult,
-      dragonflyMetricsResult,
-      dragonflyTasksResult,
-      dragonflyPeersResult,
-    ] = await Promise.allSettled([
+    const corePromises = Promise.allSettled([
       healthApi.check(),
       obsApi.summary(),
-      kubernetes.getDragonflyStatus(),
-      kubernetes.getDragonflyMetrics(),
-      kubernetes.getDragonflyTasks(),
-      kubernetes.getDragonflyPeers(),
     ]);
+
+    const dragonflyPromises = fetchDragonfly
+      ? Promise.allSettled([
+          kubernetes.getDragonflyStatus(),
+          kubernetes.getDragonflyMetrics(),
+          kubernetes.getDragonflyTasks(),
+          kubernetes.getDragonflyPeers(),
+        ])
+      : Promise.resolve(null);
+
+    const [coreResults, dragonflyResults] = await Promise.all([
+      corePromises,
+      dragonflyPromises,
+    ]);
+
+    const [healthResult, summaryResult] = coreResults;
 
     if (healthResult.status === "fulfilled") {
       setHealthData(healthResult.value);
@@ -118,29 +123,38 @@ export function ObservabilityClient() {
       setSummary(null);
     }
 
-    if (dragonflyStatusResult.status === "fulfilled") {
-      setDragonflyStatus(dragonflyStatusResult.value);
-    } else {
-      console.warn("Dragonfly status unavailable:", dragonflyStatusResult.reason);
-      setDragonflyStatus(null);
-    }
+    if (dragonflyResults) {
+      const [
+        dragonflyStatusResult,
+        dragonflyMetricsResult,
+        dragonflyTasksResult,
+        dragonflyPeersResult,
+      ] = dragonflyResults;
 
-    if (dragonflyMetricsResult.status === "fulfilled") {
-      setDragonflyMetrics(dragonflyMetricsResult.value);
-    } else {
-      setDragonflyMetrics(null);
-    }
+      if (dragonflyStatusResult.status === "fulfilled") {
+        setDragonflyStatus(dragonflyStatusResult.value);
+      } else {
+        console.warn("Dragonfly status unavailable:", dragonflyStatusResult.reason);
+        setDragonflyStatus(null);
+      }
 
-    if (dragonflyTasksResult.status === "fulfilled") {
-      setDragonflyTasks(dragonflyTasksResult.value);
-    } else {
-      setDragonflyTasks([]);
-    }
+      if (dragonflyMetricsResult.status === "fulfilled") {
+        setDragonflyMetrics(dragonflyMetricsResult.value);
+      } else {
+        setDragonflyMetrics(null);
+      }
 
-    if (dragonflyPeersResult.status === "fulfilled") {
-      setDragonflyPeers(dragonflyPeersResult.value);
-    } else {
-      setDragonflyPeers([]);
+      if (dragonflyTasksResult.status === "fulfilled") {
+        setDragonflyTasks(dragonflyTasksResult.value);
+      } else {
+        setDragonflyTasks([]);
+      }
+
+      if (dragonflyPeersResult.status === "fulfilled") {
+        setDragonflyPeers(dragonflyPeersResult.value);
+      } else {
+        setDragonflyPeers([]);
+      }
     }
 
     setLastUpdated(new Date());
@@ -149,10 +163,10 @@ export function ObservabilityClient() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData();
-    const interval = setInterval(() => void fetchData(), 10000);
+    void fetchData(activeTab === "dragonfly");
+    const interval = setInterval(() => void fetchData(activeTab === "dragonfly"), 10000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, activeTab]);
 
   if (loading) {
     return (
@@ -180,7 +194,7 @@ export function ObservabilityClient() {
           <Badge variant="outline" className="text-xs">
             Updated: {lastUpdated.toLocaleTimeString()}
           </Badge>
-          <Button size="sm" variant="ghost" onClick={fetchData}>
+          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly")}>
             Refresh
           </Button>
         </div>

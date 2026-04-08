@@ -291,7 +291,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
           name: "core-registry",
           version: "1.0.0",
           description:
-            "Container registry integration (ECR, GCP Artifact Registry, Docker Hub)",
+            "Container registry integration (ECR, GCP Artifact Registry, Docker Hub, Harbor)",
         },
         module: RegistryModule,
       },

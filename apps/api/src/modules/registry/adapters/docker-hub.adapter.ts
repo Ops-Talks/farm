@@ -107,8 +107,9 @@ export class DockerHubAdapter implements IRegistryAdapter {
    * Authenticates with Docker Hub and caches the token.
    */
   private async authenticate(): Promise<void> {
+    const loginUrl = `${this.baseUrl.replace(/\/+$/, '')}/v2/users/login`;
     const response = await globalThis.fetch(
-      'https://hub.docker.com/v2/users/login',
+      loginUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

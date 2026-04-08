@@ -10,7 +10,7 @@ import {
  * DTO for setting or updating container image metadata on a component.
  */
 export class SetContainerImageDto {
-  @ApiProperty({ example: 'ecr', description: 'Registry type (ecr, gcr, dockerhub)' })
+  @ApiProperty({ example: 'ecr', description: 'Registry type (ecr, gcr, dockerhub, harbor)' })
   @IsString()
   @IsNotEmpty()
   registry: string;

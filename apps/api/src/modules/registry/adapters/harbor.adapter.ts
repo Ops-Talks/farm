@@ -71,7 +71,14 @@ export class HarborAdapter implements IRegistryAdapter {
   constructor(private readonly config: ConfigService) {
     this.baseUrl = (config.get<string>('registry.url') ?? '').replace(/\/$/, '');
     const rawCredentials = config.get<string>('registry.credentials') ?? '{}';
-    const credentials: HarborCredentials = JSON.parse(rawCredentials) as HarborCredentials;
+    let credentials: HarborCredentials = { username: '', password: '' };
+    try {
+      credentials = JSON.parse(rawCredentials) as HarborCredentials;
+    } catch {
+      this.logger.error(
+        'Failed to parse Harbor credentials JSON; adapter will use empty credentials',
+      );
+    }
     const encoded = Buffer.from(
       `${credentials.username ?? ''}:${credentials.password ?? ''}`,
     ).toString('base64');
