@@ -91,7 +91,11 @@ describe("AuthController", () => {
 
   describe("getProfile", () => {
     it("should return the user profile for the authenticated user", async () => {
-      const mockUser = { id: "u1", username: "alice", email: "alice@example.com" };
+      const mockUser = {
+        id: "u1",
+        username: "alice",
+        email: "alice@example.com",
+      };
       service.getProfile.mockResolvedValue(mockUser);
 
       const mockReq = { user: { userId: "u1" } };
@@ -104,12 +108,19 @@ describe("AuthController", () => {
 
   describe("updateProfile", () => {
     it("should update and return the user profile", async () => {
-      const mockUser = { id: "u1", username: "alice", email: "new@example.com" };
+      const mockUser = {
+        id: "u1",
+        username: "alice",
+        email: "new@example.com",
+      };
       service.updateProfile.mockResolvedValue(mockUser);
 
       const mockReq = { user: { userId: "u1" } };
       const dto = { email: "new@example.com", firstName: "Alice" };
-      const result = await controller.updateProfile(mockReq as never, dto as never);
+      const result = await controller.updateProfile(
+        mockReq as never,
+        dto as never,
+      );
 
       expect(result).toEqual(mockUser);
       expect(service.updateProfile).toHaveBeenCalledWith("u1", dto);

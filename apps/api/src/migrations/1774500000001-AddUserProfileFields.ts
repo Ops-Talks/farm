@@ -18,10 +18,6 @@ export class AddUserProfileFields1774500000001 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropColumns("users", [
-      "firstName",
-      "lastName",
-      "gender",
-    ]);
+    await queryRunner.dropColumns("users", ["firstName", "lastName", "gender"]);
   }
 }
