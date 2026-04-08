@@ -1108,7 +1108,8 @@ export class KubernetesService {
         if (!component) continue;
 
         const image =
-          item.spec?.template?.spec?.containers?.[0]?.image ?? "unknown:unknown";
+          item.spec?.template?.spec?.containers?.[0]?.image ??
+          "unknown:unknown";
         const version = this.extractImageTag(image);
 
         components.push({
@@ -1127,7 +1128,8 @@ export class KubernetesService {
         if (!component) continue;
 
         const image =
-          item.spec?.template?.spec?.containers?.[0]?.image ?? "unknown:unknown";
+          item.spec?.template?.spec?.containers?.[0]?.image ??
+          "unknown:unknown";
         const version = this.extractImageTag(image);
 
         const desired =
@@ -1199,7 +1201,8 @@ export class KubernetesService {
     const withoutDigest = imageRef.split("@")[0];
     // The tag is after the last ":" that comes after the last "/"
     const lastSlash = withoutDigest.lastIndexOf("/");
-    const tagPortion = lastSlash >= 0 ? withoutDigest.substring(lastSlash) : withoutDigest;
+    const tagPortion =
+      lastSlash >= 0 ? withoutDigest.substring(lastSlash) : withoutDigest;
     const colonIdx = tagPortion.lastIndexOf(":");
     if (colonIdx < 0) return "unknown";
     return tagPortion.substring(colonIdx + 1) || "unknown";
@@ -1240,7 +1243,9 @@ export class KubernetesService {
 
       const pods = podsRes.items ?? [];
       if (pods.length === 0) {
-        this.logger.warn("No Dragonfly manager pod found; returning zero metrics");
+        this.logger.warn(
+          "No Dragonfly manager pod found; returning zero metrics",
+        );
         return emptyMetrics;
       }
 
@@ -1313,20 +1318,14 @@ export class KubernetesService {
    *
    * @returns Array of DragonflyTask objects (currently always empty)
    */
-  async getDragonflyTasks(): Promise<DragonflyTask[]> {
+  getDragonflyTasks(): Promise<DragonflyTask[]> {
     if (!this.isEnabled()) {
-      return [];
+      return Promise.resolve([]);
     }
 
-    try {
-      // Individual task data is not exposed via standard Prometheus metrics.
-      // Return empty until a dedicated task API or log scraping is available.
-      return [];
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(`Failed to get Dragonfly tasks: ${message}`);
-      return [];
-    }
+    // Individual task data is not exposed via standard Prometheus metrics.
+    // Return empty until a dedicated task API or log scraping is available.
+    return Promise.resolve([]);
   }
 
   /**

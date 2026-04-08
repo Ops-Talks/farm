@@ -1,17 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getQueueToken } from '@nestjs/bullmq';
-import { ContainerImageSyncScheduler } from '../processors/container-image-sync.scheduler';
-import {
-  CONTAINER_IMAGE_SYNC_QUEUE,
-} from '../processors/container-image-sync.processor';
-import { CatalogService } from '../catalog.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { getQueueToken } from "@nestjs/bullmq";
+import { ContainerImageSyncScheduler } from "../processors/container-image-sync.scheduler";
+import { CONTAINER_IMAGE_SYNC_QUEUE } from "../processors/container-image-sync.processor";
+import { CatalogService } from "../catalog.service";
 import {
   Component,
   ComponentKind,
   ComponentLifecycle,
-} from '../entities/component.entity';
+} from "../entities/component.entity";
 
-describe('ContainerImageSyncScheduler', () => {
+describe("ContainerImageSyncScheduler", () => {
   let scheduler: ContainerImageSyncScheduler;
 
   const mockCatalogService = {
@@ -19,7 +17,7 @@ describe('ContainerImageSyncScheduler', () => {
   };
 
   const mockQueue = {
-    add: jest.fn().mockResolvedValue({ id: 'job-id' }),
+    add: jest.fn().mockResolvedValue({ id: "job-id" }),
   };
 
   const baseComponent = (id: string): Component =>
@@ -28,7 +26,7 @@ describe('ContainerImageSyncScheduler', () => {
       name: `service-${id}`,
       kind: ComponentKind.SERVICE,
       description: null,
-      owner: 'team-a',
+      owner: "team-a",
       teamId: null,
       team: null,
       lifecycle: ComponentLifecycle.PRODUCTION,
@@ -37,7 +35,7 @@ describe('ContainerImageSyncScheduler', () => {
       metadata: {},
       helmChart: null,
       argocdApp: null,
-      containerImage: { registry: 'ecr', image: 'myapp' },
+      containerImage: { registry: "ecr", image: "myapp" },
       dependencies: [],
       organizationId: null,
       createdAt: new Date(),
@@ -56,30 +54,32 @@ describe('ContainerImageSyncScheduler', () => {
       ],
     }).compile();
 
-    scheduler = module.get<ContainerImageSyncScheduler>(ContainerImageSyncScheduler);
+    scheduler = module.get<ContainerImageSyncScheduler>(
+      ContainerImageSyncScheduler,
+    );
     jest.clearAllMocks();
   });
 
-  it('enqueues one sync job per component that has a containerImage', async () => {
-    const components = [baseComponent('id-1'), baseComponent('id-2')];
+  it("enqueues one sync job per component that has a containerImage", async () => {
+    const components = [baseComponent("id-1"), baseComponent("id-2")];
     mockCatalogService.findAllWithContainerImage.mockResolvedValue(components);
 
     await scheduler.scheduleContainerImageSync();
 
     expect(mockQueue.add).toHaveBeenCalledTimes(2);
     expect(mockQueue.add).toHaveBeenCalledWith(
-      'sync',
-      { componentId: 'id-1' },
+      "sync",
+      { componentId: "id-1" },
       { removeOnComplete: 100, removeOnFail: 50 },
     );
     expect(mockQueue.add).toHaveBeenCalledWith(
-      'sync',
-      { componentId: 'id-2' },
+      "sync",
+      { componentId: "id-2" },
       { removeOnComplete: 100, removeOnFail: 50 },
     );
   });
 
-  it('does nothing when no components have a containerImage', async () => {
+  it("does nothing when no components have a containerImage", async () => {
     mockCatalogService.findAllWithContainerImage.mockResolvedValue([]);
 
     await scheduler.scheduleContainerImageSync();

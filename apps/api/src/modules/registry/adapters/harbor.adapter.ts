@@ -1,6 +1,6 @@
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { RegistryType } from '../enums/registry-type.enum';
+import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
   RepositoryDto,
@@ -9,7 +9,7 @@ import {
   ScanResultDto,
   VulnerabilityDto,
   HarborReplicationPolicy,
-} from '../interfaces/registry-adapter.interface';
+} from "../interfaces/registry-adapter.interface";
 
 /**
  * Parsed Harbor credentials.
@@ -69,19 +69,22 @@ export class HarborAdapter implements IRegistryAdapter {
   private readonly authHeader: string;
 
   constructor(private readonly config: ConfigService) {
-    this.baseUrl = (config.get<string>('registry.url') ?? '').replace(/\/$/, '');
-    const rawCredentials = config.get<string>('registry.credentials') ?? '{}';
-    let credentials: HarborCredentials = { username: '', password: '' };
+    this.baseUrl = (config.get<string>("registry.url") ?? "").replace(
+      /\/$/,
+      "",
+    );
+    const rawCredentials = config.get<string>("registry.credentials") ?? "{}";
+    let credentials: HarborCredentials = { username: "", password: "" };
     try {
       credentials = JSON.parse(rawCredentials) as HarborCredentials;
     } catch {
       this.logger.error(
-        'Failed to parse Harbor credentials JSON; adapter will use empty credentials',
+        "Failed to parse Harbor credentials JSON; adapter will use empty credentials",
       );
     }
     const encoded = Buffer.from(
-      `${credentials.username ?? ''}:${credentials.password ?? ''}`,
-    ).toString('base64');
+      `${credentials.username ?? ""}:${credentials.password ?? ""}`,
+    ).toString("base64");
     this.authHeader = `Basic ${encoded}`;
   }
 
@@ -92,7 +95,7 @@ export class HarborAdapter implements IRegistryAdapter {
     const response = await globalThis.fetch(`${this.baseUrl}${path}`, {
       headers: {
         Authorization: this.authHeader,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     if (!response.ok) {
@@ -106,7 +109,7 @@ export class HarborAdapter implements IRegistryAdapter {
    */
   async listRepositories(): Promise<RepositoryDto[]> {
     const projects = await this.fetchJson<HarborProject[]>(
-      '/api/v2.0/projects?page_size=100',
+      "/api/v2.0/projects?page_size=100",
     );
     const repos: RepositoryDto[] = [];
     for (const project of projects) {
@@ -116,7 +119,7 @@ export class HarborAdapter implements IRegistryAdapter {
       for (const r of projectRepos) {
         repos.push({
           name: r.name,
-          uri: `${this.baseUrl.replace(/https?:\/\//, '')}/${r.name}`,
+          uri: `${this.baseUrl.replace(/https?:\/\//, "")}/${r.name}`,
           description: r.description ?? undefined,
         });
       }
@@ -131,8 +134,8 @@ export class HarborAdapter implements IRegistryAdapter {
    * @param repo - Repository in "project/repository-name" format
    */
   async listTags(repo: string): Promise<TagDto[]> {
-    const [project, ...repoParts] = repo.split('/');
-    const repoName = repoParts.join('/');
+    const [project, ...repoParts] = repo.split("/");
+    const repoName = repoParts.join("/");
     const artifacts = await this.fetchJson<HarborArtifact[]>(
       `/api/v2.0/projects/${encodeURIComponent(project)}/repositories/${encodeURIComponent(repoName)}/artifacts?page_size=100&with_tag=true`,
     );
@@ -153,8 +156,8 @@ export class HarborAdapter implements IRegistryAdapter {
    * @param tag  - Image tag or digest reference
    */
   async getManifest(repo: string, tag: string): Promise<ManifestDto> {
-    const [project, ...repoParts] = repo.split('/');
-    const repoName = repoParts.join('/');
+    const [project, ...repoParts] = repo.split("/");
+    const repoName = repoParts.join("/");
     const artifact = await this.fetchJson<HarborArtifact>(
       `/api/v2.0/projects/${encodeURIComponent(project)}/repositories/${encodeURIComponent(repoName)}/artifacts/${encodeURIComponent(tag)}`,
     );
@@ -162,7 +165,7 @@ export class HarborAdapter implements IRegistryAdapter {
       digest: artifact.digest,
       mediaType:
         artifact.media_type ??
-        'application/vnd.docker.distribution.manifest.v2+json',
+        "application/vnd.docker.distribution.manifest.v2+json",
       sizeBytes: artifact.size ?? undefined,
       pushedAt: artifact.push_time ? new Date(artifact.push_time) : undefined,
       tags: (artifact.tags ?? []).map((t) => t.name),
@@ -177,19 +180,20 @@ export class HarborAdapter implements IRegistryAdapter {
    * @param tag  - Image tag or digest reference
    */
   async getScanResults(repo: string, tag: string): Promise<ScanResultDto> {
-    const [project, ...repoParts] = repo.split('/');
-    const repoName = repoParts.join('/');
+    const [project, ...repoParts] = repo.split("/");
+    const repoName = repoParts.join("/");
     try {
       const reportPath =
         `/api/v2.0/projects/${encodeURIComponent(project)}` +
         `/repositories/${encodeURIComponent(repoName)}` +
         `/artifacts/${encodeURIComponent(tag)}/additions/vulnerabilities`;
-      const report = await this.fetchJson<Record<string, HarborScanReport>>(reportPath);
+      const report =
+        await this.fetchJson<Record<string, HarborScanReport>>(reportPath);
 
       // Harbor returns a map of mediaType -> report; use the first entry
       const scanReport = Object.values(report)[0];
       if (!scanReport?.vulnerabilities) {
-        return { status: 'PENDING', vulnerabilities: [] };
+        return { status: "PENDING", vulnerabilities: [] };
       }
 
       const vulns: VulnerabilityDto[] = scanReport.vulnerabilities.map((v) => ({
@@ -201,9 +205,9 @@ export class HarborAdapter implements IRegistryAdapter {
         description: v.description ?? undefined,
       }));
 
-      return { status: 'COMPLETE', vulnerabilities: vulns };
+      return { status: "COMPLETE", vulnerabilities: vulns };
     } catch {
-      return { status: 'FAILED', vulnerabilities: [] };
+      return { status: "FAILED", vulnerabilities: [] };
     }
   }
 
@@ -226,7 +230,7 @@ export class HarborAdapter implements IRegistryAdapter {
     }
 
     const policies = await this.fetchJson<RawPolicy[]>(
-      '/api/v2.0/replication/policies?page_size=100',
+      "/api/v2.0/replication/policies?page_size=100",
     );
 
     const results: HarborReplicationPolicy[] = [];
@@ -243,15 +247,13 @@ export class HarborAdapter implements IRegistryAdapter {
 
       results.push({
         id: p.id,
-        name: p.name ?? '',
-        srcRegistry:
-          p.src_registry?.name ?? p.src_registry?.url ?? 'local',
-        destRegistry:
-          p.dest_registry?.name ?? p.dest_registry?.url ?? 'local',
+        name: p.name ?? "",
+        srcRegistry: p.src_registry?.name ?? p.src_registry?.url ?? "local",
+        destRegistry: p.dest_registry?.name ?? p.dest_registry?.url ?? "local",
         filters: (p.filters ?? [])
-          .filter((f) => f.type === 'name')
-          .map((f) => f.value ?? '*'),
-        triggerType: p.trigger?.type ?? 'manual',
+          .filter((f) => f.type === "name")
+          .map((f) => f.value ?? "*"),
+        triggerType: p.trigger?.type ?? "manual",
         enabled: p.enabled ?? true,
         lastExecutionStatus,
       });
@@ -262,21 +264,21 @@ export class HarborAdapter implements IRegistryAdapter {
   /**
    * Maps a Harbor severity string to the canonical VulnerabilityDto severity.
    */
-  private mapSeverity(severity: string): VulnerabilityDto['severity'] {
+  private mapSeverity(severity: string): VulnerabilityDto["severity"] {
     switch (severity?.toUpperCase()) {
-      case 'CRITICAL':
-        return 'CRITICAL';
-      case 'HIGH':
-        return 'HIGH';
-      case 'MEDIUM':
-        return 'MEDIUM';
-      case 'LOW':
-        return 'LOW';
-      case 'NEGLIGIBLE':
-      case 'INFORMATIONAL':
-        return 'INFORMATIONAL';
+      case "CRITICAL":
+        return "CRITICAL";
+      case "HIGH":
+        return "HIGH";
+      case "MEDIUM":
+        return "MEDIUM";
+      case "LOW":
+        return "LOW";
+      case "NEGLIGIBLE":
+      case "INFORMATIONAL":
+        return "INFORMATIONAL";
       default:
-        return 'UNDEFINED';
+        return "UNDEFINED";
     }
   }
 }

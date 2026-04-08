@@ -1,14 +1,14 @@
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { GoogleAuth } from 'google-auth-library';
-import { RegistryType } from '../enums/registry-type.enum';
+import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { GoogleAuth } from "google-auth-library";
+import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
   RepositoryDto,
   TagDto,
   ManifestDto,
   ScanResultDto,
-} from '../interfaces/registry-adapter.interface';
+} from "../interfaces/registry-adapter.interface";
 
 /**
  * Parsed GCP service account credentials.
@@ -74,22 +74,22 @@ export class GcrAdapter implements IRegistryAdapter {
   private readonly parsedCredentials: Record<string, unknown> | undefined;
   private readonly location: string;
   private readonly projectId: string;
-  private readonly baseUrl = 'https://artifactregistry.googleapis.com/v1';
+  private readonly baseUrl = "https://artifactregistry.googleapis.com/v1";
 
   constructor(private readonly config: ConfigService) {
-    const credentialsJson = config.get<string>('registry.credentials') ?? '';
-    this.location = config.get<string>('registry.url') ?? 'us-central1';
+    const credentialsJson = config.get<string>("registry.credentials") ?? "";
+    this.location = config.get<string>("registry.url") ?? "us-central1";
 
-    let parsed: GcpCredentials = { project_id: '' };
+    let parsed: GcpCredentials = { project_id: "" };
     if (credentialsJson) {
       try {
         parsed = JSON.parse(credentialsJson) as GcpCredentials;
         this.parsedCredentials = parsed as unknown as Record<string, unknown>;
       } catch {
-        this.logger.error('Failed to parse GCP credentials JSON');
+        this.logger.error("Failed to parse GCP credentials JSON");
       }
     }
-    this.projectId = parsed.project_id ?? '';
+    this.projectId = parsed.project_id ?? "";
   }
 
   /**
@@ -97,11 +97,11 @@ export class GcrAdapter implements IRegistryAdapter {
    */
   private async getAccessToken(): Promise<string> {
     const auth = new GoogleAuth({
-      scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+      scopes: ["https://www.googleapis.com/auth/cloud-platform"],
       credentials: this.parsedCredentials,
     });
     const token = await auth.getAccessToken();
-    return token ?? '';
+    return token ?? "";
   }
 
   /**
@@ -112,12 +112,14 @@ export class GcrAdapter implements IRegistryAdapter {
     const response = await globalThis.fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Artifact Registry request failed: HTTP ${response.status} ${url}`);
+      throw new Error(
+        `Artifact Registry request failed: HTTP ${response.status} ${url}`,
+      );
     }
 
     return response.json() as Promise<T>;
@@ -130,11 +132,13 @@ export class GcrAdapter implements IRegistryAdapter {
     const url = `${this.baseUrl}/projects/${this.projectId}/locations/${this.location}/repositories`;
     const data = await this.fetchJson<ArtifactRepositoriesResponse>(url);
 
-    const repositories: RepositoryDto[] = (data.repositories ?? []).map((r) => ({
-      name: r.name.split('/').pop() ?? r.name,
-      uri: r.name,
-      description: r.description ?? undefined,
-    }));
+    const repositories: RepositoryDto[] = (data.repositories ?? []).map(
+      (r) => ({
+        name: r.name.split("/").pop() ?? r.name,
+        uri: r.name,
+        description: r.description ?? undefined,
+      }),
+    );
 
     this.logger.log(`Fetched ${repositories.length} repositories from GCR`);
     return repositories;
@@ -148,7 +152,7 @@ export class GcrAdapter implements IRegistryAdapter {
     const data = await this.fetchJson<ArtifactTagsResponse>(url);
 
     return (data.tags ?? []).map((t) => ({
-      tag: t.name.split('/').pop() ?? t.name,
+      tag: t.name.split("/").pop() ?? t.name,
       digest: t.version ?? undefined,
     }));
   }
@@ -164,7 +168,7 @@ export class GcrAdapter implements IRegistryAdapter {
       digest: data.name,
       mediaType:
         data.metadata?.mediaType ??
-        'application/vnd.oci.image.manifest.v1+json',
+        "application/vnd.oci.image.manifest.v1+json",
       pushedAt: data.createTime ? new Date(data.createTime) : undefined,
       tags: [tag],
     };
@@ -174,7 +178,8 @@ export class GcrAdapter implements IRegistryAdapter {
    * Artifact Registry does not provide native vulnerability scan results.
    * Always returns UNSUPPORTED.
    */
-  async getScanResults(_repo: string, _tag: string): Promise<ScanResultDto> {
-    return { status: 'UNSUPPORTED', vulnerabilities: [] };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getScanResults(_repo: string, _tag: string): Promise<ScanResultDto> {
+    return Promise.resolve({ status: "UNSUPPORTED", vulnerabilities: [] });
   }
 }

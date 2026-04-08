@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 /**
  * Migration: creates container_vulnerabilities table to store CVE scan results
  * per component image tag, supporting vulnerability surface (Phase 17, FARM-S244).
  */
 export class AddContainerVulnerabilities1774600000002 implements MigrationInterface {
-  name = 'AddContainerVulnerabilities1774600000002';
+  name = "AddContainerVulnerabilities1774600000002";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

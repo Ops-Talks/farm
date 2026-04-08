@@ -1,13 +1,13 @@
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { RegistryType } from '../enums/registry-type.enum';
+import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
   RepositoryDto,
   TagDto,
   ManifestDto,
   ScanResultDto,
-} from '../interfaces/registry-adapter.interface';
+} from "../interfaces/registry-adapter.interface";
 
 /**
  * Parsed Docker Hub credentials.
@@ -92,12 +92,12 @@ export class DockerHubAdapter implements IRegistryAdapter {
 
   constructor(private readonly config: ConfigService) {
     this.baseUrl =
-      config.get<string>('registry.url') || 'https://hub.docker.com';
+      config.get<string>("registry.url") || "https://hub.docker.com";
 
-    const rawCredentials = config.get<string>('registry.credentials') ?? '';
+    const rawCredentials = config.get<string>("registry.credentials") ?? "";
     const credentials: DockerHubCredentials = rawCredentials
       ? (JSON.parse(rawCredentials) as DockerHubCredentials)
-      : { username: '', password: '' };
+      : { username: "", password: "" };
 
     this.username = credentials.username;
     this.password = credentials.password;
@@ -107,18 +107,20 @@ export class DockerHubAdapter implements IRegistryAdapter {
    * Authenticates with Docker Hub and caches the token.
    */
   private async authenticate(): Promise<void> {
-    const loginUrl = `${this.baseUrl.replace(/\/+$/, '')}/v2/users/login`;
-    const response = await globalThis.fetch(
-      loginUrl,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: this.username, password: this.password }),
-      },
-    );
+    const loginUrl = `${this.baseUrl.replace(/\/+$/, "")}/v2/users/login`;
+    const response = await globalThis.fetch(loginUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: this.username,
+        password: this.password,
+      }),
+    });
 
     if (!response.ok) {
-      throw new Error(`Docker Hub authentication failed: HTTP ${response.status}`);
+      throw new Error(
+        `Docker Hub authentication failed: HTTP ${response.status}`,
+      );
     }
 
     const data = (await response.json()) as DockerHubLoginResponse;
@@ -130,8 +132,8 @@ export class DockerHubAdapter implements IRegistryAdapter {
    */
   private buildHeaders(): Record<string, string> {
     return {
-      Authorization: `JWT ${this.authToken ?? ''}`,
-      'Content-Type': 'application/json',
+      Authorization: `JWT ${this.authToken ?? ""}`,
+      "Content-Type": "application/json",
     };
   }
 
@@ -143,7 +145,9 @@ export class DockerHubAdapter implements IRegistryAdapter {
       await this.authenticate();
     }
 
-    let response = await globalThis.fetch(url, { headers: this.buildHeaders() });
+    let response = await globalThis.fetch(url, {
+      headers: this.buildHeaders(),
+    });
 
     if (response.status === 401) {
       this.authToken = null;
@@ -152,7 +156,9 @@ export class DockerHubAdapter implements IRegistryAdapter {
     }
 
     if (!response.ok) {
-      throw new Error(`Docker Hub request failed: HTTP ${response.status} ${url}`);
+      throw new Error(
+        `Docker Hub request failed: HTTP ${response.status} ${url}`,
+      );
     }
 
     return response.json() as Promise<T>;
@@ -171,7 +177,9 @@ export class DockerHubAdapter implements IRegistryAdapter {
       description: r.description ?? undefined,
     }));
 
-    this.logger.log(`Fetched ${repositories.length} repositories from Docker Hub`);
+    this.logger.log(
+      `Fetched ${repositories.length} repositories from Docker Hub`,
+    );
     return repositories;
   }
 
@@ -198,8 +206,8 @@ export class DockerHubAdapter implements IRegistryAdapter {
     const data = await this.fetchJson<DockerHubTagDetail>(url);
 
     return {
-      digest: data.digest ?? data.images?.[0]?.digest ?? '',
-      mediaType: 'application/vnd.docker.distribution.manifest.v2+json',
+      digest: data.digest ?? data.images?.[0]?.digest ?? "",
+      mediaType: "application/vnd.docker.distribution.manifest.v2+json",
       sizeBytes: data.full_size ?? undefined,
       pushedAt: data.last_pushed ? new Date(data.last_pushed) : undefined,
       tags: [data.name],
@@ -210,7 +218,8 @@ export class DockerHubAdapter implements IRegistryAdapter {
    * Docker Hub does not provide native vulnerability scan results.
    * Always returns UNSUPPORTED.
    */
-  async getScanResults(_repo: string, _tag: string): Promise<ScanResultDto> {
-    return { status: 'UNSUPPORTED', vulnerabilities: [] };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getScanResults(_repo: string, _tag: string): Promise<ScanResultDto> {
+    return Promise.resolve({ status: "UNSUPPORTED", vulnerabilities: [] });
   }
 }

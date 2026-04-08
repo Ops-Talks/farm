@@ -299,10 +299,19 @@ export class CatalogController {
    */
   @Post("components/:id/container-image")
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Set or update container image metadata for a component" })
+  @ApiOperation({
+    summary: "Set or update container image metadata for a component",
+  })
   @ApiParam({ name: "id", description: "Component UUID" })
-  @ApiOkResponse({ description: "Container image metadata updated", type: Component })
-  @ApiResponse({ status: 404, description: "Component not found", type: ErrorResponseDto })
+  @ApiOkResponse({
+    description: "Container image metadata updated",
+    type: Component,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Component not found",
+    type: ErrorResponseDto,
+  })
   async setContainerImage(
     @Param("id") id: string,
     @Body() dto: SetContainerImageDto,

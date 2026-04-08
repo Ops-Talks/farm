@@ -4,7 +4,6 @@ import {
   KubernetesService,
   CrdResource,
   ArgoRolloutStatus,
-  DragonflyInstallStatus,
 } from "./kubernetes.service";
 import { CatalogService } from "../catalog/catalog.service";
 import { EventsGateway } from "../../common/events/events.gateway";
@@ -1469,11 +1468,17 @@ describe("KubernetesService", () => {
         mockListPods.mockResolvedValue({
           items: [
             {
-              metadata: { name: "dragonfly-dfdaemon-abc12", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-dfdaemon-abc12",
+                namespace: "dragonfly",
+              },
               status: { podIP: "10.0.0.5", phase: "Running" },
             },
             {
-              metadata: { name: "dragonfly-dfdaemon-def34", namespace: "dragonfly" },
+              metadata: {
+                name: "dragonfly-dfdaemon-def34",
+                namespace: "dragonfly",
+              },
               status: { podIP: "10.0.0.6", phase: "Pending" },
             },
           ],

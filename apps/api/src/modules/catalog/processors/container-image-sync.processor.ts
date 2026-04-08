@@ -1,9 +1,9 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
-import { Job } from 'bullmq';
-import { CatalogService } from '../catalog.service';
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Logger } from "@nestjs/common";
+import { Job } from "bullmq";
+import { CatalogService } from "../catalog.service";
 
-export const CONTAINER_IMAGE_SYNC_QUEUE = 'container-image-sync';
+export const CONTAINER_IMAGE_SYNC_QUEUE = "container-image-sync";
 
 export interface ContainerImageSyncJobData {
   componentId: string;
@@ -29,7 +29,9 @@ export class ContainerImageSyncProcessor extends WorkerHost {
       this.logger.log(`Container image synced for component ${componentId}`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to sync container image for ${componentId}: ${msg}`);
+      this.logger.error(
+        `Failed to sync container image for ${componentId}: ${msg}`,
+      );
       throw error;
     }
   }

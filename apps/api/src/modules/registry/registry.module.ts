@@ -1,27 +1,27 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bullmq';
-import { ConfigService } from '@nestjs/config';
-import { RegistryController } from './registry.controller';
-import { RegistryService } from './registry.service';
-import { VulnerabilityService } from './vulnerability.service';
-import { EcrAdapter } from './adapters/ecr.adapter';
-import { GcrAdapter } from './adapters/gcr.adapter';
-import { DockerHubAdapter } from './adapters/docker-hub.adapter';
-import { HarborAdapter } from './adapters/harbor.adapter';
-import { IRegistryAdapter } from './interfaces/registry-adapter.interface';
-import { REGISTRY_ADAPTER } from './registry.constants';
-import { ContainerVulnerability } from './entities/container-vulnerability.entity';
-import { Component } from '../catalog/entities/component.entity';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { BullModule } from "@nestjs/bullmq";
+import { ConfigService } from "@nestjs/config";
+import { RegistryController } from "./registry.controller";
+import { RegistryService } from "./registry.service";
+import { VulnerabilityService } from "./vulnerability.service";
+import { EcrAdapter } from "./adapters/ecr.adapter";
+import { GcrAdapter } from "./adapters/gcr.adapter";
+import { DockerHubAdapter } from "./adapters/docker-hub.adapter";
+import { HarborAdapter } from "./adapters/harbor.adapter";
+import { IRegistryAdapter } from "./interfaces/registry-adapter.interface";
+import { REGISTRY_ADAPTER } from "./registry.constants";
+import { ContainerVulnerability } from "./entities/container-vulnerability.entity";
+import { Component } from "../catalog/entities/component.entity";
 import {
   VulnerabilitySyncProcessor,
   VULNERABILITY_SYNC_QUEUE,
-} from './processors/vulnerability-sync.processor';
-import { VulnerabilitySyncScheduler } from './processors/vulnerability-sync.scheduler';
+} from "./processors/vulnerability-sync.processor";
+import { VulnerabilitySyncScheduler } from "./processors/vulnerability-sync.scheduler";
 
-export { REGISTRY_ADAPTER } from './registry.constants';
+export { REGISTRY_ADAPTER } from "./registry.constants";
 
-const isTest = process.env.NODE_ENV === 'test';
+const isTest = process.env.NODE_ENV === "test";
 
 /**
  * Factory that selects and instantiates the appropriate registry adapter
@@ -32,16 +32,16 @@ const isTest = process.env.NODE_ENV === 'test';
 export function registryAdapterFactory(
   config: ConfigService,
 ): IRegistryAdapter | null {
-  const type = config.get<string>('registry.type') ?? '';
+  const type = config.get<string>("registry.type") ?? "";
 
   switch (type) {
-    case 'ecr':
+    case "ecr":
       return new EcrAdapter(config);
-    case 'gcr':
+    case "gcr":
       return new GcrAdapter(config);
-    case 'dockerhub':
+    case "dockerhub":
       return new DockerHubAdapter(config);
-    case 'harbor':
+    case "harbor":
       return new HarborAdapter(config);
     default:
       return null;
@@ -71,9 +71,7 @@ export function registryAdapterFactory(
       inject: [ConfigService],
       useFactory: registryAdapterFactory,
     },
-    ...(isTest
-      ? []
-      : [VulnerabilitySyncProcessor, VulnerabilitySyncScheduler]),
+    ...(isTest ? [] : [VulnerabilitySyncProcessor, VulnerabilitySyncScheduler]),
   ],
   exports: [RegistryService, VulnerabilityService],
 })

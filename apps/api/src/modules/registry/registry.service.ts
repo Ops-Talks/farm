@@ -3,8 +3,8 @@ import {
   Injectable,
   Logger,
   ServiceUnavailableException,
-} from '@nestjs/common';
-import { REGISTRY_ADAPTER } from './registry.constants';
+} from "@nestjs/common";
+import { REGISTRY_ADAPTER } from "./registry.constants";
 import {
   IRegistryAdapter,
   RepositoryDto,
@@ -12,8 +12,8 @@ import {
   ManifestDto,
   ScanResultDto,
   HarborReplicationPolicy,
-} from './interfaces/registry-adapter.interface';
-import { RegistryType } from './enums/registry-type.enum';
+} from "./interfaces/registry-adapter.interface";
+import { RegistryType } from "./enums/registry-type.enum";
 
 /**
  * Extracts the adapter-specific repository identifier from a full image
@@ -28,34 +28,38 @@ import { RegistryType } from './enums/registry-type.enum';
  */
 function normalizeImageForAdapter(
   image: string,
-  registryType: RegistryType | string,
+  registryType: RegistryType,
 ): string {
   switch (registryType) {
     case RegistryType.ECR: {
       // ECR images: <account>.dkr.ecr.<region>.amazonaws.com/<repo>[:<tag>]
-      const slashIdx = image.indexOf('/');
+      const slashIdx = image.indexOf("/");
       if (slashIdx >= 0) {
         const host = image.substring(0, slashIdx);
-        if (host.endsWith('.amazonaws.com')) {
-          return image.substring(slashIdx + 1).split(':')[0];
+        if (host.endsWith(".amazonaws.com")) {
+          return image.substring(slashIdx + 1).split(":")[0];
         }
       }
-      return image.split(':')[0];
+      return image.split(":")[0];
     }
     case RegistryType.DOCKER_HUB: {
       // Docker Hub: docker.io/<ns>/<repo> or <ns>/<repo> or <repo>
       let path = image;
       // Strip known Docker Hub hosts
-      for (const host of ['docker.io/', 'index.docker.io/', 'registry-1.docker.io/']) {
+      for (const host of [
+        "docker.io/",
+        "index.docker.io/",
+        "registry-1.docker.io/",
+      ]) {
         if (path.startsWith(host)) {
           path = path.substring(host.length);
           break;
         }
       }
       // Strip tag/digest
-      path = path.split(':')[0].split('@')[0];
+      path = path.split(":")[0].split("@")[0];
       // Default namespace for official images
-      if (!path.includes('/')) {
+      if (!path.includes("/")) {
         path = `library/${path}`;
       }
       return path;
@@ -64,19 +68,22 @@ function normalizeImageForAdapter(
       // Harbor: <host>/<project>/<repo>[:<tag>]
       let path = image;
       // Strip protocol prefix if present
-      path = path.replace(/^https?:\/\//, '');
+      path = path.replace(/^https?:\/\//, "");
       // If there's a host portion (contains dots or port), strip it
-      const parts = path.split('/');
-      if (parts.length > 2 && (parts[0].includes('.') || parts[0].includes(':'))) {
-        path = parts.slice(1).join('/');
+      const parts = path.split("/");
+      if (
+        parts.length > 2 &&
+        (parts[0].includes(".") || parts[0].includes(":"))
+      ) {
+        path = parts.slice(1).join("/");
       }
       // Strip tag/digest
-      path = path.split(':')[0].split('@')[0];
+      path = path.split(":")[0].split("@")[0];
       return path;
     }
     default:
       // GCR and unknown: return as-is (strip tag/digest only)
-      return image.split(':')[0].split('@')[0];
+      return image.split(":")[0].split("@")[0];
   }
 }
 
@@ -105,7 +112,7 @@ export class RegistryService {
    */
   private getAdapter(): IRegistryAdapter {
     if (!this.adapter) {
-      throw new ServiceUnavailableException('Registry adapter not configured');
+      throw new ServiceUnavailableException("Registry adapter not configured");
     }
     return this.adapter;
   }
@@ -172,7 +179,7 @@ export class RegistryService {
     if (!adapter || adapter.type !== RegistryType.HARBOR) {
       return [];
     }
-    if (typeof adapter.listReplicationPolicies !== 'function') {
+    if (typeof adapter.listReplicationPolicies !== "function") {
       return [];
     }
     return adapter.listReplicationPolicies();

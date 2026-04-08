@@ -1,4 +1,4 @@
-import { RegistryType } from '../enums/registry-type.enum';
+import { RegistryType } from "../enums/registry-type.enum";
 
 export interface RepositoryDto {
   name: string;
@@ -23,7 +23,13 @@ export interface ManifestDto {
 
 export interface VulnerabilityDto {
   cveId: string;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFORMATIONAL' | 'UNDEFINED';
+  severity:
+    | "CRITICAL"
+    | "HIGH"
+    | "MEDIUM"
+    | "LOW"
+    | "INFORMATIONAL"
+    | "UNDEFINED";
   packageName: string;
   installedVersion?: string;
   fixedVersion?: string;
@@ -31,7 +37,7 @@ export interface VulnerabilityDto {
 }
 
 export interface ScanResultDto {
-  status: 'COMPLETE' | 'PENDING' | 'FAILED' | 'UNSUPPORTED';
+  status: "COMPLETE" | "PENDING" | "FAILED" | "UNSUPPORTED";
   vulnerabilities: VulnerabilityDto[];
 }
 

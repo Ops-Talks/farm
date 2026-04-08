@@ -176,7 +176,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Emits a container:vulnerability-found event to all connected clients.
    */
-  emitContainerVulnerabilityFound(payload: ContainerVulnerabilityFoundPayload): void {
+  emitContainerVulnerabilityFound(
+    payload: ContainerVulnerabilityFoundPayload,
+  ): void {
     this.server?.emit(FarmEvent.CONTAINER_VULNERABILITY_FOUND, payload);
   }
 }

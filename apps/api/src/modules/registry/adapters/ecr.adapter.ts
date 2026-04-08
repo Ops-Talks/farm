@@ -1,13 +1,13 @@
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   ECRClient,
   DescribeRepositoriesCommand,
   DescribeImagesCommand,
   DescribeImageScanFindingsCommand,
   ImageDetail,
-} from '@aws-sdk/client-ecr';
-import { RegistryType } from '../enums/registry-type.enum';
+} from "@aws-sdk/client-ecr";
+import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
   RepositoryDto,
@@ -15,7 +15,7 @@ import {
   ManifestDto,
   ScanResultDto,
   VulnerabilityDto,
-} from '../interfaces/registry-adapter.interface';
+} from "../interfaces/registry-adapter.interface";
 
 /**
  * Parsed ECR credentials from the registry.credentials config value.
@@ -41,15 +41,15 @@ export class EcrAdapter implements IRegistryAdapter {
   private readonly accountId: string;
 
   constructor(private readonly config: ConfigService) {
-    const rawCredentials = config.get<string>('registry.credentials') ?? '';
+    const rawCredentials = config.get<string>("registry.credentials") ?? "";
     const credentials: EcrCredentials = rawCredentials
       ? (JSON.parse(rawCredentials) as EcrCredentials)
-      : { accessKeyId: '', secretAccessKey: '', region: 'us-east-1' };
+      : { accessKeyId: "", secretAccessKey: "", region: "us-east-1" };
 
-    this.accountId = config.get<string>('registry.url') ?? '';
+    this.accountId = config.get<string>("registry.url") ?? "";
 
     this.client = new ECRClient({
-      region: credentials.region || 'us-east-1',
+      region: credentials.region || "us-east-1",
       credentials: credentials.accessKeyId
         ? {
             accessKeyId: credentials.accessKeyId,
@@ -76,8 +76,8 @@ export class EcrAdapter implements IRegistryAdapter {
 
       for (const repo of response.repositories ?? []) {
         repositories.push({
-          name: repo.repositoryName ?? '',
-          uri: repo.repositoryUri ?? '',
+          name: repo.repositoryName ?? "",
+          uri: repo.repositoryUri ?? "",
         });
       }
 
@@ -125,8 +125,10 @@ export class EcrAdapter implements IRegistryAdapter {
     }
 
     return {
-      digest: detail.imageDigest ?? '',
-      mediaType: detail.artifactMediaType ?? 'application/vnd.oci.image.manifest.v1+json',
+      digest: detail.imageDigest ?? "",
+      mediaType:
+        detail.artifactMediaType ??
+        "application/vnd.oci.image.manifest.v1+json",
       sizeBytes: detail.imageSizeInBytes ?? undefined,
       pushedAt: detail.imagePushedAt ?? undefined,
       tags: detail.imageTags ?? [],
@@ -148,39 +150,42 @@ export class EcrAdapter implements IRegistryAdapter {
         }),
       );
 
-      const scanStatus = response.imageScanStatus?.status ?? '';
+      const scanStatus = response.imageScanStatus?.status ?? "";
 
-      if (scanStatus === 'IN_PROGRESS') {
-        return { status: 'PENDING', vulnerabilities: [] };
+      if (scanStatus === "IN_PROGRESS") {
+        return { status: "PENDING", vulnerabilities: [] };
       }
 
-      if (scanStatus === 'FAILED') {
-        return { status: 'FAILED', vulnerabilities: [] };
+      if (scanStatus === "FAILED") {
+        return { status: "FAILED", vulnerabilities: [] };
       }
 
       const findings = response.imageScanFindings?.findings ?? [];
       const vulnerabilities: VulnerabilityDto[] = findings.map((f) => ({
-        cveId: f.name ?? '',
-        severity: (f.severity ?? 'UNDEFINED') as VulnerabilityDto['severity'],
+        cveId: f.name ?? "",
+        severity: (f.severity ?? "UNDEFINED") as VulnerabilityDto["severity"],
         packageName:
-          f.attributes?.find((a) => a.key === 'package_name')?.value ?? '',
+          f.attributes?.find((a) => a.key === "package_name")?.value ?? "",
         installedVersion:
-          f.attributes?.find((a) => a.key === 'package_version')?.value ?? undefined,
+          f.attributes?.find((a) => a.key === "package_version")?.value ??
+          undefined,
         fixedVersion: undefined,
         description: f.description ?? undefined,
       }));
 
-      return { status: 'COMPLETE', vulnerabilities };
+      return { status: "COMPLETE", vulnerabilities };
     } catch (err: unknown) {
-      const errorName = (err as { name?: string }).name ?? '';
+      const errorName = (err as { name?: string }).name ?? "";
       if (
-        errorName === 'RegistryNotFoundException' ||
-        errorName === 'ImageNotFoundException' ||
-        errorName === 'ScanNotFoundException'
+        errorName === "RegistryNotFoundException" ||
+        errorName === "ImageNotFoundException" ||
+        errorName === "ScanNotFoundException"
       ) {
-        return { status: 'UNSUPPORTED', vulnerabilities: [] };
+        return { status: "UNSUPPORTED", vulnerabilities: [] };
       }
-      this.logger.error(`ECR scan results fetch failed for ${repo}:${tag}: ${String(err)}`);
+      this.logger.error(
+        `ECR scan results fetch failed for ${repo}:${tag}: ${String(err)}`,
+      );
       throw err;
     }
   }
@@ -190,7 +195,7 @@ export class EcrAdapter implements IRegistryAdapter {
    */
   private imageDetailToTagDto(detail: ImageDetail): TagDto {
     return {
-      tag: (detail.imageTags ?? [])[0] ?? '',
+      tag: (detail.imageTags ?? [])[0] ?? "",
       digest: detail.imageDigest ?? undefined,
       pushedAt: detail.imagePushedAt ?? undefined,
       sizeBytes: detail.imageSizeInBytes ?? undefined,
