@@ -1195,8 +1195,8 @@ export class KubernetesService {
    * @returns The tag string, or "unknown"
    */
   private extractImageTag(imageRef: string): string {
-    // Strip any @sha256:... digest suffix
-    const withoutDigest = imageRef.replace(/@sha256:[a-fA-F0-9]+$/, "");
+    // Strip any digest suffix (e.g. @sha256:..., @sha384:..., @sha512:...)
+    const withoutDigest = imageRef.split("@")[0];
     // The tag is after the last ":" that comes after the last "/"
     const lastSlash = withoutDigest.lastIndexOf("/");
     const tagPortion = lastSlash >= 0 ? withoutDigest.substring(lastSlash) : withoutDigest;

@@ -34,8 +34,11 @@ function normalizeImageForAdapter(
     case RegistryType.ECR: {
       // ECR images: <account>.dkr.ecr.<region>.amazonaws.com/<repo>[:<tag>]
       const slashIdx = image.indexOf('/');
-      if (slashIdx >= 0 && image.includes('.amazonaws.com')) {
-        return image.substring(slashIdx + 1).split(':')[0];
+      if (slashIdx >= 0) {
+        const host = image.substring(0, slashIdx);
+        if (host.endsWith('.amazonaws.com')) {
+          return image.substring(slashIdx + 1).split(':')[0];
+        }
       }
       return image.split(':')[0];
     }
