@@ -6,9 +6,12 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineStage } from "./entities/pipeline.entity";
 import { PipelineRunStatus } from "./entities/pipeline-run.entity";
+import { FinOpsService } from "../finops/finops.service";
 
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
+// Node's util.promisify(execFile) uses a custom __promisify__ that resolves
+// to { stdout, stderr }. The callback signature is (err, stdout, stderr).
 // ---------------------------------------------------------------------------
 const mockExecFileImpl = jest.fn();
 
@@ -71,12 +74,31 @@ const VALID_INFRACOST_RESULT = {
   ],
 };
 
+/**
+ * Helper that configures the mock execFile callback to resolve with an
+ * { stdout, stderr } object. Standard util.promisify wraps (err, result)
+ * callbacks, so passing a single object ensures the destructuring in the
+ * executor's `const { stdout } = await execFileAsync(...)` works correctly.
+ */
+function execFileSuccess(stdout: string, stderr = "") {
+  return (_file: string, _args: string[], cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+    cb(null, { stdout, stderr });
+  };
+}
+
+function execFileError(err: unknown) {
+  return (_file: string, _args: string[], cb: (err: unknown) => void) => {
+    cb(err);
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 describe("InfracostStageExecutor", () => {
   let executor: InfracostStageExecutor;
   let runRepository: jest.Mocked<Repository<PipelineRun>>;
+  let finOpsService: { upsertCostEstimate: jest.Mock };
 
   beforeEach(async () => {
     mockExecFileImpl.mockReset();
@@ -85,12 +107,20 @@ describe("InfracostStageExecutor", () => {
       save: jest.fn(),
     };
 
+    finOpsService = {
+      upsertCostEstimate: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         InfracostStageExecutor,
         {
           provide: getRepositoryToken(PipelineRun),
           useValue: mockRepo,
+        },
+        {
+          provide: FinOpsService,
+          useValue: finOpsService,
         },
       ],
     }).compile();
@@ -102,19 +132,16 @@ describe("InfracostStageExecutor", () => {
   // -------------------------------------------------------------------------
   describe("isInfracostAvailable()", () => {
     it("returns true when infracost --version succeeds", async () => {
-      mockExecFileImpl.mockImplementation((_file, _args, cb) => {
-        (cb as (err: null, result: { stdout: string; stderr: string }) => void)(
-          null,
-          { stdout: "infracost v0.10.0", stderr: "" },
-        );
-      });
+      mockExecFileImpl.mockImplementation(
+        execFileSuccess("infracost v0.10.0"),
+      );
       await expect(executor.isInfracostAvailable()).resolves.toBe(true);
     });
 
     it("returns false when infracost --version throws", async () => {
-      mockExecFileImpl.mockImplementation((_file, _args, cb) => {
-        (cb as (err: Error) => void)(new Error("not found"));
-      });
+      mockExecFileImpl.mockImplementation(
+        execFileError(new Error("not found")),
+      );
       await expect(executor.isInfracostAvailable()).resolves.toBe(false);
     });
   });
@@ -128,10 +155,9 @@ describe("InfracostStageExecutor", () => {
     });
 
     it("returns { success: false } when infracost binary is not found", async () => {
-      // --version call fails → binary not available
-      mockExecFileImpl.mockImplementation((_file, _args, cb) => {
-        (cb as (err: Error) => void)(new Error("ENOENT"));
-      });
+      mockExecFileImpl.mockImplementation(
+        execFileError(new Error("ENOENT")),
+      );
 
       const run = buildRun();
       const stage = buildStage();
@@ -143,27 +169,12 @@ describe("InfracostStageExecutor", () => {
 
     it("returns { success: true } and persists result to run.metadata.infracost", async () => {
       let callCount = 0;
-      mockExecFileImpl.mockImplementation((_file, args, cb) => {
+      mockExecFileImpl.mockImplementation((_file: string, _args: string[], cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
         callCount++;
         if (callCount === 1) {
-          // --version check
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, { stdout: "infracost v0.10.0", stderr: "" });
+          cb(null, { stdout: "infracost v0.10.0", stderr: "" });
         } else {
-          // diff call
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, {
-            stdout: JSON.stringify(VALID_INFRACOST_RESULT),
-            stderr: "",
-          });
+          cb(null, { stdout: JSON.stringify(VALID_INFRACOST_RESULT), stderr: "" });
         }
       });
 
@@ -185,29 +196,44 @@ describe("InfracostStageExecutor", () => {
       expect(runRepository.save).toHaveBeenCalledWith(run);
     });
 
+    it("persists cost estimate via FinOpsService when componentId is in config", async () => {
+      let callCount = 0;
+      mockExecFileImpl.mockImplementation((_file: string, _args: string[], cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+        callCount++;
+        if (callCount === 1) {
+          cb(null, { stdout: "infracost v0.10.0", stderr: "" });
+        } else {
+          cb(null, { stdout: JSON.stringify(VALID_INFRACOST_RESULT), stderr: "" });
+        }
+      });
+
+      runRepository.save.mockResolvedValue({} as PipelineRun);
+
+      const run = buildRun();
+      const stage = buildStage({ componentId: "comp-uuid-1" });
+      await executor.execute(stage, run, emitLog);
+
+      expect(finOpsService.upsertCostEstimate).toHaveBeenCalledWith(
+        "comp-uuid-1",
+        expect.objectContaining({
+          estimatedMonthlyCost: 10.0,
+          diffMonthlyCost: 2.5,
+          currency: "USD",
+          pipelineRunId: "run-uuid-1",
+        }),
+      );
+    });
+
     it("defaults terraformDir to '.' when not set in config", async () => {
       let callCount = 0;
       const capturedArgs: string[][] = [];
-      mockExecFileImpl.mockImplementation((_file, args, cb) => {
+      mockExecFileImpl.mockImplementation((_file: string, args: string[], cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
         callCount++;
-        capturedArgs.push(args as string[]);
+        capturedArgs.push(args);
         if (callCount === 1) {
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, { stdout: "infracost v0.10.0", stderr: "" });
+          cb(null, { stdout: "infracost v0.10.0", stderr: "" });
         } else {
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, {
-            stdout: JSON.stringify(VALID_INFRACOST_RESULT),
-            stderr: "",
-          });
+          cb(null, { stdout: JSON.stringify(VALID_INFRACOST_RESULT), stderr: "" });
         }
       });
 
@@ -224,22 +250,12 @@ describe("InfracostStageExecutor", () => {
 
     it("returns { success: false, output: 'infracost: invalid JSON output' } on malformed JSON", async () => {
       let callCount = 0;
-      mockExecFileImpl.mockImplementation((_file, _args, cb) => {
+      mockExecFileImpl.mockImplementation((_file: string, _args: string[], cb: (err: null | unknown, result?: { stdout: string; stderr: string }) => void) => {
         callCount++;
         if (callCount === 1) {
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, { stdout: "infracost v0.10.0", stderr: "" });
+          cb(null, { stdout: "infracost v0.10.0", stderr: "" });
         } else {
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, { stdout: "not valid JSON {{{{", stderr: "" });
+          cb(null, { stdout: "not valid JSON {{{{", stderr: "" });
         }
       });
 
@@ -252,20 +268,13 @@ describe("InfracostStageExecutor", () => {
     });
 
     it("returns { success: false } when a non-Error value is thrown", async () => {
-      // --version succeeds, diff throws a non-Error
       let callCount = 0;
-      mockExecFileImpl.mockImplementation((_file, _args, cb) => {
+      mockExecFileImpl.mockImplementation((_file: string, _args: string[], cb: (err: unknown) => void) => {
         callCount++;
         if (callCount === 1) {
-          (
-            cb as (
-              err: null,
-              result: { stdout: string; stderr: string },
-            ) => void
-          )(null, { stdout: "infracost v0.10.0", stderr: "" });
+          (cb as (err: null, result: { stdout: string; stderr: string }) => void)(null, { stdout: "infracost v0.10.0", stderr: "" });
         } else {
-          // Simulate a non-Error throw by calling cb with a plain string error
-          (cb as (err: string) => void)("unexpected string error");
+          cb("unexpected string error");
         }
       });
 
@@ -273,7 +282,6 @@ describe("InfracostStageExecutor", () => {
       const stage = buildStage();
       const result = await executor.execute(stage, run, emitLog);
 
-      // The outer catch should wrap the error
       expect(result.success).toBe(false);
     });
   });

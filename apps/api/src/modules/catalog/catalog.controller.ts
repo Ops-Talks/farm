@@ -46,6 +46,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { FinOpsService } from "../finops/finops.service";
 import { CostEstimate } from "../finops/entities/cost-estimate.entity";
+import { CostEstimateResponseDto } from "../finops/dto/cost-estimate-response.dto";
 import {
   CATALOG_DISCOVERY_QUEUE,
   CatalogDiscoveryJobData,
@@ -343,7 +344,9 @@ export class CatalogController {
     description: "No cost estimate found for this component",
     type: ErrorResponseDto,
   })
-  async getCostEstimate(@Param("id") id: string): Promise<CostEstimate> {
+  async getCostEstimate(
+    @Param("id") id: string,
+  ): Promise<CostEstimateResponseDto> {
     if (!this.finOpsService) {
       throw new NotFoundException(`Cost estimate not available`);
     }
@@ -351,6 +354,17 @@ export class CatalogController {
     if (!estimate) {
       throw new NotFoundException(`No cost estimate found for component ${id}`);
     }
-    return estimate;
+    return {
+      id: estimate.id,
+      componentId: estimate.componentId,
+      pipelineRunId: estimate.pipelineRunId,
+      estimatedMonthlyCost: Number(estimate.estimatedMonthlyCost),
+      diffMonthlyCost: Number(estimate.diffMonthlyCost),
+      currency: estimate.currency,
+      breakdown: estimate.breakdown,
+      measuredAt: estimate.measuredAt,
+      createdAt: estimate.createdAt,
+      updatedAt: estimate.updatedAt,
+    };
   }
 }

@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
+import { numericTransformer } from "../../../common/transformers/numeric.transformer";
 
 /**
  * Stores the latest infracost estimate for a catalog component.
@@ -48,7 +49,13 @@ export class CostEstimate {
     example: 12.5,
     description: "Estimated total monthly cost in the given currency",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   estimatedMonthlyCost: number;
 
   @ApiProperty({
@@ -62,7 +69,13 @@ export class CostEstimate {
     example: 2.5,
     description: "Diff (delta) monthly cost compared to previous estimate",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   diffMonthlyCost: number;
 
   @ApiProperty({

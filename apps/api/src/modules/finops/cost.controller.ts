@@ -19,7 +19,6 @@ import { Repository } from "typeorm";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { Component } from "../catalog/entities/component.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
-import { FinOpsService } from "./finops.service";
 import { OpenCostService } from "./open-cost.service";
 import { Team } from "../teams/entities/team.entity";
 
@@ -32,7 +31,6 @@ import { Team } from "../teams/entities/team.entity";
 @Controller("cost")
 export class CostController {
   constructor(
-    private readonly finOpsService: FinOpsService,
     private readonly openCostService: OpenCostService,
     @InjectRepository(Component)
     private readonly componentRepo: Repository<Component>,
@@ -66,6 +64,7 @@ export class CostController {
 
   /**
    * Returns the last 30 actual cost records for a component (for sparkline rendering).
+   * Numeric fields are cast from Postgres decimal strings to numbers.
    *
    * @param id - Component UUID
    */
@@ -76,15 +75,30 @@ export class CostController {
   @ApiParam({ name: "id", description: "Component UUID" })
   @ApiResponse({ status: 200, description: "Array of ActualCost records" })
   async getCostHistory(@Param("id") id: string) {
-    return this.actualCostRepo.find({
+    const records = await this.actualCostRepo.find({
       where: { componentId: id },
       order: { syncedAt: "DESC" },
       take: 30,
     });
+    return records.map((r) => ({
+      id: r.id,
+      componentId: r.componentId,
+      window: r.window,
+      cpuCost: Number(r.cpuCost),
+      memoryCost: Number(r.memoryCost),
+      pvCost: Number(r.pvCost),
+      networkCost: Number(r.networkCost),
+      totalCost: Number(r.totalCost),
+      currency: r.currency,
+      syncedAt: r.syncedAt,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
   }
 
   /**
    * Returns an aggregated cost summary for all components that belong to a team.
+   * Uses a subquery to fetch only the latest cost per component at the DB level.
    *
    * @param id - Team UUID
    */
@@ -104,20 +118,33 @@ export class CostController {
     });
     const componentIds = components.map((c) => c.id);
 
-    const costs =
+    const latestCosts =
       componentIds.length > 0
         ? await this.actualCostRepo
             .createQueryBuilder("ac")
-            .where("ac.componentId IN (:...ids)", { ids: componentIds })
-            .orderBy("ac.syncedAt", "DESC")
+            .innerJoin(
+              (qb) =>
+                qb
+                  .subQuery()
+                  .select("latest.componentId", "componentId")
+                  .addSelect("MAX(latest.syncedAt)", "latestSyncedAt")
+                  .from(ActualCost, "latest")
+                  .where("latest.componentId IN (:...ids)", {
+                    ids: componentIds,
+                  })
+                  .groupBy("latest.componentId"),
+              "latest_per_component",
+              'latest_per_component."componentId" = ac."componentId" AND latest_per_component."latestSyncedAt" = ac."syncedAt"',
+            )
             .getMany()
         : [];
 
-    // Latest record per component.
+    // Keep a single latest row per component in case multiple rows share
+    // the same latest syncedAt timestamp.
     const latestByComponent = new Map<string, ActualCost>();
-    for (const c of costs) {
-      if (!latestByComponent.has(c.componentId)) {
-        latestByComponent.set(c.componentId, c);
+    for (const cost of latestCosts) {
+      if (!latestByComponent.has(cost.componentId)) {
+        latestByComponent.set(cost.componentId, cost);
       }
     }
 
@@ -141,6 +168,8 @@ export class CostController {
 
   /**
    * Returns the top-N most expensive components across the platform.
+   * Uses a subquery to fetch only the latest record per component in a single
+   * query, avoiding N+1. Joins the component table to include budget info.
    *
    * @param limit - Maximum number of results to return (default 10, max 100)
    */
@@ -157,30 +186,46 @@ export class CostController {
   async getPlatformCostSummary(@Query("limit") limit = 10) {
     const n = Math.min(Number(limit) || 10, 100);
 
-    // Get the latest syncedAt per component.
-    const rows = await this.actualCostRepo
+    const results = await this.actualCostRepo
       .createQueryBuilder("ac")
-      .select("ac.componentId", "componentId")
-      .addSelect("MAX(ac.syncedAt)", "latestSync")
-      .groupBy("ac.componentId")
-      .getRawMany<{ componentId: string; latestSync: Date }>();
+      .innerJoin(
+        (qb) =>
+          qb
+            .subQuery()
+            .select("latest.componentId", "componentId")
+            .addSelect("MAX(latest.syncedAt)", "latestSync")
+            .from(ActualCost, "latest")
+            .groupBy("latest.componentId"),
+        "latest_per_component",
+        'latest_per_component."componentId" = ac."componentId" AND latest_per_component."latestSync" = ac."syncedAt"',
+      )
+      .orderBy("ac.totalCost", "DESC")
+      .limit(n)
+      .getMany();
 
-    const results: ActualCost[] = [];
-    for (const row of rows) {
-      const record = await this.actualCostRepo.findOne({
-        where: { componentId: row.componentId, syncedAt: row.latestSync },
-      });
-      if (record) results.push(record);
+    // Collect budget data from components in a single query.
+    const componentIds = results.map((r) => r.componentId);
+    const budgetMap = new Map<string, number | null>();
+    if (componentIds.length > 0) {
+      const comps = await this.componentRepo
+        .createQueryBuilder("c")
+        .select(["c.id", "c.costBudgetUsd"])
+        .where("c.id IN (:...ids)", { ids: componentIds })
+        .getMany();
+      for (const c of comps) {
+        budgetMap.set(
+          c.id,
+          c.costBudgetUsd != null ? Number(c.costBudgetUsd) : null,
+        );
+      }
     }
 
-    return results
-      .sort((a, b) => Number(b.totalCost) - Number(a.totalCost))
-      .slice(0, n)
-      .map((r) => ({
-        componentId: r.componentId,
-        totalCost: Number(r.totalCost),
-        currency: r.currency,
-        syncedAt: r.syncedAt,
-      }));
+    return results.map((r) => ({
+      componentId: r.componentId,
+      totalCost: Number(r.totalCost),
+      currency: r.currency,
+      syncedAt: r.syncedAt,
+      budgetUsd: budgetMap.get(r.componentId) ?? null,
+    }));
   }
 }

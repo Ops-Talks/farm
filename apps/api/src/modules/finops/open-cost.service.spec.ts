@@ -120,5 +120,25 @@ describe("OpenCostService", () => {
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
     });
+
+    it("URL-encodes labelSelector and window params", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ data: {} }),
+      }) as unknown as typeof globalThis.fetch;
+
+      await service.getAllocation("my app/special", "7d&extra=1");
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "filterLabels=app:my%20app%2Fspecial",
+        ),
+      );
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "window=7d%26extra%3D1",
+        ),
+      );
+    });
   });
 });

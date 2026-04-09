@@ -11,6 +11,7 @@ import {
   Index,
 } from "typeorm";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { numericTransformer } from "../../../common/transformers/numeric.transformer";
 
 /**
  * Represents the kind of a catalog entity.
@@ -290,7 +291,13 @@ export class Component {
       "Monthly cost budget threshold in USD; alerts fire when exceeded",
     nullable: true,
   })
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
+  @Column({
+    type: "decimal",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: numericTransformer,
+  })
   costBudgetUsd: number | null;
 
   @ApiProperty({

@@ -42,7 +42,7 @@ export class OpenCostService {
     window: string,
   ): Promise<OpenCostAllocation | null> {
     try {
-      const url = `${this.baseUrl}/model/allocation?window=${window}&aggregate=label:app&filterLabels=app:${labelSelector}`;
+      const url = `${this.baseUrl}/model/allocation?window=${encodeURIComponent(window)}&aggregate=label:app&filterLabels=app:${encodeURIComponent(labelSelector)}`;
       const response = await globalThis.fetch(url);
       if (!response.ok) {
         this.logger.warn(

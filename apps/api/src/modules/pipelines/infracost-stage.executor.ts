@@ -7,6 +7,7 @@ import { PipelineStage } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { Component } from "../catalog/entities/component.entity";
+import { FinOpsService } from "../finops/finops.service";
 
 const execFileAsync = promisify(execFile);
 
@@ -73,6 +74,8 @@ export class InfracostStageExecutor {
     private readonly componentRepository?: Repository<Component>,
     @Optional()
     private readonly eventsGateway?: EventsGateway,
+    @Optional()
+    private readonly finOpsService?: FinOpsService,
   ) {}
 
   /**
@@ -141,18 +144,30 @@ export class InfracostStageExecutor {
         await this.runRepository.save(run);
       }
 
-      // Budget check via stage config componentId.
+      // Persist cost estimate via FinOpsService.
       const componentId = config.componentId;
+      if (componentId && this.finOpsService) {
+        await this.finOpsService.upsertCostEstimate(componentId, {
+          estimatedMonthlyCost: Number(result.totalMonthlyCost),
+          diffMonthlyCost: Number(result.diffMonthlyCost),
+          currency: result.currency,
+          pipelineRunId: run.id,
+          breakdown: result.projects as unknown as Record<string, unknown>,
+          measuredAt: new Date(),
+        });
+      }
+
+      // Budget check: compare estimated total monthly cost to budget threshold.
       if (componentId && this.componentRepository && this.eventsGateway) {
         const component = await this.componentRepository.findOne({
           where: { id: componentId },
         });
         if (component?.costBudgetUsd != null) {
-          const delta = Number(result.diffMonthlyCost);
-          if (delta > Number(component.costBudgetUsd)) {
+          const estimatedTotal = Number(result.totalMonthlyCost);
+          if (estimatedTotal > Number(component.costBudgetUsd)) {
             this.eventsGateway.emitCostBudgetExceeded({
               componentId,
-              delta,
+              delta: estimatedTotal - Number(component.costBudgetUsd),
               pipelineRunId: run.id,
               timestamp: new Date().toISOString(),
             });

@@ -7,6 +7,7 @@ import { Repository } from "typeorm";
 import { CostEstimate } from "../src/modules/finops/entities/cost-estimate.entity";
 import { ActualCost } from "../src/modules/finops/entities/actual-cost.entity";
 import { Team } from "../src/modules/teams/entities/team.entity";
+import { OpenCostService } from "../src/modules/finops/open-cost.service";
 
 /**
  * Response shape for cost-estimate endpoint.
@@ -58,6 +59,7 @@ interface PlatformCostItem {
   totalCost: number;
   currency: string;
   syncedAt: string;
+  budgetUsd: number | null;
 }
 
 /**
@@ -79,7 +81,8 @@ async function createComponent(
 
 /**
  * End-to-end tests for the FinOps API.
- * Uses a better-sqlite3 in-memory database; OpenCost is not contacted.
+ * Uses a better-sqlite3 in-memory database; OpenCostService is mocked to
+ * avoid real HTTP calls to OpenCost.
  */
 describe("FinOps (e2e)", () => {
   let app: INestApplication<App>;
@@ -90,6 +93,13 @@ describe("FinOps (e2e)", () => {
 
   beforeAll(async () => {
     app = await createE2EApp();
+
+    // Override OpenCostService to avoid real HTTP calls in E2E tests.
+    const openCostService = app.get(OpenCostService);
+    jest
+      .spyOn(openCostService, "getAllocation")
+      .mockResolvedValue(null);
+
     ({ token } = await registerAndLogin(app));
 
     costEstimateRepo = app.get<Repository<CostEstimate>>(
@@ -134,14 +144,12 @@ describe("FinOps (e2e)", () => {
 
       // Seed an estimate directly via the repository.
       const estimate = costEstimateRepo.create({
+        componentId,
         estimatedMonthlyCost: 15.75,
         diffMonthlyCost: 3.0,
         currency: "USD",
         measuredAt: new Date(),
       });
-
-      (estimate as unknown as Record<string, unknown>).componentId =
-        componentId;
       await costEstimateRepo.save(estimate);
 
       const res = await request(app.getHttpServer())
@@ -225,7 +233,7 @@ describe("FinOps (e2e)", () => {
       // Seed two cost records.
       await actualCostRepo.save(
         actualCostRepo.create({
-          componentId: componentId as unknown as string,
+          componentId: componentId,
           window: "30d",
           totalCost: 5.0,
           currency: "USD",
@@ -234,7 +242,7 @@ describe("FinOps (e2e)", () => {
       );
       await actualCostRepo.save(
         actualCostRepo.create({
-          componentId: componentId as unknown as string,
+          componentId: componentId,
           window: "30d",
           totalCost: 8.0,
           currency: "USD",
@@ -284,7 +292,7 @@ describe("FinOps (e2e)", () => {
 
       await actualCostRepo.save(
         actualCostRepo.create({
-          componentId: componentId as unknown as string,
+          componentId: componentId,
           window: "30d",
           totalCost: 20.0,
           currency: "USD",
@@ -333,7 +341,7 @@ describe("FinOps (e2e)", () => {
       const now = new Date();
       await actualCostRepo.save(
         actualCostRepo.create({
-          componentId: cheapId as unknown as string,
+          componentId: cheapId,
           window: "30d",
           totalCost: 5.0,
           currency: "USD",
@@ -342,7 +350,7 @@ describe("FinOps (e2e)", () => {
       );
       await actualCostRepo.save(
         actualCostRepo.create({
-          componentId: expensiveId as unknown as string,
+          componentId: expensiveId,
           window: "30d",
           totalCost: 100.0,
           currency: "USD",

@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
+import { numericTransformer } from "../../../common/transformers/numeric.transformer";
 
 /**
  * Stores an actual cost measurement retrieved from OpenCost for a catalog component.
@@ -44,35 +45,65 @@ export class ActualCost {
   window: string;
 
   @ApiProperty({ example: 0.5, description: "CPU cost in the given window" })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   cpuCost: number;
 
   @ApiProperty({
     example: 0.25,
     description: "Memory cost in the given window",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   memoryCost: number;
 
   @ApiProperty({
     example: 0.1,
     description: "Persistent volume cost in the given window",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   pvCost: number;
 
   @ApiProperty({
     example: 0.05,
     description: "Network cost in the given window",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   networkCost: number;
 
   @ApiProperty({
     example: 0.9,
     description: "Total cost (sum of all cost dimensions) in the given window",
   })
-  @Column({ type: "decimal", precision: 12, scale: 4, default: 0 })
+  @Column({
+    type: "decimal",
+    precision: 12,
+    scale: 4,
+    default: 0,
+    transformer: numericTransformer,
+  })
   totalCost: number;
 
   @ApiProperty({
