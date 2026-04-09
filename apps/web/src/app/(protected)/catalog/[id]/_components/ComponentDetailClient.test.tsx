@@ -9,6 +9,8 @@ import React from "react";
 const mockGetComponent = vi.fn();
 const mockListDeployments = vi.fn();
 const mockPush = vi.fn();
+const mockGetCostEstimate = vi.fn().mockResolvedValue(null);
+const mockGetActualCost = vi.fn().mockResolvedValue(null);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
@@ -39,8 +41,8 @@ vi.mock("@/lib/api-client", () => ({
     listHarborReplications: vi.fn().mockResolvedValue([]),
   },
   finops: {
-    getCostEstimate: vi.fn().mockResolvedValue(null),
-    getActualCost: vi.fn().mockResolvedValue(null),
+    getCostEstimate: (...args: unknown[]) => mockGetCostEstimate(...args),
+    getActualCost: (...args: unknown[]) => mockGetActualCost(...args),
   },
 }));
 
@@ -110,12 +112,15 @@ vi.mock(
   () => ({ KedaBindingCard: () => <div data-testid="keda-binding-card-stub" /> }),
 );
 
-// Stub out FinOps components so tests don't depend on their internals
 vi.mock("@/components/finops/CostEstimateCard", () => ({
   CostEstimateCard: () => <div data-testid="cost-estimate-card-stub" />,
 }));
 vi.mock("@/components/finops/CostBudgetExceededBanner", () => ({
-  CostBudgetExceededBanner: () => <div data-testid="cost-budget-exceeded-banner-stub" />,
+  CostBudgetExceededBanner: ({ onDismiss }: { onDismiss?: () => void }) => (
+    <div data-testid="cost-budget-exceeded-banner-stub">
+      <button onClick={onDismiss}>Dismiss banner</button>
+    </div>
+  ),
 }));
 
 import { ComponentDetailClient } from "@/app/(protected)/catalog/[id]/_components/ComponentDetailClient";
@@ -145,6 +150,8 @@ describe("ComponentDetailClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+    mockGetCostEstimate.mockResolvedValue(null);
+    mockGetActualCost.mockResolvedValue(null);
   });
 
   it("renders skeleton while loading", () => {
@@ -392,6 +399,216 @@ describe("ComponentDetailClient", () => {
         expect(screen.getByRole("heading", { name: "auth-service" })).toBeInTheDocument();
       });
       expect(screen.queryByTestId("harbor-replication-table")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // FinOps feature coverage (Phase 19)
+  // ---------------------------------------------------------------------------
+  describe("FinOps feature coverage", () => {
+    const mockEstimate = {
+      id: "est-1",
+      componentId: "comp-1",
+      pipelineRunId: null,
+      estimatedMonthlyCost: 42.5,
+      diffMonthlyCost: 5.0,
+      currency: "USD",
+      breakdown: null,
+      measuredAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    it("renders CostEstimateCard when a cost estimate is available", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockGetCostEstimate.mockResolvedValue(mockEstimate);
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("cost-estimate-card-stub")).toBeInTheDocument();
+      });
+    });
+
+    it("does not render CostEstimateCard when no cost estimate is returned", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockGetCostEstimate.mockResolvedValue(null);
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { name: "auth-service" })).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId("cost-estimate-card-stub")).not.toBeInTheDocument();
+    });
+
+    it("renders CostBudgetExceededBanner when estimated cost exceeds the component budget", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ costBudgetUsd: 30 }),
+      );
+      // estimatedMonthlyCost (42.5) > costBudgetUsd (30)
+      mockGetCostEstimate.mockResolvedValue({ ...mockEstimate, estimatedMonthlyCost: 42.5 });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("cost-budget-exceeded-banner-stub")).toBeInTheDocument();
+      });
+    });
+
+    it("does not render CostBudgetExceededBanner when estimated cost is within budget", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ costBudgetUsd: 100 }),
+      );
+      // estimatedMonthlyCost (42.5) < costBudgetUsd (100)
+      mockGetCostEstimate.mockResolvedValue({ ...mockEstimate, estimatedMonthlyCost: 42.5 });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { name: "auth-service" })).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId("cost-budget-exceeded-banner-stub")).not.toBeInTheDocument();
+    });
+
+    it("dismisses the budget banner when its onDismiss callback is invoked", async () => {
+      const user = userEvent.setup();
+
+      mockGetComponent.mockResolvedValue(makeComponent({ costBudgetUsd: 10 }));
+      // estimatedMonthlyCost (42.5) > costBudgetUsd (10) → banner is shown
+      mockGetCostEstimate.mockResolvedValue({ ...mockEstimate, estimatedMonthlyCost: 42.5 });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("cost-budget-exceeded-banner-stub")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: "Dismiss banner" }));
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("cost-budget-exceeded-banner-stub")).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // lifecycleVariant and deploymentStatusVariant coverage
+  // ---------------------------------------------------------------------------
+  describe("lifecycleVariant badge styling", () => {
+    it("renders lifecycle badge for 'experimental' components", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent({ lifecycle: "experimental" }));
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("experimental")).toBeInTheDocument();
+      });
+    });
+
+    it("renders lifecycle badge for 'deprecated' components", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent({ lifecycle: "deprecated" }));
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("deprecated")).toBeInTheDocument();
+      });
+    });
+
+    it("renders lifecycle badge for 'decommissioned' components", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent({ lifecycle: "decommissioned" }));
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("decommissioned")).toBeInTheDocument();
+      });
+    });
+
+    it("renders lifecycle badge for unknown lifecycle values", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent({ lifecycle: "staging" }));
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("staging")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("deploymentStatusVariant badge styling", () => {
+    const makeDeployment = (status: string) => ({
+      id: `d-${status}`,
+      version: "1.0.0",
+      status,
+      componentId: "comp-1",
+      environmentId: "env-1",
+      environment: { id: "env-1", name: "production" },
+      triggeredBy: "alice",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    it("renders 'in_progress' deployment badge", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({
+        data: [makeDeployment("in_progress")],
+        total: 1,
+      });
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("in_progress")).toBeInTheDocument();
+      });
+    });
+
+    it("renders 'pending' deployment badge", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({
+        data: [makeDeployment("pending")],
+        total: 1,
+      });
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("pending")).toBeInTheDocument();
+      });
+    });
+
+    it("renders 'failed' deployment badge", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({
+        data: [makeDeployment("failed")],
+        total: 1,
+      });
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("failed")).toBeInTheDocument();
+      });
+    });
+
+    it("renders 'rolled_back' deployment badge", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({
+        data: [makeDeployment("rolled_back")],
+        total: 1,
+      });
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("rolled_back")).toBeInTheDocument();
+      });
+    });
+
+    it("renders 'cancelled' deployment badge (default variant)", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({
+        data: [makeDeployment("cancelled")],
+        total: 1,
+      });
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("cancelled")).toBeInTheDocument();
+      });
     });
   });
 });

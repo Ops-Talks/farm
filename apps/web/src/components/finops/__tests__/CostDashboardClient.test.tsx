@@ -213,4 +213,116 @@ describe("CostDashboardClient", () => {
       expect(screen.getByText("Failed to Load Costs")).toBeInTheDocument();
     });
   });
+
+  it("renders 'No cost data available' for teams whose cost fetch fails", async () => {
+    const user = userEvent.setup();
+    mockGetPlatformCostSummary.mockResolvedValue([]);
+    mockTeamsList.mockResolvedValue({ data: mockTeams });
+    // All team cost requests fail so no team has a cost record
+    mockGetTeamCostSummary.mockRejectedValue(new Error("cost API down"));
+
+    render(<CostDashboardClient />);
+
+    await user.click(screen.getByRole("tab", { name: "By Team" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Platform Team")).toBeInTheDocument();
+    });
+
+    const noCostMessages = screen.getAllByText("No cost data available");
+    expect(noCostMessages.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders '1 component' with the singular form when a team has exactly one component", async () => {
+    const user = userEvent.setup();
+    mockGetPlatformCostSummary.mockResolvedValue([]);
+    mockTeamsList.mockResolvedValue({ data: [mockTeams[0]] });
+    mockGetTeamCostSummary.mockResolvedValue({
+      ...mockTeamCost,
+      components: [{ componentId: "comp-1", totalCost: 75.0, window: "30d" }],
+    });
+
+    render(<CostDashboardClient />);
+
+    await user.click(screen.getByRole("tab", { name: "By Team" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("1 component")).toBeInTheDocument();
+    });
+  });
+
+  it("does not reload team data when the By Team tab is clicked a second time", async () => {
+    const user = userEvent.setup();
+    mockGetPlatformCostSummary.mockResolvedValue([]);
+    mockTeamsList.mockResolvedValue({ data: mockTeams });
+    mockGetTeamCostSummary.mockResolvedValue(mockTeamCost);
+
+    render(<CostDashboardClient />);
+
+    // First click triggers the load
+    await user.click(screen.getByRole("tab", { name: "By Team" }));
+    await waitFor(() => {
+      expect(screen.getByText("Platform Team")).toBeInTheDocument();
+    });
+
+    // Navigate away and back — teamsLoaded guard should prevent a second fetch
+    await user.click(screen.getByRole("tab", { name: "By Component" }));
+    await user.click(screen.getByRole("tab", { name: "By Team" }));
+
+    expect(mockTeamsList).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders 'No Teams Found' when teams.list() throws an error", async () => {
+    const user = userEvent.setup();
+    mockGetPlatformCostSummary.mockResolvedValue([]);
+    mockTeamsList.mockRejectedValue(new Error("Teams API down"));
+
+    render(<CostDashboardClient />);
+
+    await user.click(screen.getByRole("tab", { name: "By Team" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("No Teams Found")).toBeInTheDocument();
+    });
+  });
+
+  it("sorts component costs back to descending after two clicks on the Monthly Cost header", async () => {
+    const user = userEvent.setup();
+    mockGetPlatformCostSummary.mockResolvedValue(mockCostItems);
+    render(<CostDashboardClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("comp-1")).toBeInTheDocument();
+    });
+
+    const sortButton = screen.getByRole("button", { name: /Monthly Cost/i });
+    // First click → ascending (comp-1 $50 before comp-2 $120)
+    await user.click(sortButton);
+    // Second click → descending again (comp-2 $120 before comp-1 $50)
+    await user.click(sortButton);
+
+    const cells = screen.getAllByRole("cell");
+    const componentCells = cells.filter(
+      (c) => c.textContent === "comp-1" || c.textContent === "comp-2",
+    );
+    expect(componentCells[0].textContent).toBe("comp-2");
+  });
+
+  it("renders 'No budget set' for items with budgetUsd equal to zero", async () => {
+    mockGetPlatformCostSummary.mockResolvedValue([
+      {
+        componentId: "comp-zero",
+        totalCost: 10.0,
+        currency: "USD",
+        syncedAt: "2025-05-01T00:00:00Z",
+        budgetUsd: 0,
+      },
+    ]);
+    render(<CostDashboardClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("comp-zero")).toBeInTheDocument();
+    });
+    expect(screen.getByText("No budget set")).toBeInTheDocument();
+  });
 });

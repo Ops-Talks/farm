@@ -124,18 +124,80 @@ describe("CostController", () => {
       expect(result.totalCost).toBe(0);
       expect(result.components).toEqual([]);
     });
-  });
 
-  // -------------------------------------------------------------------------
-  describe("getPlatformCostSummary()", () => {
-    it("returns empty array when no actual costs exist", async () => {
+    it("returns aggregated total when team has components with costs", async () => {
+      mockTeamRepo.findOne.mockResolvedValue({ id: "team-1" });
+      mockComponentRepo.find.mockResolvedValue([
+        { id: "comp-1" },
+        { id: "comp-2" },
+      ]);
+
+      const mockSubQb = {
+        subQuery: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+      };
       const mockQb = {
-        innerJoin: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
+        innerJoin: jest.fn().mockImplementation((subQbFn: unknown) => {
+          if (typeof subQbFn === "function")
+            (subQbFn as (qb: unknown) => void)(mockSubQb);
+          return mockQb;
+        }),
+        getMany: jest.fn().mockResolvedValue([
+          {
+            componentId: "comp-1",
+            totalCost: "40",
+            currency: "USD",
+            window: "30d",
+          },
+          {
+            componentId: "comp-2",
+            totalCost: "60",
+            currency: "USD",
+            window: "30d",
+          },
+        ]),
       };
       mockActualCostRepo.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await controller.getTeamCostSummary("team-1");
+
+      expect(result.teamId).toBe("team-1");
+      expect(result.totalCost).toBe(100);
+      expect(result.components).toHaveLength(2);
+      expect(result.components[0].componentId).toBe("comp-1");
+    });
+  });
+
+  describe("getPlatformCostSummary()", () => {
+    const buildSubQbMock = () => ({
+      subQuery: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+    });
+
+    const buildAcQb = (results: object[]) => {
+      const subQb = buildSubQbMock();
+      const qb = {
+        innerJoin: jest.fn().mockImplementation((subQbFn: unknown) => {
+          if (typeof subQbFn === "function")
+            (subQbFn as (qb: unknown) => void)(subQb);
+          return qb;
+        }),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(results),
+      };
+      return qb;
+    };
+
+    it("returns empty array when no actual costs exist", async () => {
+      mockActualCostRepo.createQueryBuilder.mockReturnValue(buildAcQb([]));
 
       const result = await controller.getPlatformCostSummary(10);
 
@@ -143,11 +205,8 @@ describe("CostController", () => {
     });
 
     it("returns results with budgetUsd from component table", async () => {
-      const mockAcQb = {
-        innerJoin: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([
+      mockActualCostRepo.createQueryBuilder.mockReturnValue(
+        buildAcQb([
           {
             componentId: "comp-1",
             totalCost: 50,
@@ -155,8 +214,7 @@ describe("CostController", () => {
             syncedAt: new Date("2024-01-01"),
           },
         ]),
-      };
-      mockActualCostRepo.createQueryBuilder.mockReturnValue(mockAcQb);
+      );
 
       const mockCompQb = {
         select: jest.fn().mockReturnThis(),
@@ -175,11 +233,8 @@ describe("CostController", () => {
     });
 
     it("returns null budgetUsd when component has no budget set", async () => {
-      const mockAcQb = {
-        innerJoin: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([
+      mockActualCostRepo.createQueryBuilder.mockReturnValue(
+        buildAcQb([
           {
             componentId: "comp-1",
             totalCost: 50,
@@ -187,8 +242,7 @@ describe("CostController", () => {
             syncedAt: new Date("2024-01-01"),
           },
         ]),
-      };
-      mockActualCostRepo.createQueryBuilder.mockReturnValue(mockAcQb);
+      );
 
       const mockCompQb = {
         select: jest.fn().mockReturnThis(),

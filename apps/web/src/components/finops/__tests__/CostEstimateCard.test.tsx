@@ -93,4 +93,52 @@ describe("CostEstimateCard", () => {
     );
     expect(screen.getByText(/just now/)).toBeInTheDocument();
   });
+
+  it("renders '1 minute ago' for exactly one minute elapsed (singular)", () => {
+    render(
+      <CostEstimateCard
+        estimate={makeEstimate({ measuredAt: new Date(FIXED_NOW - 1 * 60_000).toISOString() })}
+      />,
+    );
+    expect(screen.getByText(/1 minute ago/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 minutes ago/)).not.toBeInTheDocument();
+  });
+
+  it("renders '5 minutes ago' when measuredAt was 5 minutes in the past", () => {
+    render(
+      <CostEstimateCard
+        estimate={makeEstimate({ measuredAt: new Date(FIXED_NOW - 5 * 60_000).toISOString() })}
+      />,
+    );
+    expect(screen.getByText(/5 minutes ago/)).toBeInTheDocument();
+  });
+
+  it("renders '1 hour ago' for exactly one hour elapsed (singular)", () => {
+    render(
+      <CostEstimateCard
+        estimate={makeEstimate({ measuredAt: new Date(FIXED_NOW - 1 * 60 * 60_000).toISOString() })}
+      />,
+    );
+    expect(screen.getByText(/1 hour ago/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 hours ago/)).not.toBeInTheDocument();
+  });
+
+  it("renders '3 days ago' when measuredAt was 3 days in the past", () => {
+    render(
+      <CostEstimateCard
+        estimate={makeEstimate({ measuredAt: new Date(FIXED_NOW - 3 * 24 * 60 * 60_000).toISOString() })}
+      />,
+    );
+    expect(screen.getByText(/3 days ago/)).toBeInTheDocument();
+  });
+
+  it("renders '1 day ago' for exactly one day elapsed (singular)", () => {
+    render(
+      <CostEstimateCard
+        estimate={makeEstimate({ measuredAt: new Date(FIXED_NOW - 1 * 24 * 60 * 60_000).toISOString() })}
+      />,
+    );
+    expect(screen.getByText(/1 day ago/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 days ago/)).not.toBeInTheDocument();
+  });
 });
