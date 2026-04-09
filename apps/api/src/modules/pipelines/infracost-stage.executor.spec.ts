@@ -416,7 +416,7 @@ describe("InfracostStageExecutor — budget check", () => {
     expect(eventsGateway.emitCostBudgetExceeded).toHaveBeenCalledWith(
       expect.objectContaining({
         componentId: "comp-budget-1",
-        delta: expect.closeTo(5.0, 2),
+        delta: 5,
         pipelineRunId: "run-uuid-1",
       }),
     );
