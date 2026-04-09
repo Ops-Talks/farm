@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
-import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer } from "@/types/api";
+import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer, KedaInstallStatus, KedaScaledObject, KedaScaledJob } from "@/types/api";
 // HealthTab is the default active tab — keep it statically imported to avoid
 // a loading flash on first render.
 import { HealthTab } from "./health-tab";
@@ -62,7 +62,18 @@ const DragonflyTab = dynamic(
   },
 );
 
-type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly";
+/** KedaTab: KEDA autoscaling ScaledObjects and ScaledJobs */
+const KedaTab = dynamic(
+  () => import("./keda-tab").then((m) => ({ default: m.KedaTab })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md" />
+    ),
+  },
+);
+
+type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly" | "keda";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "health", label: "Health" },
@@ -70,6 +81,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "traces", label: "Traces" },
   { id: "logs", label: "Logs" },
   { id: "dragonfly", label: "Dragonfly" },
+  { id: "keda", label: "KEDA" },
 ];
 
 export function ObservabilityClient() {
@@ -85,7 +97,12 @@ export function ObservabilityClient() {
   const [dragonflyTasks, setDragonflyTasks] = useState<DragonflyTask[]>([]);
   const [dragonflyPeers, setDragonflyPeers] = useState<DragonflyPeer[]>([]);
 
-  const fetchData = useCallback(async (fetchDragonfly: boolean) => {
+  // KEDA Autoscaling state
+  const [kedaStatus, setKedaStatus] = useState<KedaInstallStatus | null>(null);
+  const [kedaScaledObjects, setKedaScaledObjects] = useState<KedaScaledObject[]>([]);
+  const [kedaScaledJobs, setKedaScaledJobs] = useState<KedaScaledJob[]>([]);
+
+  const fetchData = useCallback(async (fetchDragonfly: boolean, fetchKeda: boolean) => {
     // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
     // not prevent the health data from rendering.
     const corePromises = Promise.allSettled([
@@ -102,9 +119,18 @@ export function ObservabilityClient() {
         ])
       : Promise.resolve(null);
 
-    const [coreResults, dragonflyResults] = await Promise.all([
+    const kedaPromises = fetchKeda
+      ? Promise.allSettled([
+          kubernetes.getKedaStatus(),
+          kubernetes.listKedaScaledObjects(),
+          kubernetes.listKedaScaledJobs(),
+        ])
+      : Promise.resolve(null);
+
+    const [coreResults, dragonflyResults, kedaResults] = await Promise.all([
       corePromises,
       dragonflyPromises,
+      kedaPromises,
     ]);
 
     const [healthResult, summaryResult] = coreResults;
@@ -157,14 +183,41 @@ export function ObservabilityClient() {
       }
     }
 
+    if (kedaResults) {
+      const [kedaStatusResult, kedaScaledObjectsResult, kedaScaledJobsResult] =
+        kedaResults;
+
+      if (kedaStatusResult.status === "fulfilled") {
+        setKedaStatus(kedaStatusResult.value);
+      } else {
+        console.warn("KEDA status unavailable:", kedaStatusResult.reason);
+        setKedaStatus(null);
+      }
+
+      if (kedaScaledObjectsResult.status === "fulfilled") {
+        setKedaScaledObjects(kedaScaledObjectsResult.value);
+      } else {
+        setKedaScaledObjects([]);
+      }
+
+      if (kedaScaledJobsResult.status === "fulfilled") {
+        setKedaScaledJobs(kedaScaledJobsResult.value);
+      } else {
+        setKedaScaledJobs([]);
+      }
+    }
+
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData(activeTab === "dragonfly");
-    const interval = setInterval(() => void fetchData(activeTab === "dragonfly"), 10000);
+    void fetchData(activeTab === "dragonfly", activeTab === "keda");
+    const interval = setInterval(
+      () => void fetchData(activeTab === "dragonfly", activeTab === "keda"),
+      10000,
+    );
     return () => clearInterval(interval);
   }, [fetchData, activeTab]);
 
@@ -194,7 +247,7 @@ export function ObservabilityClient() {
           <Badge variant="outline" className="text-xs">
             Updated: {lastUpdated.toLocaleTimeString()}
           </Badge>
-          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly")}>
+          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly", activeTab === "keda")}>
             Refresh
           </Button>
         </div>
@@ -220,6 +273,13 @@ export function ObservabilityClient() {
             metrics={dragonflyMetrics}
             tasks={dragonflyTasks}
             peers={dragonflyPeers}
+          />
+        )}
+        {activeTab === "keda" && (
+          <KedaTab
+            status={kedaStatus}
+            scaledObjects={kedaScaledObjects}
+            scaledJobs={kedaScaledJobs}
           />
         )}
       </div>

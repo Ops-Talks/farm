@@ -10,6 +10,8 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
+  Optional,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -18,6 +20,8 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiParam,
+  ApiOkResponse,
+  ApiCreatedResponse,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import {
@@ -33,6 +37,14 @@ import {
   DragonflyTask,
   DragonflyPeer,
   DragonflyTaskMetrics,
+  FluxInstallStatus,
+  FluxKustomization,
+  FluxHelmRelease,
+  FluxSource,
+  KedaInstallStatus,
+  KedaScaledObject,
+  KedaScaledJob,
+  KedaScaledObjectTrigger,
 } from "./kubernetes.service";
 import {
   KyvernoPolicyReportService,
@@ -42,6 +54,12 @@ import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
 import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
 import { DeleteOperatorBindingDto } from "./dto/delete-operator-binding.dto";
+import { FluxBindingService } from "./flux-binding.service";
+import { FluxBinding } from "./entities/flux-binding.entity";
+import { CreateFluxBindingDto } from "./dto/create-flux-binding.dto";
+import { KedaBindingService } from "./keda-binding.service";
+import { KedaBinding } from "./entities/keda-binding.entity";
+import { CreateKedaBindingDto } from "./dto/create-keda-binding.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
@@ -62,6 +80,10 @@ export class KubernetesController {
     private readonly kubernetesService: KubernetesService,
     private readonly kyvernoPolicyReportService: KyvernoPolicyReportService,
     private readonly operatorBindingService: OperatorBindingService,
+    @Optional()
+    private readonly fluxBindingService?: FluxBindingService,
+    @Optional()
+    private readonly kedaBindingService?: KedaBindingService,
   ) {}
 
   /**
@@ -475,5 +497,296 @@ export class KubernetesController {
   })
   async getDragonflyMetrics(): Promise<DragonflyTaskMetrics> {
     return this.kubernetesService.getDragonflyMetrics();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Flux GitOps (FARM-S248 / FARM-S249 / FARM-S250)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of Flux v2, including per-controller
+   * readiness information.
+   *
+   * @returns FluxInstallStatus with overall installed flag and controller list
+   */
+  @Get("flux/status")
+  @ApiOperation({ summary: "Get Flux v2 installation status" })
+  @ApiOkResponse({
+    description: "Flux installation status with controller info",
+  })
+  getFluxStatus(): Promise<FluxInstallStatus> {
+    return this.kubernetesService.getFluxStatus();
+  }
+
+  /**
+   * Lists all Flux Kustomization custom resources discovered in the cluster.
+   *
+   * @returns Array of FluxKustomization descriptors
+   */
+  @Get("flux/kustomizations")
+  @ApiOperation({ summary: "List Flux Kustomizations" })
+  @ApiOkResponse({ description: "Array of Flux Kustomization resources" })
+  listFluxKustomizations(): Promise<FluxKustomization[]> {
+    return this.kubernetesService.listFluxKustomizations();
+  }
+
+  /**
+   * Lists all Flux HelmRelease custom resources discovered in the cluster.
+   *
+   * @returns Array of FluxHelmRelease descriptors
+   */
+  @Get("flux/helm-releases")
+  @ApiOperation({ summary: "List Flux HelmReleases" })
+  @ApiOkResponse({ description: "Array of Flux HelmRelease resources" })
+  listFluxHelmReleases(): Promise<FluxHelmRelease[]> {
+    return this.kubernetesService.listFluxHelmReleases();
+  }
+
+  /**
+   * Lists all Flux bindings for a given catalog component.
+   *
+   * @param componentId - The catalog component UUID
+   * @param req - The authenticated request carrying optional org context
+   * @returns Array of FluxBinding entities for the component
+   */
+  @Get("components/:componentId/flux-bindings")
+  @ApiOperation({ summary: "List Flux bindings for a catalog component" })
+  @ApiParam({ name: "componentId", description: "Catalog component UUID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all Flux bindings for the specified component.",
+  })
+  listFluxBindingsByComponent(
+    @Param("componentId") componentId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<FluxBinding[]> {
+    if (!this.fluxBindingService) {
+      throw new ServiceUnavailableException("FluxBindingService not available");
+    }
+    return this.fluxBindingService.findByComponent(
+      componentId,
+      req.organizationId,
+    );
+  }
+
+  /**
+   * Creates a binding between a Flux resource and a catalog component.
+   * The organization scope is derived from the authenticated request context;
+   * any organizationId supplied in the body is ignored and replaced.
+   *
+   * @param dto - Binding details from the request body
+   * @param req - The authenticated request carrying optional org context
+   * @returns The created FluxBinding entity
+   */
+  @Post("flux/binding")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Bind a Flux resource to a catalog component" })
+  @ApiCreatedResponse({ description: "Binding created" })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Binding already exists",
+  })
+  createFluxBinding(
+    @Body() dto: CreateFluxBindingDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<FluxBinding> {
+    if (!this.fluxBindingService) {
+      throw new ServiceUnavailableException("FluxBindingService not available");
+    }
+    return this.fluxBindingService.create({
+      ...dto,
+      organizationId: req.organizationId,
+    });
+  }
+
+  /**
+   * Removes a Flux-resource-to-component binding by its UUID.
+   * The operation is scoped to the caller's organization; bindings belonging
+   * to another organization cannot be removed.
+   *
+   * @param id - The binding UUID
+   * @param req - The authenticated request carrying optional org context
+   */
+  @Delete("flux/binding/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Remove a Flux-component binding" })
+  @ApiParam({ name: "id", description: "Binding UUID" })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: "Binding removed",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Binding not found",
+  })
+  removeFluxBinding(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    if (!this.fluxBindingService) {
+      throw new ServiceUnavailableException("FluxBindingService not available");
+    }
+    return this.fluxBindingService.remove(id, req.organizationId);
+  }
+
+  /**
+   * Lists all Flux GitRepository and OCIRepository source resources in the
+   * cluster.
+   *
+   * @returns Array of FluxSource descriptors
+   */
+  @Get("flux/sources")
+  @ApiOperation({
+    summary: "List Flux GitRepository and OCIRepository sources",
+  })
+  @ApiOkResponse({ description: "Array of Flux source resources" })
+  listFluxSources(): Promise<FluxSource[]> {
+    return this.kubernetesService.listFluxSources();
+  }
+
+  // ---------------------------------------------------------------------------
+  // KEDA Autoscaling (FARM-S252 / FARM-S253)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of the KEDA autoscaler in the cluster.
+   *
+   * @returns KEDA installation status with version
+   */
+  @Get("keda/status")
+  @ApiOperation({ summary: "Get KEDA installation status" })
+  @ApiOkResponse({ description: "KEDA installation status" })
+  getKedaStatus(): Promise<KedaInstallStatus> {
+    return this.kubernetesService.getKedaStatus();
+  }
+
+  /**
+   * Lists all KEDA ScaledObject resources cluster-wide.
+   *
+   * @returns Array of KEDA ScaledObject resources
+   */
+  @Get("keda/scaled-objects")
+  @ApiOperation({ summary: "List KEDA ScaledObjects" })
+  @ApiOkResponse({ description: "Array of KEDA ScaledObject resources" })
+  listKedaScaledObjects(): Promise<KedaScaledObject[]> {
+    return this.kubernetesService.listKedaScaledObjects();
+  }
+
+  /**
+   * Lists all KEDA ScaledJob resources cluster-wide.
+   *
+   * @returns Array of KEDA ScaledJob resources
+   */
+  @Get("keda/scaled-jobs")
+  @ApiOperation({ summary: "List KEDA ScaledJobs" })
+  @ApiOkResponse({ description: "Array of KEDA ScaledJob resources" })
+  listKedaScaledJobs(): Promise<KedaScaledJob[]> {
+    return this.kubernetesService.listKedaScaledJobs();
+  }
+
+  /**
+   * Returns the list of triggers for a specific KEDA ScaledObject.
+   *
+   * @param namespace - Kubernetes namespace of the ScaledObject
+   * @param name - ScaledObject name
+   * @returns Array of scaler trigger descriptors
+   */
+  @Get("keda/scaled-objects/:namespace/:name/triggers")
+  @ApiOperation({ summary: "Get triggers for a KEDA ScaledObject" })
+  @ApiParam({ name: "namespace", description: "Kubernetes namespace" })
+  @ApiParam({ name: "name", description: "ScaledObject name" })
+  @ApiOkResponse({ description: "Array of scaler trigger descriptors" })
+  getKedaScaledObjectTriggers(
+    @Param("namespace") namespace: string,
+    @Param("name") name: string,
+  ): Promise<KedaScaledObjectTrigger[]> {
+    return this.kubernetesService.getKedaScaledObjectTriggers(name, namespace);
+  }
+
+  /**
+   * Lists all KEDA bindings for a given catalog component.
+   *
+   * @param componentId - The catalog component UUID
+   * @param req - The authenticated request carrying optional org context
+   * @returns Array of KedaBinding entities for the component
+   */
+  @Get("components/:componentId/keda-bindings")
+  @ApiOperation({ summary: "List KEDA bindings for a catalog component" })
+  @ApiParam({ name: "componentId", description: "Catalog component UUID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all KEDA bindings for the specified component.",
+  })
+  listKedaBindingsByComponent(
+    @Param("componentId") componentId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<KedaBinding[]> {
+    if (!this.kedaBindingService) {
+      throw new ServiceUnavailableException("KedaBindingService not available");
+    }
+    return this.kedaBindingService.findByComponent(
+      componentId,
+      req.organizationId,
+    );
+  }
+
+  /**
+   * Creates a binding between a KEDA ScaledObject and a catalog component.
+   * The organization scope is derived from the authenticated request context;
+   * any organizationId supplied in the body is ignored and replaced.
+   *
+   * @param dto - Binding details from the request body
+   * @param req - The authenticated request carrying optional org context
+   * @returns The created KedaBinding entity
+   */
+  @Post("keda/binding")
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Bind a KEDA ScaledObject to a catalog component" })
+  @ApiCreatedResponse({ description: "Binding created" })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Binding already exists",
+  })
+  createKedaBinding(
+    @Body() dto: CreateKedaBindingDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<KedaBinding> {
+    if (!this.kedaBindingService) {
+      throw new ServiceUnavailableException("KedaBindingService not available");
+    }
+    return this.kedaBindingService.create({
+      ...dto,
+      organizationId: req.organizationId,
+    });
+  }
+
+  /**
+   * Removes a KEDA ScaledObject-to-component binding by its UUID.
+   * The operation is scoped to the caller's organization; bindings belonging
+   * to another organization cannot be removed.
+   *
+   * @param id - The binding UUID
+   * @param req - The authenticated request carrying optional org context
+   */
+  @Delete("keda/binding/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Remove a KEDA-component binding" })
+  @ApiParam({ name: "id", description: "Binding UUID" })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: "Binding removed",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Binding not found",
+  })
+  removeKedaBinding(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    if (!this.kedaBindingService) {
+      throw new ServiceUnavailableException("KedaBindingService not available");
+    }
+    return this.kedaBindingService.remove(id, req.organizationId);
   }
 }
