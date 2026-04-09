@@ -7,6 +7,8 @@ import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineStage } from "./entities/pipeline.entity";
 import { PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { FinOpsService } from "../finops/finops.service";
+import { Component } from "../catalog/entities/component.entity";
+import { EventsGateway } from "../../common/events/events.gateway";
 
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
@@ -327,5 +329,132 @@ describe("InfracostStageExecutor", () => {
 
       expect(result.success).toBe(false);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Budget check: requires componentRepository + eventsGateway to be injected.
+// ---------------------------------------------------------------------------
+describe("InfracostStageExecutor — budget check", () => {
+  let executor: InfracostStageExecutor;
+  let componentRepository: { findOne: jest.Mock };
+  let eventsGateway: { emitCostBudgetExceeded: jest.Mock };
+  const emitLog = jest.fn();
+
+  // VALID_INFRACOST_RESULT has totalMonthlyCost: "10.00"
+  const BUDGET_RESULT = {
+    totalMonthlyCost: "10.00",
+    diffMonthlyCost: "2.50",
+    currency: "USD",
+    projects: [],
+  };
+
+  beforeEach(async () => {
+    mockExecFileImpl.mockReset();
+    emitLog.mockReset();
+
+    componentRepository = { findOne: jest.fn() };
+    eventsGateway = { emitCostBudgetExceeded: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        InfracostStageExecutor,
+        {
+          provide: getRepositoryToken(PipelineRun),
+          useValue: { save: jest.fn().mockResolvedValue({}) },
+        },
+        {
+          provide: getRepositoryToken(Component),
+          useValue: componentRepository,
+        },
+        {
+          provide: EventsGateway,
+          useValue: eventsGateway,
+        },
+        {
+          provide: FinOpsService,
+          useValue: { upsertCostEstimate: jest.fn().mockResolvedValue({}) },
+        },
+      ],
+    }).compile();
+
+    executor = module.get<InfracostStageExecutor>(InfracostStageExecutor);
+
+    // Default mock: version check succeeds, diff returns BUDGET_RESULT.
+    let callCount = 0;
+    mockExecFileImpl.mockImplementation(
+      (
+        _file: string,
+        _args: string[],
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
+        callCount++;
+        if (callCount === 1) {
+          cb(null, { stdout: "infracost v0.10.0", stderr: "" });
+        } else {
+          cb(null, { stdout: JSON.stringify(BUDGET_RESULT), stderr: "" });
+        }
+      },
+    );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("emits cost:budget-exceeded when estimated total exceeds component budget", async () => {
+    componentRepository.findOne.mockResolvedValue({
+      id: "comp-budget-1",
+      costBudgetUsd: "5.00",
+    });
+
+    const run = buildRun();
+    const stage = buildStage({ componentId: "comp-budget-1" });
+    const result = await executor.execute(stage, run, emitLog);
+
+    expect(result.success).toBe(true);
+    expect(eventsGateway.emitCostBudgetExceeded).toHaveBeenCalledWith(
+      expect.objectContaining({
+        componentId: "comp-budget-1",
+        delta: expect.closeTo(5.0, 2),
+        pipelineRunId: "run-uuid-1",
+      }),
+    );
+  });
+
+  it("does not emit cost:budget-exceeded when estimated total is within budget", async () => {
+    componentRepository.findOne.mockResolvedValue({
+      id: "comp-budget-2",
+      costBudgetUsd: "20.00",
+    });
+
+    const run = buildRun();
+    const stage = buildStage({ componentId: "comp-budget-2" });
+    await executor.execute(stage, run, emitLog);
+
+    expect(eventsGateway.emitCostBudgetExceeded).not.toHaveBeenCalled();
+  });
+
+  it("does not emit cost:budget-exceeded when component has no budget set", async () => {
+    componentRepository.findOne.mockResolvedValue({
+      id: "comp-no-budget",
+      costBudgetUsd: null,
+    });
+
+    const run = buildRun();
+    const stage = buildStage({ componentId: "comp-no-budget" });
+    await executor.execute(stage, run, emitLog);
+
+    expect(eventsGateway.emitCostBudgetExceeded).not.toHaveBeenCalled();
+  });
+
+  it("does not emit when component is not found", async () => {
+    componentRepository.findOne.mockResolvedValue(null);
+
+    const run = buildRun();
+    const stage = buildStage({ componentId: "comp-missing" });
+    await executor.execute(stage, run, emitLog);
+
+    expect(eventsGateway.emitCostBudgetExceeded).not.toHaveBeenCalled();
   });
 });
