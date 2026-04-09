@@ -45,7 +45,6 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { FinOpsService } from "../finops/finops.service";
-import { CostEstimate } from "../finops/entities/cost-estimate.entity";
 import { CostEstimateResponseDto } from "../finops/dto/cost-estimate-response.dto";
 import {
   CATALOG_DISCOVERY_QUEUE,

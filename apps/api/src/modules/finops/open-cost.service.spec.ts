@@ -130,14 +130,10 @@ describe("OpenCostService", () => {
       await service.getAllocation("my app/special", "7d&extra=1");
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(
-          "filterLabels=app:my%20app%2Fspecial",
-        ),
+        expect.stringContaining("filterLabels=app:my%20app%2Fspecial"),
       );
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(
-          "window=7d%26extra%3D1",
-        ),
+        expect.stringContaining("window=7d%26extra%3D1"),
       );
     });
   });

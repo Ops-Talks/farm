@@ -96,9 +96,7 @@ describe("FinOps (e2e)", () => {
 
     // Override OpenCostService to avoid real HTTP calls in E2E tests.
     const openCostService = app.get(OpenCostService);
-    jest
-      .spyOn(openCostService, "getAllocation")
-      .mockResolvedValue(null);
+    jest.spyOn(openCostService, "getAllocation").mockResolvedValue(null);
 
     ({ token } = await registerAndLogin(app));
 
