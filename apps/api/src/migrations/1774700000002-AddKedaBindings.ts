@@ -4,9 +4,9 @@ export class AddKedaBindings1774700000002 implements MigrationInterface {
   name = "AddKedaBindings1774700000002";
 
   async up(queryRunner: QueryRunner): Promise<void> {
-    const isPostgres = queryRunner.connection.options.type === "postgres";
+    const databaseType = queryRunner.connection.options.type;
 
-    if (isPostgres) {
+    if (databaseType === "postgres") {
       await queryRunner.query(`
         CREATE TABLE "keda_bindings" (
           "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -26,7 +26,10 @@ export class AddKedaBindings1774700000002 implements MigrationInterface {
       await queryRunner.query(
         `CREATE INDEX "IDX_keda_bindings_organizationId" ON "keda_bindings" ("organizationId")`,
       );
-    } else {
+    } else if (
+      databaseType === "sqlite" ||
+      databaseType === "better-sqlite3"
+    ) {
       await queryRunner.query(`
         CREATE TABLE "keda_bindings" (
           "id" varchar PRIMARY KEY NOT NULL,
@@ -45,13 +48,17 @@ export class AddKedaBindings1774700000002 implements MigrationInterface {
       await queryRunner.query(
         `CREATE INDEX "IDX_keda_bindings_organizationId" ON "keda_bindings" ("organizationId")`,
       );
+    } else {
+      throw new Error(
+        `Unsupported database type for AddKedaBindings1774700000002 migration: ${databaseType}`,
+      );
     }
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
-    const isPostgres = queryRunner.connection.options.type === "postgres";
+    const databaseType = queryRunner.connection.options.type;
 
-    if (isPostgres) {
+    if (databaseType === "postgres") {
       await queryRunner.query(
         `DROP INDEX IF EXISTS "IDX_keda_bindings_organizationId"`,
       );
