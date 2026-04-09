@@ -51,6 +51,38 @@ describe("DockerHubAdapter", () => {
     expect(adapter.type).toBe(RegistryType.DOCKER_HUB);
   });
 
+  describe("constructor branch coverage", () => {
+    it("should use default credentials when registry.credentials config returns null", () => {
+      // Covers: L97 (?? ""), L98 (falsy → default creds)
+      const cs = {
+        get: jest.fn((key: string) => {
+          if (key === "registry.credentials") return null;
+          if (key === "registry.url") return "https://hub.docker.com";
+          return null;
+        }),
+      } as unknown as ConfigService;
+
+      const newAdapter = new DockerHubAdapter(cs);
+
+      expect(newAdapter.type).toBe(RegistryType.DOCKER_HUB);
+    });
+
+    it("should use default credentials when registry.credentials is empty string", () => {
+      // Covers: L98 (falsy "" → default creds)
+      const cs = {
+        get: jest.fn((key: string) => {
+          if (key === "registry.credentials") return "";
+          if (key === "registry.url") return "https://hub.docker.com";
+          return "";
+        }),
+      } as unknown as ConfigService;
+
+      const newAdapter = new DockerHubAdapter(cs);
+
+      expect(newAdapter.type).toBe(RegistryType.DOCKER_HUB);
+    });
+  });
+
   describe("listRepositories()", () => {
     it("should authenticate and return repositories", async () => {
       mockFetchWithLogin({
@@ -145,6 +177,62 @@ describe("DockerHubAdapter", () => {
       expect(result).toHaveLength(1);
       expect(fetchMock).toHaveBeenCalledTimes(4);
     });
+
+    it("should throw when Docker Hub authentication fails", async () => {
+      // Covers: L120 (if (!response.ok) true branch in authenticate())
+      globalThis.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+      }) as unknown as typeof globalThis.fetch;
+
+      await expect(adapter.listRepositories()).rejects.toThrow(
+        "Docker Hub authentication failed: HTTP 403",
+      );
+    });
+
+    it("should throw when API request fails with non-401 status", async () => {
+      // Covers: L158 (if (!response.ok) true branch in fetchJson())
+      mockFetchWithLogin({
+        ok: false,
+        status: 500,
+      });
+
+      await expect(adapter.listRepositories()).rejects.toThrow(
+        "Docker Hub request failed: HTTP 500",
+      );
+    });
+
+    it("should use empty Authorization header when token is null after login", async () => {
+      // Covers: L135 (this.authToken ?? "")
+      globalThis.fetch = jest
+        .fn()
+        // Login returns null token
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ token: null }),
+        })
+        // Subsequent API call succeeds
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ results: [] }),
+        }) as unknown as typeof globalThis.fetch;
+
+      const result = await adapter.listRepositories();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should handle null results field in repositories response", async () => {
+      // Covers: L174 (data.results ?? [])
+      mockFetchWithLogin({
+        ok: true,
+        json: () => Promise.resolve({ results: null }),
+      });
+
+      const result = await adapter.listRepositories();
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe("listTags()", () => {
@@ -186,6 +274,46 @@ describe("DockerHubAdapter", () => {
 
       expect(result).toEqual([]);
     });
+
+    it("should handle null results field in tags response", async () => {
+      // Covers: L193 (data.results ?? [])
+      mockFetchWithLogin({
+        ok: true,
+        json: () => Promise.resolve({ results: null }),
+      });
+
+      const result = await adapter.listTags("testuser/my-app");
+
+      expect(result).toEqual([]);
+    });
+
+    it("should use undefined fallbacks when tag fields are null", async () => {
+      // Covers: L195 (t.digest ?? undefined), L196 (last_pushed falsy → undefined),
+      //         L197 (t.full_size ?? undefined)
+      mockFetchWithLogin({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            results: [
+              {
+                name: "latest",
+                digest: null,
+                last_pushed: null,
+                full_size: null,
+              },
+            ],
+          }),
+      });
+
+      const result = await adapter.listTags("testuser/my-app");
+
+      expect(result[0]).toEqual({
+        tag: "latest",
+        digest: undefined,
+        pushedAt: undefined,
+        sizeBytes: undefined,
+      });
+    });
   });
 
   describe("getManifest()", () => {
@@ -210,6 +338,64 @@ describe("DockerHubAdapter", () => {
         sizeBytes: 2048,
         tags: ["v1.0"],
       });
+    });
+
+    it("should fall back to images[0].digest when top-level digest is null", async () => {
+      // Covers: L209 second branch (data.images?.[0]?.digest)
+      mockFetchWithLogin({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: "v1.0",
+            digest: null,
+            last_pushed: "2024-01-01T00:00:00Z",
+            full_size: 1024,
+            images: [{ digest: "sha256:fallback", os: "linux" }],
+          }),
+      });
+
+      const result = await adapter.getManifest("testuser/my-app", "v1.0");
+
+      expect(result.digest).toBe("sha256:fallback");
+    });
+
+    it("should use empty string digest when both digest and images are unavailable", async () => {
+      // Covers: L209 third branch ("" fallback), L211 (full_size ?? undefined),
+      //         L212 (last_pushed falsy → undefined)
+      mockFetchWithLogin({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: "v1.0",
+            digest: null,
+            last_pushed: null,
+            full_size: null,
+            images: [],
+          }),
+      });
+
+      const result = await adapter.getManifest("testuser/my-app", "v1.0");
+
+      expect(result.digest).toBe("");
+      expect(result.sizeBytes).toBeUndefined();
+      expect(result.pushedAt).toBeUndefined();
+    });
+
+    it("should use empty string digest when digest is null and images field is absent", async () => {
+      // Covers: L209 — images is undefined so ?.[0] is undefined
+      mockFetchWithLogin({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            name: "v1.0",
+            digest: null,
+            images: undefined,
+          }),
+      });
+
+      const result = await adapter.getManifest("testuser/my-app", "v1.0");
+
+      expect(result.digest).toBe("");
     });
   });
 
