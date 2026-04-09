@@ -26,10 +26,7 @@ export class AddKedaBindings1774700000002 implements MigrationInterface {
       await queryRunner.query(
         `CREATE INDEX "IDX_keda_bindings_organizationId" ON "keda_bindings" ("organizationId")`,
       );
-    } else if (
-      databaseType === "sqlite" ||
-      databaseType === "better-sqlite3"
-    ) {
+    } else if (databaseType === "sqlite" || databaseType === "better-sqlite3") {
       await queryRunner.query(`
         CREATE TABLE "keda_bindings" (
           "id" varchar PRIMARY KEY NOT NULL,

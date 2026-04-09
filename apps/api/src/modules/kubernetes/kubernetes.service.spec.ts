@@ -1473,6 +1473,34 @@ describe("KubernetesService", () => {
           totalPeers: 0,
         });
       });
+
+      it("should use items fallback when listPodForAllNamespaces response has no items key", async () => {
+        mockListPods.mockResolvedValue({});
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
+
+      it("should return zero metrics on non-Error throw from coreV1Api", async () => {
+        mockListPods.mockRejectedValue("dragonfly-string-error");
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result).toEqual({
+          totalTasks: 0,
+          succeededTasks: 0,
+          failedTasks: 0,
+          activeTasks: 0,
+          totalPeers: 0,
+        });
+      });
     });
 
     describe("getDragonflyPeers", () => {
@@ -1544,6 +1572,35 @@ describe("KubernetesService", () => {
 
       it("should return empty array on coreV1Api error", async () => {
         mockListPods.mockRejectedValue(new Error("network failure"));
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use items fallback when getDragonflyPeers response has no items key", async () => {
+        mockListPods.mockResolvedValue({});
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use unknown fallbacks when pod has no metadata or status", async () => {
+        mockListPods.mockResolvedValue({
+          items: [{}],
+        });
+
+        const result = await service.getDragonflyPeers();
+
+        expect(result).toHaveLength(1);
+        expect(result[0].peerId).toBe("unknown");
+        expect(result[0].ip).toBe("unknown");
+        expect(result[0].status).toBe("idle");
+      });
+
+      it("should return empty array on non-Error throw from coreV1Api in getDragonflyPeers", async () => {
+        mockListPods.mockRejectedValue("peers-string-error");
 
         const result = await service.getDragonflyPeers();
 
@@ -1780,6 +1837,47 @@ describe("KubernetesService", () => {
 
         expect(result.totalTasks).toBe(100);
       });
+
+      it("should use empty-string fallback for pod name/namespace when pod has no metadata", async () => {
+        mockListPods.mockResolvedValue({
+          items: [{ status: { phase: "Running" } }],
+        });
+        mockConnectPodProxy.mockResolvedValue(
+          [
+            "dragonfly_manager_peer_task_total 5",
+            "dragonfly_manager_peer_task_succeeded_total 4",
+            "dragonfly_manager_peer_task_failed_total 0",
+            "dragonfly_manager_peer_total 2",
+          ].join("\n"),
+        );
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(5);
+      });
+
+      it("should ignore non-finite metric values (NaN lines)", async () => {
+        mockListPods.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "dragonfly-mgr", namespace: "dragonfly" },
+              status: { phase: "Running" },
+            },
+          ],
+        });
+        mockConnectPodProxy.mockResolvedValue(
+          [
+            "dragonfly_manager_peer_task_total NaN",
+            "dragonfly_manager_peer_task_succeeded_total 0",
+            "dragonfly_manager_peer_task_failed_total 0",
+            "dragonfly_manager_peer_total 0",
+          ].join("\n"),
+        );
+
+        const result = await service.getDragonflyMetrics();
+
+        expect(result.totalTasks).toBe(0);
+      });
     });
   });
 
@@ -1882,6 +1980,23 @@ describe("KubernetesService", () => {
 
         expect(result).toEqual({ installed: false, controllers: [] });
       });
+
+      it("should use items fallback when getFluxStatus response has no items key", async () => {
+        mockListDeployments.mockResolvedValue({});
+
+        const result = await service.getFluxStatus();
+
+        expect(result.installed).toBe(false);
+        expect(result.controllers.every((c) => !c.ready)).toBe(true);
+      });
+
+      it("should return not-installed on non-Error throw from listDeployments", async () => {
+        mockListDeployments.mockRejectedValue("flux-string-error");
+
+        const result = await service.getFluxStatus();
+
+        expect(result).toEqual({ installed: false, controllers: [] });
+      });
     });
 
     // -------------------------------------------------------------------------
@@ -1962,6 +2077,40 @@ describe("KubernetesService", () => {
         mockListRollouts.mockRejectedValue(
           new Error("kustomizations CRD not found"),
         );
+
+        const result = await service.listFluxKustomizations();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use items fallback when listFluxKustomizations response has no items key", async () => {
+        mockListRollouts.mockResolvedValue({});
+
+        const result = await service.listFluxKustomizations();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use all field fallbacks when kustomization item has no keys", async () => {
+        mockListRollouts.mockResolvedValue({ items: [{}] });
+
+        const result = await service.listFluxKustomizations();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          name: "",
+          namespace: "default",
+          path: "",
+          ready: false,
+          suspended: false,
+          lastAppliedRevision: null,
+          sourceRef: null,
+          readyConditionMessage: null,
+        });
+      });
+
+      it("should return empty array on non-Error throw in listFluxKustomizations", async () => {
+        mockListRollouts.mockRejectedValue("kustomization-string-error");
 
         const result = await service.listFluxKustomizations();
 
@@ -2058,6 +2207,32 @@ describe("KubernetesService", () => {
         const result = await service.listFluxHelmReleases();
 
         expect(result).toEqual([]);
+      });
+
+      it("should use items fallback when listFluxHelmReleases response has no items key", async () => {
+        mockListRollouts.mockResolvedValue({});
+
+        const result = await service.listFluxHelmReleases();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use all field fallbacks when HelmRelease item has no keys", async () => {
+        mockListRollouts.mockResolvedValue({ items: [{}] });
+
+        const result = await service.listFluxHelmReleases();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          name: "",
+          namespace: "default",
+          chartName: "",
+          chartVersion: null,
+          ready: false,
+          suspended: false,
+          lastAppliedRevision: null,
+          readyConditionMessage: null,
+        });
       });
     });
 
@@ -2225,6 +2400,66 @@ describe("KubernetesService", () => {
 
         expect(Array.isArray(result)).toBe(true);
       });
+
+      it("should use items fallback when git response has no items key", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({})
+          .mockResolvedValueOnce({ items: [] });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use all field fallbacks when GitRepository item has no keys", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({ items: [{}] })
+          .mockResolvedValueOnce({ items: [] });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          kind: "GitRepository",
+          name: "",
+          namespace: "default",
+          url: "",
+          branch: null,
+          lastFetchedCommit: null,
+          ready: false,
+          readyConditionMessage: null,
+        });
+      });
+
+      it("should use items fallback when OCI response has no items key", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({ items: [] })
+          .mockResolvedValueOnce({});
+
+        const result = await service.listFluxSources();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should use all field fallbacks when OCIRepository item has no keys", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({ items: [] })
+          .mockResolvedValueOnce({ items: [{}] });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          kind: "OCIRepository",
+          name: "",
+          namespace: "default",
+          url: "",
+          branch: null,
+          lastFetchedCommit: null,
+          ready: false,
+          readyConditionMessage: null,
+        });
+      });
     });
 
     // -------------------------------------------------------------------------
@@ -2343,6 +2578,34 @@ describe("KubernetesService", () => {
         jest
           .spyOn(service, "listFluxKustomizations")
           .mockRejectedValue(new Error("inner error"));
+
+        await expect(service.pollFluxReconciliation()).resolves.toBeUndefined();
+      });
+
+      it("should not emit event for a ready HelmRelease", async () => {
+        jest.spyOn(service, "listFluxKustomizations").mockResolvedValue([]);
+        jest.spyOn(service, "listFluxHelmReleases").mockResolvedValue([
+          {
+            name: "nginx",
+            namespace: "ingress",
+            chartName: "nginx",
+            chartVersion: "1.0.0",
+            ready: true,
+            suspended: false,
+            lastAppliedRevision: "1.0.0",
+            readyConditionMessage: null,
+          },
+        ]);
+
+        await service.pollFluxReconciliation();
+
+        expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      });
+
+      it("should handle non-Error throw from listFluxKustomizations", async () => {
+        jest
+          .spyOn(service, "listFluxKustomizations")
+          .mockRejectedValue("string-error-poll");
 
         await expect(service.pollFluxReconciliation()).resolves.toBeUndefined();
       });
@@ -3624,6 +3887,39 @@ describe("KEDA Autoscaling", () => {
       expect(result.installed).toBe(true);
       expect(result.version).toBe("");
     });
+
+    it("should use items fallback when getKedaStatus response has no items key", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({}),
+      });
+
+      const result = await svc.getKedaStatus();
+
+      expect(result).toEqual({ installed: false, version: "" });
+    });
+
+    it("should use field fallbacks when keda-operator item has no metadata/spec", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({
+          items: [{ metadata: { name: "keda-operator" } }],
+        }),
+      });
+
+      const result = await svc.getKedaStatus();
+
+      expect(result.installed).toBe(false);
+      expect(result.version).toBe("");
+    });
+
+    it("should return not-installed on non-Error throw in getKedaStatus", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockRejectedValue("keda-string-error"),
+      });
+
+      const result = await svc.getKedaStatus();
+
+      expect(result).toEqual({ installed: false, version: "" });
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -3752,6 +4048,47 @@ describe("KEDA Autoscaling", () => {
         scalerType: "unknown",
       });
     });
+
+    it("should use items fallback when listKedaScaledObjects response has no items key", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({}),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should use all field fallbacks when ScaledObject item has fully empty keys", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {},
+              spec: { scaleTargetRef: {}, triggers: [{}] },
+              status: {},
+            },
+          ],
+        }),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].scalerType).toBe("unknown");
+    });
+
+    it("should return empty array on non-Error throw in listKedaScaledObjects", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest
+          .fn()
+          .mockRejectedValue("scaled-objects-string-error"),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+
+      expect(result).toEqual([]);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -3824,6 +4161,41 @@ describe("KEDA Autoscaling", () => {
         maxReplicaCount: 100,
         ready: false,
       });
+    });
+
+    it("should use items fallback when listKedaScaledJobs response has no items key", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({}),
+      });
+
+      const result = await svc.listKedaScaledJobs();
+
+      expect(result).toEqual([]);
+    });
+
+    it("should use all field fallbacks when ScaledJob item has fully empty keys", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [{ metadata: {}, spec: { jobTargetRef: {} }, status: {} }],
+        }),
+      });
+
+      const result = await svc.listKedaScaledJobs();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].jobTemplateName).toBeNull();
+    });
+
+    it("should return empty array on non-Error throw in listKedaScaledJobs", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest
+          .fn()
+          .mockRejectedValue("scaled-jobs-string-error"),
+      });
+
+      const result = await svc.listKedaScaledJobs();
+
+      expect(result).toEqual([]);
     });
   });
 
@@ -3908,6 +4280,51 @@ describe("KEDA Autoscaling", () => {
         "empty-scaler",
         "default",
       );
+      expect(result).toEqual([]);
+    });
+
+    it("should use items fallback when getKedaScaledObjectTriggers response has no spec key", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest.fn().mockResolvedValue({}),
+      });
+
+      const result = await svc.getKedaScaledObjectTriggers(
+        "empty-scaler",
+        "default",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should use fallbacks when trigger has no type or metadata", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest.fn().mockResolvedValue({
+          spec: { triggers: [{}] },
+        }),
+      });
+
+      const result = await svc.getKedaScaledObjectTriggers(
+        "my-scaler",
+        "default",
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe("unknown");
+      expect(result[0].metadata).toEqual({});
+    });
+
+    it("should return empty array on non-Error throw in getKedaScaledObjectTriggers", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest
+          .fn()
+          .mockRejectedValue("triggers-string-error"),
+      });
+
+      const result = await svc.getKedaScaledObjectTriggers(
+        "my-scaler",
+        "default",
+      );
+
       expect(result).toEqual([]);
     });
   });
