@@ -122,6 +122,8 @@ export interface CatalogComponent {
   containerImage?: ContainerImageMetadata | null;
   /** Optional Kubernetes namespace for Istio service mesh integration (FARM-E42) */
   namespace?: string;
+  /** Optional monthly cost budget in USD for FinOps alerting (Phase 19) */
+  costBudgetUsd?: number | null;
   createdAt: string;
   updatedAt: string;
 }

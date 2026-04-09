@@ -6,4 +6,5 @@ export const QUEUE_NAMES = {
   KEYCLOAK_SYNC: "keycloak-sync",
   GATEWAY_SYNC: "gateway-sync",
   API_HEALTH_CHECK: "api-health-check",
+  COST_SYNC: "cost-sync",
 } as const;

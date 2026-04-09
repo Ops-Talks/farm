@@ -115,6 +115,9 @@ export const configuration = () => ({
     url: process.env.REGISTRY_URL || "",
     credentials: process.env.REGISTRY_CREDENTIALS || "",
   },
+  opencost: {
+    url: process.env.OPENCOST_URL || "http://localhost:9090",
+  },
 });
 
 /**
@@ -197,4 +200,6 @@ export const validationSchema = Joi.object({
     .default(""),
   REGISTRY_URL: Joi.string().allow("").default(""),
   REGISTRY_CREDENTIALS: Joi.string().allow("").default(""),
+  // OpenCost integration (optional)
+  OPENCOST_URL: Joi.string().uri().default("http://localhost:9090"),
 });

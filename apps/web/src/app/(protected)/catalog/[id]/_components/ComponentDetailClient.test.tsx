@@ -38,6 +38,10 @@ vi.mock("@/lib/api-client", () => ({
   registry: {
     listHarborReplications: vi.fn().mockResolvedValue([]),
   },
+  finops: {
+    getCostEstimate: vi.fn().mockResolvedValue(null),
+    getActualCost: vi.fn().mockResolvedValue(null),
+  },
 }));
 
 vi.mock("@/lib/otel-spans", () => ({
@@ -105,6 +109,14 @@ vi.mock(
   "@/app/(protected)/catalog/[id]/_components/KedaBindingCard",
   () => ({ KedaBindingCard: () => <div data-testid="keda-binding-card-stub" /> }),
 );
+
+// Stub out FinOps components so tests don't depend on their internals
+vi.mock("@/components/finops/CostEstimateCard", () => ({
+  CostEstimateCard: () => <div data-testid="cost-estimate-card-stub" />,
+}));
+vi.mock("@/components/finops/CostBudgetExceededBanner", () => ({
+  CostBudgetExceededBanner: () => <div data-testid="cost-budget-exceeded-banner-stub" />,
+}));
 
 import { ComponentDetailClient } from "@/app/(protected)/catalog/[id]/_components/ComponentDetailClient";
 

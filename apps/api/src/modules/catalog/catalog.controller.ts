@@ -14,6 +14,7 @@ import {
   Inject,
   Optional,
   Req,
+  NotFoundException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -43,6 +44,8 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { FinOpsService } from "../finops/finops.service";
+import { CostEstimate } from "../finops/entities/cost-estimate.entity";
 import {
   CATALOG_DISCOVERY_QUEUE,
   CatalogDiscoveryJobData,
@@ -83,6 +86,8 @@ export class CatalogController {
     @Optional()
     @InjectQueue(CATALOG_DISCOVERY_QUEUE)
     private readonly discoveryQueue?: Queue<CatalogDiscoveryJobData>,
+    @Optional()
+    private readonly finOpsService?: FinOpsService,
   ) {}
 
   /**
@@ -317,5 +322,35 @@ export class CatalogController {
     @Body() dto: SetContainerImageDto,
   ): Promise<Component> {
     return this.catalogService.setContainerImage(id, dto);
+  }
+
+  /**
+   * Returns the latest infracost estimate for a component.
+   * Returns 404 when no estimate has been recorded yet.
+   *
+   * @param id - Component UUID
+   */
+  @Get("components/:id/cost-estimate")
+  @ApiOperation({
+    summary: "Get the latest infracost estimate for a component",
+  })
+  @ApiParam({ name: "id", description: "Component UUID" })
+  @ApiOkResponse({
+    description: "Latest cost estimate",
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "No cost estimate found for this component",
+    type: ErrorResponseDto,
+  })
+  async getCostEstimate(@Param("id") id: string): Promise<CostEstimate> {
+    if (!this.finOpsService) {
+      throw new NotFoundException(`Cost estimate not available`);
+    }
+    const estimate = await this.finOpsService.getCostEstimate(id);
+    if (!estimate) {
+      throw new NotFoundException(`No cost estimate found for component ${id}`);
+    }
+    return estimate;
   }
 }

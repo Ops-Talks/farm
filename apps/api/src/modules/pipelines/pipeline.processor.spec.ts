@@ -50,6 +50,7 @@ function buildRun(overrides: Partial<PipelineRun> = {}): PipelineRun {
     durationMs: null,
     logs: null,
     stageResults: null,
+    metadata: null,
     pipeline: {} as Pipeline,
     createdAt: new Date("2024-01-01T00:00:00Z"),
     updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -1026,6 +1027,7 @@ describe("PipelineProcessor", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
     }
@@ -1735,6 +1737,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1809,6 +1812,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1838,6 +1842,7 @@ describe("PipelineProcessor — additional branches", () => {
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1900,6 +1905,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1934,6 +1940,7 @@ describe("PipelineProcessor — additional branches", () => {
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
+        undefined,
         undefined,
         undefined,
         undefined,

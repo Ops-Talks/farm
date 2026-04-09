@@ -306,8 +306,7 @@ describe("GcrAdapter", () => {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: "2024-01-01T00:00:00Z",
             metadata: {
-              mediaType:
-                "application/vnd.docker.distribution.manifest.v2+json",
+              mediaType: "application/vnd.docker.distribution.manifest.v2+json",
             },
           }),
       }) as unknown as typeof globalThis.fetch;

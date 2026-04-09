@@ -126,7 +126,6 @@ import type {
   KedaBinding,
   CreateKedaBindingDto,
 } from "@/types/api";
-
 const API_BASE = "/api";
 
 // -- Token storage --
@@ -2219,5 +2218,104 @@ export const registry = {
   /** List Harbor replication policies. Returns empty array for non-Harbor adapters. */
   listHarborReplications(): Promise<HarborReplicationPolicy[]> {
     return request<HarborReplicationPolicy[]>('/v1/registry/harbor/replications');
+  },
+};
+
+// -- FinOps types (Phase 19) --
+
+export interface CostEstimate {
+  id: string;
+  componentId: string;
+  pipelineRunId: string | null;
+  estimatedMonthlyCost: number;
+  diffMonthlyCost: number;
+  currency: string;
+  breakdown: Record<string, unknown> | null;
+  measuredAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActualCost {
+  id: string;
+  componentId: string;
+  window: string;
+  cpuCost: number;
+  memoryCost: number;
+  pvCost: number;
+  networkCost: number;
+  totalCost: number;
+  currency: string;
+  syncedAt: string;
+}
+
+export interface OpenCostAllocation {
+  totalCost: number;
+  cpuCost?: number;
+  memoryCost?: number;
+  pvCost?: number;
+  networkCost?: number;
+}
+
+export interface ComponentActualCost {
+  componentId: string;
+  sevenDay: OpenCostAllocation | null;
+  thirtyDay: OpenCostAllocation | null;
+}
+
+export interface PlatformCostSummaryItem {
+  componentId: string;
+  totalCost: number;
+  currency: string;
+  syncedAt: string;
+  budgetUsd?: number | null;
+}
+
+export interface TeamCostSummary {
+  teamId: string;
+  totalCost: number;
+  currency: string;
+  components: { componentId: string; totalCost: number; window: string }[];
+}
+
+// -- FinOps API (Phase 19) --
+
+export const finops = {
+  /** Get the latest Infracost estimate for a component. Returns null when none exists. */
+  getCostEstimate(componentId: string): Promise<CostEstimate | null> {
+    return request<CostEstimate>(
+      `/v1/catalog/components/${encodeURIComponent(componentId)}/cost-estimate`,
+    ).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    });
+  },
+
+  /** Get 7-day and 30-day OpenCost allocation data for a component. */
+  getActualCost(componentId: string): Promise<ComponentActualCost> {
+    return request<ComponentActualCost>(
+      `/v1/cost/components/${encodeURIComponent(componentId)}/actual`,
+    );
+  },
+
+  /** Get last 30 actual cost records for a component, sorted by syncedAt DESC. */
+  getCostHistory(componentId: string): Promise<ActualCost[]> {
+    return request<ActualCost[]>(
+      `/v1/cost/components/${encodeURIComponent(componentId)}/history`,
+    );
+  },
+
+  /** Get platform-wide cost summary, optionally limited to N components. */
+  getPlatformCostSummary(limit = 10): Promise<PlatformCostSummaryItem[]> {
+    return request<PlatformCostSummaryItem[]>(
+      `/v1/cost/summary${toQueryString({ limit })}`,
+    );
+  },
+
+  /** Get aggregated cost summary for a team and its components. */
+  getTeamCostSummary(teamId: string): Promise<TeamCostSummary> {
+    return request<TeamCostSummary>(
+      `/v1/cost/teams/${encodeURIComponent(teamId)}/summary`,
+    );
   },
 };

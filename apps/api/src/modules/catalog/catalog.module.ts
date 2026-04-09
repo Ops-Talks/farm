@@ -14,6 +14,7 @@ import {
 } from "./processors/container-image-sync.processor";
 import { ContainerImageSyncScheduler } from "./processors/container-image-sync.scheduler";
 import { RegistryModule } from "../registry/registry.module";
+import { FinOpsModule } from "../finops/finops.module";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -31,6 +32,7 @@ const isTest = process.env.NODE_ENV === "test";
           BullModule.registerQueue({ name: CONTAINER_IMAGE_SYNC_QUEUE }),
           RegistryModule,
         ]),
+    FinOpsModule,
   ],
   controllers: [CatalogController],
   providers: [

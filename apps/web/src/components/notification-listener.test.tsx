@@ -101,12 +101,12 @@ describe("NotificationListener", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 2. Subscribes to two events on mount
+  // 2. Subscribes to three events on mount
   // -------------------------------------------------------------------------
-  it("subscribes to AUDIT_LOG_CREATED and PIPELINE_RUN_UPDATED on mount", () => {
+  it("subscribes to AUDIT_LOG_CREATED, PIPELINE_RUN_UPDATED, and COST_ACTUAL_BUDGET_EXCEEDED on mount", () => {
     render(<NotificationListener />);
 
-    expect(mockSubscribe).toHaveBeenCalledTimes(2);
+    expect(mockSubscribe).toHaveBeenCalledTimes(3);
     expect(mockSubscribe).toHaveBeenCalledWith(
       FarmEvent.AUDIT_LOG_CREATED,
       expect.any(Function),
@@ -115,24 +115,31 @@ describe("NotificationListener", () => {
       FarmEvent.PIPELINE_RUN_UPDATED,
       expect.any(Function),
     );
+    expect(mockSubscribe).toHaveBeenCalledWith(
+      FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED,
+      expect.any(Function),
+    );
   });
 
   // -------------------------------------------------------------------------
   // 3. Unsubscribes on unmount
   // -------------------------------------------------------------------------
-  it("calls both unsubscribe functions when the component unmounts", () => {
+  it("calls all unsubscribe functions when the component unmounts", () => {
     const { unmount } = render(<NotificationListener />);
 
     const unsubAudit = capturedUnsubFns[FarmEvent.AUDIT_LOG_CREATED];
     const unsubPipeline = capturedUnsubFns[FarmEvent.PIPELINE_RUN_UPDATED];
+    const unsubCostActual = capturedUnsubFns[FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED];
 
     expect(unsubAudit).toBeDefined();
     expect(unsubPipeline).toBeDefined();
+    expect(unsubCostActual).toBeDefined();
 
     unmount();
 
     expect(unsubAudit).toHaveBeenCalledTimes(1);
     expect(unsubPipeline).toHaveBeenCalledTimes(1);
+    expect(unsubCostActual).toHaveBeenCalledTimes(1);
   });
 
   // -------------------------------------------------------------------------
@@ -238,5 +245,27 @@ describe("NotificationListener", () => {
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
     expect(toast.info).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  // 10. Warning toast for COST_ACTUAL_BUDGET_EXCEEDED
+  // -------------------------------------------------------------------------
+  it("shows a warning toast when actual cost exceeds the monthly budget", async () => {
+    const { toast } = await import("sonner");
+
+    render(<NotificationListener />);
+    capturedCallbacks[FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED]({
+      componentId: "svc-checkout",
+      totalCost: 150.0,
+      budgetUsd: 100.0,
+      timestamp: new Date().toISOString(),
+    });
+
+    expect(toast.warning).toHaveBeenCalledWith(
+      expect.stringContaining("svc-checkout"),
+    );
+    expect(toast.warning).toHaveBeenCalledWith(
+      expect.stringContaining("budget"),
+    );
   });
 });

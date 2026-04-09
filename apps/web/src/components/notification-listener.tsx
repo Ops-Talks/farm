@@ -6,6 +6,14 @@ import { subscribe } from "@/lib/ws-client";
 import { FarmEvent, PipelineRunStatus } from "@/types/api";
 import type { PipelineRun, AuditLog } from "@/types/api";
 
+// FinOps WebSocket event payloads (Phase 19)
+interface CostActualBudgetExceededPayload {
+  componentId: string;
+  totalCost: number;
+  budgetUsd: number;
+  timestamp: string;
+}
+
 /**
  * NotificationListener — mounts inside AuthGuard / AppShell after auth is ready.
  * Subscribes to WebSocket events and shows Sonner toast notifications.
@@ -44,9 +52,29 @@ export function NotificationListener() {
       },
     );
 
+    // Phase 19 — FinOps: actual cost budget exceeded → warning toast
+    const unsubCostActual = subscribe(
+      FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED,
+      (payload) => {
+        const event = payload as unknown as CostActualBudgetExceededPayload;
+        const totalStr = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(event.totalCost);
+        const budgetStr = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(event.budgetUsd);
+        toast.warning(
+          `Component ${event.componentId} exceeded monthly budget: ${totalStr} vs ${budgetStr} budget`,
+        );
+      },
+    );
+
     return () => {
       unsubAudit();
       unsubPipeline();
+      unsubCostActual();
     };
   }, []);
 

@@ -69,6 +69,9 @@ export enum FarmEvent {
   PIPELINE_RUN_UPDATED = "pipeline.run.updated",
   PIPELINE_LOG = "pipeline.log",
   AUDIT_LOG_CREATED = "audit-log.created",
+  // FinOps (Phase 19)
+  COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
+  COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded",
 }
 
 /**

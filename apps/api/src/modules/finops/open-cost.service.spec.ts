@@ -1,0 +1,124 @@
+import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
+import { OpenCostService } from "./open-cost.service";
+
+/**
+ * Unit tests for OpenCostService.
+ * Uses the capture-and-restore pattern for globalThis.fetch to avoid
+ * side-effects between test suites.
+ */
+describe("OpenCostService", () => {
+  let service: OpenCostService;
+  let originalFetch: typeof globalThis.fetch;
+
+  beforeEach(async () => {
+    originalFetch = globalThis.fetch;
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        OpenCostService,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultVal?: string) => {
+              if (key === "OPENCOST_URL") return "http://opencost.test:9090";
+              return defaultVal ?? "";
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<OpenCostService>(OpenCostService);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  // -------------------------------------------------------------------------
+  describe("getAllocation()", () => {
+    it("returns a parsed allocation when OpenCost responds successfully", async () => {
+      const mockData = {
+        data: {
+          "my-app": {
+            cpuCost: 1.5,
+            memoryCost: 0.8,
+            pvCost: 0.2,
+            networkCost: 0.1,
+            totalCost: 2.6,
+            currency: "USD",
+          },
+        },
+      };
+
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockData),
+      }) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+
+      expect(result).toEqual({
+        cpuCost: 1.5,
+        memoryCost: 0.8,
+        pvCost: 0.2,
+        networkCost: 0.1,
+        totalCost: 2.6,
+        currency: "USD",
+      });
+    });
+
+    it("returns null when the HTTP response is not OK", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when data is absent from the response", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({}),
+      }) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when data object is empty", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ data: {} }),
+      }) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when fetch throws a non-Error value", async () => {
+      globalThis.fetch = jest
+        .fn()
+        .mockRejectedValue(
+          "network timeout",
+        ) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when fetch throws an Error", async () => {
+      globalThis.fetch = jest
+        .fn()
+        .mockRejectedValue(
+          new Error("ECONNREFUSED"),
+        ) as unknown as typeof globalThis.fetch;
+
+      const result = await service.getAllocation("my-app", "30d");
+      expect(result).toBeNull();
+    });
+  });
+});

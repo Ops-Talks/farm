@@ -51,6 +51,7 @@ import {
   Cpu,
   GitBranch,
   UserCircle,
+  DollarSign,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
@@ -76,6 +77,7 @@ const navItems = [
   { href: "/compliance/policies", label: "Tag Policies", icon: Tag },
   { href: "/operators", label: "Operators", icon: Cpu },
   { href: "/gitops", label: "GitOps", icon: GitBranch },
+  { href: "/cost", label: "Cost", icon: DollarSign },
   { href: "/custom-dashboards", label: "Custom Dashboards", icon: LayoutGrid },
   { href: "/service-templates", label: "Templates", icon: Layers },
   { href: "/environment-requests", label: "Env Requests", icon: ServerCog },

@@ -18,6 +18,8 @@ import {
   ScaffoldEventPayload,
   EnvironmentRequestEventPayload,
   ContainerVulnerabilityFoundPayload,
+  CostBudgetExceededPayload,
+  CostActualBudgetExceededPayload,
 } from "./events.interfaces";
 
 /**
@@ -180,5 +182,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     payload: ContainerVulnerabilityFoundPayload,
   ): void {
     this.server?.emit(FarmEvent.CONTAINER_VULNERABILITY_FOUND, payload);
+  }
+
+  /**
+   * Emits a cost:budget-exceeded event when an infracost diff exceeds the budget.
+   */
+  emitCostBudgetExceeded(payload: CostBudgetExceededPayload): void {
+    this.server?.emit(FarmEvent.COST_BUDGET_EXCEEDED, payload);
+  }
+
+  /**
+   * Emits a cost:actual-budget-exceeded event when OpenCost total exceeds the budget.
+   */
+  emitCostActualBudgetExceeded(payload: CostActualBudgetExceededPayload): void {
+    this.server?.emit(FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED, payload);
   }
 }

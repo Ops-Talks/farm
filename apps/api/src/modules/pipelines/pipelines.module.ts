@@ -9,8 +9,10 @@ import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun } from "./entities/pipeline-run.entity";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
 import { BuildStageExecutor } from "./build-stage.executor";
+import { InfracostStageExecutor } from "./infracost-stage.executor";
 import { CloudModule } from "../cloud/cloud.module";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
+import { Component } from "../catalog/entities/component.entity";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -21,7 +23,12 @@ const isTest = process.env.NODE_ENV === "test";
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Pipeline, PipelineRun, IntegrationCredential]),
+    TypeOrmModule.forFeature([
+      Pipeline,
+      PipelineRun,
+      IntegrationCredential,
+      Component,
+    ]),
     ...(isTest
       ? []
       : [BullModule.registerQueue({ name: QUEUE_NAMES.PIPELINE_EXECUTION })]),
@@ -32,6 +39,7 @@ const isTest = process.env.NODE_ENV === "test";
     PipelinesService,
     HelmDeployExecutor,
     BuildStageExecutor,
+    InfracostStageExecutor,
     ...(isTest ? [] : [PipelineProcessor]),
   ],
   exports: [PipelinesService],
