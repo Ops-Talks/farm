@@ -1411,19 +1411,20 @@ export interface FluxKustomization {
   path: string;
   ready: boolean;
   suspended: boolean;
-  lastAppliedRevision: string;
-  conditions: Array<{ type: string; status: string; message: string }>;
+  lastAppliedRevision: string | null;
+  sourceRef: string | null;
+  readyConditionMessage: string | null;
 }
 
 export interface FluxHelmRelease {
   name: string;
   namespace: string;
   chartName: string;
-  chartVersion: string;
+  chartVersion: string | null;
   ready: boolean;
   suspended: boolean;
-  lastAppliedRevision: string;
-  conditions: Array<{ type: string; status: string; message: string }>;
+  lastAppliedRevision: string | null;
+  readyConditionMessage: string | null;
 }
 
 export interface FluxSource {
@@ -1431,11 +1432,10 @@ export interface FluxSource {
   name: string;
   namespace: string;
   url: string;
-  ref: string;
-  lastFetchedRevision: string;
+  branch: string | null;
+  lastFetchedCommit: string | null;
   ready: boolean;
-  suspended: boolean;
-  artifact?: { revision: string; digest: string };
+  readyConditionMessage: string | null;
 }
 
 export interface FluxBinding {
@@ -1471,26 +1471,26 @@ export interface KedaScaledObjectTrigger {
 export interface KedaScaledObject {
   name: string;
   namespace: string;
-  targetName: string;
-  targetKind: string;
+  targetDeployment: string | null;
+  targetKind: string | null;
   minReplicaCount: number;
   maxReplicaCount: number;
   ready: boolean;
   active: boolean;
   paused: boolean;
+  currentReplicas: number;
+  desiredReplicas: number;
+  scalerType: string;
   triggers: KedaScaledObjectTrigger[];
-  conditions: Array<{ type: string; status: string; message: string }>;
 }
 
 export interface KedaScaledJob {
   name: string;
   namespace: string;
-  jobTemplateName: string;
+  jobTemplateName: string | null;
   minReplicaCount: number;
   maxReplicaCount: number;
   ready: boolean;
-  triggers: KedaScaledObjectTrigger[];
-  conditions: Array<{ type: string; status: string; message: string }>;
 }
 
 export interface KedaBinding {

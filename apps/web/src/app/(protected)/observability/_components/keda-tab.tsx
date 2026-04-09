@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -90,14 +90,10 @@ function TriggerRow({ trigger }: { trigger: KedaScaledObjectTrigger }) {
       {entries.length > 0 && (
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs pt-1">
           {entries.map(([key, value]) => (
-            <>
-              <dt key={`k-${key}`} className="text-muted-foreground font-medium">
-                {key}
-              </dt>
-              <dd key={`v-${key}`} className="font-mono break-all">
-                {value}
-              </dd>
-            </>
+            <Fragment key={key}>
+              <dt className="text-muted-foreground font-medium">{key}</dt>
+              <dd className="font-mono break-all">{value}</dd>
+            </Fragment>
           ))}
         </dl>
       )}
@@ -149,7 +145,7 @@ function ScaledObjectsTable({
               <span className="text-muted-foreground text-xs">
                 {obj.minReplicaCount}&ndash;{obj.maxReplicaCount}
               </span>
-              <span className="text-muted-foreground text-xs">{obj.targetName}</span>
+              <span className="text-muted-foreground text-xs">{obj.targetDeployment ?? ""}</span>
               {scaledObjectStateBadge(obj)}
             </div>
           </div>
@@ -188,11 +184,6 @@ function ScaledJobsTable({ items }: { items: KedaScaledJob[] }) {
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {job.triggers[0] && (
-                <Badge variant="outline" className="text-xs">
-                  {job.triggers[0].type}
-                </Badge>
-              )}
               <span className="text-muted-foreground text-xs">
                 {job.minReplicaCount}&ndash;{job.maxReplicaCount}
               </span>
@@ -283,8 +274,12 @@ export function KedaTab({
               <SheetHeader>
                 <SheetTitle>{selectedObject.name}</SheetTitle>
                 <p className="text-sm text-muted-foreground">
-                  {selectedObject.namespace} &ndash; {selectedObject.targetKind}{" "}
-                  {selectedObject.targetName}
+                  {selectedObject.namespace}
+                  {selectedObject.targetKind && selectedObject.targetDeployment
+                    ? ` \u2013 ${selectedObject.targetKind} ${selectedObject.targetDeployment}`
+                    : selectedObject.targetDeployment
+                      ? ` \u2013 ${selectedObject.targetDeployment}`
+                      : ""}
                 </p>
               </SheetHeader>
               <div className="mt-4 flex flex-col gap-3 overflow-y-auto">

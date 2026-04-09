@@ -140,4 +140,51 @@ describe("Kubernetes Flux GitOps (e2e)", () => {
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // Flux Binding happy-path (FARM-S249)
+  // ---------------------------------------------------------------------------
+
+  it("POST /api/v1/kubernetes/flux/binding — creates a binding and DELETE removes it", async () => {
+    // Create a catalog component to use as the FK target.
+    const compRes = await request(app.getHttpServer())
+      .post("/api/v1/catalog/components")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        name: "flux-e2e-component",
+        kind: "service",
+        owner: "platform-team",
+      })
+      .expect(201);
+
+    const componentId = (compRes.body as { id: string }).id;
+
+    // Create the Flux binding.
+    const createRes = await request(app.getHttpServer())
+      .post("/api/v1/kubernetes/flux/binding")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        resourceKind: "Kustomization",
+        resourceName: "my-app",
+        resourceNamespace: "flux-system",
+        componentId,
+      })
+      .expect(201);
+
+    expect(createRes.body).toMatchObject({
+      resourceKind: "Kustomization",
+      resourceName: "my-app",
+      resourceNamespace: "flux-system",
+      componentId,
+    });
+    expect(typeof (createRes.body as { id: string }).id).toBe("string");
+
+    const bindingId = (createRes.body as { id: string }).id;
+
+    // Remove the binding.
+    await request(app.getHttpServer())
+      .delete(`/api/v1/kubernetes/flux/binding/${bindingId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(204);
+  });
 });

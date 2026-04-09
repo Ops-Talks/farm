@@ -3784,7 +3784,9 @@ describe("KEDA Autoscaling", () => {
               spec: {
                 minReplicaCount: 0,
                 maxReplicaCount: 20,
-                jobTargetRef: { completions: "batch-template" },
+                jobTargetRef: {
+                  template: { metadata: { name: "batch-template" } },
+                },
               },
               status: {
                 conditions: [{ type: "Ready", status: "True" }],

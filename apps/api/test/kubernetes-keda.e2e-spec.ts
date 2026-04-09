@@ -126,4 +126,49 @@ describe("Kubernetes KEDA (e2e)", () => {
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // KEDA Binding happy-path (FARM-S252)
+  // ---------------------------------------------------------------------------
+
+  it("POST /api/v1/kubernetes/keda/binding — creates a binding and DELETE removes it", async () => {
+    // Create a catalog component to use as the FK target.
+    const compRes = await request(app.getHttpServer())
+      .post("/api/v1/catalog/components")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        name: "keda-e2e-component",
+        kind: "service",
+        owner: "platform-team",
+      })
+      .expect(201);
+
+    const componentId = (compRes.body as { id: string }).id;
+
+    // Create the KEDA binding.
+    const createRes = await request(app.getHttpServer())
+      .post("/api/v1/kubernetes/keda/binding")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        scaledObjectName: "my-scaler",
+        scaledObjectNamespace: "default",
+        componentId,
+      })
+      .expect(201);
+
+    expect(createRes.body).toMatchObject({
+      scaledObjectName: "my-scaler",
+      scaledObjectNamespace: "default",
+      componentId,
+    });
+    expect(typeof (createRes.body as { id: string }).id).toBe("string");
+
+    const bindingId = (createRes.body as { id: string }).id;
+
+    // Remove the binding.
+    await request(app.getHttpServer())
+      .delete(`/api/v1/kubernetes/keda/binding/${bindingId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(204);
+  });
 });

@@ -123,44 +123,16 @@ function FluxStatusCard({ status, isLoading }: FluxStatusCardProps) {
   );
 }
 
-// -- Conditions list (used inside the detail sheet) -------------------------
+// -- Condition message (used inside the detail sheet) -----------------------
 
-interface ConditionListProps {
-  conditions: Array<{ type: string; status: string; message: string }>;
-}
-
-function ConditionList({ conditions }: ConditionListProps) {
-  if (!conditions || conditions.length === 0) {
+function ReadyConditionMessage({ message }: { message: string | null }) {
+  if (!message) {
     return (
-      <p className="text-sm text-muted-foreground italic">No conditions reported.</p>
+      <p className="text-sm text-muted-foreground italic">No condition message reported.</p>
     );
   }
   return (
-    <div className="space-y-2">
-      {conditions.map((c, i) => (
-        <div
-          key={i}
-          className="rounded-md border px-3 py-2 text-xs space-y-0.5"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">{c.type}</span>
-            <Badge
-              variant="secondary"
-              className={
-                c.status === "True"
-                  ? "bg-green-500/20 text-green-700 dark:text-green-400"
-                  : "bg-red-500/20 text-red-700 dark:text-red-400"
-              }
-            >
-              {c.status}
-            </Badge>
-          </div>
-          {c.message && (
-            <p className="text-muted-foreground leading-snug">{c.message}</p>
-          )}
-        </div>
-      ))}
-    </div>
+    <p className="text-sm text-muted-foreground leading-snug">{message}</p>
   );
 }
 
@@ -197,7 +169,15 @@ function KustomizationsTable({ items, onSelect }: KustomizationsTableProps) {
             <tr
               key={`${item.namespace}/${item.name}`}
               className="hover:bg-muted/30 cursor-pointer transition-colors"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(item);
+                }
+              }}
             >
               <td className="px-4 py-2 font-mono font-medium">{item.name}</td>
               <td className="px-4 py-2 text-muted-foreground">{item.namespace}</td>
@@ -254,7 +234,15 @@ function HelmReleasesTable({ items, onSelect }: HelmReleasesTableProps) {
             <tr
               key={`${item.namespace}/${item.name}`}
               className="hover:bg-muted/30 cursor-pointer transition-colors"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(item);
+                }
+              }}
             >
               <td className="px-4 py-2 font-mono font-medium">{item.name}</td>
               <td className="px-4 py-2 text-muted-foreground">{item.namespace}</td>
@@ -310,7 +298,15 @@ function SourcesTable({ items, onSelect }: SourcesTableProps) {
             <tr
               key={`${item.kind}/${item.namespace}/${item.name}`}
               className="hover:bg-muted/30 cursor-pointer transition-colors"
+              role="button"
+              tabIndex={0}
               onClick={() => onSelect(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(item);
+                }
+              }}
             >
               <td className="px-4 py-2">
                 <Badge variant="outline" className="text-xs">
@@ -323,14 +319,14 @@ function SourcesTable({ items, onSelect }: SourcesTableProps) {
                 {item.url}
               </td>
               <td className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                {item.ref}
+                {item.branch ?? "—"}
               </td>
               <td className="px-4 py-2">
                 <Badge
                   variant="secondary"
-                  className={readyBadgeClass(item.ready, item.suspended)}
+                  className={readyBadgeClass(item.ready, false)}
                 >
-                  {readyLabel(item.ready, item.suspended)}
+                  {readyLabel(item.ready, false)}
                 </Badge>
               </td>
             </tr>
@@ -398,10 +394,10 @@ function KustomizationDetailSheet({
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                  Conditions
+                  Ready Condition
                 </span>
                 <div className="mt-2">
-                  <ConditionList conditions={item.conditions} />
+                  <ReadyConditionMessage message={item.readyConditionMessage} />
                 </div>
               </div>
             </div>
@@ -470,10 +466,10 @@ function HelmReleaseDetailSheet({ item, onClose }: HelmReleaseDetailSheetProps) 
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                  Conditions
+                  Ready Condition
                 </span>
                 <div className="mt-2">
-                  <ConditionList conditions={item.conditions} />
+                  <ReadyConditionMessage message={item.readyConditionMessage} />
                 </div>
               </div>
             </div>
@@ -522,9 +518,9 @@ function SourceDetailSheet({ item, onClose }: SourceDetailSheetProps) {
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                    Ref
+                    Branch
                   </span>
-                  <p className="font-mono">{item.ref}</p>
+                  <p className="font-mono">{item.branch ?? "—"}</p>
                 </div>
                 <div>
                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
@@ -533,40 +529,28 @@ function SourceDetailSheet({ item, onClose }: SourceDetailSheetProps) {
                   <div className="mt-1">
                     <Badge
                       variant="secondary"
-                      className={readyBadgeClass(item.ready, item.suspended)}
+                      className={readyBadgeClass(item.ready, false)}
                     >
-                      {readyLabel(item.ready, item.suspended)}
+                      {readyLabel(item.ready, false)}
                     </Badge>
                   </div>
                 </div>
                 <div className="col-span-2">
                   <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                    Last Fetched Revision
+                    Last Fetched Commit
                   </span>
                   <p className="font-mono text-xs break-all">
-                    {item.lastFetchedRevision || "—"}
+                    {item.lastFetchedCommit || "—"}
                   </p>
                 </div>
-                {item.artifact && (
-                  <>
-                    <div className="col-span-2">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                        Artifact Revision
-                      </span>
-                      <p className="font-mono text-xs break-all">
-                        {item.artifact.revision}
-                      </p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
-                        Artifact Digest
-                      </span>
-                      <p className="font-mono text-xs break-all">
-                        {item.artifact.digest}
-                      </p>
-                    </div>
-                  </>
-                )}
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tight">
+                  Ready Condition
+                </span>
+                <div className="mt-2">
+                  <ReadyConditionMessage message={item.readyConditionMessage} />
+                </div>
               </div>
             </div>
           </>

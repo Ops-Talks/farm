@@ -230,5 +230,28 @@ describe("FluxBindingService", () => {
       );
       expect(repo.remove).not.toHaveBeenCalled();
     });
+
+    it("should delete successfully when org matches binding org", async () => {
+      const bindingWithOrg = { ...mockBinding, organizationId: "org-uuid-1" };
+      repo.findOne.mockResolvedValue(bindingWithOrg);
+      repo.remove.mockResolvedValue(undefined);
+
+      await expect(
+        service.remove("flux-binding-uuid-1", "org-uuid-1"),
+      ).resolves.toBeUndefined();
+
+      expect(repo.remove).toHaveBeenCalledWith(bindingWithOrg);
+    });
+
+    it("should throw NotFoundException when org does not match binding org", async () => {
+      const bindingWithOrg = { ...mockBinding, organizationId: "org-uuid-1" };
+      repo.findOne.mockResolvedValue(bindingWithOrg);
+
+      await expect(
+        service.remove("flux-binding-uuid-1", "different-org"),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
   });
 });

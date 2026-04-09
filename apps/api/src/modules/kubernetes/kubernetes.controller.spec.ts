@@ -439,8 +439,9 @@ describe("KubernetesController", () => {
         resourceNamespace: "flux-system",
         componentId: "comp-uuid-1",
       };
+      const mockReq = {} as RequestWithOrg;
       // In this test setup fluxBindingService is not provided (null via @Optional)
-      expect(() => controller.createFluxBinding(dto)).toThrow(
+      expect(() => controller.createFluxBinding(dto, mockReq)).toThrow(
         "FluxBindingService not available",
       );
     });
@@ -448,7 +449,8 @@ describe("KubernetesController", () => {
 
   describe("removeFluxBinding", () => {
     it("should throw ServiceUnavailableException when fluxBindingService is null", () => {
-      expect(() => controller.removeFluxBinding("some-id")).toThrow(
+      const mockReq = {} as RequestWithOrg;
+      expect(() => controller.removeFluxBinding("some-id", mockReq)).toThrow(
         "FluxBindingService not available",
       );
     });
@@ -464,6 +466,7 @@ describe("KubernetesController (with FluxBindingService)", () => {
   let fluxBindingService: {
     create: jest.Mock;
     remove: jest.Mock;
+    findByComponent: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -507,6 +510,7 @@ describe("KubernetesController (with FluxBindingService)", () => {
         organizationId: null,
       }),
       remove: jest.fn().mockResolvedValue(undefined),
+      findByComponent: jest.fn().mockResolvedValue([]),
     };
 
     const module = await Test.createTestingModule({
@@ -530,16 +534,24 @@ describe("KubernetesController (with FluxBindingService)", () => {
       resourceNamespace: "flux-system",
       componentId: "comp-uuid-1",
     };
-    const result = await controller.createFluxBinding(dto);
-    expect(fluxBindingService.create).toHaveBeenCalledWith(dto);
+    const mockReq = {} as RequestWithOrg;
+    const result = await controller.createFluxBinding(dto, mockReq);
+    expect(fluxBindingService.create).toHaveBeenCalledWith({
+      ...dto,
+      organizationId: undefined,
+    });
     expect(result).toMatchObject({ resourceKind: "Kustomization" });
   });
 
   it("should remove a flux binding when service is available", async () => {
+    const mockReq = {} as RequestWithOrg;
     await expect(
-      controller.removeFluxBinding("flux-binding-uuid"),
+      controller.removeFluxBinding("flux-binding-uuid", mockReq),
     ).resolves.toBeUndefined();
-    expect(fluxBindingService.remove).toHaveBeenCalledWith("flux-binding-uuid");
+    expect(fluxBindingService.remove).toHaveBeenCalledWith(
+      "flux-binding-uuid",
+      undefined,
+    );
   });
 });
 
@@ -609,7 +621,11 @@ describe("KubernetesController (KEDA and Dragonfly coverage)", () => {
         { provide: OperatorBindingService, useValue: operatorBindingService },
         {
           provide: FluxBindingService,
-          useValue: { create: jest.fn(), remove: jest.fn() },
+          useValue: {
+            create: jest.fn(),
+            remove: jest.fn(),
+            findByComponent: jest.fn().mockResolvedValue([]),
+          },
         },
         // KedaBindingService intentionally omitted to test null guard
       ],
@@ -669,18 +685,19 @@ describe("KubernetesController (KEDA and Dragonfly coverage)", () => {
 
   it("should throw ServiceUnavailableException for createKedaBinding when kedaBindingService is null", () => {
     const dto = {
-      resourceKind: "ScaledObject" as const,
-      resourceName: "my-scaler",
-      resourceNamespace: "default",
+      scaledObjectName: "my-scaler",
+      scaledObjectNamespace: "default",
       componentId: "comp-uuid-1",
     };
-    expect(() => controller.createKedaBinding(dto)).toThrow(
+    const mockReq = {} as RequestWithOrg;
+    expect(() => controller.createKedaBinding(dto, mockReq)).toThrow(
       "KedaBindingService not available",
     );
   });
 
   it("should throw ServiceUnavailableException for removeKedaBinding when kedaBindingService is null", () => {
-    expect(() => controller.removeKedaBinding("some-id")).toThrow(
+    const mockReq = {} as RequestWithOrg;
+    expect(() => controller.removeKedaBinding("some-id", mockReq)).toThrow(
       "KedaBindingService not available",
     );
   });
@@ -692,7 +709,11 @@ describe("KubernetesController (KEDA and Dragonfly coverage)", () => {
 
 describe("KubernetesController (with KedaBindingService)", () => {
   let controller: KubernetesController;
-  let kedaBindingService: { create: jest.Mock; remove: jest.Mock };
+  let kedaBindingService: {
+    create: jest.Mock;
+    remove: jest.Mock;
+    findByComponent: jest.Mock;
+  };
 
   beforeEach(async () => {
     const kubernetesService = {
@@ -735,14 +756,14 @@ describe("KubernetesController (with KedaBindingService)", () => {
     kedaBindingService = {
       create: jest.fn().mockResolvedValue({
         id: "keda-binding-uuid",
-        resourceKind: "ScaledObject",
-        resourceName: "my-scaler",
-        resourceNamespace: "default",
+        scaledObjectName: "my-scaler",
+        scaledObjectNamespace: "default",
         componentId: "comp-uuid-1",
         boundAt: new Date(),
         organizationId: null,
       }),
       remove: jest.fn().mockResolvedValue(undefined),
+      findByComponent: jest.fn().mockResolvedValue([]),
     };
 
     const module = await Test.createTestingModule({
@@ -767,7 +788,11 @@ describe("KubernetesController (with KedaBindingService)", () => {
         },
         {
           provide: FluxBindingService,
-          useValue: { create: jest.fn(), remove: jest.fn() },
+          useValue: {
+            create: jest.fn(),
+            remove: jest.fn(),
+            findByComponent: jest.fn().mockResolvedValue([]),
+          },
         },
         { provide: KedaBindingService, useValue: kedaBindingService },
       ],
@@ -782,20 +807,30 @@ describe("KubernetesController (with KedaBindingService)", () => {
 
   it("should create a KEDA binding when service is available", async () => {
     const dto = {
-      resourceKind: "ScaledObject" as const,
-      resourceName: "my-scaler",
-      resourceNamespace: "default",
+      scaledObjectName: "my-scaler",
+      scaledObjectNamespace: "default",
       componentId: "comp-uuid-1",
     };
-    const result = await controller.createKedaBinding(dto);
-    expect(kedaBindingService.create).toHaveBeenCalledWith(dto);
-    expect(result).toMatchObject({ resourceKind: "ScaledObject" });
+    const mockReq = {} as RequestWithOrg;
+    const result = await controller.createKedaBinding(dto, mockReq);
+    expect(kedaBindingService.create).toHaveBeenCalledWith({
+      ...dto,
+      organizationId: undefined,
+    });
+    expect(result).toMatchObject({
+      scaledObjectName: "my-scaler",
+      scaledObjectNamespace: "default",
+    });
   });
 
   it("should remove a KEDA binding when service is available", async () => {
+    const mockReq = {} as RequestWithOrg;
     await expect(
-      controller.removeKedaBinding("keda-binding-uuid"),
+      controller.removeKedaBinding("keda-binding-uuid", mockReq),
     ).resolves.toBeUndefined();
-    expect(kedaBindingService.remove).toHaveBeenCalledWith("keda-binding-uuid");
+    expect(kedaBindingService.remove).toHaveBeenCalledWith(
+      "keda-binding-uuid",
+      undefined,
+    );
   });
 });

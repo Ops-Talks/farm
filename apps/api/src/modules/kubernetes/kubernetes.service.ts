@@ -361,6 +361,8 @@ export interface KedaScaledObject {
   namespace: string;
   /** Name of the target Deployment/StatefulSet, or null when unresolved */
   targetDeployment: string | null;
+  /** Kind of the scale target (e.g. "Deployment", "StatefulSet"), or null */
+  targetKind: string | null;
   /** Minimum replica count configured on the ScaledObject */
   minReplicaCount: number;
   /** Maximum replica count configured on the ScaledObject */
@@ -377,6 +379,8 @@ export interface KedaScaledObject {
   desiredReplicas: number;
   /** Type of the first trigger, e.g. "kafka" */
   scalerType: string;
+  /** All trigger descriptors attached to this ScaledObject */
+  triggers: KedaScaledObjectTrigger[];
 }
 
 /**
@@ -387,7 +391,7 @@ export interface KedaScaledJob {
   name: string;
   /** Kubernetes namespace */
   namespace: string;
-  /** Job template name (from completions field), or null when absent */
+  /** Job template name from the job template metadata, or null when absent */
   jobTemplateName: string | null;
   /** Minimum replica count */
   minReplicaCount: number;
@@ -1916,6 +1920,7 @@ export class KubernetesService {
           name: (metadata.name as string) ?? "",
           namespace: (metadata.namespace as string) ?? "default",
           targetDeployment: scaleTarget.name ?? null,
+          targetKind: scaleTarget.kind ?? null,
           minReplicaCount: (spec.minReplicaCount as number) ?? 0,
           maxReplicaCount: (spec.maxReplicaCount as number) ?? 100,
           ready: readyCond?.status === "True",
@@ -1924,6 +1929,10 @@ export class KubernetesService {
           currentReplicas: (status.currentReplicas as number) ?? 0,
           desiredReplicas: (status.desiredReplicas as number) ?? 0,
           scalerType: (firstTrigger?.type as string) ?? "unknown",
+          triggers: triggers.map((t) => ({
+            type: (t.type as string) ?? "unknown",
+            metadata: (t.metadata as Record<string, string>) ?? {},
+          })),
         };
       });
     } catch (error) {
@@ -1968,11 +1977,19 @@ export class KubernetesService {
           string,
           unknown
         >;
+        const jobTemplateSpec = (jobTemplate.template ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const jobTemplateMetadata = (jobTemplateSpec.metadata ?? {}) as Record<
+          string,
+          unknown
+        >;
 
         return {
           name: (metadata.name as string) ?? "",
           namespace: (metadata.namespace as string) ?? "default",
-          jobTemplateName: (jobTemplate.completions as string) ?? null,
+          jobTemplateName: (jobTemplateMetadata.name as string) ?? null,
           minReplicaCount: (spec.minReplicaCount as number) ?? 0,
           maxReplicaCount: (spec.maxReplicaCount as number) ?? 100,
           ready: readyCond?.status === "True",

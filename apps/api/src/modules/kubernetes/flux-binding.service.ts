@@ -114,15 +114,28 @@ export class FluxBindingService {
   }
 
   /**
-   * Removes a binding by its UUID.
+   * Removes a binding by its UUID, optionally scoped to an organization.
+   * Returns NotFoundException when the binding does not exist or does not
+   * belong to the given organization (to prevent information disclosure).
    *
    * @param id - The binding UUID
-   * @throws NotFoundException if no binding with the given id exists
+   * @param organizationId - Optional org UUID; when provided, the binding must
+   *                         belong to this org or the removal is rejected
+   * @throws NotFoundException if no binding with the given id exists, or if
+   *         the binding's org does not match the provided org
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, organizationId?: string): Promise<void> {
     const binding = await this.bindingRepository.findOne({ where: { id } });
 
     if (!binding) {
+      throw new NotFoundException(`Flux binding "${id}" not found`);
+    }
+
+    if (
+      organizationId &&
+      binding.organizationId &&
+      binding.organizationId !== organizationId
+    ) {
       throw new NotFoundException(`Flux binding "${id}" not found`);
     }
 

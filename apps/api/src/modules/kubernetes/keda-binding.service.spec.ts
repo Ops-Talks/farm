@@ -221,5 +221,26 @@ describe("KedaBindingService", () => {
       );
       expect(repo.remove).not.toHaveBeenCalled();
     });
+
+    it("should remove successfully when org matches binding org", async () => {
+      repo.findOne.mockResolvedValue(mockBinding);
+      repo.remove.mockResolvedValue(undefined);
+
+      await expect(
+        service.remove("keda-binding-uuid-1", "org-uuid-1"),
+      ).resolves.toBeUndefined();
+
+      expect(repo.remove).toHaveBeenCalledWith(mockBinding);
+    });
+
+    it("should throw NotFoundException when org does not match binding org", async () => {
+      repo.findOne.mockResolvedValue(mockBinding);
+
+      await expect(
+        service.remove("keda-binding-uuid-1", "different-org"),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
   });
 });

@@ -543,9 +543,39 @@ export class KubernetesController {
   }
 
   /**
+   * Lists all Flux bindings for a given catalog component.
+   *
+   * @param componentId - The catalog component UUID
+   * @param req - The authenticated request carrying optional org context
+   * @returns Array of FluxBinding entities for the component
+   */
+  @Get("components/:componentId/flux-bindings")
+  @ApiOperation({ summary: "List Flux bindings for a catalog component" })
+  @ApiParam({ name: "componentId", description: "Catalog component UUID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all Flux bindings for the specified component.",
+  })
+  listFluxBindingsByComponent(
+    @Param("componentId") componentId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<FluxBinding[]> {
+    if (!this.fluxBindingService) {
+      throw new ServiceUnavailableException("FluxBindingService not available");
+    }
+    return this.fluxBindingService.findByComponent(
+      componentId,
+      req.organizationId,
+    );
+  }
+
+  /**
    * Creates a binding between a Flux resource and a catalog component.
+   * The organization scope is derived from the authenticated request context;
+   * any organizationId supplied in the body is ignored and replaced.
    *
    * @param dto - Binding details from the request body
+   * @param req - The authenticated request carrying optional org context
    * @returns The created FluxBinding entity
    */
   @Post("flux/binding")
@@ -556,17 +586,26 @@ export class KubernetesController {
     status: HttpStatus.CONFLICT,
     description: "Binding already exists",
   })
-  createFluxBinding(@Body() dto: CreateFluxBindingDto): Promise<FluxBinding> {
+  createFluxBinding(
+    @Body() dto: CreateFluxBindingDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<FluxBinding> {
     if (!this.fluxBindingService) {
       throw new ServiceUnavailableException("FluxBindingService not available");
     }
-    return this.fluxBindingService.create(dto);
+    return this.fluxBindingService.create({
+      ...dto,
+      organizationId: req.organizationId,
+    });
   }
 
   /**
    * Removes a Flux-resource-to-component binding by its UUID.
+   * The operation is scoped to the caller's organization; bindings belonging
+   * to another organization cannot be removed.
    *
    * @param id - The binding UUID
+   * @param req - The authenticated request carrying optional org context
    */
   @Delete("flux/binding/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -580,11 +619,14 @@ export class KubernetesController {
     status: HttpStatus.NOT_FOUND,
     description: "Binding not found",
   })
-  removeFluxBinding(@Param("id") id: string): Promise<void> {
+  removeFluxBinding(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
     if (!this.fluxBindingService) {
       throw new ServiceUnavailableException("FluxBindingService not available");
     }
-    return this.fluxBindingService.remove(id);
+    return this.fluxBindingService.remove(id, req.organizationId);
   }
 
   /**
@@ -662,9 +704,39 @@ export class KubernetesController {
   }
 
   /**
+   * Lists all KEDA bindings for a given catalog component.
+   *
+   * @param componentId - The catalog component UUID
+   * @param req - The authenticated request carrying optional org context
+   * @returns Array of KedaBinding entities for the component
+   */
+  @Get("components/:componentId/keda-bindings")
+  @ApiOperation({ summary: "List KEDA bindings for a catalog component" })
+  @ApiParam({ name: "componentId", description: "Catalog component UUID" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all KEDA bindings for the specified component.",
+  })
+  listKedaBindingsByComponent(
+    @Param("componentId") componentId: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<KedaBinding[]> {
+    if (!this.kedaBindingService) {
+      throw new ServiceUnavailableException("KedaBindingService not available");
+    }
+    return this.kedaBindingService.findByComponent(
+      componentId,
+      req.organizationId,
+    );
+  }
+
+  /**
    * Creates a binding between a KEDA ScaledObject and a catalog component.
+   * The organization scope is derived from the authenticated request context;
+   * any organizationId supplied in the body is ignored and replaced.
    *
    * @param dto - Binding details from the request body
+   * @param req - The authenticated request carrying optional org context
    * @returns The created KedaBinding entity
    */
   @Post("keda/binding")
@@ -675,17 +747,26 @@ export class KubernetesController {
     status: HttpStatus.CONFLICT,
     description: "Binding already exists",
   })
-  createKedaBinding(@Body() dto: CreateKedaBindingDto): Promise<KedaBinding> {
+  createKedaBinding(
+    @Body() dto: CreateKedaBindingDto,
+    @Req() req: RequestWithOrg,
+  ): Promise<KedaBinding> {
     if (!this.kedaBindingService) {
       throw new ServiceUnavailableException("KedaBindingService not available");
     }
-    return this.kedaBindingService.create(dto);
+    return this.kedaBindingService.create({
+      ...dto,
+      organizationId: req.organizationId,
+    });
   }
 
   /**
    * Removes a KEDA ScaledObject-to-component binding by its UUID.
+   * The operation is scoped to the caller's organization; bindings belonging
+   * to another organization cannot be removed.
    *
    * @param id - The binding UUID
+   * @param req - The authenticated request carrying optional org context
    */
   @Delete("keda/binding/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -699,10 +780,13 @@ export class KubernetesController {
     status: HttpStatus.NOT_FOUND,
     description: "Binding not found",
   })
-  removeKedaBinding(@Param("id") id: string): Promise<void> {
+  removeKedaBinding(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
     if (!this.kedaBindingService) {
       throw new ServiceUnavailableException("KedaBindingService not available");
     }
-    return this.kedaBindingService.remove(id);
+    return this.kedaBindingService.remove(id, req.organizationId);
   }
 }
