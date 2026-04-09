@@ -431,6 +431,15 @@ describe("KubernetesController", () => {
     });
   });
 
+  describe("listFluxBindingsByComponent", () => {
+    it("should throw ServiceUnavailableException when fluxBindingService is null", () => {
+      const mockReq = {} as RequestWithOrg;
+      expect(() =>
+        controller.listFluxBindingsByComponent("comp-uuid-1", mockReq),
+      ).toThrow("FluxBindingService not available");
+    });
+  });
+
   describe("createFluxBinding", () => {
     it("should throw ServiceUnavailableException when fluxBindingService is null", () => {
       const dto = {
@@ -550,6 +559,19 @@ describe("KubernetesController (with FluxBindingService)", () => {
     ).resolves.toBeUndefined();
     expect(fluxBindingService.remove).toHaveBeenCalledWith(
       "flux-binding-uuid",
+      undefined,
+    );
+  });
+
+  it("should list flux bindings by component when service is available", async () => {
+    const mockReq = {} as RequestWithOrg;
+    const result = await controller.listFluxBindingsByComponent(
+      "comp-uuid-1",
+      mockReq,
+    );
+    expect(Array.isArray(result)).toBe(true);
+    expect(fluxBindingService.findByComponent).toHaveBeenCalledWith(
+      "comp-uuid-1",
       undefined,
     );
   });
@@ -681,6 +703,13 @@ describe("KubernetesController (KEDA and Dragonfly coverage)", () => {
     );
     expect(Array.isArray(result)).toBe(true);
     expect(kubernetesService.getKedaScaledObjectTriggers).toHaveBeenCalled();
+  });
+
+  it("should throw ServiceUnavailableException for listKedaBindingsByComponent when kedaBindingService is null", () => {
+    const mockReq = {} as RequestWithOrg;
+    expect(() =>
+      controller.listKedaBindingsByComponent("comp-uuid-1", mockReq),
+    ).toThrow("KedaBindingService not available");
   });
 
   it("should throw ServiceUnavailableException for createKedaBinding when kedaBindingService is null", () => {
@@ -830,6 +859,19 @@ describe("KubernetesController (with KedaBindingService)", () => {
     ).resolves.toBeUndefined();
     expect(kedaBindingService.remove).toHaveBeenCalledWith(
       "keda-binding-uuid",
+      undefined,
+    );
+  });
+
+  it("should list KEDA bindings by component when service is available", async () => {
+    const mockReq = {} as RequestWithOrg;
+    const result = await controller.listKedaBindingsByComponent(
+      "comp-uuid-1",
+      mockReq,
+    );
+    expect(Array.isArray(result)).toBe(true);
+    expect(kedaBindingService.findByComponent).toHaveBeenCalledWith(
+      "comp-uuid-1",
       undefined,
     );
   });
