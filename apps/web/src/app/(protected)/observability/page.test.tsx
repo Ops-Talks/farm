@@ -11,6 +11,9 @@ const mockGetDragonflyStatus = vi.fn();
 const mockGetDragonflyMetrics = vi.fn();
 const mockGetDragonflyTasks = vi.fn();
 const mockGetDragonflyPeers = vi.fn();
+const mockGetKedaStatus = vi.fn();
+const mockListKedaScaledObjects = vi.fn();
+const mockListKedaScaledJobs = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   health: { check: () => mockHealthCheck() },
@@ -27,6 +30,9 @@ vi.mock("@/lib/api-client", () => ({
     getDragonflyMetrics: () => mockGetDragonflyMetrics(),
     getDragonflyTasks: () => mockGetDragonflyTasks(),
     getDragonflyPeers: () => mockGetDragonflyPeers(),
+    getKedaStatus: () => mockGetKedaStatus(),
+    listKedaScaledObjects: () => mockListKedaScaledObjects(),
+    listKedaScaledJobs: () => mockListKedaScaledJobs(),
   },
 }));
 
@@ -84,6 +90,9 @@ describe("ObservabilityPage", () => {
     });
     mockGetDragonflyTasks.mockResolvedValue([]);
     mockGetDragonflyPeers.mockResolvedValue([]);
+    mockGetKedaStatus.mockResolvedValue({ installed: true, version: "2.14.0" });
+    mockListKedaScaledObjects.mockResolvedValue([]);
+    mockListKedaScaledJobs.mockResolvedValue([]);
   });
 
   it("should render heading and tabs", async () => {

@@ -30,6 +30,8 @@ import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { OperatorsTab } from "./OperatorsTab";
 import { ContainerSecurityTab } from "./ContainerSecurityTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
+import { FluxBindingCard } from "./FluxBindingCard";
+import { KedaBindingCard } from "./KedaBindingCard";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -440,6 +442,12 @@ export function ComponentDetailClient() {
               {component.containerImage?.registry === "harbor" && (
                 <HarborReplicationTable />
               )}
+
+              {/* Flux GitOps bindings (FARM-S251 / T189) */}
+              <FluxBindingCard componentId={component.id} />
+
+              {/* KEDA autoscaling bindings (FARM-S254 / T196) */}
+              <KedaBindingCard componentId={component.id} />
 
               {/* Dependencies */}
               <Card>

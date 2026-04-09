@@ -12,6 +12,8 @@ import { KyvernoPolicyReportService } from "./kyverno-policy-report.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
 import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
+import { FluxBindingService } from "./flux-binding.service";
+import { KedaBindingService } from "./keda-binding.service";
 
 describe("KubernetesController", () => {
   let controller: KubernetesController;
@@ -372,5 +374,428 @@ describe("KubernetesController", () => {
         "comp-uuid-none",
       );
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Flux GitOps endpoints (FARM-S248 / FARM-S249 / FARM-S250)
+  // ---------------------------------------------------------------------------
+
+  describe("getFluxStatus", () => {
+    it("should return flux status from the service", async () => {
+      (
+        kubernetesService as jest.Mocked<typeof kubernetesService> & {
+          getFluxStatus: jest.Mock;
+        }
+      ).getFluxStatus = jest.fn().mockResolvedValue({
+        installed: true,
+        controllers: [],
+      });
+      const result = await controller.getFluxStatus();
+      expect(result).toMatchObject({ installed: true });
+    });
+  });
+
+  describe("listFluxKustomizations", () => {
+    it("should return kustomizations from the service", async () => {
+      (
+        kubernetesService as jest.Mocked<typeof kubernetesService> & {
+          listFluxKustomizations: jest.Mock;
+        }
+      ).listFluxKustomizations = jest.fn().mockResolvedValue([]);
+      const result = await controller.listFluxKustomizations();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("listFluxHelmReleases", () => {
+    it("should return helm releases from the service", async () => {
+      (
+        kubernetesService as jest.Mocked<typeof kubernetesService> & {
+          listFluxHelmReleases: jest.Mock;
+        }
+      ).listFluxHelmReleases = jest.fn().mockResolvedValue([]);
+      const result = await controller.listFluxHelmReleases();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("listFluxSources", () => {
+    it("should return sources from the service", async () => {
+      (
+        kubernetesService as jest.Mocked<typeof kubernetesService> & {
+          listFluxSources: jest.Mock;
+        }
+      ).listFluxSources = jest.fn().mockResolvedValue([]);
+      const result = await controller.listFluxSources();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe("createFluxBinding", () => {
+    it("should throw ServiceUnavailableException when fluxBindingService is null", () => {
+      const dto = {
+        resourceKind: "Kustomization" as const,
+        resourceName: "my-app",
+        resourceNamespace: "flux-system",
+        componentId: "comp-uuid-1",
+      };
+      // In this test setup fluxBindingService is not provided (null via @Optional)
+      expect(() => controller.createFluxBinding(dto)).toThrow(
+        "FluxBindingService not available",
+      );
+    });
+  });
+
+  describe("removeFluxBinding", () => {
+    it("should throw ServiceUnavailableException when fluxBindingService is null", () => {
+      expect(() => controller.removeFluxBinding("some-id")).toThrow(
+        "FluxBindingService not available",
+      );
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KubernetesController — with FluxBindingService registered
+// ---------------------------------------------------------------------------
+
+describe("KubernetesController (with FluxBindingService)", () => {
+  let controller: KubernetesController;
+  let fluxBindingService: {
+    create: jest.Mock;
+    remove: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    const kubernetesService = {
+      discoverWorkloads: jest.fn().mockResolvedValue([]),
+      matchComponent: jest.fn().mockResolvedValue([]),
+      listCRDs: jest.fn().mockResolvedValue([]),
+      listRollouts: jest.fn().mockResolvedValue([]),
+      listOperators: jest.fn().mockResolvedValue([]),
+      listOperatorCustomResources: jest.fn().mockResolvedValue([]),
+      listNodeRuntimes: jest.fn().mockResolvedValue([]),
+      getCrioMetrics: jest.fn().mockResolvedValue({}),
+      getFluxStatus: jest
+        .fn()
+        .mockResolvedValue({ installed: false, controllers: [] }),
+      listFluxKustomizations: jest.fn().mockResolvedValue([]),
+      listFluxHelmReleases: jest.fn().mockResolvedValue([]),
+      listFluxSources: jest.fn().mockResolvedValue([]),
+    };
+
+    const kyvernoService = {
+      listPolicyReports: jest.fn().mockResolvedValue([]),
+      listClusterPolicyReports: jest.fn().mockResolvedValue([]),
+    };
+
+    const operatorBindingService = {
+      create: jest.fn().mockResolvedValue({}),
+      findByOperator: jest.fn().mockResolvedValue([]),
+      findByComponent: jest.fn().mockResolvedValue([]),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    fluxBindingService = {
+      create: jest.fn().mockResolvedValue({
+        id: "flux-binding-uuid",
+        resourceKind: "Kustomization",
+        resourceName: "my-app",
+        resourceNamespace: "flux-system",
+        componentId: "comp-uuid-1",
+        boundAt: new Date(),
+        organizationId: null,
+      }),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module = await Test.createTestingModule({
+      controllers: [KubernetesController],
+      providers: [
+        { provide: KubernetesService, useValue: kubernetesService },
+        { provide: KyvernoPolicyReportService, useValue: kyvernoService },
+        { provide: OperatorBindingService, useValue: operatorBindingService },
+        { provide: FluxBindingService, useValue: fluxBindingService },
+        { provide: KedaBindingService, useValue: null },
+      ],
+    }).compile();
+
+    controller = module.get<KubernetesController>(KubernetesController);
+  });
+
+  it("should create a flux binding when service is available", async () => {
+    const dto = {
+      resourceKind: "Kustomization" as const,
+      resourceName: "my-app",
+      resourceNamespace: "flux-system",
+      componentId: "comp-uuid-1",
+    };
+    const result = await controller.createFluxBinding(dto);
+    expect(fluxBindingService.create).toHaveBeenCalledWith(dto);
+    expect(result).toMatchObject({ resourceKind: "Kustomization" });
+  });
+
+  it("should remove a flux binding when service is available", async () => {
+    await expect(
+      controller.removeFluxBinding("flux-binding-uuid"),
+    ).resolves.toBeUndefined();
+    expect(fluxBindingService.remove).toHaveBeenCalledWith("flux-binding-uuid");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KubernetesController — KEDA null guard and Dragonfly delegation
+// ---------------------------------------------------------------------------
+
+describe("KubernetesController (KEDA and Dragonfly coverage)", () => {
+  let controller: KubernetesController;
+  let kubernetesService: Record<string, jest.Mock>;
+
+  beforeEach(async () => {
+    kubernetesService = {
+      discoverWorkloads: jest.fn().mockResolvedValue([]),
+      matchComponent: jest.fn().mockResolvedValue([]),
+      listCRDs: jest.fn().mockResolvedValue([]),
+      listRollouts: jest.fn().mockResolvedValue([]),
+      listOperators: jest.fn().mockResolvedValue([]),
+      listOperatorCustomResources: jest.fn().mockResolvedValue([]),
+      listNodeRuntimes: jest.fn().mockResolvedValue([]),
+      getCrioMetrics: jest.fn().mockResolvedValue({}),
+      getDragonflyStatus: jest.fn().mockResolvedValue({
+        status: "not-installed",
+        version: null,
+        components: [],
+      }),
+      getDragonflyTasks: jest.fn().mockResolvedValue([]),
+      getDragonflyPeers: jest.fn().mockResolvedValue([]),
+      getDragonflyMetrics: jest.fn().mockResolvedValue({
+        totalTasks: 0,
+        succeededTasks: 0,
+        failedTasks: 0,
+        activeTasks: 0,
+        totalPeers: 0,
+      }),
+      getFluxStatus: jest
+        .fn()
+        .mockResolvedValue({ installed: false, controllers: [] }),
+      listFluxKustomizations: jest.fn().mockResolvedValue([]),
+      listFluxHelmReleases: jest.fn().mockResolvedValue([]),
+      listFluxSources: jest.fn().mockResolvedValue([]),
+      getKedaStatus: jest
+        .fn()
+        .mockResolvedValue({ installed: false, version: "" }),
+      listKedaScaledObjects: jest.fn().mockResolvedValue([]),
+      listKedaScaledJobs: jest.fn().mockResolvedValue([]),
+      getKedaScaledObjectTriggers: jest.fn().mockResolvedValue([]),
+    };
+
+    const kyvernoService = {
+      listPolicyReports: jest.fn().mockResolvedValue([]),
+      listClusterPolicyReports: jest.fn().mockResolvedValue([]),
+    };
+
+    const operatorBindingService = {
+      create: jest.fn().mockResolvedValue({}),
+      findByOperator: jest.fn().mockResolvedValue([]),
+      findByComponent: jest.fn().mockResolvedValue([]),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module = await Test.createTestingModule({
+      controllers: [KubernetesController],
+      providers: [
+        { provide: KubernetesService, useValue: kubernetesService },
+        { provide: KyvernoPolicyReportService, useValue: kyvernoService },
+        { provide: OperatorBindingService, useValue: operatorBindingService },
+        {
+          provide: FluxBindingService,
+          useValue: { create: jest.fn(), remove: jest.fn() },
+        },
+        // KedaBindingService intentionally omitted to test null guard
+      ],
+    }).compile();
+
+    controller = module.get<KubernetesController>(KubernetesController);
+  });
+
+  it("should delegate getDragonflyStatus to the service", async () => {
+    const result = await controller.getDragonflyStatus();
+    expect(result).toMatchObject({ status: "not-installed" });
+    expect(kubernetesService.getDragonflyStatus).toHaveBeenCalled();
+  });
+
+  it("should delegate getDragonflyTasks to the service", async () => {
+    const result = await controller.getDragonflyTasks();
+    expect(Array.isArray(result)).toBe(true);
+    expect(kubernetesService.getDragonflyTasks).toHaveBeenCalled();
+  });
+
+  it("should delegate getDragonflyPeers to the service", async () => {
+    const result = await controller.getDragonflyPeers();
+    expect(Array.isArray(result)).toBe(true);
+    expect(kubernetesService.getDragonflyPeers).toHaveBeenCalled();
+  });
+
+  it("should delegate getDragonflyMetrics to the service", async () => {
+    const result = await controller.getDragonflyMetrics();
+    expect(result).toMatchObject({ totalTasks: 0 });
+    expect(kubernetesService.getDragonflyMetrics).toHaveBeenCalled();
+  });
+
+  it("should delegate getKedaStatus to the service", async () => {
+    const result = await controller.getKedaStatus();
+    expect(result).toMatchObject({ installed: false });
+    expect(kubernetesService.getKedaStatus).toHaveBeenCalled();
+  });
+
+  it("should delegate listKedaScaledObjects to the service", async () => {
+    const result = await controller.listKedaScaledObjects();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should delegate listKedaScaledJobs to the service", async () => {
+    const result = await controller.listKedaScaledJobs();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should delegate getKedaScaledObjectTriggers to the service", async () => {
+    const result = await controller.getKedaScaledObjectTriggers(
+      "default",
+      "my-scaler",
+    );
+    expect(Array.isArray(result)).toBe(true);
+    expect(kubernetesService.getKedaScaledObjectTriggers).toHaveBeenCalled();
+  });
+
+  it("should throw ServiceUnavailableException for createKedaBinding when kedaBindingService is null", () => {
+    const dto = {
+      resourceKind: "ScaledObject" as const,
+      resourceName: "my-scaler",
+      resourceNamespace: "default",
+      componentId: "comp-uuid-1",
+    };
+    expect(() => controller.createKedaBinding(dto)).toThrow(
+      "KedaBindingService not available",
+    );
+  });
+
+  it("should throw ServiceUnavailableException for removeKedaBinding when kedaBindingService is null", () => {
+    expect(() => controller.removeKedaBinding("some-id")).toThrow(
+      "KedaBindingService not available",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// KubernetesController — with KedaBindingService registered (happy paths)
+// ---------------------------------------------------------------------------
+
+describe("KubernetesController (with KedaBindingService)", () => {
+  let controller: KubernetesController;
+  let kedaBindingService: { create: jest.Mock; remove: jest.Mock };
+
+  beforeEach(async () => {
+    const kubernetesService = {
+      discoverWorkloads: jest.fn().mockResolvedValue([]),
+      matchComponent: jest.fn().mockResolvedValue([]),
+      listCRDs: jest.fn().mockResolvedValue([]),
+      listRollouts: jest.fn().mockResolvedValue([]),
+      listOperators: jest.fn().mockResolvedValue([]),
+      listOperatorCustomResources: jest.fn().mockResolvedValue([]),
+      listNodeRuntimes: jest.fn().mockResolvedValue([]),
+      getCrioMetrics: jest.fn().mockResolvedValue({}),
+      getDragonflyStatus: jest.fn().mockResolvedValue({
+        status: "not-installed",
+        version: null,
+        components: [],
+      }),
+      getDragonflyTasks: jest.fn().mockResolvedValue([]),
+      getDragonflyPeers: jest.fn().mockResolvedValue([]),
+      getDragonflyMetrics: jest.fn().mockResolvedValue({
+        totalTasks: 0,
+        succeededTasks: 0,
+        failedTasks: 0,
+        activeTasks: 0,
+        totalPeers: 0,
+      }),
+      getFluxStatus: jest
+        .fn()
+        .mockResolvedValue({ installed: false, controllers: [] }),
+      listFluxKustomizations: jest.fn().mockResolvedValue([]),
+      listFluxHelmReleases: jest.fn().mockResolvedValue([]),
+      listFluxSources: jest.fn().mockResolvedValue([]),
+      getKedaStatus: jest
+        .fn()
+        .mockResolvedValue({ installed: false, version: "" }),
+      listKedaScaledObjects: jest.fn().mockResolvedValue([]),
+      listKedaScaledJobs: jest.fn().mockResolvedValue([]),
+      getKedaScaledObjectTriggers: jest.fn().mockResolvedValue([]),
+    };
+
+    kedaBindingService = {
+      create: jest.fn().mockResolvedValue({
+        id: "keda-binding-uuid",
+        resourceKind: "ScaledObject",
+        resourceName: "my-scaler",
+        resourceNamespace: "default",
+        componentId: "comp-uuid-1",
+        boundAt: new Date(),
+        organizationId: null,
+      }),
+      remove: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module = await Test.createTestingModule({
+      controllers: [KubernetesController],
+      providers: [
+        { provide: KubernetesService, useValue: kubernetesService },
+        {
+          provide: KyvernoPolicyReportService,
+          useValue: {
+            listPolicyReports: jest.fn(),
+            listClusterPolicyReports: jest.fn(),
+          },
+        },
+        {
+          provide: OperatorBindingService,
+          useValue: {
+            create: jest.fn(),
+            findByOperator: jest.fn(),
+            findByComponent: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+        {
+          provide: FluxBindingService,
+          useValue: { create: jest.fn(), remove: jest.fn() },
+        },
+        { provide: KedaBindingService, useValue: kedaBindingService },
+      ],
+    }).compile();
+
+    controller = module.get<KubernetesController>(KubernetesController);
+    // Bypass the DI injection-token issue caused by "KedaBindingService | null"
+    // union type: directly set the private property on the controller instance.
+    (controller as unknown as Record<string, unknown>).kedaBindingService =
+      kedaBindingService;
+  });
+
+  it("should create a KEDA binding when service is available", async () => {
+    const dto = {
+      resourceKind: "ScaledObject" as const,
+      resourceName: "my-scaler",
+      resourceNamespace: "default",
+      componentId: "comp-uuid-1",
+    };
+    const result = await controller.createKedaBinding(dto);
+    expect(kedaBindingService.create).toHaveBeenCalledWith(dto);
+    expect(result).toMatchObject({ resourceKind: "ScaledObject" });
+  });
+
+  it("should remove a KEDA binding when service is available", async () => {
+    await expect(
+      controller.removeKedaBinding("keda-binding-uuid"),
+    ).resolves.toBeUndefined();
+    expect(kedaBindingService.remove).toHaveBeenCalledWith("keda-binding-uuid");
   });
 });

@@ -26,6 +26,7 @@ export enum FarmEvent {
   ENV_REQUEST_PROVISIONED = "env-request.provisioned",
   ENV_REQUEST_EXPIRED = "env-request.expired",
   CONTAINER_VULNERABILITY_FOUND = "container:vulnerability-found",
+  FLUX_RECONCILIATION_FAILED = "flux:reconciliation-failed",
 }
 
 /**
@@ -130,5 +131,16 @@ export interface ContainerVulnerabilityFoundPayload {
   criticalCount: number;
   image: string;
   tag: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for Flux reconciliation failure events.
+ */
+export interface FluxReconciliationFailedPayload {
+  resourceKind: "Kustomization" | "HelmRelease";
+  name: string;
+  namespace: string;
+  reason: string;
   timestamp: string;
 }

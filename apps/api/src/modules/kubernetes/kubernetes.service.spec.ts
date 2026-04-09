@@ -1170,6 +1170,28 @@ describe("KubernetesService", () => {
       });
     });
 
+    it("should use full string as runtimeName when no :// separator exists", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          {
+            metadata: { name: "legacy-node" },
+            status: {
+              nodeInfo: { containerRuntimeVersion: "docker" },
+            },
+          },
+        ],
+      });
+
+      const result = await service.listNodeRuntimes();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        nodeName: "legacy-node",
+        runtimeName: "docker",
+        runtimeVersion: "unknown",
+      });
+    });
+
     it("should handle API errors gracefully", async () => {
       mockListNodes.mockRejectedValue(new Error("connection refused"));
 
@@ -1257,6 +1279,25 @@ describe("KubernetesService", () => {
       const result = await service.getCrioMetrics("worker-1");
 
       expect(result).toEqual({ nodeName: "worker-1", available: false });
+    });
+
+    it("should return available=false when node is not found in the runtime list", async () => {
+      mockListNodes.mockResolvedValue({
+        items: [
+          fakeNodeItem({
+            name: "other-node",
+            containerRuntimeVersion: "containerd://1.7.2",
+          }),
+        ],
+      });
+
+      // Ask for a node that doesn't exist in the list.
+      const result = await service.getCrioMetrics("nonexistent-node");
+
+      expect(result).toEqual({
+        nodeName: "nonexistent-node",
+        available: false,
+      });
     });
   });
 
@@ -1516,6 +1557,35 @@ describe("KubernetesService", () => {
 
         expect(result).toEqual([]);
       });
+
+      it("should return empty array when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.getDragonflyTasks();
+
+        expect(result).toEqual([]);
+      });
     });
 
     describe("getDragonflyStatus — DaemonSet path", () => {
@@ -1709,6 +1779,572 @@ describe("KubernetesService", () => {
         const result = await service.getDragonflyMetrics();
 
         expect(result.totalTasks).toBe(100);
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Flux GitOps (FARM-S248 / FARM-S249 / FARM-S250)
+  // ---------------------------------------------------------------------------
+
+  describe("Flux GitOps", () => {
+    // -------------------------------------------------------------------------
+    // getFluxStatus
+    // -------------------------------------------------------------------------
+
+    describe("getFluxStatus", () => {
+      it("should return not-installed when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.getFluxStatus();
+
+        expect(result).toEqual({ installed: false, controllers: [] });
+      });
+
+      it("should return installed:true when two controllers are ready", async () => {
+        mockListDeployments.mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "source-controller",
+                namespace: "flux-system",
+              },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [
+                      { image: "ghcr.io/fluxcd/source-controller:v1.2.3" },
+                    ],
+                  },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+            {
+              metadata: {
+                name: "kustomize-controller",
+                namespace: "flux-system",
+              },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [
+                      {
+                        image: "ghcr.io/fluxcd/kustomize-controller:v1.2.3",
+                      },
+                    ],
+                  },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+          ],
+        });
+
+        const result = await service.getFluxStatus();
+
+        expect(result.installed).toBe(true);
+        expect(result.controllers).toHaveLength(4);
+        const sourceCtrl = result.controllers.find(
+          (c) => c.name === "source-controller",
+        );
+        expect(sourceCtrl?.ready).toBe(true);
+        expect(sourceCtrl?.version).toBe("v1.2.3");
+        expect(sourceCtrl?.namespace).toBe("flux-system");
+      });
+
+      it("should return not-installed on k8s API error", async () => {
+        mockListDeployments.mockRejectedValue(new Error("api error"));
+
+        const result = await service.getFluxStatus();
+
+        expect(result).toEqual({ installed: false, controllers: [] });
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // listFluxKustomizations
+    // -------------------------------------------------------------------------
+
+    describe("listFluxKustomizations", () => {
+      it("should return empty array when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.listFluxKustomizations();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should return mapped array when one Kustomization exists", async () => {
+        mockListRollouts.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "my-app", namespace: "flux-system" },
+              spec: {
+                path: "./deploy/production",
+                suspend: false,
+                sourceRef: { kind: "GitRepository", name: "my-repo" },
+              },
+              status: {
+                lastAppliedRevision: "main/abc123",
+                conditions: [
+                  {
+                    type: "Ready",
+                    status: "True",
+                    message: "Applied revision: main/abc123",
+                  },
+                ],
+              },
+            },
+          ],
+        });
+
+        const result = await service.listFluxKustomizations();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          name: "my-app",
+          namespace: "flux-system",
+          path: "./deploy/production",
+          ready: true,
+          suspended: false,
+          lastAppliedRevision: "main/abc123",
+          sourceRef: "GitRepository/my-repo",
+          readyConditionMessage: "Applied revision: main/abc123",
+        });
+      });
+
+      it("should return empty array on API error", async () => {
+        mockListRollouts.mockRejectedValue(
+          new Error("kustomizations CRD not found"),
+        );
+
+        const result = await service.listFluxKustomizations();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // listFluxHelmReleases
+    // -------------------------------------------------------------------------
+
+    describe("listFluxHelmReleases", () => {
+      it("should return empty array when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.listFluxHelmReleases();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should return mapped array when one HelmRelease exists", async () => {
+        mockListRollouts.mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "nginx", namespace: "ingress" },
+              spec: {
+                suspend: true,
+                chart: {
+                  spec: { chart: "nginx", version: ">=1.0.0" },
+                },
+              },
+              status: {
+                lastAppliedRevision: "1.3.0",
+                conditions: [
+                  {
+                    type: "Ready",
+                    status: "False",
+                    message: "install retries exhausted",
+                  },
+                ],
+              },
+            },
+          ],
+        });
+
+        const result = await service.listFluxHelmReleases();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          name: "nginx",
+          namespace: "ingress",
+          chartName: "nginx",
+          chartVersion: ">=1.0.0",
+          ready: false,
+          suspended: true,
+          lastAppliedRevision: "1.3.0",
+          readyConditionMessage: "install retries exhausted",
+        });
+      });
+
+      it("should return empty array when API call throws", async () => {
+        mockListRollouts.mockRejectedValue(new Error("helm CRD not found"));
+
+        const result = await service.listFluxHelmReleases();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should handle non-Error throws in API call", async () => {
+        mockListRollouts.mockRejectedValue("non-error-helm-failure");
+
+        const result = await service.listFluxHelmReleases();
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // listFluxSources
+    // -------------------------------------------------------------------------
+
+    describe("listFluxSources", () => {
+      it("should return empty array when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        const result = await disabledService.listFluxSources();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should return mapped GitRepository when one item exists", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({
+            items: [
+              {
+                metadata: { name: "my-repo", namespace: "flux-system" },
+                spec: {
+                  url: "https://github.com/org/repo.git",
+                  ref: { branch: "main" },
+                },
+                status: {
+                  artifact: { revision: "main/abc123def456" },
+                  conditions: [
+                    {
+                      type: "Ready",
+                      status: "True",
+                      message: "stored artifact for revision",
+                    },
+                  ],
+                },
+              },
+            ],
+          })
+          // Second call (OCIRepositories): return empty
+          .mockResolvedValueOnce({ items: [] });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          kind: "GitRepository",
+          name: "my-repo",
+          namespace: "flux-system",
+          url: "https://github.com/org/repo.git",
+          branch: "main",
+          lastFetchedCommit: "main/abc123def456",
+          ready: true,
+          readyConditionMessage: "stored artifact for revision",
+        });
+      });
+
+      it("should return partial list when OCIRepository fetch fails", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({
+            items: [
+              {
+                metadata: { name: "git-src", namespace: "flux-system" },
+                spec: {
+                  url: "https://github.com/org/app.git",
+                  ref: { branch: "main" },
+                },
+                status: {
+                  artifact: { revision: "main/111" },
+                  conditions: [
+                    { type: "Ready", status: "True", message: "ok" },
+                  ],
+                },
+              },
+            ],
+          })
+          .mockRejectedValueOnce(new Error("oci CRD not found"));
+
+        const result = await service.listFluxSources();
+
+        expect(result).toHaveLength(1);
+        expect(result[0].kind).toBe("GitRepository");
+      });
+
+      it("should return empty when GitRepository fetch fails", async () => {
+        mockListRollouts
+          .mockRejectedValueOnce(new Error("git CRD not found"))
+          .mockResolvedValueOnce({ items: [] });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toEqual([]);
+      });
+
+      it("should return OCIRepository items when they exist", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({ items: [] })
+          .mockResolvedValueOnce({
+            items: [
+              {
+                metadata: { name: "oci-src", namespace: "flux-system" },
+                spec: { url: "oci://registry.io/repo" },
+                status: {
+                  artifact: { revision: "sha256:abc123" },
+                  conditions: [
+                    { type: "Ready", status: "True", message: "fetched" },
+                  ],
+                },
+              },
+            ],
+          });
+
+        const result = await service.listFluxSources();
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+          kind: "OCIRepository",
+          name: "oci-src",
+          url: "oci://registry.io/repo",
+          branch: null,
+          lastFetchedCommit: "sha256:abc123",
+          ready: true,
+        });
+      });
+
+      it("should handle non-Error throw from GitRepository fetch", async () => {
+        mockListRollouts
+          .mockRejectedValueOnce("non-error-git-failure")
+          .mockResolvedValueOnce({ items: [] });
+
+        const result = await service.listFluxSources();
+
+        // GitRepository failed gracefully; OCI succeeded (empty)
+        expect(Array.isArray(result)).toBe(true);
+      });
+
+      it("should handle non-Error throw from OCIRepository fetch", async () => {
+        mockListRollouts
+          .mockResolvedValueOnce({ items: [] })
+          .mockRejectedValueOnce("non-error-oci-failure");
+
+        const result = await service.listFluxSources();
+
+        expect(Array.isArray(result)).toBe(true);
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // pollFluxReconciliation
+    // -------------------------------------------------------------------------
+
+    describe("pollFluxReconciliation", () => {
+      it("should return early when Kubernetes is disabled", async () => {
+        mockLoadFromFile = jest.fn().mockImplementation(() => {
+          throw new Error("no kubeconfig");
+        });
+        mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+
+        const module = await Test.createTestingModule({
+          providers: [
+            KubernetesService,
+            {
+              provide: ConfigService,
+              useValue: {
+                get: (key: string) => {
+                  if (key === "kubernetes.kubeconfigPath") return "";
+                  return "";
+                },
+              },
+            },
+            { provide: CatalogService, useValue: mockCatalogService },
+            { provide: EventsGateway, useValue: mockEventsGateway },
+          ],
+        }).compile();
+
+        const disabledService =
+          module.get<KubernetesService>(KubernetesService);
+        await expect(
+          disabledService.pollFluxReconciliation(),
+        ).resolves.toBeUndefined();
+        expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      });
+
+      it("should emit FLUX_RECONCILIATION_FAILED for a failed Kustomization", async () => {
+        jest.spyOn(service, "listFluxKustomizations").mockResolvedValue([
+          {
+            name: "broken-app",
+            namespace: "production",
+            path: "./deploy",
+            ready: false,
+            suspended: false,
+            lastAppliedRevision: null,
+            sourceRef: "GitRepository/my-repo",
+            readyConditionMessage: "reconciliation failed: timeout",
+          },
+        ]);
+        jest.spyOn(service, "listFluxHelmReleases").mockResolvedValue([]);
+
+        await service.pollFluxReconciliation();
+
+        expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+          "flux:reconciliation-failed",
+          expect.objectContaining({
+            resourceKind: "Kustomization",
+            name: "broken-app",
+            namespace: "production",
+            reason: "reconciliation failed: timeout",
+          }),
+        );
+      });
+
+      it("should emit FLUX_RECONCILIATION_FAILED for a failed HelmRelease", async () => {
+        jest.spyOn(service, "listFluxKustomizations").mockResolvedValue([]);
+        jest.spyOn(service, "listFluxHelmReleases").mockResolvedValue([
+          {
+            name: "nginx",
+            namespace: "ingress",
+            chartName: "nginx",
+            chartVersion: "1.0.0",
+            ready: false,
+            suspended: false,
+            lastAppliedRevision: null,
+            readyConditionMessage: "install retries exhausted",
+          },
+        ]);
+
+        await service.pollFluxReconciliation();
+
+        expect(mockEventsGateway.server.emit).toHaveBeenCalledWith(
+          "flux:reconciliation-failed",
+          expect.objectContaining({
+            resourceKind: "HelmRelease",
+            name: "nginx",
+            namespace: "ingress",
+            reason: "install retries exhausted",
+          }),
+        );
+      });
+
+      it("should not emit event for a suspended failed resource", async () => {
+        jest.spyOn(service, "listFluxKustomizations").mockResolvedValue([
+          {
+            name: "suspended-app",
+            namespace: "production",
+            path: "./deploy",
+            ready: false,
+            suspended: true,
+            lastAppliedRevision: null,
+            sourceRef: null,
+            readyConditionMessage: "some error",
+          },
+        ]);
+        jest.spyOn(service, "listFluxHelmReleases").mockResolvedValue([]);
+
+        await service.pollFluxReconciliation();
+
+        expect(mockEventsGateway.server.emit).not.toHaveBeenCalled();
+      });
+
+      it("should handle inner error gracefully in pollFluxReconciliation", async () => {
+        jest
+          .spyOn(service, "listFluxKustomizations")
+          .mockRejectedValue(new Error("inner error"));
+
+        await expect(service.pollFluxReconciliation()).resolves.toBeUndefined();
       });
     });
   });
@@ -2538,6 +3174,34 @@ describe("KubernetesService — additional branch coverage", () => {
       expect(result).toEqual([]);
     });
 
+    it("should use String(error) when non-Error is thrown for CRD query", async () => {
+      mockLoadFromCluster = jest.fn();
+      const mockClusterObj = jest
+        .fn()
+        // First call: listOperators → returns CSV list
+        .mockResolvedValueOnce({ items: [csvWithCrds] })
+        // Second call: CRD query throws a non-Error
+        .mockRejectedValueOnce("non-error-crd-failure");
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      expect(result).toEqual([]);
+    });
+
     it("should return empty array when operator has no owned CRDs", async () => {
       mockLoadFromCluster = jest.fn();
       const csvNoCrds = {
@@ -2674,7 +3338,575 @@ describe("KubernetesService — additional branch coverage", () => {
         kind: "Beta",
       });
     });
+
+    it("should return empty array when Kubernetes is disabled", async () => {
+      mockLoadFromFile = jest.fn().mockImplementation(() => {
+        throw new Error("disabled");
+      });
+      mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should skip CRD with 404 response and continue", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockGetCurrentCluster = jest
+        .fn()
+        .mockReturnValue({ server: "https://kubernetes.default.svc" });
+      const notFound = new Error("Not Found") as Error & {
+        response: { statusCode: number };
+      };
+      notFound.response = { statusCode: 404 };
+
+      const mockClusterObj = jest
+        .fn()
+        .mockResolvedValueOnce({ items: [csvWithCrds] })
+        .mockRejectedValueOnce(notFound);
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when listOperators throws", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockGetCurrentCluster = jest
+        .fn()
+        .mockReturnValue({ server: "https://kubernetes.default.svc" });
+      const mockClusterObj = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("API failure"));
+      mockMakeApiClient = jest.fn().mockReturnValue({
+        listDeploymentForAllNamespaces: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listCustomResourceDefinition: jest
+          .fn()
+          .mockResolvedValue({ items: [] }),
+        listClusterCustomObject: mockClusterObj,
+        listNamespacedCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+        listNode: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const service = await buildService();
+
+      const result = await service.listOperatorCustomResources(
+        "test-operator.v1.0.0",
+      );
+
+      expect(result).toEqual([]);
+    });
   });
 });
 
 // ---------------------------------------------------------------------------
+
+// KEDA Autoscaling (FARM-S252 / FARM-S253)
+// ---------------------------------------------------------------------------
+
+describe("KEDA Autoscaling", () => {
+  // Local config/catalog/events mocks needed outside the outer describe block.
+  const kedaConfigService = {
+    get: (key: string) => {
+      if (key === "kubernetes.kubeconfigPath") return "/fake/kubeconfig";
+      return "";
+    },
+  };
+  const kedaCatalogService = {
+    findAll: jest.fn().mockResolvedValue([[], 0]),
+    create: jest.fn().mockResolvedValue({ id: "new-id", name: "test" }),
+    update: jest.fn().mockResolvedValue({ id: "existing-id" }),
+  };
+  const kedaEventsGateway = { server: { emit: jest.fn() } };
+
+  // Helper to build a fresh service with custom mockMakeApiClient per test.
+  async function buildKedaService(
+    overrides: Partial<{
+      listDeployments: jest.Mock;
+      listClusterCustomObject: jest.Mock;
+      getNamespacedCustomObject: jest.Mock;
+    }> = {},
+  ) {
+    const listDeployments =
+      overrides.listDeployments ?? jest.fn().mockResolvedValue({ items: [] });
+    const listClusterCustomObject =
+      overrides.listClusterCustomObject ??
+      jest.fn().mockResolvedValue({ items: [] });
+    const getNamespacedCustomObject =
+      overrides.getNamespacedCustomObject ?? jest.fn().mockResolvedValue({});
+
+    // Reset connection mocks so initClient() succeeds.
+    mockLoadFromFile = jest.fn();
+    mockLoadFromCluster = jest.fn().mockImplementation(() => {
+      throw new Error("not in cluster");
+    });
+    mockGetCurrentCluster = jest
+      .fn()
+      .mockReturnValue({ server: "https://kubernetes.default.svc" });
+
+    mockMakeApiClient = jest.fn().mockImplementation((ApiClass: object) => {
+      const name = (ApiClass as { name?: string }).name ?? "";
+      if (name === "AppsV1Api") {
+        return {
+          listDeploymentForAllNamespaces: listDeployments,
+          listDaemonSetForAllNamespaces: jest
+            .fn()
+            .mockResolvedValue({ items: [] }),
+        };
+      }
+      if (name === "CustomObjectsApi") {
+        return {
+          listClusterCustomObject,
+          listNamespacedCustomObject: jest
+            .fn()
+            .mockResolvedValue({ items: [] }),
+          getNamespacedCustomObject,
+        };
+      }
+      if (name === "CoreV1Api") {
+        return {
+          listSecretForAllNamespaces: jest
+            .fn()
+            .mockResolvedValue({ items: [] }),
+          listNode: jest.fn().mockResolvedValue({ items: [] }),
+          listPodForAllNamespaces: jest.fn().mockResolvedValue({ items: [] }),
+          connectGetNamespacedPodProxy: jest.fn().mockResolvedValue(""),
+        };
+      }
+      if (name === "ApiextensionsV1Api") {
+        return {
+          listCustomResourceDefinition: jest
+            .fn()
+            .mockResolvedValue({ items: [] }),
+        };
+      }
+      return {};
+    });
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KubernetesService,
+        { provide: ConfigService, useValue: kedaConfigService },
+        { provide: CatalogService, useValue: kedaCatalogService },
+        { provide: EventsGateway, useValue: kedaEventsGateway },
+      ],
+    }).compile();
+
+    return module.get<KubernetesService>(KubernetesService);
+  }
+
+  async function buildDisabledKedaService() {
+    mockLoadFromFile = jest.fn().mockImplementation(() => {
+      throw new Error("disabled");
+    });
+    mockGetCurrentCluster = jest.fn().mockReturnValue(null);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KubernetesService,
+        { provide: ConfigService, useValue: kedaConfigService },
+        { provide: CatalogService, useValue: kedaCatalogService },
+        { provide: EventsGateway, useValue: kedaEventsGateway },
+      ],
+    }).compile();
+    return module.get<KubernetesService>(KubernetesService);
+  }
+
+  // -------------------------------------------------------------------------
+  // getKedaStatus
+  // -------------------------------------------------------------------------
+
+  describe("getKedaStatus", () => {
+    it("should return not-installed when Kubernetes is disabled", async () => {
+      const svc = await buildDisabledKedaService();
+      const result = await svc.getKedaStatus();
+      expect(result).toEqual({ installed: false, version: "" });
+    });
+
+    it("should return not-installed when keda-operator deployment is absent", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const result = await svc.getKedaStatus();
+      expect(result).toEqual({ installed: false, version: "" });
+    });
+
+    it("should return installed=true with version when keda-operator is ready", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "keda-operator", namespace: "keda" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "ghcr.io/kedacore/keda:2.13.0" }],
+                  },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+          ],
+        }),
+      });
+      const result = await svc.getKedaStatus();
+      expect(result.installed).toBe(true);
+      expect(result.version).toBe("2.13.0");
+    });
+
+    it("should return installed=false when readyReplicas is 0", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "keda-operator", namespace: "keda" },
+              spec: {
+                template: {
+                  spec: {
+                    containers: [{ image: "ghcr.io/kedacore/keda:2.13.0" }],
+                  },
+                },
+              },
+              status: { readyReplicas: 0 },
+            },
+          ],
+        }),
+      });
+      const result = await svc.getKedaStatus();
+      expect(result.installed).toBe(false);
+      expect(result.version).toBe("2.13.0");
+    });
+
+    it("should return not-installed on API error", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest
+          .fn()
+          .mockRejectedValue(new Error("connection refused")),
+      });
+      const result = await svc.getKedaStatus();
+      expect(result).toEqual({ installed: false, version: "" });
+    });
+
+    it("should return empty version when image tag is unknown", async () => {
+      const svc = await buildKedaService({
+        listDeployments: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "keda-operator", namespace: "keda" },
+              spec: {
+                template: {
+                  spec: { containers: [{ image: "keda-operator" }] },
+                },
+              },
+              status: { readyReplicas: 1 },
+            },
+          ],
+        }),
+      });
+      const result = await svc.getKedaStatus();
+      expect(result.installed).toBe(true);
+      expect(result.version).toBe("");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listKedaScaledObjects
+  // -------------------------------------------------------------------------
+
+  describe("listKedaScaledObjects", () => {
+    it("should return empty array when Kubernetes is disabled", async () => {
+      const svc = await buildDisabledKedaService();
+      const result = await svc.listKedaScaledObjects();
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array on API error", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest
+          .fn()
+          .mockRejectedValue(new Error("CRD not found")),
+      });
+      const result = await svc.listKedaScaledObjects();
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array when no ScaledObjects exist", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({ items: [] }),
+      });
+      const result = await svc.listKedaScaledObjects();
+      expect(result).toEqual([]);
+    });
+
+    it("should map a ScaledObject with ready+active conditions and kafka trigger", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "my-app-scaler",
+                namespace: "production",
+                annotations: {},
+              },
+              spec: {
+                scaleTargetRef: { name: "my-app" },
+                minReplicaCount: 1,
+                maxReplicaCount: 10,
+                triggers: [
+                  {
+                    type: "kafka",
+                    metadata: {
+                      bootstrapServers: "kafka:9092",
+                      topic: "events",
+                    },
+                  },
+                ],
+              },
+              status: {
+                currentReplicas: 3,
+                desiredReplicas: 5,
+                conditions: [
+                  { type: "Ready", status: "True" },
+                  { type: "Active", status: "True" },
+                ],
+              },
+            },
+          ],
+        }),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: "my-app-scaler",
+        namespace: "production",
+        targetDeployment: "my-app",
+        minReplicaCount: 1,
+        maxReplicaCount: 10,
+        ready: true,
+        active: true,
+        paused: false,
+        currentReplicas: 3,
+        desiredReplicas: 5,
+        scalerType: "kafka",
+      });
+    });
+
+    it("should set paused=true when autoscaling.keda.sh/paused annotation is true", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: {
+                name: "paused-scaler",
+                namespace: "default",
+                annotations: { "autoscaling.keda.sh/paused": "true" },
+              },
+              spec: { triggers: [] },
+              status: { conditions: [] },
+            },
+          ],
+        }),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+      expect(result[0].paused).toBe(true);
+    });
+
+    it("should use defaults when optional ScaledObject fields are absent", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [{ metadata: {}, spec: {}, status: {} }],
+        }),
+      });
+
+      const result = await svc.listKedaScaledObjects();
+      expect(result[0]).toMatchObject({
+        name: "",
+        namespace: "default",
+        targetDeployment: null,
+        minReplicaCount: 0,
+        maxReplicaCount: 100,
+        ready: false,
+        active: false,
+        paused: false,
+        currentReplicas: 0,
+        desiredReplicas: 0,
+        scalerType: "unknown",
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // listKedaScaledJobs
+  // -------------------------------------------------------------------------
+
+  describe("listKedaScaledJobs", () => {
+    it("should return empty array when Kubernetes is disabled", async () => {
+      const svc = await buildDisabledKedaService();
+      const result = await svc.listKedaScaledJobs();
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array on API error", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest
+          .fn()
+          .mockRejectedValue(new Error("no CRD")),
+      });
+      const result = await svc.listKedaScaledJobs();
+      expect(result).toEqual([]);
+    });
+
+    it("should map a ScaledJob with Ready condition", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [
+            {
+              metadata: { name: "batch-job-scaler", namespace: "jobs" },
+              spec: {
+                minReplicaCount: 0,
+                maxReplicaCount: 20,
+                jobTargetRef: { completions: "batch-template" },
+              },
+              status: {
+                conditions: [{ type: "Ready", status: "True" }],
+              },
+            },
+          ],
+        }),
+      });
+
+      const result = await svc.listKedaScaledJobs();
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: "batch-job-scaler",
+        namespace: "jobs",
+        jobTemplateName: "batch-template",
+        minReplicaCount: 0,
+        maxReplicaCount: 20,
+        ready: true,
+      });
+    });
+
+    it("should use defaults when optional ScaledJob fields are absent", async () => {
+      const svc = await buildKedaService({
+        listClusterCustomObject: jest.fn().mockResolvedValue({
+          items: [{ metadata: {}, spec: {}, status: {} }],
+        }),
+      });
+
+      const result = await svc.listKedaScaledJobs();
+      expect(result[0]).toMatchObject({
+        name: "",
+        namespace: "default",
+        jobTemplateName: null,
+        minReplicaCount: 0,
+        maxReplicaCount: 100,
+        ready: false,
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // getKedaScaledObjectTriggers
+  // -------------------------------------------------------------------------
+
+  describe("getKedaScaledObjectTriggers", () => {
+    it("should return empty array when Kubernetes is disabled", async () => {
+      const svc = await buildDisabledKedaService();
+      const result = await svc.getKedaScaledObjectTriggers(
+        "my-scaler",
+        "default",
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array on API error", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest
+          .fn()
+          .mockRejectedValue(new Error("not found")),
+      });
+      const result = await svc.getKedaScaledObjectTriggers(
+        "missing-scaler",
+        "default",
+      );
+      expect(result).toEqual([]);
+    });
+
+    it("should return triggers array when ScaledObject exists", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest.fn().mockResolvedValue({
+          metadata: { name: "my-scaler", namespace: "production" },
+          spec: {
+            triggers: [
+              {
+                type: "kafka",
+                metadata: {
+                  bootstrapServers: "kafka:9092",
+                  topic: "orders",
+                  consumerGroup: "my-group",
+                },
+              },
+              {
+                type: "prometheus",
+                metadata: {
+                  serverAddress: "http://prometheus:9090",
+                  query: "up",
+                  threshold: "5",
+                },
+              },
+            ],
+          },
+        }),
+      });
+
+      const result = await svc.getKedaScaledObjectTriggers(
+        "my-scaler",
+        "production",
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0]).toMatchObject({
+        type: "kafka",
+        metadata: { bootstrapServers: "kafka:9092", topic: "orders" },
+      });
+      expect(result[1]).toMatchObject({
+        type: "prometheus",
+        metadata: { serverAddress: "http://prometheus:9090" },
+      });
+    });
+
+    it("should return empty array when ScaledObject has no triggers", async () => {
+      const svc = await buildKedaService({
+        getNamespacedCustomObject: jest.fn().mockResolvedValue({
+          metadata: { name: "empty-scaler", namespace: "default" },
+          spec: {},
+        }),
+      });
+
+      const result = await svc.getKedaScaledObjectTriggers(
+        "empty-scaler",
+        "default",
+      );
+      expect(result).toEqual([]);
+    });
+  });
+});

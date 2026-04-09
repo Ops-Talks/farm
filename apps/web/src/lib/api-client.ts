@@ -111,6 +111,20 @@ import type {
   DragonflyPeer,
   // Harbor replication (FARM-S247 / T180)
   HarborReplicationPolicy,
+  // Flux GitOps (FARM-S251 / Phase 18)
+  FluxInstallStatus,
+  FluxKustomization,
+  FluxHelmRelease,
+  FluxSource,
+  FluxBinding,
+  CreateFluxBindingDto,
+  // KEDA Autoscaling (FARM-S254 / Phase 18)
+  KedaInstallStatus,
+  KedaScaledObject,
+  KedaScaledJob,
+  KedaScaledObjectTrigger,
+  KedaBinding,
+  CreateKedaBindingDto,
 } from "@/types/api";
 
 const API_BASE = "/api";
@@ -1204,6 +1218,96 @@ export const kubernetes = {
   /** Get active Dragonfly peers. */
   getDragonflyPeers(): Promise<DragonflyPeer[]> {
     return request<DragonflyPeer[]>("/v1/kubernetes/dragonfly/peers");
+  },
+
+  // -- Flux GitOps (FARM-S251 / Phase 18) --
+
+  /** Get Flux v2 installation status from the cluster. */
+  getFluxStatus(): Promise<FluxInstallStatus> {
+    return request<FluxInstallStatus>("/v1/kubernetes/flux/status");
+  },
+
+  /** List all Flux Kustomization resources. */
+  listFluxKustomizations(): Promise<FluxKustomization[]> {
+    return request<FluxKustomization[]>("/v1/kubernetes/flux/kustomizations");
+  },
+
+  /** List all Flux HelmRelease resources. */
+  listFluxHelmReleases(): Promise<FluxHelmRelease[]> {
+    return request<FluxHelmRelease[]>("/v1/kubernetes/flux/helm-releases");
+  },
+
+  /** List all Flux GitRepository and OCIRepository sources. */
+  listFluxSources(): Promise<FluxSource[]> {
+    return request<FluxSource[]>("/v1/kubernetes/flux/sources");
+  },
+
+  /** Get all Flux bindings for a component. */
+  listFluxBindings(componentId: string): Promise<FluxBinding[]> {
+    return request<FluxBinding[]>(
+      `/v1/kubernetes/components/${encodeURIComponent(componentId)}/flux-bindings`,
+    );
+  },
+
+  /** Create a Flux binding between a resource and a component. */
+  createFluxBinding(dto: CreateFluxBindingDto): Promise<FluxBinding> {
+    return request<FluxBinding>("/v1/kubernetes/flux/binding", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Remove a Flux binding by ID. */
+  deleteFluxBinding(id: string): Promise<void> {
+    return request<void>(
+      `/v1/kubernetes/flux/binding/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  },
+
+  /** Get KEDA installation status from the cluster. */
+  getKedaStatus(): Promise<KedaInstallStatus> {
+    return request<KedaInstallStatus>("/v1/kubernetes/keda/status");
+  },
+
+  /** List all KEDA ScaledObject resources. */
+  listKedaScaledObjects(): Promise<KedaScaledObject[]> {
+    return request<KedaScaledObject[]>("/v1/kubernetes/keda/scaled-objects");
+  },
+
+  /** List all KEDA ScaledJob resources. */
+  listKedaScaledJobs(): Promise<KedaScaledJob[]> {
+    return request<KedaScaledJob[]>("/v1/kubernetes/keda/scaled-jobs");
+  },
+
+  /** Get trigger details for a specific ScaledObject. */
+  getKedaScaledObjectTriggers(namespace: string, name: string): Promise<KedaScaledObjectTrigger[]> {
+    return request<KedaScaledObjectTrigger[]>(
+      `/v1/kubernetes/keda/scaled-objects/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/triggers`,
+    );
+  },
+
+  /** Get all KEDA bindings for a component. */
+  listKedaBindings(componentId: string): Promise<KedaBinding[]> {
+    return request<KedaBinding[]>(
+      `/v1/kubernetes/components/${encodeURIComponent(componentId)}/keda-bindings`,
+    );
+  },
+
+  /** Create a KEDA binding between a ScaledObject and a component. */
+  createKedaBinding(dto: CreateKedaBindingDto): Promise<KedaBinding> {
+    return request<KedaBinding>("/v1/kubernetes/keda/binding", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Remove a KEDA binding by ID. */
+  deleteKedaBinding(id: string): Promise<void> {
+    return request<void>(
+      `/v1/kubernetes/keda/binding/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
   },
 };
 

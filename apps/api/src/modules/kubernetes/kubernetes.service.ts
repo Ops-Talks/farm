@@ -233,6 +233,170 @@ export interface DragonflyPeer {
   taskCount: number;
 }
 
+// ---------------------------------------------------------------------------
+// Flux GitOps interfaces (FARM-E61)
+// ---------------------------------------------------------------------------
+
+/**
+ * Information about a single Flux controller deployment.
+ */
+export interface FluxControllerInfo {
+  /** Controller name, e.g. "source-controller" */
+  name: string;
+  /** Kubernetes namespace where the controller is running */
+  namespace: string;
+  /** Whether the controller has at least one ready replica */
+  ready: boolean;
+  /** Container image tag extracted from the deployment spec */
+  version: string;
+}
+
+/**
+ * Overall Flux v2 installation status.
+ */
+export interface FluxInstallStatus {
+  /** Whether at least one Flux controller is ready */
+  installed: boolean;
+  /** Per-controller status descriptors */
+  controllers: FluxControllerInfo[];
+}
+
+/**
+ * A Flux Kustomization custom resource.
+ */
+export interface FluxKustomization {
+  /** Resource name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Path within the source repository */
+  path: string;
+  /** Whether the Ready condition is True */
+  ready: boolean;
+  /** Whether reconciliation is suspended */
+  suspended: boolean;
+  /** Last revision that was successfully applied */
+  lastAppliedRevision: string | null;
+  /** Source reference in the form "Kind/name" */
+  sourceRef: string | null;
+  /** Human-readable message from the Ready condition */
+  readyConditionMessage: string | null;
+}
+
+/**
+ * A Flux HelmRelease custom resource.
+ */
+export interface FluxHelmRelease {
+  /** Resource name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Helm chart name */
+  chartName: string;
+  /** Helm chart version constraint, or null when not specified */
+  chartVersion: string | null;
+  /** Whether the Ready condition is True */
+  ready: boolean;
+  /** Whether reconciliation is suspended */
+  suspended: boolean;
+  /** Last revision that was successfully applied */
+  lastAppliedRevision: string | null;
+  /** Human-readable message from the Ready condition */
+  readyConditionMessage: string | null;
+}
+
+/**
+ * A Flux GitRepository or OCIRepository source resource.
+ */
+export interface FluxSource {
+  /** Source kind */
+  kind: "GitRepository" | "OCIRepository";
+  /** Resource name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Repository URL */
+  url: string;
+  /** Branch name (GitRepository only), or null for OCIRepository */
+  branch: string | null;
+  /** Last fetched commit or digest from the artifact status */
+  lastFetchedCommit: string | null;
+  /** Whether the Ready condition is True */
+  ready: boolean;
+  /** Human-readable message from the Ready condition */
+  readyConditionMessage: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// KEDA Autoscaling (FARM-E62)
+// ---------------------------------------------------------------------------
+
+/**
+ * Installation status of the KEDA autoscaler in the cluster.
+ */
+export interface KedaInstallStatus {
+  /** Whether the KEDA operator is installed and ready */
+  installed: boolean;
+  /** KEDA version extracted from the operator image tag */
+  version: string;
+}
+
+/**
+ * Describes a single trigger attached to a KEDA ScaledObject.
+ */
+export interface KedaScaledObjectTrigger {
+  /** Trigger type, e.g. "kafka", "prometheus", "redis" */
+  type: string;
+  /** Trigger-specific metadata key/value pairs */
+  metadata: Record<string, string>;
+}
+
+/**
+ * Represents a KEDA ScaledObject resource discovered in the cluster.
+ */
+export interface KedaScaledObject {
+  /** ScaledObject name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Name of the target Deployment/StatefulSet, or null when unresolved */
+  targetDeployment: string | null;
+  /** Minimum replica count configured on the ScaledObject */
+  minReplicaCount: number;
+  /** Maximum replica count configured on the ScaledObject */
+  maxReplicaCount: number;
+  /** Whether the Ready condition is True */
+  ready: boolean;
+  /** Whether the Active condition is True (at least one trigger is firing) */
+  active: boolean;
+  /** Whether the ScaledObject is paused via the autoscaling.keda.sh/paused annotation */
+  paused: boolean;
+  /** Current replica count reported by KEDA */
+  currentReplicas: number;
+  /** Desired replica count computed by KEDA */
+  desiredReplicas: number;
+  /** Type of the first trigger, e.g. "kafka" */
+  scalerType: string;
+}
+
+/**
+ * Represents a KEDA ScaledJob resource discovered in the cluster.
+ */
+export interface KedaScaledJob {
+  /** ScaledJob name */
+  name: string;
+  /** Kubernetes namespace */
+  namespace: string;
+  /** Job template name (from completions field), or null when absent */
+  jobTemplateName: string | null;
+  /** Minimum replica count */
+  minReplicaCount: number;
+  /** Maximum replica count */
+  maxReplicaCount: number;
+  /** Whether the Ready condition is True */
+  ready: boolean;
+}
+
 /**
  * Raw shape of an Argo Rollout object returned by the CustomObjectsApi.
  * Only the fields consumed by this service are declared; additional cluster
@@ -1357,6 +1521,515 @@ export class KubernetesService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to get Dragonfly peers: ${message}`);
+      return [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Flux GitOps Integration (FARM-S248 / FARM-S249 / FARM-S250)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of Flux v2 by checking for well-known
+   * controller deployments labelled with app.kubernetes.io/part-of=flux.
+   *
+   * @returns FluxInstallStatus with per-controller info and overall installed flag
+   */
+  async getFluxStatus(): Promise<FluxInstallStatus> {
+    if (!this.isEnabled() || !this.appsV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning not-installed Flux status",
+      );
+      return { installed: false, controllers: [] };
+    }
+
+    try {
+      const controllerNames = [
+        "source-controller",
+        "kustomize-controller",
+        "helm-controller",
+        "notification-controller",
+      ];
+
+      const res = await this.appsV1Api.listDeploymentForAllNamespaces({
+        labelSelector: "app.kubernetes.io/part-of=flux",
+      });
+
+      const deployments = res.items ?? [];
+      const controllers: FluxControllerInfo[] = controllerNames.map((name) => {
+        const dep = deployments.find((d) => d.metadata?.name === name);
+        const image = dep?.spec?.template?.spec?.containers?.[0]?.image ?? "";
+        const version = this.extractImageTag(image);
+        return {
+          name,
+          namespace: dep?.metadata?.namespace ?? "flux-system",
+          ready: (dep?.status?.readyReplicas ?? 0) > 0,
+          version: version === "unknown" ? "" : version,
+        };
+      });
+
+      const installed = controllers.some((c) => c.ready);
+      return { installed, controllers };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to get Flux status: ${message}`);
+      return { installed: false, controllers: [] };
+    }
+  }
+
+  /**
+   * Lists all Flux Kustomization custom resources in the cluster.
+   *
+   * @returns Array of FluxKustomization descriptors; empty when Flux is not installed
+   */
+  async listFluxKustomizations(): Promise<FluxKustomization[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty Flux Kustomization list",
+      );
+      return [];
+    }
+
+    try {
+      const res = (await this.customObjectsApi.listClusterCustomObject({
+        group: "kustomize.toolkit.fluxcd.io",
+        version: "v1",
+        plural: "kustomizations",
+      })) as { items?: object[] };
+
+      const items = res.items ?? [];
+      return items.map((item) => {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const sourceRef = spec.sourceRef as Record<string, string> | undefined;
+
+        return {
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          path: (spec.path as string) ?? "",
+          ready: readyCond?.status === "True",
+          suspended: (spec.suspend as boolean) ?? false,
+          lastAppliedRevision: (status.lastAppliedRevision as string) ?? null,
+          sourceRef: sourceRef ? `${sourceRef.kind}/${sourceRef.name}` : null,
+          readyConditionMessage: readyCond?.message ?? null,
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list Flux Kustomizations: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Lists all Flux HelmRelease custom resources in the cluster.
+   *
+   * @returns Array of FluxHelmRelease descriptors; empty when Flux is not installed
+   */
+  async listFluxHelmReleases(): Promise<FluxHelmRelease[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty Flux HelmRelease list",
+      );
+      return [];
+    }
+
+    try {
+      const res = (await this.customObjectsApi.listClusterCustomObject({
+        group: "helm.toolkit.fluxcd.io",
+        version: "v2",
+        plural: "helmreleases",
+      })) as { items?: object[] };
+
+      const items = res.items ?? [];
+      return items.map((item) => {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const chart = (spec.chart ?? {}) as Record<string, unknown>;
+        const chartSpec = (chart.spec ?? {}) as Record<string, unknown>;
+
+        return {
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          chartName: (chartSpec.chart as string) ?? "",
+          chartVersion: (chartSpec.version as string) ?? null,
+          ready: readyCond?.status === "True",
+          suspended: (spec.suspend as boolean) ?? false,
+          lastAppliedRevision: (status.lastAppliedRevision as string) ?? null,
+          readyConditionMessage: readyCond?.message ?? null,
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list Flux HelmReleases: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Lists all Flux GitRepository and OCIRepository source resources in the
+   * cluster. Both kinds are fetched independently so a missing CRD for one
+   * kind does not prevent results from the other.
+   *
+   * @returns Array of FluxSource descriptors
+   */
+  async listFluxSources(): Promise<FluxSource[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty Flux source list",
+      );
+      return [];
+    }
+
+    const sources: FluxSource[] = [];
+
+    try {
+      const gitRes = (await this.customObjectsApi.listClusterCustomObject({
+        group: "source.toolkit.fluxcd.io",
+        version: "v1",
+        plural: "gitrepositories",
+      })) as { items?: object[] };
+      const gitItems = gitRes.items ?? [];
+      for (const item of gitItems) {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const artifact = (status.artifact ?? {}) as Record<string, unknown>;
+
+        sources.push({
+          kind: "GitRepository",
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          url: (spec.url as string) ?? "",
+          branch:
+            (spec.ref as Record<string, string> | undefined)?.branch ?? null,
+          lastFetchedCommit: (artifact.revision as string) ?? null,
+          ready: readyCond?.status === "True",
+          readyConditionMessage: readyCond?.message ?? null,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list GitRepositories: ${message}`);
+    }
+
+    try {
+      const ociRes = (await this.customObjectsApi.listClusterCustomObject({
+        group: "source.toolkit.fluxcd.io",
+        version: "v1beta2",
+        plural: "ocirepositories",
+      })) as { items?: object[] };
+      const ociItems = ociRes.items ?? [];
+      for (const item of ociItems) {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const artifact = (status.artifact ?? {}) as Record<string, unknown>;
+
+        sources.push({
+          kind: "OCIRepository",
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          url: (spec.url as string) ?? "",
+          branch: null,
+          lastFetchedCommit: (artifact.revision as string) ?? null,
+          ready: readyCond?.status === "True",
+          readyConditionMessage: readyCond?.message ?? null,
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list OCIRepositories: ${message}`);
+    }
+
+    return sources;
+  }
+
+  /**
+   * Polls Flux Kustomization and HelmRelease resources every 60 seconds and
+   * emits a WebSocket event for each resource that is not ready, not suspended,
+   * and has a non-empty condition message.
+   */
+  @Cron("*/60 * * * * *")
+  async pollFluxReconciliation(): Promise<void> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      return;
+    }
+
+    try {
+      const [kustomizations, helmReleases] = await Promise.all([
+        this.listFluxKustomizations(),
+        this.listFluxHelmReleases(),
+      ]);
+
+      for (const k of kustomizations) {
+        if (!k.ready && !k.suspended && k.readyConditionMessage) {
+          this.eventsGateway?.server?.emit(
+            FarmEvent.FLUX_RECONCILIATION_FAILED,
+            {
+              resourceKind: "Kustomization",
+              name: k.name,
+              namespace: k.namespace,
+              reason: k.readyConditionMessage,
+              timestamp: new Date().toISOString(),
+            },
+          );
+        }
+      }
+
+      for (const hr of helmReleases) {
+        if (!hr.ready && !hr.suspended && hr.readyConditionMessage) {
+          this.eventsGateway?.server?.emit(
+            FarmEvent.FLUX_RECONCILIATION_FAILED,
+            {
+              resourceKind: "HelmRelease",
+              name: hr.name,
+              namespace: hr.namespace,
+              reason: hr.readyConditionMessage,
+              timestamp: new Date().toISOString(),
+            },
+          );
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to poll Flux reconciliation: ${message}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // KEDA Autoscaling (FARM-S252)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the installation status of the KEDA autoscaler operator.
+   * Discovers Deployments labelled with "app=keda-operator" and checks
+   * readiness. Returns not-installed when Kubernetes is unavailable or
+   * the operator is not found.
+   *
+   * @returns KedaInstallStatus with installed flag and version string
+   */
+  async getKedaStatus(): Promise<KedaInstallStatus> {
+    if (!this.isEnabled() || !this.appsV1Api) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning not-installed KEDA status",
+      );
+      return { installed: false, version: "" };
+    }
+
+    try {
+      const res = await this.appsV1Api.listDeploymentForAllNamespaces({
+        labelSelector: "app=keda-operator",
+      });
+      const items = res.items ?? [];
+      const kedaDep = items.find((d) =>
+        (d.metadata?.name ?? "").includes("keda-operator"),
+      );
+
+      if (!kedaDep) {
+        return { installed: false, version: "" };
+      }
+
+      const image = kedaDep.spec?.template?.spec?.containers?.[0]?.image ?? "";
+      const version = this.extractImageTag(image);
+
+      return {
+        installed: (kedaDep.status?.readyReplicas ?? 0) > 0,
+        version: version === "unknown" ? "" : version,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to get KEDA status: ${message}`);
+      return { installed: false, version: "" };
+    }
+  }
+
+  /**
+   * Lists all KEDA ScaledObject resources discovered cluster-wide.
+   * Returns an empty array gracefully when the KEDA CRD is not installed.
+   *
+   * @returns Array of KedaScaledObject descriptors
+   */
+  async listKedaScaledObjects(): Promise<KedaScaledObject[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty KEDA ScaledObject list",
+      );
+      return [];
+    }
+
+    try {
+      const res = (await this.customObjectsApi.listClusterCustomObject({
+        group: "keda.sh",
+        version: "v1alpha1",
+        plural: "scaledobjects",
+      })) as { items?: object[] };
+
+      const items = res.items ?? [];
+      return items.map((item) => {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const activeCond = conditions.find((c) => c.type === "Active");
+        const scaleTarget = (spec.scaleTargetRef ?? {}) as Record<
+          string,
+          string
+        >;
+        const triggers =
+          (spec.triggers as Array<Record<string, unknown>> | undefined) ?? [];
+        const firstTrigger = triggers[0] as Record<string, unknown> | undefined;
+
+        const annotations = (metadata.annotations ?? {}) as Record<
+          string,
+          string
+        >;
+        const paused = annotations["autoscaling.keda.sh/paused"] === "true";
+
+        return {
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          targetDeployment: scaleTarget.name ?? null,
+          minReplicaCount: (spec.minReplicaCount as number) ?? 0,
+          maxReplicaCount: (spec.maxReplicaCount as number) ?? 100,
+          ready: readyCond?.status === "True",
+          active: activeCond?.status === "True",
+          paused,
+          currentReplicas: (status.currentReplicas as number) ?? 0,
+          desiredReplicas: (status.desiredReplicas as number) ?? 0,
+          scalerType: (firstTrigger?.type as string) ?? "unknown",
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list KEDA ScaledObjects: ${message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Lists all KEDA ScaledJob resources discovered cluster-wide.
+   * Returns an empty array gracefully when the KEDA CRD is not installed.
+   *
+   * @returns Array of KedaScaledJob descriptors
+   */
+  async listKedaScaledJobs(): Promise<KedaScaledJob[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn(
+        "Kubernetes not enabled; returning empty KEDA ScaledJob list",
+      );
+      return [];
+    }
+
+    try {
+      const res = (await this.customObjectsApi.listClusterCustomObject({
+        group: "keda.sh",
+        version: "v1alpha1",
+        plural: "scaledjobs",
+      })) as { items?: object[] };
+
+      const items = res.items ?? [];
+      return items.map((item) => {
+        const obj = item as Record<string, unknown>;
+        const metadata = (obj.metadata ?? {}) as Record<string, unknown>;
+        const spec = (obj.spec ?? {}) as Record<string, unknown>;
+        const status = (obj.status ?? {}) as Record<string, unknown>;
+        const conditions =
+          (status.conditions as Array<Record<string, string>> | undefined) ??
+          [];
+        const readyCond = conditions.find((c) => c.type === "Ready");
+        const jobTemplate = (spec.jobTargetRef ?? {}) as Record<
+          string,
+          unknown
+        >;
+
+        return {
+          name: (metadata.name as string) ?? "",
+          namespace: (metadata.namespace as string) ?? "default",
+          jobTemplateName: (jobTemplate.completions as string) ?? null,
+          minReplicaCount: (spec.minReplicaCount as number) ?? 0,
+          maxReplicaCount: (spec.maxReplicaCount as number) ?? 100,
+          ready: readyCond?.status === "True",
+        };
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to list KEDA ScaledJobs: ${message}`);
+      return [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // KEDA Trigger Details (FARM-S253)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the list of triggers configured on a specific KEDA ScaledObject.
+   * Returns an empty array gracefully when the ScaledObject is not found or
+   * when Kubernetes is unavailable.
+   *
+   * @param name - ScaledObject name
+   * @param namespace - Kubernetes namespace
+   * @returns Array of KedaScaledObjectTrigger descriptors
+   */
+  async getKedaScaledObjectTriggers(
+    name: string,
+    namespace: string,
+  ): Promise<KedaScaledObjectTrigger[]> {
+    if (!this.isEnabled() || !this.customObjectsApi) {
+      this.logger.warn("Kubernetes not enabled; returning empty trigger list");
+      return [];
+    }
+
+    try {
+      const res = (await this.customObjectsApi.getNamespacedCustomObject({
+        group: "keda.sh",
+        version: "v1alpha1",
+        namespace,
+        plural: "scaledobjects",
+        name,
+      })) as Record<string, unknown>;
+
+      const obj = res;
+      const spec = (obj.spec ?? {}) as Record<string, unknown>;
+      const triggers =
+        (spec.triggers as Array<Record<string, unknown>> | undefined) ?? [];
+
+      return triggers.map((t) => ({
+        type: (t.type as string) ?? "unknown",
+        metadata: (t.metadata ?? {}) as Record<string, string>,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to get KEDA ScaledObject triggers for "${name}": ${message}`,
+      );
       return [];
     }
   }

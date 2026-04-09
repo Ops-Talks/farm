@@ -1391,3 +1391,120 @@ export interface HarborReplicationPolicy {
   enabled: boolean;
   lastExecutionStatus: string | null;
 }
+
+// -- Flux GitOps (FARM-E61 / Phase 18) --
+
+export interface FluxControllerInfo {
+  name: string;
+  version: string;
+  ready: boolean;
+}
+
+export interface FluxInstallStatus {
+  installed: boolean;
+  controllers: FluxControllerInfo[];
+}
+
+export interface FluxKustomization {
+  name: string;
+  namespace: string;
+  path: string;
+  ready: boolean;
+  suspended: boolean;
+  lastAppliedRevision: string;
+  conditions: Array<{ type: string; status: string; message: string }>;
+}
+
+export interface FluxHelmRelease {
+  name: string;
+  namespace: string;
+  chartName: string;
+  chartVersion: string;
+  ready: boolean;
+  suspended: boolean;
+  lastAppliedRevision: string;
+  conditions: Array<{ type: string; status: string; message: string }>;
+}
+
+export interface FluxSource {
+  kind: string;
+  name: string;
+  namespace: string;
+  url: string;
+  ref: string;
+  lastFetchedRevision: string;
+  ready: boolean;
+  suspended: boolean;
+  artifact?: { revision: string; digest: string };
+}
+
+export interface FluxBinding {
+  id: string;
+  resourceKind: "Kustomization" | "HelmRelease";
+  resourceName: string;
+  resourceNamespace: string;
+  componentId: string;
+  organizationId?: string;
+  boundAt: string;
+}
+
+export interface CreateFluxBindingDto {
+  resourceKind: "Kustomization" | "HelmRelease";
+  resourceName: string;
+  resourceNamespace: string;
+  componentId: string;
+  organizationId?: string;
+}
+
+// -- KEDA Autoscaling (FARM-E62 / Phase 18) --
+
+export interface KedaInstallStatus {
+  installed: boolean;
+  version: string;
+}
+
+export interface KedaScaledObjectTrigger {
+  type: string;
+  metadata: Record<string, string>;
+}
+
+export interface KedaScaledObject {
+  name: string;
+  namespace: string;
+  targetName: string;
+  targetKind: string;
+  minReplicaCount: number;
+  maxReplicaCount: number;
+  ready: boolean;
+  active: boolean;
+  paused: boolean;
+  triggers: KedaScaledObjectTrigger[];
+  conditions: Array<{ type: string; status: string; message: string }>;
+}
+
+export interface KedaScaledJob {
+  name: string;
+  namespace: string;
+  jobTemplateName: string;
+  minReplicaCount: number;
+  maxReplicaCount: number;
+  ready: boolean;
+  triggers: KedaScaledObjectTrigger[];
+  conditions: Array<{ type: string; status: string; message: string }>;
+}
+
+export interface KedaBinding {
+  id: string;
+  scaledObjectName: string;
+  scaledObjectNamespace: string;
+  componentId: string;
+  organizationId?: string;
+  boundAt: string;
+}
+
+export interface CreateKedaBindingDto {
+  scaledObjectName: string;
+  scaledObjectNamespace: string;
+  componentId: string;
+  organizationId?: string;
+}

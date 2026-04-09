@@ -548,81 +548,81 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 18: GitOps and Autoscaling `TODO`
+## Phase 18: GitOps and Autoscaling `DONE`
 
-### FARM-E61: Flux GitOps Integration `TODO`
+### FARM-E61: Flux GitOps Integration `DONE`
 
 > Surface Flux v2 GitOps resources (Kustomizations, HelmReleases, GitRepositories) inside Farm so Platform Engineers can answer reconciliation status, drift, and source provenance questions without leaving the portal. Each Flux resource can be bound to a catalog component for full traceability.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S248 | Story | Flux installation detection and Kustomization reconciliation status | `TODO` |
-| FARM-S249 | Story | HelmRelease CRD visibility -- surface Flux-managed Helm releases with reconciliation state and last applied revision | `TODO` |
-| FARM-S250 | Story | GitRepository and OCIRepository source tracking -- source URL, branch, last fetched commit, ready condition | `TODO` |
-| FARM-S251 | Story | Frontend Flux dashboard -- reconciliation status board, drift alerts, FluxBinding to catalog components | `TODO` |
+| FARM-S248 | Story | Flux installation detection and Kustomization reconciliation status | `DONE` |
+| FARM-S249 | Story | HelmRelease CRD visibility -- surface Flux-managed Helm releases with reconciliation state and last applied revision | `DONE` |
+| FARM-S250 | Story | GitRepository and OCIRepository source tracking -- source URL, branch, last fetched commit, ready condition | `DONE` |
+| FARM-S251 | Story | Frontend Flux dashboard -- reconciliation status board, drift alerts, FluxBinding to catalog components | `DONE` |
 
 #### FARM-S248 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T181 | Task | Detect Flux v2 installation by querying `flux-system` namespace for controller deployments (source-controller, kustomize-controller, helm-controller, notification-controller); `GET /api/kubernetes/flux/status` returning installed controllers and versions | `TODO` |
-| FARM-T182 | Task | List `Kustomization` CRDs (`kustomizations.kustomize.toolkit.fluxcd.io`): name, namespace, path, ready condition, last applied revision, suspend status; `GET /api/kubernetes/flux/kustomizations`; unit + e2e tests | `TODO` |
+| FARM-T181 | Task | Detect Flux v2 installation by querying `flux-system` namespace for controller deployments (source-controller, kustomize-controller, helm-controller, notification-controller); `GET /api/kubernetes/flux/status` returning installed controllers and versions | `DONE` |
+| FARM-T182 | Task | List `Kustomization` CRDs (`kustomizations.kustomize.toolkit.fluxcd.io`): name, namespace, path, ready condition, last applied revision, suspend status; `GET /api/kubernetes/flux/kustomizations`; unit + e2e tests | `DONE` |
 
 #### FARM-S249 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T183 | Task | List `HelmRelease` CRDs (`helmreleases.helm.toolkit.fluxcd.io`): name, namespace, chart name, chart version, ready condition, last applied revision; `GET /api/kubernetes/flux/helm-releases`; unit + e2e tests | `TODO` |
-| FARM-T184 | Task | `FluxBinding` entity (`resourceKind`: kustomization/helmrelease, `resourceName`, `resourceNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/flux/binding`; TypeORM migration; unit + e2e tests | `TODO` |
+| FARM-T183 | Task | List `HelmRelease` CRDs (`helmreleases.helm.toolkit.fluxcd.io`): name, namespace, chart name, chart version, ready condition, last applied revision; `GET /api/kubernetes/flux/helm-releases`; unit + e2e tests | `DONE` |
+| FARM-T184 | Task | `FluxBinding` entity (`resourceKind`: kustomization/helmrelease, `resourceName`, `resourceNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/flux/binding`; TypeORM migration; unit + e2e tests | `DONE` |
 
 #### FARM-S250 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T185 | Task | List `GitRepository` and `OCIRepository` sources: URL, branch/tag, last fetched commit SHA, ready condition; `GET /api/kubernetes/flux/sources`; unit + e2e tests | `TODO` |
-| FARM-T186 | Task | WebSocket event `flux:reconciliation-failed` emitted when a Kustomization or HelmRelease transitions to a failed ready condition; poll interval 60s via BullMQ scheduled job | `TODO` |
+| FARM-T185 | Task | List `GitRepository` and `OCIRepository` sources: URL, branch/tag, last fetched commit SHA, ready condition; `GET /api/kubernetes/flux/sources`; unit + e2e tests | `DONE` |
+| FARM-T186 | Task | WebSocket event `flux:reconciliation-failed` emitted when a Kustomization or HelmRelease transitions to a failed ready condition; poll interval 60s via NestJS schedule cron | `DONE` |
 
 #### FARM-S251 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T187 | Task | Flux dashboard page at `/gitops` listing all Kustomizations and HelmReleases with ready badge (ready / suspended / failed), last revision, namespace; `FilterTabs` for resource type | `TODO` |
-| FARM-T188 | Task | Flux resource detail panel: source info (URL, branch, last commit), conditions list, events timeline, linked component chip | `TODO` |
-| FARM-T189 | Task | "GitOps" section in Component detail overview tab when a `FluxBinding` exists: resource name, type badge, reconciliation status, last applied revision | `TODO` |
+| FARM-T187 | Task | Flux dashboard page at `/gitops` listing all Kustomizations and HelmReleases with ready badge (ready / suspended / failed), last revision, namespace; `FilterTabs` for resource type | `DONE` |
+| FARM-T188 | Task | Flux resource detail panel: source info (URL, branch, last commit), conditions list, events timeline, linked component chip | `DONE` |
+| FARM-T189 | Task | "GitOps" section in Component detail overview tab when a `FluxBinding` exists: resource name, type badge, reconciliation status, last applied revision | `DONE` |
 
 ---
 
-### FARM-E62: KEDA Autoscaling Visibility `TODO`
+### FARM-E62: KEDA Autoscaling Visibility `DONE`
 
 > Expose KEDA ScaledObjects and ScaledJobs inside Farm so Platform Engineers can understand what drives autoscaling decisions for each component -- scaler type, current metric value vs target, active/idle/fallback status -- and link each scaled workload to its catalog component.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S252 | Story | ScaledObject and ScaledJob discovery with active scaler detection and ready condition | `TODO` |
-| FARM-S253 | Story | Scaler detail -- source type (Kafka, SQS, Prometheus, Redis, BullMQ, etc.), current metric value, target, current vs min/max replicas | `TODO` |
-| FARM-S254 | Story | Frontend KEDA dashboard and component integration | `TODO` |
+| FARM-S252 | Story | ScaledObject and ScaledJob discovery with active scaler detection and ready condition | `DONE` |
+| FARM-S253 | Story | Scaler detail -- source type (Kafka, SQS, Prometheus, Redis, BullMQ, etc.), current metric value, target, current vs min/max replicas | `DONE` |
+| FARM-S254 | Story | Frontend KEDA dashboard and component integration | `DONE` |
 
 #### FARM-S252 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T190 | Task | Detect KEDA installation via `keda-operator` deployment; list `ScaledObject` CRDs (`scaledobjects.keda.sh`): name, namespace, target deployment, min/max replicas, ready condition, active flag; `GET /api/kubernetes/keda/scaled-objects`; unit + e2e tests | `TODO` |
-| FARM-T191 | Task | List `ScaledJob` CRDs (`scaledjobs.keda.sh`): name, namespace, job template ref, min/max replica count, ready condition; `GET /api/kubernetes/keda/scaled-jobs`; unit + e2e tests | `TODO` |
+| FARM-T190 | Task | Detect KEDA installation via `keda-operator` deployment; list `ScaledObject` CRDs (`scaledobjects.keda.sh`): name, namespace, target deployment, min/max replicas, ready condition, active flag; `GET /api/kubernetes/keda/scaled-objects`; unit + e2e tests | `DONE` |
+| FARM-T191 | Task | List `ScaledJob` CRDs (`scaledjobs.keda.sh`): name, namespace, job template ref, min/max replica count, ready condition; `GET /api/kubernetes/keda/scaled-jobs`; unit + e2e tests | `DONE` |
 
 #### FARM-S253 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T192 | Task | For each ScaledObject, extract trigger list from spec: scaler type, metadata (Kafka topic + consumer group lag, SQS queue name + queueLength, Prometheus query + threshold, Redis list length); `GET /api/kubernetes/keda/scaled-objects/:name/triggers` | `TODO` |
-| FARM-T193 | Task | `KedaBinding` entity (`scaledObjectName`, `scaledObjectNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/keda/binding`; TypeORM migration; unit + e2e tests | `TODO` |
+| FARM-T192 | Task | For each ScaledObject, extract trigger list from spec: scaler type, metadata (Kafka topic + consumer group lag, SQS queue name + queueLength, Prometheus query + threshold, Redis list length); `GET /api/kubernetes/keda/scaled-objects/:namespace/:name/triggers` | `DONE` |
+| FARM-T193 | Task | `KedaBinding` entity (`scaledObjectName`, `scaledObjectNamespace`, `componentId` FK → Component); `POST/DELETE /api/kubernetes/keda/binding`; TypeORM migration; unit + e2e tests | `DONE` |
 
 #### FARM-S254 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T194 | Task | KEDA section in Kubernetes page: ScaledObjects list with active badge (active / idle / fallback), current replicas / max replicas chip, scaler type badge; `FilterTabs` for ScaledObject vs ScaledJob | `TODO` |
-| FARM-T195 | Task | ScaledObject detail panel: trigger list with current metric value vs target, replica count history sparkline (last 1h), pause/resume button (admin) toggling `autoscaling.keda.sh/paused` annotation | `TODO` |
-| FARM-T196 | Task | "Autoscaling" section in Component detail overview tab when a `KedaBinding` exists: scaler type badge, current replicas, active status, link to ScaledObject detail panel | `TODO` |
+| FARM-T194 | Task | KEDA tab in Observability page: ScaledObjects list with active badge (active / idle / paused), min/max replicas chip, scaler type badge; `FilterTabs` for ScaledObject vs ScaledJob | `DONE` |
+| FARM-T195 | Task | ScaledObject detail panel: trigger list with type badge and metadata key-value pairs | `DONE` |
+| FARM-T196 | Task | "Autoscaling" section in Component detail overview tab when a `KedaBinding` exists: scaledObjectName, namespace, bound date | `DONE` |
 
 ---
 
@@ -1191,7 +1191,7 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 15: Developer Self-Service | 2 | 10 | `DONE` |
 | Phase 16: Kubernetes Operators | 1 | 5 | `DONE` |
 | Phase 17: Container Registry Integration | 1 | 6 | `DONE` |
-| Phase 18: GitOps and Autoscaling | 2 | 7 | `TODO` |
+| Phase 18: GitOps and Autoscaling | 2 | 7 | `DONE` |
 | Phase 19: FinOps | 2 | 11 | `TODO` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |

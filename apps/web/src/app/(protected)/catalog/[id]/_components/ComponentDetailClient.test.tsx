@@ -97,6 +97,14 @@ vi.mock(
   "@/app/(protected)/catalog/[id]/_components/HarborReplicationTable",
   () => ({ HarborReplicationTable: () => <div data-testid="harbor-replication-table" /> }),
 );
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/FluxBindingCard",
+  () => ({ FluxBindingCard: () => <div data-testid="flux-binding-card-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/KedaBindingCard",
+  () => ({ KedaBindingCard: () => <div data-testid="keda-binding-card-stub" /> }),
+);
 
 import { ComponentDetailClient } from "@/app/(protected)/catalog/[id]/_components/ComponentDetailClient";
 
