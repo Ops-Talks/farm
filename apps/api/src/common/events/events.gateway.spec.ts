@@ -175,5 +175,207 @@ describe("EventsGateway", () => {
         deploymentPayload,
       );
     });
+
+    it("should emit pipeline.run.updated event", () => {
+      const payload = {
+        id: "run-1",
+        pipelineId: "pipe-1",
+        status: "running",
+        triggeredBy: "user-1",
+        startedAt: null,
+        finishedAt: null,
+        durationMs: null,
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitPipelineRunUpdated(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.PIPELINE_RUN_UPDATED,
+        payload,
+      );
+    });
+
+    it("should emit pipeline.log event", () => {
+      const payload = {
+        runId: "run-1",
+        stage: "build",
+        message: "Building...",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitPipelineLog(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.PIPELINE_LOG,
+        payload,
+      );
+    });
+
+    it("should emit incident.created event", () => {
+      const payload = {
+        id: "inc-1",
+        title: "DB down",
+        severity: "critical",
+        status: "open",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitIncidentCreated(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.INCIDENT_CREATED,
+        payload,
+      );
+    });
+
+    it("should emit incident.status-changed event", () => {
+      const payload = {
+        id: "inc-1",
+        title: "DB down",
+        previousStatus: "open",
+        newStatus: "resolved",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitIncidentStatusChanged(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.INCIDENT_STATUS_CHANGED,
+        payload,
+      );
+    });
+
+    it("should emit scaffold.completed event", () => {
+      const payload = {
+        id: "sc-1",
+        templateName: "node-service",
+        targetRepository: "org/repo",
+        status: "completed",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitScaffoldCompleted(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.SCAFFOLD_COMPLETED,
+        payload,
+      );
+    });
+
+    it("should emit scaffold.failed event", () => {
+      const payload = {
+        id: "sc-2",
+        templateName: "node-service",
+        targetRepository: "org/repo",
+        status: "failed",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitScaffoldFailed(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.SCAFFOLD_FAILED,
+        payload,
+      );
+    });
+
+    it("should emit env-request.created event", () => {
+      const payload = {
+        id: "req-1",
+        name: "staging",
+        type: "ephemeral",
+        status: "pending",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitEnvRequestCreated(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.ENV_REQUEST_CREATED,
+        payload,
+      );
+    });
+
+    it("should emit env-request.decided event", () => {
+      const payload = {
+        id: "req-1",
+        name: "staging",
+        type: "ephemeral",
+        status: "approved",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitEnvRequestDecided(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.ENV_REQUEST_DECIDED,
+        payload,
+      );
+    });
+
+    it("should emit env-request.provisioned event", () => {
+      const payload = {
+        id: "req-1",
+        name: "staging",
+        type: "ephemeral",
+        status: "provisioned",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitEnvRequestProvisioned(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.ENV_REQUEST_PROVISIONED,
+        payload,
+      );
+    });
+
+    it("should emit env-request.expired event", () => {
+      const payload = {
+        id: "req-1",
+        name: "staging",
+        type: "ephemeral",
+        status: "expired",
+        requestedBy: "user-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitEnvRequestExpired(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.ENV_REQUEST_EXPIRED,
+        payload,
+      );
+    });
+
+    it("should emit container:vulnerability-found event", () => {
+      const payload = {
+        componentId: "comp-1",
+        componentName: "api",
+        criticalCount: 2,
+        image: "nginx",
+        tag: "latest",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitContainerVulnerabilityFound(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.CONTAINER_VULNERABILITY_FOUND,
+        payload,
+      );
+    });
+
+    it("should emit cost:budget-exceeded event", () => {
+      const payload = {
+        componentId: "comp-1",
+        delta: 10.5,
+        pipelineRunId: "run-1",
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitCostBudgetExceeded(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.COST_BUDGET_EXCEEDED,
+        payload,
+      );
+    });
+
+    it("should emit cost:actual-budget-exceeded event", () => {
+      const payload = {
+        componentId: "comp-1",
+        totalCost: 150,
+        budgetUsd: 100,
+        timestamp: "2026-01-01T00:00:00.000Z",
+      };
+      gateway.emitCostActualBudgetExceeded(payload);
+      expect(mockServer.emit).toHaveBeenCalledWith(
+        FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED,
+        payload,
+      );
+    });
   });
 });

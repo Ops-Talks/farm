@@ -19,7 +19,7 @@ export interface PipelineStage {
   /** Human-readable stage name */
   name: string;
   /** Category that determines how the stage is executed */
-  type: "script" | "approval" | "deploy" | "notify" | "build";
+  type: "script" | "approval" | "deploy" | "notify" | "build" | "infracost";
   /** Stage-specific configuration values */
   config: Record<string, unknown>;
   /** Execution order — lower numbers run first */

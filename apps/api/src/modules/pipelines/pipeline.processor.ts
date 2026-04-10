@@ -17,6 +17,7 @@ import {
   HelmDeployConfig,
 } from "../helm/helm-deploy.executor";
 import { BuildStageExecutor } from "./build-stage.executor";
+import { InfracostStageExecutor } from "./infracost-stage.executor";
 import {
   AwsEcsExecutor,
   AwsEcsDeployConfig,
@@ -114,6 +115,7 @@ export class PipelineProcessor extends WorkerHost {
     private readonly eventsGateway: EventsGateway,
     @Optional() private readonly helmDeployExecutor?: HelmDeployExecutor,
     @Optional() private readonly buildStageExecutor?: BuildStageExecutor,
+    @Optional() private readonly infracostExecutor?: InfracostStageExecutor,
     @Optional() private readonly awsEcsExecutor?: AwsEcsExecutor,
     @Optional() private readonly awsLambdaExecutor?: AwsLambdaExecutor,
     @Optional() private readonly gcpCloudRunExecutor?: GcpCloudRunExecutor,
@@ -328,6 +330,18 @@ export class PipelineProcessor extends WorkerHost {
           );
           stageResult.status = result.success ? "succeeded" : "failed";
           stageResult.output = result.output;
+        } else if (stage.type === "infracost" && this.infracostExecutor) {
+          // Dispatch infracost stages to InfracostStageExecutor.
+          const result = await this.infracostExecutor.execute(
+            stage,
+            run,
+            (msg) => this.emitLog(runId, stage.name, msg),
+          );
+          stageResult.status = result.success ? "succeeded" : "failed";
+          stageResult.output = result.output;
+          if (!result.success) {
+            run.status = PipelineRunStatus.FAILED;
+          }
         } else {
           // Simulate work for all other stage types.
           await new Promise<void>((resolve) => setTimeout(resolve, 500));

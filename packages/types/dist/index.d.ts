@@ -62,7 +62,9 @@ export declare enum FarmEvent {
     DEPLOYMENT_UPDATED = "deployment.updated",
     PIPELINE_RUN_UPDATED = "pipeline.run.updated",
     PIPELINE_LOG = "pipeline.log",
-    AUDIT_LOG_CREATED = "audit-log.created"
+    AUDIT_LOG_CREATED = "audit-log.created",
+    COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
+    COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded"
 }
 /**
  * Represents the lifecycle status of a pipeline run.

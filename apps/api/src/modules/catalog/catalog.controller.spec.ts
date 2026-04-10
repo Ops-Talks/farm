@@ -1,8 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { getQueueToken } from "@nestjs/bullmq";
+import { NotFoundException } from "@nestjs/common";
 import { CatalogController } from "./catalog.controller";
 import { CatalogService } from "./catalog.service";
+import { FinOpsService } from "../finops/finops.service";
 import { CreateComponentDto } from "./dto/create-component.dto";
 import { UpdateComponentDto } from "./dto/update-component.dto";
 import { ComponentKind } from "./entities/component.entity";
@@ -15,6 +17,7 @@ const mockCatalogService = {
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+  setContainerImage: jest.fn(),
 };
 
 const mockCacheManager = {
@@ -146,6 +149,31 @@ describe("CatalogController", () => {
       url: "https://github.com/example/repo",
     });
   });
+
+  describe("setContainerImage()", () => {
+    it("should delegate to catalogService.setContainerImage", async () => {
+      const updated = { id: "comp-1", containerImage: "nginx:1.25" };
+      mockCatalogService.setContainerImage.mockResolvedValue(updated);
+
+      const result = await controller.setContainerImage("comp-1", {
+        containerImage: "nginx:1.25",
+      });
+
+      expect(result).toEqual(updated);
+      expect(mockCatalogService.setContainerImage).toHaveBeenCalledWith(
+        "comp-1",
+        { containerImage: "nginx:1.25" },
+      );
+    });
+  });
+
+  describe("getCostEstimate() — finOpsService not provided", () => {
+    it("throws NotFoundException when finOpsService is not available", async () => {
+      await expect(controller.getCostEstimate("comp-1")).rejects.toThrow(
+        new NotFoundException("Cost estimate not available"),
+      );
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -223,5 +251,80 @@ describe("CatalogController — without discovery queue", () => {
       );
       expect(mockCacheManagerLocal.clear).toHaveBeenCalled();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CatalogController — getCostEstimate with FinOpsService
+// ---------------------------------------------------------------------------
+
+describe("CatalogController — getCostEstimate with FinOpsService", () => {
+  let controller: CatalogController;
+
+  const mockFinOpsService = {
+    getCostEstimate: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CatalogController],
+      providers: [
+        {
+          provide: CatalogService,
+          useValue: {
+            create: jest.fn(),
+            findAll: jest.fn(),
+            findOne: jest.fn(),
+            update: jest.fn(),
+            remove: jest.fn(),
+            setContainerImage: jest.fn(),
+          },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+            clear: jest.fn(),
+          },
+        },
+        { provide: FinOpsService, useValue: mockFinOpsService },
+      ],
+    }).compile();
+
+    controller = module.get<CatalogController>(CatalogController);
+  });
+
+  it("throws NotFoundException when estimate does not exist", async () => {
+    mockFinOpsService.getCostEstimate.mockResolvedValue(null);
+
+    await expect(controller.getCostEstimate("comp-1")).rejects.toThrow(
+      new NotFoundException("No cost estimate found for component comp-1"),
+    );
+  });
+
+  it("returns mapped DTO when estimate exists", async () => {
+    const estimate = {
+      id: "est-1",
+      componentId: "comp-1",
+      pipelineRunId: "run-1",
+      estimatedMonthlyCost: "120.50",
+      diffMonthlyCost: "10.00",
+      currency: "USD",
+      breakdown: { total: 120.5 },
+      measuredAt: new Date("2025-01-01"),
+      createdAt: new Date("2025-01-01"),
+      updatedAt: new Date("2025-01-01"),
+    };
+    mockFinOpsService.getCostEstimate.mockResolvedValue(estimate);
+
+    const result = await controller.getCostEstimate("comp-1");
+
+    expect(result.id).toBe("est-1");
+    expect(result.estimatedMonthlyCost).toBe(120.5);
+    expect(result.diffMonthlyCost).toBe(10);
+    expect(result.currency).toBe("USD");
   });
 });

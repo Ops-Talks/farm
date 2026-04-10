@@ -12,8 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { catalog, deployments } from "@/lib/api-client";
+import { catalog, deployments, finops } from "@/lib/api-client";
 import type { CatalogComponent, Deployment } from "@/types/api";
+import type { CostEstimate, ComponentActualCost } from "@/lib/api-client";
 import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
 import { ContainerImageCard } from "./ContainerImageCard";
@@ -32,6 +33,8 @@ import { ContainerSecurityTab } from "./ContainerSecurityTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
+import { CostEstimateCard } from "@/components/finops/CostEstimateCard";
+import { CostBudgetExceededBanner } from "@/components/finops/CostBudgetExceededBanner";
 import { recordSpan } from "@/lib/otel-spans";
 
 function lifecycleVariant(
@@ -173,6 +176,9 @@ export function ComponentDetailClient() {
   const [componentDeployments, setComponentDeployments] = useState<
     Deployment[]
   >([]);
+  const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
+  const [actualCost, setActualCost] = useState<ComponentActualCost | null>(null);
+  const [budgetBannerDismissed, setBudgetBannerDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -182,7 +188,9 @@ export function ComponentDetailClient() {
     Promise.allSettled([
       catalog.getComponent(params.id),
       deployments.list({ componentId: params.id, take: 10 }),
-    ]).then(([compResult, deplResult]) => {
+      finops.getCostEstimate(params.id),
+      finops.getActualCost(params.id).catch(() => null),
+    ]).then(([compResult, deplResult, estimateResult, actualCostResult]) => {
       if (compResult.status === "fulfilled") {
         setComponent(compResult.value);
       } else {
@@ -191,6 +199,14 @@ export function ComponentDetailClient() {
 
       if (deplResult.status === "fulfilled") {
         setComponentDeployments(deplResult.value.data);
+      }
+
+      if (estimateResult.status === "fulfilled") {
+        setCostEstimate(estimateResult.value);
+      }
+
+      if (actualCostResult.status === "fulfilled" && actualCostResult.value !== null) {
+        setActualCost(actualCostResult.value as ComponentActualCost);
       }
 
       setLoading(false);
@@ -271,6 +287,18 @@ export function ComponentDetailClient() {
         </div>
       </PageHeader>
 
+      {/* FinOps budget exceeded banner (Phase 19) */}
+      {!budgetBannerDismissed &&
+        costEstimate &&
+        component.costBudgetUsd != null &&
+        costEstimate.estimatedMonthlyCost > component.costBudgetUsd && (
+          <CostBudgetExceededBanner
+            delta={costEstimate.estimatedMonthlyCost - component.costBudgetUsd}
+            currency={costEstimate.currency}
+            onDismiss={() => setBudgetBannerDismissed(true)}
+          />
+        )}
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -295,9 +323,17 @@ export function ComponentDetailClient() {
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Main info */}
             <div className="flex flex-col gap-6 lg:col-span-2">
-              {/* Details card */}
+              {/* Details card — red header border when actual 30-day cost exceeds budget */}
               <Card>
-                <CardHeader>
+                <CardHeader
+                  className={
+                    actualCost?.thirtyDay?.totalCost != null &&
+                    component.costBudgetUsd != null &&
+                    actualCost.thirtyDay.totalCost > component.costBudgetUsd
+                      ? "border-b border-red-500"
+                      : undefined
+                  }
+                >
                   <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                     Technical Details
                   </CardTitle>
@@ -448,6 +484,11 @@ export function ComponentDetailClient() {
 
               {/* KEDA autoscaling bindings (FARM-S254 / T196) */}
               <KedaBindingCard componentId={component.id} />
+
+              {/* Cost estimate card (Phase 19 — FinOps) */}
+              {costEstimate && (
+                <CostEstimateCard estimate={costEstimate} />
+              )}
 
               {/* Dependencies */}
               <Card>

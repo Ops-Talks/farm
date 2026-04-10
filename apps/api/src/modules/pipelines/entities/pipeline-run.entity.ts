@@ -111,6 +111,13 @@ export class PipelineRun {
   stageResults: StageResult[] | null;
 
   @ApiProperty({
+    description: "Pipeline stage execution metadata (e.g. infracost result)",
+    nullable: true,
+  })
+  @Column("simple-json", { nullable: true })
+  metadata: Record<string, unknown> | null;
+
+  @ApiProperty({
     example: "2024-01-01T00:00:00Z",
     description: "The creation date",
   })

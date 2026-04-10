@@ -45,6 +45,7 @@ import { IncidentModule } from "./modules/incident/incident.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { ServiceTemplateModule } from "./modules/service-template/service-template.module";
 import { EnvironmentRequestModule } from "./modules/environment-request/environment-request.module";
+import { FinOpsModule } from "./modules/finops/finops.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -338,6 +339,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Self-service environment provisioning with approval workflows",
         },
         module: EnvironmentRequestModule,
+      },
+      {
+        metadata: {
+          name: "core-finops",
+          version: "1.0.0",
+          description:
+            "FinOps: Infracost pipeline integration and OpenCost component cost visibility",
+        },
+        module: FinOpsModule,
       },
     ]),
   ],

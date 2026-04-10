@@ -27,6 +27,8 @@ export enum FarmEvent {
   ENV_REQUEST_EXPIRED = "env-request.expired",
   CONTAINER_VULNERABILITY_FOUND = "container:vulnerability-found",
   FLUX_RECONCILIATION_FAILED = "flux:reconciliation-failed",
+  COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
+  COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded",
 }
 
 /**
@@ -142,5 +144,25 @@ export interface FluxReconciliationFailedPayload {
   name: string;
   namespace: string;
   reason: string;
+  timestamp: string;
+}
+
+/**
+ * Payload for cost:budget-exceeded events (infracost diff exceeded budget).
+ */
+export interface CostBudgetExceededPayload {
+  componentId: string;
+  delta: number;
+  pipelineRunId: string | null;
+  timestamp: string;
+}
+
+/**
+ * Payload for cost:actual-budget-exceeded events (OpenCost total exceeded budget).
+ */
+export interface CostActualBudgetExceededPayload {
+  componentId: string;
+  totalCost: number;
+  budgetUsd: number;
   timestamp: string;
 }

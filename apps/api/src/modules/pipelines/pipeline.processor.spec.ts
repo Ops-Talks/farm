@@ -10,6 +10,7 @@ import { Pipeline, PipelineStage } from "./entities/pipeline.entity";
 import { EventsGateway } from "../../common/events/events.gateway";
 import { HelmDeployExecutor } from "../helm/helm-deploy.executor";
 import { BuildStageExecutor } from "./build-stage.executor";
+import { InfracostStageExecutor } from "./infracost-stage.executor";
 import { AwsEcsExecutor } from "../cloud/executors/aws-ecs.executor";
 import { AwsLambdaExecutor } from "../cloud/executors/aws-lambda.executor";
 import { GcpCloudRunExecutor } from "../cloud/executors/gcp-cloud-run.executor";
@@ -50,6 +51,7 @@ function buildRun(overrides: Partial<PipelineRun> = {}): PipelineRun {
     durationMs: null,
     logs: null,
     stageResults: null,
+    metadata: null,
     pipeline: {} as Pipeline,
     createdAt: new Date("2024-01-01T00:00:00Z"),
     updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -1026,6 +1028,7 @@ describe("PipelineProcessor", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
     }
@@ -1735,6 +1738,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1809,6 +1813,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1838,6 +1843,7 @@ describe("PipelineProcessor — additional branches", () => {
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1900,6 +1906,7 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         credRepo as never,
       );
 
@@ -1934,6 +1941,7 @@ describe("PipelineProcessor — additional branches", () => {
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -2644,6 +2652,98 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
       expect(result.plainString).toBe("just-a-value");
       expect(result.numberVal).toBe(42);
       expect(result.boolVal).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe("infracost stage executor dispatch", () => {
+    it("should dispatch infracost stages to InfracostStageExecutor and succeed", async () => {
+      const mockInfracostExecutor = {
+        execute: jest
+          .fn()
+          .mockImplementation(
+            (_stage: unknown, _run: unknown, logFn: (msg: string) => void) => {
+              logFn("Infracost output");
+              return { success: true, output: "cost estimate generated" };
+            },
+          ),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: InfracostStageExecutor, useValue: mockInfracostExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const infracostStage: PipelineStage = {
+        id: "infracost-stage-1",
+        name: "CostEstimate",
+        type: "infracost",
+        config: {},
+        order: 1,
+      };
+      const pipeline = buildPipeline([infracostStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockInfracostExecutor.execute).toHaveBeenCalled();
+      const lastSave = mockRunRepo.save.mock.calls.at(-1) as [PipelineRun];
+      expect(lastSave[0].status).toBe(PipelineRunStatus.SUCCEEDED);
+    });
+
+    it("should mark run as failed when infracost stage fails", async () => {
+      const mockInfracostExecutor = {
+        execute: jest.fn().mockResolvedValue({
+          success: false,
+          output: "cost estimate failed",
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: InfracostStageExecutor, useValue: mockInfracostExecutor },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const infracostStage: PipelineStage = {
+        id: "infracost-stage-fail",
+        name: "CostEstimate",
+        type: "infracost",
+        config: {},
+        order: 1,
+      };
+      const pipeline = buildPipeline([infracostStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
     });
   });
 });

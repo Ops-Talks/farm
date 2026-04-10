@@ -626,252 +626,252 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 19: FinOps `TODO`
+## Phase 19: FinOps `DONE`
 
-### FARM-E63: Infracost Pipeline Integration `TODO`
+### FARM-E63: Infracost Pipeline Integration `DONE`
 
 > Integrate Infracost into Farm pipelines to surface estimated infrastructure cost changes before they reach production. A new `InfracostExecutor` stage runs `infracost diff` as part of CI, stores the cost delta in the pipeline run, and alerts when a change exceeds a configurable budget threshold per component.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S255 | Story | Pipeline infrastructure for Infracost: `metadata` JSONB column on `PipelineRun`, `'infracost'` stage type added to `PipelineStage.type` union, `InfracostExecutor` wired in `PipelinesModule` | `TODO` |
-| FARM-S293 | Story | `InfracostExecutor` implementation: binary availability check, spawn `infracost diff`, stream logs, parse JSON output, persist result to `run.metadata.infracost` | `TODO` |
-| FARM-S294 | Story | Component cost estimate backend: `CostEstimate` entity, `FinOpsModule` with `FinOpsService.upsertCostEstimate()`, `GET /api/catalog/components/:id/cost-estimate` endpoint | `TODO` |
-| FARM-S257 | Story | Infracost cost alerting backend: `costBudgetUsd` field on `Component`, `cost:budget-exceeded` WebSocket event, budget check in `InfracostExecutor` | `TODO` |
-| FARM-S295 | Story | Infracost frontend integration: `getCostEstimate()` in `api-client.ts`, `CostEstimateCard` component, budget exceeded warning banner in Component detail | `TODO` |
+| FARM-S255 | Story | Pipeline infrastructure for Infracost: `metadata` JSONB column on `PipelineRun`, `'infracost'` stage type added to `PipelineStage.type` union, `InfracostExecutor` wired in `PipelinesModule` | `DONE` |
+| FARM-S293 | Story | `InfracostExecutor` implementation: binary availability check, spawn `infracost diff`, stream logs, parse JSON output, persist result to `run.metadata.infracost` | `DONE` |
+| FARM-S294 | Story | Component cost estimate backend: `CostEstimate` entity, `FinOpsModule` with `FinOpsService.upsertCostEstimate()`, `GET /api/catalog/components/:id/cost-estimate` endpoint | `DONE` |
+| FARM-S257 | Story | Infracost cost alerting backend: `costBudgetUsd` field on `Component`, `cost:budget-exceeded` WebSocket event, budget check in `InfracostExecutor` | `DONE` |
+| FARM-S295 | Story | Infracost frontend integration: `getCostEstimate()` in `api-client.ts`, `CostEstimateCard` component, budget exceeded warning banner in Component detail | `DONE` |
 
 #### FARM-S255 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T285 | Task | Add `metadata` JSONB nullable column to `PipelineRun` entity; generate TypeORM migration `AddPipelineRunMetadata` | `TODO` |
-| FARM-T286 | Task | Add `'infracost'` to `PipelineStage.type` union; provide `InfracostExecutor` in `PipelinesModule` providers; add `else if (stage.type === 'infracost')` branch to `PipelineProcessor` | `TODO` |
+| FARM-T285 | Task | Add `metadata` JSONB nullable column to `PipelineRun` entity; generate TypeORM migration `AddPipelineRunMetadata` | `DONE` |
+| FARM-T286 | Task | Add `'infracost'` to `PipelineStage.type` union; provide `InfracostExecutor` in `PipelinesModule` providers; add `else if (stage.type === 'infracost')` branch to `PipelineProcessor` | `DONE` |
 
 ##### FARM-T285 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST211 | Sub-task | Add `@Column({ type: 'simple-json', nullable: true }) metadata: Record<string, unknown> \| null` to `PipelineRun` entity | `TODO` |
-| FARM-ST212 | Sub-task | Run `npm run migration:generate` to produce `AddPipelineRunMetadata` migration; verify generated up/down SQL | `TODO` |
+| FARM-ST211 | Sub-task | Add `@Column({ type: 'simple-json', nullable: true }) metadata: Record<string, unknown> \| null` to `PipelineRun` entity | `DONE` |
+| FARM-ST212 | Sub-task | Run `npm run migration:generate` to produce `AddPipelineRunMetadata` migration; verify generated up/down SQL | `DONE` |
 
 ##### FARM-T286 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST213 | Sub-task | Extend `PipelineStage.type` union in `pipeline.entity.ts` to include `'infracost'` | `TODO` |
-| FARM-ST214 | Sub-task | Add `InfracostExecutor` to `PipelinesModule` `providers` array and inject into `PipelineProcessor` via `@Optional()` | `TODO` |
-| FARM-ST215 | Sub-task | Add `else if (stage.type === 'infracost' && this.infracostExecutor)` branch to `PipelineProcessor` stage dispatch (after the existing `'build'` branch) | `TODO` |
+| FARM-ST213 | Sub-task | Extend `PipelineStage.type` union in `pipeline.entity.ts` to include `'infracost'` | `DONE` |
+| FARM-ST214 | Sub-task | Add `InfracostExecutor` to `PipelinesModule` `providers` array and inject into `PipelineProcessor` via `@Optional()` | `DONE` |
+| FARM-ST215 | Sub-task | Add `else if (stage.type === 'infracost' && this.infracostExecutor)` branch to `PipelineProcessor` stage dispatch (after the existing `'build'` branch) | `DONE` |
 
 #### FARM-S293 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T197 | Task | `InfracostExecutor.execute()`: check binary availability, spawn `infracost diff --path <terraformDir> --format json`, stream log lines via `emitLog`, parse stdout JSON, persist result to `run.metadata.infracost`; unit tests | `TODO` |
-| FARM-T198 | Task | `InfracostStageConfig` interface (`terraformDir` default `'.'`, optional `costThreshold: number`); update `@ApiProperty` examples on `PipelineStage` to document `infracost` type | `TODO` |
+| FARM-T197 | Task | `InfracostExecutor.execute()`: check binary availability, spawn `infracost diff --path <terraformDir> --format json`, stream log lines via `emitLog`, parse stdout JSON, persist result to `run.metadata.infracost`; unit tests | `DONE` |
+| FARM-T198 | Task | `InfracostStageConfig` interface (`terraformDir` default `'.'`, optional `costThreshold: number`); update `@ApiProperty` examples on `PipelineStage` to document `infracost` type | `DONE` |
 
 ##### FARM-T197 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST216 | Sub-task | Define `InfracostStageConfig` interface and `InfracostResult` interface (`totalMonthlyCost`, `diffMonthlyCost`, `currency`, `projects: InfracostProject[]`) | `TODO` |
-| FARM-ST217 | Sub-task | Implement `isInfracostAvailable()` using `execFile('infracost', ['--version'])` — same pattern as `BuildStageExecutor.isEngineAvailable()` | `TODO` |
-| FARM-ST218 | Sub-task | Spawn `infracost diff --path <terraformDir> --format json`; stream each stdout line via `emitLog` callback; collect full stdout for parsing | `TODO` |
-| FARM-ST219 | Sub-task | Parse collected stdout JSON into `InfracostResult`; handle malformed output and non-zero exit code gracefully with a descriptive error message | `TODO` |
-| FARM-ST220 | Sub-task | Persist parsed result to `run.metadata.infracost` via `PipelineRun` repository `save()`; return `{ success: true, output }` | `TODO` |
-| FARM-ST221 | Sub-task | Unit tests: mock `execFile`, assert `InfracostResult` shape, verify metadata persistence, test graceful failure path when binary missing or JSON invalid | `TODO` |
+| FARM-ST216 | Sub-task | Define `InfracostStageConfig` interface and `InfracostResult` interface (`totalMonthlyCost`, `diffMonthlyCost`, `currency`, `projects: InfracostProject[]`) | `DONE` |
+| FARM-ST217 | Sub-task | Implement `isInfracostAvailable()` using `execFile('infracost', ['--version'])` — same pattern as `BuildStageExecutor.isEngineAvailable()` | `DONE` |
+| FARM-ST218 | Sub-task | Spawn `infracost diff --path <terraformDir> --format json`; stream each stdout line via `emitLog` callback; collect full stdout for parsing | `DONE` |
+| FARM-ST219 | Sub-task | Parse collected stdout JSON into `InfracostResult`; handle malformed output and non-zero exit code gracefully with a descriptive error message | `DONE` |
+| FARM-ST220 | Sub-task | Persist parsed result to `run.metadata.infracost` via `PipelineRun` repository `save()`; return `{ success: true, output }` | `DONE` |
+| FARM-ST221 | Sub-task | Unit tests: mock `execFile`, assert `InfracostResult` shape, verify metadata persistence, test graceful failure path when binary missing or JSON invalid | `DONE` |
 
 #### FARM-S294 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T199 | Task | `CostEstimate` entity (`componentId` FK → Component, `estimatedMonthlyCost` decimal, `currency` default `'USD'`, `pipelineRunId` FK nullable, `breakdown` JSONB, `measuredAt`); TypeORM migration | `TODO` |
-| FARM-T200 | Task | Create `FinOpsModule` with `FinOpsService`; implement `upsertCostEstimate(componentId, data)`; add `GET /api/catalog/components/:id/cost-estimate` to `CatalogController`; call `upsertCostEstimate` from `InfracostExecutor` on success; unit + e2e tests | `TODO` |
+| FARM-T199 | Task | `CostEstimate` entity (`componentId` FK → Component, `estimatedMonthlyCost` decimal, `currency` default `'USD'`, `pipelineRunId` FK nullable, `breakdown` JSONB, `measuredAt`); TypeORM migration | `DONE` |
+| FARM-T200 | Task | Create `FinOpsModule` with `FinOpsService`; implement `upsertCostEstimate(componentId, data)`; add `GET /api/catalog/components/:id/cost-estimate` to `CatalogController`; call `upsertCostEstimate` from `InfracostExecutor` on success; unit + e2e tests | `DONE` |
 
 ##### FARM-T199 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST222 | Sub-task | Define `CostEstimate` entity with UUID PK, `componentId` FK, `pipelineRunId` FK (nullable), `estimatedMonthlyCost` decimal, `currency` varchar, `breakdown` simple-json, and `measuredAt` timestamp | `TODO` |
-| FARM-ST223 | Sub-task | Generate TypeORM migration `CreateCostEstimateTable`; verify up/down SQL | `TODO` |
+| FARM-ST222 | Sub-task | Define `CostEstimate` entity with UUID PK, `componentId` FK, `pipelineRunId` FK (nullable), `estimatedMonthlyCost` decimal, `currency` varchar, `breakdown` simple-json, and `measuredAt` timestamp | `DONE` |
+| FARM-ST223 | Sub-task | Generate TypeORM migration `CreateCostEstimateTable`; verify up/down SQL | `DONE` |
 
 ##### FARM-T200 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST224 | Sub-task | Create `FinOpsModule` importing `TypeOrmModule.forFeature([CostEstimate, ActualCost])`; provide `FinOpsService`; register in `AppModule` | `TODO` |
-| FARM-ST225 | Sub-task | Implement `FinOpsService.upsertCostEstimate(componentId, data)`: find-or-create `CostEstimate` by `componentId`, update fields, `save` | `TODO` |
-| FARM-ST226 | Sub-task | Add `GET /api/catalog/components/:id/cost-estimate` endpoint to `CatalogController`; inject `FinOpsService` via constructor | `TODO` |
-| FARM-ST227 | Sub-task | Call `FinOpsService.upsertCostEstimate()` from `InfracostExecutor.execute()` after a successful parse | `TODO` |
-| FARM-ST228 | Sub-task | Unit tests for `FinOpsService.upsertCostEstimate()` (find-or-create path); e2e test asserting `GET /api/catalog/components/:id/cost-estimate` returns persisted data | `TODO` |
+| FARM-ST224 | Sub-task | Create `FinOpsModule` importing `TypeOrmModule.forFeature([CostEstimate, ActualCost])`; provide `FinOpsService`; register in `AppModule` | `DONE` |
+| FARM-ST225 | Sub-task | Implement `FinOpsService.upsertCostEstimate(componentId, data)`: find-or-create `CostEstimate` by `componentId`, update fields, `save` | `DONE` |
+| FARM-ST226 | Sub-task | Add `GET /api/catalog/components/:id/cost-estimate` endpoint to `CatalogController`; inject `FinOpsService` via constructor | `DONE` |
+| FARM-ST227 | Sub-task | Call `FinOpsService.upsertCostEstimate()` from `InfracostExecutor.execute()` after a successful parse | `DONE` |
+| FARM-ST228 | Sub-task | Unit tests for `FinOpsService.upsertCostEstimate()` (find-or-create path); e2e test asserting `GET /api/catalog/components/:id/cost-estimate` returns persisted data | `DONE` |
 
 #### FARM-S257 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T201 | Task | `costBudgetUsd` nullable decimal column on `Component` entity; add optional `costBudgetUsd` to `UpdateComponentDto`; TypeORM migration (shared with FARM-T210) | `TODO` |
-| FARM-T202 | Task | Add `COST_BUDGET_EXCEEDED` to `FarmEvent`, `CostBudgetExceededPayload` interface, and `emitCostBudgetExceeded()` to `EventsGateway`; implement budget check in `InfracostExecutor` post-parse; unit tests | `TODO` |
+| FARM-T201 | Task | `costBudgetUsd` nullable decimal column on `Component` entity; add optional `costBudgetUsd` to `UpdateComponentDto`; TypeORM migration (shared with FARM-T210) | `DONE` |
+| FARM-T202 | Task | Add `COST_BUDGET_EXCEEDED` to `FarmEvent`, `CostBudgetExceededPayload` interface, and `emitCostBudgetExceeded()` to `EventsGateway`; implement budget check in `InfracostExecutor` post-parse; unit tests | `DONE` |
 
 ##### FARM-T201 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST229 | Sub-task | Add `@Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) costBudgetUsd: number \| null` to `Component` entity | `TODO` |
-| FARM-ST230 | Sub-task | Add optional `@IsOptional() @IsNumber() costBudgetUsd?: number` to `UpdateComponentDto` with `@ApiPropertyOptional` decorator | `TODO` |
-| FARM-ST231 | Sub-task | Generate migration `AddCostBudgetUsdToComponent`; this single migration satisfies both FARM-T201 (Infracost) and FARM-T210 (OpenCost) | `TODO` |
+| FARM-ST229 | Sub-task | Add `@Column({ type: 'decimal', precision: 10, scale: 2, nullable: true }) costBudgetUsd: number \| null` to `Component` entity | `DONE` |
+| FARM-ST230 | Sub-task | Add optional `@IsOptional() @IsNumber() costBudgetUsd?: number` to `UpdateComponentDto` with `@ApiPropertyOptional` decorator | `DONE` |
+| FARM-ST231 | Sub-task | Generate migration `AddCostBudgetUsdToComponent`; this single migration satisfies both FARM-T201 (Infracost) and FARM-T210 (OpenCost) | `DONE` |
 
 ##### FARM-T202 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST232 | Sub-task | Add `COST_BUDGET_EXCEEDED = 'cost:budget-exceeded'` to `FarmEvent` enum in `events.interfaces.ts` | `TODO` |
-| FARM-ST233 | Sub-task | Define `CostBudgetExceededPayload` interface (`componentId`, `delta`, `pipelineRunId`, `timestamp`) in `events.interfaces.ts` | `TODO` |
-| FARM-ST234 | Sub-task | Add `emitCostBudgetExceeded(payload: CostBudgetExceededPayload)` method to `EventsGateway` | `TODO` |
-| FARM-ST235 | Sub-task | In `InfracostExecutor.execute()` post-parse: load `component.costBudgetUsd` from `ComponentRepository`; call `eventsGateway.emitCostBudgetExceeded()` when `diffMonthlyCost > costBudgetUsd` | `TODO` |
-| FARM-ST236 | Sub-task | Unit tests: verify event emitted when delta exceeds threshold; verify no event when under threshold or `costBudgetUsd` is null | `TODO` |
+| FARM-ST232 | Sub-task | Add `COST_BUDGET_EXCEEDED = 'cost:budget-exceeded'` to `FarmEvent` enum in `events.interfaces.ts` | `DONE` |
+| FARM-ST233 | Sub-task | Define `CostBudgetExceededPayload` interface (`componentId`, `delta`, `pipelineRunId`, `timestamp`) in `events.interfaces.ts` | `DONE` |
+| FARM-ST234 | Sub-task | Add `emitCostBudgetExceeded(payload: CostBudgetExceededPayload)` method to `EventsGateway` | `DONE` |
+| FARM-ST235 | Sub-task | In `InfracostExecutor.execute()` post-parse: load `component.costBudgetUsd` from `ComponentRepository`; call `eventsGateway.emitCostBudgetExceeded()` when `diffMonthlyCost > costBudgetUsd` | `DONE` |
+| FARM-ST236 | Sub-task | Unit tests: verify event emitted when delta exceeds threshold; verify no event when under threshold or `costBudgetUsd` is null | `DONE` |
 
 #### FARM-S295 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T203 | Task | Add `getCostEstimate()` to `api-client.ts`; `CostEstimateCard` component (monthly cost chip, green/red delta badge, timestamp); dismissible budget exceeded warning banner; integration in Component detail overview tab; unit tests | `TODO` |
+| FARM-T203 | Task | Add `getCostEstimate()` to `api-client.ts`; `CostEstimateCard` component (monthly cost chip, green/red delta badge, timestamp); dismissible budget exceeded warning banner; integration in Component detail overview tab; unit tests | `DONE` |
 
 ##### FARM-T203 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST237 | Sub-task | Add `getCostEstimate(componentId: string): Promise<CostEstimate>` to `api-client.ts`; unit test with mocked fetch | `TODO` |
-| FARM-ST238 | Sub-task | `CostEstimateCard` component: estimated monthly cost chip, green/red `diffMonthlyCost` delta badge, `measuredAt` relative timestamp | `TODO` |
-| FARM-ST239 | Sub-task | Budget exceeded warning banner: rendered when `diffMonthlyCost > costBudgetUsd`; dismissible with local state | `TODO` |
-| FARM-ST240 | Sub-task | Integrate `CostEstimateCard` and optional warning banner into Component detail overview tab; unit tests for both components | `TODO` |
+| FARM-ST237 | Sub-task | Add `getCostEstimate(componentId: string): Promise<CostEstimate>` to `api-client.ts`; unit test with mocked fetch | `DONE` |
+| FARM-ST238 | Sub-task | `CostEstimateCard` component: estimated monthly cost chip, green/red `diffMonthlyCost` delta badge, `measuredAt` relative timestamp | `DONE` |
+| FARM-ST239 | Sub-task | Budget exceeded warning banner: rendered when `diffMonthlyCost > costBudgetUsd`; dismissible with local state | `DONE` |
+| FARM-ST240 | Sub-task | Integrate `CostEstimateCard` and optional warning banner into Component detail overview tab; unit tests for both components | `DONE` |
 
 ---
 
-### FARM-E64: OpenCost Component Cost Visibility `TODO`
+### FARM-E64: OpenCost Component Cost Visibility `DONE`
 
 > Query OpenCost's allocation API to surface real Kubernetes compute costs per component, team, and namespace. Platform Engineers can set monthly budgets per component, receive alerts when actual spend exceeds them, and explore costs across the platform from a dedicated FinOps dashboard.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S258 | Story | FinOps module bootstrap and OpenCost adapter: `CostController` at `/api/cost`, `OPENCOST_URL` config, `OpenCostService`, `GET /api/cost/components/:id/actual` endpoint | `TODO` |
-| FARM-S296 | Story | ActualCost sync backend: `ActualCost` entity, BullMQ daily sync job for all components with active deployments, `GET /api/cost/components/:id/history` endpoint | `TODO` |
-| FARM-S297 | Story | Cost summary API endpoints: `GET /api/cost/teams/:id/summary` and `GET /api/cost/summary?limit=N` | `TODO` |
-| FARM-S260 | Story | Cost dashboard frontend: `/cost` page with "By Component" sortable table (sparkline, budget bar) and "By Team" cost cards; sidebar nav entry | `TODO` |
-| FARM-S261 | Story | Actual cost alerting backend: post-sync budget check, `cost:actual-budget-exceeded` WebSocket event, alerting record creation | `TODO` |
-| FARM-S298 | Story | Actual cost alerting frontend: `CostBudgetBar` component, red border on component card when budget exceeded, notification panel entry | `TODO` |
+| FARM-S258 | Story | FinOps module bootstrap and OpenCost adapter: `CostController` at `/api/cost`, `OPENCOST_URL` config, `OpenCostService`, `GET /api/cost/components/:id/actual` endpoint | `DONE` |
+| FARM-S296 | Story | ActualCost sync backend: `ActualCost` entity, BullMQ daily sync job for all components with active deployments, `GET /api/cost/components/:id/history` endpoint | `DONE` |
+| FARM-S297 | Story | Cost summary API endpoints: `GET /api/cost/teams/:id/summary` and `GET /api/cost/summary?limit=N` | `DONE` |
+| FARM-S260 | Story | Cost dashboard frontend: `/cost` page with "By Component" sortable table (sparkline, budget bar) and "By Team" cost cards; sidebar nav entry | `DONE` |
+| FARM-S261 | Story | Actual cost alerting backend: post-sync budget check, `cost:actual-budget-exceeded` WebSocket event, alerting record creation | `DONE` |
+| FARM-S298 | Story | Actual cost alerting frontend: `CostBudgetBar` component, red border on component card when budget exceeded, notification panel entry | `DONE` |
 
 #### FARM-S258 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T287 | Task | Add `CostController` class with `@Controller('cost')` to `FinOpsModule`; add `OPENCOST_URL` to Joi config schema (default `http://localhost:9090`) | `TODO` |
-| FARM-T204 | Task | `OpenCostService.getAllocation(labelSelector, window)` using `globalThis.fetch`; unit tests with capture-and-restore mock pattern | `TODO` |
-| FARM-T205 | Task | `GET /api/cost/components/:id/actual` returning 7d and 30d cost breakdown (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`); e2e tests | `TODO` |
+| FARM-T287 | Task | Add `CostController` class with `@Controller('cost')` to `FinOpsModule`; add `OPENCOST_URL` to Joi config schema (default `http://localhost:9090`) | `DONE` |
+| FARM-T204 | Task | `OpenCostService.getAllocation(labelSelector, window)` using `globalThis.fetch`; unit tests with capture-and-restore mock pattern | `DONE` |
+| FARM-T205 | Task | `GET /api/cost/components/:id/actual` returning 7d and 30d cost breakdown (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`); e2e tests | `DONE` |
 
 ##### FARM-T287 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST241 | Sub-task | Create `CostController` with `@Controller('cost')` and `@UseGuards(JwtAuthGuard)`; add to `FinOpsModule` controllers array | `TODO` |
-| FARM-ST242 | Sub-task | Add `OPENCOST_URL: Joi.string().uri().default('http://localhost:9090')` to config validation schema in `src/config/configuration.ts` | `TODO` |
+| FARM-ST241 | Sub-task | Create `CostController` with `@Controller('cost')` and `@UseGuards(JwtAuthGuard)`; add to `FinOpsModule` controllers array | `DONE` |
+| FARM-ST242 | Sub-task | Add `OPENCOST_URL: Joi.string().uri().default('http://localhost:9090')` to config validation schema in `src/config/configuration.ts` | `DONE` |
 
 ##### FARM-T204 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST243 | Sub-task | Define `OpenCostAllocation` TypeScript interface (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`, `currency`) | `TODO` |
-| FARM-ST244 | Sub-task | Implement `getAllocation(labelSelector, window)` building URL `/model/allocation?window=<window>&aggregate=label:app&filterLabels=app:<labelSelector>`; parse and return typed response | `TODO` |
-| FARM-ST245 | Sub-task | Unit tests: use capture-and-restore `globalThis.fetch` pattern; assert allocation parsing; test HTTP error and empty-response handling | `TODO` |
+| FARM-ST243 | Sub-task | Define `OpenCostAllocation` TypeScript interface (`cpuCost`, `memoryCost`, `pvCost`, `networkCost`, `totalCost`, `currency`) | `DONE` |
+| FARM-ST244 | Sub-task | Implement `getAllocation(labelSelector, window)` building URL `/model/allocation?window=<window>&aggregate=label:app&filterLabels=app:<labelSelector>`; parse and return typed response | `DONE` |
+| FARM-ST245 | Sub-task | Unit tests: use capture-and-restore `globalThis.fetch` pattern; assert allocation parsing; test HTTP error and empty-response handling | `DONE` |
 
 ##### FARM-T205 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST246 | Sub-task | Implement endpoint: look up `Component.name` by id, call `OpenCostService.getAllocation` for `7d` and `30d` windows, return combined DTO | `TODO` |
-| FARM-ST247 | Sub-task | E2e tests with mocked `OpenCostService`; assert both `sevenDay` and `thirtyDay` fields present in response | `TODO` |
+| FARM-ST246 | Sub-task | Implement endpoint: look up `Component.name` by id, call `OpenCostService.getAllocation` for `7d` and `30d` windows, return combined DTO | `DONE` |
+| FARM-ST247 | Sub-task | E2e tests with mocked `OpenCostService`; assert both `sevenDay` and `thirtyDay` fields present in response | `DONE` |
 
 #### FARM-S296 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T206 | Task | `ActualCost` entity (`componentId` FK, `window` varchar, cost decimal fields, `currency`, `syncedAt`); BullMQ daily sync job refreshing all components with an active deployment; TypeORM migration | `TODO` |
-| FARM-T207 | Task | `GET /api/cost/components/:id/history` returning last 30 `ActualCost` records ordered by `syncedAt` DESC for sparkline rendering; unit + e2e tests | `TODO` |
+| FARM-T206 | Task | `ActualCost` entity (`componentId` FK, `window` varchar, cost decimal fields, `currency`, `syncedAt`); BullMQ daily sync job refreshing all components with an active deployment; TypeORM migration | `DONE` |
+| FARM-T207 | Task | `GET /api/cost/components/:id/history` returning last 30 `ActualCost` records ordered by `syncedAt` DESC for sparkline rendering; unit + e2e tests | `DONE` |
 
 ##### FARM-T206 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST248 | Sub-task | Define `ActualCost` entity with UUID PK, `componentId` FK, `window` varchar, decimal cost columns, `currency` varchar, `syncedAt` timestamp | `TODO` |
-| FARM-ST249 | Sub-task | Generate TypeORM migration `CreateActualCostTable`; verify up/down SQL | `TODO` |
-| FARM-ST250 | Sub-task | Implement `ActualCostSyncProcessor` BullMQ job: query all `Component` IDs with at least one active `Deployment`, call `OpenCostService.getAllocation('30d')` per component, upsert `ActualCost` record | `TODO` |
-| FARM-ST251 | Sub-task | Register BullMQ CRON schedule in `FinOpsModule` (configurable via `COST_SYNC_CRON` env var, default `0 3 * * *`) | `TODO` |
+| FARM-ST248 | Sub-task | Define `ActualCost` entity with UUID PK, `componentId` FK, `window` varchar, decimal cost columns, `currency` varchar, `syncedAt` timestamp | `DONE` |
+| FARM-ST249 | Sub-task | Generate TypeORM migration `CreateActualCostTable`; verify up/down SQL | `DONE` |
+| FARM-ST250 | Sub-task | Implement `ActualCostSyncProcessor` BullMQ job: query all `Component` IDs with at least one active `Deployment`, call `OpenCostService.getAllocation('30d')` per component, upsert `ActualCost` record | `DONE` |
+| FARM-ST251 | Sub-task | Register BullMQ CRON schedule in `FinOpsModule` (configurable via `COST_SYNC_CRON` env var, default `0 3 * * *`) | `DONE` |
 
 ##### FARM-T207 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST252 | Sub-task | Implement `GET /api/cost/components/:id/history` in `CostController`: query `ActualCost` by `componentId` ordered by `syncedAt` DESC, limit 30 | `TODO` |
-| FARM-ST253 | Sub-task | Unit test for repository query ordering; e2e test asserting response array shape | `TODO` |
+| FARM-ST252 | Sub-task | Implement `GET /api/cost/components/:id/history` in `CostController`: query `ActualCost` by `componentId` ordered by `syncedAt` DESC, limit 30 | `DONE` |
+| FARM-ST253 | Sub-task | Unit test for repository query ordering; e2e test asserting response array shape | `DONE` |
 
 #### FARM-S297 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T208 | Task | `GET /api/cost/teams/:id/summary` aggregating latest `ActualCost` for all team components; `GET /api/cost/summary?limit=N` (default 10) returning top-N most expensive components platform-wide; unit + e2e tests | `TODO` |
+| FARM-T208 | Task | `GET /api/cost/teams/:id/summary` aggregating latest `ActualCost` for all team components; `GET /api/cost/summary?limit=N` (default 10) returning top-N most expensive components platform-wide; unit + e2e tests | `DONE` |
 
 ##### FARM-T208 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST254 | Sub-task | Implement `GET /api/cost/teams/:id/summary`: load team's components, join with latest `ActualCost` per component, return `{ teamId, totalCost, currency, components[] }` | `TODO` |
-| FARM-ST255 | Sub-task | Implement `GET /api/cost/summary?limit=N`: join latest `ActualCost` rows with `Component`, order by `totalCost` DESC, limit N | `TODO` |
-| FARM-ST256 | Sub-task | Unit tests for aggregation queries; e2e tests for both endpoints asserting response shape | `TODO` |
+| FARM-ST254 | Sub-task | Implement `GET /api/cost/teams/:id/summary`: load team's components, join with latest `ActualCost` per component, return `{ teamId, totalCost, currency, components[] }` | `DONE` |
+| FARM-ST255 | Sub-task | Implement `GET /api/cost/summary?limit=N`: join latest `ActualCost` rows with `Component`, order by `totalCost` DESC, limit N | `DONE` |
+| FARM-ST256 | Sub-task | Unit tests for aggregation queries; e2e tests for both endpoints asserting response shape | `DONE` |
 
 #### FARM-S260 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T209 | Task | `/cost` page with `FilterTabs` ("By Component" / "By Team"); "By Component" sortable table with monthly cost, 30d sparkline, budget usage bar; "By Team" team cost cards; add cost methods to `api-client.ts`; sidebar nav entry; unit tests | `TODO` |
+| FARM-T209 | Task | `/cost` page with `FilterTabs` ("By Component" / "By Team"); "By Component" sortable table with monthly cost, 30d sparkline, budget usage bar; "By Team" team cost cards; add cost methods to `api-client.ts`; sidebar nav entry; unit tests | `DONE` |
 
 ##### FARM-T209 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST257 | Sub-task | Add `/cost` route under protected layout; add "Cost" link to sidebar nav | `TODO` |
-| FARM-ST258 | Sub-task | Add `getPlatformCostSummary(limit?)`, `getTeamCostSummary(teamId)`, `getComponentCostHistory(componentId)` to `api-client.ts`; unit tests | `TODO` |
-| FARM-ST259 | Sub-task | "By Component" tab: sortable table (name, monthly cost, 30d sparkline column, budget usage progress bar) using `getPlatformCostSummary` and `getComponentCostHistory` | `TODO` |
-| FARM-ST260 | Sub-task | "By Team" tab: team cost cards with total monthly cost and top-3 most expensive components list, using `getTeamCostSummary` | `TODO` |
-| FARM-ST261 | Sub-task | Unit tests for `/cost` page, `FilterTabs` switching, and "By Component" table column sorting | `TODO` |
+| FARM-ST257 | Sub-task | Add `/cost` route under protected layout; add "Cost" link to sidebar nav | `DONE` |
+| FARM-ST258 | Sub-task | Add `getPlatformCostSummary(limit?)`, `getTeamCostSummary(teamId)`, `getComponentCostHistory(componentId)` to `api-client.ts`; unit tests | `DONE` |
+| FARM-ST259 | Sub-task | "By Component" tab: sortable table (name, monthly cost, 30d sparkline column, budget usage progress bar) using `getPlatformCostSummary` and `getComponentCostHistory` | `DONE` |
+| FARM-ST260 | Sub-task | "By Team" tab: team cost cards with total monthly cost and top-3 most expensive components list, using `getTeamCostSummary` | `DONE` |
+| FARM-ST261 | Sub-task | Unit tests for `/cost` page, `FilterTabs` switching, and "By Component" table column sorting | `DONE` |
 
 #### FARM-S261 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T210 | Task | `costBudgetUsd` on `Component` — shared migration with FARM-T201/ST231; no new migration required if FARM-S257 was implemented first | `TODO` |
-| FARM-T211 | Task | Add `COST_ACTUAL_BUDGET_EXCEEDED` to `FarmEvent`, `CostActualBudgetExceededPayload` interface, and `emitCostActualBudgetExceeded()` to `EventsGateway`; post-sync budget check in `ActualCostSyncProcessor`; create alerting record; unit tests | `TODO` |
+| FARM-T210 | Task | `costBudgetUsd` on `Component` — shared migration with FARM-T201/ST231; no new migration required if FARM-S257 was implemented first | `DONE` |
+| FARM-T211 | Task | Add `COST_ACTUAL_BUDGET_EXCEEDED` to `FarmEvent`, `CostActualBudgetExceededPayload` interface, and `emitCostActualBudgetExceeded()` to `EventsGateway`; post-sync budget check in `ActualCostSyncProcessor`; create alerting record; unit tests | `DONE` |
 
 ##### FARM-T211 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST262 | Sub-task | Add `COST_ACTUAL_BUDGET_EXCEEDED = 'cost:actual-budget-exceeded'` to `FarmEvent` enum | `TODO` |
-| FARM-ST263 | Sub-task | Define `CostActualBudgetExceededPayload` interface (`componentId`, `totalCost`, `budgetUsd`, `timestamp`); add `emitCostActualBudgetExceeded()` to `EventsGateway` | `TODO` |
-| FARM-ST264 | Sub-task | After each `ActualCost` upsert in `ActualCostSyncProcessor`: compare 30d `totalCost` vs `component.costBudgetUsd`; emit event and call `AlertingService.createAlert()` if exceeded | `TODO` |
-| FARM-ST265 | Sub-task | Unit tests: verify event emitted on breach; verify alerting record created; verify no event when under threshold or `costBudgetUsd` is null | `TODO` |
+| FARM-ST262 | Sub-task | Add `COST_ACTUAL_BUDGET_EXCEEDED = 'cost:actual-budget-exceeded'` to `FarmEvent` enum | `DONE` |
+| FARM-ST263 | Sub-task | Define `CostActualBudgetExceededPayload` interface (`componentId`, `totalCost`, `budgetUsd`, `timestamp`); add `emitCostActualBudgetExceeded()` to `EventsGateway` | `DONE` |
+| FARM-ST264 | Sub-task | After each `ActualCost` upsert in `ActualCostSyncProcessor`: compare 30d `totalCost` vs `component.costBudgetUsd`; emit event and call `AlertingService.createAlert()` if exceeded | `DONE` |
+| FARM-ST265 | Sub-task | Unit tests: verify event emitted on breach; verify alerting record created; verify no event when under threshold or `costBudgetUsd` is null | `DONE` |
 
 #### FARM-S298 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T212 | Task | `CostBudgetBar` component (text label + percentage fill bar with color transitions); conditional red border on component detail card when budget exceeded; notification panel entry for `cost:actual-budget-exceeded`; unit tests | `TODO` |
+| FARM-T212 | Task | `CostBudgetBar` component (text label + percentage fill bar with color transitions); conditional red border on component detail card when budget exceeded; notification panel entry for `cost:actual-budget-exceeded`; unit tests | `DONE` |
 
 ##### FARM-T212 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST266 | Sub-task | `CostBudgetBar` component: `$X of $Y monthly budget used` label, percentage fill bar with green → yellow → red color transition at 75% and 100% thresholds | `TODO` |
-| FARM-ST267 | Sub-task | Conditional red border and warning icon on component detail card header when 30d `totalCost > costBudgetUsd` | `TODO` |
-| FARM-ST268 | Sub-task | Subscribe to `cost:actual-budget-exceeded` WebSocket event in notification panel; render entry with component name, overage amount, and timestamp | `TODO` |
-| FARM-ST269 | Sub-task | Unit tests for `CostBudgetBar` (percentage calculation, color thresholds), red border condition logic, and notification panel entry render | `TODO` |
+| FARM-ST266 | Sub-task | `CostBudgetBar` component: `$X of $Y monthly budget used` label, percentage fill bar with green → yellow → red color transition at 75% and 100% thresholds | `DONE` |
+| FARM-ST267 | Sub-task | Conditional red border and warning icon on component detail card header when 30d `totalCost > costBudgetUsd` | `DONE` |
+| FARM-ST268 | Sub-task | Subscribe to `cost:actual-budget-exceeded` WebSocket event in notification panel; render entry with component name, overage amount, and timestamp | `DONE` |
+| FARM-ST269 | Sub-task | Unit tests for `CostBudgetBar` (percentage calculation, color thresholds), red border condition logic, and notification panel entry render | `DONE` |
 
 ---
 
@@ -1167,6 +1167,217 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 ---
 
+## Phase 25: Feature Availability UX `TODO`
+
+### FARM-E71: Feature Availability and Configuration UX `TODO`
+
+> Farm is a modular platform — features like Kubernetes, FinOps, Service Mesh, and Registry integration require external services to be configured before they surface meaningful data. Currently, sidebar navigation items for unconfigured features are always visible, leading to empty pages with no guidance. This Epic introduces a consistent "not configured" UX pattern: top-level pages for optional features detect availability on mount and render an informative setup screen (with documentation links and required environment variables) instead of an empty state. Component-detail tabs that already gate on `installed: true` are not affected.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S299 | Story | Backend availability endpoints: each optional module exposes `GET /api/<module>/available` returning `{ available: boolean, reason?: string }` | `TODO` |
+| FARM-S300 | Story | Frontend `FeatureUnavailablePage` component and `useFeatureAvailability` hook; integrate into all optional top-level pages | `TODO` |
+| FARM-S301 | Story | Sidebar nav enhancements: show a subtle "not configured" badge on nav items whose feature is unavailable; clicking still navigates (shows the setup screen) | `TODO` |
+| FARM-S302 | Story | Plugin Marketplace view toggle: add a grid/list toggle to the Plugin Marketplace toolbar so users can switch between the current card grid and a compact table list view; persist preference in `localStorage` | `TODO` |
+| FARM-S303 | Story | Integration Settings brand icons: replace the placeholder emoji icons on the ArgoCD, CircleCI, Jenkins, and Travis CI cards with the official SVG brand logos using `simple-icons` | `TODO` |
+| FARM-S304 | Story | New CI/CD integrations: add GitHub Actions (PAT + repository webhook) and Azure DevOps (Personal Access Token + organization URL) as first-class integration types with dedicated connect forms, credential storage, pipeline status endpoints, and frontend cards | `TODO` |
+| FARM-S305 | Story | Sidebar navigation reorganization: group the 25 flat nav items into labeled sections (Operations, Observability, Infrastructure, Self-Service, Organization, Settings) to reduce cognitive load and improve discoverability | `TODO` |
+
+#### FARM-S299 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T288 | Task | Add `GET /api/kubernetes/available` to `KubernetesController` returning `{ available: boolean, reason: string }` based on `isKubernetesEnabled()`; unit tests | `TODO` |
+| FARM-T289 | Task | Add `GET /api/cost/available` to `CostController` (checks `OPENCOST_URL` reachability with a lightweight HEAD request); unit tests | `TODO` |
+| FARM-T290 | Task | Add `GET /api/registry/available` to `RegistryController` (returns true when at least one registry credential is configured); unit tests | `TODO` |
+| FARM-T291 | Task | Add `GET /api/helm/available` to `HelmController` (checks if at least one Helm release exists or cluster is reachable); unit tests | `TODO` |
+| FARM-T292 | Task | Add `GET /api/istio/available` and `GET /api/linkerd/available` availability endpoints; unit tests | `TODO` |
+
+##### FARM-T288 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST270 | Sub-task | Implement `GET /api/kubernetes/available`: call `isKubernetesEnabled()`; return `{ available: true }` or `{ available: false, reason: "KUBECONFIG not set or cluster unreachable" }` | `TODO` |
+| FARM-ST271 | Sub-task | Unit test: returns `available: true` when enabled; `available: false` with reason when disabled | `TODO` |
+
+##### FARM-T289 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST272 | Sub-task | Implement `GET /api/cost/available`: attempt HEAD `${OPENCOST_URL}/healthz`; return `{ available: true }` on 2xx; `{ available: false, reason: "OpenCost unreachable at <url>" }` otherwise | `TODO` |
+| FARM-ST273 | Sub-task | Unit test: mocked fetch returns 200 → available; mocked fetch throws → not available with reason | `TODO` |
+
+##### FARM-T290 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST274 | Sub-task | Implement `GET /api/registry/available`: query `RegistryCredential` repository count; `available: true` when count > 0 | `TODO` |
+| FARM-ST275 | Sub-task | Unit test: count > 0 → available; count = 0 → not available | `TODO` |
+
+##### FARM-T291 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST276 | Sub-task | Implement `GET /api/helm/available`: delegate to `isKubernetesEnabled()`; Helm operations require a live cluster | `TODO` |
+| FARM-ST277 | Sub-task | Unit test: kubernetes enabled → available; disabled → not available | `TODO` |
+
+##### FARM-T292 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST278 | Sub-task | Implement `GET /api/istio/available` using `IstioService.isIstioEnabled()` | `TODO` |
+| FARM-ST279 | Sub-task | Implement `GET /api/linkerd/available` using `LinkerdService.isLinkerdEnabled()` (Phase 20) | `TODO` |
+| FARM-ST280 | Sub-task | Unit tests for both endpoints | `TODO` |
+
+#### FARM-S300 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T293 | Task | Create `useFeatureAvailability(endpoint: string)` hook: fetches the availability endpoint, returns `{ available: boolean, reason: string | undefined, loading: boolean }`; unit tests | `TODO` |
+| FARM-T294 | Task | Create `FeatureUnavailablePage` component: title, description, required env var list, documentation link, and an optional "Retry" button that re-fetches availability; unit tests | `TODO` |
+| FARM-T295 | Task | Wrap optional top-level pages (`/kubernetes`, `/cost`, `/registry`, `/helm`, `/istio`) with `useFeatureAvailability`; render `FeatureUnavailablePage` when `available === false`; unit tests for each page | `TODO` |
+
+##### FARM-T293 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST281 | Sub-task | Implement `useFeatureAvailability` hook using `globalThis.fetch` (or the existing `apiFetch` utility); cache result with `useState`; re-fetch on explicit `retry()` call | `TODO` |
+| FARM-ST282 | Sub-task | Unit tests: loading state, available true, available false with reason, retry triggers re-fetch | `TODO` |
+
+##### FARM-T294 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST283 | Sub-task | `FeatureUnavailablePage` props: `featureName`, `reason`, `requiredEnvVars: string[]`, `docsUrl?: string`, `onRetry?: () => void` | `TODO` |
+| FARM-ST284 | Sub-task | Render: feature name heading, reason paragraph, env vars as a code block list, optional docs link button, optional "Check Again" button | `TODO` |
+| FARM-ST285 | Sub-task | Unit tests: renders feature name and reason; renders env vars; calls onRetry when button clicked; hides retry button when onRetry not provided | `TODO` |
+
+##### FARM-T295 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST286 | Sub-task | Wrap `/kubernetes` page: `useFeatureAvailability('/api/kubernetes/available')`; `requiredEnvVars: ['KUBECONFIG']`; `docsUrl: '/docs/kubernetes'` | `TODO` |
+| FARM-ST287 | Sub-task | Wrap `/cost` page: `useFeatureAvailability('/api/cost/available')`; `requiredEnvVars: ['OPENCOST_URL']` | `TODO` |
+| FARM-ST288 | Sub-task | Wrap `/registry` page: `useFeatureAvailability('/api/registry/available')`; `requiredEnvVars: ['Registry credentials configured via Settings > Integrations']` | `TODO` |
+| FARM-ST289 | Sub-task | Wrap `/helm` page: `useFeatureAvailability('/api/helm/available')`; `requiredEnvVars: ['KUBECONFIG']` | `TODO` |
+| FARM-ST290 | Sub-task | Unit tests for each wrapped page: renders `FeatureUnavailablePage` when hook returns `available: false`; renders normal content when `available: true` | `TODO` |
+
+#### FARM-S301 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T296 | Task | Add `GET /api/features/availability` bulk endpoint returning a map of `{ [featureKey]: { available: boolean } }` for all optional features; reduces sidebar to a single API call; unit + e2e tests | `TODO` |
+| FARM-T297 | Task | Frontend: fetch `/api/features/availability` once in the app shell on mount; store in context; pass `available` boolean to each nav item; render a subtle dot indicator on unavailable items; unit tests | `TODO` |
+
+##### FARM-T296 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST291 | Sub-task | Create `FeaturesController` with `GET /api/features/availability`; aggregate availability from `KubernetesService`, `OpenCostService`, `RegistryService`, `IstioService` | `TODO` |
+| FARM-ST292 | Sub-task | Response shape: `{ kubernetes: { available: bool }, cost: { available: bool }, registry: { available: bool }, helm: { available: bool }, istio: { available: bool } }` | `TODO` |
+| FARM-ST293 | Sub-task | Unit test: each feature maps to expected available state; e2e test: endpoint returns all keys | `TODO` |
+
+##### FARM-T297 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST294 | Sub-task | Add `getFeatureAvailability()` to `api-client.ts`; create `FeatureAvailabilityContext` with React context + provider | `TODO` |
+| FARM-ST295 | Sub-task | Update `AppShell` to call `getFeatureAvailability()` on mount and store in context; pass availability map down to nav item renderer | `TODO` |
+| FARM-ST296 | Sub-task | Nav item renderer: show a small gray dot badge when `available === false`; no tooltip, no blocking — clicking still navigates | `TODO` |
+| FARM-ST297 | Sub-task | Unit tests: dot badge visible when unavailable; no badge when available; context provides correct values | `TODO` |
+
+#### FARM-S302 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T298 | Task | Add `viewMode: 'grid' \| 'list'` state to `PluginsClient`; render a `LayoutGrid` / `List` toggle button group in the `PageHeader` toolbar; persist preference with `localStorage` key `plugins-view-mode`; unit tests | `TODO` |
+| FARM-T299 | Task | Implement `PluginListRow` and `PluginListRowSkeleton` components: compact table row with columns for name+version, description (single-line truncated), menu items count, and routes count; render as `<table>` when `viewMode === 'list'`; unit tests | `TODO` |
+
+##### FARM-T298 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST298 | Sub-task | Add `LayoutGrid` and `List` icon buttons (lucide-react) next to "Reload Plugins" in the `PageHeader`; active view highlighted with `variant="secondary"`; default to `'grid'` | `TODO` |
+| FARM-ST299 | Sub-task | Read initial `viewMode` from `localStorage.getItem('plugins-view-mode')` on component mount; write back on every toggle | `TODO` |
+| FARM-ST300 | Sub-task | Unit tests: toggles from grid to list and back; persists to localStorage; defaults to grid when localStorage is empty | `TODO` |
+
+##### FARM-T299 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST301 | Sub-task | `PluginListRow` renders a `<tr>` with four `<td>` columns: (1) plugin name + monospace version badge, (2) description truncated to one line, (3) menu items count with `Menu` icon, (4) routes count with `Route` icon; `Installed` badge in column 1 | `TODO` |
+| FARM-ST302 | Sub-task | `PluginListRowSkeleton` renders matching `<tr>` with `<Skeleton>` cells matching column widths | `TODO` |
+| FARM-ST303 | Sub-task | When `viewMode === 'list'` render a `<table>` with a `<thead>` (Plugin, Description, Menu Items, Routes) and `<tbody>` of `PluginListRow` items; reuse existing `EmptyState` for empty list | `TODO` |
+| FARM-ST304 | Sub-task | Unit tests: `PluginListRow` renders name, version, description, counts; skeleton renders without errors; table header rendered in list mode; grid cards rendered in grid mode | `TODO` |
+
+#### FARM-S303 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T300 | Task | Install `simple-icons` as a frontend dependency; create `src/components/integrations/brand-icons.tsx` exporting `ArgoCDIcon`, `CircleCIIcon`, `JenkinsIcon`, `TravisCIIcon` as React SVG components using `makeBrandIcon()` factory | `TODO` |
+| FARM-T301 | Task | Update `IntegrationSettingsClient.tsx`: change `INTEGRATIONS` array `icon` field from `string` (emoji) to `React.ComponentType<BrandIconProps>`; update `IntegrationCardProps` and render logic accordingly; update tests to assert SVG `role="img"` elements instead of emoji text | `TODO` |
+
+##### FARM-T300 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST305 | Sub-task | `makeBrandIcon(si: SimpleIcon)` returns a named React component rendering `<svg role="img" viewBox="0 0 24 24" fill={#hex}>` with the simple-icons `path`; `displayName` set to `BrandIcon(<title>)` | `TODO` |
+| FARM-ST306 | Sub-task | Export `ArgoCDIcon` (siArgo, `#EF7B4D`), `CircleCIIcon` (siCircleci, `#343434`), `JenkinsIcon` (siJenkins, `#D24939`), `TravisCIIcon` (siTravisci, `#3EAAAF`) | `TODO` |
+
+##### FARM-T301 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST307 | Sub-task | Replace `icon: string` with `Icon: React.ComponentType<BrandIconProps>` in the `INTEGRATIONS` constant and `IntegrationCardProps` interface | `TODO` |
+| FARM-ST308 | Sub-task | Render `<Icon size={28} />` in `IntegrationCard` replacing the `<span>{icon}</span>` emoji element | `TODO` |
+| FARM-ST309 | Sub-task | Update the "renders integration icons/emojis" test: remove emoji `getByText` assertions; add `getAllByRole("img", { hidden: true })` to verify four SVG brand icons are present | `TODO` |
+
+#### FARM-S304 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T302 | Task | Backend: add `GITHUB_ACTIONS = "github-actions"` and `AZURE_DEVOPS = "azure-devops"` to `IntegrationType` enum; create migration; add `GitHubActionsService` (`GET /api/integrations/github-actions/runs`) and `AzureDevOpsService` (`GET /api/integrations/azure-devops/pipelines`) with credential-based HTTP clients; unit + e2e tests | `TODO` |
+| FARM-T303 | Task | Frontend brand icons: add `GitHubActionsIcon` (siGithubactions, `#2088FF`) to `brand-icons.tsx`; create `AzureDevOpsIcon` as a custom inline SVG component (official brand color `#0078D4`) | `TODO` |
+| FARM-T304 | Task | Frontend connect forms: `GitHubActionsConnectForm` (name, PAT token, optional repository filter) and `AzureDevOpsConnectForm` (name, organization URL, PAT token); add both to `INTEGRATIONS` array and `ConnectModal` dispatch | `TODO` |
+| FARM-T305 | Task | Update `IntegrationSettingsClient` tests: "renders all four integration cards" becomes "renders all six integration cards"; add `Not Connected` count assertion (`6`); add form-field tests for each new connect form | `TODO` |
+
+##### FARM-T302 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST310 | Sub-task | Add enum values to `integration-credential.entity.ts`; generate and run migration `AddGitHubActionsAzureDevOpsTypes` | `TODO` |
+| FARM-ST311 | Sub-task | `GitHubActionsService`: list workflow runs via `GET https://api.github.com/repos/{owner}/{repo}/actions/runs` using stored PAT; map to common `PipelineRun` shape | `TODO` |
+| FARM-ST312 | Sub-task | `AzureDevOpsService`: list pipeline runs via `GET https://dev.azure.com/{org}/{project}/_apis/pipelines/{id}/runs` using stored PAT; map to common shape | `TODO` |
+| FARM-ST313 | Sub-task | Unit tests for both services (mocked globalThis.fetch); e2e tests for credential CRUD with new types | `TODO` |
+
+#### FARM-S305 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T306 | Task | Define nav section groups in `app-shell.tsx`: replace the flat `navItems` array with a `navSections` structure; each section has a `label` and an `items` array; render a section heading (`<p>` with `text-xs uppercase font-semibold text-muted-foreground`) above each group; unit tests | `TODO` |
+| FARM-T307 | Task | Validate grouping with UX review and update mobile nav drawer to mirror the same section structure; update `app-shell` tests to assert section headings are rendered | `TODO` |
+
+##### FARM-T306 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST314 | Sub-task | **Operations** section: Dashboard, Catalog, Deployments, Pipelines | `TODO` |
+| FARM-ST315 | Sub-task | **Observability** section: Alerting, SLOs, Incidents, Observability, Analytics | `TODO` |
+| FARM-ST316 | Sub-task | **Infrastructure** section: Operators, GitOps, Queues, Cost | `TODO` |
+| FARM-ST317 | Sub-task | **Self-Service** section: Templates, Env Requests, Custom Dashboards, Docs | `TODO` |
+| FARM-ST318 | Sub-task | **Organization** section: Organizations, Teams | `TODO` |
+| FARM-ST319 | Sub-task | **Settings** section: Integrations, Cloud Providers, Keycloak SSO, Compliance, Tag Policies, Plugins | `TODO` |
+
+##### FARM-T307 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST320 | Sub-task | Update desktop `<nav>` in `AppShell` to iterate `navSections` and render a heading + items per section, with `mb-4` spacing between sections | `TODO` |
+| FARM-ST321 | Sub-task | Mirror the same `navSections` structure in the mobile `Sheet` drawer nav | `TODO` |
+| FARM-ST322 | Sub-task | Update `app-shell.test.tsx`: assert each of the six section headings is rendered; existing nav-item tests remain valid | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -1192,10 +1403,11 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 16: Kubernetes Operators | 1 | 5 | `DONE` |
 | Phase 17: Container Registry Integration | 1 | 6 | `DONE` |
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `DONE` |
-| Phase 19: FinOps | 2 | 11 | `TODO` |
+| Phase 19: FinOps | 2 | 11 | `DONE` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
-| **Total** | **72** | **282** | |
+| Phase 25: Feature Availability UX | 1 | 7 | `TODO` |
+| **Total** | **73** | **289** | |

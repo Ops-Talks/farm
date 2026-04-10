@@ -39,6 +39,8 @@ import {
   dashboards,
   serviceTemplates,
   environmentRequests,
+  registry,
+  finops,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -2995,6 +2997,165 @@ describe("api-client", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "/api/v1/environment-requests/req-1/expire",
         expect.objectContaining({ method: "POST" }),
+      );
+    });
+  });
+
+  // ─── Registry & Container Vulnerability API (FARM-S244) ──────────────────
+
+  describe("registry", () => {
+    it("listVulnerabilities without severity sends GET to the component vulnerabilities URL", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const result = await registry.listVulnerabilities("comp-1");
+      expect(Array.isArray(result)).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/registry/components/comp-1/vulnerabilities",
+        expect.any(Object),
+      );
+    });
+
+    it("listVulnerabilities with severity appends the severity query parameter", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await registry.listVulnerabilities("comp-1", "HIGH");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/registry/components/comp-1/vulnerabilities?severity=HIGH",
+        expect.any(Object),
+      );
+    });
+
+    it("getVulnerabilitySummary sends GET to the summary endpoint and returns counts", async () => {
+      const summary = { critical: 1, high: 2, medium: 3, low: 4, negligible: 0 };
+      mockFetch.mockReturnValueOnce(jsonResponse(summary));
+      const result = await registry.getVulnerabilitySummary("comp-1");
+      expect(result).toEqual(summary);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/registry/components/comp-1/vulnerabilities/summary",
+        expect.any(Object),
+      );
+    });
+
+    it("syncVulnerabilities sends POST to the sync endpoint", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ queued: true, count: 5 }));
+      const result = await registry.syncVulnerabilities("comp-1");
+      expect(result.queued).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/registry/components/comp-1/vulnerabilities/sync",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("listHarborReplications sends GET to the harbor replications endpoint", async () => {
+      const policies = [{ id: "policy-1", name: "sync-policy" }];
+      mockFetch.mockReturnValueOnce(jsonResponse(policies));
+      const result = await registry.listHarborReplications();
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/registry/harbor/replications",
+        expect.any(Object),
+      );
+    });
+  });
+
+  // ─── FinOps API (Phase 19) ────────────────────────────────────────────────
+
+  describe("finops", () => {
+    const mockEstimate = {
+      id: "est-1",
+      componentId: "comp-1",
+      pipelineRunId: null,
+      estimatedMonthlyCost: 42.5,
+      diffMonthlyCost: 0,
+      currency: "USD",
+      breakdown: null,
+      measuredAt: "2025-01-01T00:00:00Z",
+      createdAt: "2025-01-01T00:00:00Z",
+      updatedAt: "2025-01-01T00:00:00Z",
+    };
+
+    it("getCostEstimate returns the estimate object on a successful response", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(mockEstimate));
+      const result = await finops.getCostEstimate("comp-1");
+      expect(result).toEqual(mockEstimate);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/catalog/components/comp-1/cost-estimate",
+        expect.any(Object),
+      );
+    });
+
+    it("getCostEstimate returns null when the API responds with 404", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 404, timestamp: "t", path: "/test", message: "Not Found" },
+          404,
+        ),
+      );
+      const result = await finops.getCostEstimate("unknown-comp");
+      expect(result).toBeNull();
+    });
+
+    it("getCostEstimate rethrows non-404 ApiErrors", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 500, timestamp: "t", path: "/test", message: "Server Error" },
+          500,
+        ),
+      );
+      await expect(finops.getCostEstimate("comp-1")).rejects.toThrow(ApiError);
+    });
+
+    it("getActualCost sends GET to the actual cost endpoint and returns allocation data", async () => {
+      const actual = {
+        componentId: "comp-1",
+        sevenDay: { totalCost: 12.0 },
+        thirtyDay: { totalCost: 50.0 },
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(actual));
+      const result = await finops.getActualCost("comp-1");
+      expect(result.componentId).toBe("comp-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/cost/components/comp-1/actual",
+        expect.any(Object),
+      );
+    });
+
+    it("getCostHistory sends GET to the history endpoint and returns an array", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const result = await finops.getCostHistory("comp-1");
+      expect(Array.isArray(result)).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/cost/components/comp-1/history",
+        expect.any(Object),
+      );
+    });
+
+    it("getPlatformCostSummary passes an explicit limit query parameter", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await finops.getPlatformCostSummary(25);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/cost/summary");
+      expect(url).toContain("limit=25");
+    });
+
+    it("getPlatformCostSummary uses the default limit of 10 when none is provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await finops.getPlatformCostSummary();
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("limit=10");
+    });
+
+    it("getTeamCostSummary sends GET to the team summary endpoint", async () => {
+      const summary = {
+        teamId: "team-1",
+        totalCost: 75.0,
+        currency: "USD",
+        components: [{ componentId: "comp-1", totalCost: 75.0, window: "30d" }],
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(summary));
+      const result = await finops.getTeamCostSummary("team-1");
+      expect(result.teamId).toBe("team-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/cost/teams/team-1/summary",
+        expect.any(Object),
       );
     });
   });
