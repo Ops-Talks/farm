@@ -5,16 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.0] - 2026-04-09
 
-### Added
-- **gitops**: Phase 18 — Flux v2 GitOps integration; detect Flux controllers, list Kustomizations, HelmReleases, and GitRepository/OCIRepository sources via `GET /api/kubernetes/flux/*` endpoints.
-- **gitops**: `FluxBinding` entity and `POST/DELETE /api/kubernetes/flux/binding` for linking Flux resources to catalog components.
-- **gitops**: WebSocket `flux:reconciliation-failed` event emitted by background cron when non-ready, non-suspended Flux resources are detected.
-- **gitops**: `/gitops` frontend page with Kustomizations / HelmReleases / Sources tabs, ready/suspended/failed badges, detail sheet, and GitOps section in Component detail.
-- **keda**: Phase 18 — KEDA autoscaling visibility; detect KEDA installation, list ScaledObjects and ScaledJobs via `GET /api/kubernetes/keda/*` endpoints.
-- **keda**: `KedaBinding` entity and `POST/DELETE /api/kubernetes/keda/binding` for linking ScaledObjects to catalog components.
-- **keda**: KEDA tab in Observability page with ScaledObject/ScaledJob list, active/paused/idle badges, trigger detail sheet, and Autoscaling section in Component detail.
+### Changed
+- feat(phase-19) New Features.
+- feat(phase-19) New Features.
+- feat(phase-19) New Features.
+- feat(phase-19) New Features.
+- feat(phase-19) New Features.
+- fix(phase-18) Bugs and Coverage.
+- **kubernetes**: add missing branch coverage for listFluxBindingsByComponent and listKedaBindingsByComponent.
+- feat(phase-18) New Features.
+
+### Fixed
+- **finops**: address PR review feedback - numeric transformers, query optimizations, FinOpsService integration.
+- **cve**: AXIOS.
+- **phase-18**: make AddKedaBindings migration explicit about supported db types.
+- **phase-18**: address PR review feedback - org scoping, type alignment, accessibility, migration.
 
 ## [0.16.0] - 2026-04-08
 
