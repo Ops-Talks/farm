@@ -386,4 +386,23 @@ describe("RegistryController — additional endpoints", () => {
       expect(result).toEqual({ queued: false, count: 1 });
     });
   });
+
+  describe("getAvailability()", () => {
+    it("returns available: true when adapterType is not null", async () => {
+      const { controller, mockRegistryService } = await buildController();
+      mockRegistryService.adapterType = "ecr";
+      const result = controller.getAvailability();
+      expect(result).toEqual({ available: true });
+    });
+
+    it("returns available: false with reason when adapterType is null", async () => {
+      const { controller, mockRegistryService } = await buildController();
+      mockRegistryService.adapterType = null;
+      const result = controller.getAvailability();
+      expect(result).toEqual({
+        available: false,
+        reason: "No registry adapter configured. Set REGISTRY_TYPE.",
+      });
+    });
+  });
 });

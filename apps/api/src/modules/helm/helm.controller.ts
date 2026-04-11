@@ -17,6 +17,7 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { HelmService } from "./helm.service";
+import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { HelmRelease } from "./helm-release.interface";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
@@ -33,7 +34,10 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
   type: ErrorResponseDto,
 })
 export class HelmController {
-  constructor(private readonly helmService: HelmService) {}
+  constructor(
+    private readonly helmService: HelmService,
+    private readonly kubernetesService: KubernetesService,
+  ) {}
 
   /**
    * Lists all Helm releases discovered from Kubernetes Secrets.
@@ -90,5 +94,23 @@ export class HelmController {
     @Query("namespace") namespace?: string,
   ): Promise<{ synced: number; errors: string[] }> {
     return this.helmService.syncReleases(namespace);
+  }
+
+  /**
+   * Returns whether Helm operations are available (requires Kubernetes).
+   */
+  @Get("available")
+  @ApiOperation({
+    summary: "Check if Helm operations are available (requires Kubernetes)",
+  })
+  @ApiResponse({ status: 200, description: "Availability status" })
+  getAvailability(): { available: boolean; reason?: string } {
+    const available = this.kubernetesService.isEnabled();
+    return available
+      ? { available: true }
+      : {
+          available: false,
+          reason: "KUBECONFIG not set or cluster unreachable",
+        };
   }
 }

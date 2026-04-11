@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { HelmController } from "./helm.controller";
 import { HelmService } from "./helm.service";
+import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { HelmRelease } from "./helm-release.interface";
 
 const mockReleases: HelmRelease[] = [
@@ -19,6 +20,7 @@ const mockReleases: HelmRelease[] = [
 describe("HelmController", () => {
   let controller: HelmController;
   let helmService: jest.Mocked<HelmService>;
+  let kubernetesService: jest.Mocked<Pick<KubernetesService, "isEnabled">>;
 
   beforeEach(async () => {
     const mockHelmService: Partial<jest.Mocked<HelmService>> = {
@@ -26,9 +28,14 @@ describe("HelmController", () => {
       syncReleases: jest.fn().mockResolvedValue({ synced: 1, errors: [] }),
     };
 
+    kubernetesService = { isEnabled: jest.fn().mockReturnValue(true) };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HelmController],
-      providers: [{ provide: HelmService, useValue: mockHelmService }],
+      providers: [
+        { provide: HelmService, useValue: mockHelmService },
+        { provide: KubernetesService, useValue: kubernetesService },
+      ],
     }).compile();
 
     controller = module.get<HelmController>(HelmController);
@@ -81,6 +88,23 @@ describe("HelmController", () => {
       });
       const result = await controller.syncReleases();
       expect(result.errors).toHaveLength(1);
+    });
+  });
+
+  describe("getAvailability", () => {
+    it("returns available: true when Kubernetes is enabled", () => {
+      kubernetesService.isEnabled.mockReturnValue(true);
+      const result = controller.getAvailability();
+      expect(result).toEqual({ available: true });
+    });
+
+    it("returns available: false with reason when Kubernetes is not enabled", () => {
+      kubernetesService.isEnabled.mockReturnValue(false);
+      const result = controller.getAvailability();
+      expect(result).toEqual({
+        available: false,
+        reason: "KUBECONFIG not set or cluster unreachable",
+      });
     });
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { AwsIcon, GcpIcon, AzureCloudIcon } from '@/components/integrations/brand-icons';
 
 // ---------------------------------------------------------------------------
 // Provider metadata
@@ -21,21 +23,24 @@ import { ErrorBoundary } from '@/components/error-boundary';
 
 type CloudProvider = 'aws' | 'gcp' | 'azure';
 
-const PROVIDERS: { type: CloudProvider; label: string; description: string }[] = [
+const PROVIDERS: { type: CloudProvider; label: string; description: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
   {
     type: 'aws',
     label: 'Amazon Web Services',
     description: 'Connect via IAM role credentials to discover ECS, Lambda, RDS, and more.',
+    Icon: AwsIcon,
   },
   {
     type: 'gcp',
     label: 'Google Cloud Platform',
     description: 'Connect via service account to discover Cloud Run, Cloud SQL, and more.',
+    Icon: GcpIcon,
   },
   {
     type: 'azure',
     label: 'Microsoft Azure',
     description: 'Connect via service principal to discover Container Apps, and more.',
+    Icon: AzureCloudIcon,
   },
 ];
 
@@ -366,6 +371,7 @@ interface ProviderCardProps {
   onConnect: (type: CloudProvider) => void;
   onDisconnect: (id: string) => void;
   isDisconnecting: boolean;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 const ProviderCard = memo(function ProviderCard({
@@ -377,6 +383,7 @@ const ProviderCard = memo(function ProviderCard({
   onConnect,
   onDisconnect,
   isDisconnecting,
+  Icon,
 }: ProviderCardProps) {
   const isConnected = status?.connected ?? false;
 
@@ -384,9 +391,12 @@ const ProviderCard = memo(function ProviderCard({
     <Card data-testid={`cloud-provider-card-${type}`}>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-base font-semibold">{label}</CardTitle>
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+          <div className="flex items-center gap-3">
+            <Icon className="h-8 w-8 shrink-0" aria-label={`${label} logo`} />
+            <div>
+              <CardTitle className="text-base font-semibold">{label}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            </div>
           </div>
           <span
             className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -561,6 +571,7 @@ export function CloudProvidersClient() {
                   type={provider.type}
                   label={provider.label}
                   description={provider.description}
+                  Icon={provider.Icon}
                   status={getProviderStatus(provider.type)}
                   credentialId={getCredentialId(provider.type)}
                   onConnect={handleConnect}

@@ -206,4 +206,20 @@ export class RegistryController {
     );
     return { queued: false, count: results.length };
   }
+
+  /**
+   * Returns whether a registry adapter is configured.
+   */
+  @Get("available")
+  @ApiOperation({ summary: "Check if a registry adapter is configured" })
+  @ApiOkResponse({ description: "Availability status" })
+  getAvailability(): { available: boolean; reason?: string } {
+    const available = this.registryService.adapterType !== null;
+    return available
+      ? { available: true }
+      : {
+          available: false,
+          reason: "No registry adapter configured. Set REGISTRY_TYPE.",
+        };
+  }
 }

@@ -14,6 +14,7 @@ vi.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({
     user: { id: "u1", username: "admin", displayName: "Admin User", email: "admin@farm.dev", roles: ["admin"] },
     logout: vi.fn(),
+    isAuthenticated: true,
   }),
 }));
 
@@ -37,6 +38,20 @@ vi.mock("@/lib/otel-context", () => ({
   setUserContext: vi.fn(),
   clearUserContext: vi.fn(),
   getUserContext: vi.fn(() => null),
+}));
+
+// FeatureAvailabilityProvider uses useQuery — mock to avoid needing QueryClientProvider.
+vi.mock("@/contexts/feature-availability-context", () => ({
+  FeatureAvailabilityProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useFeatureAvailability: () => ({
+    kubernetes: false, cost: false, registry: false, helm: false, istio: false,
+    allConfigured: false, isLoading: false,
+  }),
+}));
+
+// SearchModal uses useQuery — stub it out.
+vi.mock("@/components/search/search-modal", () => ({
+  SearchModal: () => null,
 }));
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -67,8 +82,13 @@ describe("AppShell — breadcrumbs", () => {
 
   it("renders the last path segment as plain text, not a link", () => {
     render(<AppShell>Content</AppShell>);
-    // "Settings" (last segment) should not be a link
-    const settingsText = screen.getByText("Settings");
-    expect(settingsText.tagName).not.toBe("A");
+    // "Settings" (last breadcrumb segment) is a <span>, not a link.
+    // Scope to the breadcrumb nav to avoid matching the sidebar section label.
+    const breadcrumbNav = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const settingsSpans = Array.from(breadcrumbNav.querySelectorAll("span")).filter(
+      (el) => el.textContent === "Settings",
+    );
+    expect(settingsSpans.length).toBeGreaterThan(0);
+    settingsSpans.forEach((el) => expect(el.tagName).not.toBe("A"));
   });
 });

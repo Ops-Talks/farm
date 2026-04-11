@@ -214,4 +214,47 @@ describe("PluginsClient", () => {
       expect(badges).toHaveLength(2);
     });
   });
+
+  it("should show Grid view and List view toggle buttons", async () => {
+    mockListPlugins.mockResolvedValue([]);
+    render(<PluginsClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Grid view" })).toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: "List view" })).toBeInTheDocument();
+  });
+
+  it("should switch to list view when List view button is clicked", async () => {
+    const user = userEvent.setup();
+    mockListPlugins.mockResolvedValue([
+      mockPlugin({ name: "list-plugin", description: "A plugin in list view" }),
+    ]);
+    render(<PluginsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("list-plugin")).toBeInTheDocument();
+    });
+
+    // Switch to list view
+    await user.click(screen.getByRole("button", { name: "List view" }));
+
+    // Plugin should still be visible in list format
+    expect(screen.getByText("list-plugin")).toBeInTheDocument();
+  });
+
+  it("should toggle back to grid view after switching to list", async () => {
+    const user = userEvent.setup();
+    mockListPlugins.mockResolvedValue([mockPlugin()]);
+    render(<PluginsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("example-plugin")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: "List view" }));
+    await user.click(screen.getByRole("button", { name: "Grid view" }));
+
+    // Plugin still visible
+    expect(screen.getByText("example-plugin")).toBeInTheDocument();
+  });
 });

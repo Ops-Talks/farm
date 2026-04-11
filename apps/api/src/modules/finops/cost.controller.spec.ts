@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { CostController } from "./cost.controller";
 import { OpenCostService } from "./open-cost.service";
 import { Component } from "../catalog/entities/component.entity";
@@ -36,6 +37,10 @@ describe("CostController", () => {
       controllers: [CostController],
       providers: [
         { provide: OpenCostService, useValue: mockOpenCostService },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue("http://localhost:9090") },
+        },
         { provide: getRepositoryToken(Component), useValue: mockComponentRepo },
         {
           provide: getRepositoryToken(ActualCost),
@@ -256,6 +261,48 @@ describe("CostController", () => {
       const result = await controller.getPlatformCostSummary(10);
 
       expect(result[0].budgetUsd).toBeNull();
+    });
+  });
+
+  describe("getAvailability()", () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("returns available: true when OpenCost health check succeeds", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+      }) as unknown as typeof fetch;
+      const result = await controller.getAvailability();
+      expect(result).toEqual({ available: true });
+    });
+
+    it("returns available: false with reason when OpenCost returns non-ok status", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }) as unknown as typeof fetch;
+      const result = await controller.getAvailability();
+      expect(result.available).toBe(false);
+      expect(result.reason).toContain("503");
+    });
+
+    it("returns available: false with reason when OpenCost is unreachable", async () => {
+      globalThis.fetch = jest
+        .fn()
+        .mockRejectedValue(
+          new Error("ECONNREFUSED"),
+        ) as unknown as typeof fetch;
+      const result = await controller.getAvailability();
+      expect(result.available).toBe(false);
+      expect(result.reason).toContain("unreachable");
     });
   });
 });

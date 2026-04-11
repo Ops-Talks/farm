@@ -24,7 +24,10 @@
     "alwaysStrict": true,
     "useUnknownInCatchVariables": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "importHelpers": true
   },
-  "exclude": ["web"]
+  "exclude": [
+    "web"
+  ]
 }

@@ -30,6 +30,7 @@ vi.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({
     user: mockAuthUser.current,
     logout: mockLogout,
+    isAuthenticated: true,
   }),
 }));
 
@@ -68,6 +69,22 @@ vi.mock("@/contexts/organization-context", () => ({
   OrganizationProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// FeatureAvailabilityProvider uses useQuery — mock the entire context module
+// so no QueryClient is needed in AppShell tests.
+vi.mock("@/contexts/feature-availability-context", () => ({
+  FeatureAvailabilityProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useFeatureAvailability: () => ({
+    kubernetes: false, cost: false, registry: false, helm: false, istio: false,
+    allConfigured: false, isLoading: false,
+  }),
+}));
+
+// SearchModal uses useQuery — mock it as a simple stub.
+vi.mock("@/components/search/search-modal", () => ({
+  SearchModal: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="search-modal-stub" /> : null,
+}));
+
 // Mock OTel helpers — org-switcher now imports these.
 vi.mock("@/lib/otel-spans", () => ({
   recordSpan: vi.fn((_name: unknown, fn: () => unknown) => fn()),
@@ -81,6 +98,7 @@ vi.mock("@/lib/otel-context", () => ({
 
 import React from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { fireEvent } from "@testing-library/react";
 
 describe("AppShell", () => {
   beforeEach(() => {
@@ -100,12 +118,34 @@ describe("AppShell", () => {
   it("should render sidebar navigation links", () => {
     render(<AppShell>Main Content</AppShell>);
 
-    // Use getAllByText because links appear in both sidebar and mobile nav
+    // Use getAllByText because links appear in both sidebar and mobile nav.
+    // All of these are in the Operations section which is open for /dashboard.
     expect(screen.getAllByText(/Dashboard/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/Catalog/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/Deployments/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/Docs/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/Teams/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Pipelines/i)[0]).toBeInTheDocument();
+    // Note: Teams is in the Organization section which is collapsed by default
+    // at /dashboard — it is intentionally not checked here.
+  });
+
+  it("should render sidebar section labels", () => {
+    render(<AppShell>Main Content</AppShell>);
+    expect(screen.getAllByText(/Operations/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Observability/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Infrastructure/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Self-Service/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Organization/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Settings/i)[0]).toBeInTheDocument();
+  });
+
+  it("should keep the desktop sidebar constrained to the viewport", () => {
+    render(<AppShell>Main Content</AppShell>);
+
+    const sidebar = screen.getByLabelText("Sidebar");
+    expect(sidebar).toHaveClass("sticky", "top-0", "h-screen", "min-h-0");
+
+    const desktopNav = screen.getByRole("navigation", { name: /Main navigation/i });
+    expect(desktopNav).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
   });
 
   it("should mark the active nav item with aria-current=page", () => {
@@ -272,6 +312,16 @@ describe("AppShell", () => {
     });
   });
 
+  it("should make the mobile navigation scrollable", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    await user.click(screen.getByRole("button", { name: /Open navigation menu/i }));
+
+    const mobileNav = await screen.findByRole("navigation", { name: /Mobile navigation/i });
+    expect(mobileNav).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
+  });
+
   it("should use the startsWith rule when pathname extends a nav href", () => {
     mockPathnameReturn.mockReturnValue("/catalog/some-id");
     render(<AppShell>Content</AppShell>);
@@ -300,4 +350,78 @@ describe("AppShell", () => {
     expect(mockRouterPush).toHaveBeenCalledWith("/profile");
   });
 
+  it("should open SearchModal when Cmd+K is pressed", () => {
+    render(<AppShell>Content</AppShell>);
+    // SearchModal stub is not rendered initially (searchOpen = false)
+    expect(screen.queryByTestId("search-modal-stub")).toBeNull();
+
+    fireEvent.keyDown(document, { key: "k", metaKey: true });
+
+    expect(screen.getByTestId("search-modal-stub")).toBeInTheDocument();
+  });
+
+  it("should open SearchModal when Search button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const searchBtn = screen.getByRole("button", { name: /Quick search/i });
+    await user.click(searchBtn);
+
+    expect(screen.getByTestId("search-modal-stub")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // T316 / T317 — Collapsible accordion sections (ST349–ST353)
+  // -------------------------------------------------------------------------
+
+  it("should collapse all sections except the active one by default", () => {
+    // mockPathnameReturn returns "/dashboard" which is in Operations
+    render(<AppShell>Content</AppShell>);
+
+    // Operations section toggle button should have aria-expanded="true"
+    const opsButtons = screen.getAllByRole("button", { name: /Operations/i });
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+
+    // Observability section toggle should be collapsed
+    const obsButtons = screen.getAllByRole("button", { name: /Observability/i });
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("should expand a collapsed section when its header button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    // Observability is collapsed initially (not the active section for /dashboard)
+    const obsButtons = screen.getAllByRole("button", { name: /Observability/i });
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(obsButtons[0]);
+
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("should collapse an open section when its header button is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    // Operations is open initially
+    const opsButtons = screen.getAllByRole("button", { name: /Operations/i });
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(opsButtons[0]);
+
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("should not render items of a collapsed section", () => {
+    // /dashboard → Operations is open. Observability is collapsed.
+    render(<AppShell>Content</AppShell>);
+
+    // Dashboard is in Operations (open); should be in DOM
+    const dashLinks = screen.getAllByRole("link", { name: /^Dashboard$/i });
+    expect(dashLinks.length).toBeGreaterThan(0);
+
+    // SLOs is in Observability (collapsed); should not be in DOM
+    expect(screen.queryByRole("link", { name: /^SLOs$/i })).toBeNull();
+  });
 });

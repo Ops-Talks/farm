@@ -789,4 +789,20 @@ export class KubernetesController {
     }
     return this.kedaBindingService.remove(id, req.organizationId);
   }
+
+  /**
+   * Returns whether the Kubernetes integration is configured and reachable.
+   */
+  @Get("available")
+  @ApiOperation({ summary: "Check if Kubernetes is configured and reachable" })
+  @ApiResponse({ status: 200, description: "Availability status" })
+  getAvailability(): { available: boolean; reason?: string } {
+    const available = this.kubernetesService.isEnabled();
+    return available
+      ? { available: true }
+      : {
+          available: false,
+          reason: "KUBECONFIG not set or cluster unreachable",
+        };
+  }
 }

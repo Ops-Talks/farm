@@ -16,6 +16,7 @@ import {
 } from "@nestjs/swagger";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import { ConfigService } from "@nestjs/config";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { Component } from "../catalog/entities/component.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
@@ -32,6 +33,7 @@ import { Team } from "../teams/entities/team.entity";
 export class CostController {
   constructor(
     private readonly openCostService: OpenCostService,
+    private readonly configService: ConfigService,
     @InjectRepository(Component)
     private readonly componentRepo: Repository<Component>,
     @InjectRepository(ActualCost)
@@ -227,5 +229,31 @@ export class CostController {
       syncedAt: r.syncedAt,
       budgetUsd: budgetMap.get(r.componentId) ?? null,
     }));
+  }
+
+  /**
+   * Returns whether OpenCost is reachable at the configured URL.
+   */
+  @Get("available")
+  @ApiOperation({ summary: "Check if OpenCost is reachable" })
+  @ApiResponse({ status: 200, description: "Availability status" })
+  async getAvailability(): Promise<{ available: boolean; reason?: string }> {
+    const url = this.configService.get<string>(
+      "OPENCOST_URL",
+      "http://localhost:9090",
+    );
+    try {
+      const res = await globalThis.fetch(`${url}/healthz`, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) return { available: true };
+      return {
+        available: false,
+        reason: `OpenCost returned status ${res.status} at ${url}`,
+      };
+    } catch {
+      return { available: false, reason: `OpenCost unreachable at ${url}` };
+    }
   }
 }

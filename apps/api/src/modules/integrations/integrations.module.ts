@@ -15,11 +15,15 @@ import { JenkinsController } from "./jenkins.controller";
 import { TravisCIService } from "./travisci.service";
 import { TravisCIController } from "./travisci.controller";
 import { WebhookReceiverController } from "./webhook-receiver.controller";
+import { GitHubActionsService } from "./github-actions.service";
+import { GitHubActionsController } from "./github-actions.controller";
+import { AzureDevOpsService } from "./azure-devops.service";
+import { AzureDevOpsController } from "./azure-devops.controller";
 
 /**
  * Module that registers webhook notification services, domain event listeners,
  * integration credential management, and CI/CD integration services for
- * ArgoCD, CircleCI, Jenkins, and Travis CI.
+ * ArgoCD, CircleCI, Jenkins, Travis CI, GitHub Actions, and Azure DevOps.
  */
 @Module({
   imports: [HttpModule, TypeOrmModule.forFeature([IntegrationCredential])],
@@ -30,6 +34,8 @@ import { WebhookReceiverController } from "./webhook-receiver.controller";
     JenkinsController,
     TravisCIController,
     WebhookReceiverController,
+    GitHubActionsController,
+    AzureDevOpsController,
   ],
   providers: [
     WebhookService,
@@ -39,6 +45,8 @@ import { WebhookReceiverController } from "./webhook-receiver.controller";
     CircleCIService,
     JenkinsService,
     TravisCIService,
+    GitHubActionsService,
+    AzureDevOpsService,
   ],
   exports: [
     WebhookService,
@@ -47,6 +55,8 @@ import { WebhookReceiverController } from "./webhook-receiver.controller";
     CircleCIService,
     JenkinsService,
     TravisCIService,
+    GitHubActionsService,
+    AzureDevOpsService,
   ],
 })
 export class IntegrationsModule {}

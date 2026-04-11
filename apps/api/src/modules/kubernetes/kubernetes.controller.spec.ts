@@ -141,8 +141,8 @@ describe("KubernetesController", () => {
       listOperatorCustomResources: jest.fn().mockResolvedValue([mockCR]),
       listNodeRuntimes: jest.fn().mockResolvedValue([mockRuntime]),
       getCrioMetrics: jest.fn().mockResolvedValue(mockCrioMetrics),
+      isEnabled: jest.fn().mockReturnValue(false),
     };
-
     kyvernoService = {
       listPolicyReports: jest.fn().mockResolvedValue([mockPolicyReport]),
       listClusterPolicyReports: jest.fn().mockResolvedValue([mockPolicyReport]),
@@ -462,6 +462,27 @@ describe("KubernetesController", () => {
       expect(() => controller.removeFluxBinding("some-id", mockReq)).toThrow(
         "FluxBindingService not available",
       );
+    });
+  });
+
+  describe("getAvailability", () => {
+    it("should return available: true when Kubernetes is enabled", () => {
+      (kubernetesService as unknown as Record<string, unknown>).isEnabled = jest
+        .fn()
+        .mockReturnValue(true);
+      const result = controller.getAvailability();
+      expect(result).toEqual({ available: true });
+    });
+
+    it("should return available: false with reason when Kubernetes is not enabled", () => {
+      (kubernetesService as unknown as Record<string, unknown>).isEnabled = jest
+        .fn()
+        .mockReturnValue(false);
+      const result = controller.getAvailability();
+      expect(result).toEqual({
+        available: false,
+        reason: "KUBECONFIG not set or cluster unreachable",
+      });
     });
   });
 });

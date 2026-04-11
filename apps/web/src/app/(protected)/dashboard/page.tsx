@@ -3,6 +3,8 @@ import { QuickStats } from "@/components/dashboard/quick-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { QueuePanel } from "@/components/dashboard/queue-panel";
 import { RecentPipelinesWidget } from "./_components/recent-pipelines-widget";
+import { SetupChecklistCard } from "@/components/dashboard/setup-checklist-card";
+import { IntegrationHealthCard } from "@/components/dashboard/integration-health-card";
 
 export default function DashboardPage() {
   return (
@@ -14,6 +16,9 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Setup checklist (shown when items pending) */}
+      <SetupChecklistCard />
+
       {/* Quick stats */}
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
@@ -22,13 +27,21 @@ export default function DashboardPage() {
         <QuickStats />
       </section>
 
-      {/* System health */}
-      <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          System Health
-        </h2>
-        <HealthPanel />
-      </section>
+      {/* System health and integration health side by side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            System Health
+          </h2>
+          <HealthPanel />
+        </section>
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            Integrations
+          </h2>
+          <IntegrationHealthCard />
+        </section>
+      </div>
 
       {/* Activity feed and queue panel side by side */}
       <div className="grid gap-6 lg:grid-cols-2">
