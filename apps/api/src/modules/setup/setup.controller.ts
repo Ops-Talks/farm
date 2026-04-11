@@ -25,7 +25,9 @@ export class SetupController {
     summary: "Get the admin setup checklist with completion status",
   })
   @ApiResponse({ status: 200, description: "Array of checklist items" })
-  async getChecklist(@Req() req: RequestWithOrg): Promise<SetupChecklistItem[]> {
+  async getChecklist(
+    @Req() req: RequestWithOrg,
+  ): Promise<SetupChecklistItem[]> {
     return this.setupService.getChecklist(req.organizationId);
   }
 

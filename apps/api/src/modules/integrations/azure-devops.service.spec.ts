@@ -139,7 +139,9 @@ describe("AzureDevOpsService", () => {
 
       const expectedAuth = "Basic " + Buffer.from(":my-pat").toString("base64");
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("dev.azure.com/my-org/my-project/_apis/build/builds"),
+        expect.stringContaining(
+          "dev.azure.com/my-org/my-project/_apis/build/builds",
+        ),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: expectedAuth,

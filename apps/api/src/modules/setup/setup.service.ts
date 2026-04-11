@@ -56,9 +56,7 @@ export class SetupService {
       orgId
         ? this.teamRepo.count({ where: { organizationId: orgId } })
         : this.teamRepo.count(),
-      orgId
-        ? this.credRepo.count({ where: { orgId } })
-        : this.credRepo.count(),
+      orgId ? this.credRepo.count({ where: { orgId } }) : this.credRepo.count(),
       orgId ? this.orgRepo.findOne({ where: { id: orgId } }) : null,
     ]);
     const dismissed: string[] =

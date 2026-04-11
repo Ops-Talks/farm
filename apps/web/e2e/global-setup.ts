@@ -103,6 +103,18 @@ async function globalSetup(config: FullConfig): Promise<void> {
   };
 
   fs.writeFileSync(AUTH_FILE, JSON.stringify(authState, null, 2));
+
+  // 4. Pre-warm key pages so Next.js compiles them before tests begin.
+  //    The dev server compiles routes on first request; without this the first
+  //    test to visit a page may time out waiting for on-demand compilation in CI.
+  const pagesToWarm = ["/login", "/dashboard"];
+  for (const route of pagesToWarm) {
+    try {
+      await fetch(`${baseURL}${route}`);
+    } catch {
+      // Non-fatal — tests will still run; they just may be slower on first visit.
+    }
+  }
 }
 
 export default globalSetup;

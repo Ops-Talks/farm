@@ -45,7 +45,9 @@ export class SearchController {
     @Req() req?: RequestWithOrg,
   ): Promise<QuickSearchResult[]> {
     const parsed = limit ? parseInt(limit, 10) : 10;
-    const safeLimit = Number.isNaN(parsed) ? 10 : Math.min(Math.max(parsed, 1), 100);
+    const safeLimit = Number.isNaN(parsed)
+      ? 10
+      : Math.min(Math.max(parsed, 1), 100);
     return this.searchService.quickSearch(
       q ?? "",
       safeLimit,
