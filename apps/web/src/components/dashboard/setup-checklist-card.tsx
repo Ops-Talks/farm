@@ -67,7 +67,7 @@ export function SetupChecklistCard() {
     },
   });
 
-  const items = data ?? [];
+  const items = Array.isArray(data) ? data : [];
   const pendingItems = items.filter((i) => !i.completed && !i.dismissed);
 
   // Hide the card when everything is done or dismissed.
