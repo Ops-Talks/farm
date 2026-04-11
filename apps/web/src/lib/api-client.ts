@@ -125,6 +125,11 @@ import type {
   KedaScaledObjectTrigger,
   KedaBinding,
   CreateKedaBindingDto,
+  // Phase 25
+  FeatureAvailability,
+  FeatureAvailabilityRaw,
+  QuickSearchResult,
+  SetupChecklistItem,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -2317,5 +2322,46 @@ export const finops = {
     return request<TeamCostSummary>(
       `/v1/cost/teams/${encodeURIComponent(teamId)}/summary`,
     );
+  },
+};
+
+// -- Features availability (Phase 25) --
+
+export const features = {
+  async getAvailability(): Promise<FeatureAvailability> {
+    const raw = await request<FeatureAvailabilityRaw>('/v1/features/availability');
+    const allConfigured =
+      raw.kubernetes.available &&
+      raw.cost.available &&
+      raw.registry.available &&
+      raw.helm.available &&
+      raw.istio.available;
+    return {
+      kubernetes: raw.kubernetes.available,
+      cost: raw.cost.available,
+      registry: raw.registry.available,
+      helm: raw.helm.available,
+      istio: raw.istio.available,
+      allConfigured,
+    };
+  },
+};
+
+// -- Quick search (Phase 25) --
+
+export const search = {
+  quick(q: string): Promise<QuickSearchResult[]> {
+    return request<QuickSearchResult[]>(`/v1/search/quick${toQueryString({ q })}`);
+  },
+};
+
+// -- Setup checklist (Phase 25) --
+
+export const setup = {
+  getChecklist(): Promise<SetupChecklistItem[]> {
+    return request<SetupChecklistItem[]>('/v1/setup/checklist');
+  },
+  dismissItem(key: string): Promise<void> {
+    return request<void>(`/v1/setup/checklist/${encodeURIComponent(key)}/dismiss`, { method: 'POST' });
   },
 };

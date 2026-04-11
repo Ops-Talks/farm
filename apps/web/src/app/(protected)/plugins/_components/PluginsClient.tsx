@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { plugins as pluginsApi } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import type { PluginMetadata } from "@/types/api";
-import { Puzzle, RefreshCw, Menu, Route } from "lucide-react";
+import { Puzzle, RefreshCw, Menu, Route, LayoutGrid, List as ListIcon } from "lucide-react";
 import { toast } from "sonner";
 
 // ── Loading skeleton ─────────────────────────────────────────────────────────
@@ -100,6 +100,31 @@ function PluginCard({ plugin }: PluginCardProps) {
   );
 }
 
+// ── Plugin list row (list view) ───────────────────────────────────────────────
+
+function PluginListRow({ plugin }: { plugin: PluginMetadata }) {
+  return (
+    <div className="flex items-center gap-4 rounded-md border px-4 py-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{plugin.name}</span>
+          <span className="text-xs text-muted-foreground font-mono">v{plugin.version}</span>
+          <Badge variant="secondary" className="text-[10px] uppercase font-bold">Installed</Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">{plugin.description}</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Menu className="h-3 w-3" aria-hidden="true" />{plugin.menuItems?.length ?? 0} items
+        </span>
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Route className="h-3 w-3" aria-hidden="true" />{plugin.routes?.length ?? 0} routes
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ── Main client component ────────────────────────────────────────────────────
 
 export function PluginsClient() {
@@ -108,6 +133,7 @@ export function PluginsClient() {
   const queryClient = useQueryClient();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Fetch the installed plugin list — cached for 60 s by the global QueryClient.
   const { data: pluginList = [], isLoading } = useQuery<PluginMetadata[]>({
@@ -143,22 +169,48 @@ export function PluginsClient() {
         title="Plugin Marketplace"
         description="Extend Farm with plugins. Each plugin can contribute menu items, routes, and more."
       >
-        {/* Reload button is only shown to admins */}
-        {isAdmin && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setConfirmOpen(true)}
-            disabled={reloadMutation.isPending}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${reloadMutation.isPending ? "animate-spin" : ""}`} />
-            {reloadMutation.isPending ? "Reloading..." : "Reload Plugins"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Grid / list view toggle */}
+          <div className="flex items-center border rounded-md overflow-hidden">
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => setViewMode("grid")}
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => setViewMode("list")}
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+            >
+              <ListIcon className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Reload button is only shown to admins */}
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmOpen(true)}
+              disabled={reloadMutation.isPending}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${reloadMutation.isPending ? "animate-spin" : ""}`} />
+              {reloadMutation.isPending ? "Reloading..." : "Reload Plugins"}
+            </Button>
+          )}
+        </div>
       </PageHeader>
 
-      {/* Plugin grid */}
+      {/* Plugin grid or list */}
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <PluginCardSkeleton />
@@ -171,10 +223,16 @@ export function PluginsClient() {
           description="Drop a plugin.json in the plugins directory and click Reload Plugins to register new extensions."
           icon={<Puzzle className="h-6 w-6 text-muted-foreground" />}
         />
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pluginList.map((plugin) => (
             <PluginCard key={plugin.name} plugin={plugin} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {pluginList.map((plugin) => (
+            <PluginListRow key={plugin.name} plugin={plugin} />
           ))}
         </div>
       )}

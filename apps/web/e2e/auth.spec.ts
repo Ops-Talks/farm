@@ -39,6 +39,29 @@ test("user can log in with valid credentials and is redirected to dashboard", as
     }),
   );
 
+  // Stub array-returning Phase 25 endpoints so components don't crash on
+  // the generic { data: [], total: 0 } shape above.
+  await page.route("**/api/v1/setup/checklist", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    }),
+  );
+  await page.route("**/api/v1/features/availability", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        kubernetes: { available: false },
+        cost: { available: false },
+        registry: { available: false },
+        helm: { available: false },
+        istio: { available: false },
+      }),
+    }),
+  );
+
   // Intercept the login endpoint with a success response (registered last = highest priority)
   await page.route("**/api/v1/auth/login", (route) =>
     route.fulfill({

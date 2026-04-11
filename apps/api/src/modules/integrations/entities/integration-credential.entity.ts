@@ -16,6 +16,8 @@ export enum IntegrationType {
   CIRCLECI = "circleci",
   JENKINS = "jenkins",
   TRAVISCI = "travisci",
+  GITHUB_ACTIONS = "github-actions",
+  AZURE_DEVOPS = "azure-devops",
   AWS_IAM_ROLE = "aws-iam-role",
   GCP_SERVICE_ACCOUNT = "gcp-service-account",
   AZURE_SERVICE_PRINCIPAL = "azure-service-principal",

@@ -60,6 +60,9 @@ export class Organization {
   })
   userOrganizations: UserOrganization[];
 
+  @Column({ type: "simple-json", nullable: true })
+  settings: Record<string, unknown> | null;
+
   @ApiProperty({
     example: "2023-01-01T00:00:00Z",
     description: "The creation date",

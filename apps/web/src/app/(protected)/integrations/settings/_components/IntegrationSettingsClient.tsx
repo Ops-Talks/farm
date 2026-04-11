@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useMemo, useState } from "react";
+import type { SVGProps } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,42 +13,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorBoundary } from "@/components/error-boundary";
+import {
+  ArgoCDIcon,
+  CircleCIIcon,
+  JenkinsIcon,
+  TravisCIIcon,
+  GitHubActionsIcon,
+  AzureDevOpsIcon,
+} from "@/components/integrations/brand-icons";
 
 // ---------------------------------------------------------------------------
 // Integration metadata
 // ---------------------------------------------------------------------------
 
-type IntegrationType = "argocd" | "circleci" | "jenkins" | "travisci";
+type IntegrationType = "argocd" | "circleci" | "jenkins" | "travisci" | "github-actions" | "azure-devops";
 
 const INTEGRATIONS: {
   type: IntegrationType;
   label: string;
-  icon: string;
+  Icon: React.ComponentType<SVGProps<SVGSVGElement>>;
   description: string;
 }[] = [
   {
     type: "argocd",
     label: "ArgoCD",
-    icon: "🔄",
+    Icon: ArgoCDIcon,
     description: "GitOps continuous delivery tool for Kubernetes.",
   },
   {
     type: "circleci",
     label: "CircleCI",
-    icon: "⭕",
+    Icon: CircleCIIcon,
     description: "Cloud-native CI/CD platform.",
   },
   {
     type: "jenkins",
     label: "Jenkins",
-    icon: "🤖",
+    Icon: JenkinsIcon,
     description: "Open-source automation server.",
   },
   {
     type: "travisci",
     label: "Travis CI",
-    icon: "🔵",
+    Icon: TravisCIIcon,
     description: "Hosted CI service for GitHub projects.",
+  },
+  {
+    type: "github-actions",
+    label: "GitHub Actions",
+    Icon: GitHubActionsIcon,
+    description: "Native CI/CD for GitHub repositories.",
+  },
+  {
+    type: "azure-devops",
+    label: "Azure DevOps",
+    Icon: AzureDevOpsIcon,
+    description: "Microsoft DevOps platform for pipelines and repos.",
   },
 ];
 
@@ -83,10 +104,24 @@ const travisCISchema = z.object({
     .or(z.literal("")),
 });
 
+const githubActionsSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  token: z.string().min(1, "Token is required"),
+  owner: z.string().optional(),
+});
+
+const azureDevOpsSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  token: z.string().min(1, "Token is required"),
+  organization: z.string().min(1, "Organization is required"),
+});
+
 type ArgoCDFormValues = z.infer<typeof argoCDSchema>;
 type CircleCIFormValues = z.infer<typeof circleCISchema>;
 type JenkinsFormValues = z.infer<typeof jenkinsSchema>;
 type TravisCIFormValues = z.infer<typeof travisCISchema>;
+type GitHubActionsFormValues = z.infer<typeof githubActionsSchema>;
+type AzureDevOpsFormValues = z.infer<typeof azureDevOpsSchema>;
 
 // ---------------------------------------------------------------------------
 // Per-type connect forms
@@ -321,6 +356,116 @@ const TravisCIConnectForm = memo(function TravisCIConnectForm({
   );
 });
 
+const GitHubActionsConnectForm = memo(function GitHubActionsConnectForm({
+  onSave,
+  onClose,
+  isPending,
+}: {
+  onSave: (data: Record<string, unknown>) => void;
+  onClose: () => void;
+  isPending: boolean;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<GitHubActionsFormValues>({ resolver: zodResolver(githubActionsSchema) });
+
+  return (
+    <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
+      <div className="space-y-1">
+        <label htmlFor="ghactions-name" className="text-sm font-medium">
+          Name <span className="text-destructive">*</span>
+        </label>
+        <Input id="ghactions-name" placeholder="e.g. My GitHub Actions" {...register("name")} />
+        {errors.name?.message && (
+          <p className="text-xs text-destructive">{errors.name.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="ghactions-token" className="text-sm font-medium">
+          Token <span className="text-destructive">*</span>
+        </label>
+        <Input id="ghactions-token" type="password" placeholder="GitHub personal access token" {...register("token")} />
+        {errors.token?.message && (
+          <p className="text-xs text-destructive">{errors.token.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="ghactions-owner" className="text-sm font-medium">
+          Owner{" "}
+          <span className="font-normal text-muted-foreground">(optional)</span>
+        </label>
+        <Input id="ghactions-owner" placeholder="my-github-org" {...register("owner")} />
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={isPending}>
+          {isPending ? "Saving…" : "Connect"}
+        </Button>
+      </div>
+    </form>
+  );
+});
+
+const AzureDevOpsConnectForm = memo(function AzureDevOpsConnectForm({
+  onSave,
+  onClose,
+  isPending,
+}: {
+  onSave: (data: Record<string, unknown>) => void;
+  onClose: () => void;
+  isPending: boolean;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<AzureDevOpsFormValues>({ resolver: zodResolver(azureDevOpsSchema) });
+
+  return (
+    <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
+      <div className="space-y-1">
+        <label htmlFor="azdevops-name" className="text-sm font-medium">
+          Name <span className="text-destructive">*</span>
+        </label>
+        <Input id="azdevops-name" placeholder="e.g. My Azure DevOps" {...register("name")} />
+        {errors.name?.message && (
+          <p className="text-xs text-destructive">{errors.name.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="azdevops-token" className="text-sm font-medium">
+          Token <span className="text-destructive">*</span>
+        </label>
+        <Input id="azdevops-token" type="password" placeholder="Azure DevOps personal access token" {...register("token")} />
+        {errors.token?.message && (
+          <p className="text-xs text-destructive">{errors.token.message}</p>
+        )}
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="azdevops-org" className="text-sm font-medium">
+          Organization <span className="text-destructive">*</span>
+        </label>
+        <Input id="azdevops-org" placeholder="my-azure-org" {...register("organization")} />
+        {errors.organization?.message && (
+          <p className="text-xs text-destructive">{errors.organization.message}</p>
+        )}
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={isPending}>
+          {isPending ? "Saving…" : "Connect"}
+        </Button>
+      </div>
+    </form>
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Single integration card
 // ---------------------------------------------------------------------------
@@ -328,7 +473,7 @@ const TravisCIConnectForm = memo(function TravisCIConnectForm({
 interface IntegrationCardProps {
   type: IntegrationType;
   label: string;
-  icon: string;
+  Icon: React.ComponentType<SVGProps<SVGSVGElement>>;
   description: string;
   credential: IntegrationCredential | undefined;
   onConnect: (type: IntegrationType) => void;
@@ -339,7 +484,7 @@ interface IntegrationCardProps {
 const IntegrationCard = memo(function IntegrationCard({
   type,
   label,
-  icon,
+  Icon,
   description,
   credential,
   onConnect,
@@ -353,9 +498,7 @@ const IntegrationCard = memo(function IntegrationCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden="true">
-              {icon}
-            </span>
+            <Icon className="h-8 w-8 shrink-0" aria-hidden="true" />
             <div>
               <CardTitle className="text-base font-semibold">{label}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
@@ -439,6 +582,8 @@ const ConnectModal = memo(function ConnectModal({ type, label, onSave, onClose, 
         {type === "circleci" && <CircleCIConnectForm {...formProps} />}
         {type === "jenkins" && <JenkinsConnectForm {...formProps} />}
         {type === "travisci" && <TravisCIConnectForm {...formProps} />}
+        {type === "github-actions" && <GitHubActionsConnectForm {...formProps} />}
+        {type === "azure-devops" && <AzureDevOpsConnectForm {...formProps} />}
       </div>
     </div>
   );
@@ -526,13 +671,13 @@ export function IntegrationSettingsClient() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {INTEGRATIONS.map((integration) => (
           <ErrorBoundary key={integration.type}>
             <IntegrationCard
               type={integration.type}
               label={integration.label}
-              icon={integration.icon}
+              Icon={integration.Icon}
               description={integration.description}
               credential={getCredentialForType(integration.type)}
               onConnect={handleConnect}

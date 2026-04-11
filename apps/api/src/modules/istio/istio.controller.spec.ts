@@ -455,4 +455,21 @@ describe("IstioController — additional branch coverage", () => {
       );
     });
   });
+
+  describe("getAvailability", () => {
+    it("returns available: true when Istio is enabled", async () => {
+      mockIstioService.isIstioEnabled.mockResolvedValue(true);
+      const result = await controller.getAvailability();
+      expect(result).toEqual({ available: true });
+    });
+
+    it("returns available: false with reason when Istio is not detected", async () => {
+      mockIstioService.isIstioEnabled.mockResolvedValue(false);
+      const result = await controller.getAvailability();
+      expect(result).toEqual({
+        available: false,
+        reason: "Istio not detected in cluster",
+      });
+    });
+  });
 });

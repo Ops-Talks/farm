@@ -46,6 +46,9 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { ServiceTemplateModule } from "./modules/service-template/service-template.module";
 import { EnvironmentRequestModule } from "./modules/environment-request/environment-request.module";
 import { FinOpsModule } from "./modules/finops/finops.module";
+import { FeaturesModule } from "./modules/features/features.module";
+import { SearchModule } from "./modules/search/search.module";
+import { SetupModule } from "./modules/setup/setup.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -348,6 +351,33 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "FinOps: Infracost pipeline integration and OpenCost component cost visibility",
         },
         module: FinOpsModule,
+      },
+      {
+        metadata: {
+          name: "core-features",
+          version: "1.0.0",
+          description:
+            "Bulk feature availability endpoint for all optional platform integrations",
+        },
+        module: FeaturesModule,
+      },
+      {
+        metadata: {
+          name: "core-search",
+          version: "1.0.0",
+          description:
+            "Quick search across catalog, teams, documentation, environments, and pipelines",
+        },
+        module: SearchModule,
+      },
+      {
+        metadata: {
+          name: "core-setup",
+          version: "1.0.0",
+          description:
+            "Admin setup checklist with real-time completion status and dismissal support",
+        },
+        module: SetupModule,
       },
     ]),
   ],

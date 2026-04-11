@@ -1182,6 +1182,10 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | FARM-S303 | Story | Integration Settings brand icons: replace the placeholder emoji icons on the ArgoCD, CircleCI, Jenkins, and Travis CI cards with the official SVG brand logos using `simple-icons` | `TODO` |
 | FARM-S304 | Story | New CI/CD integrations: add GitHub Actions (PAT + repository webhook) and Azure DevOps (Personal Access Token + organization URL) as first-class integration types with dedicated connect forms, credential storage, pipeline status endpoints, and frontend cards | `TODO` |
 | FARM-S305 | Story | Sidebar navigation reorganization: group the 25 flat nav items into labeled sections (Operations, Observability, Infrastructure, Self-Service, Organization, Settings) to reduce cognitive load and improve discoverability | `TODO` |
+| FARM-S306 | Story | Global quick search (Cmd+K): keyboard-activated modal that searches across catalog components, teams, documentation, environments, and pipelines by name; grouped results with keyboard navigation | `TODO` |
+| FARM-S307 | Story | Admin setup checklist: dismissible "Getting Started" card on the Dashboard guiding workspace admins through initial configuration steps (Kubernetes, Registry, first component, first team, integrations); completion state derived from live data | `TODO` |
+| FARM-S308 | Story | Integration health summary card on Dashboard: compact card consuming `GET /api/features/availability`; shows all optional features with color-coded status dots and a "Configure" link; surfaces availability proactively without requiring navigation | `DONE` |
+| FARM-S309 | Story | Sidebar collapsible sections: category titles (Operations, Observability, etc.) become toggle buttons; the section containing the active route auto-expands on load; all other sections start collapsed; native `overflow-y-auto` scroll bar appears only when enough sections are expanded to exceed the viewport height | `TODO` |
 
 #### FARM-S299 Tasks
 
@@ -1376,6 +1380,133 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | FARM-ST321 | Sub-task | Mirror the same `navSections` structure in the mobile `Sheet` drawer nav | `TODO` |
 | FARM-ST322 | Sub-task | Update `app-shell.test.tsx`: assert each of the six section headings is rendered; existing nav-item tests remain valid | `TODO` |
 
+#### FARM-S306 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T308 | Task | `GET /api/search/quick?q=<term>&limit=N` endpoint: parallel `LIKE` queries across `Component` (name, description), `Team` (name), `Documentation` (title), `Environment` (name), `Pipeline` (name); returns `QuickSearchResult[]` typed by entity; unit + e2e tests | `TODO` |
+| FARM-T309 | Task | `SearchModal` frontend component: activated by `Cmd+K` / `Ctrl+K` global shortcut; debounced input (300 ms); results grouped by entity type; keyboard navigation (arrow keys, Enter to navigate, Esc to close); unit tests | `TODO` |
+| FARM-T310 | Task | Mount `SearchModal` in `AppShell`; add `getQuickSearchResults(query, limit?)` to `api-client.ts`; add a search shortcut hint button in the top nav bar (desktop only); unit tests | `TODO` |
+
+##### FARM-T308 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST323 | Sub-task | Define `QuickSearchResult` interface: `{ type: 'component'\|'team'\|'documentation'\|'environment'\|'pipeline', id: string, name: string, description?: string, url: string }` in a shared DTO file | `TODO` |
+| FARM-ST324 | Sub-task | `SearchService.quickSearch(query, limit)`: run parallel `findOptions` LIKE queries on all five repositories; merge arrays, limit total to `limit` (default 10), preserving entity-type grouping | `TODO` |
+| FARM-ST325 | Sub-task | `SearchController` at `/search` with `GET /quick`; unit tests for service merge logic; e2e test asserting all entity types returned when name matches | `TODO` |
+
+##### FARM-T309 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST326 | Sub-task | Global `keydown` listener in `SearchModal` (or a wrapping hook): detect `Meta+K` / `Ctrl+K`, toggle `open` state; Esc closes; register and clean up listener in `useEffect` | `TODO` |
+| FARM-ST327 | Sub-task | Debounced input (300 ms) calls `getQuickSearchResults`; results rendered in `CommandGroup` sections (one per entity type); each result row shows entity type badge, name, and truncated description | `TODO` |
+| FARM-ST328 | Sub-task | Keyboard navigation: `ArrowDown`/`ArrowUp` moves highlighted index; `Enter` on highlighted item calls `router.push(result.url)` and closes modal; empty state when query is blank or no results found | `TODO` |
+| FARM-ST329 | Sub-task | Unit tests: modal opens on `Cmd+K`; closes on Esc; renders grouped results; Enter navigates to correct URL; debounce prevents excessive API calls | `TODO` |
+
+##### FARM-T310 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST330 | Sub-task | Add `getQuickSearchResults(query: string, limit?: number): Promise<QuickSearchResult[]>` to `api-client.ts`; unit test with mocked fetch | `TODO` |
+| FARM-ST331 | Sub-task | Mount `<SearchModal />` once in `AppShell` (always rendered, visibility controlled by internal state); pass `open`/`onOpenChange` props | `TODO` |
+| FARM-ST332 | Sub-task | Add a search trigger button in the top nav bar (desktop `md:flex` only): magnifying glass icon + `⌘K` keyboard hint chip; clicking opens modal | `TODO` |
+| FARM-ST333 | Sub-task | Unit tests: search button rendered in AppShell; click opens modal; modal unmounts cleanly without listener leaks | `TODO` |
+
+---
+
+#### FARM-S307 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T311 | Task | `GET /api/setup/checklist` endpoint: returns checklist items derived from live data (entity counts + feature availability); `POST /api/setup/checklist/:key/dismiss` stores dismissed keys in `workspace.settings` JSONB; unit + e2e tests | `TODO` |
+| FARM-T312 | Task | `SetupChecklistCard` component: dismissible card with per-item completion status (green check / gray pending), title, description, and "Configure" link button; "Dismiss all" button; unit tests | `TODO` |
+| FARM-T313 | Task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; integrate `SetupChecklistCard` at top of Dashboard page below the stats row; card is hidden when all items are completed or all are dismissed; unit tests | `TODO` |
+
+##### FARM-T311 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST334 | Sub-task | Define `SetupChecklistItem` interface: `{ key: string, title: string, description: string, href: string, completed: boolean, dismissed: boolean }`; define five keys: `setup-kubernetes`, `setup-registry`, `create-component`, `create-team`, `configure-integrations` | `TODO` |
+| FARM-ST335 | Sub-task | Compute `completed` for each key: `setup-kubernetes` → `isKubernetesEnabled()`; `setup-registry` → registry credential count > 0; `create-component` → component count > 0; `create-team` → team count > 0; `configure-integrations` → integration credential count > 0 | `TODO` |
+| FARM-ST336 | Sub-task | Persist dismissed keys in `workspace.settings.dismissedChecklist: string[]` (JSONB patch via `WorkspaceService.updateSettings()`); `POST /api/setup/checklist/:key/dismiss` appends the key | `TODO` |
+| FARM-ST337 | Sub-task | Unit tests: all items incomplete → all returned uncompleted; dismiss persists to workspace settings; e2e test for GET and POST endpoints | `TODO` |
+
+##### FARM-T312 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST338 | Sub-task | `SetupChecklistCard` renders a `Card` with a progress header (`N of 5 steps complete`), a list of `SetupChecklistItem` rows, and a "Dismiss all" button in the card footer | `TODO` |
+| FARM-ST339 | Sub-task | Each item row: left icon (`CheckCircle2` green when completed, `Circle` gray when pending), title + description, right "Configure →" link button (hidden when completed); clicking "×" on a row calls dismiss for that key | `TODO` |
+| FARM-ST340 | Sub-task | Unit tests: renders N-of-5 progress; completed items show check icon; dismiss button calls `dismissChecklistItem`; card hidden when `items` is empty or all dismissed | `TODO` |
+
+##### FARM-T313 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST341 | Sub-task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; unit tests with mocked fetch | `TODO` |
+| FARM-ST342 | Sub-task | Dashboard page: call `getSetupChecklist()` on mount; derive `visible = items.some(i => !i.completed && !i.dismissed)`; render `SetupChecklistCard` above the stats grid when `visible` | `TODO` |
+| FARM-ST343 | Sub-task | Unit tests for Dashboard page: checklist card rendered when incomplete items exist; card absent when all completed; card absent when all dismissed | `TODO` |
+
+---
+
+#### FARM-S308 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T314 | Task | `IntegrationHealthCard` component: fetches `GET /api/features/availability` (defined in FARM-T296); renders each feature as a row with a color-coded dot (green = available, red = unavailable), feature name, and a "Configure →" link to the appropriate settings page; unit tests | `TODO` |
+| FARM-T315 | Task | Integrate `IntegrationHealthCard` into the Dashboard page alongside `SetupChecklistCard`; add `getFeatureAvailability()` call to `api-client.ts` if not already present (FARM-ST294); unit tests for dashboard layout with card | `TODO` |
+
+##### FARM-T314 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST344 | Sub-task | `IntegrationHealthCard` props: `availability: FeatureAvailabilityMap`; render a `Card` titled "Platform Integrations" with a row per feature (kubernetes, cost, registry, helm, istio) | `TODO` |
+| FARM-ST345 | Sub-task | Each row: `dot` indicator (`bg-green-500` when available, `bg-red-500` when not), feature display name, optional `reason` shown as a muted subtitle when unavailable, right-aligned "Configure →" link | `TODO` |
+| FARM-ST346 | Sub-task | Unit tests: green dot when available; red dot + reason when unavailable; "Configure" links point to correct pages; all five features rendered | `TODO` |
+
+##### FARM-T315 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST347 | Sub-task | Dashboard page: call `getFeatureAvailability()` on mount (reuse if already fetched by AppShell context from FARM-ST294); pass result to `IntegrationHealthCard`; render card in a two-column grid alongside `SetupChecklistCard` on desktop, stacked on mobile | `TODO` |
+| FARM-ST348 | Sub-task | Unit tests: `IntegrationHealthCard` rendered with availability data; loading skeleton while fetching; graceful empty state when endpoint unreachable | `TODO` |
+
+---
+
+#### FARM-S309 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T316 | Task | Desktop sidebar accordion: replace `<p>` section labels with `<button>` toggle controls; manage `collapsedSections` state as `Set<string>`; initialize with all sections except the one containing the active route collapsed; render items only when section is open; add `ChevronDown`/`ChevronRight` icon; unit tests | `TODO` |
+| FARM-T317 | Task | Mobile Sheet nav parity: apply the same accordion toggle behavior to the mobile navigation inside `SheetContent`; use independent collapsed state scoped to the mobile menu; unit tests | `TODO` |
+| FARM-T318 | Task | AppShell test coverage for accordion: tests for default open/closed sections based on active route; toggle open; toggle closed; items hidden when section collapsed; accessibility (aria-expanded on trigger buttons) | `TODO` |
+
+##### FARM-T316 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST349 | Sub-task | Add `collapsedSections` state (`useState<Set<string>>`); initialize from `activeHref`: on render only the section whose items include `activeHref` is open, all others collapsed | `TODO` |
+| FARM-ST350 | Sub-task | Replace `<p>` section label with `<button>` element; clicking toggles the section; show `ChevronDown` when open and `ChevronRight` when closed | `TODO` |
+| FARM-ST351 | Sub-task | Wrap section items in a conditional block: render items only when the section is not collapsed | `TODO` |
+
+##### FARM-T317 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST352 | Sub-task | Duplicate `collapsedSections` state for the mobile Sheet nav (independent from desktop); apply the same button + conditional render pattern | `TODO` |
+| FARM-ST353 | Sub-task | Unit tests for mobile nav accordion: verify default state, toggle open, toggle closed | `TODO` |
+
+##### FARM-T318 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST354 | Sub-task | Test: all sections except the active one start collapsed; active section is open | `TODO` |
+| FARM-ST355 | Sub-task | Test: clicking a closed section label opens it; clicking an open section label closes it | `TODO` |
+| FARM-ST356 | Sub-task | Test: items in a collapsed section are not present in the DOM; items in an open section are present | `TODO` |
+| FARM-ST357 | Sub-task | Test: section title buttons have `aria-expanded` attribute set correctly (true when open, false when closed) | `TODO` |
+
 ---
 
 ## Summary
@@ -1409,5 +1540,5 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
-| Phase 25: Feature Availability UX | 1 | 7 | `TODO` |
+| Phase 25: Feature Availability UX | 1 | 11 | `TODO` |
 | **Total** | **73** | **289** | |

@@ -41,6 +41,9 @@ import {
   environmentRequests,
   registry,
   finops,
+  features,
+  search,
+  setup,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -3157,6 +3160,87 @@ describe("api-client", () => {
         "/api/v1/cost/teams/team-1/summary",
         expect.any(Object),
       );
+    });
+  });
+
+  describe("features", () => {
+    const rawAvailability = {
+      kubernetes: { available: true },
+      cost: { available: true },
+      registry: { available: false },
+      helm: { available: true },
+      istio: { available: false },
+    };
+
+    it("getAvailability maps raw response to flat FeatureAvailability", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(rawAvailability));
+      const result = await features.getAvailability();
+      expect(result.kubernetes).toBe(true);
+      expect(result.cost).toBe(true);
+      expect(result.registry).toBe(false);
+      expect(result.helm).toBe(true);
+      expect(result.istio).toBe(false);
+    });
+
+    it("getAvailability sets allConfigured=false when any feature is unavailable", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(rawAvailability));
+      const result = await features.getAvailability();
+      expect(result.allConfigured).toBe(false);
+    });
+
+    it("getAvailability sets allConfigured=true when all features are available", async () => {
+      const allTrue = {
+        kubernetes: { available: true },
+        cost: { available: true },
+        registry: { available: true },
+        helm: { available: true },
+        istio: { available: true },
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(allTrue));
+      const result = await features.getAvailability();
+      expect(result.allConfigured).toBe(true);
+    });
+  });
+
+  describe("search", () => {
+    it("quick sends GET to the quick-search endpoint with the query parameter", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const result = await search.quick("my-service");
+      expect(Array.isArray(result)).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/search/quick"),
+        expect.any(Object),
+      );
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("q=my-service");
+    });
+  });
+
+  describe("setup", () => {
+    it("getChecklist sends GET to the checklist endpoint", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const result = await setup.getChecklist();
+      expect(Array.isArray(result)).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/setup/checklist",
+        expect.any(Object),
+      );
+    });
+
+    it("dismissItem sends POST to the checklist dismiss endpoint", async () => {
+      mockFetch.mockReturnValueOnce({ ok: true, status: 200, json: () => Promise.resolve(null) });
+      await setup.dismissItem("k8s");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/setup/checklist/k8s/dismiss",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("dismissItem URL-encodes the key", async () => {
+      mockFetch.mockReturnValueOnce({ ok: true, status: 200, json: () => Promise.resolve(null) });
+      await setup.dismissItem("key/with spaces");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("key%2Fwith%20spaces");
     });
   });
 });

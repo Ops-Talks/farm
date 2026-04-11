@@ -47,6 +47,15 @@ export default defineConfig({
     // Screenshots and video only on failure
     screenshot: "only-on-failure",
     video: "retain-on-failure",
+
+    // Allow more time for actions in CI (slower runners, on-demand compilation)
+    actionTimeout: isCI ? 15_000 : 5_000,
+  },
+
+  // Raise the default expect() assertion timeout in CI — Next.js dev server
+  // may need several seconds to compile pages on first load.
+  expect: {
+    timeout: isCI ? 10_000 : 5_000,
   },
 
   projects: [

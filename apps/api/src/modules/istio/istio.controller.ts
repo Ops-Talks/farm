@@ -328,4 +328,17 @@ export class IstioController {
   ): Promise<IstioTopologyEdge[]> {
     return this.istioService.buildTopology(orgId ?? "", kubeconfig);
   }
+
+  /**
+   * Returns whether Istio is installed in the cluster.
+   */
+  @Get("available")
+  @ApiOperation({ summary: "Check if Istio is installed in the cluster" })
+  @ApiResponse({ status: 200, description: "Availability status" })
+  async getAvailability(): Promise<{ available: boolean; reason?: string }> {
+    const available = await this.istioService.isIstioEnabled();
+    return available
+      ? { available: true }
+      : { available: false, reason: "Istio not detected in cluster" };
+  }
 }
