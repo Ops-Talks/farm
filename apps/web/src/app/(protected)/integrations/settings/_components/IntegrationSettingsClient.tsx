@@ -585,8 +585,8 @@ const ConnectModal = memo(function ConnectModal({ type, label, onSave, onClose, 
         {type === "circleci" && <CircleCIConnectForm {...formProps} />}
         {type === "jenkins" && <JenkinsConnectForm {...formProps} />}
         {type === "travisci" && <TravisCIConnectForm {...formProps} />}
-        {type === "github_actions" && <GitHubActionsConnectForm {...formProps} />}
-        {type === "azure_devops" && <AzureDevOpsConnectForm {...formProps} />}
+        {type === "github-actions" && <GitHubActionsConnectForm {...formProps} />}
+        {type === "azure-devops" && <AzureDevOpsConnectForm {...formProps} />}
       </div>
     </div>
   );
