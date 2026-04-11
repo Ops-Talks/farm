@@ -302,7 +302,7 @@ test.describe("docs page — authenticated", () => {
     await page
       .getByPlaceholder("Search documentation...")
       .fill("getting started");
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
 
     // The CardTitle renders "Search Results (1)".
     await expect(page.getByText(/Search Results/)).toBeVisible({
@@ -334,7 +334,7 @@ test.describe("docs page — authenticated", () => {
     await page
       .getByPlaceholder("Search documentation...")
       .fill("getting started");
-    await page.getByRole("button", { name: "Search" }).click();
+    await page.getByRole("button", { name: "Search", exact: true }).click();
 
     await expect(page.getByText(/Search Results/)).toBeVisible({
       timeout: 5000,
