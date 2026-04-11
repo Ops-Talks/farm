@@ -257,4 +257,37 @@ describe("PluginsClient", () => {
     // Plugin still visible
     expect(screen.getByText("example-plugin")).toBeInTheDocument();
   });
+
+  it("should show singular 'plugin' in success toast when scanned=1", async () => {
+    mockIsAdmin = true;
+    mockListPlugins.mockResolvedValue([]);
+    mockReloadPlugins.mockResolvedValue({ scanned: 1 });
+    const user = userEvent.setup();
+    render(<PluginsClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("Reload Plugins")).toBeInTheDocument();
+    });
+    await user.click(screen.getByText("Reload Plugins"));
+    await user.click(screen.getByText("Reload"));
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("Plugin scan complete — 1 plugin found");
+    });
+  });
+
+  it("should show 'Reloading...' text while reload mutation is pending", async () => {
+    mockIsAdmin = true;
+    mockListPlugins.mockResolvedValue([]);
+    // Never-resolving promise keeps the mutation in isPending state.
+    mockReloadPlugins.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<PluginsClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("Reload Plugins")).toBeInTheDocument();
+    });
+    await user.click(screen.getByText("Reload Plugins"));
+    await user.click(screen.getByText("Reload"));
+    await waitFor(() => {
+      expect(screen.getByText("Reloading...")).toBeInTheDocument();
+    });
+  });
 });

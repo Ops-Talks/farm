@@ -397,9 +397,6 @@ const GitHubActionsConnectForm = memo(function GitHubActionsConnectForm({
           <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
         <Input id="ghactions-owner" placeholder="my-github-org" {...register("owner")} />
-        {errors.owner?.message && (
-          <p className="text-xs text-destructive">{errors.owner.message}</p>
-        )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" size="sm" onClick={onClose}>

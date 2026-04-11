@@ -427,4 +427,62 @@ describe("AppShell", () => {
     // SLOs is in Observability (collapsed); should not be in DOM
     expect(screen.queryByRole("link", { name: /^SLOs$/i })).toBeNull();
   });
+
+  // -------------------------------------------------------------------------
+  // getInitialCollapsed: unknown pathname → all sections open (empty Set)
+  // -------------------------------------------------------------------------
+
+  it("should open all sections when the pathname matches no nav section", () => {
+    mockPathnameReturn.mockReturnValue("/unknown-page");
+    render(<AppShell>Content</AppShell>);
+
+    // With an empty initial collapsed set, every section toggle is expanded.
+    const opsButtons = screen.getAllByRole("button", { name: /Operations/i });
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+
+    const obsButtons = screen.getAllByRole("button", { name: /Observability/i });
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "true");
+  });
+
+  // -------------------------------------------------------------------------
+  // effectiveCollapsed: force-expand the active section even if user collapsed it
+  // -------------------------------------------------------------------------
+
+  it("should keep the active desktop section expanded when the user tries to collapse it", async () => {
+    // /dashboard → Operations is the active section.
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    const opsButtons = screen.getAllByRole("button", { name: /Operations/i });
+    // Initially expanded (active section).
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+
+    // Click to "collapse" the active section — effectiveCollapsed must re-expand it.
+    await user.click(opsButtons[0]);
+
+    // The active section must remain expanded.
+    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("should keep the active mobile section expanded when the user tries to collapse it", async () => {
+    const user = userEvent.setup();
+    render(<AppShell>Content</AppShell>);
+
+    // Open the mobile drawer.
+    await user.click(screen.getByRole("button", { name: /Open navigation menu/i }));
+    const mobileNav = await screen.findByRole("navigation", { name: /Mobile navigation/i });
+
+    // Operations is the active section; find its toggle inside the mobile nav.
+    const mobileOpsButtons = Array.from(
+      mobileNav.querySelectorAll("button"),
+    ).filter((b) => b.textContent?.includes("Operations"));
+    expect(mobileOpsButtons[0]).toBeTruthy();
+    expect(mobileOpsButtons[0]).toHaveAttribute("aria-expanded", "true");
+
+    // Try to collapse it.
+    await user.click(mobileOpsButtons[0]!);
+
+    // effectiveMobileCollapsed must re-expand the active section.
+    expect(mobileOpsButtons[0]).toHaveAttribute("aria-expanded", "true");
+  });
 });

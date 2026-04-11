@@ -693,4 +693,56 @@ describe("IntegrationSettingsClient", () => {
     });
     expect(modal.getByText("Organization is required")).toBeInTheDocument();
   });
+
+  it("shows 'Saving…' in GitHub Actions form while mutation is pending", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    // Never-resolving promise keeps createMutation.isPending = true.
+    mockCreate.mockReturnValue(new Promise(() => {}));
+    render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("integration-card-github-actions")).toBeInTheDocument();
+    });
+
+    const card = screen.getByTestId("integration-card-github-actions");
+    await user.click(within(card).getByRole("button", { name: /^connect$/i }));
+
+    const dialog = await screen.findByRole("dialog");
+    const modal = within(dialog);
+
+    await user.type(modal.getByLabelText(/^name/i), "My GH");
+    await user.type(modal.getByLabelText(/token/i), "ghp_tok");
+    await user.click(modal.getByRole("button", { name: /^connect$/i }));
+
+    await waitFor(() => {
+      expect(modal.getByText("Saving…")).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'Saving…' in Azure DevOps form while mutation is pending", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    mockCreate.mockReturnValue(new Promise(() => {}));
+    render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("integration-card-azure-devops")).toBeInTheDocument();
+    });
+
+    const card = screen.getByTestId("integration-card-azure-devops");
+    await user.click(within(card).getByRole("button", { name: /^connect$/i }));
+
+    const dialog = await screen.findByRole("dialog");
+    const modal = within(dialog);
+
+    await user.type(modal.getByLabelText(/^name/i), "My Azure");
+    await user.type(modal.getByLabelText(/token/i), "az_tok");
+    await user.type(modal.getByLabelText(/organization/i), "my-org");
+    await user.click(modal.getByRole("button", { name: /^connect$/i }));
+
+    await waitFor(() => {
+      expect(modal.getByText("Saving…")).toBeInTheDocument();
+    });
+  });
 });

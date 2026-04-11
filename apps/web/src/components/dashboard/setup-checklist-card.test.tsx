@@ -59,11 +59,11 @@ describe("SetupChecklistCard", () => {
     } as ReturnType<typeof useQuery>);
   });
 
-  it("renders pending items only", () => {
+  it("renders pending and completed items, hides dismissed items", () => {
     render(<SetupChecklistCard />);
     expect(screen.getByText("Configure Kubernetes")).toBeTruthy();
-    // done item is filtered out from pendingItems
-    expect(screen.queryByText("Configure Registry")).toBeNull();
+    // completed (non-dismissed) item is now shown with a checkmark
+    expect(screen.getByText("Configure Registry")).toBeTruthy();
   });
 
   it("dismiss button triggers mutate", () => {

@@ -87,7 +87,7 @@ export function SetupChecklistCard() {
           </div>
         ) : (
           <div className="divide-y">
-            {pendingItems.map((item) => (
+            {items.filter((i) => !i.dismissed).map((item) => (
               <ChecklistItemRow
                 key={item.key}
                 item={item}
