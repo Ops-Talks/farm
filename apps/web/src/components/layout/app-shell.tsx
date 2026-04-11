@@ -288,27 +288,33 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Ensure the section containing the active route is always expanded
   // when the pathname changes (e.g. after navigation).
-  useEffect(() => {
-    const activeSection = navSections.find((s) =>
+  // Instead of calling setState inside an effect (which triggers the
+  // react-hooks/set-state-in-effect lint rule), we derive the effective
+  // collapsed sets via useMemo: user-toggled state minus the active section.
+  const activeSectionLabel = useMemo(() => {
+    const section = navSections.find((s) =>
       s.items.some(
         (i) => pathname === i.href || pathname.startsWith(i.href + "/"),
       ),
     );
-    if (activeSection) {
-      setCollapsedSections((prev) => {
-        if (!prev.has(activeSection.label)) return prev;
-        const next = new Set(prev);
-        next.delete(activeSection.label);
-        return next;
-      });
-      setMobileCollapsedSections((prev) => {
-        if (!prev.has(activeSection.label)) return prev;
-        const next = new Set(prev);
-        next.delete(activeSection.label);
-        return next;
-      });
-    }
+    return section?.label;
   }, [pathname]);
+
+  const effectiveCollapsed = useMemo(() => {
+    if (!activeSectionLabel || !collapsedSections.has(activeSectionLabel))
+      return collapsedSections;
+    const next = new Set(collapsedSections);
+    next.delete(activeSectionLabel);
+    return next;
+  }, [collapsedSections, activeSectionLabel]);
+
+  const effectiveMobileCollapsed = useMemo(() => {
+    if (!activeSectionLabel || !mobileCollapsedSections.has(activeSectionLabel))
+      return mobileCollapsedSections;
+    const next = new Set(mobileCollapsedSections);
+    next.delete(activeSectionLabel);
+    return next;
+  }, [mobileCollapsedSections, activeSectionLabel]);
 
   const cycleTheme = useCallback(() => {
     if (theme === "light") setTheme("dark");
@@ -372,15 +378,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => toggleSection(section.label)}
-                  aria-expanded={!collapsedSections.has(section.label)}
+                  aria-expanded={!effectiveCollapsed.has(section.label)}
                   className="flex w-full items-center justify-between px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-muted-foreground transition-colors"
                 >
                   {section.label}
-                  {collapsedSections.has(section.label)
+                  {effectiveCollapsed.has(section.label)
                     ? <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
                     : <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" />}
                 </button>
-                {!collapsedSections.has(section.label) && section.items.map((item) => {
+                {!effectiveCollapsed.has(section.label) && section.items.map((item) => {
                   const isActive = activeHref === item.href;
                   return <NavItem key={item.href} item={item} isActive={isActive} />;
                 })}
@@ -428,15 +434,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                         <button
                           type="button"
                           onClick={() => toggleMobileSection(section.label)}
-                          aria-expanded={!mobileCollapsedSections.has(section.label)}
+                          aria-expanded={!effectiveMobileCollapsed.has(section.label)}
                           className="flex w-full items-center justify-between px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-muted-foreground transition-colors"
                         >
                           {section.label}
-                          {mobileCollapsedSections.has(section.label)
+                          {effectiveMobileCollapsed.has(section.label)
                             ? <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
                             : <ChevronDown className="h-3 w-3 shrink-0" aria-hidden="true" />}
                         </button>
-                        {!mobileCollapsedSections.has(section.label) && section.items.map((item) => {
+                        {!effectiveMobileCollapsed.has(section.label) && section.items.map((item) => {
                           const isActive = activeHref === item.href;
                           return (
                             <NavItem

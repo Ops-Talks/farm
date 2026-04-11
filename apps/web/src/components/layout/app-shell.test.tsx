@@ -404,13 +404,16 @@ describe("AppShell", () => {
     const user = userEvent.setup();
     render(<AppShell>Content</AppShell>);
 
-    // Operations is open initially
-    const opsButtons = screen.getAllByRole("button", { name: /Operations/i });
-    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "true");
+    // Observability is collapsed initially (not the active section for /dashboard).
+    // Expand it first, then collapse it again.
+    const obsButtons = screen.getAllByRole("button", { name: /Observability/i });
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "false");
 
-    await user.click(opsButtons[0]);
+    await user.click(obsButtons[0]);
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "true");
 
-    expect(opsButtons[0]).toHaveAttribute("aria-expanded", "false");
+    await user.click(obsButtons[0]);
+    expect(obsButtons[0]).toHaveAttribute("aria-expanded", "false");
   });
 
   it("should not render items of a collapsed section", () => {
