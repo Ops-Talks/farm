@@ -21,24 +21,24 @@ function ChecklistItemRow({
 }) {
   return (
     <div className="flex items-center gap-3 py-2">
-      {item.done ? (
+      {item.completed ? (
         <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" aria-hidden="true" />
       ) : (
         <Circle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       )}
       <span
-        className={`flex-1 text-sm ${item.done ? "text-muted-foreground line-through" : "text-foreground"}`}
+        className={`flex-1 text-sm ${item.completed ? "text-muted-foreground line-through" : "text-foreground"}`}
       >
-        {item.label}
+        {item.title}
       </span>
-      {!item.done && (
+      {!item.completed && (
         <Button
           variant="ghost"
           size="icon"
           className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
           onClick={() => onDismiss(item.key)}
           disabled={isDismissing}
-          aria-label={`Dismiss ${item.label}`}
+          aria-label={`Dismiss ${item.title}`}
         >
           <X className="h-3 w-3" />
         </Button>
@@ -67,8 +67,8 @@ export function SetupChecklistCard() {
     },
   });
 
-  const items = data?.items ?? [];
-  const pendingItems = items.filter((i) => !i.done && !i.dismissedAt);
+  const items = data ?? [];
+  const pendingItems = items.filter((i) => !i.completed && !i.dismissed);
 
   // Hide the card when everything is done or dismissed.
   if (!isLoading && pendingItems.length === 0) return null;

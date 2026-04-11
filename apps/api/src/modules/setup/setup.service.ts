@@ -50,9 +50,15 @@ export class SetupService {
    */
   async getChecklist(orgId?: string): Promise<SetupChecklistItem[]> {
     const [componentCount, teamCount, credCount, org] = await Promise.all([
-      this.componentRepo.count(),
-      this.teamRepo.count(),
-      this.credRepo.count(),
+      orgId
+        ? this.componentRepo.count({ where: { organizationId: orgId } })
+        : this.componentRepo.count(),
+      orgId
+        ? this.teamRepo.count({ where: { organizationId: orgId } })
+        : this.teamRepo.count(),
+      orgId
+        ? this.credRepo.count({ where: { orgId } })
+        : this.credRepo.count(),
       orgId ? this.orgRepo.findOne({ where: { id: orgId } }) : null,
     ]);
     const dismissed: string[] =

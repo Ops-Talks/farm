@@ -115,7 +115,7 @@ describe("GitHubActionsService", () => {
       expect(result).toEqual([]);
     });
 
-    it("uses users/events endpoint when repo is not provided", async () => {
+    it("uses org-level actions/runs endpoint when repo is not provided", async () => {
       mockCredentialService.findByType.mockResolvedValue(encryptedCredential);
       mockCredentialService.decrypt.mockReturnValue(
         JSON.stringify({ token: "gh-token", owner: "acme" }),
@@ -129,7 +129,7 @@ describe("GitHubActionsService", () => {
       await service.listWorkflowRuns("org-1");
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("users/acme/events"),
+        "https://api.github.com/orgs/acme/actions/runs",
         expect.any(Object),
       );
     });

@@ -333,8 +333,8 @@ describe("IntegrationSettingsClient", () => {
     expect(screen.getByTestId("integration-card-circleci")).toBeInTheDocument();
     expect(screen.getByTestId("integration-card-jenkins")).toBeInTheDocument();
     expect(screen.getByTestId("integration-card-travisci")).toBeInTheDocument();
-    expect(screen.getByTestId("integration-card-github_actions")).toBeInTheDocument();
-    expect(screen.getByTestId("integration-card-azure_devops")).toBeInTheDocument();
+    expect(screen.getByTestId("integration-card-github-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("integration-card-azure-devops")).toBeInTheDocument();
   });
 
   // --- Tests for Phase 25 new integration modals ---
@@ -442,10 +442,10 @@ describe("IntegrationSettingsClient", () => {
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-github_actions")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-github-actions")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-github_actions");
+    const card = screen.getByTestId("integration-card-github-actions");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     await waitFor(() => {
@@ -460,10 +460,10 @@ describe("IntegrationSettingsClient", () => {
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-azure_devops")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-azure-devops")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-azure_devops");
+    const card = screen.getByTestId("integration-card-azure-devops");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     await waitFor(() => {
@@ -501,15 +501,15 @@ describe("IntegrationSettingsClient", () => {
     const user = userEvent.setup();
     mockList.mockResolvedValue([]);
     mockCreate.mockResolvedValue(
-      buildCredential({ type: "github_actions", name: "My GitHub" }),
+      buildCredential({ type: "github-actions", name: "My GitHub" }),
     );
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-github_actions")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-github-actions")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-github_actions");
+    const card = screen.getByTestId("integration-card-github-actions");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     const dialog = await screen.findByRole("dialog");
@@ -521,7 +521,7 @@ describe("IntegrationSettingsClient", () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "github_actions", token: "ghp_token" }),
+        expect.objectContaining({ type: "github-actions", token: "ghp_token" }),
       );
     });
   });
@@ -530,15 +530,15 @@ describe("IntegrationSettingsClient", () => {
     const user = userEvent.setup();
     mockList.mockResolvedValue([]);
     mockCreate.mockResolvedValue(
-      buildCredential({ type: "azure_devops", name: "My Azure" }),
+      buildCredential({ type: "azure-devops", name: "My Azure" }),
     );
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-azure_devops")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-azure-devops")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-azure_devops");
+    const card = screen.getByTestId("integration-card-azure-devops");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     const dialog = await screen.findByRole("dialog");
@@ -551,7 +551,7 @@ describe("IntegrationSettingsClient", () => {
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "azure_devops", org: "my-org" }),
+        expect.objectContaining({ type: "azure-devops", organization: "my-org" }),
       );
     });
   });
@@ -654,10 +654,10 @@ describe("IntegrationSettingsClient", () => {
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-github_actions")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-github-actions")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-github_actions");
+    const card = screen.getByTestId("integration-card-github-actions");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     const dialog = await screen.findByRole("dialog");
@@ -677,10 +677,10 @@ describe("IntegrationSettingsClient", () => {
     render(<IntegrationSettingsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId("integration-card-azure_devops")).toBeInTheDocument();
+      expect(screen.getByTestId("integration-card-azure-devops")).toBeInTheDocument();
     });
 
-    const card = screen.getByTestId("integration-card-azure_devops");
+    const card = screen.getByTestId("integration-card-azure-devops");
     await user.click(within(card).getByRole("button", { name: /^connect$/i }));
 
     const dialog = await screen.findByRole("dialog");

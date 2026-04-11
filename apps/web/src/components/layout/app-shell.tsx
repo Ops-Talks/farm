@@ -154,6 +154,10 @@ function getInitialCollapsed(pathname: string): Set<string> {
       );
       return bLen - aLen;
     })[0];
+
+  // When no section matches the pathname, all sections should be open (empty Set).
+  if (!activeSection) return new Set();
+
   return new Set(
     navSections.filter((s) => s !== activeSection).map((s) => s.label),
   );
@@ -281,6 +285,30 @@ export function AppShell({ children }: { children: ReactNode }) {
         .sort((a, b) => b.href.length - a.href.length)[0]?.href,
     [pathname],
   );
+
+  // Ensure the section containing the active route is always expanded
+  // when the pathname changes (e.g. after navigation).
+  useEffect(() => {
+    const activeSection = navSections.find((s) =>
+      s.items.some(
+        (i) => pathname === i.href || pathname.startsWith(i.href + "/"),
+      ),
+    );
+    if (activeSection) {
+      setCollapsedSections((prev) => {
+        if (!prev.has(activeSection.label)) return prev;
+        const next = new Set(prev);
+        next.delete(activeSection.label);
+        return next;
+      });
+      setMobileCollapsedSections((prev) => {
+        if (!prev.has(activeSection.label)) return prev;
+        const next = new Set(prev);
+        next.delete(activeSection.label);
+        return next;
+      });
+    }
+  }, [pathname]);
 
   const cycleTheme = useCallback(() => {
     if (theme === "light") setTheme("dark");

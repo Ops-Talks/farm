@@ -62,7 +62,7 @@ describe("AzureDevOpsService", () => {
       );
     });
 
-    it("returns mapped pipelines on success", async () => {
+    it("returns mapped pipeline runs on success", async () => {
       mockCredentialService.findByType.mockResolvedValue(encryptedCredential);
       mockCredentialService.decrypt.mockReturnValue(
         JSON.stringify({
@@ -72,18 +72,20 @@ describe("AzureDevOpsService", () => {
         }),
       );
 
-      const mockPipeline = {
+      const mockRun = {
         id: 10,
-        name: "Build Pipeline",
-        state: "completed",
+        buildNumber: "20240101.1",
+        status: "completed",
         result: "succeeded",
-        createdDate: "2024-01-01T00:00:00Z",
-        finishedDate: "2024-01-01T01:00:00Z",
+        startTime: "2024-01-01T00:00:00Z",
+        finishTime: "2024-01-01T01:00:00Z",
+        queueTime: "2024-01-01T00:00:00Z",
+        definition: { id: 5, name: "Build Pipeline" },
       };
 
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: jest.fn().mockResolvedValue({ value: [mockPipeline] }),
+        json: jest.fn().mockResolvedValue({ value: [mockRun] }),
       }) as unknown as typeof fetch;
 
       const result = await service.listPipelines("org-1");
@@ -92,7 +94,9 @@ describe("AzureDevOpsService", () => {
       expect(result[0]).toMatchObject({
         id: 10,
         name: "Build Pipeline",
-        pipeline: { id: 10, name: "Build Pipeline" },
+        state: "completed",
+        result: "succeeded",
+        pipeline: { id: 5, name: "Build Pipeline" },
       });
     });
 
@@ -135,7 +139,7 @@ describe("AzureDevOpsService", () => {
 
       const expectedAuth = "Basic " + Buffer.from(":my-pat").toString("base64");
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("dev.azure.com"),
+        expect.stringContaining("dev.azure.com/my-org/my-project/_apis/build/builds"),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: expectedAuth,
@@ -164,7 +168,7 @@ describe("AzureDevOpsService", () => {
       expect(result).toEqual([]);
     });
 
-    it("falls back to default values when pipeline fields are missing", async () => {
+    it("falls back to default values when pipeline run fields are missing", async () => {
       mockCredentialService.findByType.mockResolvedValue(encryptedCredential);
       mockCredentialService.decrypt.mockReturnValue(
         JSON.stringify({
@@ -174,13 +178,12 @@ describe("AzureDevOpsService", () => {
         }),
       );
 
-      // Pipeline entry with missing state, result, createdDate, finishedDate.
-      // Exercises the right branches of `?? "unknown"`, `?? null`, `?? ""`, `?? null`.
-      const sparseP = { id: 5, name: "Sparse" };
+      // Build entry with missing fields to exercise fallback branches.
+      const sparseRun = { id: 5 };
 
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: jest.fn().mockResolvedValue({ value: [sparseP] }),
+        json: jest.fn().mockResolvedValue({ value: [sparseRun] }),
       }) as unknown as typeof fetch;
 
       const result = await service.listPipelines("org-1");
@@ -188,7 +191,7 @@ describe("AzureDevOpsService", () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         id: 5,
-        name: "Sparse",
+        name: "",
         state: "unknown",
         result: null,
         createdDate: "",

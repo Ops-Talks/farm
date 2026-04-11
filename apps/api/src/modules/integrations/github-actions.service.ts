@@ -53,10 +53,9 @@ export class GitHubActionsService {
    */
   async listWorkflowRuns(orgId: string): Promise<GitHubActionsWorkflowRun[]> {
     const { token, owner, repo } = await this.resolveCredential(orgId);
-    const repoPath = repo ?? "";
-    const url = repoPath
-      ? `https://api.github.com/repos/${owner}/${repoPath}/actions/runs`
-      : `https://api.github.com/users/${owner}/events`;
+    const url = repo
+      ? `https://api.github.com/repos/${owner}/${repo}/actions/runs`
+      : `https://api.github.com/orgs/${owner}/actions/runs`;
     const res = await globalThis.fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,

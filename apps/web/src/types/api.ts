@@ -1513,6 +1513,14 @@ export interface CreateKedaBindingDto {
 
 // -- Phase 25 --
 
+export interface FeatureAvailabilityRaw {
+  kubernetes: { available: boolean };
+  cost: { available: boolean };
+  registry: { available: boolean };
+  helm: { available: boolean };
+  istio: { available: boolean };
+}
+
 export interface FeatureAvailability {
   kubernetes: boolean;
   cost: boolean;
@@ -1525,22 +1533,16 @@ export interface FeatureAvailability {
 export interface QuickSearchResult {
   type: string;
   id: string;
-  title: string;
-  subtitle: string;
-  href: string;
-}
-
-export interface QuickSearchResponse {
-  results: QuickSearchResult[];
+  name: string;
+  description?: string;
+  url: string;
 }
 
 export interface SetupChecklistItem {
   key: string;
-  label: string;
-  done: boolean;
-  dismissedAt: string | null;
-}
-
-export interface SetupChecklistResponse {
-  items: SetupChecklistItem[];
+  title: string;
+  description: string;
+  href: string;
+  completed: boolean;
+  dismissed: boolean;
 }

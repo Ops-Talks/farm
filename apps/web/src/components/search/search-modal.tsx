@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import type { ElementType, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X, BookOpen, Users, Building2, GitPullRequest } from "lucide-react";
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { search as searchApi } from "@/lib/api-client";
 import type { QuickSearchResult } from "@/types/api";
 
-const TYPE_ICONS: Record<string, React.ElementType> = {
+const TYPE_ICONS: Record<string, ElementType> = {
   component: BookOpen,
   team: Users,
   organization: Building2,
@@ -39,8 +40,8 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
   });
 
   const results: QuickSearchResult[] = useMemo(
-    () => data?.results ?? [],
-    [data?.results],
+    () => data ?? [],
+    [data],
   );
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: ReactKeyboardEvent) => {
       if (e.key === "Escape") {
         onClose();
       } else if (e.key === "ArrowDown") {
@@ -78,7 +79,7 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
       } else if (e.key === "Enter" && results[selectedIndex]) {
-        handleNavigate(results[selectedIndex].href);
+        handleNavigate(results[selectedIndex].url);
       }
     },
     [results, selectedIndex, handleNavigate, onClose],
@@ -152,12 +153,12 @@ export function SearchModal({ open, onClose }: SearchModalProps) {
                       "flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted transition-colors",
                       i === selectedIndex && "bg-muted",
                     )}
-                    onClick={() => handleNavigate(result.href)}
+                    onClick={() => handleNavigate(result.url)}
                   >
                     <ResultIcon type={result.type} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{result.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{result.subtitle}</p>
+                      <p className="text-sm font-medium truncate">{result.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{result.description}</p>
                     </div>
                     <span className="text-[10px] text-muted-foreground uppercase font-medium shrink-0">
                       {result.type}

@@ -18,23 +18,23 @@ const makeResults = (): QuickSearchResult[] => [
   {
     type: "component",
     id: "c-1",
-    title: "user-service",
-    subtitle: "A user service",
-    href: "/catalog/c-1",
+    name: "user-service",
+    description: "A user service",
+    url: "/catalog/c-1",
   },
   {
     type: "team",
     id: "t-1",
-    title: "platform team",
-    subtitle: "Platform team",
-    href: "/teams/t-1",
+    name: "platform team",
+    description: "Platform team",
+    url: "/teams/t-1",
   },
   {
     type: "unknown-type" as QuickSearchResult["type"],
     id: "x-1",
-    title: "Misc",
-    subtitle: "",
-    href: "/misc/x-1",
+    name: "Misc",
+    description: "",
+    url: "/misc/x-1",
   },
 ];
 
@@ -90,7 +90,7 @@ describe("SearchModal", () => {
   });
 
   it("shows no-results message when query is long enough but results are empty", () => {
-    mockUseQuery.mockReturnValue({ data: { results: [] }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: [], isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     fireEvent.change(screen.getByLabelText("Search query"), {
@@ -103,7 +103,7 @@ describe("SearchModal", () => {
   it("renders result items when results are returned", () => {
     const results = makeResults();
     mockUseQuery.mockReturnValue({
-      data: { results },
+      data: results,
       isFetching: false,
     });
 
@@ -118,7 +118,7 @@ describe("SearchModal", () => {
 
   it("navigates to result href and calls onClose when a result is clicked", () => {
     const results = makeResults();
-    mockUseQuery.mockReturnValue({ data: { results }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: results, isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     fireEvent.change(screen.getByLabelText("Search query"), {
@@ -137,7 +137,7 @@ describe("SearchModal", () => {
 
   it("moves selection down on ArrowDown and navigates on Enter", () => {
     const results = makeResults();
-    mockUseQuery.mockReturnValue({ data: { results }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: results, isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     const input = screen.getByLabelText("Search query");
@@ -153,7 +153,7 @@ describe("SearchModal", () => {
 
   it("moves selection up on ArrowUp (clamped to 0)", () => {
     const results = makeResults();
-    mockUseQuery.mockReturnValue({ data: { results }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: results, isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     const input = screen.getByLabelText("Search query");
@@ -168,7 +168,7 @@ describe("SearchModal", () => {
   });
 
   it("does not navigate on Enter when there are no results", () => {
-    mockUseQuery.mockReturnValue({ data: { results: [] }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: [], isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     const input = screen.getByLabelText("Search query");
@@ -195,7 +195,7 @@ describe("SearchModal", () => {
   it("renders the fallback Search icon for unknown result types", () => {
     // The unknown-type entry in makeResults() triggers the `?? Search` branch in ResultIcon.
     const results = makeResults();
-    mockUseQuery.mockReturnValue({ data: { results }, isFetching: false });
+    mockUseQuery.mockReturnValue({ data: results, isFetching: false });
 
     render(<SearchModal open={true} onClose={onClose} />);
     fireEvent.change(screen.getByLabelText("Search query"), {

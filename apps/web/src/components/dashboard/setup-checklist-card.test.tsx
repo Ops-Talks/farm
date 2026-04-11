@@ -10,7 +10,7 @@ vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 vi.mock("@/lib/api-client", () => ({
   setup: {
-    getChecklist: vi.fn().mockResolvedValue({ items: [] }),
+    getChecklist: vi.fn().mockResolvedValue([]),
     dismissItem: vi.fn().mockResolvedValue(undefined),
   },
 }));
@@ -47,16 +47,14 @@ import { useQuery } from "@tanstack/react-query";
 import { setup as setupApi } from "@/lib/api-client";
 import { toast } from "sonner";
 
-const pendingItem = { key: "k8s", label: "Configure Kubernetes", done: false, dismissedAt: null };
-const doneItem = { key: "registry", label: "Configure Registry", done: true, dismissedAt: null };
+const pendingItem = { key: "k8s", title: "Configure Kubernetes", completed: false, dismissed: false, description: "", href: "/kubernetes" };
+const doneItem = { key: "registry", title: "Configure Registry", completed: true, dismissed: false, description: "", href: "/integrations/settings" };
 
 describe("SetupChecklistCard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useQuery).mockReturnValue({
-      data: {
-        items: [pendingItem, doneItem],
-      },
+      data: [pendingItem, doneItem],
       isLoading: false,
     } as ReturnType<typeof useQuery>);
   });
@@ -76,7 +74,7 @@ describe("SetupChecklistCard", () => {
 
   it("returns null when no pending items", () => {
     vi.mocked(useQuery).mockReturnValue({
-      data: { items: [{ key: "k8s", label: "K8s", done: true, dismissedAt: null }] },
+      data: [{ key: "k8s", title: "K8s", completed: true, dismissed: false, description: "", href: "/kubernetes" }],
       isLoading: false,
     } as ReturnType<typeof useQuery>);
     const { container } = render(<SetupChecklistCard />);
@@ -99,7 +97,7 @@ describe("SetupChecklistCard", () => {
       const fn = (opts as { queryFn?: () => unknown }).queryFn;
       void fn?.();
       return {
-        data: { items: [pendingItem] },
+        data: [pendingItem],
         isLoading: false,
       } as unknown as ReturnType<typeof useQuery>;
     });

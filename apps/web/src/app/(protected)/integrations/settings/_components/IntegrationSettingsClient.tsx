@@ -26,7 +26,7 @@ import {
 // Integration metadata
 // ---------------------------------------------------------------------------
 
-type IntegrationType = "argocd" | "circleci" | "jenkins" | "travisci" | "github_actions" | "azure_devops";
+type IntegrationType = "argocd" | "circleci" | "jenkins" | "travisci" | "github-actions" | "azure-devops";
 
 const INTEGRATIONS: {
   type: IntegrationType;
@@ -59,13 +59,13 @@ const INTEGRATIONS: {
     description: "Hosted CI service for GitHub projects.",
   },
   {
-    type: "github_actions",
+    type: "github-actions",
     label: "GitHub Actions",
     Icon: GitHubActionsIcon,
     description: "Native CI/CD for GitHub repositories.",
   },
   {
-    type: "azure_devops",
+    type: "azure-devops",
     label: "Azure DevOps",
     Icon: AzureDevOpsIcon,
     description: "Microsoft DevOps platform for pipelines and repos.",
@@ -107,13 +107,13 @@ const travisCISchema = z.object({
 const githubActionsSchema = z.object({
   name: z.string().min(1, "Name is required"),
   token: z.string().min(1, "Token is required"),
-  org: z.string().optional(),
+  owner: z.string().optional(),
 });
 
 const azureDevOpsSchema = z.object({
   name: z.string().min(1, "Name is required"),
   token: z.string().min(1, "Token is required"),
-  org: z.string().min(1, "Organization is required"),
+  organization: z.string().min(1, "Organization is required"),
 });
 
 type ArgoCDFormValues = z.infer<typeof argoCDSchema>;
@@ -392,13 +392,13 @@ const GitHubActionsConnectForm = memo(function GitHubActionsConnectForm({
         )}
       </div>
       <div className="space-y-1">
-        <label htmlFor="ghactions-org" className="text-sm font-medium">
-          Organization{" "}
+        <label htmlFor="ghactions-owner" className="text-sm font-medium">
+          Owner{" "}
           <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
-        <Input id="ghactions-org" placeholder="my-github-org" {...register("org")} />
-        {errors.org?.message && (
-          <p className="text-xs text-destructive">{errors.org.message}</p>
+        <Input id="ghactions-owner" placeholder="my-github-org" {...register("owner")} />
+        {errors.owner?.message && (
+          <p className="text-xs text-destructive">{errors.owner.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -452,9 +452,9 @@ const AzureDevOpsConnectForm = memo(function AzureDevOpsConnectForm({
         <label htmlFor="azdevops-org" className="text-sm font-medium">
           Organization <span className="text-destructive">*</span>
         </label>
-        <Input id="azdevops-org" placeholder="my-azure-org" {...register("org")} />
-        {errors.org?.message && (
-          <p className="text-xs text-destructive">{errors.org.message}</p>
+        <Input id="azdevops-org" placeholder="my-azure-org" {...register("organization")} />
+        {errors.organization?.message && (
+          <p className="text-xs text-destructive">{errors.organization.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">

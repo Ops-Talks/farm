@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -7,6 +7,7 @@ import {
   ApiResponse,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SearchService, QuickSearchResult } from "./search.service";
 
 /**
@@ -31,7 +32,7 @@ export class SearchController {
   })
   @ApiQuery({
     name: "limit",
-    description: "Maximum results to return (default 10)",
+    description: "Maximum results to return (default 10, max 100)",
     required: false,
   })
   @ApiResponse({
@@ -41,10 +42,14 @@ export class SearchController {
   async quickSearch(
     @Query("q") q: string,
     @Query("limit") limit?: string,
+    @Req() req?: RequestWithOrg,
   ): Promise<QuickSearchResult[]> {
+    const parsed = limit ? parseInt(limit, 10) : 10;
+    const safeLimit = Number.isNaN(parsed) ? 10 : Math.min(Math.max(parsed, 1), 100);
     return this.searchService.quickSearch(
       q ?? "",
-      limit ? parseInt(limit, 10) : 10,
+      safeLimit,
+      req?.organizationId,
     );
   }
 }

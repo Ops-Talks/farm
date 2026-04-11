@@ -15,6 +15,7 @@ describe("SearchService", () => {
 
   const createQb = (results: unknown[]) => ({
     where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     getMany: jest.fn().mockResolvedValue(results),
   });
@@ -125,7 +126,7 @@ describe("SearchService", () => {
       expect(results.length).toBeLessThanOrEqual(3);
     });
 
-    it("queries all repositories with LIKE pattern", async () => {
+    it("queries all repositories with ILIKE pattern", async () => {
       await service.quickSearch("my-query");
 
       expect(mockComponentRepo.createQueryBuilder).toHaveBeenCalledWith("c");
@@ -133,6 +134,33 @@ describe("SearchService", () => {
       expect(mockDocRepo.createQueryBuilder).toHaveBeenCalledWith("d");
       expect(mockEnvRepo.createQueryBuilder).toHaveBeenCalledWith("e");
       expect(mockPipelineRepo.createQueryBuilder).toHaveBeenCalledWith("p");
+    });
+
+    it("scopes queries by organizationId when orgId is provided", async () => {
+      const qb = createQb([]);
+      mockComponentRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTeamRepo.createQueryBuilder.mockReturnValue(qb);
+      mockDocRepo.createQueryBuilder.mockReturnValue(qb);
+      mockEnvRepo.createQueryBuilder.mockReturnValue(qb);
+      mockPipelineRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.quickSearch("test", 10, "org-123");
+
+      // Each query builder should have andWhere called for org scoping
+      expect(qb.andWhere).toHaveBeenCalled();
+    });
+
+    it("does not add andWhere when orgId is not provided", async () => {
+      const qb = createQb([]);
+      mockComponentRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTeamRepo.createQueryBuilder.mockReturnValue(qb);
+      mockDocRepo.createQueryBuilder.mockReturnValue(qb);
+      mockEnvRepo.createQueryBuilder.mockReturnValue(qb);
+      mockPipelineRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.quickSearch("test", 10);
+
+      expect(qb.andWhere).not.toHaveBeenCalled();
     });
 
     it("omits description field when it is null", async () => {

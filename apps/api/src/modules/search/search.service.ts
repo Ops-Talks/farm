@@ -36,42 +36,53 @@ export class SearchService {
 
   /**
    * Performs a case-insensitive search across all entity types.
-   * Returns up to `limit` combined results.
+   * Returns up to `limit` combined results scoped to the given organization.
    *
    * @param query - Search term (minimum 2 characters)
    * @param limit - Maximum total results to return (default 10)
+   * @param orgId - Optional organization UUID to scope results
    */
-  async quickSearch(query: string, limit = 10): Promise<QuickSearchResult[]> {
+  async quickSearch(
+    query: string,
+    limit = 10,
+    orgId?: string,
+  ): Promise<QuickSearchResult[]> {
     if (!query || query.trim().length < 2) return [];
     const q = `%${query.trim()}%`;
     const perType = Math.max(2, Math.ceil(limit / 5));
+
+    const componentQb = this.componentRepo
+      .createQueryBuilder("c")
+      .where("(c.name ILIKE :q OR c.description ILIKE :q)", { q });
+    if (orgId) componentQb.andWhere("c.organizationId = :orgId", { orgId });
+
+    const teamQb = this.teamRepo
+      .createQueryBuilder("t")
+      .where("t.name ILIKE :q", { q });
+    if (orgId) teamQb.andWhere("t.organizationId = :orgId", { orgId });
+
+    const docQb = this.docRepo
+      .createQueryBuilder("d")
+      .where("d.title ILIKE :q", { q });
+    if (orgId) docQb.andWhere("d.organizationId = :orgId", { orgId });
+
+    const envQb = this.envRepo
+      .createQueryBuilder("e")
+      .where("e.name ILIKE :q", { q });
+    if (orgId) envQb.andWhere("e.organizationId = :orgId", { orgId });
+
+    const pipelineQb = this.pipelineRepo
+      .createQueryBuilder("p")
+      .where("p.name ILIKE :q", { q });
+    if (orgId) pipelineQb.andWhere("p.organizationId = :orgId", { orgId });
+
     const [components, teams, docs, environments, pipelines] =
       await Promise.all([
-        this.componentRepo
-          .createQueryBuilder("c")
-          .where("c.name LIKE :q OR c.description LIKE :q", { q })
-          .limit(perType)
-          .getMany(),
-        this.teamRepo
-          .createQueryBuilder("t")
-          .where("t.name LIKE :q", { q })
-          .limit(perType)
-          .getMany(),
-        this.docRepo
-          .createQueryBuilder("d")
-          .where("d.title LIKE :q", { q })
-          .limit(perType)
-          .getMany(),
-        this.envRepo
-          .createQueryBuilder("e")
-          .where("e.name LIKE :q", { q })
-          .limit(perType)
-          .getMany(),
-        this.pipelineRepo
-          .createQueryBuilder("p")
-          .where("p.name LIKE :q", { q })
-          .limit(perType)
-          .getMany(),
+        componentQb.limit(perType).getMany(),
+        teamQb.limit(perType).getMany(),
+        docQb.limit(perType).getMany(),
+        envQb.limit(perType).getMany(),
+        pipelineQb.limit(perType).getMany(),
       ]);
     const results: QuickSearchResult[] = [
       ...components.map((c) => ({

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { SetupController } from "./setup.controller";
 import { SetupService, SetupChecklistItem } from "./setup.service";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 describe("SetupController", () => {
   let controller: SetupController;
@@ -75,20 +76,20 @@ describe("SetupController", () => {
 
   describe("getChecklist()", () => {
     it("returns checklist items from SetupService", async () => {
-      const mockReq = { organizationId: "org-1" } as unknown as Request;
+      const mockReq = { organizationId: "org-1" } as RequestWithOrg;
       const result = await controller.getChecklist(mockReq);
       expect(setupService.getChecklist).toHaveBeenCalledWith("org-1");
       expect(result).toEqual(mockChecklist);
     });
 
     it("passes undefined orgId when request has no organizationId", async () => {
-      const mockReq = {} as unknown as Request;
+      const mockReq = {} as RequestWithOrg;
       await controller.getChecklist(mockReq);
       expect(setupService.getChecklist).toHaveBeenCalledWith(undefined);
     });
 
     it("returns 5 items", async () => {
-      const mockReq = {} as unknown as Request;
+      const mockReq = {} as RequestWithOrg;
       const result = await controller.getChecklist(mockReq);
       expect(result).toHaveLength(5);
     });
@@ -96,7 +97,7 @@ describe("SetupController", () => {
 
   describe("dismissItem()", () => {
     it("calls dismissItem and returns { dismissed: true }", async () => {
-      const mockReq = { organizationId: "org-1" } as unknown as Request;
+      const mockReq = { organizationId: "org-1" } as RequestWithOrg;
       const result = await controller.dismissItem("setup-kubernetes", mockReq);
       expect(setupService.dismissItem).toHaveBeenCalledWith(
         "org-1",
@@ -106,7 +107,7 @@ describe("SetupController", () => {
     });
 
     it("passes undefined orgId when request has no organizationId", async () => {
-      const mockReq = {} as unknown as Request;
+      const mockReq = {} as RequestWithOrg;
       await controller.dismissItem("create-team", mockReq);
       expect(setupService.dismissItem).toHaveBeenCalledWith(
         undefined,
@@ -117,8 +118,6 @@ describe("SetupController", () => {
 
   describe("direct instantiation", () => {
     it("covers the V8-instrumented constructor parameter branch artifact", () => {
-      // Passing undefined covers the 'falsy' branch of the TypeScript-compiled
-      // constructor parameter property assignment that Istanbul instruments.
       const ctrl = new SetupController(undefined as unknown as SetupService);
       expect(ctrl).toBeDefined();
     });

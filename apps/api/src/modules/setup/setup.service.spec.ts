@@ -118,6 +118,27 @@ describe("SetupService", () => {
       const items = await service.getChecklist("org-1");
       expect(items.every((i) => i.dismissed === false)).toBe(true);
     });
+
+    it("scopes counts by orgId when provided", async () => {
+      mockOrgRepo.findOne.mockResolvedValue({ id: "org-1", settings: null });
+      await service.getChecklist("org-1");
+      expect(mockComponentRepo.count).toHaveBeenCalledWith({
+        where: { organizationId: "org-1" },
+      });
+      expect(mockTeamRepo.count).toHaveBeenCalledWith({
+        where: { organizationId: "org-1" },
+      });
+      expect(mockCredRepo.count).toHaveBeenCalledWith({
+        where: { orgId: "org-1" },
+      });
+    });
+
+    it("does not scope counts when orgId is not provided", async () => {
+      await service.getChecklist();
+      expect(mockComponentRepo.count).toHaveBeenCalledWith();
+      expect(mockTeamRepo.count).toHaveBeenCalledWith();
+      expect(mockCredRepo.count).toHaveBeenCalledWith();
+    });
   });
 
   describe("dismissItem()", () => {

@@ -7,6 +7,7 @@ import {
   ApiParam,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SetupService, SetupChecklistItem } from "./setup.service";
 
 /**
@@ -24,10 +25,8 @@ export class SetupController {
     summary: "Get the admin setup checklist with completion status",
   })
   @ApiResponse({ status: 200, description: "Array of checklist items" })
-  async getChecklist(@Req() req: Request): Promise<SetupChecklistItem[]> {
-    const orgId = (req as unknown as { organizationId?: string })
-      .organizationId;
-    return this.setupService.getChecklist(orgId);
+  async getChecklist(@Req() req: RequestWithOrg): Promise<SetupChecklistItem[]> {
+    return this.setupService.getChecklist(req.organizationId);
   }
 
   @Post("checklist/:key/dismiss")
@@ -38,11 +37,9 @@ export class SetupController {
   @ApiResponse({ status: 200, description: "Item dismissed" })
   async dismissItem(
     @Param("key") key: string,
-    @Req() req: Request,
+    @Req() req: RequestWithOrg,
   ): Promise<{ dismissed: boolean }> {
-    const orgId = (req as unknown as { organizationId?: string })
-      .organizationId;
-    await this.setupService.dismissItem(orgId, key);
+    await this.setupService.dismissItem(req.organizationId, key);
     return { dismissed: true };
   }
 }

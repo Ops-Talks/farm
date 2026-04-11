@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { SearchController } from "./search.controller";
 import { SearchService } from "./search.service";
 import { QuickSearchResult } from "./search.service";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 describe("SearchController", () => {
   let controller: SearchController;
@@ -46,25 +47,47 @@ describe("SearchController", () => {
 
   describe("quickSearch()", () => {
     it("calls searchService.quickSearch with correct params and returns results", async () => {
-      const result = await controller.quickSearch("user", "5");
-      expect(searchService.quickSearch).toHaveBeenCalledWith("user", 5);
+      const req = { organizationId: "org-1" } as RequestWithOrg;
+      const result = await controller.quickSearch("user", "5", req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("user", 5, "org-1");
       expect(result).toEqual(mockResults);
     });
 
     it("uses default limit of 10 when limit param is not provided", async () => {
-      await controller.quickSearch("user");
-      expect(searchService.quickSearch).toHaveBeenCalledWith("user", 10);
+      const req = { organizationId: "org-1" } as RequestWithOrg;
+      await controller.quickSearch("user", undefined, req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("user", 10, "org-1");
     });
 
     it("passes empty string when q is undefined", async () => {
-      await controller.quickSearch(undefined as unknown as string);
-      expect(searchService.quickSearch).toHaveBeenCalledWith("", 10);
+      const req = {} as RequestWithOrg;
+      await controller.quickSearch(undefined as unknown as string, undefined, req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("", 10, undefined);
     });
 
     it("returns empty array for short queries", async () => {
       searchService.quickSearch.mockResolvedValue([]);
-      const result = await controller.quickSearch("a");
+      const req = {} as RequestWithOrg;
+      const result = await controller.quickSearch("a", undefined, req);
       expect(result).toEqual([]);
+    });
+
+    it("defaults limit to 10 when limit is NaN", async () => {
+      const req = {} as RequestWithOrg;
+      await controller.quickSearch("test", "abc", req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("test", 10, undefined);
+    });
+
+    it("clamps limit to 100 when too large", async () => {
+      const req = {} as RequestWithOrg;
+      await controller.quickSearch("test", "500", req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("test", 100, undefined);
+    });
+
+    it("clamps limit to 1 when zero or negative", async () => {
+      const req = {} as RequestWithOrg;
+      await controller.quickSearch("test", "0", req);
+      expect(searchService.quickSearch).toHaveBeenCalledWith("test", 1, undefined);
     });
   });
 });
