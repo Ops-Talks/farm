@@ -45,12 +45,16 @@ ENV NODE_ENV=production
 # The tarball is downloaded once and extracted into each directory in turn.
 RUN npm install -g npm@latest \
  && npm pack picomatch@4.0.4 --quiet \
- && find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | while read dir; do \
+ && picomatch_dirs="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d)" \
+ && test -n "$picomatch_dirs" || { echo "Expected to find at least one bundled picomatch directory in npm"; exit 1; } \
+ && printf '%s\n' "$picomatch_dirs" | while IFS= read -r dir; do \
       tar xzf picomatch-4.0.4.tgz --strip-components=1 -C "$dir"; \
     done \
  && rm picomatch-4.0.4.tgz \
  && npm pack brace-expansion@5.0.5 --quiet \
- && find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | while read dir; do \
+ && brace_expansion_dirs="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d)" \
+ && test -n "$brace_expansion_dirs" || { echo "Expected to find at least one bundled brace-expansion directory in npm"; exit 1; } \
+ && printf '%s\n' "$brace_expansion_dirs" | while IFS= read -r dir; do \
       tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir"; \
     done \
  && rm brace-expansion-5.0.5.tgz
