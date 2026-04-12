@@ -54,7 +54,11 @@ RUN npm install -g npm@latest \
 # CRC32 combine functions) and CVE-2026-22184 (arbitrary code execution via
 # buffer overflow). The version constraint is explicit so the build fails if the
 # required version is not available in the Alpine repositories.
-RUN apk add --no-cache "zlib>=1.3.2-r0"
+# Also upgrade libssl3 and libcrypto3 (fixed in 3.5.6-r0) to address:
+#   CVE-2026-28390 - NULL pointer dereference in CMS EnvelopedData processing
+#   CVE-2026-31790 - Uninitialized memory disclosure via RSASVE key encapsulation
+RUN apk add --no-cache "zlib>=1.3.2-r0" \
+ && apk upgrade --no-cache libssl3 libcrypto3
 
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
