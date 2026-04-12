@@ -2981,6 +2981,58 @@ describe("api-client", () => {
       );
       expect(body.targetRepository).toBe("org/dry-run-svc");
     });
+
+    describe("dryRun", () => {
+      it("calls correct URL and method", async () => {
+        mockFetch.mockReturnValueOnce(
+          jsonResponse({ valid: true, errors: [], preview: "" }),
+        );
+        const dto = { variables: { SERVICE_NAME: "my-svc", PORT: "8080" } };
+        await serviceTemplates.dryRun("tpl-1", dto);
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/v1/service-templates/tpl-1/dry-run",
+          expect.objectContaining({ method: "POST" }),
+        );
+        const body = JSON.parse(
+          (mockFetch.mock.calls[0][1] as RequestInit).body as string,
+        );
+        expect(body.variables).toEqual({ SERVICE_NAME: "my-svc", PORT: "8080" });
+      });
+    });
+
+    describe("preview", () => {
+      it("calls correct URL without vars", async () => {
+        mockFetch.mockReturnValueOnce(
+          jsonResponse({ valid: true, errors: [], preview: "rendered" }),
+        );
+        await serviceTemplates.preview("tpl-1");
+        expect(mockFetch).toHaveBeenCalledWith(
+          "/api/v1/service-templates/tpl-1/preview",
+          expect.any(Object),
+        );
+      });
+
+      it("calls correct URL with base64url-encoded vars", async () => {
+        mockFetch.mockReturnValueOnce(
+          jsonResponse({ valid: true, errors: [], preview: "rendered" }),
+        );
+        const vars = { FOO: "bar" };
+        await serviceTemplates.preview("tpl-1", vars);
+
+        const calledUrl = mockFetch.mock.calls[0][0] as string;
+        expect(calledUrl).toMatch(
+          /^\/api\/v1\/service-templates\/tpl-1\/preview\?vars=/,
+        );
+
+        // Decode the base64url vars and verify the original object is preserved
+        const encodedPart = decodeURIComponent(
+          calledUrl.replace(/.*\?vars=/, ""),
+        );
+        const jsonStr = Buffer.from(encodedPart, "base64url").toString("utf8");
+        const decoded = JSON.parse(jsonStr) as Record<string, string>;
+        expect(decoded).toEqual(vars);
+      });
+    });
   });
 
   describe("environmentRequests", () => {

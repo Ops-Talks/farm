@@ -1167,252 +1167,252 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 ---
 
-## Phase 25: Feature Availability UX `TODO`
+## Phase 25: Feature Availability UX `DONE`
 
-### FARM-E71: Feature Availability and Configuration UX `TODO`
+### FARM-E71: Feature Availability and Configuration UX `DONE`
 
 > Farm is a modular platform — features like Kubernetes, FinOps, Service Mesh, and Registry integration require external services to be configured before they surface meaningful data. Currently, sidebar navigation items for unconfigured features are always visible, leading to empty pages with no guidance. This Epic introduces a consistent "not configured" UX pattern: top-level pages for optional features detect availability on mount and render an informative setup screen (with documentation links and required environment variables) instead of an empty state. Component-detail tabs that already gate on `installed: true` are not affected.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S299 | Story | Backend availability endpoints: each optional module exposes `GET /api/<module>/available` returning `{ available: boolean, reason?: string }` | `TODO` |
-| FARM-S300 | Story | Frontend `FeatureUnavailablePage` component and `useFeatureAvailability` hook; integrate into all optional top-level pages | `TODO` |
-| FARM-S301 | Story | Sidebar nav enhancements: show a subtle "not configured" badge on nav items whose feature is unavailable; clicking still navigates (shows the setup screen) | `TODO` |
-| FARM-S302 | Story | Plugin Marketplace view toggle: add a grid/list toggle to the Plugin Marketplace toolbar so users can switch between the current card grid and a compact table list view; persist preference in `localStorage` | `TODO` |
-| FARM-S303 | Story | Integration Settings brand icons: replace the placeholder emoji icons on the ArgoCD, CircleCI, Jenkins, and Travis CI cards with the official SVG brand logos using `simple-icons` | `TODO` |
-| FARM-S304 | Story | New CI/CD integrations: add GitHub Actions (PAT + repository webhook) and Azure DevOps (Personal Access Token + organization URL) as first-class integration types with dedicated connect forms, credential storage, pipeline status endpoints, and frontend cards | `TODO` |
-| FARM-S305 | Story | Sidebar navigation reorganization: group the 25 flat nav items into labeled sections (Operations, Observability, Infrastructure, Self-Service, Organization, Settings) to reduce cognitive load and improve discoverability | `TODO` |
-| FARM-S306 | Story | Global quick search (Cmd+K): keyboard-activated modal that searches across catalog components, teams, documentation, environments, and pipelines by name; grouped results with keyboard navigation | `TODO` |
-| FARM-S307 | Story | Admin setup checklist: dismissible "Getting Started" card on the Dashboard guiding workspace admins through initial configuration steps (Kubernetes, Registry, first component, first team, integrations); completion state derived from live data | `TODO` |
+| FARM-S299 | Story | Backend availability endpoints: each optional module exposes `GET /api/<module>/available` returning `{ available: boolean, reason?: string }` | `DONE` |
+| FARM-S300 | Story | Frontend `FeatureUnavailablePage` component and `useFeatureAvailability` hook; integrate into all optional top-level pages | `DONE` |
+| FARM-S301 | Story | Sidebar nav enhancements: show a subtle "not configured" badge on nav items whose feature is unavailable; clicking still navigates (shows the setup screen) | `DONE` |
+| FARM-S302 | Story | Plugin Marketplace view toggle: add a grid/list toggle to the Plugin Marketplace toolbar so users can switch between the current card grid and a compact table list view; persist preference in `localStorage` | `DONE` |
+| FARM-S303 | Story | Integration Settings brand icons: replace the placeholder emoji icons on the ArgoCD, CircleCI, Jenkins, and Travis CI cards with the official SVG brand logos using `simple-icons` | `DONE` |
+| FARM-S304 | Story | New CI/CD integrations: add GitHub Actions (PAT + repository webhook) and Azure DevOps (Personal Access Token + organization URL) as first-class integration types with dedicated connect forms, credential storage, pipeline status endpoints, and frontend cards | `DONE` |
+| FARM-S305 | Story | Sidebar navigation reorganization: group the 25 flat nav items into labeled sections (Operations, Observability, Infrastructure, Self-Service, Organization, Settings) to reduce cognitive load and improve discoverability | `DONE` |
+| FARM-S306 | Story | Global quick search (Cmd+K): keyboard-activated modal that searches across catalog components, teams, documentation, environments, and pipelines by name; grouped results with keyboard navigation | `DONE` |
+| FARM-S307 | Story | Admin setup checklist: dismissible "Getting Started" card on the Dashboard guiding workspace admins through initial configuration steps (Kubernetes, Registry, first component, first team, integrations); completion state derived from live data | `DONE` |
 | FARM-S308 | Story | Integration health summary card on Dashboard: compact card consuming `GET /api/features/availability`; shows all optional features with color-coded status dots and a "Configure" link; surfaces availability proactively without requiring navigation | `DONE` |
-| FARM-S309 | Story | Sidebar collapsible sections: category titles (Operations, Observability, etc.) become toggle buttons; the section containing the active route auto-expands on load; all other sections start collapsed; native `overflow-y-auto` scroll bar appears only when enough sections are expanded to exceed the viewport height | `TODO` |
+| FARM-S309 | Story | Sidebar collapsible sections: category titles (Operations, Observability, etc.) become toggle buttons; the section containing the active route auto-expands on load; all other sections start collapsed; native `overflow-y-auto` scroll bar appears only when enough sections are expanded to exceed the viewport height | `DONE` |
 
 #### FARM-S299 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T288 | Task | Add `GET /api/kubernetes/available` to `KubernetesController` returning `{ available: boolean, reason: string }` based on `isKubernetesEnabled()`; unit tests | `TODO` |
-| FARM-T289 | Task | Add `GET /api/cost/available` to `CostController` (checks `OPENCOST_URL` reachability with a lightweight HEAD request); unit tests | `TODO` |
-| FARM-T290 | Task | Add `GET /api/registry/available` to `RegistryController` (returns true when at least one registry credential is configured); unit tests | `TODO` |
-| FARM-T291 | Task | Add `GET /api/helm/available` to `HelmController` (checks if at least one Helm release exists or cluster is reachable); unit tests | `TODO` |
-| FARM-T292 | Task | Add `GET /api/istio/available` and `GET /api/linkerd/available` availability endpoints; unit tests | `TODO` |
+| FARM-T288 | Task | Add `GET /api/kubernetes/available` to `KubernetesController` returning `{ available: boolean, reason: string }` based on `isKubernetesEnabled()`; unit tests | `DONE` |
+| FARM-T289 | Task | Add `GET /api/cost/available` to `CostController` (checks `OPENCOST_URL` reachability with a lightweight HEAD request); unit tests | `DONE` |
+| FARM-T290 | Task | Add `GET /api/registry/available` to `RegistryController` (returns true when at least one registry credential is configured); unit tests | `DONE` |
+| FARM-T291 | Task | Add `GET /api/helm/available` to `HelmController` (checks if at least one Helm release exists or cluster is reachable); unit tests | `DONE` |
+| FARM-T292 | Task | Add `GET /api/istio/available` and `GET /api/linkerd/available` availability endpoints; unit tests | `DONE` |
 
 ##### FARM-T288 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST270 | Sub-task | Implement `GET /api/kubernetes/available`: call `isKubernetesEnabled()`; return `{ available: true }` or `{ available: false, reason: "KUBECONFIG not set or cluster unreachable" }` | `TODO` |
-| FARM-ST271 | Sub-task | Unit test: returns `available: true` when enabled; `available: false` with reason when disabled | `TODO` |
+| FARM-ST270 | Sub-task | Implement `GET /api/kubernetes/available`: call `isKubernetesEnabled()`; return `{ available: true }` or `{ available: false, reason: "KUBECONFIG not set or cluster unreachable" }` | `DONE` |
+| FARM-ST271 | Sub-task | Unit test: returns `available: true` when enabled; `available: false` with reason when disabled | `DONE` |
 
 ##### FARM-T289 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST272 | Sub-task | Implement `GET /api/cost/available`: attempt HEAD `${OPENCOST_URL}/healthz`; return `{ available: true }` on 2xx; `{ available: false, reason: "OpenCost unreachable at <url>" }` otherwise | `TODO` |
-| FARM-ST273 | Sub-task | Unit test: mocked fetch returns 200 → available; mocked fetch throws → not available with reason | `TODO` |
+| FARM-ST272 | Sub-task | Implement `GET /api/cost/available`: attempt HEAD `${OPENCOST_URL}/healthz`; return `{ available: true }` on 2xx; `{ available: false, reason: "OpenCost unreachable at <url>" }` otherwise | `DONE` |
+| FARM-ST273 | Sub-task | Unit test: mocked fetch returns 200 → available; mocked fetch throws → not available with reason | `DONE` |
 
 ##### FARM-T290 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST274 | Sub-task | Implement `GET /api/registry/available`: query `RegistryCredential` repository count; `available: true` when count > 0 | `TODO` |
-| FARM-ST275 | Sub-task | Unit test: count > 0 → available; count = 0 → not available | `TODO` |
+| FARM-ST274 | Sub-task | Implement `GET /api/registry/available`: query `RegistryCredential` repository count; `available: true` when count > 0 | `DONE` |
+| FARM-ST275 | Sub-task | Unit test: count > 0 → available; count = 0 → not available | `DONE` |
 
 ##### FARM-T291 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST276 | Sub-task | Implement `GET /api/helm/available`: delegate to `isKubernetesEnabled()`; Helm operations require a live cluster | `TODO` |
-| FARM-ST277 | Sub-task | Unit test: kubernetes enabled → available; disabled → not available | `TODO` |
+| FARM-ST276 | Sub-task | Implement `GET /api/helm/available`: delegate to `isKubernetesEnabled()`; Helm operations require a live cluster | `DONE` |
+| FARM-ST277 | Sub-task | Unit test: kubernetes enabled → available; disabled → not available | `DONE` |
 
 ##### FARM-T292 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST278 | Sub-task | Implement `GET /api/istio/available` using `IstioService.isIstioEnabled()` | `TODO` |
-| FARM-ST279 | Sub-task | Implement `GET /api/linkerd/available` using `LinkerdService.isLinkerdEnabled()` (Phase 20) | `TODO` |
-| FARM-ST280 | Sub-task | Unit tests for both endpoints | `TODO` |
+| FARM-ST278 | Sub-task | Implement `GET /api/istio/available` using `IstioService.isIstioEnabled()` | `DONE` |
+| FARM-ST279 | Sub-task | Implement `GET /api/linkerd/available` using `LinkerdService.isLinkerdEnabled()` (Phase 20) | `DONE` |
+| FARM-ST280 | Sub-task | Unit tests for both endpoints | `DONE` |
 
 #### FARM-S300 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T293 | Task | Create `useFeatureAvailability(endpoint: string)` hook: fetches the availability endpoint, returns `{ available: boolean, reason: string | undefined, loading: boolean }`; unit tests | `TODO` |
-| FARM-T294 | Task | Create `FeatureUnavailablePage` component: title, description, required env var list, documentation link, and an optional "Retry" button that re-fetches availability; unit tests | `TODO` |
-| FARM-T295 | Task | Wrap optional top-level pages (`/kubernetes`, `/cost`, `/registry`, `/helm`, `/istio`) with `useFeatureAvailability`; render `FeatureUnavailablePage` when `available === false`; unit tests for each page | `TODO` |
+| FARM-T293 | Task | Create `useFeatureAvailability(endpoint: string)` hook: fetches the availability endpoint, returns `{ available: boolean, reason: string | undefined, loading: boolean }`; unit tests | `DONE` |
+| FARM-T294 | Task | Create `FeatureUnavailablePage` component: title, description, required env var list, documentation link, and an optional "Retry" button that re-fetches availability; unit tests | `DONE` |
+| FARM-T295 | Task | Wrap optional top-level pages (`/kubernetes`, `/cost`, `/registry`, `/helm`, `/istio`) with `useFeatureAvailability`; render `FeatureUnavailablePage` when `available === false`; unit tests for each page | `DONE` |
 
 ##### FARM-T293 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST281 | Sub-task | Implement `useFeatureAvailability` hook using `globalThis.fetch` (or the existing `apiFetch` utility); cache result with `useState`; re-fetch on explicit `retry()` call | `TODO` |
-| FARM-ST282 | Sub-task | Unit tests: loading state, available true, available false with reason, retry triggers re-fetch | `TODO` |
+| FARM-ST281 | Sub-task | Implement `useFeatureAvailability` hook using `globalThis.fetch` (or the existing `apiFetch` utility); cache result with `useState`; re-fetch on explicit `retry()` call | `DONE` |
+| FARM-ST282 | Sub-task | Unit tests: loading state, available true, available false with reason, retry triggers re-fetch | `DONE` |
 
 ##### FARM-T294 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST283 | Sub-task | `FeatureUnavailablePage` props: `featureName`, `reason`, `requiredEnvVars: string[]`, `docsUrl?: string`, `onRetry?: () => void` | `TODO` |
-| FARM-ST284 | Sub-task | Render: feature name heading, reason paragraph, env vars as a code block list, optional docs link button, optional "Check Again" button | `TODO` |
-| FARM-ST285 | Sub-task | Unit tests: renders feature name and reason; renders env vars; calls onRetry when button clicked; hides retry button when onRetry not provided | `TODO` |
+| FARM-ST283 | Sub-task | `FeatureUnavailablePage` props: `featureName`, `reason`, `requiredEnvVars: string[]`, `docsUrl?: string`, `onRetry?: () => void` | `DONE` |
+| FARM-ST284 | Sub-task | Render: feature name heading, reason paragraph, env vars as a code block list, optional docs link button, optional "Check Again" button | `DONE` |
+| FARM-ST285 | Sub-task | Unit tests: renders feature name and reason; renders env vars; calls onRetry when button clicked; hides retry button when onRetry not provided | `DONE` |
 
 ##### FARM-T295 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST286 | Sub-task | Wrap `/kubernetes` page: `useFeatureAvailability('/api/kubernetes/available')`; `requiredEnvVars: ['KUBECONFIG']`; `docsUrl: '/docs/kubernetes'` | `TODO` |
-| FARM-ST287 | Sub-task | Wrap `/cost` page: `useFeatureAvailability('/api/cost/available')`; `requiredEnvVars: ['OPENCOST_URL']` | `TODO` |
-| FARM-ST288 | Sub-task | Wrap `/registry` page: `useFeatureAvailability('/api/registry/available')`; `requiredEnvVars: ['Registry credentials configured via Settings > Integrations']` | `TODO` |
-| FARM-ST289 | Sub-task | Wrap `/helm` page: `useFeatureAvailability('/api/helm/available')`; `requiredEnvVars: ['KUBECONFIG']` | `TODO` |
-| FARM-ST290 | Sub-task | Unit tests for each wrapped page: renders `FeatureUnavailablePage` when hook returns `available: false`; renders normal content when `available: true` | `TODO` |
+| FARM-ST286 | Sub-task | Wrap `/kubernetes` page: `useFeatureAvailability('/api/kubernetes/available')`; `requiredEnvVars: ['KUBECONFIG']`; `docsUrl: '/docs/kubernetes'` | `DONE` |
+| FARM-ST287 | Sub-task | Wrap `/cost` page: `useFeatureAvailability('/api/cost/available')`; `requiredEnvVars: ['OPENCOST_URL']` | `DONE` |
+| FARM-ST288 | Sub-task | Wrap `/registry` page: `useFeatureAvailability('/api/registry/available')`; `requiredEnvVars: ['Registry credentials configured via Settings > Integrations']` | `DONE` |
+| FARM-ST289 | Sub-task | Wrap `/helm` page: `useFeatureAvailability('/api/helm/available')`; `requiredEnvVars: ['KUBECONFIG']` | `DONE` |
+| FARM-ST290 | Sub-task | Unit tests for each wrapped page: renders `FeatureUnavailablePage` when hook returns `available: false`; renders normal content when `available: true` | `DONE` |
 
 #### FARM-S301 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T296 | Task | Add `GET /api/features/availability` bulk endpoint returning a map of `{ [featureKey]: { available: boolean } }` for all optional features; reduces sidebar to a single API call; unit + e2e tests | `TODO` |
-| FARM-T297 | Task | Frontend: fetch `/api/features/availability` once in the app shell on mount; store in context; pass `available` boolean to each nav item; render a subtle dot indicator on unavailable items; unit tests | `TODO` |
+| FARM-T296 | Task | Add `GET /api/features/availability` bulk endpoint returning a map of `{ [featureKey]: { available: boolean } }` for all optional features; reduces sidebar to a single API call; unit + e2e tests | `DONE` |
+| FARM-T297 | Task | Frontend: fetch `/api/features/availability` once in the app shell on mount; store in context; pass `available` boolean to each nav item; render a subtle dot indicator on unavailable items; unit tests | `DONE` |
 
 ##### FARM-T296 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST291 | Sub-task | Create `FeaturesController` with `GET /api/features/availability`; aggregate availability from `KubernetesService`, `OpenCostService`, `RegistryService`, `IstioService` | `TODO` |
-| FARM-ST292 | Sub-task | Response shape: `{ kubernetes: { available: bool }, cost: { available: bool }, registry: { available: bool }, helm: { available: bool }, istio: { available: bool } }` | `TODO` |
-| FARM-ST293 | Sub-task | Unit test: each feature maps to expected available state; e2e test: endpoint returns all keys | `TODO` |
+| FARM-ST291 | Sub-task | Create `FeaturesController` with `GET /api/features/availability`; aggregate availability from `KubernetesService`, `OpenCostService`, `RegistryService`, `IstioService` | `DONE` |
+| FARM-ST292 | Sub-task | Response shape: `{ kubernetes: { available: bool }, cost: { available: bool }, registry: { available: bool }, helm: { available: bool }, istio: { available: bool } }` | `DONE` |
+| FARM-ST293 | Sub-task | Unit test: each feature maps to expected available state; e2e test: endpoint returns all keys | `DONE` |
 
 ##### FARM-T297 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST294 | Sub-task | Add `getFeatureAvailability()` to `api-client.ts`; create `FeatureAvailabilityContext` with React context + provider | `TODO` |
-| FARM-ST295 | Sub-task | Update `AppShell` to call `getFeatureAvailability()` on mount and store in context; pass availability map down to nav item renderer | `TODO` |
-| FARM-ST296 | Sub-task | Nav item renderer: show a small gray dot badge when `available === false`; no tooltip, no blocking — clicking still navigates | `TODO` |
-| FARM-ST297 | Sub-task | Unit tests: dot badge visible when unavailable; no badge when available; context provides correct values | `TODO` |
+| FARM-ST294 | Sub-task | Add `getFeatureAvailability()` to `api-client.ts`; create `FeatureAvailabilityContext` with React context + provider | `DONE` |
+| FARM-ST295 | Sub-task | Update `AppShell` to call `getFeatureAvailability()` on mount and store in context; pass availability map down to nav item renderer | `DONE` |
+| FARM-ST296 | Sub-task | Nav item renderer: show a small gray dot badge when `available === false`; no tooltip, no blocking — clicking still navigates | `DONE` |
+| FARM-ST297 | Sub-task | Unit tests: dot badge visible when unavailable; no badge when available; context provides correct values | `DONE` |
 
 #### FARM-S302 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T298 | Task | Add `viewMode: 'grid' \| 'list'` state to `PluginsClient`; render a `LayoutGrid` / `List` toggle button group in the `PageHeader` toolbar; persist preference with `localStorage` key `plugins-view-mode`; unit tests | `TODO` |
-| FARM-T299 | Task | Implement `PluginListRow` and `PluginListRowSkeleton` components: compact table row with columns for name+version, description (single-line truncated), menu items count, and routes count; render as `<table>` when `viewMode === 'list'`; unit tests | `TODO` |
+| FARM-T298 | Task | Add `viewMode: 'grid' \| 'list'` state to `PluginsClient`; render a `LayoutGrid` / `List` toggle button group in the `PageHeader` toolbar; persist preference with `localStorage` key `plugins-view-mode`; unit tests | `DONE` |
+| FARM-T299 | Task | Implement `PluginListRow` and `PluginListRowSkeleton` components: compact table row with columns for name+version, description (single-line truncated), menu items count, and routes count; render as `<table>` when `viewMode === 'list'`; unit tests | `DONE` |
 
 ##### FARM-T298 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST298 | Sub-task | Add `LayoutGrid` and `List` icon buttons (lucide-react) next to "Reload Plugins" in the `PageHeader`; active view highlighted with `variant="secondary"`; default to `'grid'` | `TODO` |
-| FARM-ST299 | Sub-task | Read initial `viewMode` from `localStorage.getItem('plugins-view-mode')` on component mount; write back on every toggle | `TODO` |
-| FARM-ST300 | Sub-task | Unit tests: toggles from grid to list and back; persists to localStorage; defaults to grid when localStorage is empty | `TODO` |
+| FARM-ST298 | Sub-task | Add `LayoutGrid` and `List` icon buttons (lucide-react) next to "Reload Plugins" in the `PageHeader`; active view highlighted with `variant="secondary"`; default to `'grid'` | `DONE` |
+| FARM-ST299 | Sub-task | Read initial `viewMode` from `localStorage.getItem('plugins-view-mode')` on component mount; write back on every toggle | `DONE` |
+| FARM-ST300 | Sub-task | Unit tests: toggles from grid to list and back; persists to localStorage; defaults to grid when localStorage is empty | `DONE` |
 
 ##### FARM-T299 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST301 | Sub-task | `PluginListRow` renders a `<tr>` with four `<td>` columns: (1) plugin name + monospace version badge, (2) description truncated to one line, (3) menu items count with `Menu` icon, (4) routes count with `Route` icon; `Installed` badge in column 1 | `TODO` |
-| FARM-ST302 | Sub-task | `PluginListRowSkeleton` renders matching `<tr>` with `<Skeleton>` cells matching column widths | `TODO` |
-| FARM-ST303 | Sub-task | When `viewMode === 'list'` render a `<table>` with a `<thead>` (Plugin, Description, Menu Items, Routes) and `<tbody>` of `PluginListRow` items; reuse existing `EmptyState` for empty list | `TODO` |
-| FARM-ST304 | Sub-task | Unit tests: `PluginListRow` renders name, version, description, counts; skeleton renders without errors; table header rendered in list mode; grid cards rendered in grid mode | `TODO` |
+| FARM-ST301 | Sub-task | `PluginListRow` renders a `<tr>` with four `<td>` columns: (1) plugin name + monospace version badge, (2) description truncated to one line, (3) menu items count with `Menu` icon, (4) routes count with `Route` icon; `Installed` badge in column 1 | `DONE` |
+| FARM-ST302 | Sub-task | `PluginListRowSkeleton` renders matching `<tr>` with `<Skeleton>` cells matching column widths | `DONE` |
+| FARM-ST303 | Sub-task | When `viewMode === 'list'` render a `<table>` with a `<thead>` (Plugin, Description, Menu Items, Routes) and `<tbody>` of `PluginListRow` items; reuse existing `EmptyState` for empty list | `DONE` |
+| FARM-ST304 | Sub-task | Unit tests: `PluginListRow` renders name, version, description, counts; skeleton renders without errors; table header rendered in list mode; grid cards rendered in grid mode | `DONE` |
 
 #### FARM-S303 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T300 | Task | Install `simple-icons` as a frontend dependency; create `src/components/integrations/brand-icons.tsx` exporting `ArgoCDIcon`, `CircleCIIcon`, `JenkinsIcon`, `TravisCIIcon` as React SVG components using `makeBrandIcon()` factory | `TODO` |
-| FARM-T301 | Task | Update `IntegrationSettingsClient.tsx`: change `INTEGRATIONS` array `icon` field from `string` (emoji) to `React.ComponentType<BrandIconProps>`; update `IntegrationCardProps` and render logic accordingly; update tests to assert SVG `role="img"` elements instead of emoji text | `TODO` |
+| FARM-T300 | Task | Install `simple-icons` as a frontend dependency; create `src/components/integrations/brand-icons.tsx` exporting `ArgoCDIcon`, `CircleCIIcon`, `JenkinsIcon`, `TravisCIIcon` as React SVG components using `makeBrandIcon()` factory | `DONE` |
+| FARM-T301 | Task | Update `IntegrationSettingsClient.tsx`: change `INTEGRATIONS` array `icon` field from `string` (emoji) to `React.ComponentType<BrandIconProps>`; update `IntegrationCardProps` and render logic accordingly; update tests to assert SVG `role="img"` elements instead of emoji text | `DONE` |
 
 ##### FARM-T300 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST305 | Sub-task | `makeBrandIcon(si: SimpleIcon)` returns a named React component rendering `<svg role="img" viewBox="0 0 24 24" fill={#hex}>` with the simple-icons `path`; `displayName` set to `BrandIcon(<title>)` | `TODO` |
-| FARM-ST306 | Sub-task | Export `ArgoCDIcon` (siArgo, `#EF7B4D`), `CircleCIIcon` (siCircleci, `#343434`), `JenkinsIcon` (siJenkins, `#D24939`), `TravisCIIcon` (siTravisci, `#3EAAAF`) | `TODO` |
+| FARM-ST305 | Sub-task | `makeBrandIcon(si: SimpleIcon)` returns a named React component rendering `<svg role="img" viewBox="0 0 24 24" fill={#hex}>` with the simple-icons `path`; `displayName` set to `BrandIcon(<title>)` | `DONE` |
+| FARM-ST306 | Sub-task | Export `ArgoCDIcon` (siArgo, `#EF7B4D`), `CircleCIIcon` (siCircleci, `#343434`), `JenkinsIcon` (siJenkins, `#D24939`), `TravisCIIcon` (siTravisci, `#3EAAAF`) | `DONE` |
 
 ##### FARM-T301 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST307 | Sub-task | Replace `icon: string` with `Icon: React.ComponentType<BrandIconProps>` in the `INTEGRATIONS` constant and `IntegrationCardProps` interface | `TODO` |
-| FARM-ST308 | Sub-task | Render `<Icon size={28} />` in `IntegrationCard` replacing the `<span>{icon}</span>` emoji element | `TODO` |
-| FARM-ST309 | Sub-task | Update the "renders integration icons/emojis" test: remove emoji `getByText` assertions; add `getAllByRole("img", { hidden: true })` to verify four SVG brand icons are present | `TODO` |
+| FARM-ST307 | Sub-task | Replace `icon: string` with `Icon: React.ComponentType<BrandIconProps>` in the `INTEGRATIONS` constant and `IntegrationCardProps` interface | `DONE` |
+| FARM-ST308 | Sub-task | Render `<Icon size={28} />` in `IntegrationCard` replacing the `<span>{icon}</span>` emoji element | `DONE` |
+| FARM-ST309 | Sub-task | Update the "renders integration icons/emojis" test: remove emoji `getByText` assertions; add `getAllByRole("img", { hidden: true })` to verify four SVG brand icons are present | `DONE` |
 
 #### FARM-S304 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T302 | Task | Backend: add `GITHUB_ACTIONS = "github-actions"` and `AZURE_DEVOPS = "azure-devops"` to `IntegrationType` enum; create migration; add `GitHubActionsService` (`GET /api/integrations/github-actions/runs`) and `AzureDevOpsService` (`GET /api/integrations/azure-devops/pipelines`) with credential-based HTTP clients; unit + e2e tests | `TODO` |
-| FARM-T303 | Task | Frontend brand icons: add `GitHubActionsIcon` (siGithubactions, `#2088FF`) to `brand-icons.tsx`; create `AzureDevOpsIcon` as a custom inline SVG component (official brand color `#0078D4`) | `TODO` |
-| FARM-T304 | Task | Frontend connect forms: `GitHubActionsConnectForm` (name, PAT token, optional repository filter) and `AzureDevOpsConnectForm` (name, organization URL, PAT token); add both to `INTEGRATIONS` array and `ConnectModal` dispatch | `TODO` |
-| FARM-T305 | Task | Update `IntegrationSettingsClient` tests: "renders all four integration cards" becomes "renders all six integration cards"; add `Not Connected` count assertion (`6`); add form-field tests for each new connect form | `TODO` |
+| FARM-T302 | Task | Backend: add `GITHUB_ACTIONS = "github-actions"` and `AZURE_DEVOPS = "azure-devops"` to `IntegrationType` enum; create migration; add `GitHubActionsService` (`GET /api/integrations/github-actions/runs`) and `AzureDevOpsService` (`GET /api/integrations/azure-devops/pipelines`) with credential-based HTTP clients; unit + e2e tests | `DONE` |
+| FARM-T303 | Task | Frontend brand icons: add `GitHubActionsIcon` (siGithubactions, `#2088FF`) to `brand-icons.tsx`; create `AzureDevOpsIcon` as a custom inline SVG component (official brand color `#0078D4`) | `DONE` |
+| FARM-T304 | Task | Frontend connect forms: `GitHubActionsConnectForm` (name, PAT token, optional repository filter) and `AzureDevOpsConnectForm` (name, organization URL, PAT token); add both to `INTEGRATIONS` array and `ConnectModal` dispatch | `DONE` |
+| FARM-T305 | Task | Update `IntegrationSettingsClient` tests: "renders all four integration cards" becomes "renders all six integration cards"; add `Not Connected` count assertion (`6`); add form-field tests for each new connect form | `DONE` |
 
 ##### FARM-T302 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST310 | Sub-task | Add enum values to `integration-credential.entity.ts`; generate and run migration `AddGitHubActionsAzureDevOpsTypes` | `TODO` |
-| FARM-ST311 | Sub-task | `GitHubActionsService`: list workflow runs via `GET https://api.github.com/repos/{owner}/{repo}/actions/runs` using stored PAT; map to common `PipelineRun` shape | `TODO` |
-| FARM-ST312 | Sub-task | `AzureDevOpsService`: list pipeline runs via `GET https://dev.azure.com/{org}/{project}/_apis/pipelines/{id}/runs` using stored PAT; map to common shape | `TODO` |
-| FARM-ST313 | Sub-task | Unit tests for both services (mocked globalThis.fetch); e2e tests for credential CRUD with new types | `TODO` |
+| FARM-ST310 | Sub-task | Add enum values to `integration-credential.entity.ts`; generate and run migration `AddGitHubActionsAzureDevOpsTypes` | `DONE` |
+| FARM-ST311 | Sub-task | `GitHubActionsService`: list workflow runs via `GET https://api.github.com/repos/{owner}/{repo}/actions/runs` using stored PAT; map to common `PipelineRun` shape | `DONE` |
+| FARM-ST312 | Sub-task | `AzureDevOpsService`: list pipeline runs via `GET https://dev.azure.com/{org}/{project}/_apis/pipelines/{id}/runs` using stored PAT; map to common shape | `DONE` |
+| FARM-ST313 | Sub-task | Unit tests for both services (mocked globalThis.fetch); e2e tests for credential CRUD with new types | `DONE` |
 
 #### FARM-S305 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T306 | Task | Define nav section groups in `app-shell.tsx`: replace the flat `navItems` array with a `navSections` structure; each section has a `label` and an `items` array; render a section heading (`<p>` with `text-xs uppercase font-semibold text-muted-foreground`) above each group; unit tests | `TODO` |
-| FARM-T307 | Task | Validate grouping with UX review and update mobile nav drawer to mirror the same section structure; update `app-shell` tests to assert section headings are rendered | `TODO` |
+| FARM-T306 | Task | Define nav section groups in `app-shell.tsx`: replace the flat `navItems` array with a `navSections` structure; each section has a `label` and an `items` array; render a section heading (`<p>` with `text-xs uppercase font-semibold text-muted-foreground`) above each group; unit tests | `DONE` |
+| FARM-T307 | Task | Validate grouping with UX review and update mobile nav drawer to mirror the same section structure; update `app-shell` tests to assert section headings are rendered | `DONE` |
 
 ##### FARM-T306 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST314 | Sub-task | **Operations** section: Dashboard, Catalog, Deployments, Pipelines | `TODO` |
-| FARM-ST315 | Sub-task | **Observability** section: Alerting, SLOs, Incidents, Observability, Analytics | `TODO` |
-| FARM-ST316 | Sub-task | **Infrastructure** section: Operators, GitOps, Queues, Cost | `TODO` |
-| FARM-ST317 | Sub-task | **Self-Service** section: Templates, Env Requests, Custom Dashboards, Docs | `TODO` |
-| FARM-ST318 | Sub-task | **Organization** section: Organizations, Teams | `TODO` |
-| FARM-ST319 | Sub-task | **Settings** section: Integrations, Cloud Providers, Keycloak SSO, Compliance, Tag Policies, Plugins | `TODO` |
+| FARM-ST314 | Sub-task | **Operations** section: Dashboard, Catalog, Deployments, Pipelines | `DONE` |
+| FARM-ST315 | Sub-task | **Observability** section: Alerting, SLOs, Incidents, Observability, Analytics | `DONE` |
+| FARM-ST316 | Sub-task | **Infrastructure** section: Operators, GitOps, Queues, Cost | `DONE` |
+| FARM-ST317 | Sub-task | **Self-Service** section: Templates, Env Requests, Custom Dashboards, Docs | `DONE` |
+| FARM-ST318 | Sub-task | **Organization** section: Organizations, Teams | `DONE` |
+| FARM-ST319 | Sub-task | **Settings** section: Integrations, Cloud Providers, Keycloak SSO, Compliance, Tag Policies, Plugins | `DONE` |
 
 ##### FARM-T307 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST320 | Sub-task | Update desktop `<nav>` in `AppShell` to iterate `navSections` and render a heading + items per section, with `mb-4` spacing between sections | `TODO` |
-| FARM-ST321 | Sub-task | Mirror the same `navSections` structure in the mobile `Sheet` drawer nav | `TODO` |
-| FARM-ST322 | Sub-task | Update `app-shell.test.tsx`: assert each of the six section headings is rendered; existing nav-item tests remain valid | `TODO` |
+| FARM-ST320 | Sub-task | Update desktop `<nav>` in `AppShell` to iterate `navSections` and render a heading + items per section, with `mb-4` spacing between sections | `DONE` |
+| FARM-ST321 | Sub-task | Mirror the same `navSections` structure in the mobile `Sheet` drawer nav | `DONE` |
+| FARM-ST322 | Sub-task | Update `app-shell.test.tsx`: assert each of the six section headings is rendered; existing nav-item tests remain valid | `DONE` |
 
 #### FARM-S306 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T308 | Task | `GET /api/search/quick?q=<term>&limit=N` endpoint: parallel `LIKE` queries across `Component` (name, description), `Team` (name), `Documentation` (title), `Environment` (name), `Pipeline` (name); returns `QuickSearchResult[]` typed by entity; unit + e2e tests | `TODO` |
-| FARM-T309 | Task | `SearchModal` frontend component: activated by `Cmd+K` / `Ctrl+K` global shortcut; debounced input (300 ms); results grouped by entity type; keyboard navigation (arrow keys, Enter to navigate, Esc to close); unit tests | `TODO` |
-| FARM-T310 | Task | Mount `SearchModal` in `AppShell`; add `getQuickSearchResults(query, limit?)` to `api-client.ts`; add a search shortcut hint button in the top nav bar (desktop only); unit tests | `TODO` |
+| FARM-T308 | Task | `GET /api/search/quick?q=<term>&limit=N` endpoint: parallel `LIKE` queries across `Component` (name, description), `Team` (name), `Documentation` (title), `Environment` (name), `Pipeline` (name); returns `QuickSearchResult[]` typed by entity; unit + e2e tests | `DONE` |
+| FARM-T309 | Task | `SearchModal` frontend component: activated by `Cmd+K` / `Ctrl+K` global shortcut; debounced input (300 ms); results grouped by entity type; keyboard navigation (arrow keys, Enter to navigate, Esc to close); unit tests | `DONE` |
+| FARM-T310 | Task | Mount `SearchModal` in `AppShell`; add `getQuickSearchResults(query, limit?)` to `api-client.ts`; add a search shortcut hint button in the top nav bar (desktop only); unit tests | `DONE` |
 
 ##### FARM-T308 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST323 | Sub-task | Define `QuickSearchResult` interface: `{ type: 'component'\|'team'\|'documentation'\|'environment'\|'pipeline', id: string, name: string, description?: string, url: string }` in a shared DTO file | `TODO` |
-| FARM-ST324 | Sub-task | `SearchService.quickSearch(query, limit)`: run parallel `findOptions` LIKE queries on all five repositories; merge arrays, limit total to `limit` (default 10), preserving entity-type grouping | `TODO` |
-| FARM-ST325 | Sub-task | `SearchController` at `/search` with `GET /quick`; unit tests for service merge logic; e2e test asserting all entity types returned when name matches | `TODO` |
+| FARM-ST323 | Sub-task | Define `QuickSearchResult` interface: `{ type: 'component'\|'team'\|'documentation'\|'environment'\|'pipeline', id: string, name: string, description?: string, url: string }` in a shared DTO file | `DONE` |
+| FARM-ST324 | Sub-task | `SearchService.quickSearch(query, limit)`: run parallel `findOptions` LIKE queries on all five repositories; merge arrays, limit total to `limit` (default 10), preserving entity-type grouping | `DONE` |
+| FARM-ST325 | Sub-task | `SearchController` at `/search` with `GET /quick`; unit tests for service merge logic; e2e test asserting all entity types returned when name matches | `DONE` |
 
 ##### FARM-T309 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST326 | Sub-task | Global `keydown` listener in `SearchModal` (or a wrapping hook): detect `Meta+K` / `Ctrl+K`, toggle `open` state; Esc closes; register and clean up listener in `useEffect` | `TODO` |
-| FARM-ST327 | Sub-task | Debounced input (300 ms) calls `getQuickSearchResults`; results rendered in `CommandGroup` sections (one per entity type); each result row shows entity type badge, name, and truncated description | `TODO` |
-| FARM-ST328 | Sub-task | Keyboard navigation: `ArrowDown`/`ArrowUp` moves highlighted index; `Enter` on highlighted item calls `router.push(result.url)` and closes modal; empty state when query is blank or no results found | `TODO` |
-| FARM-ST329 | Sub-task | Unit tests: modal opens on `Cmd+K`; closes on Esc; renders grouped results; Enter navigates to correct URL; debounce prevents excessive API calls | `TODO` |
+| FARM-ST326 | Sub-task | Global `keydown` listener in `SearchModal` (or a wrapping hook): detect `Meta+K` / `Ctrl+K`, toggle `open` state; Esc closes; register and clean up listener in `useEffect` | `DONE` |
+| FARM-ST327 | Sub-task | Debounced input (300 ms) calls `getQuickSearchResults`; results rendered in `CommandGroup` sections (one per entity type); each result row shows entity type badge, name, and truncated description | `DONE` |
+| FARM-ST328 | Sub-task | Keyboard navigation: `ArrowDown`/`ArrowUp` moves highlighted index; `Enter` on highlighted item calls `router.push(result.url)` and closes modal; empty state when query is blank or no results found | `DONE` |
+| FARM-ST329 | Sub-task | Unit tests: modal opens on `Cmd+K`; closes on Esc; renders grouped results; Enter navigates to correct URL; debounce prevents excessive API calls | `DONE` |
 
 ##### FARM-T310 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST330 | Sub-task | Add `getQuickSearchResults(query: string, limit?: number): Promise<QuickSearchResult[]>` to `api-client.ts`; unit test with mocked fetch | `TODO` |
-| FARM-ST331 | Sub-task | Mount `<SearchModal />` once in `AppShell` (always rendered, visibility controlled by internal state); pass `open`/`onOpenChange` props | `TODO` |
-| FARM-ST332 | Sub-task | Add a search trigger button in the top nav bar (desktop `md:flex` only): magnifying glass icon + `⌘K` keyboard hint chip; clicking opens modal | `TODO` |
-| FARM-ST333 | Sub-task | Unit tests: search button rendered in AppShell; click opens modal; modal unmounts cleanly without listener leaks | `TODO` |
+| FARM-ST330 | Sub-task | Add `getQuickSearchResults(query: string, limit?: number): Promise<QuickSearchResult[]>` to `api-client.ts`; unit test with mocked fetch | `DONE` |
+| FARM-ST331 | Sub-task | Mount `<SearchModal />` once in `AppShell` (always rendered, visibility controlled by internal state); pass `open`/`onOpenChange` props | `DONE` |
+| FARM-ST332 | Sub-task | Add a search trigger button in the top nav bar (desktop `md:flex` only): magnifying glass icon + `⌘K` keyboard hint chip; clicking opens modal | `DONE` |
+| FARM-ST333 | Sub-task | Unit tests: search button rendered in AppShell; click opens modal; modal unmounts cleanly without listener leaks | `DONE` |
 
 ---
 
@@ -1420,34 +1420,34 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T311 | Task | `GET /api/setup/checklist` endpoint: returns checklist items derived from live data (entity counts + feature availability); `POST /api/setup/checklist/:key/dismiss` stores dismissed keys in `workspace.settings` JSONB; unit + e2e tests | `TODO` |
-| FARM-T312 | Task | `SetupChecklistCard` component: dismissible card with per-item completion status (green check / gray pending), title, description, and "Configure" link button; "Dismiss all" button; unit tests | `TODO` |
-| FARM-T313 | Task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; integrate `SetupChecklistCard` at top of Dashboard page below the stats row; card is hidden when all items are completed or all are dismissed; unit tests | `TODO` |
+| FARM-T311 | Task | `GET /api/setup/checklist` endpoint: returns checklist items derived from live data (entity counts + feature availability); `POST /api/setup/checklist/:key/dismiss` stores dismissed keys in `workspace.settings` JSONB; unit + e2e tests | `DONE` |
+| FARM-T312 | Task | `SetupChecklistCard` component: dismissible card with per-item completion status (green check / gray pending), title, description, and "Configure" link button; "Dismiss all" button; unit tests | `DONE` |
+| FARM-T313 | Task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; integrate `SetupChecklistCard` at top of Dashboard page below the stats row; card is hidden when all items are completed or all are dismissed; unit tests | `DONE` |
 
 ##### FARM-T311 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST334 | Sub-task | Define `SetupChecklistItem` interface: `{ key: string, title: string, description: string, href: string, completed: boolean, dismissed: boolean }`; define five keys: `setup-kubernetes`, `setup-registry`, `create-component`, `create-team`, `configure-integrations` | `TODO` |
-| FARM-ST335 | Sub-task | Compute `completed` for each key: `setup-kubernetes` → `isKubernetesEnabled()`; `setup-registry` → registry credential count > 0; `create-component` → component count > 0; `create-team` → team count > 0; `configure-integrations` → integration credential count > 0 | `TODO` |
-| FARM-ST336 | Sub-task | Persist dismissed keys in `workspace.settings.dismissedChecklist: string[]` (JSONB patch via `WorkspaceService.updateSettings()`); `POST /api/setup/checklist/:key/dismiss` appends the key | `TODO` |
-| FARM-ST337 | Sub-task | Unit tests: all items incomplete → all returned uncompleted; dismiss persists to workspace settings; e2e test for GET and POST endpoints | `TODO` |
+| FARM-ST334 | Sub-task | Define `SetupChecklistItem` interface: `{ key: string, title: string, description: string, href: string, completed: boolean, dismissed: boolean }`; define five keys: `setup-kubernetes`, `setup-registry`, `create-component`, `create-team`, `configure-integrations` | `DONE` |
+| FARM-ST335 | Sub-task | Compute `completed` for each key: `setup-kubernetes` → `isKubernetesEnabled()`; `setup-registry` → registry credential count > 0; `create-component` → component count > 0; `create-team` → team count > 0; `configure-integrations` → integration credential count > 0 | `DONE` |
+| FARM-ST336 | Sub-task | Persist dismissed keys in `workspace.settings.dismissedChecklist: string[]` (JSONB patch via `WorkspaceService.updateSettings()`); `POST /api/setup/checklist/:key/dismiss` appends the key | `DONE` |
+| FARM-ST337 | Sub-task | Unit tests: all items incomplete → all returned uncompleted; dismiss persists to workspace settings; e2e test for GET and POST endpoints | `DONE` |
 
 ##### FARM-T312 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST338 | Sub-task | `SetupChecklistCard` renders a `Card` with a progress header (`N of 5 steps complete`), a list of `SetupChecklistItem` rows, and a "Dismiss all" button in the card footer | `TODO` |
-| FARM-ST339 | Sub-task | Each item row: left icon (`CheckCircle2` green when completed, `Circle` gray when pending), title + description, right "Configure →" link button (hidden when completed); clicking "×" on a row calls dismiss for that key | `TODO` |
-| FARM-ST340 | Sub-task | Unit tests: renders N-of-5 progress; completed items show check icon; dismiss button calls `dismissChecklistItem`; card hidden when `items` is empty or all dismissed | `TODO` |
+| FARM-ST338 | Sub-task | `SetupChecklistCard` renders a `Card` with a progress header (`N of 5 steps complete`), a list of `SetupChecklistItem` rows, and a "Dismiss all" button in the card footer | `DONE` |
+| FARM-ST339 | Sub-task | Each item row: left icon (`CheckCircle2` green when completed, `Circle` gray when pending), title + description, right "Configure →" link button (hidden when completed); clicking "×" on a row calls dismiss for that key | `DONE` |
+| FARM-ST340 | Sub-task | Unit tests: renders N-of-5 progress; completed items show check icon; dismiss button calls `dismissChecklistItem`; card hidden when `items` is empty or all dismissed | `DONE` |
 
 ##### FARM-T313 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST341 | Sub-task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; unit tests with mocked fetch | `TODO` |
-| FARM-ST342 | Sub-task | Dashboard page: call `getSetupChecklist()` on mount; derive `visible = items.some(i => !i.completed && !i.dismissed)`; render `SetupChecklistCard` above the stats grid when `visible` | `TODO` |
-| FARM-ST343 | Sub-task | Unit tests for Dashboard page: checklist card rendered when incomplete items exist; card absent when all completed; card absent when all dismissed | `TODO` |
+| FARM-ST341 | Sub-task | Add `getSetupChecklist()` and `dismissChecklistItem(key)` to `api-client.ts`; unit tests with mocked fetch | `DONE` |
+| FARM-ST342 | Sub-task | Dashboard page: call `getSetupChecklist()` on mount; derive `visible = items.some(i => !i.completed && !i.dismissed)`; render `SetupChecklistCard` above the stats grid when `visible` | `DONE` |
+| FARM-ST343 | Sub-task | Unit tests for Dashboard page: checklist card rendered when incomplete items exist; card absent when all completed; card absent when all dismissed | `DONE` |
 
 ---
 
@@ -1455,23 +1455,23 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T314 | Task | `IntegrationHealthCard` component: fetches `GET /api/features/availability` (defined in FARM-T296); renders each feature as a row with a color-coded dot (green = available, red = unavailable), feature name, and a "Configure →" link to the appropriate settings page; unit tests | `TODO` |
-| FARM-T315 | Task | Integrate `IntegrationHealthCard` into the Dashboard page alongside `SetupChecklistCard`; add `getFeatureAvailability()` call to `api-client.ts` if not already present (FARM-ST294); unit tests for dashboard layout with card | `TODO` |
+| FARM-T314 | Task | `IntegrationHealthCard` component: fetches `GET /api/features/availability` (defined in FARM-T296); renders each feature as a row with a color-coded dot (green = available, red = unavailable), feature name, and a "Configure →" link to the appropriate settings page; unit tests | `DONE` |
+| FARM-T315 | Task | Integrate `IntegrationHealthCard` into the Dashboard page alongside `SetupChecklistCard`; add `getFeatureAvailability()` call to `api-client.ts` if not already present (FARM-ST294); unit tests for dashboard layout with card | `DONE` |
 
 ##### FARM-T314 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST344 | Sub-task | `IntegrationHealthCard` props: `availability: FeatureAvailabilityMap`; render a `Card` titled "Platform Integrations" with a row per feature (kubernetes, cost, registry, helm, istio) | `TODO` |
-| FARM-ST345 | Sub-task | Each row: `dot` indicator (`bg-green-500` when available, `bg-red-500` when not), feature display name, optional `reason` shown as a muted subtitle when unavailable, right-aligned "Configure →" link | `TODO` |
-| FARM-ST346 | Sub-task | Unit tests: green dot when available; red dot + reason when unavailable; "Configure" links point to correct pages; all five features rendered | `TODO` |
+| FARM-ST344 | Sub-task | `IntegrationHealthCard` props: `availability: FeatureAvailabilityMap`; render a `Card` titled "Platform Integrations" with a row per feature (kubernetes, cost, registry, helm, istio) | `DONE` |
+| FARM-ST345 | Sub-task | Each row: `dot` indicator (`bg-green-500` when available, `bg-red-500` when not), feature display name, optional `reason` shown as a muted subtitle when unavailable, right-aligned "Configure →" link | `DONE` |
+| FARM-ST346 | Sub-task | Unit tests: green dot when available; red dot + reason when unavailable; "Configure" links point to correct pages; all five features rendered | `DONE` |
 
 ##### FARM-T315 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST347 | Sub-task | Dashboard page: call `getFeatureAvailability()` on mount (reuse if already fetched by AppShell context from FARM-ST294); pass result to `IntegrationHealthCard`; render card in a two-column grid alongside `SetupChecklistCard` on desktop, stacked on mobile | `TODO` |
-| FARM-ST348 | Sub-task | Unit tests: `IntegrationHealthCard` rendered with availability data; loading skeleton while fetching; graceful empty state when endpoint unreachable | `TODO` |
+| FARM-ST347 | Sub-task | Dashboard page: call `getFeatureAvailability()` on mount (reuse if already fetched by AppShell context from FARM-ST294); pass result to `IntegrationHealthCard`; render card in a two-column grid alongside `SetupChecklistCard` on desktop, stacked on mobile | `DONE` |
+| FARM-ST348 | Sub-task | Unit tests: `IntegrationHealthCard` rendered with availability data; loading skeleton while fetching; graceful empty state when endpoint unreachable | `DONE` |
 
 ---
 
@@ -1479,33 +1479,334 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T316 | Task | Desktop sidebar accordion: replace `<p>` section labels with `<button>` toggle controls; manage `collapsedSections` state as `Set<string>`; initialize with all sections except the one containing the active route collapsed; render items only when section is open; add `ChevronDown`/`ChevronRight` icon; unit tests | `TODO` |
-| FARM-T317 | Task | Mobile Sheet nav parity: apply the same accordion toggle behavior to the mobile navigation inside `SheetContent`; use independent collapsed state scoped to the mobile menu; unit tests | `TODO` |
-| FARM-T318 | Task | AppShell test coverage for accordion: tests for default open/closed sections based on active route; toggle open; toggle closed; items hidden when section collapsed; accessibility (aria-expanded on trigger buttons) | `TODO` |
+| FARM-T316 | Task | Desktop sidebar accordion: replace `<p>` section labels with `<button>` toggle controls; manage `collapsedSections` state as `Set<string>`; initialize with all sections except the one containing the active route collapsed; render items only when section is open; add `ChevronDown`/`ChevronRight` icon; unit tests | `DONE` |
+| FARM-T317 | Task | Mobile Sheet nav parity: apply the same accordion toggle behavior to the mobile navigation inside `SheetContent`; use independent collapsed state scoped to the mobile menu; unit tests | `DONE` |
+| FARM-T318 | Task | AppShell test coverage for accordion: tests for default open/closed sections based on active route; toggle open; toggle closed; items hidden when section collapsed; accessibility (aria-expanded on trigger buttons) | `DONE` |
 
 ##### FARM-T316 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST349 | Sub-task | Add `collapsedSections` state (`useState<Set<string>>`); initialize from `activeHref`: on render only the section whose items include `activeHref` is open, all others collapsed | `TODO` |
-| FARM-ST350 | Sub-task | Replace `<p>` section label with `<button>` element; clicking toggles the section; show `ChevronDown` when open and `ChevronRight` when closed | `TODO` |
-| FARM-ST351 | Sub-task | Wrap section items in a conditional block: render items only when the section is not collapsed | `TODO` |
+| FARM-ST349 | Sub-task | Add `collapsedSections` state (`useState<Set<string>>`); initialize from `activeHref`: on render only the section whose items include `activeHref` is open, all others collapsed | `DONE` |
+| FARM-ST350 | Sub-task | Replace `<p>` section label with `<button>` element; clicking toggles the section; show `ChevronDown` when open and `ChevronRight` when closed | `DONE` |
+| FARM-ST351 | Sub-task | Wrap section items in a conditional block: render items only when the section is not collapsed | `DONE` |
 
 ##### FARM-T317 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST352 | Sub-task | Duplicate `collapsedSections` state for the mobile Sheet nav (independent from desktop); apply the same button + conditional render pattern | `TODO` |
-| FARM-ST353 | Sub-task | Unit tests for mobile nav accordion: verify default state, toggle open, toggle closed | `TODO` |
+| FARM-ST352 | Sub-task | Duplicate `collapsedSections` state for the mobile Sheet nav (independent from desktop); apply the same button + conditional render pattern | `DONE` |
+| FARM-ST353 | Sub-task | Unit tests for mobile nav accordion: verify default state, toggle open, toggle closed | `DONE` |
 
 ##### FARM-T318 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST354 | Sub-task | Test: all sections except the active one start collapsed; active section is open | `TODO` |
-| FARM-ST355 | Sub-task | Test: clicking a closed section label opens it; clicking an open section label closes it | `TODO` |
-| FARM-ST356 | Sub-task | Test: items in a collapsed section are not present in the DOM; items in an open section are present | `TODO` |
-| FARM-ST357 | Sub-task | Test: section title buttons have `aria-expanded` attribute set correctly (true when open, false when closed) | `TODO` |
+| FARM-ST354 | Sub-task | Test: all sections except the active one start collapsed; active section is open | `DONE` |
+| FARM-ST355 | Sub-task | Test: clicking a closed section label opens it; clicking an open section label closes it | `DONE` |
+| FARM-ST356 | Sub-task | Test: items in a collapsed section are not present in the DOM; items in an open section are present | `DONE` |
+| FARM-ST357 | Sub-task | Test: section title buttons have `aria-expanded` attribute set correctly (true when open, false when closed) | `DONE` |
+
+---
+
+## Phase 26: Auth Provider Expansion `TODO`
+
+### FARM-E72: Social and Enterprise SSO Providers `TODO`
+
+> Farm currently supports only local email/password authentication with JWT. This Epic adds first-class OAuth2 and OIDC providers — GitHub, Google, and Okta — plus LDAP/Active Directory for on-premises enterprises. All providers follow the same Passport.js strategy pattern and issue the same JWT access + refresh token pair, making the rest of the application provider-agnostic.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S310 | Story | GitHub OAuth2 authentication -- users can sign in via GitHub; profile is upserted into the `User` table; JWT issued on callback | `TODO` |
+| FARM-S311 | Story | Google OAuth2 authentication -- users can sign in via Google; email used as unique identifier; JWT issued on callback | `TODO` |
+| FARM-S312 | Story | Okta OIDC authentication -- enterprise Okta tenants connect via OIDC/PKCE; groups mapped to Farm roles | `TODO` |
+| FARM-S313 | Story | LDAP / Active Directory authentication -- Farm binds as a service account, searches the user DN, maps attributes to `User` entity fields | `TODO` |
+| FARM-S314 | Story | Provider discovery endpoint and frontend login page -- `GET /api/auth/providers` returns enabled providers; login page renders provider buttons dynamically | `TODO` |
+
+#### FARM-S310 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T319 | Task | `GitHubStrategy` (passport-github2): `validate()` upserts `User` with `githubId`, `avatarUrl`, and `externalProvider = "github"`; env vars `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`; unit tests | `TODO` |
+| FARM-T320 | Task | `GET /api/auth/github` initiates OAuth2 redirect; `GET /api/auth/github/callback` exchanges code, issues JWT access + refresh tokens, redirects to `/dashboard`; unit + e2e tests | `TODO` |
+
+##### FARM-T319 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST358 | Sub-task | Add optional `githubId`, `googleId`, `externalProvider` fields to `User` entity; migration | `TODO` |
+| FARM-ST359 | Sub-task | Unit test: mock GitHub callback profile → `validate()` returns upserted `User`; existing local user with matching email is linked | `TODO` |
+
+#### FARM-S311 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T321 | Task | `GoogleStrategy` (passport-google-oauth20): `validate()` upserts `User` with `googleId` and `externalProvider = "google"`; env vars `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`; unit tests | `TODO` |
+| FARM-T322 | Task | `GET /api/auth/google` and `GET /api/auth/google/callback`; same JWT issuance flow as GitHub; unit + e2e tests | `TODO` |
+
+#### FARM-S312 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T323 | Task | `OktaStrategy` (openid-client / passport-openidconnect): PKCE flow; validate ID token; map Okta groups to Farm roles via configurable `OKTA_GROUPS_CLAIM`; env vars `OKTA_ISSUER`, `OKTA_CLIENT_ID`, `OKTA_CLIENT_SECRET`, `OKTA_CALLBACK_URL`; unit tests | `TODO` |
+| FARM-T324 | Task | `GET /api/auth/okta` and `GET /api/auth/okta/callback`; PKCE verifier generated per request and stored in session; unit + e2e tests | `TODO` |
+
+#### FARM-S313 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T325 | Task | `LdapStrategy` (passport-ldapauth): bind as service account, search user by `LDAP_SEARCH_FILTER`; env vars `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_SEARCH_BASE`, `LDAP_SEARCH_FILTER`; unit tests with mock ldapauth | `TODO` |
+| FARM-T326 | Task | LDAP attribute mapping: `displayName` → `firstName`+`lastName`, `mail` → `email`, `memberOf` → roles via configurable `LDAP_ADMIN_GROUP` env var; upsert `User` on each successful bind; unit tests | `TODO` |
+
+##### FARM-T325 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST360 | Sub-task | Unit test: mock LDAP profile with `memberOf` containing admin group → user returned with `roles: ["admin"]` | `TODO` |
+| FARM-ST361 | Sub-task | Unit test: LDAP bind failure (wrong password) → strategy throws `UnauthorizedException` | `TODO` |
+
+#### FARM-S314 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T327 | Task | `GET /api/auth/providers`: read enabled provider env vars at runtime, return `{ providers: ["github","google","okta","ldap","local"][] }`; unit tests | `TODO` |
+| FARM-T328 | Task | Frontend login page: fetch `/api/auth/providers` on mount, render a branded button per enabled provider (GitHub, Google, Okta, LDAP form); local email/password form always shown; unit tests | `TODO` |
+
+---
+
+## Phase 27: Advanced Search `TODO`
+
+### FARM-E73: Elasticsearch-backed Search with Facets and Ranking `TODO`
+
+> The current quick-search queries PostgreSQL with `ILIKE` across a handful of fields. This Epic replaces the search backend with Elasticsearch (or OpenSearch), adding faceted filtering by type, namespace, and tags; relevance ranking with per-field boost weights; typo tolerance via fuzzy matching; and result snippet highlighting. The system degrades gracefully to the existing DB search when Elasticsearch is unavailable.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S315 | Story | Elasticsearch integration -- `ElasticsearchModule` wrapping `@elastic/elasticsearch`; health check; document indexing on entity create/update via TypeORM subscribers | `TODO` |
+| FARM-S316 | Story | Faceted search API -- `GET /api/v1/search/advanced` with `types[]`, `namespace`, `tags[]` filters and aggregation buckets | `TODO` |
+| FARM-S317 | Story | Relevance ranking and typo tolerance -- per-field boost weights (`title^3`, `tags^2`, `description^1`), `fuzziness: AUTO`, snippet highlighting with `<em>` markers | `TODO` |
+| FARM-S318 | Story | Frontend advanced search UI -- two-pane modal (facet panel + result list with highlighted snippets); replaces existing quick-search modal | `TODO` |
+
+#### FARM-S315 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T329 | Task | `ElasticsearchModule`: configure `@elastic/elasticsearch` client with `ELASTICSEARCH_URL` env var (default `http://localhost:9200`); `isElasticsearchEnabled()` pings `/_cluster/health`; graceful `false` on timeout; unit tests | `TODO` |
+| FARM-T330 | Task | `SearchIndexService.index(doc)` and `bulkIndex(docs[])`: index component, documentation, team, environment, and API spec documents; document schema: `{ id, type, title, description, tags, namespace, updatedAt }`; TypeORM subscriber triggers on create/update; unit tests | `TODO` |
+| FARM-T331 | Task | `POST /api/v1/search/reindex` (admin-only): truncate and rebuild all indices from DB; returns job status; unit + e2e tests | `TODO` |
+
+##### FARM-T329 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST362 | Sub-task | Unit test: ES client ping succeeds → `isElasticsearchEnabled()` returns true | `TODO` |
+| FARM-ST363 | Sub-task | Unit test: ES client throws `ConnectionError` → `isElasticsearchEnabled()` returns false; logs warn; falls back to DB search | `TODO` |
+
+#### FARM-S316 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T332 | Task | `SearchService.search(query, filters)`: Elasticsearch `multi_match` query with `filter` clauses for `type`, `namespace`, and `tags`; return hits with `_source` and aggregation buckets for type and tags | `TODO` |
+| FARM-T333 | Task | `GET /api/v1/search/advanced` controller: DTO `{ q, types?, namespace?, tags?, page?, limit? }`; pagination via `from`/`size`; unit + e2e tests | `TODO` |
+
+#### FARM-S317 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T334 | Task | Boost and fuzzy config: `title^3`, `tags^2`, `description^1`; `fuzziness: "AUTO"`; `highlight` option returns fragment list with `<em>` markers; configurable via `SearchConfig` entity | `TODO` |
+| FARM-T335 | Task | Admin endpoint `PATCH /api/v1/search/config` to update boost weights at runtime; persisted in `SearchConfig` entity (`titleBoost`, `tagsBoost`, `descriptionBoost`, `fuzziness`); migration; unit tests | `TODO` |
+
+#### FARM-S318 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T336 | Task | `AdvancedSearchModal` component: two-pane layout (left: facet checkboxes for type/namespace/tags; right: paginated result list with snippet highlights rendered as bold text); keyboard navigation (ArrowUp/Down, Enter, Escape); replaces `SearchModal` | `TODO` |
+| FARM-T337 | Task | `useFacetedSearch` hook: debounced query (300ms), manages active filter state, calls `GET /api/v1/search/advanced`, returns `{ results, facets, loading, error }`; unit tests with mock API | `TODO` |
+
+##### FARM-T336 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST364 | Sub-task | Unit test: toggling a facet checkbox adds/removes the filter from the active set and re-triggers the search | `TODO` |
+| FARM-ST365 | Sub-task | Unit test: snippet `<em>` markers are rendered as `<strong>` via sanitized `dangerouslySetInnerHTML`; raw HTML from other fields is stripped | `TODO` |
+
+---
+
+## Phase 28: Software Templates 2.0 `TODO`
+
+### FARM-E74: Nunjucks Templating with Dry-run and Live Preview `TODO`
+
+> The current scaffold engine uses Handlebars with a basic variable substitution model. This Epic upgrades to Nunjucks for richer template logic (filters, macros, inheritance), adds a dry-run endpoint that validates variables against the template schema before execution, a live server-side preview API, and a JSON Schema-driven parameter form with type-aware inputs and conditional field visibility.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S319 | Story | Nunjucks template engine -- replace Handlebars with Nunjucks; add built-in string filters (`camelCase`, `snakeCase`, `kebabCase`, `pascalCase`) | `TODO` |
+| FARM-S320 | Story | Dry-run validation endpoint -- `POST /api/v1/service-templates/:id/dry-run` validates variables and returns rendered output without writing files | `TODO` |
+| FARM-S321 | Story | Live template preview -- `GET /api/v1/service-templates/:id/preview` renders the template server-side with provided variables; frontend split-view with auto-refresh | `TODO` |
+| FARM-S322 | Story | JSON Schema-driven parameter form -- extend `ServiceTemplate.parameters` JSONB to support `type`, `validation`, `dependsOn`; `DynamicParameterForm` with conditional field visibility | `TODO` |
+
+#### FARM-S319 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T338 | Task | Replace `handlebars` with `nunjucks`; update `ScaffoldService.render(template, vars)` to use `nunjucks.renderString`; register `camelCase`, `snakeCase`, `kebabCase`, `pascalCase` as custom filters; all existing scaffold tests must pass | `TODO` |
+| FARM-T339 | Task | Handlebars-to-Nunjucks migration guide: convert `{{#if}}` → `{% if %}`, `{{#each items}}` → `{% for item in items %}`; audit and update all stored templates in seed data and tests; unit tests for each filter | `TODO` |
+
+##### FARM-T338 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST366 | Sub-task | Unit test: `nunjucks.renderString` with `camelCase` filter converts `"my-service"` → `"myService"` | `TODO` |
+| FARM-ST367 | Sub-task | Unit test: `nunjucks.renderString` with `pascalCase` filter converts `"my-service"` → `"MyService"` | `TODO` |
+
+#### FARM-S320 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T340 | Task | `ScaffoldService.dryRun(templateId, variables)`: validate all required variables present; render template; return `{ valid: boolean, errors: string[], preview: string }`; unit tests | `TODO` |
+| FARM-T341 | Task | `POST /api/v1/service-templates/:id/dry-run` controller; requires auth; returns dry-run result; unit + e2e tests | `TODO` |
+
+#### FARM-S321 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T342 | Task | `GET /api/v1/service-templates/:id/preview?vars=<base64-encoded-JSON>`: render template with provided vars; 8KB response size cap; unit tests | `TODO` |
+| FARM-T343 | Task | Frontend `TemplatePreviewPanel`: split view (left: variable form, right: rendered preview); auto-refreshes with 300ms debounce on variable change; unit tests | `TODO` |
+
+#### FARM-S322 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T344 | Task | Extend `ServiceTemplate.parameters` JSONB schema to support `type` (`string | number | boolean | enum | multiselect`), `validation` (regex pattern + message), `default`, `placeholder`, `dependsOn` (`{ field, equals, action: "show"|"hide" }`); update DTO validation | `TODO` |
+| FARM-T345 | Task | `DynamicParameterForm` component: render type-aware inputs (text, number, toggle, select, multi-select); evaluate `dependsOn` rules to show/hide fields reactively; unit tests for each input type and visibility rule | `TODO` |
+
+##### FARM-T345 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST368 | Sub-task | Unit test: field with `dependsOn: { field: "provider", equals: "aws", action: "show" }` is hidden by default and shown when `provider` is set to `"aws"` | `TODO` |
+| FARM-ST369 | Sub-task | Unit test: multiselect field serializes to comma-separated string before POST; deserializes back to array on load | `TODO` |
+
+---
+
+## Phase 29: TechDocs 2.0 `TODO`
+
+### FARM-E75: MkDocs Integration and CI Publishing `TODO`
+
+> Farm's current documentation module fetches Markdown files from URLs and renders them server-side. This Epic adds first-class MkDocs support: Farm clones a component's repository, detects `mkdocs.yml`, builds the static site, serves it under a versioned path, and re-builds on Git push via webhook. Full-text doc search is powered by the Elasticsearch index introduced in Phase 27.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S323 | Story | MkDocs build service -- clone repo, detect `mkdocs.yml`, run `mkdocs build`, store output in `DocumentationBuild` entity | `TODO` |
+| FARM-S324 | Story | CI publishing pipeline -- webhook endpoint triggered by GitHub/GitLab push; enqueues `DocsBuildJob` via BullMQ | `TODO` |
+| FARM-S325 | Story | Versioned documentation -- each build is tagged with a semver or branch name; frontend `VersionSelector` dropdown in the doc viewer | `TODO` |
+| FARM-S326 | Story | Full-text documentation search -- index rendered HTML pages into Elasticsearch after build; `GET /api/docs/search` scoped to docs type | `TODO` |
+
+#### FARM-S323 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T346 | Task | `MkDocsService.build(componentId, repoUrl, ref)`: shallow clone repo, detect `mkdocs.yml`, run `mkdocs build --site-dir dist/` via `child_process.spawn`; store artifacts path in `DocumentationBuild`; env `MKDOCS_ENABLED=true`; unit tests | `TODO` |
+| FARM-T347 | Task | `DocumentationBuild` entity (componentId, version, status: `building | ready | failed`, buildLog text, artifactsPath, triggeredAt, completedAt); migration; `GET /api/docs/builds/:componentId` returns build history; unit tests | `TODO` |
+
+##### FARM-T346 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST370 | Sub-task | Unit test: `build()` resolves with `{ status: "ready", artifactsPath }` when `mkdocs build` exits with code 0 | `TODO` |
+| FARM-ST371 | Sub-task | Unit test: missing `mkdocs.yml` → build fails with `{ status: "failed", buildLog: "mkdocs.yml not found" }` | `TODO` |
+
+#### FARM-S324 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T348 | Task | `POST /api/docs/webhook` accepting GitHub/GitLab push payloads; verify `X-Hub-Signature-256` HMAC; enqueue `DocsBuildJob` only when `mkdocs.yml` or `docs/` path appears in changed files; unit tests with mock payloads | `TODO` |
+| FARM-T349 | Task | `DocsBuildJob` BullMQ processor: call `MkDocsService.build()`, update `DocumentationBuild.status`, emit `docs:build-complete` WebSocket event with build summary; unit tests | `TODO` |
+
+##### FARM-T348 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST372 | Sub-task | Unit test: invalid HMAC signature returns 401 Unauthorized | `TODO` |
+| FARM-ST373 | Sub-task | Unit test: push event with no `docs/` or `mkdocs.yml` changes is acknowledged (200) but no BullMQ job is enqueued | `TODO` |
+
+#### FARM-S325 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T350 | Task | Tag each `DocumentationBuild` with the semver tag or branch name from the webhook payload ref (`refs/tags/v1.2.0` → `v1.2.0`); `GET /api/docs/:componentId/versions` returns builds sorted by version desc; unit tests | `TODO` |
+| FARM-T351 | Task | Frontend `VersionSelector` dropdown in the documentation viewer header; switching version re-fetches that build's rendered content; defaults to latest; unit tests | `TODO` |
+
+#### FARM-S326 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T352 | Task | After successful `DocsBuildJob`, strip HTML tags from rendered pages and index into Elasticsearch with `type = "docs"`, `componentId`, `heading`, `body`, `url` fields; unit tests | `TODO` |
+| FARM-T353 | Task | `GET /api/docs/search?q=<query>&componentId=<id>` endpoint: Elasticsearch query scoped to `type=docs`; return matching pages with heading + snippet highlight; unit + e2e tests | `TODO` |
+
+---
+
+## Phase 30: Plugin Ecosystem `TODO`
+
+### FARM-E76: Community Plugin Registry and SDK `TODO`
+
+> Farm's current plugin system uses a static in-memory registry populated at startup. This Epic evolves it into a full community plugin ecosystem: a versioned `plugin.json` manifest spec, a registry API for publishing and discovering plugins, lifecycle management (install, enable, disable, uninstall) per organization, and a frontend renderer that loads plugin UI via React lazy-loading or sandboxed iframes.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S327 | Story | Plugin SDK and `plugin.json` manifest spec v2 -- defines `id`, `version`, `entryPoint`, `permissions`, `menuContributions`, `routeContributions`, `settingsSchema` | `TODO` |
+| FARM-S328 | Story | Community plugin registry API -- search and publish endpoints backed by the Farm DB; install count tracking | `TODO` |
+| FARM-S329 | Story | Plugin lifecycle management -- install, enable, disable, uninstall per organization; `PluginInstance` entity with status state machine | `TODO` |
+| FARM-S330 | Story | Frontend dynamic plugin renderer -- React lazy-loading for route contributions; sandboxed iframe with postMessage bridge for sidebar/panel contributions | `TODO` |
+
+#### FARM-S327 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T354 | Task | Define `plugin.json` manifest v2 schema: `id`, `name`, `version` (semver), `description`, `author`, `license`, `farmMinVersion`, `entryPoint` (URL or npm package), `permissions[]`, `menuContributions[]`, `routeContributions[]`, `settingsSchema` (JSON Schema); publish to `packages/plugin-sdk/schema/plugin.json` | `TODO` |
+| FARM-T355 | Task | `PluginValidator.validate(manifest)`: check required fields, semver format, `farmMinVersion` compatibility, `permissions` against known scopes; return `{ valid: boolean, errors: string[] }`; unit tests | `TODO` |
+
+##### FARM-T354 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST374 | Sub-task | Unit test: valid manifest with all required fields passes validation | `TODO` |
+| FARM-ST375 | Sub-task | Unit test: manifest with missing `id` fails; incompatible `farmMinVersion` (`"99.0.0"`) fails with descriptive error | `TODO` |
+
+#### FARM-S328 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T356 | Task | `PluginRegistryService.search(query, category?)`: queries `PluginManifest` DB table; `publish(manifest)`: validates and upserts; `GET /api/plugins/registry` with `?q=` and `?category=` filters; unit tests | `TODO` |
+| FARM-T357 | Task | `GET /api/plugins/registry/:id` returns full manifest + install count + latest version; `GET /api/plugins/registry/:id/versions` returns version history; unit + e2e tests | `TODO` |
+
+#### FARM-S329 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T358 | Task | `PluginInstance` entity (pluginId, orgId, version, status: `installing | active | disabled | error`, installedAt); `PluginInstanceService.install(pluginId, orgId)`: resolve entry point, validate manifest, create instance; migration; unit tests | `TODO` |
+| FARM-T359 | Task | `POST /api/plugins/:id/enable` and `/disable`: toggle `PluginInstance.status`; `DELETE /api/plugins/:id` uninstalls and clears menu contributions; emit `plugin:status-changed` WebSocket event; unit + e2e tests | `TODO` |
+
+#### FARM-S330 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T360 | Task | `PluginRenderer` component: for route contributions, load via `React.lazy(() => import(entryPoint))` wrapped in `<Suspense>` with skeleton fallback; for sidebar/panel contributions, render a sandboxed `<iframe>` with `sandbox="allow-scripts allow-same-origin"`; unit tests | `TODO` |
+| FARM-T361 | Task | postMessage bridge: `PluginRenderer` listens for `farm:navigate`, `farm:toast`, and `farm:api-request` messages from iframe; injects auth token into API requests; enforces CSP `frame-src` policy; unit tests | `TODO` |
+
+##### FARM-T360 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST376 | Sub-task | Unit test: `PluginRenderer` in iframe mode renders `<iframe sandbox="allow-scripts allow-same-origin">` with the plugin entry point URL as `src` | `TODO` |
+| FARM-ST377 | Sub-task | Unit test: `React.lazy` dynamic import resolves a mock module → component is rendered inside `<Suspense>`; loading skeleton is shown before resolution | `TODO` |
+
+##### FARM-T361 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST378 | Sub-task | Unit test: `farm:navigate` message from iframe calls `router.push` with the provided path | `TODO` |
+| FARM-ST379 | Sub-task | Unit test: `farm:api-request` message from untrusted origin (not matching plugin `entryPoint` host) is rejected and logged as a security warning | `TODO` |
 
 ---
 
@@ -1535,10 +1836,15 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 17: Container Registry Integration | 1 | 6 | `DONE` |
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `DONE` |
 | Phase 19: FinOps | 2 | 11 | `DONE` |
-| Phase 20: Service Mesh Expansion | 1 | 4 | `TODO` |
+| Phase 20: Service Mesh Expansion | 1 | 4 | `DONE` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
-| Phase 25: Feature Availability UX | 1 | 11 | `TODO` |
-| **Total** | **73** | **289** | |
+| Phase 25: Feature Availability UX | 1 | 11 | `DONE` |
+| Phase 26: Auth Provider Expansion | 1 | 5 | `TODO` |
+| Phase 27: Advanced Search | 1 | 4 | `TODO` |
+| Phase 28: Software Templates 2.0 | 1 | 4 | `TODO` |
+| Phase 29: TechDocs 2.0 | 1 | 4 | `TODO` |
+| Phase 30: Plugin Ecosystem | 1 | 4 | `TODO` |
+| **Total** | **78** | **311** | |

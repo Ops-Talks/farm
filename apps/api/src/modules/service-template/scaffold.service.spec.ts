@@ -3,6 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { ScaffoldService } from "./scaffold.service";
 import { ServiceTemplateService } from "./service-template.service";
+import { TemplateEngineService } from "./template-engine.service";
 import {
   ScaffoldRequest,
   ScaffoldRequestStatus,
@@ -13,6 +14,7 @@ describe("ScaffoldService", () => {
   let service: ScaffoldService;
   let scaffoldRepo: Record<string, jest.Mock>;
   let templateService: Record<string, jest.Mock>;
+  let templateEngine: TemplateEngineService;
 
   const mockTemplate: ServiceTemplate = {
     id: "tpl-uuid-1",
@@ -72,6 +74,7 @@ describe("ScaffoldService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScaffoldService,
+        TemplateEngineService,
         {
           provide: getRepositoryToken(ScaffoldRequest),
           useValue: scaffoldRepo,
@@ -81,6 +84,7 @@ describe("ScaffoldService", () => {
     }).compile();
 
     service = module.get<ScaffoldService>(ScaffoldService);
+    templateEngine = module.get<TemplateEngineService>(TemplateEngineService);
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -629,6 +633,113 @@ describe("ScaffoldService", () => {
       for (const file of commonFiles) {
         expect(result.renderedFiles).toContain(file);
       }
+    });
+  });
+
+  describe("dryRun", () => {
+    const noVarsTemplate: ServiceTemplate = {
+      ...mockTemplate,
+      variables: [],
+    };
+
+    it("should return valid=true when all required variables provided", async () => {
+      templateService.findOne.mockResolvedValue(mockTemplate);
+
+      const result = await service.dryRun("tpl-uuid-1", {
+        SERVICE_NAME: "my-service",
+        PORT: "3000",
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.preview).toBeTruthy();
+    });
+
+    it("should return valid=false with errors when required variables missing", async () => {
+      templateService.findOne.mockResolvedValue(mockTemplate);
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toMatch(/Missing required template variables/);
+    });
+
+    it("should return valid=false with errors when pattern validation fails", async () => {
+      const templateWithPattern: ServiceTemplate = {
+        ...mockTemplate,
+        variables: [
+          {
+            key: "SERVICE_NAME",
+            label: "Service Name",
+            description: "Name",
+            required: true,
+            pattern: "^[a-z][a-z0-9-]*$",
+          },
+        ],
+      };
+      templateService.findOne.mockResolvedValue(templateWithPattern);
+
+      const result = await service.dryRun("tpl-uuid-1", {
+        SERVICE_NAME: "INVALID_NAME",
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toMatch(/must match pattern/);
+    });
+
+    it("should truncate preview to 8192 characters", async () => {
+      // Use a template engine spy to return a very long string
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+      const longString = "x".repeat(10000);
+      jest.spyOn(templateEngine, "render").mockReturnValue(longString);
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.preview.length).toBeLessThanOrEqual(8192);
+    });
+
+    it("should work when template has no variables", async () => {
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.preview).toBeTruthy();
+    });
+
+    it("should catch rendering errors and return them in errors array instead of throwing", async () => {
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+      jest
+        .spyOn(templateEngine, "render")
+        .mockImplementation(() => {
+          throw new BadRequestException("Template rendering failed: invalid syntax");
+        });
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/rendering failed/i),
+        ]),
+      );
+    });
+
+    it("should not include variable values in the preview output", async () => {
+      templateService.findOne.mockResolvedValue(mockTemplate);
+
+      const result = await service.dryRun("tpl-uuid-1", {
+        SERVICE_NAME: "secret-service",
+        PORT: "3000",
+      });
+
+      expect(result.preview).not.toContain('"secret-service"');
+      expect(result.preview).not.toContain('"3000"');
+      expect(result.preview).not.toContain("dump");
     });
   });
 });

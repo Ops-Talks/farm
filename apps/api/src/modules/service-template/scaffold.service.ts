@@ -7,7 +7,12 @@ import {
 } from "./entities/scaffold-request.entity";
 import { ServiceTemplate } from "./entities/service-template.entity";
 import { CreateScaffoldRequestDto } from "./dto/scaffold-request.dto";
+import { DryRunResultDto } from "./dto/dry-run-result.dto";
 import { ServiceTemplateService } from "./service-template.service";
+import { TemplateEngineService } from "./template-engine.service";
+
+/** Maximum character length for the rendered preview string. */
+const PREVIEW_MAX_LENGTH = 8192;
 
 /**
  * Service responsible for scaffolding new projects from service templates.
@@ -21,6 +26,7 @@ export class ScaffoldService {
     @InjectRepository(ScaffoldRequest)
     private readonly scaffoldRepository: Repository<ScaffoldRequest>,
     private readonly serviceTemplateService: ServiceTemplateService,
+    private readonly templateEngine: TemplateEngineService,
   ) {}
 
   /**
@@ -150,18 +156,107 @@ export class ScaffoldService {
   }
 
   /**
+   * Performs a dry-run validation of a template against provided variables.
+   * Collects all validation errors instead of throwing, and renders a
+   * representative preview string using the Nunjucks template engine.
+   * @param templateId - UUID of the template to validate
+   * @param variables - Key-value pairs of template variables to validate
+   * @returns A DryRunResultDto with validity status, errors, and preview
+   */
+  async dryRun(
+    templateId: string,
+    variables?: Record<string, string>,
+  ): Promise<DryRunResultDto> {
+    const template = await this.serviceTemplateService.findOne(templateId);
+    const provided = variables ?? {};
+    const errors: string[] = [];
+
+    // Collect missing required variable errors without throwing
+    if (template.variables && template.variables.length > 0) {
+      const missingVariables = template.variables
+        .filter(
+          (v) =>
+            v.required &&
+            (provided[v.key] === undefined || provided[v.key] === ""),
+        )
+        .map((v) => v.key);
+
+      if (missingVariables.length > 0) {
+        errors.push(
+          `Missing required template variables: ${missingVariables.join(", ")}`,
+        );
+      }
+
+      // Collect pattern violations without throwing
+      const patternViolations = template.variables
+        .filter(
+          (v) =>
+            v.pattern &&
+            provided[v.key] !== undefined &&
+            provided[v.key] !== "" &&
+            !new RegExp(v.pattern).test(provided[v.key]),
+        )
+        .map((v) => `${v.key} must match pattern ${v.pattern}`);
+
+      if (patternViolations.length > 0) {
+        errors.push(
+          `Template variable validation failed: ${patternViolations.join("; ")}`,
+        );
+      }
+    }
+
+    let files: string[] = [];
+    try {
+      files = this.generateFileTreePreview(template, variables);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`File tree rendering failed: ${message}`);
+    }
+
+    const previewTemplate = [
+      "# {{ name }} Preview",
+      "Files to be created:",
+      "{% for f in files %}",
+      "- {{ f }}",
+      "{% endfor %}",
+    ].join("\n");
+
+    let rendered = "";
+    try {
+      rendered = this.templateEngine.render(previewTemplate, {
+        name: template.name,
+        files,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`Preview rendering failed: ${message}`);
+    }
+
+    const preview =
+      rendered.length > PREVIEW_MAX_LENGTH
+        ? rendered.slice(0, PREVIEW_MAX_LENGTH)
+        : rendered;
+
+    return { valid: errors.length === 0, errors, preview };
+  }
+
+  /**
    * Generates a simulated file tree preview for a dry-run scaffold.
    * The file structure varies based on the template's language and framework.
+   * File paths that contain Nunjucks syntax are rendered using the template engine.
    * @param template - The service template
    * @param variables - User-provided variables for path interpolation
    * @returns Array of file paths representing the scaffolded project structure
    */
-  private generateFileTreePreview(
+  protected generateFileTreePreview(
     template: ServiceTemplate,
     variables?: Record<string, string>,
   ): string[] {
-    const serviceName =
-      variables?.SERVICE_NAME ?? variables?.APP_NAME ?? "my-service";
+    const vars: Record<string, unknown> = {
+      ...(variables ?? {}),
+      SERVICE_NAME:
+        variables?.SERVICE_NAME ?? variables?.APP_NAME ?? "my-service",
+    };
 
     const commonFiles = [
       "README.md",
@@ -200,7 +295,7 @@ export class ScaffoldService {
         "go.mod",
         "go.sum",
         "Makefile",
-        `cmd/${serviceName}/main.go`,
+        `cmd/{{ SERVICE_NAME | default("my-service") }}/main.go`,
         `internal/handler/health.go`,
         `internal/handler/router.go`,
         `internal/config/config.go`,
@@ -210,18 +305,25 @@ export class ScaffoldService {
         "pyproject.toml",
         "requirements.txt",
         "Makefile",
-        `${serviceName}/__init__.py`,
-        `${serviceName}/main.py`,
-        `${serviceName}/worker.py`,
-        `${serviceName}/config.py`,
+        `{{ SERVICE_NAME | default("my-service") }}/__init__.py`,
+        `{{ SERVICE_NAME | default("my-service") }}/main.py`,
+        `{{ SERVICE_NAME | default("my-service") }}/worker.py`,
+        `{{ SERVICE_NAME | default("my-service") }}/config.py`,
         `tests/__init__.py`,
         `tests/test_worker.py`,
       ],
     };
 
-    const files =
+    const rawFiles =
       frameworkFiles[template.framework] ?? frameworkFiles["nestjs"];
 
-    return [...commonFiles, ...files];
+    const renderedFiles = rawFiles.map((path) => {
+      if (!path.includes("{{")) {
+        return path;
+      }
+      return this.templateEngine.render(path, vars);
+    });
+
+    return [...commonFiles, ...renderedFiles];
   }
 }

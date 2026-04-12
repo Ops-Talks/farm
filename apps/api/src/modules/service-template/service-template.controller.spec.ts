@@ -9,6 +9,7 @@ import {
 } from "./entities/scaffold-request.entity";
 import { CreateServiceTemplateDto } from "./dto/create-service-template.dto";
 import { UpdateServiceTemplateDto } from "./dto/update-service-template.dto";
+import { DryRunResultDto } from "./dto/dry-run-result.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 
 const mockTemplateService = {
@@ -21,6 +22,7 @@ const mockTemplateService = {
 
 const mockScaffoldService = {
   scaffold: jest.fn(),
+  dryRun: jest.fn(),
 };
 
 describe("ServiceTemplateController", () => {
@@ -57,6 +59,12 @@ describe("ServiceTemplateController", () => {
     organizationId: "org-uuid-1",
     createdAt: new Date("2024-01-01T00:00:00Z"),
     updatedAt: new Date("2024-01-01T00:00:00Z"),
+  };
+
+  const mockDryRunResult: DryRunResultDto = {
+    valid: true,
+    errors: [],
+    preview: "# nestjs-api Preview\nFiles to be created:\n- README.md",
   };
 
   const mockRequest = {
@@ -222,6 +230,105 @@ describe("ServiceTemplateController", () => {
         { ...dto, dryRun: true },
         "user-uuid-1",
         "org-uuid-1",
+      );
+    });
+  });
+
+  describe("POST /:id/dry-run", () => {
+    it("should call scaffoldService.dryRun with provided variables", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+
+      const dto = { variables: { SERVICE_NAME: "my-service" } };
+      const result = await controller.dryRun("tpl-uuid-1", dto);
+
+      expect(result).toEqual(mockDryRunResult);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith("tpl-uuid-1", {
+        SERVICE_NAME: "my-service",
+      });
+    });
+
+    it("should call scaffoldService.dryRun with undefined variables when body is empty", async () => {
+      const invalidResult: DryRunResultDto = {
+        valid: false,
+        errors: ["Missing required template variables: SERVICE_NAME"],
+        preview: "# nestjs-api Preview",
+      };
+      scaffoldService.dryRun.mockResolvedValue(invalidResult);
+
+      const result = await controller.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith(
+        "tpl-uuid-1",
+        undefined,
+      );
+    });
+
+    it("should return valid=true result when all variables are valid", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+
+      const result = await controller.dryRun("tpl-uuid-1", {
+        variables: { SERVICE_NAME: "valid-service" },
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+  });
+
+  describe("GET /:id/preview", () => {
+    it("should decode base64url vars and call scaffoldService.dryRun", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+      const vars = Buffer.from(
+        JSON.stringify({ SERVICE_NAME: "my-service" }),
+      ).toString("base64url");
+
+      const result = await controller.preview("tpl-uuid-1", { vars });
+
+      expect(result).toEqual(mockDryRunResult);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith("tpl-uuid-1", {
+        SERVICE_NAME: "my-service",
+      });
+    });
+
+    it("should treat invalid base64 as empty vars without throwing", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+
+      const result = await controller.preview("tpl-uuid-1", {
+        vars: "!!!not-valid-base64!!!",
+      });
+
+      expect(result).toEqual(mockDryRunResult);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith(
+        "tpl-uuid-1",
+        undefined,
+      );
+    });
+
+    it("should call scaffoldService.dryRun with undefined when vars query param is absent", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+
+      const result = await controller.preview("tpl-uuid-1", {});
+
+      expect(result).toEqual(mockDryRunResult);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith(
+        "tpl-uuid-1",
+        undefined,
+      );
+    });
+
+    it("should treat valid base64url with invalid JSON as empty vars", async () => {
+      scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
+      // Valid base64url but not valid JSON
+      const vars = Buffer.from("not-json-content").toString("base64url");
+
+      const result = await controller.preview("tpl-uuid-1", { vars });
+
+      expect(result).toEqual(mockDryRunResult);
+      expect(scaffoldService.dryRun).toHaveBeenCalledWith(
+        "tpl-uuid-1",
+        undefined,
       );
     });
   });

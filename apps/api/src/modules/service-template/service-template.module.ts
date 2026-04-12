@@ -3,17 +3,20 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ServiceTemplateService } from "./service-template.service";
 import { ScaffoldService } from "./scaffold.service";
 import { ServiceTemplateController } from "./service-template.controller";
+import { TemplateEngineService } from "./template-engine.service";
 import { ServiceTemplate } from "./entities/service-template.entity";
 import { ScaffoldRequest } from "./entities/scaffold-request.entity";
 
 /**
  * Module for managing service templates and scaffold operations
  * as part of the developer self-service workflow (Phase 15).
+ * Extended in Phase 28 (Software Templates 2.0) with Nunjucks rendering,
+ * dry-run validation, and live preview endpoints.
  */
 @Module({
   imports: [TypeOrmModule.forFeature([ServiceTemplate, ScaffoldRequest])],
   controllers: [ServiceTemplateController],
-  providers: [ServiceTemplateService, ScaffoldService],
+  providers: [ServiceTemplateService, ScaffoldService, TemplateEngineService],
   exports: [ServiceTemplateService],
 })
 export class ServiceTemplateModule implements OnModuleInit {
