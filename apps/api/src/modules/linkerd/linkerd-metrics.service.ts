@@ -215,7 +215,7 @@ export class LinkerdMetricsService {
       h: 3600,
       d: 86400,
     };
-    return value * (multipliers[unit] ?? 60);
+    return value * (multipliers[unit] /* istanbul ignore next */ ?? 60);
   }
 
   /**

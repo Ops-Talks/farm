@@ -6,10 +6,13 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: mockUseQuery,
 }));
 
+const mockListServerAuthorizations = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+const mockListAuthorizationPolicies = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+
 vi.mock('@/lib/api-client', () => ({
   linkerd: {
-    listServerAuthorizations: vi.fn(),
-    listAuthorizationPolicies: vi.fn(),
+    listServerAuthorizations: mockListServerAuthorizations,
+    listAuthorizationPolicies: mockListAuthorizationPolicies,
   },
 }));
 
@@ -93,5 +96,21 @@ describe('LinkerdSecurityTab', () => {
     render(<LinkerdSecurityTab component={mockComponent} />);
     expect(screen.getByTestId('linkerd-auth-policy-card')).toBeInTheDocument();
     expect(screen.getByTestId('linkerd-auth-policy-row-my-policy')).toBeInTheDocument();
+  });
+
+  it('invokes queryFn functions which call api-client methods', async () => {
+    mockUseQuery.mockReturnValue({ isLoading: false, isError: false, data: [] });
+    render(<LinkerdSecurityTab component={mockComponent} />);
+
+    const calls = mockUseQuery.mock.calls as Array<[{ queryFn: () => unknown }]>;
+    await calls[0][0].queryFn();
+    await calls[1][0].queryFn();
+
+    expect(mockListServerAuthorizations).toHaveBeenCalledWith(
+      expect.objectContaining({ namespace: 'default' }),
+    );
+    expect(mockListAuthorizationPolicies).toHaveBeenCalledWith(
+      expect.objectContaining({ namespace: 'default' }),
+    );
   });
 });

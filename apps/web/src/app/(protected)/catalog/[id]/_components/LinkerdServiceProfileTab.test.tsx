@@ -6,9 +6,11 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: mockUseQuery,
 }));
 
+const mockListServiceProfiles = vi.hoisted(() => vi.fn().mockResolvedValue([]));
+
 vi.mock('@/lib/api-client', () => ({
   linkerd: {
-    listServiceProfiles: vi.fn(),
+    listServiceProfiles: mockListServiceProfiles,
   },
 }));
 
@@ -97,5 +99,17 @@ describe('LinkerdServiceProfileTab', () => {
     });
     render(<LinkerdServiceProfileTab component={mockComponent} />);
     expect(screen.getByText(/Retry budget/i)).toBeInTheDocument();
+  });
+
+  it('invokes queryFn which calls api-client listServiceProfiles', async () => {
+    mockUseQuery.mockReturnValue({ isLoading: false, isError: false, data: [] });
+    render(<LinkerdServiceProfileTab component={mockComponent} />);
+
+    const calls = mockUseQuery.mock.calls as Array<[{ queryFn: () => unknown }]>;
+    await calls[0][0].queryFn();
+
+    expect(mockListServiceProfiles).toHaveBeenCalledWith(
+      expect.objectContaining({ namespace: 'default' }),
+    );
   });
 });

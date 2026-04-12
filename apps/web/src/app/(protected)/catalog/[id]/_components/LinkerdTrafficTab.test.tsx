@@ -7,11 +7,15 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: mockUseQuery,
 }));
 
+const mockGetMetricsRps = vi.hoisted(() => vi.fn().mockResolvedValue({ query: '', timeseries: [] }));
+const mockGetMetricsErrorRate = vi.hoisted(() => vi.fn().mockResolvedValue({ query: '', timeseries: [] }));
+const mockGetMetricsLatency = vi.hoisted(() => vi.fn().mockResolvedValue({ p50: null, p95: null, p99: null }));
+
 vi.mock('@/lib/api-client', () => ({
   linkerd: {
-    getMetricsRps: vi.fn(),
-    getMetricsErrorRate: vi.fn(),
-    getMetricsLatency: vi.fn(),
+    getMetricsRps: mockGetMetricsRps,
+    getMetricsErrorRate: mockGetMetricsErrorRate,
+    getMetricsLatency: mockGetMetricsLatency,
   },
 }));
 
@@ -77,5 +81,25 @@ describe('LinkerdTrafficTab', () => {
       .mockReturnValueOnce({ isLoading: false, isError: false, data: undefined });
     render(<LinkerdTrafficTab component={mockComponent} />);
     expect(screen.getByTestId('linkerd-rps-table')).toBeInTheDocument();
+  });
+
+  it('invokes queryFn functions which call api-client methods', async () => {
+    mockUseQuery.mockReturnValue({ isLoading: false, isError: false, data: undefined });
+    render(<LinkerdTrafficTab component={mockComponent} />);
+
+    const calls = mockUseQuery.mock.calls as Array<[{ queryFn: () => unknown }]>;
+    await calls[0][0].queryFn();
+    await calls[1][0].queryFn();
+    await calls[2][0].queryFn();
+
+    expect(mockGetMetricsRps).toHaveBeenCalledWith(
+      expect.objectContaining({ deployment: 'my-service', namespace: 'default' }),
+    );
+    expect(mockGetMetricsErrorRate).toHaveBeenCalledWith(
+      expect.objectContaining({ deployment: 'my-service' }),
+    );
+    expect(mockGetMetricsLatency).toHaveBeenCalledWith(
+      expect.objectContaining({ deployment: 'my-service' }),
+    );
   });
 });

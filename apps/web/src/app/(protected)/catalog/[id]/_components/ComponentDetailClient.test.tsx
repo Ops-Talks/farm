@@ -11,6 +11,7 @@ const mockListDeployments = vi.fn();
 const mockPush = vi.fn();
 const mockGetCostEstimate = vi.fn().mockResolvedValue(null);
 const mockGetActualCost = vi.fn().mockResolvedValue(null);
+const mockLinkerdGetStatus = vi.fn().mockResolvedValue({ installed: false, components: [] });
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
@@ -45,7 +46,7 @@ vi.mock("@/lib/api-client", () => ({
     getActualCost: (...args: unknown[]) => mockGetActualCost(...args),
   },
   linkerd: {
-    getStatus: vi.fn().mockResolvedValue({ installed: false, components: [] }),
+    getStatus: (...args: unknown[]) => mockLinkerdGetStatus(...args),
   },
 }));
 
@@ -623,6 +624,24 @@ describe("ComponentDetailClient", () => {
 
       await waitFor(() => {
         expect(screen.getByText("cancelled")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Linkerd status error handling
+  // ---------------------------------------------------------------------------
+
+  describe("Linkerd status", () => {
+    it("renders without crash when linkerd.getStatus rejects", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockLinkerdGetStatus.mockRejectedValue(new Error("Linkerd unavailable"));
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("auth-service")).toBeInTheDocument();
       });
     });
   });

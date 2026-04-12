@@ -244,6 +244,63 @@ describe("LinkerdMetricsService", () => {
       expect(edges).toHaveLength(1);
     });
 
+    it("produces undefined rps when values array is empty", async () => {
+      const response = buildPrometheusResponse([
+        {
+          metric: {
+            deployment: "a",
+            dst_deployment: "b",
+            namespace: "default",
+          },
+          values: [],
+        },
+      ]);
+      mockHttpService.get.mockReturnValue(of(response));
+
+      const edges = await service.buildTopology("5m");
+      expect(edges).toHaveLength(1);
+      expect(edges[0].rps).toBeUndefined();
+    });
+
+    it("defaults namespace to 'default' when label is absent", async () => {
+      const response = buildPrometheusResponse([
+        {
+          metric: { deployment: "svc-a", dst_deployment: "svc-b" },
+          values: [[1700000000, "1.0"]],
+        },
+      ]);
+      mockHttpService.get.mockReturnValue(of(response));
+
+      const edges = await service.buildTopology("5m");
+      expect(edges).toHaveLength(1);
+      expect(edges[0].namespace).toBe("default");
+    });
+
+    it("deduplicates two series with identical source/destination/namespace", async () => {
+      const response = buildPrometheusResponse([
+        {
+          metric: {
+            deployment: "a",
+            dst_deployment: "b",
+            namespace: "ns",
+          },
+          values: [[1700000000, "1.0"]],
+        },
+        {
+          metric: {
+            deployment: "a",
+            dst_deployment: "b",
+            namespace: "ns",
+          },
+          values: [[1700000060, "2.0"]],
+        },
+      ]);
+      mockHttpService.get.mockReturnValue(of(response));
+
+      const edges = await service.buildTopology("5m");
+      expect(edges).toHaveLength(1);
+    });
+
     it("returns empty array when Prometheus is unreachable", async () => {
       mockHttpService.get.mockReturnValue(
         throwError(() => new Error("ECONNREFUSED")),
@@ -335,6 +392,20 @@ describe("LinkerdMetricsService", () => {
         config: { headers: {} } as AxiosResponse["config"],
       };
       mockHttpService.get.mockReturnValue(of(errorResponse));
+
+      const result = await service.getServiceRps("svc", "ns", "5m");
+      expect(result.timeseries).toEqual([]);
+    });
+
+    it("returns empty timeseries when status is 'success' but data.data is null", async () => {
+      const response: AxiosResponse<PrometheusApiResponse> = {
+        data: { status: "success", data: null as never },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: { headers: {} } as AxiosResponse["config"],
+      };
+      mockHttpService.get.mockReturnValue(of(response));
 
       const result = await service.getServiceRps("svc", "ns", "5m");
       expect(result.timeseries).toEqual([]);

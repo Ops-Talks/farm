@@ -263,6 +263,36 @@ describe("LinkerdService", () => {
       expect(result.installed).toBe(true);
       expect(result.components).toEqual([]);
     });
+
+    it("uses inline kubeconfig to build AppsV1Api client", async () => {
+      const inlineYaml = "apiVersion: v1\nclusters: []\n";
+      mockMakeApiClient
+        .mockReturnValueOnce(mockCustomObjectsApi)
+        .mockReturnValueOnce(mockAppsV1Api);
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      mockListNamespacedDeployment.mockResolvedValue({
+        items: [fakeDeployment("linkerd-controller")],
+      });
+
+      const result = await service.getStatus(inlineYaml);
+
+      expect(mockLoadFromString).toHaveBeenCalledWith(inlineYaml);
+      expect(result.installed).toBe(true);
+    });
+
+    it("returns empty components when getAppsV1Api fails with inline kubeconfig", async () => {
+      const inlineYaml = "apiVersion: v1\n";
+      mockMakeApiClient
+        .mockReturnValueOnce(mockCustomObjectsApi)
+        .mockImplementationOnce(() => {
+          throw new Error("failed");
+        });
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+
+      const result = await service.getStatus(inlineYaml);
+      expect(result.installed).toBe(true);
+      expect(result.components).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -370,11 +400,14 @@ describe("LinkerdService", () => {
       const result = await service.listAuthorizationPolicies("default");
       expect(result).toEqual([]);
     });
-  });
 
-  // ---------------------------------------------------------------------------
-  // listServiceProfiles
-  // ---------------------------------------------------------------------------
+    it("returns empty array on generic non-404 error", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue(makeGenericError());
+
+      const result = await service.listAuthorizationPolicies("default");
+      expect(result).toEqual([]);
+    });
+  });
 
   describe("listServiceProfiles", () => {
     it("returns mapped ServiceProfile resources with routes", async () => {
@@ -418,6 +451,24 @@ describe("LinkerdService", () => {
 
       expect(result[0].routes).toEqual([]);
       expect(result[0].retryBudget).toBeUndefined();
+    });
+
+    it("returns empty array on generic non-404 error", async () => {
+      mockListNamespacedCustomObject.mockRejectedValue(makeGenericError());
+
+      const result = await service.listServiceProfiles("default");
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildTopologyPlaceholder
+  // ---------------------------------------------------------------------------
+
+  describe("buildTopologyPlaceholder", () => {
+    it("returns an empty array", () => {
+      const result = service.buildTopologyPlaceholder();
+      expect(result).toEqual([]);
     });
   });
 
