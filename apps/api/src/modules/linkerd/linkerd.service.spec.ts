@@ -280,6 +280,19 @@ describe("LinkerdService", () => {
       expect(result.installed).toBe(true);
     });
 
+    it("uses file path kubeconfig to build AppsV1Api client", async () => {
+      const filePath = "/home/user/.kube/config";
+      mockMakeApiClient
+        .mockReturnValueOnce(mockCustomObjectsApi)
+        .mockReturnValueOnce(mockAppsV1Api);
+      mockListClusterCustomObject.mockResolvedValue({ items: [] });
+      mockListNamespacedDeployment.mockResolvedValue({ items: [] });
+
+      await service.getStatus(filePath);
+
+      expect(mockLoadFromFile).toHaveBeenCalledWith(filePath);
+    });
+
     it("returns empty components when getAppsV1Api fails with inline kubeconfig", async () => {
       const inlineYaml = "apiVersion: v1\n";
       mockMakeApiClient

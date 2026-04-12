@@ -128,6 +128,20 @@ describe("LinkerdMetricsService", () => {
       ];
       expect(callArgs[1].params.query).toContain('direction="inbound"');
     });
+
+    it("returns empty timeseries when result series has no values field", async () => {
+      const response = buildPrometheusResponse([
+        {
+          metric: { deployment: "svc", namespace: "default" },
+          values: undefined as unknown as [number, string][],
+        },
+      ]);
+      mockHttpService.get.mockReturnValue(of(response));
+
+      const result = await service.getServiceRps("svc", "default", "5m");
+      expect(result.timeseries).toHaveLength(1);
+      expect(result.timeseries[0].values).toEqual([]);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -274,6 +288,19 @@ describe("LinkerdMetricsService", () => {
       const edges = await service.buildTopology("5m");
       expect(edges).toHaveLength(1);
       expect(edges[0].namespace).toBe("default");
+    });
+
+    it("uses empty string source when deployment label is absent", async () => {
+      const response = buildPrometheusResponse([
+        {
+          metric: { dst_deployment: "svc-b", namespace: "default" },
+          values: [[1700000000, "1.0"]],
+        },
+      ]);
+      mockHttpService.get.mockReturnValue(of(response));
+
+      const edges = await service.buildTopology("5m");
+      expect(edges).toHaveLength(0);
     });
 
     it("deduplicates two series with identical source/destination/namespace", async () => {

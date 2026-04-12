@@ -735,6 +735,11 @@ describe("KubernetesService", () => {
       const api = service.getCustomObjectsApi();
       expect(api).not.toBeNull();
     });
+
+    it("should return the AppsV1Api instance", () => {
+      const api = service.getAppsV1Api();
+      expect(api).not.toBeNull();
+    });
   });
 
   describe("discoverWorkloads — appsV1Api is null", () => {
