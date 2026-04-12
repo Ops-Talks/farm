@@ -60,11 +60,12 @@ RUN npm install -g npm@latest \
  && rm brace-expansion-5.0.5.tgz
 
 # Upgrade Alpine system packages to their patched versions:
-#   zlib    >=1.3.2-r0  CVE-2026-27171, CVE-2026-22184
-#   libssl3 >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
-#   musl    >=1.2.5-r22 CVE-2026-6042 (security flaw in musl libc up to 1.2.6)
+#   zlib       >=1.3.2-r0  CVE-2026-27171, CVE-2026-22184
+#   libssl3    >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
+#   libcrypto3 >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
+#   musl       >=1.2.5-r22 CVE-2026-6042 (security flaw in musl libc up to 1.2.6)
 RUN apk add --no-cache "zlib>=1.3.2-r0" "libssl3>=3.5.6-r0" "libcrypto3>=3.5.6-r0" \
- && apk upgrade --no-cache musl musl-utils
+ "musl>=1.2.5-r22" "musl-utils>=1.2.5-r22"
 
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
