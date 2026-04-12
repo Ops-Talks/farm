@@ -206,5 +206,5 @@ export const validationSchema = Joi.object({
   // OpenCost integration (optional)
   OPENCOST_URL: Joi.string().uri().default("http://localhost:9090"),
   // OPA integration (optional)
-  OPA_URL: Joi.string().optional(),
+  OPA_URL: Joi.string().uri().default("http://localhost:8181"),
 });

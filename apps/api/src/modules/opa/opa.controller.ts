@@ -20,7 +20,7 @@ import {
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OpaService } from "./opa.service";
 import { EvaluateOpaDto } from "./dto/evaluate-opa.dto";
-import { OpaResult } from "./entities/opa-result.entity";
+import { OpaResultResponseDto } from "./dto/opa-result-response.dto";
 import { OpaStatusResponseDto } from "./dto/opa-status-response.dto";
 
 /**
@@ -90,11 +90,12 @@ export class OpaController {
   @ApiParam({ name: "componentId", description: "Catalog component UUID" })
   @ApiOkResponse({
     description: "Returns stored OPA evaluation results.",
-    type: [OpaResult],
+    type: [OpaResultResponseDto],
   })
   async listResults(
     @Param("componentId") componentId: string,
-  ): Promise<OpaResult[]> {
-    return this.opaService.listResults(componentId);
+  ): Promise<OpaResultResponseDto[]> {
+    const entities = await this.opaService.listResults(componentId);
+    return entities.map((entity) => OpaResultResponseDto.fromEntity(entity));
   }
 }

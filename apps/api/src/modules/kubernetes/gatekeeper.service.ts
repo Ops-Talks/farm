@@ -152,6 +152,8 @@ export class GatekeeperService {
 
   /**
    * Lists all Gatekeeper ConstraintTemplate resources installed in the cluster.
+   * For each template, derives enforcement action and violation count from its
+   * associated Constraint instances.
    * Returns an empty array gracefully when the CRD is not installed.
    *
    * @returns Array of mapped ConstraintTemplate descriptors
@@ -172,9 +174,50 @@ export class GatekeeperService {
         plural: this.TEMPLATES_PLURAL,
       })) as RawConstraintTemplateList;
 
-      return (response.items ?? []).map((item) =>
-        this.mapConstraintTemplate(item),
-      );
+      const templates = response.items ?? [];
+      const results: GatekeeperConstraintTemplate[] = [];
+
+      for (const item of templates) {
+        const base = this.mapConstraintTemplate(item);
+        const plural = item.metadata.name.toLowerCase();
+
+        try {
+          const constraintResponse = (await api.listClusterCustomObject({
+            group: this.CONSTRAINTS_GROUP,
+            version: this.CONSTRAINTS_VERSION,
+            plural,
+          })) as RawConstraintInstanceList;
+
+          const instances = constraintResponse.items ?? [];
+          let totalViolations = 0;
+          let derivedAction: "deny" | "warn" | "dryrun" = "warn";
+
+          for (const instance of instances) {
+            totalViolations += instance.status?.violations?.length ?? 0;
+            const action = instance.spec?.enforcementAction;
+            if (action) {
+              derivedAction = this.normalizeEnforcementAction(action);
+            }
+          }
+
+          base.enforcementAction = derivedAction;
+          base.violationCount = totalViolations;
+        } catch (error) {
+          const status = (error as { response?: { statusCode?: number } })
+            ?.response?.statusCode;
+          if (status !== 404) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            this.logger.debug(
+              `Failed to list constraints for template "${plural}": ${message}`,
+            );
+          }
+        }
+
+        results.push(base);
+      }
+
+      return results;
     } catch (error) {
       const status = (error as { response?: { statusCode?: number } })?.response
         ?.statusCode;

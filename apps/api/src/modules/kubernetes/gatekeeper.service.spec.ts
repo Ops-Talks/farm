@@ -105,11 +105,12 @@ describe("GatekeeperService", () => {
       expect(result).toEqual([]);
     });
 
-    it("should return mapped templates on success", async () => {
+    it("should return mapped templates with computed enforcementAction and violationCount", async () => {
       mockKubernetesService.getCustomObjectsApi.mockReturnValue(
         mockCustomObjectsApi,
       );
-      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValue({
+      // First call: list templates
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
         items: [
           {
             metadata: {
@@ -122,12 +123,52 @@ describe("GatekeeperService", () => {
           },
         ],
       });
+      // Second call: list constraint instances for "k8srequiredlabels"
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: { name: "require-env-label" },
+            spec: { enforcementAction: "deny" },
+            status: {
+              violations: [
+                { name: "pod-a", namespace: "default", message: "missing" },
+                { name: "pod-b", namespace: "prod", message: "missing" },
+              ],
+            },
+          },
+        ],
+      });
 
       const result = await service.listConstraintTemplates();
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe("k8srequiredlabels");
       expect(result[0].group).toBe("templates.gatekeeper.sh");
       expect(result[0].description).toBe("Requires labels");
+      expect(result[0].enforcementAction).toBe("deny");
+      expect(result[0].violationCount).toBe(2);
+    });
+
+    it("should default enforcementAction to warn and violationCount to 0 when no constraints exist", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      // First call: list templates
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: { name: "k8srequiredlabels" },
+            spec: {},
+          },
+        ],
+      });
+      // Second call: no constraint instances
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [],
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result).toHaveLength(1);
+      expect(result[0].enforcementAction).toBe("warn");
       expect(result[0].violationCount).toBe(0);
     });
 
@@ -140,6 +181,30 @@ describe("GatekeeperService", () => {
       });
       const result = await service.listConstraintTemplates();
       expect(result).toEqual([]);
+    });
+
+    it("should gracefully handle 404 when listing constraint instances for a template", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      // First call: list templates
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: { name: "k8srequiredlabels" },
+            spec: {},
+          },
+        ],
+      });
+      // Second call: constraint instances 404
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce({
+        response: { statusCode: 404 },
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result).toHaveLength(1);
+      expect(result[0].enforcementAction).toBe("warn");
+      expect(result[0].violationCount).toBe(0);
     });
   });
 
@@ -171,29 +236,34 @@ describe("GatekeeperService", () => {
         mockCustomObjectsApi,
       );
 
-      // First call: listConstraintTemplates
+      const constraintInstances = [
+        {
+          metadata: { name: "require-env-label" },
+          spec: { enforcementAction: "deny" },
+          status: {
+            violations: [
+              {
+                name: "my-pod",
+                namespace: "default",
+                message: "Missing label env",
+                enforcementAction: "deny",
+              },
+            ],
+          },
+        },
+      ];
+
+      // Call 1: listConstraintTemplates -> list templates
       mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
         items: [{ metadata: { name: "K8sRequiredLabels" } }],
       });
-
-      // Second call: list constraint instances for "k8srequiredlabels"
+      // Call 2: listConstraintTemplates -> list constraints for "k8srequiredlabels"
       mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
-        items: [
-          {
-            metadata: { name: "require-env-label" },
-            spec: { enforcementAction: "deny" },
-            status: {
-              violations: [
-                {
-                  name: "my-pod",
-                  namespace: "default",
-                  message: "Missing label env",
-                  enforcementAction: "deny",
-                },
-              ],
-            },
-          },
-        ],
+        items: constraintInstances,
+      });
+      // Call 3: listViolations -> list constraints for "k8srequiredlabels"
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: constraintInstances,
       });
 
       const result = await service.listViolations();
@@ -211,10 +281,15 @@ describe("GatekeeperService", () => {
         mockCustomObjectsApi,
       );
 
+      // Call 1: listConstraintTemplates -> list templates
       mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
         items: [{ metadata: { name: "K8sRequiredLabels" } }],
       });
-
+      // Call 2: listConstraintTemplates -> list constraints (404)
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce({
+        response: { statusCode: 404 },
+      });
+      // Call 3: listViolations -> list constraints (404)
       mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce({
         response: { statusCode: 404 },
       });
@@ -228,33 +303,40 @@ describe("GatekeeperService", () => {
         mockCustomObjectsApi,
       );
 
+      const constraintInstances = [
+        {
+          metadata: { name: "require-env-label" },
+          spec: { enforcementAction: "warn" },
+          status: {
+            violations: [
+              {
+                name: "pod-a",
+                namespace: "prod",
+                message: "Missing label",
+                enforcementAction: "warn",
+              },
+              {
+                name: "pod-b",
+                namespace: "staging",
+                message: "Missing label",
+                enforcementAction: "warn",
+              },
+            ],
+          },
+        },
+      ];
+
+      // Call 1: listConstraintTemplates -> list templates
       mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
         items: [{ metadata: { name: "K8sRequiredLabels" } }],
       });
-
+      // Call 2: listConstraintTemplates -> list constraints
       mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
-        items: [
-          {
-            metadata: { name: "require-env-label" },
-            spec: { enforcementAction: "warn" },
-            status: {
-              violations: [
-                {
-                  name: "pod-a",
-                  namespace: "prod",
-                  message: "Missing label",
-                  enforcementAction: "warn",
-                },
-                {
-                  name: "pod-b",
-                  namespace: "staging",
-                  message: "Missing label",
-                  enforcementAction: "warn",
-                },
-              ],
-            },
-          },
-        ],
+        items: constraintInstances,
+      });
+      // Call 3: listViolations -> list constraints
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: constraintInstances,
       });
 
       const result = await service.listViolations("prod");

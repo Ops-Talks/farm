@@ -1,4 +1,10 @@
-import { IsObject, IsOptional, IsString } from "class-validator";
+import {
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /**
@@ -8,6 +14,7 @@ export class EvaluateOpaDto {
   /** OPA policy path to evaluate, e.g. "app/rbac/allow" */
   @ApiProperty({ description: "OPA policy path to evaluate" })
   @IsString()
+  @IsNotEmpty()
   policyPath: string;
 
   /** Arbitrary input document passed to the policy */
@@ -22,7 +29,7 @@ export class EvaluateOpaDto {
   @ApiPropertyOptional({
     description: "Catalog component UUID; result is saved when provided",
   })
-  @IsString()
+  @IsUUID()
   @IsOptional()
   componentId?: string;
 }

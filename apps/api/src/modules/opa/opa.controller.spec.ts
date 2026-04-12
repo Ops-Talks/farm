@@ -3,6 +3,7 @@ import { OpaController } from "./opa.controller";
 import { OpaService } from "./opa.service";
 import { OpaResult } from "./entities/opa-result.entity";
 import { EvaluateOpaDto } from "./dto/evaluate-opa.dto";
+import { OpaResultResponseDto } from "./dto/opa-result-response.dto";
 
 describe("OpaController", () => {
   let controller: OpaController;
@@ -115,7 +116,8 @@ describe("OpaController", () => {
   // ---------------------------------------------------------------------------
 
   describe("listResults", () => {
-    it("should return results array from OpaService", async () => {
+    it("should return results array mapped via OpaResultResponseDto", async () => {
+      const now = new Date();
       const mockResults = [
         {
           id: "r1",
@@ -123,13 +125,18 @@ describe("OpaController", () => {
           policyPath: "app/allow",
           allowed: true,
           violations: [],
+          evaluatedAt: now,
+          createdAt: now,
+          updatedAt: now,
         } as OpaResult,
       ];
       opaService.listResults.mockResolvedValue(mockResults);
 
       const result = await controller.listResults("comp-1");
-      expect(result).toBe(mockResults);
       expect(opaService.listResults).toHaveBeenCalledWith("comp-1");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBeInstanceOf(OpaResultResponseDto);
+      expect(result[0].id).toBe("r1");
     });
 
     it("should return empty array when no results exist", async () => {

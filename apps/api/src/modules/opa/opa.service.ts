@@ -88,7 +88,27 @@ export class OpaService {
       body: JSON.stringify({ input }),
     });
 
-    const body = (await response.json()) as OpaDataResponse;
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      const errorDetails = responseText.trim();
+      const errorMessage = errorDetails
+        ? `OPA policy evaluation failed with status ${response.status}: ${errorDetails}`
+        : `OPA policy evaluation failed with status ${response.status}`;
+
+      throw new BadRequestException(errorMessage);
+    }
+
+    let body: OpaDataResponse;
+
+    try {
+      body = JSON.parse(responseText) as OpaDataResponse;
+    } catch {
+      throw new BadRequestException(
+        `OPA policy evaluation returned invalid JSON with status ${response.status}`,
+      );
+    }
+
     const result = body.result;
 
     let allowed: boolean;

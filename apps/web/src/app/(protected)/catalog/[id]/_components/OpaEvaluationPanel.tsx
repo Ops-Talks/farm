@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,7 @@ interface OpaEvaluationPanelProps {
 }
 
 export function OpaEvaluationPanel({ component }: OpaEvaluationPanelProps) {
+  const queryClient = useQueryClient();
   const [policyPath, setPolicyPath] = useState('');
   const [inputJson, setInputJson] = useState(
     JSON.stringify(
@@ -58,6 +59,7 @@ export function OpaEvaluationPanel({ component }: OpaEvaluationPanelProps) {
         componentId: component.id,
       });
       setResult(res);
+      await queryClient.invalidateQueries({ queryKey: ['opa-results', component.id] });
     } catch (err) {
       setEvalError(err instanceof Error ? err.message : 'Evaluation failed');
     } finally {
