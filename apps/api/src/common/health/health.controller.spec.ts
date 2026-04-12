@@ -49,7 +49,12 @@ describe("HealthController", () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn().mockReturnValue("0.2.4"),
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === "version") return "0.2.4";
+              if (key === "health.heapThresholdMb") return 512;
+              if (key === "health.rssThresholdMb") return 1024;
+              return undefined;
+            }),
           },
         },
       ],
@@ -217,7 +222,13 @@ describe("HealthController", () => {
         { provide: DiskHealthIndicator, useValue: { checkStorage: jest.fn() } },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue(undefined) },
+          useValue: {
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === "health.heapThresholdMb") return 512;
+              if (key === "health.rssThresholdMb") return 1024;
+              return undefined;
+            }),
+          },
         },
       ],
     }).compile();

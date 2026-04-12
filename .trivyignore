@@ -1,0 +1,13 @@
+# Trivy advisory suppressions for known dev-only or unfixable vulnerabilities.
+# Each entry must include a justification explaining why suppression is appropriate.
+
+# GHSA-848j-6mx2-7j84 — elliptic: Cryptographic Primitive with a Risky Implementation
+# Severity: LOW
+# Chain: @storybook/nextjs → node-polyfill-webpack-plugin@^2 → crypto-browserify → elliptic
+# Status: No patched version of elliptic exists in npm (advisory marks all versions "*").
+#   The only npm-suggested fix is downgrading @storybook/nextjs to 7.0.14, which is not
+#   viable from 9.x/10.x. All current and latest versions of @storybook/nextjs share the
+#   same dependency chain.
+# Impact: Dev-only. Production Docker images install with --omit=dev; elliptic is never
+#   present in the deployed container. Confirmed: npm audit --omit=dev reports 0 vulnerabilities.
+GHSA-848j-6mx2-7j84

@@ -18,9 +18,7 @@
     "build": "npm run api:build && npm run web:build",
     "lint": "npm run lint -w apps/api && npm run web:lint"
   },
-  "devDependencies": {
-    "picomatch": "^4.0.4"
-  },
+  "devDependencies": {},
   "overrides": {
     "@angular-devkit/core": "19.2.23",
     "@nestjs/core": {
@@ -40,6 +38,7 @@
     "lodash-es": "4.18.1",
     "release-it": {
       "undici": "6.24.1"
-    }
+    },
+    "picomatch": "4.0.4"
   }
 }

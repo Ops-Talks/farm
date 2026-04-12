@@ -121,6 +121,12 @@ export const configuration = () => ({
   opa: {
     url: process.env.OPA_URL || "http://localhost:8181",
   },
+  health: {
+    heapThresholdMb:
+      parseInt(process.env.HEALTH_HEAP_THRESHOLD_MB ?? "512", 10) || 512,
+    rssThresholdMb:
+      parseInt(process.env.HEALTH_RSS_THRESHOLD_MB ?? "1024", 10) || 1024,
+  },
 });
 
 /**
@@ -207,4 +213,7 @@ export const validationSchema = Joi.object({
   OPENCOST_URL: Joi.string().uri().default("http://localhost:9090"),
   // OPA integration (optional)
   OPA_URL: Joi.string().uri().default("http://localhost:8181"),
+  // Health check memory thresholds (MB)
+  HEALTH_HEAP_THRESHOLD_MB: Joi.number().integer().min(64).default(512),
+  HEALTH_RSS_THRESHOLD_MB: Joi.number().integer().min(64).default(1024),
 });
