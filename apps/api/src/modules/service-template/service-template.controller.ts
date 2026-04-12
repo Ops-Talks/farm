@@ -21,6 +21,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from "@nestjs/swagger";
 import { Request } from "express";
 import { ServiceTemplateService } from "./service-template.service";
@@ -29,6 +30,9 @@ import { CreateServiceTemplateDto } from "./dto/create-service-template.dto";
 import { UpdateServiceTemplateDto } from "./dto/update-service-template.dto";
 import { ListTemplatesQueryDto } from "./dto/list-templates-query.dto";
 import { CreateScaffoldRequestDto } from "./dto/scaffold-request.dto";
+import { DryRunRequestDto } from "./dto/dry-run-request.dto";
+import { DryRunResultDto } from "./dto/dry-run-result.dto";
+import { PreviewQueryDto } from "./dto/preview-query.dto";
 import { ServiceTemplate } from "./entities/service-template.entity";
 import { ScaffoldRequest } from "./entities/scaffold-request.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -280,5 +284,90 @@ export class ServiceTemplateController {
       req.user.userId,
       req.organizationId,
     );
+  }
+
+  /**
+   * Validates template variables and returns a structured result with
+   * errors and a rendered preview string.
+   * Unlike POST /:id/scaffold/dry-run, this endpoint does NOT persist a
+   * ScaffoldRequest — it is a lightweight validation-only operation.
+   * @param id - The UUID of the service template to validate against
+   * @param dto - Optional variables to validate
+   * @returns DryRunResultDto with validity status, errors, and preview
+   */
+  @Post(":id/dry-run")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Validate template variables and get a rendered preview",
+  })
+  @ApiParam({
+    name: "id",
+    description: "The UUID of the service template to validate against",
+  })
+  @ApiOkResponse({
+    description: "Dry-run validation completed.",
+    type: DryRunResultDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Service template not found.",
+    type: ErrorResponseDto,
+  })
+  async dryRun(
+    @Param("id") id: string,
+    @Body() dto: DryRunRequestDto,
+  ): Promise<DryRunResultDto> {
+    return await this.scaffoldService.dryRun(id, dto.variables);
+  }
+
+  /**
+   * Returns a live rendered preview for a template using variables supplied
+   * as a base64url-encoded JSON query parameter.
+   * Useful for real-time frontend previews without a POST body.
+   * @param id - The UUID of the service template
+   * @param query - Query params containing optional base64-encoded variables
+   * @returns DryRunResultDto with validity status, errors, and preview
+   */
+  @Get(":id/preview")
+  @ApiOperation({
+    summary: "Live preview of a template with base64-encoded variables",
+  })
+  @ApiParam({
+    name: "id",
+    description: "The UUID of the service template",
+  })
+  @ApiQuery({
+    name: "vars",
+    required: false,
+    description:
+      "Base64url-encoded JSON object of template variable key-value pairs",
+  })
+  @ApiOkResponse({
+    description: "Live preview rendered successfully.",
+    type: DryRunResultDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Service template not found.",
+    type: ErrorResponseDto,
+  })
+  async preview(
+    @Param("id") id: string,
+    @Query() query: PreviewQueryDto,
+  ): Promise<DryRunResultDto> {
+    let decodedVars: Record<string, string> | undefined;
+
+    if (query.vars) {
+      try {
+        decodedVars = JSON.parse(
+          Buffer.from(query.vars, "base64").toString("utf8"),
+        ) as Record<string, string>;
+      } catch {
+        // Invalid base64 or JSON — treat as empty vars
+        decodedVars = undefined;
+      }
+    }
+
+    return await this.scaffoldService.dryRun(id, decodedVars);
   }
 }

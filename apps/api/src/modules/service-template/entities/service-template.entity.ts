@@ -9,8 +9,30 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 
 /**
+ * Supported input types for a template variable.
+ * Stored as a discriminator to drive frontend rendering logic.
+ */
+export type TemplateVariableType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "enum"
+  | "multiselect";
+
+/**
+ * Conditional visibility rule for a template variable.
+ * When the referenced field equals the given value the action is applied.
+ */
+export interface TemplateVariableDependsOn {
+  field: string;
+  equals: string;
+  action: "show" | "hide";
+}
+
+/**
  * Represents a variable that can be provided when scaffolding
  * a new service from a template.
+ * Stored as simple-json — extending this interface requires no DB migration.
  */
 export interface TemplateVariable {
   key: string;
@@ -19,6 +41,12 @@ export interface TemplateVariable {
   default?: string;
   required: boolean;
   pattern?: string;
+  // New in Phase 28 (Software Templates 2.0)
+  type?: TemplateVariableType;
+  /** Valid option values for enum/multiselect types. */
+  options?: string[];
+  placeholder?: string;
+  dependsOn?: TemplateVariableDependsOn;
 }
 
 /**

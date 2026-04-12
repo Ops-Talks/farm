@@ -90,6 +90,8 @@ import type {
   CreateServiceTemplateDto,
   UpdateServiceTemplateDto,
   CreateScaffoldRequestDto,
+  DryRunResultDto,
+  DryRunRequestDto,
   // Environment Requests (FARM-E58)
   EnvironmentRequest,
   CreateEnvironmentRequestDto,
@@ -2198,6 +2200,30 @@ export const serviceTemplates = {
       method: "POST",
       body: JSON.stringify(dto),
     });
+  },
+
+  /**
+   * Validate variables and preview rendered output without executing scaffold.
+   * Returns DryRunResultDto with validity flag, errors list and rendered preview.
+   */
+  dryRun(templateId: string, dto: DryRunRequestDto): Promise<DryRunResultDto> {
+    return request<DryRunResultDto>(`/v1/service-templates/${templateId}/dry-run`, {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /**
+   * Live preview: renders the template with the provided variables.
+   * Variables are base64url-encoded as JSON query parameter for GET semantics.
+   * Uses btoa() which is available in both browser and Node.js 16+ global scope.
+   */
+  preview(templateId: string, vars?: Record<string, string>): Promise<DryRunResultDto> {
+    const encoded = vars
+      ? btoa(unescape(encodeURIComponent(JSON.stringify(vars))))
+      : undefined;
+    const qs = encoded ? `?vars=${encodeURIComponent(encoded)}` : "";
+    return request<DryRunResultDto>(`/v1/service-templates/${templateId}/preview${qs}`);
   },
 };
 

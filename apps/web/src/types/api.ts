@@ -1330,6 +1330,37 @@ export interface TemplateVariable {
   default?: string;
   required: boolean;
   pattern?: string;
+  // Phase 28: extended type system
+  type?: TemplateVariableType;
+  options?: string[];
+  placeholder?: string;
+  dependsOn?: TemplateVariableDependsOn;
+}
+
+export type TemplateVariableType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "enum"
+  | "multiselect";
+
+export interface TemplateVariableDependsOn {
+  /** Key of another variable that controls visibility. */
+  field: string;
+  /** Value of that field that triggers the action. */
+  equals: string;
+  /** Whether to show or hide this field when the condition is met. */
+  action: "show" | "hide";
+}
+
+export interface DryRunResultDto {
+  valid: boolean;
+  errors: string[];
+  preview: string;
+}
+
+export interface DryRunRequestDto {
+  variables?: Record<string, string>;
 }
 
 export interface ServiceTemplate {
