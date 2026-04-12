@@ -916,6 +916,70 @@ export interface IstioLatency {
   p99: IstioMetricsTimeseries;
 }
 
+// -- Linkerd 2.x Service Mesh (Phase 20) --
+
+export interface LinkerdControlPlaneComponent {
+  name: string;
+  ready: boolean;
+  version?: string;
+}
+
+export interface LinkerdStatus {
+  installed: boolean;
+  components: LinkerdControlPlaneComponent[];
+}
+
+export interface LinkerdServerAuthorization {
+  name: string;
+  namespace: string;
+  server: string;
+  clients: string[];
+}
+
+export interface LinkerdAuthorizationPolicy {
+  name: string;
+  namespace: string;
+  targetRef: { kind: string; name: string };
+  requiredAuthenticationRefs: Array<{ name: string; kind: string }>;
+}
+
+export interface LinkerdServiceProfileRoute {
+  name: string;
+  condition?: { pathRegex?: string; method?: string };
+  isRetryable: boolean;
+  timeout?: string;
+}
+
+export interface LinkerdRetryBudget {
+  retryRatio: number;
+  minRetriesPerSecond: number;
+  ttl: string;
+}
+
+export interface LinkerdServiceProfile {
+  name: string;
+  namespace: string;
+  routes: LinkerdServiceProfileRoute[];
+  retryBudget?: LinkerdRetryBudget;
+}
+
+export interface LinkerdTopologyEdge {
+  source: string;
+  destination: string;
+  namespace: string;
+  rps?: number;
+}
+
+/** Reuse IstioMetricsTimeseries shape for Linkerd metrics (same Prometheus response structure). */
+export type LinkerdMetricsTimeseries = IstioMetricsTimeseries;
+
+/** Reuse latency percentile structure for Linkerd. */
+export interface LinkerdLatency {
+  p50: LinkerdMetricsTimeseries;
+  p95: LinkerdMetricsTimeseries;
+  p99: LinkerdMetricsTimeseries;
+}
+
 // -- API Catalog and Lifecycle Management (FARM-E47) --
 
 export type ApiSpecFormat = "openapi" | "asyncapi";
@@ -1519,6 +1583,7 @@ export interface FeatureAvailabilityRaw {
   registry: { available: boolean };
   helm: { available: boolean };
   istio: { available: boolean };
+  linkerd: { available: boolean };
 }
 
 export interface FeatureAvailability {
@@ -1527,6 +1592,7 @@ export interface FeatureAvailability {
   registry: boolean;
   helm: boolean;
   istio: boolean;
+  linkerd: boolean;
   allConfigured: boolean;
 }
 

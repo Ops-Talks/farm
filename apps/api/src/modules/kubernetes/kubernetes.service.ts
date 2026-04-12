@@ -597,6 +597,14 @@ export class KubernetesService {
     return this.customObjectsApi;
   }
 
+  /**
+   * Returns the AppsV1Api instance, or null if not initialized.
+   * Used by LinkerdService and other consumers needing apps resource access.
+   */
+  getAppsV1Api(): k8s.AppsV1Api | null {
+    return this.appsV1Api;
+  }
+
   // ---------------------------------------------------------------------------
   // Workload Discovery
   // ---------------------------------------------------------------------------

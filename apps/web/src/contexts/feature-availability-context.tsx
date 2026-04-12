@@ -16,6 +16,7 @@ const DEFAULT_AVAILABILITY: FeatureAvailabilityContextValue = {
   registry: false,
   helm: false,
   istio: false,
+  linkerd: false,
   allConfigured: false,
   isLoading: true,
 };

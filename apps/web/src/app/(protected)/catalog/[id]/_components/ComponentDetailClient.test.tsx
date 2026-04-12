@@ -11,6 +11,7 @@ const mockListDeployments = vi.fn();
 const mockPush = vi.fn();
 const mockGetCostEstimate = vi.fn().mockResolvedValue(null);
 const mockGetActualCost = vi.fn().mockResolvedValue(null);
+const mockLinkerdGetStatus = vi.fn().mockResolvedValue({ installed: false, components: [] });
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
@@ -43,6 +44,9 @@ vi.mock("@/lib/api-client", () => ({
   finops: {
     getCostEstimate: (...args: unknown[]) => mockGetCostEstimate(...args),
     getActualCost: (...args: unknown[]) => mockGetActualCost(...args),
+  },
+  linkerd: {
+    getStatus: (...args: unknown[]) => mockLinkerdGetStatus(...args),
   },
 }));
 
@@ -86,6 +90,18 @@ vi.mock(
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/IstioCanaryTab",
   () => ({ IstioCanaryTab: () => <div data-testid="istio-canary-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdTrafficTab",
+  () => ({ LinkerdTrafficTab: () => <div data-testid="linkerd-traffic-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdSecurityTab",
+  () => ({ LinkerdSecurityTab: () => <div data-testid="linkerd-security-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdServiceProfileTab",
+  () => ({ LinkerdServiceProfileTab: () => <div data-testid="linkerd-profile-stub" /> }),
 );
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/ApiSpecsTab",
@@ -608,6 +624,24 @@ describe("ComponentDetailClient", () => {
 
       await waitFor(() => {
         expect(screen.getByText("cancelled")).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Linkerd status error handling
+  // ---------------------------------------------------------------------------
+
+  describe("Linkerd status", () => {
+    it("renders without crash when linkerd.getStatus rejects", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockLinkerdGetStatus.mockRejectedValue(new Error("Linkerd unavailable"));
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("auth-service")).toBeInTheDocument();
       });
     });
   });

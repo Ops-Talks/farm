@@ -29,6 +29,7 @@ import {
   tagPolicies,
   kyverno,
   istio,
+  linkerd,
   keycloakCredentials,
   apiSpecs,
   gateway,
@@ -2028,6 +2029,127 @@ describe("api-client", () => {
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("orgId=org-1");
       expect(url).toContain("kubeconfig=");
+    });
+  });
+
+  // ─── Linkerd ──────────────────────────────────────────────────────────────
+
+  describe("linkerd", () => {
+    it("should get Linkerd status without kubeconfig", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ ready: true, components: [] }));
+      const result = await linkerd.getStatus();
+      expect(result.ready).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/linkerd/status", expect.any(Object));
+    });
+
+    it("should get Linkerd status with kubeconfig param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ ready: false, components: [] }));
+      await linkerd.getStatus({ kubeconfig: "/home/user/.kube/config" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("kubeconfig=");
+    });
+
+    it("should list ServerAuthorizations without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([{ name: "sa-1" }]));
+      const result = await linkerd.listServerAuthorizations();
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/linkerd/server-authorizations", expect.any(Object));
+    });
+
+    it("should list ServerAuthorizations with namespace and kubeconfig", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await linkerd.listServerAuthorizations({ namespace: "production", kubeconfig: "/path/to/config" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=production");
+      expect(url).toContain("kubeconfig=");
+    });
+
+    it("should list AuthorizationPolicies without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([{ name: "allow-internal" }]));
+      const result = await linkerd.listAuthorizationPolicies();
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/linkerd/authorization-policies", expect.any(Object));
+    });
+
+    it("should list AuthorizationPolicies with namespace and kubeconfig", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await linkerd.listAuthorizationPolicies({ namespace: "default", kubeconfig: "/path" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=default");
+      expect(url).toContain("kubeconfig=");
+    });
+
+    it("should list ServiceProfiles without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([{ name: "frontend-sp" }]));
+      const result = await linkerd.listServiceProfiles();
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/linkerd/service-profiles", expect.any(Object));
+    });
+
+    it("should list ServiceProfiles with namespace and kubeconfig", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await linkerd.listServiceProfiles({ namespace: "staging", kubeconfig: "/path" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=staging");
+      expect(url).toContain("kubeconfig=");
+    });
+
+    it("should get RPS metrics for a deployment", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ timeseries: [], query: "" }));
+      await linkerd.getMetricsRps({ deployment: "api", namespace: "default" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("deployment=api");
+      expect(url).toContain("namespace=default");
+      expect(url).toContain("/v1/linkerd/metrics/rps");
+    });
+
+    it("should get RPS metrics with range param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ timeseries: [], query: "" }));
+      await linkerd.getMetricsRps({ deployment: "api", namespace: "default", range: "1h" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("range=1h");
+    });
+
+    it("should get error-rate metrics for a deployment", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ timeseries: [], query: "" }));
+      await linkerd.getMetricsErrorRate({ deployment: "api", namespace: "default" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/v1/linkerd/metrics/error-rate");
+    });
+
+    it("should get error-rate metrics with range param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ timeseries: [], query: "" }));
+      await linkerd.getMetricsErrorRate({ deployment: "api", namespace: "default", range: "30m" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("range=30m");
+    });
+
+    it("should get latency percentile metrics", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ p50: { timeseries: [] }, p95: { timeseries: [] }, p99: { timeseries: [] } }));
+      await linkerd.getMetricsLatency({ deployment: "api", namespace: "default" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/v1/linkerd/metrics/latency");
+    });
+
+    it("should get latency metrics with range param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ p50: { timeseries: [] }, p95: { timeseries: [] }, p99: { timeseries: [] } }));
+      await linkerd.getMetricsLatency({ deployment: "api", namespace: "default", range: "6h" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("range=6h");
+    });
+
+    it("should get service topology without params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([{ source: "api", destination: "db" }]));
+      const result = await linkerd.getTopology();
+      expect(result).toHaveLength(1);
+      expect(mockFetch).toHaveBeenCalledWith("/api/v1/linkerd/topology", expect.any(Object));
+    });
+
+    it("should get service topology with range param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await linkerd.getTopology({ range: "1h" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("range=1h");
     });
   });
 

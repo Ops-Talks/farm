@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { RegistryService } from "../registry/registry.service";
 import { IstioService } from "../istio/istio.service";
+import { LinkerdService } from "../linkerd/linkerd.service";
 
 export interface FeatureAvailabilityMap {
   kubernetes: { available: boolean };
@@ -10,6 +11,7 @@ export interface FeatureAvailabilityMap {
   registry: { available: boolean };
   helm: { available: boolean };
   istio: { available: boolean };
+  linkerd: { available: boolean };
 }
 
 /**
@@ -21,6 +23,7 @@ export class FeaturesService {
     private readonly kubernetesService: KubernetesService,
     private readonly registryService: RegistryService,
     private readonly istioService: IstioService,
+    private readonly linkerdService: LinkerdService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -32,6 +35,8 @@ export class FeaturesService {
     const registryAvailable = this.registryService.adapterType !== null;
     const istioAvailable =
       kubernetesAvailable && (await this.istioService.isIstioEnabled());
+    const linkerdAvailable =
+      kubernetesAvailable && (await this.linkerdService.isLinkerdEnabled());
     const opencostUrl = this.configService.get<string>(
       "OPENCOST_URL",
       "http://localhost:9090",
@@ -52,6 +57,7 @@ export class FeaturesService {
       registry: { available: registryAvailable },
       helm: { available: kubernetesAvailable },
       istio: { available: istioAvailable },
+      linkerd: { available: linkerdAvailable },
     };
   }
 }

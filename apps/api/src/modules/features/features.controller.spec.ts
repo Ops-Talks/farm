@@ -13,6 +13,7 @@ describe("FeaturesController", () => {
     registry: { available: true },
     helm: { available: true },
     istio: { available: false },
+    linkerd: { available: false },
   };
 
   beforeEach(async () => {
@@ -50,6 +51,7 @@ describe("FeaturesController", () => {
       expect(result).toHaveProperty("registry");
       expect(result).toHaveProperty("helm");
       expect(result).toHaveProperty("istio");
+      expect(result).toHaveProperty("linkerd");
     });
 
     it("forwards the all-unavailable response when nothing is configured", async () => {
@@ -59,6 +61,7 @@ describe("FeaturesController", () => {
         registry: { available: false },
         helm: { available: false },
         istio: { available: false },
+        linkerd: { available: false },
       };
       featuresService.getAvailability.mockResolvedValue(noneAvailable);
       const result = await controller.getAvailability();
