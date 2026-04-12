@@ -48,6 +48,13 @@ vi.mock("@/lib/api-client", () => ({
   linkerd: {
     getStatus: (...args: unknown[]) => mockLinkerdGetStatus(...args),
   },
+  // Phase 21 — Gatekeeper and OPA are off by default in tests
+  gatekeeper: {
+    isEnabled: vi.fn().mockResolvedValue({ enabled: false }),
+  },
+  opa: {
+    getStatus: vi.fn().mockResolvedValue({ reachable: false, url: '' }),
+  },
 }));
 
 vi.mock("@/lib/otel-spans", () => ({
@@ -126,6 +133,14 @@ vi.mock(
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/KedaBindingCard",
   () => ({ KedaBindingCard: () => <div data-testid="keda-binding-card-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/ConstraintTemplateTable",
+  () => ({ ConstraintTemplateTable: () => <div data-testid="constraint-template-table-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/OpaEvaluationPanel",
+  () => ({ OpaEvaluationPanel: () => <div data-testid="opa-evaluation-panel-stub" /> }),
 );
 
 vi.mock("@/components/finops/CostEstimateCard", () => ({

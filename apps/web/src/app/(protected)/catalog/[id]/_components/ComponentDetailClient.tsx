@@ -12,8 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { catalog, deployments, finops, linkerd as linkerdApi } from "@/lib/api-client";
-import type { CatalogComponent, Deployment, LinkerdStatus } from "@/types/api";
+import { catalog, deployments, finops, linkerd as linkerdApi, gatekeeper as gatekeeperApi, opa as opaApi } from "@/lib/api-client";
+import type { CatalogComponent, Deployment, LinkerdStatus, OpaStatus } from "@/types/api";
 import type { CostEstimate, ComponentActualCost } from "@/lib/api-client";
 import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
@@ -29,6 +29,8 @@ import { IstioCanaryTab } from "./IstioCanaryTab";
 import { LinkerdTrafficTab } from "./LinkerdTrafficTab";
 import { LinkerdSecurityTab } from "./LinkerdSecurityTab";
 import { LinkerdServiceProfileTab } from "./LinkerdServiceProfileTab";
+import { ConstraintTemplateTable } from "./ConstraintTemplateTable";
+import { OpaEvaluationPanel } from "./OpaEvaluationPanel";
 import { ApiSpecsTab } from "./ApiSpecsTab";
 import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { OperatorsTab } from "./OperatorsTab";
@@ -183,6 +185,8 @@ export function ComponentDetailClient() {
   const [actualCost, setActualCost] = useState<ComponentActualCost | null>(null);
   const [budgetBannerDismissed, setBudgetBannerDismissed] = useState(false);
   const [linkerdStatus, setLinkerdStatus] = useState<LinkerdStatus | null>(null);
+  const [gatekeeperEnabled, setGatekeeperEnabled] = useState(false);
+  const [opaReachable, setOpaReachable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -226,6 +230,20 @@ export function ComponentDetailClient() {
   useEffect(() => {
     linkerdApi.getStatus().then(setLinkerdStatus).catch(() => {
       setLinkerdStatus({ installed: false, components: [] });
+    });
+  }, []);
+
+  // Fetch Gatekeeper detection status once on mount (Phase 21).
+  useEffect(() => {
+    gatekeeperApi.isEnabled().then((r) => setGatekeeperEnabled(r.enabled)).catch(() => {
+      setGatekeeperEnabled(false);
+    });
+  }, []);
+
+  // Fetch OPA reachability status once on mount (Phase 21).
+  useEffect(() => {
+    opaApi.getStatus().then((s: OpaStatus) => setOpaReachable(s.reachable)).catch(() => {
+      setOpaReachable(false);
     });
   }, []);
 
@@ -329,6 +347,12 @@ export function ComponentDetailClient() {
               <TabsTrigger value="linkerd-security">Linkerd Security</TabsTrigger>
               <TabsTrigger value="linkerd-profile">Service Profiles</TabsTrigger>
             </>
+          )}
+          {gatekeeperEnabled && (
+            <TabsTrigger value="gatekeeper">Gatekeeper</TabsTrigger>
+          )}
+          {opaReachable && (
+            <TabsTrigger value="opa">OPA</TabsTrigger>
           )}
           <TabsTrigger value="api-specs">API Specs</TabsTrigger>
           {/* Gateway Routes tab (FARM-E48) */}
@@ -658,6 +682,24 @@ export function ComponentDetailClient() {
               </ErrorBoundary>
             </TabsContent>
           </>
+        )}
+
+        {/* ── Gatekeeper tab (Phase 21) ─────────────────────────────── */}
+        {gatekeeperEnabled && (
+          <TabsContent value="gatekeeper">
+            <ErrorBoundary>
+              <ConstraintTemplateTable />
+            </ErrorBoundary>
+          </TabsContent>
+        )}
+
+        {/* ── OPA tab (Phase 21) ────────────────────────────────────── */}
+        {opaReachable && (
+          <TabsContent value="opa">
+            <ErrorBoundary>
+              <OpaEvaluationPanel component={component} />
+            </ErrorBoundary>
+          </TabsContent>
         )}
 
         {/* ── API Specs tab (FARM-E47) ───────────────────────────────────── */}

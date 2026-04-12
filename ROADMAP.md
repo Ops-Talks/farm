@@ -920,9 +920,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 21: Policy Engine Expansion `TODO`
+## Phase 21: Policy Engine Expansion `DONE`
 
-### FARM-E66: OPA and Gatekeeper Integration `TODO`
+### FARM-E66: OPA and Gatekeeper Integration `DONE`
 
 Extend the existing Kyverno policy support to cover Open Policy Agent (OPA) running standalone
 and OPA Gatekeeper (the Kubernetes admission controller built on OPA). Farm reads
@@ -931,41 +931,41 @@ the REST API to evaluate Rego policies and surface violation results alongside K
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S266 | Story | OPA Gatekeeper CRD ingestion -- list `ConstraintTemplate` (templates.gatekeeper.sh/v1) and `Constraint` resources (all CRDs in the `constraints.gatekeeper.sh` group) per namespace; detect Gatekeeper presence via `gatekeeper-system` namespace | `TODO` |
-| FARM-S267 | Story | Gatekeeper violation reporting -- aggregate audit results from `Constraint.status.violations`; map to the same `PolicyViolation` interface already used by Kyverno so the frontend reuses `ViolationsTab` | `TODO` |
-| FARM-S268 | Story | Standalone OPA integration -- configure OPA REST API base URL (`OPA_URL` env var); `POST /v1/data/{policy_path}` to evaluate named Rego policies with a component metadata input document; store and display pass/fail results per component | `TODO` |
-| FARM-S269 | Story | Frontend OPA/Gatekeeper tabs -- extend `ViolationsTab` with a source selector (Kyverno / Gatekeeper / OPA); `ConstraintTemplateTable` listing template name, CRD group, enforcement action; `OpaEvaluationPanel` for on-demand policy evaluation with JSON input editor | `TODO` |
+| FARM-S266 | Story | OPA Gatekeeper CRD ingestion -- list `ConstraintTemplate` (templates.gatekeeper.sh/v1) and `Constraint` resources (all CRDs in the `constraints.gatekeeper.sh` group) per namespace; detect Gatekeeper presence via `gatekeeper-system` namespace | `DONE` |
+| FARM-S267 | Story | Gatekeeper violation reporting -- aggregate audit results from `Constraint.status.violations`; map to the same `PolicyViolation` interface already used by Kyverno so the frontend reuses `ViolationsTab` | `DONE` |
+| FARM-S268 | Story | Standalone OPA integration -- configure OPA REST API base URL (`OPA_URL` env var); `POST /v1/data/{policy_path}` to evaluate named Rego policies with a component metadata input document; store and display pass/fail results per component | `DONE` |
+| FARM-S269 | Story | Frontend OPA/Gatekeeper tabs -- extend `ViolationsTab` with a source selector (Kyverno / Gatekeeper / OPA); `ConstraintTemplateTable` listing template name, CRD group, enforcement action; `OpaEvaluationPanel` for on-demand policy evaluation with JSON input editor | `DONE` |
 
 #### FARM-S266 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T223 | Task | `GatekeeperService.isGatekeeperEnabled()`: check for `gatekeeper-system` namespace and `constrainttemplates.templates.gatekeeper.sh` CRD; graceful `false` when absent | `TODO` |
-| FARM-T224 | Task | `GatekeeperService.listConstraintTemplates()`: list `ConstraintTemplate` resources via `CustomObjectsApi`; return name, CRD group, enforcement action, description; `GET /api/gatekeeper/constraint-templates`; unit + e2e tests | `TODO` |
-| FARM-T225 | Task | `GatekeeperService.listConstraints(namespace)`: dynamically discover all Constraint CRDs from the `constraints.gatekeeper.sh` group and list instances; `GET /api/gatekeeper/constraints`; unit + e2e tests | `TODO` |
+| FARM-T223 | Task | `GatekeeperService.isGatekeeperEnabled()`: check for `gatekeeper-system` namespace and `constrainttemplates.templates.gatekeeper.sh` CRD; graceful `false` when absent | `DONE` |
+| FARM-T224 | Task | `GatekeeperService.listConstraintTemplates()`: list `ConstraintTemplate` resources via `CustomObjectsApi`; return name, CRD group, enforcement action, description; `GET /api/gatekeeper/constraint-templates`; unit + e2e tests | `DONE` |
+| FARM-T225 | Task | `GatekeeperService.listConstraints(namespace)`: dynamically discover all Constraint CRDs from the `constraints.gatekeeper.sh` group and list instances; `GET /api/gatekeeper/constraints`; unit + e2e tests | `DONE` |
 
 #### FARM-S267 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T226 | Task | `GatekeeperService.listViolations(namespace)`: aggregate `status.violations[]` from all Constraint instances; map to `PolicyViolation { kind, name, namespace, message, constraint, enforcementAction }`; `GET /api/gatekeeper/violations`; unit + e2e tests | `TODO` |
-| FARM-T227 | Task | Extend `KubernetesPolicyReportService` (or create `PolicyAggregatorService`) to merge Kyverno and Gatekeeper violations into a unified list; `GET /api/kubernetes/policy-violations?source=kyverno|gatekeeper|all`; unit tests | `TODO` |
+| FARM-T226 | Task | `GatekeeperService.listViolations(namespace)`: aggregate `status.violations[]` from all Constraint instances; map to `PolicyViolation { kind, name, namespace, message, constraint, enforcementAction }`; `GET /api/gatekeeper/violations`; unit + e2e tests | `DONE` |
+| FARM-T227 | Task | Extend `KubernetesPolicyReportService` (or create `PolicyAggregatorService`) to merge Kyverno and Gatekeeper violations into a unified list; `GET /api/kubernetes/policy-violations?source=kyverno|gatekeeper|all`; unit tests | `DONE` |
 
 #### FARM-S268 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T228 | Task | `OpaService`: configure `OPA_URL` env var (default `http://localhost:8181`); `evaluate(policyPath, input)` sends `POST /v1/data/{policyPath}` with component metadata as input document; map result to `OpaResult { allowed, violations: string[] }`; unit tests with fetch mock | `TODO` |
-| FARM-T229 | Task | `OpaModule` with `OpaService` and `OpaController`; register in `app.module.ts`; `GET /api/opa/status` (ping OPA health endpoint); `POST /api/opa/evaluate` accepting `{ policyPath, input }` body; unit + e2e tests | `TODO` |
-| FARM-T230 | Task | Persist OPA evaluation results per component: `OpaResult` entity with `componentId`, `policyPath`, `allowed`, `violations`, `evaluatedAt`; migration; `GET /api/catalog/components/:id/opa-results`; unit tests | `TODO` |
+| FARM-T228 | Task | `OpaService`: configure `OPA_URL` env var (default `http://localhost:8181`); `evaluate(policyPath, input)` sends `POST /v1/data/{policyPath}` with component metadata as input document; map result to `OpaResult { allowed, violations: string[] }`; unit tests with fetch mock | `DONE` |
+| FARM-T229 | Task | `OpaModule` with `OpaService` and `OpaController`; register in `app.module.ts`; `GET /api/opa/status` (ping OPA health endpoint); `POST /api/opa/evaluate` accepting `{ policyPath, input }` body; unit + e2e tests | `DONE` |
+| FARM-T230 | Task | Persist OPA evaluation results per component: `OpaResult` entity with `componentId`, `policyPath`, `allowed`, `violations`, `evaluatedAt`; migration; `GET /api/catalog/components/:id/opa-results`; unit tests | `DONE` |
 
 #### FARM-S269 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T231 | Task | Extend `ViolationsTab` with a `source` toggle (All / Kyverno / Gatekeeper); `ConstraintTemplateTable` component listing template name, CRD group, enforcement action badge; visible only when Gatekeeper is detected | `TODO` |
-| FARM-T232 | Task | `OpaEvaluationPanel` component: policy path input, JSON input editor (textarea with syntax hint), evaluate button calling `POST /api/opa/evaluate`, result badge (allowed/denied) and violations list; visible only when OPA is reachable | `TODO` |
-| FARM-T233 | Task | Add `gatekeeper` and `opa` tabs to `ComponentDetailClient.tsx`; fetch `isGatekeeperEnabled` and OPA status on mount; render tabs conditionally; tests for both new tab components | `TODO` |
+| FARM-T231 | Task | Extend `ViolationsTab` with a `source` toggle (All / Kyverno / Gatekeeper); `ConstraintTemplateTable` component listing template name, CRD group, enforcement action badge; visible only when Gatekeeper is detected | `DONE` |
+| FARM-T232 | Task | `OpaEvaluationPanel` component: policy path input, JSON input editor (textarea with syntax hint), evaluate button calling `POST /api/opa/evaluate`, result badge (allowed/denied) and violations list; visible only when OPA is reachable | `DONE` |
+| FARM-T233 | Task | Add `gatekeeper` and `opa` tabs to `ComponentDetailClient.tsx`; fetch `isGatekeeperEnabled` and OPA status on mount; render tabs conditionally; tests for both new tab components | `DONE` |
 
 ---
 
@@ -1632,60 +1632,60 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 
 ---
 
-## Phase 28: Software Templates 2.0 `TODO`
+## Phase 28: Software Templates 2.0 `DONE`
 
-### FARM-E74: Nunjucks Templating with Dry-run and Live Preview `TODO`
+### FARM-E74: Nunjucks Templating with Dry-run and Live Preview `DONE`
 
 > The current scaffold engine uses Handlebars with a basic variable substitution model. This Epic upgrades to Nunjucks for richer template logic (filters, macros, inheritance), adds a dry-run endpoint that validates variables against the template schema before execution, a live server-side preview API, and a JSON Schema-driven parameter form with type-aware inputs and conditional field visibility.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S319 | Story | Nunjucks template engine -- replace Handlebars with Nunjucks; add built-in string filters (`camelCase`, `snakeCase`, `kebabCase`, `pascalCase`) | `TODO` |
-| FARM-S320 | Story | Dry-run validation endpoint -- `POST /api/v1/service-templates/:id/dry-run` validates variables and returns rendered output without writing files | `TODO` |
-| FARM-S321 | Story | Live template preview -- `GET /api/v1/service-templates/:id/preview` renders the template server-side with provided variables; frontend split-view with auto-refresh | `TODO` |
-| FARM-S322 | Story | JSON Schema-driven parameter form -- extend `ServiceTemplate.parameters` JSONB to support `type`, `validation`, `dependsOn`; `DynamicParameterForm` with conditional field visibility | `TODO` |
+| FARM-S319 | Story | Nunjucks template engine -- replace Handlebars with Nunjucks; add built-in string filters (`camelCase`, `snakeCase`, `kebabCase`, `pascalCase`) | `DONE` |
+| FARM-S320 | Story | Dry-run validation endpoint -- `POST /api/v1/service-templates/:id/dry-run` validates variables and returns rendered output without writing files | `DONE` |
+| FARM-S321 | Story | Live template preview -- `GET /api/v1/service-templates/:id/preview` renders the template server-side with provided variables; frontend split-view with auto-refresh | `DONE` |
+| FARM-S322 | Story | JSON Schema-driven parameter form -- extend `ServiceTemplate.parameters` JSONB to support `type`, `validation`, `dependsOn`; `DynamicParameterForm` with conditional field visibility | `DONE` |
 
 #### FARM-S319 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T338 | Task | Replace `handlebars` with `nunjucks`; update `ScaffoldService.render(template, vars)` to use `nunjucks.renderString`; register `camelCase`, `snakeCase`, `kebabCase`, `pascalCase` as custom filters; all existing scaffold tests must pass | `TODO` |
-| FARM-T339 | Task | Handlebars-to-Nunjucks migration guide: convert `{{#if}}` → `{% if %}`, `{{#each items}}` → `{% for item in items %}`; audit and update all stored templates in seed data and tests; unit tests for each filter | `TODO` |
+| FARM-T338 | Task | Replace `handlebars` with `nunjucks`; update `ScaffoldService.render(template, vars)` to use `nunjucks.renderString`; register `camelCase`, `snakeCase`, `kebabCase`, `pascalCase` as custom filters; all existing scaffold tests must pass | `DONE` |
+| FARM-T339 | Task | Handlebars-to-Nunjucks migration guide: convert `{{#if}}` → `{% if %}`, `{{#each items}}` → `{% for item in items %}`; audit and update all stored templates in seed data and tests; unit tests for each filter | `DONE` |
 
 ##### FARM-T338 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST366 | Sub-task | Unit test: `nunjucks.renderString` with `camelCase` filter converts `"my-service"` → `"myService"` | `TODO` |
-| FARM-ST367 | Sub-task | Unit test: `nunjucks.renderString` with `pascalCase` filter converts `"my-service"` → `"MyService"` | `TODO` |
+| FARM-ST366 | Sub-task | Unit test: `nunjucks.renderString` with `camelCase` filter converts `"my-service"` → `"myService"` | `DONE` |
+| FARM-ST367 | Sub-task | Unit test: `nunjucks.renderString` with `pascalCase` filter converts `"my-service"` → `"MyService"` | `DONE` |
 
 #### FARM-S320 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T340 | Task | `ScaffoldService.dryRun(templateId, variables)`: validate all required variables present; render template; return `{ valid: boolean, errors: string[], preview: string }`; unit tests | `TODO` |
-| FARM-T341 | Task | `POST /api/v1/service-templates/:id/dry-run` controller; requires auth; returns dry-run result; unit + e2e tests | `TODO` |
+| FARM-T340 | Task | `ScaffoldService.dryRun(templateId, variables)`: validate all required variables present; render template; return `{ valid: boolean, errors: string[], preview: string }`; unit tests | `DONE` |
+| FARM-T341 | Task | `POST /api/v1/service-templates/:id/dry-run` controller; requires auth; returns dry-run result; unit + e2e tests | `DONE` |
 
 #### FARM-S321 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T342 | Task | `GET /api/v1/service-templates/:id/preview?vars=<base64-encoded-JSON>`: render template with provided vars; 8KB response size cap; unit tests | `TODO` |
-| FARM-T343 | Task | Frontend `TemplatePreviewPanel`: split view (left: variable form, right: rendered preview); auto-refreshes with 300ms debounce on variable change; unit tests | `TODO` |
+| FARM-T342 | Task | `GET /api/v1/service-templates/:id/preview?vars=<base64url-encoded-JSON>`: render template with provided vars; 8KB response size cap; unit tests | `DONE` |
+| FARM-T343 | Task | Frontend `TemplatePreviewPanel`: split view (left: variable form, right: rendered preview); auto-refreshes with 300ms debounce on variable change; unit tests | `DONE` |
 
 #### FARM-S322 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T344 | Task | Extend `ServiceTemplate.parameters` JSONB schema to support `type` (`string | number | boolean | enum | multiselect`), `validation` (regex pattern + message), `default`, `placeholder`, `dependsOn` (`{ field, equals, action: "show"|"hide" }`); update DTO validation | `TODO` |
-| FARM-T345 | Task | `DynamicParameterForm` component: render type-aware inputs (text, number, toggle, select, multi-select); evaluate `dependsOn` rules to show/hide fields reactively; unit tests for each input type and visibility rule | `TODO` |
+| FARM-T344 | Task | Extend `ServiceTemplate.parameters` JSONB schema to support `type` (`string | number | boolean | enum | multiselect`), `validation` (regex pattern + message), `default`, `placeholder`, `dependsOn` (`{ field, equals, action: "show"|"hide" }`); update DTO validation | `DONE` |
+| FARM-T345 | Task | `DynamicParameterForm` component: render type-aware inputs (text, number, toggle, select, multi-select); evaluate `dependsOn` rules to show/hide fields reactively; unit tests for each input type and visibility rule | `DONE` |
 
 ##### FARM-T345 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST368 | Sub-task | Unit test: field with `dependsOn: { field: "provider", equals: "aws", action: "show" }` is hidden by default and shown when `provider` is set to `"aws"` | `TODO` |
-| FARM-ST369 | Sub-task | Unit test: multiselect field serializes to comma-separated string before POST; deserializes back to array on load | `TODO` |
+| FARM-ST368 | Sub-task | Unit test: field with `dependsOn: { field: "provider", equals: "aws", action: "show" }` is hidden by default and shown when `provider` is set to `"aws"` | `DONE` |
+| FARM-ST369 | Sub-task | Unit test: multiselect field serializes to comma-separated string before POST; deserializes back to array on load | `DONE` |
 
 ---
 
@@ -1837,14 +1837,14 @@ Hardens the GitHub Actions CI pipeline with three gaps identified in the current
 | Phase 18: GitOps and Autoscaling | 2 | 7 | `DONE` |
 | Phase 19: FinOps | 2 | 11 | `DONE` |
 | Phase 20: Service Mesh Expansion | 1 | 4 | `DONE` |
-| Phase 21: Policy Engine Expansion | 1 | 4 | `TODO` |
+| Phase 21: Policy Engine Expansion | 1 | 4 | `DONE` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
 | Phase 23: IaC Platform | 3 | 14 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
 | Phase 25: Feature Availability UX | 1 | 11 | `DONE` |
 | Phase 26: Auth Provider Expansion | 1 | 5 | `TODO` |
 | Phase 27: Advanced Search | 1 | 4 | `TODO` |
-| Phase 28: Software Templates 2.0 | 1 | 4 | `TODO` |
+| Phase 28: Software Templates 2.0 | 1 | 4 | `DONE` |
 | Phase 29: TechDocs 2.0 | 1 | 4 | `TODO` |
 | Phase 30: Plugin Ecosystem | 1 | 4 | `TODO` |
 | **Total** | **78** | **311** | |

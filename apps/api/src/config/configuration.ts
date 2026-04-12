@@ -118,6 +118,9 @@ export const configuration = () => ({
   opencost: {
     url: process.env.OPENCOST_URL || "http://localhost:9090",
   },
+  opa: {
+    url: process.env.OPA_URL || "http://localhost:8181",
+  },
 });
 
 /**
@@ -202,4 +205,6 @@ export const validationSchema = Joi.object({
   REGISTRY_CREDENTIALS: Joi.string().allow("").default(""),
   // OpenCost integration (optional)
   OPENCOST_URL: Joi.string().uri().default("http://localhost:9090"),
+  // OPA integration (optional)
+  OPA_URL: Joi.string().optional(),
 });

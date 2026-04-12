@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { KubernetesService } from "./kubernetes.service";
 import { KubernetesController } from "./kubernetes.controller";
 import { KyvernoPolicyReportService } from "./kyverno-policy-report.service";
+import { GatekeeperService } from "./gatekeeper.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
 import { FluxBindingService } from "./flux-binding.service";
@@ -29,6 +30,7 @@ import { CatalogModule } from "../catalog/catalog.module";
   providers: [
     KubernetesService,
     KyvernoPolicyReportService,
+    GatekeeperService,
     OperatorBindingService,
     FluxBindingService,
     KedaBindingService,
@@ -36,6 +38,7 @@ import { CatalogModule } from "../catalog/catalog.module";
   exports: [
     KubernetesService,
     KyvernoPolicyReportService,
+    GatekeeperService,
     OperatorBindingService,
     FluxBindingService,
     KedaBindingService,

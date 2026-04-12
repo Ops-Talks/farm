@@ -140,6 +140,13 @@ import type {
   LinkerdTopologyEdge,
   LinkerdMetricsTimeseries,
   LinkerdLatency,
+  // Policy Engine Expansion (Phase 21)
+  GatekeeperConstraintTemplate,
+  GatekeeperViolation,
+  OpaStatus,
+  OpaEvaluateRequest,
+  OpaEvaluateResult,
+  OpaStoredResult,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -2490,5 +2497,39 @@ export const setup = {
   },
   dismissItem(key: string): Promise<void> {
     return request<void>(`/v1/setup/checklist/${encodeURIComponent(key)}/dismiss`, { method: 'POST' });
+  },
+};
+
+// -- Gatekeeper API (Phase 21) --
+
+export const gatekeeper = {
+  isEnabled(): Promise<{ enabled: boolean }> {
+    return request<{ enabled: boolean }>('/v1/kubernetes/gatekeeper/enabled');
+  },
+  listConstraintTemplates(): Promise<GatekeeperConstraintTemplate[]> {
+    return request<GatekeeperConstraintTemplate[]>('/v1/kubernetes/gatekeeper/constraint-templates');
+  },
+  listViolations(namespace?: string): Promise<GatekeeperViolation[]> {
+    const url = namespace
+      ? `/v1/kubernetes/gatekeeper/violations?namespace=${encodeURIComponent(namespace)}`
+      : '/v1/kubernetes/gatekeeper/violations';
+    return request<GatekeeperViolation[]>(url);
+  },
+};
+
+// -- OPA API (Phase 21) --
+
+export const opa = {
+  getStatus(): Promise<OpaStatus> {
+    return request<OpaStatus>('/v1/opa/status');
+  },
+  evaluate(req: OpaEvaluateRequest): Promise<OpaEvaluateResult> {
+    return request<OpaEvaluateResult>('/v1/opa/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+  listResults(componentId: string): Promise<OpaStoredResult[]> {
+    return request<OpaStoredResult[]>(`/v1/opa/results/${encodeURIComponent(componentId)}`);
   },
 };

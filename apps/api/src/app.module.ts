@@ -50,6 +50,7 @@ import { FinOpsModule } from "./modules/finops/finops.module";
 import { FeaturesModule } from "./modules/features/features.module";
 import { SearchModule } from "./modules/search/search.module";
 import { SetupModule } from "./modules/setup/setup.module";
+import { OpaModule } from "./modules/opa/opa.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -388,6 +389,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Admin setup checklist with real-time completion status and dismissal support",
         },
         module: SetupModule,
+      },
+      {
+        metadata: {
+          name: "core-opa",
+          version: "1.0.0",
+          description:
+            "Open Policy Agent (OPA) integration for on-demand policy evaluation",
+        },
+        module: OpaModule,
       },
     ]),
   ],

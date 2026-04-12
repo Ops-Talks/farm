@@ -50,6 +50,11 @@ import {
   KyvernoPolicyReportService,
   KyvernoPolicyReportResult,
 } from "./kyverno-policy-report.service";
+import {
+  GatekeeperService,
+  GatekeeperConstraintTemplate,
+  GatekeeperViolation,
+} from "./gatekeeper.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
 import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
@@ -80,6 +85,8 @@ export class KubernetesController {
     private readonly kubernetesService: KubernetesService,
     private readonly kyvernoPolicyReportService: KyvernoPolicyReportService,
     private readonly operatorBindingService: OperatorBindingService,
+    @Optional()
+    private readonly gatekeeperService?: GatekeeperService,
     @Optional()
     private readonly fluxBindingService?: FluxBindingService,
     @Optional()
@@ -222,8 +229,80 @@ export class KubernetesController {
   }
 
   // ---------------------------------------------------------------------------
-  // Operator Discovery (FARM-S237)
+  // Gatekeeper (OPA Gatekeeper) endpoints
   // ---------------------------------------------------------------------------
+
+  /**
+   * Returns whether OPA Gatekeeper is installed in the cluster by checking
+   * for the presence of the "gatekeeper-system" namespace.
+   *
+   * @returns Object with enabled boolean
+   */
+  @Get("gatekeeper/enabled")
+  @ApiOperation({
+    summary: "Check whether OPA Gatekeeper is installed in the cluster",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns { enabled: boolean }.",
+  })
+  async isGatekeeperEnabled(): Promise<{ enabled: boolean }> {
+    if (!this.gatekeeperService) {
+      return { enabled: false };
+    }
+    const enabled = await this.gatekeeperService.isGatekeeperEnabled();
+    return { enabled };
+  }
+
+  /**
+   * Lists Gatekeeper ConstraintTemplate resources installed in the cluster.
+   * Returns an empty array when Gatekeeper is not installed.
+   *
+   * @returns Array of mapped ConstraintTemplate descriptors
+   */
+  @Get("gatekeeper/constraint-templates")
+  @ApiOperation({
+    summary: "List Gatekeeper ConstraintTemplate resources",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns all Gatekeeper ConstraintTemplate resources.",
+  })
+  async listConstraintTemplates(): Promise<GatekeeperConstraintTemplate[]> {
+    if (!this.gatekeeperService) {
+      return [];
+    }
+    return this.gatekeeperService.listConstraintTemplates();
+  }
+
+  /**
+   * Lists aggregated Gatekeeper violations across all Constraint instances.
+   * An optional namespace query parameter filters results to that namespace.
+   *
+   * @param namespace - Optional Kubernetes namespace to filter violations
+   * @returns Array of mapped GatekeeperViolation entries
+   */
+  @Get("gatekeeper/violations")
+  @ApiOperation({
+    summary: "List Gatekeeper violations across all Constraint instances",
+  })
+  @ApiQuery({
+    name: "namespace",
+    required: false,
+    description: "Optional namespace to filter violations",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns Gatekeeper violations.",
+  })
+  async listGatekeeperViolations(
+    @Query("namespace") namespace?: string,
+  ): Promise<GatekeeperViolation[]> {
+    if (!this.gatekeeperService) {
+      return [];
+    }
+    return this.gatekeeperService.listViolations(namespace);
+  }
 
   /**
    * Lists all OLM-managed operators discovered in the cluster.

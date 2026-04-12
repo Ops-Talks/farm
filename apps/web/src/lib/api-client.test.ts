@@ -3032,6 +3032,53 @@ describe("api-client", () => {
         const decoded = JSON.parse(jsonStr) as Record<string, string>;
         expect(decoded).toEqual(vars);
       });
+
+      it("uses btoa fallback when Buffer is not available (browser env)", async () => {
+        mockFetch.mockReturnValueOnce(
+          jsonResponse({ valid: true, errors: [], preview: "rendered" }),
+        );
+
+        // Save references before deleting from global scope
+        const savedBuffer = Buffer;
+        const originalBuffer = (globalThis as Record<string, unknown>)["Buffer"];
+        delete (globalThis as Record<string, unknown>)["Buffer"];
+
+        try {
+          const vars = { SERVICE: "hello" };
+          await serviceTemplates.preview("tpl-1", vars);
+
+          const calledUrl = mockFetch.mock.calls[0][0] as string;
+          expect(calledUrl).toMatch(/\/preview\?vars=/);
+
+          // Decode using the saved Buffer reference (globalThis.Buffer is still gone)
+          const encodedPart = decodeURIComponent(calledUrl.replace(/.*\?vars=/, ""));
+          const decoded = JSON.parse(
+            savedBuffer.from(encodedPart, "base64url").toString("utf8"),
+          ) as Record<string, string>;
+          expect(decoded).toEqual(vars);
+        } finally {
+          // Always restore Buffer
+          (globalThis as Record<string, unknown>)["Buffer"] = originalBuffer;
+        }
+      });
+
+      it("throws synchronously when neither Buffer nor btoa is available", () => {
+        const originalBuffer = (globalThis as Record<string, unknown>)["Buffer"];
+        const originalBtoa = (globalThis as Record<string, unknown>)["btoa"];
+
+        delete (globalThis as Record<string, unknown>)["Buffer"];
+        delete (globalThis as Record<string, unknown>)["btoa"];
+
+        try {
+          // The throw is synchronous — wrap in expect(() => ...).toThrow()
+          expect(() => serviceTemplates.preview("tpl-1", { FOO: "bar" })).toThrow(
+            "No Base64URL encoder is available",
+          );
+        } finally {
+          (globalThis as Record<string, unknown>)["Buffer"] = originalBuffer;
+          (globalThis as Record<string, unknown>)["btoa"] = originalBtoa;
+        }
+      });
     });
   });
 

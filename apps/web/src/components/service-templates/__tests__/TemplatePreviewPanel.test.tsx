@@ -233,4 +233,42 @@ describe("TemplatePreviewPanel", () => {
 
     expect(previewSpy).toHaveBeenCalledWith("t2", initialValues);
   });
+
+  // ── Non-Error exception ───────────────────────────────────────────────────
+
+  it("shows generic error message when a non-Error is thrown", async () => {
+    vi.useFakeTimers();
+    // Reject with a plain string, not an Error instance
+    previewSpy.mockRejectedValue("plain rejection string");
+
+    render(
+      <TemplatePreviewPanel templateId="t1" variables={[]} />,
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    await act(async () => {});
+
+    // Falls back to the hardcoded "Failed to fetch preview" string
+    expect(screen.getByText("Failed to fetch preview")).toBeInTheDocument();
+  });
+
+  // ── Valid=false with no errors ────────────────────────────────────────────
+
+  it("does not show validation error block when valid=false but errors array is empty", async () => {
+    vi.useFakeTimers();
+    previewSpy.mockResolvedValue({ valid: false, errors: [], preview: "" });
+
+    render(
+      <TemplatePreviewPanel templateId="t1" variables={[]} />,
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    await act(async () => {});
+
+    expect(screen.queryByText("Validation errors")).not.toBeInTheDocument();
+  });
 });

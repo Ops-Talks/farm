@@ -1643,3 +1643,51 @@ export interface SetupChecklistItem {
   completed: boolean;
   dismissed: boolean;
 }
+
+// -- Gatekeeper types (Phase 21) --
+
+export interface GatekeeperConstraintTemplate {
+  name: string;
+  group: string;
+  enforcementAction: 'deny' | 'warn' | 'dryrun';
+  description?: string;
+  violationCount: number;
+}
+
+export interface GatekeeperViolation {
+  kind: string;
+  name: string;
+  namespace?: string;
+  message: string;
+  constraint: string;
+  enforcementAction: 'deny' | 'warn' | 'dryrun';
+}
+
+// -- OPA types (Phase 21) --
+
+export interface OpaStatus {
+  reachable: boolean;
+  url: string;
+}
+
+export interface OpaEvaluateRequest {
+  policyPath: string;
+  input: Record<string, unknown>;
+  componentId?: string;
+}
+
+export interface OpaEvaluateResult {
+  policyPath: string;
+  allowed: boolean;
+  violations: string[];
+}
+
+export interface OpaStoredResult {
+  id: string;
+  componentId: string;
+  policyPath: string;
+  allowed: boolean;
+  violations: string[];
+  evaluatedAt: string;
+  createdAt: string;
+}

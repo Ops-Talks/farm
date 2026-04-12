@@ -712,19 +712,60 @@ describe("ScaffoldService", () => {
 
     it("should catch rendering errors and return them in errors array instead of throwing", async () => {
       templateService.findOne.mockResolvedValue(noVarsTemplate);
-      jest
-        .spyOn(templateEngine, "render")
-        .mockImplementation(() => {
-          throw new BadRequestException("Template rendering failed: invalid syntax");
-        });
+      jest.spyOn(templateEngine, "render").mockImplementation(() => {
+        throw new BadRequestException(
+          "Template rendering failed: invalid syntax",
+        );
+      });
 
       const result = await service.dryRun("tpl-uuid-1", {});
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.errors).toEqual(
+        expect.arrayContaining([expect.stringMatching(/rendering failed/i)]),
+      );
+    });
+
+    it("should catch non-Error thrown by generateFileTreePreview and add message", async () => {
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+      jest
+        .spyOn(
+          service as unknown as { generateFileTreePreview: () => string[] },
+          "generateFileTreePreview",
+        )
+        .mockImplementation(() => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw "plain string error from file tree";
+        });
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/rendering failed/i),
+          expect.stringMatching(
+            /File tree rendering failed.*plain string error/i,
+          ),
+        ]),
+      );
+    });
+
+    it("should catch non-Error thrown by templateEngine.render and add message", async () => {
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+      jest.spyOn(templateEngine, "render").mockImplementation(() => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw "plain string render error";
+      });
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(
+            /Preview rendering failed.*plain string render error/i,
+          ),
         ]),
       );
     });
