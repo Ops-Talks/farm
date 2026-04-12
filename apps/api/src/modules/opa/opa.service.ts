@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -80,7 +80,8 @@ export class OpaService {
     policyPath: string,
     input: Record<string, unknown>,
   ): Promise<{ allowed: boolean; violations: string[] }> {
-    const url = `${this.opaUrl}/v1/data/${policyPath}`;
+    const safePolicyPath = this.sanitizePolicyPath(policyPath);
+    const url = `${this.opaUrl}/v1/data/${safePolicyPath}`;
     const response = await globalThis.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -103,6 +104,37 @@ export class OpaService {
     }
 
     return { allowed, violations };
+  }
+
+  private sanitizePolicyPath(policyPath: string): string {
+    const trimmed = policyPath.trim();
+
+    if (!trimmed) {
+      throw new BadRequestException("policyPath must not be empty");
+    }
+
+    if (trimmed.startsWith("/") || trimmed.endsWith("/")) {
+      throw new BadRequestException(
+        "policyPath must not start or end with '/'",
+      );
+    }
+
+    const segments = trimmed.split("/");
+    const segmentPattern = /^[A-Za-z0-9_-]+$/;
+
+    for (const segment of segments) {
+      if (!segment || segment === "." || segment === "..") {
+        throw new BadRequestException("policyPath contains invalid segments");
+      }
+
+      if (!segmentPattern.test(segment)) {
+        throw new BadRequestException(
+          "policyPath may only contain letters, numbers, '_' and '-' per segment",
+        );
+      }
+    }
+
+    return segments.map((segment) => encodeURIComponent(segment)).join("/");
   }
 
   /**
