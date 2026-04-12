@@ -42,28 +42,39 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Update npm to the latest version so its bundled tar dependency meets the
+# Update npm to a pinned version whose bundled tar dependency meets the
 # minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
 # CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
-# The second command patches picomatch inside npm's own bundled dependencies
-# to >=4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
-RUN npm install -g npm@latest \
- && PICO_DIR=$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d -print -quit) \
- && if [ -z "$PICO_DIR" ]; then echo "Error: picomatch directory not found in npm installation." >&2; exit 1; fi \
- && cd "$PICO_DIR" \
+# Then patch every picomatch instance inside npm's own bundled dependencies
+# to 4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
+# The tarball is downloaded once and extracted into each directory in turn.
+RUN npm install -g npm@11.12.1 \
  && npm pack picomatch@4.0.4 --quiet \
- && tar xzf picomatch-4.0.4.tgz --strip-components=1 \
- && rm picomatch-4.0.4.tgz
+ && picomatch_count="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | wc -l)" \
+ && [ "$picomatch_count" -gt 0 ] \
+ && find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | while IFS= read -r dir; do \
+      tar xzf picomatch-4.0.4.tgz --strip-components=1 -C "$dir"; \
+    done \
+ && rm picomatch-4.0.4.tgz \
+ && npm pack brace-expansion@5.0.5 --quiet \
+ && brace_expansion_count="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | wc -l)" \
+ && [ "$brace_expansion_count" -gt 0 ] \
+ && find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | while IFS= read -r dir; do \
+      tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir"; \
+    done \
+ && rm brace-expansion-5.0.5.tgz
 
-# Upgrade zlib to >=1.3.2-r0 to fix CVE-2026-27171 (DoS via infinite loop in
-# CRC32 combine functions) and CVE-2026-22184 (arbitrary code execution via
-# buffer overflow). The version constraint is explicit so the build fails if the
-# required version is not available in the Alpine repositories.
-# Also upgrade libssl3 and libcrypto3 (fixed in 3.5.6-r0) to address:
-#   CVE-2026-28390 - NULL pointer dereference in CMS EnvelopedData processing
-#   CVE-2026-31790 - Uninitialized memory disclosure via RSASVE key encapsulation
-RUN apk add --no-cache "zlib>=1.3.2-r0" \
- && apk upgrade --no-cache libssl3 libcrypto3
+# Upgrade Alpine system packages to their patched versions:
+#   zlib       >=1.3.2-r0  CVE-2026-27171, CVE-2026-22184
+#   libssl3    >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
+#   libcrypto3 >=3.5.6-r0  required alongside libssl3
+#   musl       >=1.2.5-r22 CVE-2026-6042 (security flaw in musl libc up to 1.2.6)
+RUN apk add --no-cache --upgrade \
+    "zlib>=1.3.2-r0" \
+    "libssl3>=3.5.6-r0" \
+    "libcrypto3>=3.5.6-r0" \
+    "musl>=1.2.5-r22" \
+    "musl-utils>=1.2.5-r22"
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
