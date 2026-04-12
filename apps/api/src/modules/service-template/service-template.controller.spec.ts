@@ -278,11 +278,11 @@ describe("ServiceTemplateController", () => {
   });
 
   describe("GET /:id/preview", () => {
-    it("should decode base64 vars and call scaffoldService.dryRun", async () => {
+    it("should decode base64url vars and call scaffoldService.dryRun", async () => {
       scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
       const vars = Buffer.from(
         JSON.stringify({ SERVICE_NAME: "my-service" }),
-      ).toString("base64");
+      ).toString("base64url");
 
       const result = await controller.preview("tpl-uuid-1", { vars });
 
@@ -318,10 +318,10 @@ describe("ServiceTemplateController", () => {
       );
     });
 
-    it("should treat valid base64 with invalid JSON as empty vars", async () => {
+    it("should treat valid base64url with invalid JSON as empty vars", async () => {
       scaffoldService.dryRun.mockResolvedValue(mockDryRunResult);
-      // Valid base64 but not valid JSON
-      const vars = Buffer.from("not-json-content").toString("base64");
+      // Valid base64url but not valid JSON
+      const vars = Buffer.from("not-json-content").toString("base64url");
 
       const result = await controller.preview("tpl-uuid-1", { vars });
 

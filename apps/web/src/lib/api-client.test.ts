@@ -3012,7 +3012,7 @@ describe("api-client", () => {
         );
       });
 
-      it("calls correct URL with base64-encoded vars", async () => {
+      it("calls correct URL with base64url-encoded vars", async () => {
         mockFetch.mockReturnValueOnce(
           jsonResponse({ valid: true, errors: [], preview: "rendered" }),
         );
@@ -3024,12 +3024,11 @@ describe("api-client", () => {
           /^\/api\/v1\/service-templates\/tpl-1\/preview\?vars=/,
         );
 
-        // Decode the base64 vars and verify the original object is preserved
-        const encodedPart = calledUrl.replace(
-          /.*\?vars=/,
-          "",
+        // Decode the base64url vars and verify the original object is preserved
+        const encodedPart = decodeURIComponent(
+          calledUrl.replace(/.*\?vars=/, ""),
         );
-        const jsonStr = atob(decodeURIComponent(encodedPart));
+        const jsonStr = Buffer.from(encodedPart, "base64url").toString("utf8");
         const decoded = JSON.parse(jsonStr) as Record<string, string>;
         expect(decoded).toEqual(vars);
       });

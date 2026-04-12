@@ -6,9 +6,9 @@ import { ApiPropertyOptional } from "@nestjs/swagger";
  */
 export class PreviewQueryDto {
   @ApiPropertyOptional({
-    example: "eyJTRVJWSUNFX05BTUUiOiJteS1zZXJ2aWNlIn0=",
+    example: "eyJTRVJWSUNFX05BTUUiOiJteS1zZXJ2aWNlIn0",
     description:
-      "Base64url-encoded JSON object of template variable key-value pairs",
+      "Base64URL-encoded JSON object of template variable key-value pairs (no padding)",
   })
   @IsString()
   @IsOptional()

@@ -205,22 +205,32 @@ export class ScaffoldService {
       }
     }
 
-    const files = this.generateFileTreePreview(template, variables);
+    let files: string[] = [];
+    try {
+      files = this.generateFileTreePreview(template, variables);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`File tree rendering failed: ${message}`);
+    }
 
     const previewTemplate = [
       "# {{ name }} Preview",
-      "Variables: {{ vars | dump }}",
       "Files to be created:",
       "{% for f in files %}",
       "- {{ f }}",
       "{% endfor %}",
     ].join("\n");
 
-    const rendered = this.templateEngine.render(previewTemplate, {
-      name: template.name,
-      vars: provided,
-      files,
-    });
+    let rendered = "";
+    try {
+      rendered = this.templateEngine.render(previewTemplate, {
+        name: template.name,
+        files,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`Preview rendering failed: ${message}`);
+    }
 
     const preview =
       rendered.length > PREVIEW_MAX_LENGTH

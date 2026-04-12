@@ -2215,13 +2215,39 @@ export const serviceTemplates = {
 
   /**
    * Live preview: renders the template with the provided variables.
-   * Variables are base64url-encoded as JSON query parameter for GET semantics.
-   * Uses btoa() which is available in both browser and Node.js 16+ global scope.
+   * Variables are Base64URL-encoded as a JSON query parameter for GET semantics.
    */
   preview(templateId: string, vars?: Record<string, string>): Promise<DryRunResultDto> {
-    const encoded = vars
-      ? btoa(unescape(encodeURIComponent(JSON.stringify(vars))))
-      : undefined;
+    let encoded: string | undefined;
+
+    if (vars) {
+      const json = JSON.stringify(vars);
+      const runtime = globalThis as typeof globalThis & {
+        Buffer?: {
+          from(input: string, encoding: string): {
+            toString(encoding: string): string;
+          };
+        };
+      };
+
+      if (runtime.Buffer) {
+        encoded = runtime.Buffer.from(json, "utf8").toString("base64url");
+      } else if (typeof globalThis.btoa === "function") {
+        const bytes = new TextEncoder().encode(json);
+        let binary = "";
+        for (const byte of bytes) {
+          binary += String.fromCharCode(byte);
+        }
+        encoded = globalThis
+          .btoa(binary)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/u, "");
+      } else {
+        throw new Error("No Base64URL encoder is available in the current runtime.");
+      }
+    }
+
     const qs = encoded ? `?vars=${encodeURIComponent(encoded)}` : "";
     return request<DryRunResultDto>(`/v1/service-templates/${templateId}/preview${qs}`);
   },

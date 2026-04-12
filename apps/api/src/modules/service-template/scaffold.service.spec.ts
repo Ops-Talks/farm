@@ -709,5 +709,37 @@ describe("ScaffoldService", () => {
       expect(result.errors).toHaveLength(0);
       expect(result.preview).toBeTruthy();
     });
+
+    it("should catch rendering errors and return them in errors array instead of throwing", async () => {
+      templateService.findOne.mockResolvedValue(noVarsTemplate);
+      jest
+        .spyOn(templateEngine, "render")
+        .mockImplementation(() => {
+          throw new BadRequestException("Template rendering failed: invalid syntax");
+        });
+
+      const result = await service.dryRun("tpl-uuid-1", {});
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/rendering failed/i),
+        ]),
+      );
+    });
+
+    it("should not include variable values in the preview output", async () => {
+      templateService.findOne.mockResolvedValue(mockTemplate);
+
+      const result = await service.dryRun("tpl-uuid-1", {
+        SERVICE_NAME: "secret-service",
+        PORT: "3000",
+      });
+
+      expect(result.preview).not.toContain('"secret-service"');
+      expect(result.preview).not.toContain('"3000"');
+      expect(result.preview).not.toContain("dump");
+    });
   });
 });

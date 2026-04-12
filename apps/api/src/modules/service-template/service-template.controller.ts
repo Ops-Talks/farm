@@ -322,15 +322,15 @@ export class ServiceTemplateController {
 
   /**
    * Returns a live rendered preview for a template using variables supplied
-   * as a base64url-encoded JSON query parameter.
+   * as a Base64URL-encoded JSON query parameter.
    * Useful for real-time frontend previews without a POST body.
    * @param id - The UUID of the service template
-   * @param query - Query params containing optional base64-encoded variables
+   * @param query - Query params containing optional Base64URL-encoded variables
    * @returns DryRunResultDto with validity status, errors, and preview
    */
   @Get(":id/preview")
   @ApiOperation({
-    summary: "Live preview of a template with base64-encoded variables",
+    summary: "Live preview of a template with Base64URL-encoded variables",
   })
   @ApiParam({
     name: "id",
@@ -340,7 +340,7 @@ export class ServiceTemplateController {
     name: "vars",
     required: false,
     description:
-      "Base64url-encoded JSON object of template variable key-value pairs",
+      "Base64URL-encoded JSON object of template variable key-value pairs",
   })
   @ApiOkResponse({
     description: "Live preview rendered successfully.",
@@ -360,10 +360,10 @@ export class ServiceTemplateController {
     if (query.vars) {
       try {
         decodedVars = JSON.parse(
-          Buffer.from(query.vars, "base64").toString("utf8"),
+          Buffer.from(query.vars, "base64url").toString("utf8"),
         ) as Record<string, string>;
       } catch {
-        // Invalid base64 or JSON — treat as empty vars
+        // Invalid base64url or JSON — treat as empty vars
         decodedVars = undefined;
       }
     }
