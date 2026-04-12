@@ -38,14 +38,19 @@ export class HealthController {
   })
   check(): Promise<HealthCheckResult> {
     const version = this.configService.get<string>("version") || "0.2.4";
+    const heapThresholdMb =
+      this.configService.get<number>("health.heapThresholdMb") ?? 512;
+    const rssThresholdMb =
+      this.configService.get<number>("health.rssThresholdMb") ?? 1024;
 
     return this.health.check([
       // Check database connection
       () => this.db.pingCheck("database"),
-      // Check heap memory usage (limit to 512MB)
-      () => this.memory.checkHeap("memory_heap", 512 * 1024 * 1024),
-      // Check RSS memory usage (limit to 1024MB)
-      () => this.memory.checkRSS("memory_rss", 1024 * 1024 * 1024),
+      // Check heap memory usage
+      () =>
+        this.memory.checkHeap("memory_heap", heapThresholdMb * 1024 * 1024),
+      // Check RSS memory usage
+      () => this.memory.checkRSS("memory_rss", rssThresholdMb * 1024 * 1024),
       // Check disk storage usage
       () =>
         this.disk.checkStorage("storage", {

@@ -12,6 +12,10 @@ describe("AppController (e2e)", () => {
     process.env.DATABASE_TYPE = "better-sqlite3";
     process.env.DATABASE_NAME = ":memory:";
     process.env.DATABASE_SYNC = "true";
+    // Raise memory thresholds to avoid false failures when 28 suites run in
+    // parallel under NODE_OPTIONS=--max-old-space-size=1024.
+    process.env.HEALTH_HEAP_THRESHOLD_MB = "900";
+    process.env.HEALTH_RSS_THRESHOLD_MB = "1400";
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
