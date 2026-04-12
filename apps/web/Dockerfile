@@ -50,12 +50,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # The tarball is downloaded once and extracted into each directory in turn.
 RUN npm install -g npm@latest \
  && npm pack picomatch@4.0.4 --quiet \
- && find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | while read dir; do \
+ && picomatch_count="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | wc -l)" \
+ && [ "$picomatch_count" -gt 0 ] \
+ && find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | while IFS= read -r dir; do \
       tar xzf picomatch-4.0.4.tgz --strip-components=1 -C "$dir"; \
     done \
  && rm picomatch-4.0.4.tgz \
  && npm pack brace-expansion@5.0.5 --quiet \
- && find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | while read dir; do \
+ && brace_expansion_count="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | wc -l)" \
+ && [ "$brace_expansion_count" -gt 0 ] \
+ && find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | while IFS= read -r dir; do \
       tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir"; \
     done \
  && rm brace-expansion-5.0.5.tgz
