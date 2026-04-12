@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.0] - 2026-04-11
+## [0.17.2] - 2026-04-12
 
-### Added
-- **phase-20**: Linkerd 2.x service mesh integration — `LinkerdModule` with `LinkerdService`, `LinkerdMetricsService`, and `LinkerdController` registered as `core-linkerd` plugin.
-- **phase-20**: `GET /api/v1/linkerd/status` — control plane health for linkerd-controller, linkerd-identity, linkerd-proxy-injector, linkerd-destination.
-- **phase-20**: `GET /api/v1/linkerd/metrics/rps`, `/error-rate`, `/latency` — Prometheus Linkerd metrics using `request_total` and `response_latency_ms_bucket` labels.
-- **phase-20**: `GET /api/v1/linkerd/topology` — service topology edges from `request_total{dst_deployment!=""}`.
-- **phase-20**: `GET /api/v1/linkerd/server-authorizations`, `/authorization-policies`, `/service-profiles` — CRD listing from `policy.linkerd.io` and `linkerd.io` API groups.
-- **phase-20**: `LinkerdTrafficTab`, `LinkerdSecurityTab`, `LinkerdServiceProfileTab` React components in Component detail page; tabs visible only when Linkerd is detected.
-- **phase-20**: Auto-mTLS always-on badge in `LinkerdSecurityTab`.
-- **phase-20**: `linkerd` availability flag in `FeatureAvailability` type and `features.getAvailability()`.
-- **phase-20**: `KubernetesService.getAppsV1Api()` public getter.
+### Changed
+- feat(phase-21) New Features (#59).
+- feat(phase-28) New Features.
+- feat(phase-20) New Features.
+- feat(phase-20) New Features.
+- feat(phase-20) New Features.
+
+### Fixed
+- **vulnerabilities**: NPM (#60).
+- align base64url encoding, remove vars dump, catch render errors in dryRun.
 
 ## [0.17.1] - 2026-04-11
 
