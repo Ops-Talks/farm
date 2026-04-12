@@ -9,6 +9,7 @@ import {
   CrioStorageMetrics,
 } from "./kubernetes.service";
 import { KyvernoPolicyReportService } from "./kyverno-policy-report.service";
+import { GatekeeperService } from "./gatekeeper.service";
 import { OperatorBindingService } from "./operator-binding.service";
 import { OperatorBinding } from "./entities/operator-binding.entity";
 import { CreateOperatorBindingBodyDto } from "./dto/create-operator-binding-body.dto";
@@ -34,6 +35,12 @@ describe("KubernetesController", () => {
     Pick<
       KyvernoPolicyReportService,
       "listPolicyReports" | "listClusterPolicyReports"
+    >
+  >;
+  let gatekeeperService: jest.Mocked<
+    Pick<
+      GatekeeperService,
+      "isGatekeeperEnabled" | "listConstraintTemplates" | "listViolations"
     >
   >;
   let bindingService: jest.Mocked<
@@ -148,6 +155,12 @@ describe("KubernetesController", () => {
       listClusterPolicyReports: jest.fn().mockResolvedValue([mockPolicyReport]),
     };
 
+    gatekeeperService = {
+      isGatekeeperEnabled: jest.fn().mockResolvedValue(false),
+      listConstraintTemplates: jest.fn().mockResolvedValue([]),
+      listViolations: jest.fn().mockResolvedValue([]),
+    };
+
     bindingService = {
       create: jest.fn().mockResolvedValue(mockBinding),
       findByOperator: jest.fn().mockResolvedValue([mockBinding]),
@@ -160,6 +173,7 @@ describe("KubernetesController", () => {
       providers: [
         { provide: KubernetesService, useValue: kubernetesService },
         { provide: KyvernoPolicyReportService, useValue: kyvernoService },
+        { provide: GatekeeperService, useValue: gatekeeperService },
         { provide: OperatorBindingService, useValue: bindingService },
       ],
     }).compile();
@@ -895,5 +909,182 @@ describe("KubernetesController (with KedaBindingService)", () => {
       "comp-uuid-1",
       undefined,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gatekeeper endpoints
+// ---------------------------------------------------------------------------
+
+describe("KubernetesController (Gatekeeper)", () => {
+  let controller: KubernetesController;
+  let gatekeeperService: {
+    isGatekeeperEnabled: jest.Mock;
+    listConstraintTemplates: jest.Mock;
+    listViolations: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    gatekeeperService = {
+      isGatekeeperEnabled: jest.fn().mockResolvedValue(false),
+      listConstraintTemplates: jest.fn().mockResolvedValue([]),
+      listViolations: jest.fn().mockResolvedValue([]),
+    };
+
+    const kubernetesService = {
+      discoverWorkloads: jest.fn().mockResolvedValue([]),
+      matchComponent: jest.fn().mockResolvedValue([]),
+      listCRDs: jest.fn().mockResolvedValue([]),
+      listRollouts: jest.fn().mockResolvedValue([]),
+      listOperators: jest.fn().mockResolvedValue([]),
+      listOperatorCustomResources: jest.fn().mockResolvedValue([]),
+      listNodeRuntimes: jest.fn().mockResolvedValue([]),
+      getCrioMetrics: jest.fn().mockResolvedValue({}),
+      isEnabled: jest.fn().mockReturnValue(false),
+    };
+
+    const module = await Test.createTestingModule({
+      controllers: [KubernetesController],
+      providers: [
+        { provide: KubernetesService, useValue: kubernetesService },
+        {
+          provide: KyvernoPolicyReportService,
+          useValue: {
+            listPolicyReports: jest.fn(),
+            listClusterPolicyReports: jest.fn(),
+          },
+        },
+        {
+          provide: OperatorBindingService,
+          useValue: {
+            create: jest.fn(),
+            findByOperator: jest.fn(),
+            findByComponent: jest.fn(),
+            remove: jest.fn(),
+          },
+        },
+        { provide: GatekeeperService, useValue: gatekeeperService },
+      ],
+    }).compile();
+
+    controller = module.get<KubernetesController>(KubernetesController);
+  });
+
+  describe("isGatekeeperEnabled", () => {
+    it("should return enabled: false when service returns false", async () => {
+      gatekeeperService.isGatekeeperEnabled.mockResolvedValue(false);
+      const result = await controller.isGatekeeperEnabled();
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it("should return enabled: true when gatekeeper-system namespace exists", async () => {
+      gatekeeperService.isGatekeeperEnabled.mockResolvedValue(true);
+      const result = await controller.isGatekeeperEnabled();
+      expect(result).toEqual({ enabled: true });
+    });
+  });
+
+  describe("listConstraintTemplates", () => {
+    it("should return empty array when no templates are installed", async () => {
+      gatekeeperService.listConstraintTemplates.mockResolvedValue([]);
+      const result = await controller.listConstraintTemplates();
+      expect(result).toEqual([]);
+    });
+
+    it("should return mapped templates from GatekeeperService", async () => {
+      const mockTemplate = {
+        name: "k8srequiredlabels",
+        group: "templates.gatekeeper.sh",
+        enforcementAction: "warn" as const,
+        description: "Requires labels",
+        violationCount: 0,
+      };
+      gatekeeperService.listConstraintTemplates.mockResolvedValue([
+        mockTemplate,
+      ]);
+      const result = await controller.listConstraintTemplates();
+      expect(result).toEqual([mockTemplate]);
+    });
+  });
+
+  describe("listGatekeeperViolations", () => {
+    it("should return empty array when no violations exist", async () => {
+      gatekeeperService.listViolations.mockResolvedValue([]);
+      const result = await controller.listGatekeeperViolations();
+      expect(result).toEqual([]);
+    });
+
+    it("should return violations from GatekeeperService", async () => {
+      const mockViolation = {
+        kind: "K8sRequiredLabels",
+        name: "my-pod",
+        namespace: "default",
+        message: "Missing label",
+        constraint: "require-env-label",
+        enforcementAction: "deny" as const,
+      };
+      gatekeeperService.listViolations.mockResolvedValue([mockViolation]);
+      const result = await controller.listGatekeeperViolations();
+      expect(result).toEqual([mockViolation]);
+    });
+
+    it("should pass namespace filter to GatekeeperService", async () => {
+      gatekeeperService.listViolations.mockResolvedValue([]);
+      await controller.listGatekeeperViolations("prod");
+      expect(gatekeeperService.listViolations).toHaveBeenCalledWith("prod");
+    });
+  });
+
+  describe("when GatekeeperService is not provided", () => {
+    let controllerWithoutGatekeeper: KubernetesController;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        controllers: [KubernetesController],
+        providers: [
+          {
+            provide: KubernetesService,
+            useValue: { isEnabled: jest.fn().mockReturnValue(false) },
+          },
+          {
+            provide: KyvernoPolicyReportService,
+            useValue: {
+              listPolicyReports: jest.fn(),
+              listClusterPolicyReports: jest.fn(),
+            },
+          },
+          {
+            provide: OperatorBindingService,
+            useValue: {
+              create: jest.fn(),
+              findByOperator: jest.fn(),
+              findByComponent: jest.fn(),
+              remove: jest.fn(),
+            },
+          },
+          // GatekeeperService intentionally omitted — @Optional() → undefined
+        ],
+      }).compile();
+
+      controllerWithoutGatekeeper =
+        module.get<KubernetesController>(KubernetesController);
+    });
+
+    it("isGatekeeperEnabled returns { enabled: false } when service is absent", async () => {
+      const result = await controllerWithoutGatekeeper.isGatekeeperEnabled();
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it("listConstraintTemplates returns [] when service is absent", async () => {
+      const result =
+        await controllerWithoutGatekeeper.listConstraintTemplates();
+      expect(result).toEqual([]);
+    });
+
+    it("listGatekeeperViolations returns [] when service is absent", async () => {
+      const result =
+        await controllerWithoutGatekeeper.listGatekeeperViolations();
+      expect(result).toEqual([]);
+    });
   });
 });

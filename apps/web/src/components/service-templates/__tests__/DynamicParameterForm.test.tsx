@@ -310,4 +310,94 @@ describe("DynamicParameterForm", () => {
 
     expect(container.firstChild).toBeNull();
   });
+
+  it("uses variable.default as initial value when key not in values", () => {
+    const varWithDefault: TemplateVariable = {
+      key: "LOG_LEVEL",
+      label: "Log Level",
+      description: "Logging level",
+      required: false,
+      default: "info",
+    };
+
+    render(
+      <DynamicParameterForm
+        variables={[varWithDefault]}
+        values={{}}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    expect(input.value).toBe("info");
+  });
+
+  it("uses variable.placeholder as placeholder text", () => {
+    const varWithPlaceholder: TemplateVariable = {
+      key: "REPO_URL",
+      label: "Repo URL",
+      description: "Git repository URL",
+      required: false,
+      placeholder: "https://github.com/org/repo",
+    };
+
+    render(
+      <DynamicParameterForm
+        variables={[varWithPlaceholder]}
+        values={{}}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    expect(input).toHaveAttribute("placeholder", "https://github.com/org/repo");
+  });
+
+  it("variable.default is used as placeholder when placeholder is not set", () => {
+    const varWithDefault: TemplateVariable = {
+      key: "NAMESPACE",
+      label: "Namespace",
+      description: "Kubernetes namespace",
+      required: false,
+      default: "default",
+    };
+
+    render(
+      <DynamicParameterForm
+        variables={[varWithDefault]}
+        values={{}}
+        onChange={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    expect(input).toHaveAttribute("placeholder", "default");
+  });
+
+  it("treats unknown dependsOn action as visible (shows field)", () => {
+    const conditionalVar: TemplateVariable = {
+      key: "MYSTERY_FIELD",
+      label: "Mystery Field",
+      description: "Always visible due to unknown action",
+      required: false,
+      dependsOn: {
+        field: "ENV",
+        equals: "production",
+        action: "unknown" as "show",
+      },
+    };
+
+    render(
+      <DynamicParameterForm
+        variables={[enumVar, conditionalVar]}
+        values={{ ENV: "dev" }}
+        onChange={vi.fn()}
+      />,
+    );
+
+    // Unknown action → last `return true` in isVisible → field is rendered
+    expect(
+      screen.getByText("Always visible due to unknown action"),
+    ).toBeInTheDocument();
+  });
 });
