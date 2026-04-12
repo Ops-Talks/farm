@@ -238,4 +238,66 @@ describe("OpaService", () => {
       expect(result).toBe(mockResults);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // sanitizePolicyPath (exercised via evaluate)
+  // ---------------------------------------------------------------------------
+
+  describe("policyPath validation", () => {
+    it("should throw BadRequestException when policyPath is empty", async () => {
+      await expect(service.evaluate("", {})).rejects.toThrow(
+        "policyPath must not be empty",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath starts with /", async () => {
+      await expect(service.evaluate("/app/allow", {})).rejects.toThrow(
+        "policyPath must not start or end with '/'",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath ends with /", async () => {
+      await expect(service.evaluate("app/allow/", {})).rejects.toThrow(
+        "policyPath must not start or end with '/'",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath contains a '..' segment", async () => {
+      await expect(service.evaluate("app/../etc/passwd", {})).rejects.toThrow(
+        "policyPath contains invalid segments",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath contains a '.' segment", async () => {
+      await expect(service.evaluate("app/./allow", {})).rejects.toThrow(
+        "policyPath contains invalid segments",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath has an empty segment (double slash)", async () => {
+      await expect(service.evaluate("app//allow", {})).rejects.toThrow(
+        "policyPath contains invalid segments",
+      );
+    });
+
+    it("should throw BadRequestException when policyPath segment has invalid characters", async () => {
+      await expect(service.evaluate("app/foo@bar", {})).rejects.toThrow(
+        "policyPath may only contain letters, numbers, '_' and '-' per segment",
+      );
+    });
+  });
+
+  describe("evaluate — edge cases", () => {
+    it("should return allowed: false when OPA returns no result field", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: jest.fn().mockResolvedValue(JSON.stringify({})),
+      });
+
+      const result = await service.evaluate("app/allow", {});
+      expect(result.allowed).toBe(false);
+      expect(result.violations).toEqual([]);
+    });
+  });
 });

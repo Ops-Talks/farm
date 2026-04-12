@@ -12,6 +12,8 @@ const mockPush = vi.fn();
 const mockGetCostEstimate = vi.fn().mockResolvedValue(null);
 const mockGetActualCost = vi.fn().mockResolvedValue(null);
 const mockLinkerdGetStatus = vi.fn().mockResolvedValue({ installed: false, components: [] });
+const mockGatekeeperIsEnabled = vi.fn().mockResolvedValue({ enabled: false });
+const mockOpaGetStatus = vi.fn().mockResolvedValue({ reachable: false, url: '' });
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
@@ -50,10 +52,10 @@ vi.mock("@/lib/api-client", () => ({
   },
   // Phase 21 — Gatekeeper and OPA are off by default in tests
   gatekeeper: {
-    isEnabled: vi.fn().mockResolvedValue({ enabled: false }),
+    isEnabled: (...args: unknown[]) => mockGatekeeperIsEnabled(...args),
   },
   opa: {
-    getStatus: vi.fn().mockResolvedValue({ reachable: false, url: '' }),
+    getStatus: (...args: unknown[]) => mockOpaGetStatus(...args),
   },
 }));
 
@@ -652,6 +654,60 @@ describe("ComponentDetailClient", () => {
       mockGetComponent.mockResolvedValue(makeComponent());
       mockListDeployments.mockResolvedValue({ data: [], total: 0 });
       mockLinkerdGetStatus.mockRejectedValue(new Error("Linkerd unavailable"));
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("auth-service")).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Gatekeeper and OPA detection", () => {
+    it("renders Gatekeeper tab trigger when gatekeeperEnabled is true", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: true });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: '' });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: /gatekeeper/i })).toBeInTheDocument();
+      });
+    });
+
+    it("renders OPA tab trigger when opaReachable is true", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: true, url: 'http://opa:8181' });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: /^opa$/i })).toBeInTheDocument();
+      });
+    });
+
+    it("renders without crash when gatekeeper.isEnabled rejects", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockRejectedValue(new Error("Gatekeeper unavailable"));
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: '' });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.queryByText("auth-service")).toBeInTheDocument();
+      });
+    });
+
+    it("renders without crash when opa.getStatus rejects", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockRejectedValue(new Error("OPA unavailable"));
 
       render(<ComponentDetailClient />);
 

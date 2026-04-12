@@ -45,6 +45,8 @@ import {
   features,
   search,
   setup,
+  gatekeeper,
+  opa,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -3462,6 +3464,74 @@ describe("api-client", () => {
       await setup.dismissItem("key/with spaces");
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("key%2Fwith%20spaces");
+    });
+  });
+
+  describe("gatekeeper", () => {
+    it("isEnabled sends GET to the gatekeeper enabled endpoint", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ enabled: true }));
+      const result = await gatekeeper.isEnabled();
+      expect(result).toEqual({ enabled: true });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/kubernetes/gatekeeper/enabled",
+        expect.any(Object),
+      );
+    });
+
+    it("listConstraintTemplates sends GET to the constraint-templates endpoint", async () => {
+      const templates = [{ name: "K8sRequiredLabels", group: "constraints.gatekeeper.sh", enforcementAction: "deny", violationCount: 1 }];
+      mockFetch.mockReturnValueOnce(jsonResponse(templates));
+      const result = await gatekeeper.listConstraintTemplates();
+      expect(Array.isArray(result)).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/kubernetes/gatekeeper/constraint-templates",
+        expect.any(Object),
+      );
+    });
+
+    it("listViolations sends GET without namespace when not provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gatekeeper.listViolations();
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/kubernetes/gatekeeper/violations");
+    });
+
+    it("listViolations appends namespace query param when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await gatekeeper.listViolations("production");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=production");
+    });
+  });
+
+  describe("opa", () => {
+    it("getStatus sends GET to the OPA status endpoint", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ reachable: true, url: "http://localhost:8181" }));
+      const result = await opa.getStatus();
+      expect(result).toMatchObject({ reachable: true });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/opa/status",
+        expect.any(Object),
+      );
+    });
+
+    it("evaluate sends POST to the OPA evaluate endpoint", async () => {
+      const response = { allowed: true, violations: [], policyPath: "app/allow", input: {}, componentId: null };
+      mockFetch.mockReturnValueOnce(jsonResponse(response));
+      const result = await opa.evaluate({ policyPath: "app/allow", input: {} });
+      expect(result.allowed).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/opa/evaluate",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("listResults sends GET to the results endpoint with encoded componentId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await opa.listResults("comp-uuid-1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/opa/results/");
+      expect(url).toContain("comp-uuid-1");
     });
   });
 });

@@ -156,4 +156,60 @@ describe('ConstraintTemplateTable', () => {
       await screen.findByText(/2 total violations/i),
     ).toBeInTheDocument();
   });
+
+  it('shows singular "violation" when exactly one violation exists', async () => {
+    const singleViolation: GatekeeperViolation[] = [mockViolations[0]];
+    mockListConstraintTemplates.mockResolvedValue([mockTemplates[0]]);
+    mockListViolations.mockResolvedValue(singleViolation);
+
+    renderWithClient(<ConstraintTemplateTable />);
+    await screen.findByText('K8sRequiredLabels');
+
+    const expandBtn = screen.getByTestId('expand-K8sRequiredLabels');
+    fireEvent.click(expandBtn);
+
+    // Should show "1 violation" not "1 violations"
+    expect(screen.getByText('1 violation')).toBeInTheDocument();
+  });
+
+  it('shows singular ConstraintTemplate when only one template exists', async () => {
+    mockListConstraintTemplates.mockResolvedValue([mockTemplates[0]]);
+    mockListViolations.mockResolvedValue([]);
+
+    renderWithClient(<ConstraintTemplateTable />);
+    expect(await screen.findByText(/1 ConstraintTemplate found/i)).toBeInTheDocument();
+  });
+
+  it('hides namespace label when violation has no namespace', async () => {
+    const noNsViolation: GatekeeperViolation[] = [
+      { ...mockViolations[0], namespace: undefined },
+    ];
+    mockListConstraintTemplates.mockResolvedValue([mockTemplates[0]]);
+    mockListViolations.mockResolvedValue(noNsViolation);
+
+    renderWithClient(<ConstraintTemplateTable />);
+    await screen.findByText('K8sRequiredLabels');
+
+    const expandBtn = screen.getByTestId('expand-K8sRequiredLabels');
+    fireEvent.click(expandBtn);
+
+    expect(screen.queryByText(/^ns:/)).not.toBeInTheDocument();
+  });
+
+  it('collapses violations list when expand button is clicked again', async () => {
+    mockListConstraintTemplates.mockResolvedValue(mockTemplates);
+    mockListViolations.mockResolvedValue(mockViolations);
+
+    renderWithClient(<ConstraintTemplateTable />);
+    await screen.findByText('K8sRequiredLabels');
+
+    const expandBtn = screen.getByTestId('expand-K8sRequiredLabels');
+    // Expand
+    fireEvent.click(expandBtn);
+    expect(screen.getByTestId('violations-list')).toBeInTheDocument();
+
+    // Collapse
+    fireEvent.click(expandBtn);
+    expect(screen.queryByTestId('violations-list')).not.toBeInTheDocument();
+  });
 });

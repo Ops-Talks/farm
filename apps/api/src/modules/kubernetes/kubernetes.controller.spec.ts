@@ -1034,4 +1034,57 @@ describe("KubernetesController (Gatekeeper)", () => {
       expect(gatekeeperService.listViolations).toHaveBeenCalledWith("prod");
     });
   });
+
+  describe("when GatekeeperService is not provided", () => {
+    let controllerWithoutGatekeeper: KubernetesController;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        controllers: [KubernetesController],
+        providers: [
+          {
+            provide: KubernetesService,
+            useValue: { isEnabled: jest.fn().mockReturnValue(false) },
+          },
+          {
+            provide: KyvernoPolicyReportService,
+            useValue: {
+              listPolicyReports: jest.fn(),
+              listClusterPolicyReports: jest.fn(),
+            },
+          },
+          {
+            provide: OperatorBindingService,
+            useValue: {
+              create: jest.fn(),
+              findByOperator: jest.fn(),
+              findByComponent: jest.fn(),
+              remove: jest.fn(),
+            },
+          },
+          // GatekeeperService intentionally omitted — @Optional() → undefined
+        ],
+      }).compile();
+
+      controllerWithoutGatekeeper =
+        module.get<KubernetesController>(KubernetesController);
+    });
+
+    it("isGatekeeperEnabled returns { enabled: false } when service is absent", async () => {
+      const result = await controllerWithoutGatekeeper.isGatekeeperEnabled();
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it("listConstraintTemplates returns [] when service is absent", async () => {
+      const result =
+        await controllerWithoutGatekeeper.listConstraintTemplates();
+      expect(result).toEqual([]);
+    });
+
+    it("listGatekeeperViolations returns [] when service is absent", async () => {
+      const result =
+        await controllerWithoutGatekeeper.listGatekeeperViolations();
+      expect(result).toEqual([]);
+    });
+  });
 });

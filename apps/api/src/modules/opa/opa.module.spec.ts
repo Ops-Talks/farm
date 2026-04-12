@@ -42,4 +42,9 @@ describe("OpaModule", () => {
     const service = module.get<OpaService>(OpaService);
     expect(service).toBeDefined();
   });
+
+  it("OpaResult entity can be instantiated", () => {
+    const entity = new OpaResult();
+    expect(entity).toBeInstanceOf(OpaResult);
+  });
 });

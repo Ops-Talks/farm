@@ -206,6 +206,117 @@ describe("GatekeeperService", () => {
       expect(result[0].enforcementAction).toBe("warn");
       expect(result[0].violationCount).toBe(0);
     });
+
+    it("should handle non-404 error when listing constraint instances and continue", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      // First call: list templates
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [{ metadata: { name: "k8srequiredlabels" }, spec: {} }],
+      });
+      // Second call: non-404 error on constraint instances
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce(
+        new Error("internal server error"),
+      );
+
+      const result = await service.listConstraintTemplates();
+      expect(result).toHaveLength(1);
+      expect(result[0].enforcementAction).toBe("warn");
+      expect(result[0].violationCount).toBe(0);
+    });
+
+    it("should return empty array on non-404 outer error", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValue(
+        new Error("API server down"),
+      );
+
+      const result = await service.listConstraintTemplates();
+      expect(result).toEqual([]);
+    });
+
+    it("should use 'description' annotation fallback when primary annotation is absent", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: {
+              name: "k8srequiredlabels",
+              annotations: { description: "Fallback description" },
+            },
+            spec: {},
+          },
+        ],
+      });
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [],
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result[0].description).toBe("Fallback description");
+    });
+
+    it("should have undefined description when no annotations exist", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [{ metadata: { name: "k8srequiredlabels" }, spec: {} }],
+      });
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [],
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result[0].description).toBeUndefined();
+    });
+
+    it("should map dryrun enforcement action from constraint instance", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [{ metadata: { name: "k8srequiredlabels" }, spec: {} }],
+      });
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: { name: "c1" },
+            spec: { enforcementAction: "dryrun" },
+            status: { violations: [] },
+          },
+        ],
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result[0].enforcementAction).toBe("dryrun");
+    });
+
+    it("should default to 'warn' for unrecognized enforcement action values", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [{ metadata: { name: "k8srequiredlabels" }, spec: {} }],
+      });
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [
+          {
+            metadata: { name: "c1" },
+            spec: { enforcementAction: "audit" },
+            status: { violations: [] },
+          },
+        ],
+      });
+
+      const result = await service.listConstraintTemplates();
+      expect(result[0].enforcementAction).toBe("warn");
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -293,6 +404,45 @@ describe("GatekeeperService", () => {
       mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce({
         response: { statusCode: 404 },
       });
+
+      const result = await service.listViolations();
+      expect(result).toEqual([]);
+    });
+
+    it("should handle non-404 error on constraint listing and still continue", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+
+      const constraintInstances = [
+        {
+          metadata: { name: "require-env-label" },
+          spec: { enforcementAction: "warn" },
+          status: {
+            violations: [
+              {
+                name: "pod-a",
+                namespace: "default",
+                message: "Missing label",
+                enforcementAction: "warn",
+              },
+            ],
+          },
+        },
+      ];
+
+      // Call 1: listConstraintTemplates -> list templates
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: [{ metadata: { name: "K8sRequiredLabels" } }],
+      });
+      // Call 2: listConstraintTemplates -> list constraints
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValueOnce({
+        items: constraintInstances,
+      });
+      // Call 3: listViolations -> list constraints — non-404 error
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValueOnce(
+        new Error("unexpected error"),
+      );
 
       const result = await service.listViolations();
       expect(result).toEqual([]);
