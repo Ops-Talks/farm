@@ -42,13 +42,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Update npm to the latest version so its bundled tar dependency meets the
+# Update npm to a pinned version whose bundled tar dependency meets the
 # minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
 # CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
 # Then patch every picomatch instance inside npm's own bundled dependencies
 # to 4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
 # The tarball is downloaded once and extracted into each directory in turn.
-RUN npm install -g npm@latest \
+RUN npm install -g npm@11.12.1 \
  && npm pack picomatch@4.0.4 --quiet \
  && picomatch_count="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | wc -l)" \
  && [ "$picomatch_count" -gt 0 ] \
