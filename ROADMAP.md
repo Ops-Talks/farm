@@ -875,48 +875,48 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 20: Service Mesh Expansion `TODO`
+## Phase 20: Service Mesh Expansion `DONE`
 
-### FARM-E65: Linkerd Integration `TODO`
+### FARM-E65: Linkerd Integration `DONE`
 
 > Mirror the existing Istio integration for Linkerd 2.x. Surface Linkerd control plane health, traffic metrics (RPS / error rate / latency) from Prometheus using Linkerd labels, mTLS auto-rotation status, authorization policies (`policy.linkerd.io`), and Service Profiles (per-route retry and timeout config). Three new tabs in the Component detail page mirror the Istio Traffic, Security, and Canary tabs.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S262 | Story | Linkerd control plane detection and health -- identify installed components (controller, identity, proxy-injector, destination) in the `linkerd` namespace | `TODO` |
-| FARM-S263 | Story | Traffic metrics -- RPS, error rate, and P50/P95/P99 latency per component from Prometheus using Linkerd metric labels; topology edges from `request_total{dst_deployment!=""}` | `TODO` |
-| FARM-S264 | Story | mTLS, authorization policies, and Service Profiles -- `ServerAuthorization`, `AuthorizationPolicy` CRDs from `policy.linkerd.io`; `ServiceProfile` CRDs with per-route retry and timeout config | `TODO` |
-| FARM-S265 | Story | Frontend Linkerd tabs in Component detail -- LinkerdTrafficTab, LinkerdSecurityTab, LinkerdServiceProfileTab; tabs visible only when Linkerd is detected | `TODO` |
+| FARM-S262 | Story | Linkerd control plane detection and health -- identify installed components (controller, identity, proxy-injector, destination) in the `linkerd` namespace | `DONE` |
+| FARM-S263 | Story | Traffic metrics -- RPS, error rate, and P50/P95/P99 latency per component from Prometheus using Linkerd metric labels; topology edges from `request_total{dst_deployment!=""}` | `DONE` |
+| FARM-S264 | Story | mTLS, authorization policies, and Service Profiles -- `ServerAuthorization`, `AuthorizationPolicy` CRDs from `policy.linkerd.io`; `ServiceProfile` CRDs with per-route retry and timeout config | `DONE` |
+| FARM-S265 | Story | Frontend Linkerd tabs in Component detail -- LinkerdTrafficTab, LinkerdSecurityTab, LinkerdServiceProfileTab; tabs visible only when Linkerd is detected | `DONE` |
 
 #### FARM-S262 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T213 | Task | `LinkerdService.isLinkerdEnabled()`: query `linkerd` namespace for control plane deployments (linkerd-controller, linkerd-identity, linkerd-proxy-injector, linkerd-destination); graceful `false` when namespace absent or CRDs not installed | `TODO` |
-| FARM-T214 | Task | `LinkerdModule` with `LinkerdService`, `LinkerdMetricsService`, and `LinkerdController`; register in `app.module.ts`; `GET /api/linkerd/status` returning `{ installed, components: [{ name, ready, version }] }`; unit tests | `TODO` |
+| FARM-T213 | Task | `LinkerdService.isLinkerdEnabled()`: query `linkerd` namespace for control plane deployments (linkerd-controller, linkerd-identity, linkerd-proxy-injector, linkerd-destination); graceful `false` when namespace absent or CRDs not installed | `DONE` |
+| FARM-T214 | Task | `LinkerdModule` with `LinkerdService`, `LinkerdMetricsService`, and `LinkerdController`; register in `app.module.ts`; `GET /api/linkerd/status` returning `{ installed, components: [{ name, ready, version }] }`; unit tests | `DONE` |
 
 #### FARM-S263 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T215 | Task | `LinkerdMetricsService`: query Prometheus `request_total{deployment=X,namespace=Y,direction="inbound"}` for RPS and error rate; `response_latency_ms_bucket` for P50/P95/P99; reuse `KubernetesService.queryPrometheus()` | `TODO` |
-| FARM-T216 | Task | `GET /api/linkerd/components/:namespace/:name/metrics/rps`, `/error-rate`, `/latency`; `GET /api/linkerd/topology` building edges from `request_total` with `dst_deployment` label; same `IstioTopologyEdge` interface shape; unit + e2e tests | `TODO` |
+| FARM-T215 | Task | `LinkerdMetricsService`: query Prometheus `request_total{deployment=X,namespace=Y,direction="inbound"}` for RPS and error rate; `response_latency_ms_bucket` for P50/P95/P99; reuse `KubernetesService.queryPrometheus()` | `DONE` |
+| FARM-T216 | Task | `GET /api/linkerd/components/:namespace/:name/metrics/rps`, `/error-rate`, `/latency`; `GET /api/linkerd/topology` building edges from `request_total` with `dst_deployment` label; same `IstioTopologyEdge` interface shape; unit + e2e tests | `DONE` |
 
 #### FARM-S264 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T217 | Task | List `ServerAuthorization` (`serverauthorizations.policy.linkerd.io/v1beta1`) and `AuthorizationPolicy` (`authorizationpolicies.policy.linkerd.io/v1alpha1`) CRDs per namespace via `CustomObjectsApi`; `GET /api/linkerd/authorization-policies`; unit + e2e tests | `TODO` |
-| FARM-T218 | Task | List `ServiceProfile` CRDs (`serviceprofiles.linkerd.io/v1alpha2`): name, namespace, routes array (name, condition path/method, isRetryable, timeout, retryBudget); `GET /api/linkerd/service-profiles`; unit + e2e tests | `TODO` |
+| FARM-T217 | Task | List `ServerAuthorization` (`serverauthorizations.policy.linkerd.io/v1beta1`) and `AuthorizationPolicy` (`authorizationpolicies.policy.linkerd.io/v1alpha1`) CRDs per namespace via `CustomObjectsApi`; `GET /api/linkerd/authorization-policies`; unit + e2e tests | `DONE` |
+| FARM-T218 | Task | List `ServiceProfile` CRDs (`serviceprofiles.linkerd.io/v1alpha2`): name, namespace, routes array (name, condition path/method, isRetryable, timeout, retryBudget); `GET /api/linkerd/service-profiles`; unit + e2e tests | `DONE` |
 
 #### FARM-S265 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T219 | Task | Frontend `LinkerdTrafficTab`: RPS line chart, error rate gauge, latency P50/P95/P99 table -- reuse `PromQLChartCard` and `MiniLineChart` shared components from `IstioTrafficTab` | `TODO` |
-| FARM-T220 | Task | Frontend `LinkerdSecurityTab`: mTLS status badge per namespace (auto-mTLS always-on indicator), `ServerAuthorization` and `AuthorizationPolicy` table with allowed/denied routes -- mirror `IstioSecurityTab` layout | `TODO` |
-| FARM-T221 | Task | Frontend `LinkerdServiceProfileTab`: `ServiceProfile` list with per-route table (path, method, retryable badge, timeout chip) and per-route RPS/error-rate fetched from metrics endpoint | `TODO` |
-| FARM-T222 | Task | Add `linkerd-traffic`, `linkerd-security`, `linkerd-profile` tabs to `ComponentDetailClient.tsx`; fetch Linkerd status on mount and render tabs only when `status.installed === true`; tests for all three tab components | `TODO` |
+| FARM-T219 | Task | Frontend `LinkerdTrafficTab`: RPS line chart, error rate gauge, latency P50/P95/P99 table -- reuse `PromQLChartCard` and `MiniLineChart` shared components from `IstioTrafficTab` | `DONE` |
+| FARM-T220 | Task | Frontend `LinkerdSecurityTab`: mTLS status badge per namespace (auto-mTLS always-on indicator), `ServerAuthorization` and `AuthorizationPolicy` table with allowed/denied routes -- mirror `IstioSecurityTab` layout | `DONE` |
+| FARM-T221 | Task | Frontend `LinkerdServiceProfileTab`: `ServiceProfile` list with per-route table (path, method, retryable badge, timeout chip) and per-route RPS/error-rate fetched from metrics endpoint | `DONE` |
+| FARM-T222 | Task | Add `linkerd-traffic`, `linkerd-security`, `linkerd-profile` tabs to `ComponentDetailClient.tsx`; fetch Linkerd status on mount and render tabs only when `status.installed === true`; tests for all three tab components | `DONE` |
 
 ---
 

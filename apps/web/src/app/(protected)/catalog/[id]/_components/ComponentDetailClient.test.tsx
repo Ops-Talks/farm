@@ -44,6 +44,9 @@ vi.mock("@/lib/api-client", () => ({
     getCostEstimate: (...args: unknown[]) => mockGetCostEstimate(...args),
     getActualCost: (...args: unknown[]) => mockGetActualCost(...args),
   },
+  linkerd: {
+    getStatus: vi.fn().mockResolvedValue({ installed: false, components: [] }),
+  },
 }));
 
 vi.mock("@/lib/otel-spans", () => ({
@@ -86,6 +89,18 @@ vi.mock(
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/IstioCanaryTab",
   () => ({ IstioCanaryTab: () => <div data-testid="istio-canary-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdTrafficTab",
+  () => ({ LinkerdTrafficTab: () => <div data-testid="linkerd-traffic-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdSecurityTab",
+  () => ({ LinkerdSecurityTab: () => <div data-testid="linkerd-security-stub" /> }),
+);
+vi.mock(
+  "@/app/(protected)/catalog/[id]/_components/LinkerdServiceProfileTab",
+  () => ({ LinkerdServiceProfileTab: () => <div data-testid="linkerd-profile-stub" /> }),
 );
 vi.mock(
   "@/app/(protected)/catalog/[id]/_components/ApiSpecsTab",

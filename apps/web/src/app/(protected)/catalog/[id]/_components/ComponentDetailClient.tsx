@@ -12,8 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { catalog, deployments, finops } from "@/lib/api-client";
-import type { CatalogComponent, Deployment } from "@/types/api";
+import { catalog, deployments, finops, linkerd as linkerdApi } from "@/lib/api-client";
+import type { CatalogComponent, Deployment, LinkerdStatus } from "@/types/api";
 import type { CostEstimate, ComponentActualCost } from "@/lib/api-client";
 import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
 import { HelmChartCard } from "./HelmChartCard";
@@ -26,6 +26,9 @@ import { KyvernoPolicyTab } from "./KyvernoPolicyTab";
 import { IstioTrafficTab } from "./IstioTrafficTab";
 import { IstioSecurityTab } from "./IstioSecurityTab";
 import { IstioCanaryTab } from "./IstioCanaryTab";
+import { LinkerdTrafficTab } from "./LinkerdTrafficTab";
+import { LinkerdSecurityTab } from "./LinkerdSecurityTab";
+import { LinkerdServiceProfileTab } from "./LinkerdServiceProfileTab";
 import { ApiSpecsTab } from "./ApiSpecsTab";
 import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { OperatorsTab } from "./OperatorsTab";
@@ -179,6 +182,7 @@ export function ComponentDetailClient() {
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [actualCost, setActualCost] = useState<ComponentActualCost | null>(null);
   const [budgetBannerDismissed, setBudgetBannerDismissed] = useState(false);
+  const [linkerdStatus, setLinkerdStatus] = useState<LinkerdStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -216,6 +220,14 @@ export function ComponentDetailClient() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Fetch Linkerd installation status once on mount (Phase 20).
+  // Tabs are conditionally rendered based on linkerdStatus.installed.
+  useEffect(() => {
+    linkerdApi.getStatus().then(setLinkerdStatus).catch(() => {
+      setLinkerdStatus({ installed: false, components: [] });
+    });
+  }, []);
 
   // Record a catalog.component.view span when the component data is loaded.
   // Fires each time `component` transitions to a new value so we capture
@@ -311,6 +323,13 @@ export function ComponentDetailClient() {
           <TabsTrigger value="istio-traffic">Traffic</TabsTrigger>
           <TabsTrigger value="istio-security">Security</TabsTrigger>
           <TabsTrigger value="istio-canary">Canary</TabsTrigger>
+          {linkerdStatus?.installed && (
+            <>
+              <TabsTrigger value="linkerd-traffic">Linkerd Traffic</TabsTrigger>
+              <TabsTrigger value="linkerd-security">Linkerd Security</TabsTrigger>
+              <TabsTrigger value="linkerd-profile">Service Profiles</TabsTrigger>
+            </>
+          )}
           <TabsTrigger value="api-specs">API Specs</TabsTrigger>
           {/* Gateway Routes tab (FARM-E48) */}
           <TabsTrigger value="gateway">Gateway Routes</TabsTrigger>
@@ -619,6 +638,27 @@ export function ComponentDetailClient() {
             <IstioCanaryTab component={component} />
           </ErrorBoundary>
         </TabsContent>
+
+        {/* ── Linkerd tabs (Phase 20) ────────────────────────────────────── */}
+        {linkerdStatus?.installed && (
+          <>
+            <TabsContent value="linkerd-traffic">
+              <ErrorBoundary>
+                <LinkerdTrafficTab component={component} />
+              </ErrorBoundary>
+            </TabsContent>
+            <TabsContent value="linkerd-security">
+              <ErrorBoundary>
+                <LinkerdSecurityTab component={component} />
+              </ErrorBoundary>
+            </TabsContent>
+            <TabsContent value="linkerd-profile">
+              <ErrorBoundary>
+                <LinkerdServiceProfileTab component={component} />
+              </ErrorBoundary>
+            </TabsContent>
+          </>
+        )}
 
         {/* ── API Specs tab (FARM-E47) ───────────────────────────────────── */}
         <TabsContent value="api-specs">

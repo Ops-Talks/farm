@@ -130,6 +130,14 @@ import type {
   FeatureAvailabilityRaw,
   QuickSearchResult,
   SetupChecklistItem,
+  // Linkerd 2.x Service Mesh (Phase 20)
+  LinkerdStatus,
+  LinkerdServerAuthorization,
+  LinkerdAuthorizationPolicy,
+  LinkerdServiceProfile,
+  LinkerdTopologyEdge,
+  LinkerdMetricsTimeseries,
+  LinkerdLatency,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -1682,6 +1690,72 @@ export const istio = {
   },
 };
 
+// -- Linkerd 2.x Service Mesh API (Phase 20) --
+
+export const linkerd = {
+  /** Get Linkerd installation status and control plane component readiness. */
+  getStatus(params?: { kubeconfig?: string }): Promise<LinkerdStatus> {
+    const qs = params?.kubeconfig
+      ? `?kubeconfig=${encodeURIComponent(params.kubeconfig)}`
+      : '';
+    return request<LinkerdStatus>(`/v1/linkerd/status${qs}`);
+  },
+
+  /** List ServerAuthorization resources in a namespace. */
+  listServerAuthorizations(params?: { namespace?: string; kubeconfig?: string }): Promise<LinkerdServerAuthorization[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<LinkerdServerAuthorization[]>(`/v1/linkerd/server-authorizations${qs}`);
+  },
+
+  /** List AuthorizationPolicy resources in a namespace. */
+  listAuthorizationPolicies(params?: { namespace?: string; kubeconfig?: string }): Promise<LinkerdAuthorizationPolicy[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<LinkerdAuthorizationPolicy[]>(`/v1/linkerd/authorization-policies${qs}`);
+  },
+
+  /** List ServiceProfile resources in a namespace. */
+  listServiceProfiles(params?: { namespace?: string; kubeconfig?: string }): Promise<LinkerdServiceProfile[]> {
+    const query = new URLSearchParams();
+    if (params?.namespace) query.set('namespace', params.namespace);
+    if (params?.kubeconfig) query.set('kubeconfig', params.kubeconfig);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return request<LinkerdServiceProfile[]>(`/v1/linkerd/service-profiles${qs}`);
+  },
+
+  /** Get inbound RPS timeseries for a deployment. */
+  getMetricsRps(params: { deployment: string; namespace: string; range?: string }): Promise<LinkerdMetricsTimeseries> {
+    const query = new URLSearchParams({ deployment: params.deployment, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<LinkerdMetricsTimeseries>(`/v1/linkerd/metrics/rps?${query.toString()}`);
+  },
+
+  /** Get failure rate timeseries for a deployment. */
+  getMetricsErrorRate(params: { deployment: string; namespace: string; range?: string }): Promise<LinkerdMetricsTimeseries> {
+    const query = new URLSearchParams({ deployment: params.deployment, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<LinkerdMetricsTimeseries>(`/v1/linkerd/metrics/error-rate?${query.toString()}`);
+  },
+
+  /** Get P50/P95/P99 latency percentiles for a deployment. */
+  getMetricsLatency(params: { deployment: string; namespace: string; range?: string }): Promise<LinkerdLatency> {
+    const query = new URLSearchParams({ deployment: params.deployment, namespace: params.namespace });
+    if (params.range) query.set('range', params.range);
+    return request<LinkerdLatency>(`/v1/linkerd/metrics/latency?${query.toString()}`);
+  },
+
+  /** Get service dependency topology edges. */
+  getTopology(params?: { range?: string }): Promise<LinkerdTopologyEdge[]> {
+    const qs = params?.range ? `?range=${encodeURIComponent(params.range)}` : '';
+    return request<LinkerdTopologyEdge[]>(`/v1/linkerd/topology${qs}`);
+  },
+};
+
 // -- Keycloak / Enterprise SSO API (FARM-E41) --
 
 export const keycloakCredentials = {
@@ -2342,6 +2416,7 @@ export const features = {
       registry: raw.registry.available,
       helm: raw.helm.available,
       istio: raw.istio.available,
+      linkerd: raw.linkerd?.available ?? false,
       allConfigured,
     };
   },

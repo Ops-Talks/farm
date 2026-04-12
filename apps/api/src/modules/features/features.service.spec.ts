@@ -4,6 +4,7 @@ import { FeaturesService } from "./features.service";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { RegistryService } from "../registry/registry.service";
 import { IstioService } from "../istio/istio.service";
+import { LinkerdService } from "../linkerd/linkerd.service";
 
 describe("FeaturesService", () => {
   let service: FeaturesService;
@@ -11,6 +12,7 @@ describe("FeaturesService", () => {
   const mockKubernetesService = { isEnabled: jest.fn() };
   const mockRegistryService = { adapterType: null as string | null };
   const mockIstioService = { isIstioEnabled: jest.fn() };
+  const mockLinkerdService = { isLinkerdEnabled: jest.fn() };
   const mockConfigService = {
     get: jest.fn().mockReturnValue("http://localhost:9090"),
   };
@@ -27,6 +29,7 @@ describe("FeaturesService", () => {
         { provide: KubernetesService, useValue: mockKubernetesService },
         { provide: RegistryService, useValue: mockRegistryService },
         { provide: IstioService, useValue: mockIstioService },
+        { provide: LinkerdService, useValue: mockLinkerdService },
         { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
@@ -47,6 +50,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(true);
       mockRegistryService.adapterType = "ecr";
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(true);
       globalThis.fetch = jest
         .fn()
         .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
@@ -57,6 +61,7 @@ describe("FeaturesService", () => {
       expect(result.registry.available).toBe(true);
       expect(result.helm.available).toBe(true);
       expect(result.istio.available).toBe(true);
+      expect(result.linkerd.available).toBe(true);
       expect(result.cost.available).toBe(true);
     });
 
@@ -64,6 +69,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(false);
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
       globalThis.fetch = jest
         .fn()
         .mockRejectedValue(
@@ -76,6 +82,7 @@ describe("FeaturesService", () => {
       expect(result.registry.available).toBe(false);
       expect(result.helm.available).toBe(false);
       expect(result.istio.available).toBe(false);
+      expect(result.linkerd.available).toBe(false);
       expect(result.cost.available).toBe(false);
     });
 
@@ -83,6 +90,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(false);
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
       globalThis.fetch = jest
         .fn()
         .mockRejectedValue(new Error("timeout")) as unknown as typeof fetch;
@@ -97,6 +105,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(true);
       mockRegistryService.adapterType = "ecr";
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 503,
@@ -111,6 +120,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(true);
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
       globalThis.fetch = jest
         .fn()
         .mockRejectedValue(new Error("error")) as unknown as typeof fetch;
@@ -125,6 +135,7 @@ describe("FeaturesService", () => {
       mockKubernetesService.isEnabled.mockReturnValue(false);
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
+      mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
       globalThis.fetch = jest
         .fn()
         .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
@@ -141,9 +152,9 @@ describe("FeaturesService", () => {
 
   describe("direct instantiation", () => {
     it("covers the V8-instrumented constructor parameter branch artifacts", () => {
-      // Passing undefined for the first three injected dependencies exercises the
+      // Passing undefined for the first four injected dependencies exercises the
       // 'falsy' branch of each TypeScript-compiled parameter property assignment
-      // that Istanbul instruments at lines 21-23.
+      // that Istanbul instruments at lines 22-26.
       const svc = new FeaturesService(
         undefined as unknown as ConstructorParameters<
           typeof FeaturesService
@@ -154,9 +165,12 @@ describe("FeaturesService", () => {
         undefined as unknown as ConstructorParameters<
           typeof FeaturesService
         >[2],
-        mockConfigService as unknown as ConstructorParameters<
+        undefined as unknown as ConstructorParameters<
           typeof FeaturesService
         >[3],
+        mockConfigService as unknown as ConstructorParameters<
+          typeof FeaturesService
+        >[4],
       );
       expect(svc).toBeDefined();
     });

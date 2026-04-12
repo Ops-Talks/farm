@@ -37,6 +37,7 @@ import { HelmModule } from "./modules/helm/helm.module";
 import { CloudModule } from "./modules/cloud/cloud.module";
 import { TagPolicyModule } from "./modules/tag-policy/tag-policy.module";
 import { IstioModule } from "./modules/istio/istio.module";
+import { LinkerdModule } from "./modules/linkerd/linkerd.module";
 import { ApiSpecsModule } from "./modules/api-specs/api-specs.module";
 import { GatewayModule } from "./modules/gateway/gateway.module";
 import { RegistryModule } from "./modules/registry/registry.module";
@@ -272,6 +273,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Istio service mesh integration: traffic metrics, topology, security posture, and canary traffic control",
         },
         module: IstioModule,
+      },
+      {
+        metadata: {
+          name: "core-linkerd",
+          version: "1.0.0",
+          description:
+            "Linkerd 2.x service mesh integration: traffic metrics, topology, mTLS posture, and ServiceProfile route management",
+        },
+        module: LinkerdModule,
       },
       {
         metadata: {
