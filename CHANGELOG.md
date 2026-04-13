@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.4] - 2026-04-13
+
+### Changed
+- apply all remaining PR review corrections across api-reference and user-guide docs.
+- Update docs/user-guide/container-registry.md.
+- Update docs/user-guide/opa-integration.md.
+- Update docs/user-guide/opa-integration.md.
+- **linkerd**: fix API reference response examples to match actual backend shapes.
+- Update docs/developer-guide/backend/architecture.md.
+- Update docs/developer-guide/setup.md.
+- Update docs/index.md.
+- Update docs/developer-guide/backend/architecture.md.
+- Update docs/api-reference/linkerd.md.
+- patch(mkdocs) Revision and overall docs update.
+- fix(CVES) Picomath.
+- Update ROADMAP.
+- Update ROADMAP.
+
 ## [0.17.3] - 2026-04-12
 
 ### Changed
