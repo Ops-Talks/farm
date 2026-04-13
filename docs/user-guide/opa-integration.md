@@ -120,7 +120,7 @@ Kubernetes Gatekeeper ConstraintTemplates and constraint violations are readable
 |----------|-------------|
 | `GET /api/v1/kubernetes/gatekeeper/enabled` | Check if Gatekeeper is installed in the cluster |
 | `GET /api/v1/kubernetes/gatekeeper/constraint-templates` | List all ConstraintTemplates |
-| `GET /api/v1/kubernetes/gatekeeper/violations` | List constraint violations, filterable by kind and namespace |
+| `GET /api/v1/kubernetes/gatekeeper/violations` | List constraint violations, filterable by namespace |
 
 Gatekeeper violations appear alongside Kyverno PolicyReport results on the component detail page.
 
