@@ -157,7 +157,7 @@ farm/
           kubernetes/      # Kubernetes workload, CRD, Rollout, Kyverno, Gatekeeper, Dragonfly, Flux, KEDA discovery
           istio/           # Istio service mesh traffic and security
           linkerd/         # Linkerd service mesh metrics and control plane status
-          opa/             # OPA policy evaluation and constraint template management
+          opa/             # OPA policy evaluation and policy management
           registry/        # Container registry integration (DockerHub, ECR, GCR, Harbor)
           finops/          # OpenCost cost data sync and budget tracking
           search/          # Cross-entity quick search (components, teams, environments)
