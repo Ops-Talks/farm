@@ -1,5 +1,6 @@
 codecov:
   require_ci_to_pass: false
+  after_n_builds: 2
 
 coverage:
   precision: 2
@@ -18,12 +19,8 @@ coverage:
 
 flags:
   api:
-    paths:
-      - apps/api/src/
     carryforward: false
   web:
-    paths:
-      - apps/web/src/
     carryforward: false
 
 ignore:
