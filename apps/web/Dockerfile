@@ -45,23 +45,26 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Update npm to a pinned version whose bundled tar dependency meets the
 # minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
 # CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
-# Then patch every picomatch instance inside npm's own bundled dependencies
-# to 4.0.4, fixing CVE-2026-33671 (ReDoS via crafted extglob patterns).
-# The tarball is downloaded once and extracted into each directory in turn.
+#
+# Patch picomatch inside npm's own bundled node_modules to 4.0.4 (CVE-2026-33671).
+# The fixed copy is taken directly from the deps stage (already at 4.0.4 via
+# package.json overrides), so no registry download is needed at build time.
+# brace-expansion is upgraded to 5.0.5 via npm pack (no workspace copy available
+# at the required version).
+#
+# The for loop with "|| exit 1" is used instead of piping find to while, because
+# Alpine sh runs the while body in a subshell and does not propagate inner errors
+# to the outer exit code, causing silent patch failures.
+COPY --from=deps /app/node_modules/picomatch /tmp/picomatch-fixed
 RUN npm install -g npm@11.12.1 \
- && npm pack picomatch@4.0.4 --quiet \
- && picomatch_count="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | wc -l)" \
- && [ "$picomatch_count" -gt 0 ] \
- && find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d | while IFS= read -r dir; do \
-      tar xzf picomatch-4.0.4.tgz --strip-components=1 -C "$dir"; \
-    done \
- && rm picomatch-4.0.4.tgz \
+ && picomatch_dirs="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d)" \
+ && test -n "$picomatch_dirs" || { echo "No bundled picomatch found in npm"; exit 1; } \
+ && for dir in $picomatch_dirs; do cp -rf /tmp/picomatch-fixed/. "$dir/" || exit 1; done \
+ && rm -rf /tmp/picomatch-fixed \
  && npm pack brace-expansion@5.0.5 --quiet \
- && brace_expansion_count="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | wc -l)" \
- && [ "$brace_expansion_count" -gt 0 ] \
- && find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d | while IFS= read -r dir; do \
-      tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir"; \
-    done \
+ && brace_dirs="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d)" \
+ && test -n "$brace_dirs" || { echo "No bundled brace-expansion found in npm"; exit 1; } \
+ && for dir in $brace_dirs; do tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir" || exit 1; done \
  && rm brace-expansion-5.0.5.tgz
 
 # Upgrade Alpine system packages to their patched versions:
