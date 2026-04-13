@@ -83,7 +83,7 @@ When the policy denies the input:
   "policyPath": "data/app/rbac/allow",
   "allowed": false,
   "violations": [
-    { "message": "User 'alice' does not have 'write' permission on 'reports'" }
+    "User 'alice' does not have 'write' permission on 'reports'"
   ]
 }
 ```
