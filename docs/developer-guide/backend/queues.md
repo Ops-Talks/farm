@@ -4,14 +4,21 @@ Farm uses [BullMQ](https://docs.bullmq.io/) with Redis for asynchronous backgrou
 
 ## Available Queues
 
-| Queue Name | Purpose | Processor |
-|---|---|---|
-| `catalog-discovery` | Async YAML catalog ingestion from git repositories | `CatalogDiscoveryProcessor` |
-| `notifications` | Email and webhook notification delivery (placeholder) | `NotificationProcessor` |
+| Queue Name | Registered In | Processor | Purpose |
+|---|---|---|---|
+| `catalog-discovery` | `QueuesModule` | `CatalogDiscoveryProcessor` | Async YAML catalog ingestion from git repositories |
+| `notifications` | `QueuesModule` | `NotificationProcessor` | Email and webhook notification delivery |
+| `pipeline-execution` | `QueuesModule` | `PipelineExecutionProcessor` | Multi-stage pipeline job execution with WebSocket streaming |
+| `compliance-audit` | `QueuesModule` | `ComplianceAuditProcessor` | Tag policy compliance scan for catalog components |
+| `keycloak-sync` | `QueuesModule` | `KeycloakSyncProcessor` | Keycloak group-to-team membership synchronization |
+| `cost-sync` | `FinopsModule` | `ActualCostSyncProcessor` | OpenCost cost data sync, triggered by `COST_SYNC_CRON` schedule |
+| `vulnerability-sync` | `RegistryModule` | `VulnerabilitySyncProcessor` | Container image vulnerability scan (runs every 15 minutes) |
 
 ## How It Works
 
 When a user calls `POST /api/v1/catalog/locations` to discover components from a git repository, the request is enqueued as a BullMQ job rather than processed synchronously. The `CatalogDiscoveryProcessor` picks up the job in the background, clones the repository, finds `catalog-info.yaml` files, and registers them.
+
+Module-specific queues (`cost-sync`, `vulnerability-sync`) are registered by their own feature module and follow the same pattern — their processors run independently of `QueuesModule`.
 
 If Redis is unavailable, the system falls back to synchronous processing automatically.
 
@@ -41,19 +48,27 @@ The dashboard allows you to:
 
 ## Adding a New Queue
 
-1. Define the queue name and job data interface in your processor file:
+1. Add the queue name to `QUEUE_NAMES` in `apps/api/src/common/queues/queue-names.ts`:
+
+```typescript
+export const QUEUE_NAMES = {
+  // ... existing queues
+  MY_QUEUE: "my-queue",
+} as const;
+```
+
+2. Define the job data interface and processor in your feature module:
 
 ```typescript
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
-
-export const MY_QUEUE = "my-queue";
+import { QUEUE_NAMES } from "../../common/queues/queue-names";
 
 export interface MyJobData {
   someField: string;
 }
 
-@Processor(MY_QUEUE)
+@Processor(QUEUE_NAMES.MY_QUEUE)
 export class MyProcessor extends WorkerHost {
   async process(job: Job<MyJobData>): Promise<void> {
     // Process the job
@@ -61,23 +76,23 @@ export class MyProcessor extends WorkerHost {
 }
 ```
 
-2. Register the queue in `QueuesModule` (`apps/api/src/common/queues/queues.module.ts`):
+3. Register the queue in `QueuesModule` (`apps/api/src/common/queues/queues.module.ts`):
 
 ```typescript
 BullModule.registerQueue(
-  { name: CATALOG_DISCOVERY_QUEUE },
-  { name: NOTIFICATIONS_QUEUE },
-  { name: MY_QUEUE },  // add here
+  { name: QUEUE_NAMES.CATALOG_DISCOVERY },
+  { name: QUEUE_NAMES.NOTIFICATIONS },
+  { name: QUEUE_NAMES.MY_QUEUE },  // add here
 ),
 ```
 
-3. Add the processor to the module's providers and register it with Bull Board.
+4. Add the processor to the module's providers and register it with Bull Board.
 
-4. Inject the queue in your service:
+5. Inject the queue in your service:
 
 ```typescript
 constructor(
-  @Optional() @InjectQueue(MY_QUEUE) private readonly myQueue?: Queue,
+  @Optional() @InjectQueue(QUEUE_NAMES.MY_QUEUE) private readonly myQueue?: Queue,
 ) {}
 
 async enqueueWork(data: MyJobData): Promise<void> {

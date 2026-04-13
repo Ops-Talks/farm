@@ -1,6 +1,6 @@
 # Kubernetes API
 
-The Kubernetes API provides endpoints for discovering workloads, Custom Resource Definitions (CRDs), and Argo Rollout statuses from a connected Kubernetes cluster.
+The Kubernetes API provides endpoints for discovering and inspecting workloads, Custom Resource Definitions (CRDs), Argo Rollout statuses, Gatekeeper constraint templates and violations, Dragonfly distributed cache instances, Flux GitOps bindings, KEDA scaled objects, and node runtime environments from a connected Kubernetes cluster.
 
 ## Base Path
 
@@ -27,6 +27,28 @@ Set the `KUBECONFIG_PATH` environment variable to a valid kubeconfig file, or ru
 | `DELETE` | `/api/v1/kubernetes/operators/:name/bindings` | Remove an operator-component binding | JWT |
 | `GET` | `/api/v1/kubernetes/nodes/runtimes` | List node container runtimes | JWT |
 | `GET` | `/api/v1/kubernetes/nodes/:nodeName/crio-metrics` | Get CRI-O metrics for a node | JWT |
+| `GET` | `/api/v1/kubernetes/gatekeeper/enabled` | Check if Gatekeeper is installed | JWT |
+| `GET` | `/api/v1/kubernetes/gatekeeper/constraint-templates` | List Gatekeeper ConstraintTemplates | JWT |
+| `GET` | `/api/v1/kubernetes/gatekeeper/violations` | List Gatekeeper constraint violations | JWT |
+| `GET` | `/api/v1/kubernetes/dragonfly/status` | Dragonfly P2P status | JWT |
+| `GET` | `/api/v1/kubernetes/dragonfly/tasks` | List Dragonfly tasks | JWT |
+| `GET` | `/api/v1/kubernetes/dragonfly/peers` | List Dragonfly peers | JWT |
+| `GET` | `/api/v1/kubernetes/dragonfly/metrics` | Dragonfly metrics | JWT |
+| `GET` | `/api/v1/kubernetes/flux/status` | Flux installation status | JWT |
+| `GET` | `/api/v1/kubernetes/flux/kustomizations` | List Flux Kustomizations | JWT |
+| `GET` | `/api/v1/kubernetes/flux/helm-releases` | List Flux HelmReleases | JWT |
+| `GET` | `/api/v1/kubernetes/flux/sources` | List Flux sources | JWT |
+| `GET` | `/api/v1/kubernetes/components/:componentId/flux-bindings` | List Flux bindings for a component | JWT |
+| `POST` | `/api/v1/kubernetes/flux/binding` | Create a Flux binding | JWT |
+| `DELETE` | `/api/v1/kubernetes/flux/binding/:id` | Remove a Flux binding | JWT |
+| `GET` | `/api/v1/kubernetes/keda/status` | KEDA installation status | JWT |
+| `GET` | `/api/v1/kubernetes/keda/scaled-objects` | List ScaledObjects | JWT |
+| `GET` | `/api/v1/kubernetes/keda/scaled-jobs` | List ScaledJobs | JWT |
+| `GET` | `/api/v1/kubernetes/keda/scaled-objects/:namespace/:name/triggers` | List triggers for a ScaledObject | JWT |
+| `GET` | `/api/v1/kubernetes/components/:componentId/keda-bindings` | List KEDA bindings for a component | JWT |
+| `POST` | `/api/v1/kubernetes/keda/binding` | Create a KEDA binding | JWT |
+| `DELETE` | `/api/v1/kubernetes/keda/binding/:id` | Remove a KEDA binding | JWT |
+| `GET` | `/api/v1/kubernetes/available` | Check if Kubernetes is configured | JWT |
 
 ## List Workloads
 
@@ -338,3 +360,348 @@ Returns `available: true` when the node uses CRI-O runtime. Currently indicates 
   "available": true
 }
 ```
+
+---
+
+## Gatekeeper
+
+Reads Open Policy Agent Gatekeeper resources from the cluster.
+
+### Check Gatekeeper Status
+
+```http
+GET /api/v1/kubernetes/gatekeeper/enabled
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+{ "enabled": true }
+```
+
+### List ConstraintTemplates
+
+```http
+GET /api/v1/kubernetes/gatekeeper/constraint-templates
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+[
+  {
+    "name": "K8sRequiredLabels",
+    "group": "templates.gatekeeper.sh",
+    "enforcementAction": "deny",
+    "description": "Requires specific labels to be present on Kubernetes resources.",
+    "violationCount": 3
+  }
+]
+```
+
+### List Violations
+
+```http
+GET /api/v1/kubernetes/gatekeeper/violations
+Authorization: Bearer <token>
+```
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `namespace` | string | No | Filter violations by namespace |
+
+#### Response (200)
+
+```json
+[
+  {
+    "kind": "K8sRequiredLabels",
+    "name": "my-deployment",
+    "namespace": "production",
+    "message": "Missing required label: team",
+    "constraint": "require-team-label",
+    "enforcementAction": "deny"
+  },
+  {
+    "kind": "K8sRequiredLabels",
+    "name": "cluster-admin-binding",
+    "message": "Missing required label: team",
+    "constraint": "require-team-label",
+    "enforcementAction": "warn"
+  }
+]
+```
+
+---
+
+## Dragonfly P2P
+
+Reads Dragonfly P2P resources from the cluster.
+
+### Get Dragonfly Status
+
+```http
+GET /api/v1/kubernetes/dragonfly/status
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+{ "installed": true, "version": "v2.1.0" }
+```
+
+### List Dragonfly Tasks
+
+```http
+GET /api/v1/kubernetes/dragonfly/tasks
+Authorization: Bearer <token>
+```
+
+### List Dragonfly Peers
+
+```http
+GET /api/v1/kubernetes/dragonfly/peers
+Authorization: Bearer <token>
+```
+
+### Get Dragonfly Metrics
+
+```http
+GET /api/v1/kubernetes/dragonfly/metrics
+Authorization: Bearer <token>
+```
+
+All Dragonfly endpoints return an empty result when the Dragonfly CRDs are not installed in the cluster.
+
+---
+
+## Flux GitOps
+
+Reads Flux CD resources from the cluster and manages component-to-Flux bindings.
+
+### Get Flux Status
+
+```http
+GET /api/v1/kubernetes/flux/status
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+{ "installed": true, "version": "v2.2.0" }
+```
+
+### List Kustomizations
+
+```http
+GET /api/v1/kubernetes/flux/kustomizations
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+[
+  {
+    "name": "apps",
+    "namespace": "flux-system",
+    "path": "./clusters/production/apps",
+    "ready": true,
+    "lastAppliedRevision": "main@sha1:abc123"
+  }
+]
+```
+
+### List HelmReleases
+
+```http
+GET /api/v1/kubernetes/flux/helm-releases
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+[
+  {
+    "name": "payment-service",
+    "namespace": "payments",
+    "chart": "payment-service",
+    "version": "2.4.0",
+    "ready": true
+  }
+]
+```
+
+### List Flux Sources
+
+```http
+GET /api/v1/kubernetes/flux/sources
+Authorization: Bearer <token>
+```
+
+Returns all `GitRepository`, `HelmRepository`, and `OCIRepository` sources in the cluster.
+
+### List Flux Bindings for a Component
+
+```http
+GET /api/v1/kubernetes/components/:componentId/flux-bindings
+Authorization: Bearer <token>
+```
+
+### Create Flux Binding
+
+```http
+POST /api/v1/kubernetes/flux/binding
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "componentId": "550e8400-e29b-41d4-a716-446655440001",
+  "kustomizationName": "apps",
+  "namespace": "flux-system"
+}
+```
+
+Returns the created binding (201).
+
+### Remove Flux Binding
+
+```http
+DELETE /api/v1/kubernetes/flux/binding/:id
+Authorization: Bearer <token>
+```
+
+Returns `204 No Content` on success.
+
+---
+
+## KEDA
+
+Reads KEDA (Kubernetes Event-Driven Autoscaling) resources from the cluster and manages component-to-KEDA bindings.
+
+### Get KEDA Status
+
+```http
+GET /api/v1/kubernetes/keda/status
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+{ "installed": true, "version": "v2.13.0" }
+```
+
+### List ScaledObjects
+
+```http
+GET /api/v1/kubernetes/keda/scaled-objects
+Authorization: Bearer <token>
+```
+
+#### Response (200)
+
+```json
+[
+  {
+    "name": "payment-service-scaler",
+    "namespace": "payments",
+    "scaleTargetRef": { "name": "payment-service" },
+    "minReplicaCount": 1,
+    "maxReplicaCount": 20,
+    "ready": true
+  }
+]
+```
+
+### List ScaledJobs
+
+```http
+GET /api/v1/kubernetes/keda/scaled-jobs
+Authorization: Bearer <token>
+```
+
+### List ScaledObject Triggers
+
+```http
+GET /api/v1/kubernetes/keda/scaled-objects/:namespace/:name/triggers
+Authorization: Bearer <token>
+```
+
+#### Path Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `namespace` | Kubernetes namespace |
+| `name` | ScaledObject name |
+
+#### Response (200)
+
+```json
+[
+  {
+    "type": "kafka",
+    "metadata": {
+      "bootstrapServers": "kafka:9092",
+      "topic": "payments",
+      "lagThreshold": "50"
+    }
+  }
+]
+```
+
+### List KEDA Bindings for a Component
+
+```http
+GET /api/v1/kubernetes/components/:componentId/keda-bindings
+Authorization: Bearer <token>
+```
+
+### Create KEDA Binding
+
+```http
+POST /api/v1/kubernetes/keda/binding
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "componentId": "550e8400-e29b-41d4-a716-446655440001",
+  "scaledObjectName": "payment-service-scaler",
+  "namespace": "payments"
+}
+```
+
+Returns the created binding (201).
+
+### Remove KEDA Binding
+
+```http
+DELETE /api/v1/kubernetes/keda/binding/:id
+Authorization: Bearer <token>
+```
+
+Returns `204 No Content` on success.
+
+---
+
+## Availability Check
+
+```http
+GET /api/v1/kubernetes/available
+Authorization: Bearer <token>
+```
+
+### Response (200)
+
+```json
+{ "available": true }
+```
+
+Returns `{ "available": false }` when `KUBECONFIG_PATH` is not configured or the cluster is unreachable.

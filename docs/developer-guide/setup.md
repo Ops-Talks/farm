@@ -154,13 +154,20 @@ farm/
           service-template/ # Golden path templates and service scaffolding
           environment-request/ # Environment provisioning approval workflow
           helm/            # Helm release discovery and sync
-          kubernetes/      # Kubernetes workload, CRD, Rollout, Kyverno discovery
+          kubernetes/      # Kubernetes workload, CRD, Rollout, Kyverno, Gatekeeper, Dragonfly, Flux, KEDA discovery
           istio/           # Istio service mesh traffic and security
+          linkerd/         # Linkerd service mesh metrics and control plane status
+          opa/             # OPA policy evaluation and policy management
+          registry/        # Container registry integration (DockerHub, ECR, GCR, Harbor)
+          finops/          # OpenCost cost data sync and budget tracking
+          search/          # Cross-entity quick search (components, teams, environments)
           integrations/    # CI/CD integrations (ArgoCD, CircleCI, Jenkins, TravisCI)
           cloud/           # AWS, GCP, Azure resource discovery and cost
           tag-policy/      # Tag governance and compliance
           gateway/         # API gateway (Kong, AWS API Gateway) integration
           api-specs/       # API specification lifecycle and consumer tracking
+          features/        # Feature availability aggregator and status flags
+          setup/           # Admin onboarding checklist and setup state
       test/                # End-to-end tests (supertest + SQLite in-memory)
     apps/web/              # Next.js frontend
       src/
@@ -336,6 +343,21 @@ npm run start:debug
 | `TEAMS_WEBHOOK_URL` | *(empty)* | Microsoft Teams webhook URL for notifications (leave empty to disable) |
 | `PLUGINS_DIR` | `./plugins` | Directory for external runtime plugins |
 | `KUBECONFIG_PATH` | *(empty)* | Path to a kubeconfig file; leave empty to use in-cluster config (Kubernetes, Helm, and CRD features) |
+| `OPA_URL` | `http://localhost:8181` | OPA server base URL for policy evaluation (Policy Engine module) |
+| `OPENCOST_URL` | `http://localhost:9090` | OpenCost base URL for cost data retrieval (FinOps module) |
+| `COST_SYNC_CRON` | `0 3 * * *` | Cron expression for the background cost sync schedule (FinOps module) |
+| `REGISTRY_TYPE` | *(empty)* | Registry adapter selector: `dockerhub`, `ecr`, `gcr`, or `harbor` |
+| `REGISTRY_URL` | *(empty)* | Registry base URL, AWS account ID (ECR), or GCP region (GCR) |
+| `REGISTRY_CREDENTIALS` | *(empty)* | JSON credentials string for the selected registry adapter |
+| `HEALTH_HEAP_THRESHOLD_MB` | `512` | Heap memory threshold in MB for the health check endpoint |
+| `HEALTH_RSS_THRESHOLD_MB` | `1024` | RSS memory threshold in MB for the health check endpoint |
+| `GATEWAY_KONG_ENABLED` | `false` | Enable Kong gateway adapter |
+| `GATEWAY_KONG_URL` | *(empty)* | Kong Admin API base URL |
+| `GATEWAY_KONG_API_KEY` | *(empty)* | API key for Kong Admin API authentication |
+| `GATEWAY_AWS_ENABLED` | `false` | Enable AWS API Gateway adapter |
+| `GATEWAY_AWS_REGION` | *(empty)* | AWS region for the API Gateway adapter |
+| `GATEWAY_AWS_ACCESS_KEY_ID` | *(empty)* | AWS access key ID for the API Gateway adapter |
+| `GATEWAY_AWS_SECRET_ACCESS_KEY` | *(empty)* | AWS secret access key for the API Gateway adapter |
 
 ### Frontend
 

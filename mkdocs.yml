@@ -93,6 +93,10 @@ nav:
     - Kyverno Integration: user-guide/kyverno-integration.md
     - Keycloak SSO: user-guide/keycloak-sso.md
     - Istio Service Mesh: user-guide/istio-integration.md
+    - Linkerd Service Mesh: user-guide/linkerd-integration.md
+    - OPA Policy Engine: user-guide/opa-integration.md
+    - Container Registry: user-guide/container-registry.md
+    - FinOps and Cost Management: user-guide/finops.md
     - SLO Management: user-guide/slos.md
     - Incident Management: user-guide/incidents.md
     - Custom Dashboards: user-guide/dashboards.md
@@ -148,6 +152,11 @@ nav:
     - Kyverno API: api-reference/kyverno.md
     - Keycloak SSO API: api-reference/keycloak-sso.md
     - Istio API: api-reference/istio.md
+    - Linkerd API: api-reference/linkerd.md
+    - OPA API: api-reference/opa.md
+    - Container Registry API: api-reference/registry.md
+    - Search API: api-reference/search.md
+    - FinOps API: api-reference/finops.md
     - SLO API: api-reference/slos.md
     - Incident API: api-reference/incidents.md
     - Dashboard API: api-reference/dashboards.md

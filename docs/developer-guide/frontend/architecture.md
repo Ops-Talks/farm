@@ -95,7 +95,7 @@ The API client (`apps/web/src/lib/api-client.ts`) provides a typed interface to 
 - **Base URL**: Uses relative `/api` path (proxied by Next.js rewrites to the backend)
 - **Token management**: JWT access token and refresh token stored in `sessionStorage`
 - **Auto-refresh**: On 401 responses, automatically attempts token refresh before retrying
-- **Namespaced methods**: `auth.*`, `catalog.*`, `deployments.*`, `environments.*`, `teams.*`, `queues.*`, `docs.*`, `health.*`, `organizations.*`, `invitations.*`, `observability.*`, `pipelines.*`, `alertingRules.*`, `plugins.*`, `analytics.*`, `helm.*`, `kubernetes.*`, `integrations.*`, `argocd.*`, `circleci.*`, `jenkins.*`, `travisci.*`, `cloud.*`, `tagPolicies.*`, `kyverno.*`, `istio.*`, `keycloakCredentials.*`, `apiSpecs.*`, `gateway.*`, `slos.*`, `incidents.*`, `postMortems.*`, `dashboards.*`, `serviceTemplates.*`, `environmentRequests.*`
+- **Namespaced methods**: `auth.*`, `catalog.*`, `deployments.*`, `environments.*`, `teams.*`, `queues.*`, `docs.*`, `health.*`, `organizations.*`, `invitations.*`, `observability.*`, `pipelines.*`, `alertingRules.*`, `plugins.*`, `analytics.*`, `helm.*`, `kubernetes.*`, `integrations.*`, `argocd.*`, `circleci.*`, `jenkins.*`, `travisci.*`, `cloud.*`, `tagPolicies.*`, `kyverno.*`, `istio.*`, `linkerd.*`, `opa.*`, `registry.*`, `finops.*`, `search.*`, `features.*`, `setup.*`, `keycloakCredentials.*`, `apiSpecs.*`, `gateway.*`, `slos.*`, `incidents.*`, `postMortems.*`, `dashboards.*`, `serviceTemplates.*`, `environmentRequests.*`
 
 #### Docker Proxy Configuration
 
