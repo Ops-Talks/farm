@@ -1,6 +1,6 @@
 # Container Registry Integration
 
-Farm connects to a container registry to list repositories, inspect image manifests, and surface vulnerability scan results alongside catalog components. Supported adapters: DockerHub, ECR (AWS), and Harbor.
+Farm connects to a container registry to list repositories, inspect image manifests, and surface vulnerability scan results alongside catalog components. Supported adapters: DockerHub, ECR (AWS), GCR / Artifact Registry, and Harbor.
 
 ## Overview
 
