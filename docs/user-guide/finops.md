@@ -35,7 +35,7 @@ The **Cost** tab on the component detail page shows:
 Set a cost budget on a catalog component by updating the `costBudgetUsd` field:
 
 ```http
-PATCH /api/v1/catalog/:id
+PATCH /api/v1/catalog/components/:id
 Authorization: Bearer <token>
 Content-Type: application/json
 

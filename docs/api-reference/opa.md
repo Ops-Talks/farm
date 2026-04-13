@@ -77,7 +77,7 @@ Content-Type: application/json
 }
 ```
 
-### Response (200)
+### Response (201)
 
 ```json
 {
@@ -94,7 +94,7 @@ When the policy denies the request:
   "policyPath": "data/app/rbac/allow",
   "allowed": false,
   "violations": [
-    { "message": "User 'alice' does not have 'write' permission on 'reports'" }
+    "User 'alice' does not have 'write' permission on 'reports'"
   ]
 }
 ```
@@ -136,7 +136,7 @@ Authorization: Bearer <token>
     "policyPath": "data/security/deny",
     "allowed": false,
     "violations": [
-      { "message": "Image tag is not pinned to a digest" }
+      "Image tag is not pinned to a digest"
     ],
     "evaluatedAt": "2025-05-30T09:00:00Z"
   }

@@ -39,7 +39,8 @@ metadata:
 Or update it via the Farm API:
 
 ```http
-PATCH /api/v1/catalog/:id
+PATCH /api/v1/catalog/components/:id
+Authorization: Bearer <token>
 Content-Type: application/json
 
 { "namespace": "payments" }

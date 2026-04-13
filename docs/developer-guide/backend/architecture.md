@@ -223,7 +223,7 @@ Admin setup checklist with dismissible items to guide initial platform configura
 
 ### FinOps Module
 
-OpenCost integration for per-component and per-team cost data. A BullMQ-based scheduler syncs cost records from OpenCost at a configurable interval (`FINOPS_SYNC_INTERVAL_MS`).
+OpenCost integration for per-component and per-team cost data. A BullMQ-based scheduler syncs cost records from OpenCost on a configurable schedule (`COST_SYNC_CRON`).
 
 ### Registry Module
 

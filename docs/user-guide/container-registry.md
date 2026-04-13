@@ -97,6 +97,8 @@ POST /api/v1/registry/components/:componentId/vulnerabilities/sync
 Authorization: Bearer <token>
 ```
 
+The component must have a `containerImage` field configured (set via `PATCH /api/v1/catalog/components/:id`). If the field is missing, the endpoint returns 400 with `"Component has no container image configured"`.
+
 The BullMQ job fetches scan results and persists them to the database. Results appear on the **Security** tab of the component detail page once the job completes.
 
 ### Viewing Results

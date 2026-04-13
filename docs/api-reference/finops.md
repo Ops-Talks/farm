@@ -38,25 +38,24 @@ Authorization: Bearer <token>
 ```json
 {
   "componentId": "550e8400-e29b-41d4-a716-446655440001",
-  "currency": "USD",
-  "last7d": {
+  "sevenDay": {
     "cpuCost": 12.40,
     "memoryCost": 3.20,
     "pvCost": 0.80,
     "networkCost": 0.50,
     "totalCost": 16.90
   },
-  "last30d": {
+  "thirtyDay": {
     "cpuCost": 52.10,
     "memoryCost": 13.70,
     "pvCost": 3.40,
     "networkCost": 2.10,
     "totalCost": 71.30
-  },
-  "budgetUsd": 100.00,
-  "syncedAt": "2025-06-01T08:00:00Z"
+  }
 }
 ```
+
+`sevenDay` and `thirtyDay` each contain an OpenCost allocation object, or `null` if no data is available for that window.
 
 ---
 
@@ -117,15 +116,13 @@ Authorization: Bearer <token>
   "components": [
     {
       "componentId": "550e8400-e29b-41d4-a716-446655440001",
-      "name": "payment-service",
       "totalCost": 71.30,
-      "currency": "USD"
+      "window": "30d"
     },
     {
       "componentId": "550e8400-e29b-41d4-a716-446655440002",
-      "name": "ledger-service",
       "totalCost": 71.30,
-      "currency": "USD"
+      "window": "30d"
     }
   ]
 }
@@ -154,7 +151,6 @@ Authorization: Bearer <token>
 [
   {
     "componentId": "550e8400-e29b-41d4-a716-446655440001",
-    "name": "payment-service",
     "totalCost": 71.30,
     "currency": "USD",
     "syncedAt": "2025-06-01T08:00:00Z",
@@ -162,11 +158,10 @@ Authorization: Bearer <token>
   },
   {
     "componentId": "550e8400-e29b-41d4-a716-446655440003",
-    "name": "ml-inference",
     "totalCost": 340.80,
     "currency": "USD",
     "syncedAt": "2025-06-01T08:00:00Z",
-    "budgetUsd": 250.00
+    "budgetUsd": null
   }
 ]
 ```

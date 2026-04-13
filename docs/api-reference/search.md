@@ -55,7 +55,6 @@ Returns an array of `QuickSearchResult` objects ordered by relevance.
     "type": "documentation",
     "id": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
     "name": "Payment Service Architecture",
-    "description": null,
     "url": "/docs/3f2504e0-4f89-11d3-9a0c-0305e82c3301"
   }
 ]
@@ -68,8 +67,8 @@ Returns an array of `QuickSearchResult` objects ordered by relevance.
 | `type` | string | Entity type: `component`, `team`, `documentation`, `environment`, `pipeline` |
 | `id` | string | UUID of the matched entity |
 | `name` | string | Display name of the entity |
-| `description` | string or null | Short description, if available |
-| `url` | string or null | Relative URL to the entity detail page in the Farm UI |
+| `description` | string | Short description. Omitted from the response when not available (not returned as `null`). |
+| `url` | string | Relative URL to the entity detail page in the Farm UI. Always present. |
 
 ---
 
@@ -77,5 +76,4 @@ Returns an array of `QuickSearchResult` objects ordered by relevance.
 
 | Status | Cause |
 |--------|-------|
-| 400 | `q` parameter is missing or shorter than 2 characters |
 | 401 | Missing or invalid JWT token |

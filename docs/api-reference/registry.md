@@ -8,7 +8,7 @@ The Container Registry API provides endpoints for browsing repositories, inspect
 
 ## Prerequisites
 
-- A supported registry adapter must be configured via environment variables (DockerHub, ECR, or Harbor)
+- A supported registry adapter must be configured via environment variables (DockerHub, ECR, GCR/Artifact Registry, or Harbor)
 - All endpoints require JWT authentication
 
 ## Endpoints
@@ -40,15 +40,12 @@ Authorization: Bearer <token>
 [
   {
     "name": "my-org/payment-service",
-    "description": "Payment microservice",
-    "pullCount": 4200,
-    "lastUpdated": "2025-05-28T14:00:00Z"
+    "uri": "registry.example.com/my-org/payment-service",
+    "description": "Payment microservice"
   },
   {
     "name": "my-org/frontend",
-    "description": "",
-    "pullCount": 1100,
-    "lastUpdated": "2025-05-27T09:30:00Z"
+    "uri": "registry.example.com/my-org/frontend"
   }
 ]
 ```
@@ -94,15 +91,15 @@ Authorization: Bearer <token>
 ```json
 [
   {
-    "name": "v2.4.0",
+    "tag": "v2.4.0",
     "digest": "sha256:abc123...",
-    "size": 45234567,
+    "sizeBytes": 45234567,
     "pushedAt": "2025-05-28T14:00:00Z"
   },
   {
-    "name": "latest",
+    "tag": "latest",
     "digest": "sha256:abc123...",
-    "size": 45234567,
+    "sizeBytes": 45234567,
     "pushedAt": "2025-05-28T14:00:00Z"
   }
 ]
@@ -121,20 +118,11 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "schemaVersion": 2,
+  "digest": "sha256:def456...",
   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-  "config": {
-    "mediaType": "application/vnd.docker.container.image.v1+json",
-    "digest": "sha256:def456...",
-    "size": 7682
-  },
-  "layers": [
-    {
-      "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-      "digest": "sha256:aaa111...",
-      "size": 31379200
-    }
-  ]
+  "sizeBytes": 7682,
+  "pushedAt": "2025-05-28T14:00:00Z",
+  "tags": ["v2.4.0", "latest"]
 }
 ```
 
@@ -152,27 +140,32 @@ Authorization: Bearer <token>
 ### Response (200)
 
 ```json
-[
-  {
-    "id": "CVE-2024-12345",
-    "severity": "HIGH",
-    "package": "libssl",
-    "version": "1.1.1t",
-    "fixedVersion": "1.1.1u",
-    "description": "Buffer overflow in OpenSSL libssl"
-  },
-  {
-    "id": "CVE-2024-67890",
-    "severity": "MEDIUM",
-    "package": "curl",
-    "version": "7.88.0",
-    "fixedVersion": "7.88.1",
-    "description": "SSRF vulnerability in curl"
-  }
-]
+{
+  "status": "COMPLETE",
+  "vulnerabilities": [
+    {
+      "cveId": "CVE-2024-12345",
+      "severity": "HIGH",
+      "packageName": "libssl",
+      "installedVersion": "1.1.1t",
+      "fixedVersion": "1.1.1u",
+      "description": "Buffer overflow in OpenSSL libssl"
+    },
+    {
+      "cveId": "CVE-2024-67890",
+      "severity": "MEDIUM",
+      "packageName": "curl",
+      "installedVersion": "7.88.0",
+      "fixedVersion": "7.88.1",
+      "description": "SSRF vulnerability in curl"
+    }
+  ]
+}
 ```
 
-Severity values: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `UNKNOWN`.
+`status` values: `COMPLETE`, `PENDING`, `FAILED`, `UNSUPPORTED`.
+
+Severity values: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFORMATIONAL`, `UNDEFINED`.
 
 ---
 
@@ -240,10 +233,16 @@ POST /api/v1/registry/components/550e8400-e29b-41d4-a716-446655440001/vulnerabil
 Authorization: Bearer <token>
 ```
 
-### Response (202)
+### Response (200)
 
 ```json
 { "queued": true }
+```
+
+When the BullMQ queue is unavailable, the sync runs inline and returns:
+
+```json
+{ "queued": false, "count": 7 }
 ```
 
 ---

@@ -393,8 +393,10 @@ Authorization: Bearer <token>
 [
   {
     "name": "K8sRequiredLabels",
-    "crd": "k8srequiredlabels.constraints.gatekeeper.sh",
-    "createdAt": "2025-01-10T08:00:00Z"
+    "group": "templates.gatekeeper.sh",
+    "enforcementAction": "deny",
+    "description": "Requires specific labels to be present on Kubernetes resources.",
+    "violationCount": 3
   }
 ]
 ```
@@ -410,7 +412,6 @@ Authorization: Bearer <token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `kind` | string | No | Filter violations by constraint kind |
 | `namespace` | string | No | Filter violations by namespace |
 
 #### Response (200)
@@ -421,7 +422,16 @@ Authorization: Bearer <token>
     "kind": "K8sRequiredLabels",
     "name": "my-deployment",
     "namespace": "production",
-    "message": "Missing required label: team"
+    "message": "Missing required label: team",
+    "constraint": "require-team-label",
+    "enforcementAction": "deny"
+  },
+  {
+    "kind": "K8sRequiredLabels",
+    "name": "cluster-admin-binding",
+    "message": "Missing required label: team",
+    "constraint": "require-team-label",
+    "enforcementAction": "warn"
   }
 ]
 ```
