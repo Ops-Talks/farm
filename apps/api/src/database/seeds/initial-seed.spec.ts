@@ -57,10 +57,10 @@ function buildMockRepo<T extends object>(existing: T | null = null) {
     findOne: jest.fn().mockResolvedValue(existing),
     create: jest
       .fn()
-      .mockImplementation((data: Partial<T>) => ({ id: "test-uuid", ...data }) as T),
-    save: jest
-      .fn()
-      .mockImplementation((entity: T) => Promise.resolve(entity)),
+      .mockImplementation(
+        (data: Partial<T>) => ({ id: "test-uuid", ...data }) as T,
+      ),
+    save: jest.fn().mockImplementation((entity: T) => Promise.resolve(entity)),
   } as unknown as jest.Mocked<Repository<T>>;
 }
 
@@ -573,7 +573,8 @@ describe("seedDashboard", () => {
 
     await seedDashboard(dataSource, users, mockOrg);
 
-    const dashboardCall = dashboardRepo.create.mock.calls[0][0] as Partial<Dashboard>;
+    const dashboardCall = dashboardRepo.create.mock
+      .calls[0][0] as Partial<Dashboard>;
     expect(dashboardCall.visibility).toBe(DashboardVisibility.WORKSPACE);
     expect(dashboardCall.ownerId).toBe("admin-id");
     expect(dashboardCall.organizationId).toBe("org-id");
@@ -654,7 +655,9 @@ describe("seedIncident", () => {
     const savedEntity = repo.save.mock.calls[0][0] as Partial<Incident>;
     expect(savedEntity.status).toBe(IncidentStatus.RESOLVED);
     expect(savedEntity.severity).toBe(IncidentSeverity.P2);
-    expect(savedEntity.affectedComponents).toEqual([components["user-service"]]);
+    expect(savedEntity.affectedComponents).toEqual([
+      components["user-service"],
+    ]);
     expect(savedEntity.affectedEnvironments).toEqual([environments["staging"]]);
   });
 

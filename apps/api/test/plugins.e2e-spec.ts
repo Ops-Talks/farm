@@ -52,6 +52,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-setup",
     "core-linkerd",
     "core-opa",
+    "core-iac",
   ];
 
   describe("GET /api/plugins", () => {
