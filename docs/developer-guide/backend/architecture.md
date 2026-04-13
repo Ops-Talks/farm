@@ -46,7 +46,7 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
 
 ## Module Structure
 
-Farm consists of 24 feature modules and a shared common layer. All feature modules live under `apps/api/src/modules/`.
+Farm consists of 31 feature modules and a shared common layer. All feature modules live under `apps/api/src/modules/`.
 
 ### Common Layer
 
@@ -201,6 +201,34 @@ Kubernetes workload discovery, CRD listing, Argo Rollout status, and Kyverno Pol
 
 Istio detection, VirtualService listing and traffic weight management, PeerAuthentication / AuthorizationPolicy listing, and Prometheus-backed traffic metrics (RPS, error rate, P99 latency).
 
+### Linkerd Module
+
+Linkerd 2.x detection, ServerAuthorization / AuthorizationPolicy / ServiceProfile listing, Prometheus-backed traffic metrics (RPS, failure rate, P50/P95/P99 latency), and service topology graph.
+
+### OPA Module
+
+Open Policy Agent policy evaluation and result persistence. Results can be linked to catalog components and are stored in the database for historical review. Also provides a GatekeeperService for reading Gatekeeper ConstraintTemplates and violations from the cluster.
+
+### Search Module
+
+Cross-entity quick search across catalog components, teams, documentation pages, environments, and pipelines. Results are scoped to the active organization when the `X-Organization-Id` header is present.
+
+### Features Module
+
+Feature availability aggregator that reports which integrations (kubernetes, cost, registry, helm, istio, linkerd) are currently active and reachable.
+
+### Setup Module
+
+Admin setup checklist with dismissible items to guide initial platform configuration.
+
+### FinOps Module
+
+OpenCost integration for per-component and per-team cost data. A BullMQ-based scheduler syncs cost records from OpenCost at a configurable interval (`FINOPS_SYNC_INTERVAL_MS`).
+
+### Registry Module
+
+Container registry adapter supporting DockerHub, ECR (AWS), and Harbor. Provides repository browsing, tag listing, manifest inspection, and vulnerability scanning. A background BullMQ processor syncs vulnerability results and persists them per catalog component.
+
 ### Integrations Module
 
 CI/CD platform integrations:
@@ -290,13 +318,13 @@ Auth endpoints apply stricter per-route overrides via `@Throttle()`.
 
 1. **HTTP Request**: Client sends HTTP request to the NestJS application
 2. **Routing**: NestJS routes the request to the appropriate controller
-2.5. **Organization Context**: `OrgContextInterceptor` validates the `X-Organization-Id` header and stamps `req.organizationId`
-3. **YAML Processing**: If registering via YAML, the `CatalogService` uses `js-yaml` to parse and validate the `catalog-info.yaml` content.
-4. **Validation**: DTOs validate incoming request data
-5. **Controller**: Controller method handles the request
-6. **Service**: Service performs business logic and interacts with repositories
-7. **Storage**: Data is persisted in a PostgreSQL database (in-memory SQLite for tests)
-8. **Response**: Result is returned to the client
+3. **Organization Context**: `OrgContextInterceptor` validates the `X-Organization-Id` header and stamps `req.organizationId`
+4. **YAML Processing**: If registering via YAML, the `CatalogService` uses `js-yaml` to parse and validate the `catalog-info.yaml` content.
+5. **Validation**: DTOs validate incoming request data
+6. **Controller**: Controller method handles the request
+7. **Service**: Service performs business logic and interacts with repositories
+8. **Storage**: Data is persisted in a PostgreSQL database (in-memory SQLite for tests)
+9. **Response**: Result is returned to the client
 
 ## Data Storage
 

@@ -58,6 +58,11 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Kyverno](kyverno.md) | `/api/v1/kubernetes/policy-reports`, `/api/v1/kubernetes/cluster-policy-reports` | PolicyReport reader and ClusterPolicy YAML export |
 | [Keycloak SSO](keycloak-sso.md) | `/api/v1/auth/keycloak`, `/api/v1/keycloak-sync` | OIDC login and group sync |
 | [Istio](istio.md) | `/api/v1/istio` | VirtualService, PeerAuthentication, traffic metrics |
+| [Linkerd](linkerd.md) | `/api/v1/linkerd` | Linkerd 2.x service mesh metrics, security posture, and topology |
+| [OPA](opa.md) | `/api/v1/opa` | Open Policy Agent policy evaluation and result persistence |
+| [Container Registry](registry.md) | `/api/v1/registry` | Repository browsing, image manifests, and vulnerability scanning |
+| [Search](search.md) | `/api/v1/search` | Quick search across catalog entities |
+| [FinOps](finops.md) | `/api/v1/cost` | Infrastructure cost data from OpenCost |
 | [SLOs](slos.md) | `/api/v1/slos` | Service Level Objectives and error budget tracking |
 | [Incidents](incidents.md) | `/api/v1/incidents` | Incident lifecycle, timeline, and post-mortem |
 | [Dashboards](dashboards.md) | `/api/v1/dashboards` | Custom dashboard builder with widgets |

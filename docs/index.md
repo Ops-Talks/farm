@@ -21,6 +21,9 @@ Farm enables engineering teams to:
 - **Build Dashboards**: Create custom dashboards with configurable widget grids for real-time operational visibility
 - **Scaffold Services**: Create new services from golden path templates with configurable variables and dry-run previews
 - **Self-Service Environments**: Request ephemeral or persistent deployment environments through an approval workflow with TTL management
+- **Manage Container Costs**: Track infrastructure spend per component and team via OpenCost integration with configurable budgets and automated sync
+- **Scan Container Images**: Browse container registries (DockerHub, ECR, Harbor), inspect image manifests, and surface vulnerability scan results per catalog component
+- **Enforce Policies**: Evaluate Open Policy Agent policies on demand, persist results per component, and read Gatekeeper ConstraintTemplate violations from connected clusters
 - **Discover and Understand**: Provide visibility into the software ecosystem within your organization
 
 ## Who is this documentation for?

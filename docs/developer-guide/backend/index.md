@@ -45,6 +45,15 @@ apps/api/src/
     audit-log/           # Audit log module
     organization/        # Organization and multi-tenancy module
     plugin-manager/      # Plugin manager module
+    kubernetes/          # Kubernetes workload, CRD, Rollout, Gatekeeper, Dragonfly, Flux, KEDA
+    istio/               # Istio service mesh
+    linkerd/             # Linkerd service mesh
+    opa/                 # OPA policy evaluation
+    registry/            # Container registry integration
+    finops/              # OpenCost cost sync and budget tracking
+    search/              # Cross-entity quick search
+    features/            # Feature availability flags
+    setup/               # Admin onboarding checklist
 apps/api/test/           # End-to-end tests
 ```
 
