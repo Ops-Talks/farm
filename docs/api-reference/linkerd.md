@@ -45,9 +45,12 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "linkerdEnabled": true,
-  "controlPlaneReady": true,
-  "version": "stable-2.14.0"
+  "installed": true,
+  "components": [
+    { "name": "linkerd-controller", "ready": true, "version": "stable-2.14.0" },
+    { "name": "linkerd-identity", "ready": true, "version": "stable-2.14.0" },
+    { "name": "linkerd-proxy-injector", "ready": true }
+  ]
 }
 ```
 
@@ -65,7 +68,7 @@ Authorization: Bearer <token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `namespace` | string | Yes | Kubernetes namespace to query |
-| `kubeconfig` | string | No | Base64-encoded kubeconfig override |
+| `kubeconfig` | string | No | Inline kubeconfig YAML or kubeconfig file path. Falls back to `KUBECONFIG_PATH` if omitted. |
 
 ### Response (200)
 
@@ -75,14 +78,7 @@ Authorization: Bearer <token>
     "name": "allow-monitoring",
     "namespace": "payments",
     "server": "payments-server",
-    "client": {
-      "meshTLS": {
-        "serviceAccounts": [
-          { "name": "prometheus", "namespace": "monitoring" }
-        ]
-      }
-    },
-    "createdAt": "2025-01-15T10:00:00Z"
+    "clients": ["prometheus/monitoring", "frontend/default"]
   }
 ]
 ```
@@ -101,7 +97,7 @@ Authorization: Bearer <token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `namespace` | string | Yes | Kubernetes namespace to query |
-| `kubeconfig` | string | No | Base64-encoded kubeconfig override |
+| `kubeconfig` | string | No | Inline kubeconfig YAML or kubeconfig file path. Falls back to `KUBECONFIG_PATH` if omitted. |
 
 ### Response (200)
 
@@ -116,8 +112,7 @@ Authorization: Bearer <token>
     },
     "requiredAuthenticationRefs": [
       { "kind": "MeshTLSAuthentication", "name": "frontend-mtls" }
-    ],
-    "createdAt": "2025-01-15T10:00:00Z"
+    ]
   }
 ]
 ```
@@ -136,7 +131,7 @@ Authorization: Bearer <token>
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `namespace` | string | Yes | Kubernetes namespace to query |
-| `kubeconfig` | string | No | Base64-encoded kubeconfig override |
+| `kubeconfig` | string | No | Inline kubeconfig YAML or kubeconfig file path. Falls back to `KUBECONFIG_PATH` if omitted. |
 
 ### Response (200)
 
@@ -152,8 +147,7 @@ Authorization: Bearer <token>
         "isRetryable": false,
         "timeout": "10s"
       }
-    ],
-    "createdAt": "2025-01-15T10:00:00Z"
+    ]
   }
 ]
 ```
@@ -193,36 +187,51 @@ Authorization: Bearer <token>
 
 ### Metrics Response (200)
 
-The RPS and error-rate endpoints return the same shape:
+The RPS and error-rate endpoints return the same shape (`PrometheusRangeResult`):
 
 ```json
 {
-  "metric": "rps",
-  "deployment": "payment-service",
-  "namespace": "payments",
+  "query": "sum(rate(response_total{deployment=\"payment-service\",namespace=\"payments\"}[5m]))",
   "timeseries": [
-    { "timestamp": 1700000000, "value": 12.4 },
-    { "timestamp": 1700000060, "value": 13.1 }
+    {
+      "metric": { "deployment": "payment-service", "namespace": "payments" },
+      "values": [[1700000000, "12.4"], [1700000060, "13.1"]]
+    }
   ]
 }
 ```
 
-The latency endpoint returns three separate percentile series:
+The latency endpoint returns three `PrometheusRangeResult` objects keyed by percentile:
 
 ```json
 {
-  "metric": "latency",
-  "deployment": "payment-service",
-  "namespace": "payments",
-  "p50": [
-    { "timestamp": 1700000000, "value": 4.2 }
-  ],
-  "p95": [
-    { "timestamp": 1700000000, "value": 18.7 }
-  ],
-  "p99": [
-    { "timestamp": 1700000000, "value": 45.3 }
-  ]
+  "p50": {
+    "query": "histogram_quantile(0.5, ...)",
+    "timeseries": [
+      {
+        "metric": { "deployment": "payment-service", "namespace": "payments" },
+        "values": [[1700000000, "4.2"]]
+      }
+    ]
+  },
+  "p95": {
+    "query": "histogram_quantile(0.95, ...)",
+    "timeseries": [
+      {
+        "metric": { "deployment": "payment-service", "namespace": "payments" },
+        "values": [[1700000000, "18.7"]]
+      }
+    ]
+  },
+  "p99": {
+    "query": "histogram_quantile(0.99, ...)",
+    "timeseries": [
+      {
+        "metric": { "deployment": "payment-service", "namespace": "payments" },
+        "values": [[1700000000, "45.3"]]
+      }
+    ]
+  }
 }
 ```
 
@@ -247,8 +256,8 @@ Authorization: Bearer <token>
 
 ```json
 [
-  { "source": "frontend", "destination": "payment-service", "rps": 14.2 },
-  { "source": "payment-service", "destination": "database", "rps": 8.7 }
+  { "source": "frontend", "destination": "payment-service", "namespace": "payments", "rps": 14.2 },
+  { "source": "payment-service", "destination": "database", "namespace": "payments" }
 ]
 ```
 
