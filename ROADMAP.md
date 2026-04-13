@@ -439,6 +439,225 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
+## Phase 31: Elastic Stack and Log Pipeline Visibility `TODO`
+
+### FARM-E77: Elastic Stack and Log Collector Discovery `TODO`
+
+> Farm already discovers Kubernetes workloads, Helm releases, Flux GitOps bindings, and KEDA scaled objects. This Epic extends that pattern to the observability data layer. Discovery operates across three tiers: ECK-managed resources (CRD-based, robust), in-cluster collectors deployed via Helm or plain YAML (label-based fallback), and external or SaaS Elasticsearch instances (URL health check). All tiers are independent and degrade gracefully — if ECK CRDs are absent, Farm falls back to label detection; if no in-cluster Elasticsearch is found, it checks `ELASTICSEARCH_URL`. The frontend surfaces a unified view on the Observability page and a focused card on the component detail page.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S331 | Story | Backend: ECK-managed resource discovery -- Elasticsearch clusters, Kibana instances, Logstash pipelines, and Beats via ECK CRDs | `TODO` |
+| FARM-S332 | Story | Backend: In-cluster non-ECK discovery -- Fluent Bit and Fluentd DaemonSets and Logstash Deployments via label conventions (Helm / plain YAML installs) | `TODO` |
+| FARM-S333 | Story | Backend: External and SaaS Elasticsearch health check -- ping `ELASTICSEARCH_URL`, report reachability, cluster health, and version | `TODO` |
+| FARM-S334 | Story | Frontend: Elastic Stack tab on the Observability page -- unified view of ECK resources, in-cluster collectors, and external ES with per-tier sections and health badges | `TODO` |
+| FARM-S335 | Story | Frontend: Log Pipeline card on the component detail page -- shows the collector(s) active in the component namespace (ECK preferred, label-based fallback) | `TODO` |
+
+#### FARM-S331 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T362 | Task | `ElasticStackService.getEckElasticsearch(kubeconfig)`: list `Elasticsearch` CRs from `elasticsearch.k8s.elastic.co/v1`; map to `{ name, namespace, health: "green"\|"yellow"\|"red", version, nodeCount, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `TODO` |
+| FARM-T363 | Task | `ElasticStackService.getEckKibana(kubeconfig)` and `getEckBeats(kubeconfig)`: list `Kibana` and `Beat` CRs; map to `{ name, namespace, available: bool, version?, source: "eck" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `TODO` |
+| FARM-T364 | Task | `ElasticStackService.getEckLogstash(kubeconfig)`: list `Logstash` CRs from `logstash.k8s.elastic.co/v1alpha1`; map to `{ name, namespace, readyReplicas, desiredReplicas, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `TODO` |
+
+##### FARM-T362 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST386 | Sub-task | Unit test: ECK Elasticsearch CR with `health: "green"` → returned with `source: "eck"` and correct `nodeCount` | `TODO` |
+| FARM-ST387 | Sub-task | Unit test: ECK CRD not installed (404 from CustomObjectsApi) → `getEckElasticsearch()` returns `[]` without throwing | `TODO` |
+
+#### FARM-S332 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T365 | Task | `ElasticStackService.getFluentBit(kubeconfig)` and `getFluentd(kubeconfig)`: list DaemonSets matching labels `app.kubernetes.io/name=fluent-bit` / `k8s-app=fluent-bit` and `app.kubernetes.io/name=fluentd`; map to `{ name, namespace, desiredNodes, readyNodes, notReadyNodes, configMapRef?, source: "helm" }`; degrade gracefully to `[]` when Kubernetes is unavailable; unit tests | `TODO` |
+| FARM-T366 | Task | `ElasticStackService.getLogstashDeployment(kubeconfig)`: list Deployments matching label `app.kubernetes.io/name=logstash`; map to `{ name, namespace, desiredReplicas, readyReplicas, configMapRef?, source: "helm" }`; degrade gracefully to `[]`; unit tests | `TODO` |
+| FARM-T367 | Task | `GET /api/v1/kubernetes/elastic-stack` endpoint: returns `{ eck: { elasticsearch, kibana, logstash, beats }, inCluster: { fluentBit, fluentd, logstash }, external: { ... } }`; optional `namespace` query param; unit + e2e tests | `TODO` |
+
+##### FARM-T365 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST388 | Sub-task | Unit test: Fluent Bit DaemonSet with 1 pod not ready → `notReadyNodes === 1`; no exception thrown | `TODO` |
+| FARM-ST389 | Sub-task | Unit test: no Fluent Bit DaemonSet found → returns empty array without throwing | `TODO` |
+
+#### FARM-S333 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T368 | Task | `ElasticStackService.getExternalElasticsearch()`: ping `ELASTICSEARCH_URL/_cluster/health` (from env var); return `{ url, reachable: bool, clusterHealth?: "green"\|"yellow"\|"red", version? }`; return `{ reachable: false }` when env var is not set; no Kubernetes client required; unit tests | `TODO` |
+
+##### FARM-T368 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST390 | Sub-task | Unit test: `ELASTICSEARCH_URL` not set → returns `{ reachable: false }` without throwing | `TODO` |
+| FARM-ST391 | Sub-task | Unit test: cluster health endpoint returns `{ status: "yellow" }` → `clusterHealth: "yellow"`, `reachable: true` | `TODO` |
+
+#### FARM-S334 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T369 | Task | `ElasticStackTab` on the Observability page: three sections (ECK-managed, In-cluster, External); ECK Elasticsearch health rendered with green/yellow/red color badge; DaemonSet/Deployment health as `Healthy`/`Degraded`/`Unhealthy`; external ES as `Reachable`/`Unreachable`; empty state per section; unit tests | `TODO` |
+| FARM-T370 | Task | `useElasticStack` hook: fetches `GET /api/v1/kubernetes/elastic-stack`, returns `{ eck, inCluster, external, loading, error }`; unit tests with mock API responses | `TODO` |
+
+#### FARM-S335 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T371 | Task | `LogPipelineCard` on the component detail sidebar: shows collectors for the component namespace — ECK-managed resources shown first, label-based results as fallback; renders "No log pipeline detected" when all tiers return empty; unit tests | `TODO` |
+
+---
+
+## Phase 32: Thanos and Long-Term Metrics Visibility `TODO`
+
+### FARM-E78: Thanos Discovery and Metrics Backend Awareness `TODO`
+
+Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existing `queryPrometheus()` already works when `PROMETHEUS_URL` points to a Thanos Querier — no query-layer changes are needed. This phase focuses on three complementary capabilities: (1) discovering Thanos components running in the cluster so operators can see their health, (2) auto-detecting whether the configured metrics endpoint is plain Prometheus, Thanos, Grafana Mimir, or Cortex, and (3) surfacing that knowledge in the UI to unlock longer query time-ranges and richer observability context. The same three-tier discovery model used in Phase 31 applies here: operator/CRD → label-based (Helm/YAML) → external URL detection.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S336 | Story | Backend: Thanos operator and CRD-based component discovery — Querier, Store Gateway, Compactor, Ruler, and sidecar via `monitoring.thanos.io` CRDs or kube-prometheus-stack sidecar container labels | `TODO` |
+| FARM-S337 | Story | Backend: Label-based Thanos discovery for Helm and plain-YAML installs — bitnami/thanos and thanos-io/thanos chart label conventions across Deployments and StatefulSets | `TODO` |
+| FARM-S338 | Story | Backend: Metrics backend auto-detection — determine whether `PROMETHEUS_URL` points to plain Prometheus, Thanos Querier, Grafana Mimir, or Cortex via response headers and probe endpoints | `TODO` |
+| FARM-S339 | Story | Frontend: Thanos component health panel on the Observability page — unified view of operator-managed and label-based components with per-type sections and health badges | `TODO` |
+| FARM-S340 | Story | Frontend: Metrics backend badge and extended time-range awareness — show detected backend type on the Observability page header; extend max query window to 90 days when Thanos, Mimir, or Cortex is detected | `TODO` |
+
+#### FARM-S336 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T372 | Task | `ThanosService.getThanosOperatorComponents(kubeconfig)`: list Thanos CRs from `monitoring.thanos.io` (thanos-operator) and detect Thanos sidecar containers in kube-prometheus-stack Prometheus pods via label `app.kubernetes.io/component=thanos-sidecar`; map each component to `{ name, namespace, type: "querier"\|"store-gateway"\|"compactor"\|"ruler"\|"sidecar", ready: bool, source: "operator" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `TODO` |
+
+##### FARM-T372 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST392 | Sub-task | Unit test: Thanos Querier CR present → returned with `type: "querier"`, `source: "operator"`, `ready: true` | `TODO` |
+| FARM-ST393 | Sub-task | Unit test: `monitoring.thanos.io` CRD absent (404 from CustomObjectsApi) → `getThanosOperatorComponents()` returns `[]` without throwing | `TODO` |
+
+#### FARM-S337 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T373 | Task | `ThanosService.getThanosLabelBased(kubeconfig)`: list Deployments and StatefulSets matching labels `app.kubernetes.io/name=thanos-query`, `app.kubernetes.io/name=thanos-storegateway`, `app.kubernetes.io/name=thanos-compactor`, `app.kubernetes.io/name=thanos-ruler` (bitnami/thanos and thanos-io/thanos chart conventions); map to `{ name, namespace, type, readyReplicas, desiredReplicas, source: "helm" }`; degrade gracefully to `[]`; unit tests | `TODO` |
+| FARM-T374 | Task | `GET /api/v1/kubernetes/thanos`: returns `{ operator: ThanosComponent[], inCluster: ThanosComponent[], backendType: string, longTermEnabled: bool }`; optional `namespace` query param filters in-cluster results by namespace; unit + e2e tests | `TODO` |
+
+#### FARM-S338 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T375 | Task | `ThanosService.detectMetricsBackend()`: HEAD or GET `PROMETHEUS_URL/api/v1/query` and inspect response headers — `X-Thanos-*` headers indicate Thanos Querier; probe `/ready` response body for Cortex/Mimir markers; return `{ type: "prometheus"\|"thanos"\|"mimir"\|"cortex"\|"unknown", version?: string, multiCluster?: bool }`; returns `{ type: "unknown" }` when `PROMETHEUS_URL` is not set or unreachable; unit tests | `TODO` |
+
+##### FARM-T375 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST394 | Sub-task | Unit test: response includes `X-Thanos-Querier-Store-Addresses` header → `detectMetricsBackend()` returns `{ type: "thanos" }` | `TODO` |
+| FARM-ST395 | Sub-task | Unit test: no Thanos headers, no Mimir/Cortex markers → `detectMetricsBackend()` returns `{ type: "prometheus" }` | `TODO` |
+
+#### FARM-S339 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T376 | Task | `ThanosHealthPanel` on the Observability page: two sub-sections (Operator-managed, Helm/YAML); each component rendered with a health badge (`Ready`/`Degraded`); shows component type label (Querier, Store Gateway, Compactor, Ruler, Sidecar); empty state "No Thanos components detected" when both tiers return empty; unit tests | `TODO` |
+
+#### FARM-S340 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T377 | Task | `MetricsBackendBadge` on the Observability page header: displays "Prometheus", "Thanos", "Mimir", or "Cortex" based on `detectMetricsBackend()` result; when a long-term backend (Thanos, Mimir, Cortex) is detected, extends the metrics time-range picker max from 7 days to 90 days; `useMetricsBackend` hook fetches `GET /api/v1/kubernetes/thanos` and returns `{ backendType, longTermEnabled, loading, error }`; unit tests | `TODO` |
+
+---
+
+## Phase 33: UX/UI Quality and Accessibility `TODO`
+
+### FARM-E79: UX/UI Quality and Accessibility `TODO`
+
+> Systematic improvements to the Farm Web interface derived from a full UX/UI audit. The audit identified six areas requiring work: form validation feedback, loading state consistency, empty state standardization, accessibility hardening, mutation feedback and recovery, and Storybook coverage. All changes are purely frontend and do not require API modifications. The guiding principle is to fix patterns across the entire application uniformly rather than fixing individual pages in isolation.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S341 | Story | Form UX improvements — real-time inline validation, unsaved-changes detection, and scroll-to-first-error on submit failure across all React Hook Form forms | `TODO` |
+| FARM-S342 | Story | Loading state standardization — branded page-level Suspense fallback, consistent row-count-aware skeletons on all list/table pages, and pending states on mutation buttons and confirmation dialogs | `TODO` |
+| FARM-S343 | Story | Empty state standardization — replace all ad-hoc "No data" strings and raw `<TableCell>` fallbacks with the `EmptyState` component; add action CTAs where the user can immediately address the empty state | `TODO` |
+| FARM-S344 | Story | Accessibility hardening — `aria-describedby` linking form errors to inputs, meaningful alt text and `aria-label` on icon-only buttons, minimum 44×44 px touch targets, and `<abbr>` for metric abbreviations | `TODO` |
+| FARM-S345 | Story | Feedback and recovery improvements — loading spinner in confirmation dialogs during async actions, Sonner toast with a 5-second undo action for destructive operations, and distinct pending/success/error mutation phases | `TODO` |
+| FARM-S346 | Story | Storybook coverage expansion — stories for all shared components (`EmptyState`, `ConfirmDialog`, `PageHeader`) and new UX patterns (form validation states, loading skeletons, empty states) | `TODO` |
+
+#### FARM-S341 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T378 | Task | Real-time inline validation: configure React Hook Form with `mode: "onChange"` across all forms (login, team edit, alerting rule, component create, SLO create, pipeline create); wrap each field error in `<p role="alert" aria-live="polite">` so screen readers announce errors without a page reload; unit tests | `TODO` |
+| FARM-T379 | Task | `useUnsavedChanges(isDirty: boolean)` hook: sets `window.onbeforeunload` when `isDirty` is true and clears it on submit or unmount; renders an "Unsaved changes" badge next to the submit button when `formState.isDirty`; applied to team edit, component edit, and alerting rule forms; unit tests | `TODO` |
+| FARM-T380 | Task | Scroll-to-first-error on submit: after a failed form submission identify the first invalid field using `Object.keys(formState.errors)[0]`, call `scrollIntoView({ behavior: "smooth", block: "center" })` on the corresponding input ref; applied to all multi-section forms; unit tests | `TODO` |
+
+##### FARM-T379 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST396 | Sub-task | Unit test: `useUnsavedChanges(true)` → `window.onbeforeunload` is set; `useUnsavedChanges(false)` → `window.onbeforeunload` is null | `TODO` |
+
+#### FARM-S342 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T381 | Task | `AppLoadingFallback` component: replaces the generic `<Skeleton className="h-full w-full" />` in `app/(protected)/layout.tsx` Suspense fallback; renders the Farm logo centered with a subtle pulse animation to provide brand context during navigation; unit tests | `TODO` |
+| FARM-T382 | Task | Standardize data-fetching skeletons: audit all pages that expose `isLoading`/`isPending` from React Query; ensure every list and table renders a skeleton with the same column structure as the real data (default 5 rows); affected pages: teams, environments, SLO list, alerting rules, pipelines, incidents, registry vulnerabilities panel; unit tests | `TODO` |
+| FARM-T383 | Task | Mutation pending states: add `isPending: boolean` prop to `ConfirmDialog`; disable both action buttons and replace confirm label with "Processing…" and a `<Loader2 className="animate-spin" />` icon while pending; all standalone delete/trigger buttons set `disabled` and show a spinner during the mutation; unit tests | `TODO` |
+
+##### FARM-T383 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST397 | Sub-task | Unit test: `ConfirmDialog` with `isPending=true` → confirm button is disabled and renders spinner; cancel button is also disabled; neither `onConfirm` nor `onCancel` fire on click | `TODO` |
+
+#### FARM-S343 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T384 | Task | Replace ad-hoc empty state patterns: audit every page for raw "No X found" strings inside `<TableCell colSpan>` or bare `<div>` elements; replace with `<EmptyState icon title description />` component; affected: component CRD resources tab, incidents list, pipelines list, environments list, SLO list, registry vulnerabilities panel, gateway routes; unit tests | `TODO` |
+| FARM-T385 | Task | Add action CTAs to empty states: where the user can immediately act, pass a primary button as `children` of `<EmptyState>`; examples — "Create SLO" in the SLO tab, "Add Alerting Rule" in the alerting rules page, "Add Pipeline" in the pipelines page; each CTA opens the existing create form/dialog; unit tests | `TODO` |
+
+#### FARM-S344 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T386 | Task | Form error accessibility: for every React Hook Form `<Input>` with a `fieldState.error`, set `aria-invalid="true"` and `aria-describedby="<fieldName>-error"` on the input element; give the companion error `<p>` the matching `id="<fieldName>-error"`; affects all forms in the application; unit tests | `TODO` |
+| FARM-T387 | Task | Touch target sizing: audit all interactive elements on mobile-relevant views; enforce minimum `min-h-11 min-w-11` (44 px) on icon-only buttons, navigation links, and table row action menus; update the `icon-sm` and `icon-xs` button variants in `components/ui/button.tsx` to meet the 44 px minimum; unit tests | `TODO` |
+| FARM-T388 | Task | Alt text and icon accessibility: add descriptive `aria-label` to every icon-only button (e.g. edit, delete, refresh) that currently relies solely on `aria-hidden="true"` on the inner icon; add `alt` attributes to repository avatar images and provider logos; wrap metric abbreviations ("RPS", "P99", "P50", "P95") in `<abbr title="…">` with full expansion; unit tests | `TODO` |
+
+##### FARM-T386 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST398 | Sub-task | Unit test: form input rendered with `fieldState.error` set → `aria-invalid="true"` present and `aria-describedby` value matches the `id` of the sibling error `<p>` element | `TODO` |
+
+#### FARM-S345 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T389 | Task | Confirmation dialog loading state: wire `isPending` from the parent mutation into `ConfirmDialog` for all destructive action dialogs (delete team, delete component, remove team member, delete alerting rule, delete SLO, delete pipeline); validate that no dialog can be dismissed while an action is in flight; unit tests | `TODO` |
+| FARM-T390 | Task | `useUndoableDelete(deleteFn, restoreFn, options?)` hook: calls `deleteFn` immediately on invoke; shows a Sonner toast with an "Undo" action button; if user clicks Undo within the 5-second window, calls `restoreFn` and dismisses the toast; after 5 seconds, the undo window closes silently; implement for team member removal and component deletion as the initial rollout; unit tests | `TODO` |
+
+##### FARM-T390 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST399 | Sub-task | Unit test: `useUndoableDelete` — `deleteFn` called immediately on invoke; `restoreFn` called when `undo()` is triggered within window; `restoreFn` NOT called when window expires without undo action | `TODO` |
+
+#### FARM-S346 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T391 | Task | Storybook stories for shared components: `EmptyState` (no CTA, with CTA, with icon, compact variant), `ConfirmDialog` (default, destructive, pending state), `PageHeader` (with breadcrumbs, without breadcrumbs, with action slot), data table (loading skeleton state, populated state, empty state) | `TODO` |
+| FARM-T392 | Task | Storybook stories for new UX patterns: form field with inline validation error (valid, invalid, submitting states), unsaved-changes badge, `AppLoadingFallback` branded skeleton; documents the patterns from FARM-S341 and FARM-S342 so new contributors follow the established approach | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -476,4 +695,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 28: Software Templates 2.0 | 1 | 4 | `DONE` |
 | Phase 29: TechDocs 2.0 | 1 | 4 | `TODO` |
 | Phase 30: Plugin Ecosystem | 1 | 4 | `TODO` |
-| **Total** | **78** | **311** | |
+| Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `TODO` |
+| Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
+| Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
+| **Total** | **81** | **327** | |
