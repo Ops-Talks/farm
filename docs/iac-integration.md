@@ -130,8 +130,9 @@ Each stack entry in the payload:
 ```
 
 **Upsert behaviour:** if a stack with the same `name` + `environment` already
-exists, it is updated. The `componentId` and `externalToolUrl` fields are
-preserved unless `externalToolUrl` is explicitly included in the payload.
+exists, it is updated. The `componentId` field is always preserved.
+The `externalToolUrl` field is preserved unless it is explicitly included in
+the payload.
 
 ---
 
@@ -170,7 +171,7 @@ Farm using `POST /api/v1/iac/module-drift/ingest`.
     {
       "stackPath": "stacks/networking/main.tf",
       "moduleName": "terraform-aws-modules/vpc/aws",
-      "sourceUrl": "registry.terraform.io/terraform-aws-modules/vpc/aws",
+      "sourceUrl": "https://registry.terraform.io/terraform-aws-modules/vpc/aws",
       "currentRef": "v3.14.0",
       "latestRef": "v3.19.0"
     }

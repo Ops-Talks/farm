@@ -122,7 +122,12 @@ function StackCard({ stack }: { stack: IacStackSummary }) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === "Enter") {
+          router.push(`/iac/stacks/${stack.stackId}/runs`);
+        }
+
+        if (e.key === " ") {
+          e.preventDefault();
           router.push(`/iac/stacks/${stack.stackId}/runs`);
         }
       }}
@@ -224,7 +229,12 @@ function ModuleDriftTable({ records }: { records: IacModuleDrift[] }) {
               </TableCell>
               <TableCell>
                 <a
-                  href={drift.sourceUrl}
+                  href={
+                    drift.sourceUrl.startsWith("http://") ||
+                    drift.sourceUrl.startsWith("https://")
+                      ? drift.sourceUrl
+                      : `https://${drift.sourceUrl}`
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline flex items-center gap-1"

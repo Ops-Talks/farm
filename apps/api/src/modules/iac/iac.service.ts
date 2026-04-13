@@ -131,7 +131,11 @@ export class IacService {
       resourceChanges: dto.resourceChanges ?? null,
       triggeredBy: dto.triggeredBy ?? null,
       pipelineUrl: dto.pipelineUrl ?? null,
-      startedAt: dto.startedAt ? new Date(dto.startedAt) : null,
+      startedAt: dto.startedAt
+        ? new Date(dto.startedAt)
+        : dto.finishedAt
+          ? new Date(dto.finishedAt)
+          : new Date(),
       finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : null,
       durationMs: dto.durationMs ?? null,
     });
@@ -183,7 +187,7 @@ export class IacService {
           repositoryUrl: item.repositoryUrl ?? null,
           basePath: item.basePath ?? null,
           externalToolUrl: item.externalToolUrl ?? null,
-          autoImported: false,
+          autoImported: true,
         });
         await this.stackRepository.save(stack);
         created++;
@@ -273,18 +277,30 @@ export class IacService {
     const stacksByEnvironment: Record<string, StackSummaryDto[]> = {};
     let failedLastRun = 0;
 
-    // Fetch last run per stack in a single query to avoid N+1 queries
+    // Fetch only the latest run per stack in a single query to avoid
+    // loading the full run history for the dashboard.
     const stackIds = stacks.map((s) => s.id);
     const lastRunMap = new Map<string, IacRun>();
     if (stackIds.length > 0) {
-      const recentRuns = await this.runRepository.find({
-        where: stackIds.map((id) => ({ stackId: id })),
-        order: { startedAt: "DESC" },
-      });
-      for (const run of recentRuns) {
-        if (!lastRunMap.has(run.stackId)) {
-          lastRunMap.set(run.stackId, run);
-        }
+      const latestRuns = await this.runRepository
+        .createQueryBuilder("run")
+        .innerJoin(
+          (qb) =>
+            qb
+              .subQuery()
+              .select("latest.stackId", "stackId")
+              .addSelect("MAX(latest.startedAt)", "startedAt")
+              .from(IacRun, "latest")
+              .where("latest.stackId IN (:...stackIds)", { stackIds })
+              .groupBy("latest.stackId"),
+          "latest_run",
+          'latest_run."stackId" = run."stackId" AND latest_run."startedAt" = run."startedAt"',
+        )
+        .where('run."stackId" IN (:...stackIds)', { stackIds })
+        .getMany();
+
+      for (const run of latestRuns) {
+        lastRunMap.set(run.stackId, run);
       }
     }
 

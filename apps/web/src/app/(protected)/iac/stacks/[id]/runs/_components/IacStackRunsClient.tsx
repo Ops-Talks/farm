@@ -148,6 +148,7 @@ export function IacStackRunsClient() {
       .then((res) => {
         setRuns(res.data);
         setTotal(res.total);
+        setError(null);
         setLoadedKey(`${stackId}:${page}`);
       })
       .catch(() => {

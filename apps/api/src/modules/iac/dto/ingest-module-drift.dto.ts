@@ -29,10 +29,11 @@ export class ModuleDriftItemDto {
   moduleName: string;
 
   @ApiProperty({
-    example: "registry.terraform.io/terraform-aws-modules/vpc/aws",
-    description: "Full source URL for the module",
+    example:
+      "https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws",
+    description: "Absolute HTTPS source URL for the module",
   })
-  @IsUrl({ require_protocol: false })
+  @IsUrl({ require_protocol: true, protocols: ["https"] })
   @IsNotEmpty()
   sourceUrl: string;
 

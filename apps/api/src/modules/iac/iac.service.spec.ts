@@ -67,6 +67,7 @@ describe("IacService", () => {
       findAndCount: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
+      createQueryBuilder: jest.fn(),
     };
 
     driftRepo = {
@@ -184,7 +185,7 @@ describe("IacService", () => {
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it("should create new stacks that do not exist", async () => {
+    it("should create new stacks that do not exist with autoImported true", async () => {
       stackRepo.findOne.mockResolvedValue(null);
       stackRepo.create.mockImplementation(
         (data: Partial<IacStack>) => data as IacStack,
@@ -197,6 +198,9 @@ describe("IacService", () => {
 
       expect(result.created).toBe(2);
       expect(result.updated).toBe(0);
+      expect(stackRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ autoImported: true }),
+      );
     });
 
     it("should update stacks that already exist", async () => {
@@ -249,14 +253,16 @@ describe("IacService", () => {
         {
           stackPath: "stacks/networking/main.tf",
           moduleName: "terraform-aws-modules/vpc/aws",
-          sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+          sourceUrl:
+            "https://registry.terraform.io/terraform-aws-modules/vpc/aws",
           currentRef: "v3.14.0",
           latestRef: "v3.19.0",
         },
         {
           stackPath: "stacks/database/main.tf",
           moduleName: "terraform-aws-modules/rds/aws",
-          sourceUrl: "registry.terraform.io/terraform-aws-modules/rds/aws",
+          sourceUrl:
+            "https://registry.terraform.io/terraform-aws-modules/rds/aws",
           currentRef: "main",
           latestRef: "v5.0.0",
         },
@@ -354,6 +360,20 @@ describe("IacService", () => {
   // getDashboard
   // ---------------------------------------------------------------------------
   describe("getDashboard", () => {
+    /**
+     * Creates a chainable mock for runRepository.createQueryBuilder that
+     * ultimately resolves to the provided array of runs via getMany().
+     */
+    function mockQueryBuilder(runs: IacRun[]) {
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(runs),
+      };
+      runRepo.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    }
+
     it("should group stacks by environment", async () => {
       const stagingStack: IacStack = {
         ...mockStack,
@@ -363,7 +383,7 @@ describe("IacService", () => {
       };
       const stagingRun: IacRun = { ...mockRun, stackId: "stack-uuid-2" };
       stackRepo.find.mockResolvedValue([mockStack, stagingStack]);
-      runRepo.find.mockResolvedValue([mockRun, stagingRun]);
+      mockQueryBuilder([mockRun, stagingRun]);
 
       const result = await service.getDashboard();
 
@@ -376,7 +396,7 @@ describe("IacService", () => {
     it("should count failed last runs", async () => {
       const failedRun: IacRun = { ...mockRun, status: IacRunStatus.FAILED };
       stackRepo.find.mockResolvedValue([mockStack]);
-      runRepo.find.mockResolvedValue([failedRun]);
+      mockQueryBuilder([failedRun]);
 
       const result = await service.getDashboard();
 
@@ -395,7 +415,7 @@ describe("IacService", () => {
         status: IacRunStatus.FAILED,
       };
       stackRepo.find.mockResolvedValue([mockStack, failedStack]);
-      runRepo.find.mockResolvedValue([mockRun, failedRun]);
+      mockQueryBuilder([mockRun, failedRun]);
 
       const result = await service.getDashboard();
 
@@ -423,7 +443,8 @@ describe("IacService", () => {
         id: "drift-uuid-1",
         stackPath: "stacks/main.tf",
         moduleName: "terraform-aws-modules/vpc/aws",
-        sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+        sourceUrl:
+          "https://registry.terraform.io/terraform-aws-modules/vpc/aws",
         currentRef: "v3.14.0",
         latestRef: "v3.19.0",
         versionsBehind: 5,
