@@ -227,7 +227,7 @@ OpenCost integration for per-component and per-team cost data. A BullMQ-based sc
 
 ### Registry Module
 
-Container registry adapter supporting DockerHub, ECR (AWS), and Harbor. Provides repository browsing, tag listing, manifest inspection, and vulnerability scanning. A background BullMQ processor syncs vulnerability results and persists them per catalog component.
+Container registry adapter supporting DockerHub, ECR (AWS), GCR/Artifact Registry, and Harbor. Provides repository browsing, tag listing, manifest inspection, and vulnerability scanning. A background BullMQ processor syncs vulnerability results and persists them per catalog component.
 
 ### Integrations Module
 
