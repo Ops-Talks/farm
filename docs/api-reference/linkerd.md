@@ -39,7 +39,7 @@ Authorization: Bearer <token>
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `kubeconfig` | string | No | Base64-encoded kubeconfig. Falls back to `KUBECONFIG_PATH` if omitted. |
+| `kubeconfig` | string | No | Inline kubeconfig YAML (including a multi-line string) or a kubeconfig file path. Falls back to `KUBECONFIG_PATH` if omitted. |
 
 ### Response (200)
 
