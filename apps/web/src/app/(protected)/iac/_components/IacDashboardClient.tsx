@@ -50,6 +50,16 @@ function timeAgo(isoDate: string): string {
   return `${days}d ago`;
 }
 
+/**
+ * Ensures a URL has an absolute scheme, defaulting to https://.
+ */
+function normalizeUrl(url: string): string {
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  return `https://${url}`;
+}
+
 // ---------------------------------------------------------------------------
 // Helper components
 // ---------------------------------------------------------------------------
@@ -229,12 +239,7 @@ function ModuleDriftTable({ records }: { records: IacModuleDrift[] }) {
               </TableCell>
               <TableCell>
                 <a
-                  href={
-                    drift.sourceUrl.startsWith("http://") ||
-                    drift.sourceUrl.startsWith("https://")
-                      ? drift.sourceUrl
-                      : `https://${drift.sourceUrl}`
-                  }
+                  href={normalizeUrl(drift.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline flex items-center gap-1"

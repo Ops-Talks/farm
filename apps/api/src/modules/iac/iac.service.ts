@@ -122,6 +122,12 @@ export class IacService {
       );
     }
 
+    const startedAt = dto.startedAt
+      ? new Date(dto.startedAt)
+      : dto.finishedAt
+        ? new Date(dto.finishedAt)
+        : new Date();
+
     const run = this.runRepository.create({
       stackId: stack.id,
       type: dto.type,
@@ -131,11 +137,7 @@ export class IacService {
       resourceChanges: dto.resourceChanges ?? null,
       triggeredBy: dto.triggeredBy ?? null,
       pipelineUrl: dto.pipelineUrl ?? null,
-      startedAt: dto.startedAt
-        ? new Date(dto.startedAt)
-        : dto.finishedAt
-          ? new Date(dto.finishedAt)
-          : new Date(),
+      startedAt,
       finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : null,
       durationMs: dto.durationMs ?? null,
     });
