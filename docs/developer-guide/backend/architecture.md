@@ -207,7 +207,7 @@ Linkerd 2.x detection, ServerAuthorization / AuthorizationPolicy / ServiceProfil
 
 ### OPA Module
 
-Open Policy Agent policy evaluation and result persistence. Results can be linked to catalog components and are stored in the database for historical review. Also provides a GatekeeperService for reading Gatekeeper ConstraintTemplates and violations from the cluster.
+Open Policy Agent policy evaluation and result persistence. Results can be linked to catalog components and are stored in the database for historical review.
 
 ### Search Module
 
