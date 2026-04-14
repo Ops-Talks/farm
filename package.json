@@ -39,6 +39,7 @@
     "release-it": {
       "undici": "6.24.1"
     },
-    "picomatch": "4.0.4"
+    "picomatch": "4.0.4",
+    "follow-redirects": "1.16.0"
   }
 }

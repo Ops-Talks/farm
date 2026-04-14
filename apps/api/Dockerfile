@@ -37,31 +37,6 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Update npm to a pinned version whose bundled tar dependency meets the
-# minimum fixed version (>=7.5.11) required by CVE-2026-31802, CVE-2026-29786,
-# CVE-2026-26960, CVE-2026-24842, CVE-2026-23950, and CVE-2026-23745.
-#
-# Patch picomatch inside npm's own bundled node_modules to 4.0.4 (CVE-2026-33671).
-# The fixed copy is taken directly from the deps stage (already at 4.0.4 via
-# package.json overrides), so no registry download is needed at build time.
-# brace-expansion is upgraded to 5.0.5 via npm pack (no workspace copy available
-# at the required version).
-#
-# The for loop with "|| exit 1" is used instead of piping find to while, because
-# Alpine sh runs the while body in a subshell and does not propagate inner errors
-# to the outer exit code, causing silent patch failures.
-COPY --from=deps /app/node_modules/picomatch /tmp/picomatch-fixed
-RUN npm install -g npm@11.12.1 \
- && picomatch_dirs="$(find /usr/local/lib/node_modules/npm -path '*/picomatch' -type d)" \
- && test -n "$picomatch_dirs" || { echo "No bundled picomatch found in npm"; exit 1; } \
- && for dir in $picomatch_dirs; do cp -rf /tmp/picomatch-fixed/. "$dir/" || exit 1; done \
- && rm -rf /tmp/picomatch-fixed \
- && npm pack brace-expansion@5.0.5 --quiet \
- && brace_dirs="$(find /usr/local/lib/node_modules/npm -path '*/brace-expansion' -type d)" \
- && test -n "$brace_dirs" || { echo "No bundled brace-expansion found in npm"; exit 1; } \
- && for dir in $brace_dirs; do tar xzf brace-expansion-5.0.5.tgz --strip-components=1 -C "$dir" || exit 1; done \
- && rm brace-expansion-5.0.5.tgz
-
 # Upgrade Alpine system packages to their patched versions:
 #   zlib       >=1.3.2-r0  CVE-2026-27171, CVE-2026-22184
 #   libssl3    >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
@@ -77,7 +52,11 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
 COPY apps/web/package.json               ./apps/web/
 
-RUN npm ci --omit=dev --ignore-scripts
+# Install production dependencies then remove npm and npx — the running
+# application only needs node. Removing npm eliminates all CVEs in its
+# bundled packages (picomatch, brace-expansion, tar, etc.) permanently.
+RUN npm ci --omit=dev --ignore-scripts \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Copy compiled @farm/types (needed at runtime for any require('@farm/types'))
 COPY --from=build /app/packages/types ./packages/types

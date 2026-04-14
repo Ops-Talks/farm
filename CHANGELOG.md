@@ -8,18 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.0] - 2026-04-14
 
 ### Added
-- **phase-23**: New Features.
-- **phase-23**: New Features.
-- **phase-23**: New Features.
 
-### Changed
-- extract startedAt fallback and normalizeUrl helper for readability.
-- update ROADMAP.
-- feat(seeds) - Update mocking new examples.
-
-### Fixed
-- **iac**: address PR review feedback — query perf, validation, entity types, a11y, docs.
-- address PR review comments — optimize dashboard query, fix validation, entity types, UI accessibility, and docs.
+- **IaC Visibility (FARM-E70 — Cultivator Integration)**: Full Phase 23 Cultivator integration shipped as the IaC module.
+  - `IacStack` and `IacRun` entities with migrations; `IacModuleDrift` entity for Agronomist drift reports.
+  - `POST /api/v1/iac/runs/ingest` — machine-to-machine endpoint (bearer token via `IAC_INGEST_TOKEN`) that receives Cultivator run payloads and auto-registers the parent stack when not yet known (`autoImported: true`).
+  - `POST /api/v1/iac/stacks/import` — bulk upsert of stacks from `cultivator discover --output json`; preserves existing `componentId` and `externalToolUrl` associations.
+  - `GET /api/v1/iac/stacks/:id/runs` — paginated run history sorted by `startedAt` DESC.
+  - `GET /api/v1/iac/dashboard` — cross-environment aggregation: last run status per stack, failed-stack count, environment grouping with failed stacks surfaced first.
+  - `POST /api/v1/iac/module-drift/ingest` — ingests Agronomist JSON reports; persists one `IacModuleDrift` record per outdated module reference with semver-aware `versionsBehind` computation.
+  - `GET /api/v1/iac/module-drift` — returns all drift records ordered by `detectedAt` DESC.
+  - IaC dashboard page (`/iac`): environment-tab overview of stacks with last run status badge, resource change counts, and external tool link-out.
+  - Stack detail Runs tab: chronological timeline with status icon, plan/apply badge, resource change chips, duration, actor, and CI/CD pipeline link.
+  - Module drift panel on the IaC dashboard: outdated module references grouped by stack with current vs latest version and versions-behind count.
+  - All ingest endpoints use constant-time token comparison (`crypto.timingSafeEqual`) and strict per-second rate limiting separate from the global throttler.
+  - Integration guide at `docs/iac-integration.md` with curl snippets and a ready-to-use GitHub Actions step.
 
 ## [0.17.4] - 2026-04-13
 
