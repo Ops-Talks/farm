@@ -12,13 +12,7 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/web/package.json              ./apps/web/
 COPY apps/api/package.json              ./apps/api/
 
-# lightningcss distributes its platform binary via a postinstall script that
-# copies it into place. --ignore-scripts skips that step, so the binary
-# (lightningcss.linux-x64-musl.node) would be missing at build time.
-# npm rebuild runs only the install/postinstall scripts for the named package,
-# keeping all other scripts suppressed.
-RUN npm ci --ignore-scripts \
- && npm rebuild lightningcss
+RUN npm ci --ignore-scripts
 
 # Build @farm/types so the workspace symlink target has compiled JS.
 COPY packages/types/src ./packages/types/src

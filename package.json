@@ -19,6 +19,9 @@
     "lint": "npm run lint -w apps/api && npm run web:lint"
   },
   "devDependencies": {},
+  "optionalDependencies": {
+    "lightningcss-linux-x64-musl": "1.32.0"
+  },
   "overrides": {
     "@angular-devkit/core": "19.2.23",
     "@nestjs/core": {
