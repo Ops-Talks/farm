@@ -1691,3 +1691,68 @@ export interface OpaStoredResult {
   evaluatedAt: string;
   createdAt: string;
 }
+
+// -- IaC types (FARM-E70) --
+
+export type IacRunType = "plan" | "apply";
+export type IacRunStatus = "succeeded" | "failed" | "cancelled";
+
+export interface IacResourceChanges {
+  add: number;
+  change: number;
+  destroy: number;
+}
+
+export interface IacRun {
+  id: string;
+  stackId: string;
+  type: IacRunType;
+  status: IacRunStatus;
+  environment: string;
+  provider: string | null;
+  resourceChanges: IacResourceChanges | null;
+  triggeredBy: string | null;
+  pipelineUrl: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  durationMs: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IacStackSummary {
+  stackId: string;
+  name: string;
+  lastRunStatus: IacRunStatus | null;
+  lastRunAt: string | null;
+  lastRunType: IacRunType | null;
+  resourceChanges: IacResourceChanges | null;
+  autoImported: boolean;
+  provider: string;
+  externalToolUrl: string | null;
+}
+
+export interface IacDashboard {
+  totalStacks: number;
+  failedLastRun: number;
+  environments: string[];
+  stacksByEnvironment: Record<string, IacStackSummary[]>;
+}
+
+export interface IacModuleDrift {
+  id: string;
+  stackPath: string;
+  moduleName: string;
+  sourceUrl: string;
+  currentRef: string;
+  latestRef: string;
+  versionsBehind: number;
+  detectedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IacStackRunsResponse {
+  data: IacRun[];
+  total: number;
+}

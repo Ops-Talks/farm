@@ -59,130 +59,135 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 23: IaC Platform `TODO`
+## Phase 23: IaC Visibility and Cataloging `TODO`
 
-### FARM-E68: Terraform/OpenTofu Module Registry `TODO`
+### FARM-E68: IaC Module Catalog `TODO`
 
-> A built-in registry of Terraform and OpenTofu modules that teams can browse, version, and consume directly from Farm. Modules are synced from Git repositories and validated on import.
+> A built-in catalog of Terraform, OpenTofu, and Pulumi modules that teams can browse and consume from Farm. The catalog stores structured metadata (variables, outputs, versions) parsed from source repositories. Farm acts as a discoverability layer; plan, apply, and approval workflows remain in dedicated tools (Terraform Cloud, Atlantis, Spacelift, or local CLI).
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: terraform/opentofu, source repository URL, current version, variables JSONB schema, outputs JSONB) | `TODO` |
-| FARM-S274 | Story | Module sync job -- clone module repo, parse `variables.tf` and `outputs.tf` into structured metadata, detect semver tags as versions | `TODO` |
-| FARM-S275 | Story | Module validation pipeline -- run `terraform validate` or `tofu validate` on import, store validation status and diagnostics | `TODO` |
-| FARM-S276 | Story | Frontend: module registry browser with search, version selector, variable documentation table, and usage snippet generator | `TODO` |
-| FARM-S286 | Story | IaC scaffold wizard -- select a module from the registry, fill variables via guided form, generate ready-to-use `terragrunt.hcl` (or `main.tf`) with rendered README and usage examples | `TODO` |
+| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: terraform/opentofu/pulumi, sourceRepoUrl, description, latestVersion, variablesMeta JSONB, outputsMeta JSONB); optional link to a catalog `Component` via `componentId` FK | `TODO` |
+| FARM-S274 | Story | Metadata sync service: fetch semver tags from the source repository, parse `variables.tf` and `outputs.tf` per tag into structured JSONB; triggered manually via `POST /iac-modules/:id/sync` | `TODO` |
+| FARM-S275 | Story | Frontend: module browser page with search, provider filter, version selector, variable and output documentation tables, and copyable usage snippet | `TODO` |
+| FARM-S276 | Story | Component detail IaC tab: list modules linked to the component with version badge, source repository link, and variable summary | `TODO` |
 
 #### FARM-S273 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T237 | Task | Create `IacModule` entity with `IacProvider` enum (`terraform`, `opentofu`); `IacModuleModule` with full CRUD service and controller; migration | `TODO` |
-| FARM-T238 | Task | `IacModuleVersion` entity (moduleId, version semver, commitSha, validationStatus, variablesMeta JSONB, outputsMeta JSONB, createdAt) | `TODO` |
+| FARM-T237 | Task | `IacModule` entity with `IacProvider` enum (terraform, opentofu, pulumi); `IacModuleVersion` child entity (version semver, variablesMeta JSONB, outputsMeta JSONB, syncedAt); `IacModuleModule` with full CRUD service and controller; migration | `TODO` |
+| FARM-T238 | Task | `GET /components/:id/iac-modules` and `POST /iac-modules/:id/link-component` endpoints to associate modules with catalog components; `DELETE /iac-modules/:id/unlink-component` to remove the association | `TODO` |
 
 #### FARM-S274 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T239 | Task | `ModuleSyncJob` BullMQ processor: shallow clone module repo, list semver tags via `git tag -l 'v*'`, parse HCL files per tag | `TODO` |
-| FARM-T240 | Task | HCL variable parser: extract name, type, description, default, and validation rules from `variables.tf`; same for `outputs.tf` | `TODO` |
+| FARM-T239 | Task | `IacModuleSyncService.sync(module)`: run `git ls-remote --tags <sourceRepoUrl>`, detect semver tags not yet stored, shallow-clone each new tag, parse HCL files, persist as `IacModuleVersion` records | `TODO` |
+| FARM-T240 | Task | HCL variable parser: extract name, type, description, default, and validation rules from `variables.tf`; same structure for `outputs.tf`; store result as typed JSONB on `IacModuleVersion` | `TODO` |
 
 #### FARM-S275 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T241 | Task | `ModuleValidationJob`: run `terraform init -backend=false && terraform validate` (or `tofu`) in a temp directory; capture JSON diagnostics | `TODO` |
-| FARM-T242 | Task | Store validation result on `IacModuleVersion` (status: valid/invalid/pending, diagnostics JSON array); expose via `GET /iac-modules/:id/versions/:version/validation` | `TODO` |
+| FARM-T241 | Task | Module browser page (`/iac-modules`): card/list view with provider badge, latest version chip, description, and link to detail; search by name, filter by provider | `TODO` |
+| FARM-T242 | Task | Module detail page: version selector dropdown; variable documentation table (name, type, description, default, required flag); output table; copyable usage snippet rendered from selected version (Terraform `module {}` block or Pulumi constructor call) | `TODO` |
 
-#### FARM-S286 Tasks
+#### FARM-S276 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T262 | Task | `POST /iac-modules/:id/scaffold` endpoint: accept version and variable values, render `terragrunt.hcl` (or `main.tf`) from Handlebars template with module source, version pin, and variable assignments | `TODO` |
-| FARM-T263 | Task | Scaffold templates: built-in Handlebars templates for Terragrunt (`terragrunt.hcl` with `terraform.source`, `inputs`) and plain Terraform (`main.tf` with `module` block); allow custom templates per module | `TODO` |
-| FARM-T264 | Task | Frontend: scaffold wizard -- step 1: pick module + version; step 2: fill required/optional variables with type-aware inputs (string, number, bool, list, map); step 3: preview and download generated file | `TODO` |
+| FARM-T243 | Task | IaC tab in component detail (`/catalog/:id`): table of linked modules with provider badge, version chip, source repository link; empty state with "Link IaC Module" action that opens a search dialog over existing `IacModule` records | `TODO` |
 
 ---
 
-### FARM-E69: Terragrunt Orchestration `TODO`
+### FARM-E69: IaC Stack State Visibility `TODO`
 
-> Manage Terragrunt-based infrastructure repositories with a structured account/region/environment layout. Farm provides plan/apply workflows with approval gates, drift detection, and state visualization.
+> Read-only visibility into deployed infrastructure state. Farm fetches `terraform.tfstate` files from configured backends (local, S3, GCS) and surfaces the resource inventory and dependency graph for a given component or stack. Plan, apply, and approval workflows remain in the team's existing tooling; Farm stores a link-out URL pointing to the external tool in use (Atlantis, Spacelift, Terraform Cloud, or any custom runner).
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S277 | Story | `IacStack` entity (name, repositoryUrl, basePath, provider, workspaceId) representing a Terragrunt project root; CRUD API | `TODO` |
-| FARM-S278 | Story | Plan/Apply workflow -- BullMQ jobs execute `terragrunt plan` and `terragrunt apply` with real-time log streaming via WebSocket | `TODO` |
-| FARM-S279 | Story | Drift detection CRON job -- scheduled `terragrunt plan` against each active stack, flag drifted resources, notify via WebSocket | `TODO` |
-| FARM-S280 | Story | Approval gate for apply -- plan output stored as artifact, admin approves/rejects before apply executes | `TODO` |
-| FARM-S281 | Story | Frontend: stack list, plan diff viewer with resource-level add/change/destroy summary, apply progress with real-time logs | `TODO` |
-| FARM-S285 | Story | IaC monorepo support -- auto-discover stacks within a single repo, change detection per stack path, batch plan/apply with dependency ordering | `TODO` |
+| FARM-S277 | Story | `IacStack` entity (name, provider, repositoryUrl, basePath, backendType: local/s3/gcs, backendConfig JSONB, externalToolUrl, optional `componentId` FK) and CRUD API | `TODO` |
+| FARM-S278 | Story | State file reader: fetch and parse `terraform.tfstate` from the configured backend; expose typed resource inventory via REST API | `TODO` |
+| FARM-S279 | Story | Resource dependency graph: extract dependencies from state, expose as a graph API endpoint, and render as an interactive visualization in the frontend | `TODO` |
+| FARM-S280 | Story | Frontend: stack list page, stack detail with resource inventory and dependency graph tabs, and link-out button to the external execution tool | `TODO` |
 
 #### FARM-S277 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T243 | Task | Create `IacStack` entity with relationship to workspace; fields include `parentStackId` (nullable self-ref for monorepo grouping) and `basePath` for subdir targeting; `IacStackModule` CRUD API; migration | `TODO` |
-| FARM-T244 | Task | `IacRun` entity (stackId, type: plan/apply, status: queued/running/succeeded/failed/awaiting_approval, planOutput text, triggeredBy userId, approvedBy userId) | `TODO` |
+| FARM-T244 | Task | `IacStack` entity with `IacBackendType` enum (local, s3, gcs); `externalToolUrl` field for linking to Atlantis, Spacelift, Terraform Cloud, or any external runner; CRUD service and controller; migration; optional `componentId` FK to associate the stack with a catalog component | `TODO` |
 
 #### FARM-S278 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T245 | Task | `IacPlanJob` BullMQ processor: clone repo, `cd basePath`, run `terragrunt plan -out=plan.tfplan -json`, stream logs via WebSocket `iac:log` event | `TODO` |
-| FARM-T246 | Task | `IacApplyJob` BullMQ processor: run `terragrunt apply plan.tfplan -json` after approval; update `IacRun` status; emit `iac:apply-complete` event | `TODO` |
-| FARM-T247 | Task | Parse plan JSON output to extract resource changes summary: `{ add: N, change: N, destroy: N, resources: [{ address, action, type }] }` | `TODO` |
+| FARM-T245 | Task | `StateReaderService.fetch(stack)`: read local file by absolute path, or fetch from S3 via `GetObjectCommand`, or from GCS via `storage.bucket().file().download()`; credentials via env vars `IAC_AWS_ACCESS_KEY_ID`, `IAC_AWS_SECRET_ACCESS_KEY`, `IAC_AWS_REGION`, and `IAC_GOOGLE_APPLICATION_CREDENTIALS` validated in the Joi config schema at startup | `TODO` |
+| FARM-T246 | Task | `StateReaderService.parse(raw)`: typed `TerraformState` interface mapping `resources[]` to `{ type, name, provider, module, instances[] }`; `GET /iac-stacks/:id/state` returns parsed inventory; `GET /iac-stacks/:id/state/resources` returns flat resource list; "Refresh state" triggers a re-fetch | `TODO` |
 
 #### FARM-S279 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T248 | Task | `DriftDetectionJob` BullMQ CRON (configurable, default daily 03:00 UTC): run `terragrunt plan -detailed-exitcode` per stack; exit code 2 = drift | `TODO` |
-| FARM-T249 | Task | `IacDriftRecord` entity (stackId, runId, driftedResources JSONB, detectedAt); `GET /iac-stacks/:id/drift` returns latest drift status | `TODO` |
+| FARM-T247 | Task | Build adjacency list from state `depends_on` arrays and implicit resource references between instance attributes; expose via `GET /iac-stacks/:id/state/graph` as `{ nodes: [{ id, type, name }], edges: [{ source, target }] }` | `TODO` |
+| FARM-T248 | Task | Frontend resource graph: render nodes as labeled resource cards with provider-color coding; edges show dependency direction; pan and zoom via react-flow; clicking a node shows instance attributes in a side panel | `TODO` |
 
 #### FARM-S280 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T250 | Task | `POST /iac-runs/:id/approve` and `/reject` -- require workspace admin role; on approve, enqueue `IacApplyJob` | `TODO` |
-| FARM-T251 | Task | Plan artifact storage: save `plan.tfplan` and parsed JSON summary to disk (configurable `IAC_ARTIFACTS_PATH`); link from `IacRun` record | `TODO` |
+| FARM-T249 | Task | Stack list page (`/iac`): table with stack name, provider badge, backend type, linked component chip, last state refresh timestamp, and "Open in [tool]" link-out button using `externalToolUrl` | `TODO` |
+| FARM-T250 | Task | Stack detail page: Resource Inventory tab (table with type, name, provider, module path, instance count) and Dependency Graph tab; "Refresh state" button re-fetches and re-parses the state file | `TODO` |
 
-#### FARM-S285 Tasks
+---
 
-| ID | Type | Title | Status |
-|----|------|-------|--------|
-| FARM-T257 | Task | `StackDiscoveryService`: scan repo for `terragrunt.hcl` files recursively, create one `IacStack` per directory with `parentStackId` linking to the root stack | `TODO` |
-| FARM-T258 | Task | Change detection: on plan trigger, `git diff` against last successful run commit to identify changed paths; only plan stacks whose `basePath` overlaps with changed files | `TODO` |
-| FARM-T259 | Task | Dependency ordering: parse Terragrunt `dependency` blocks to build a DAG; plan/apply stacks in topological order; fail-fast if a dependency fails | `TODO` |
-| FARM-T260 | Task | `POST /iac-stacks/:id/discover` endpoint triggers async discovery job; `GET /iac-stacks/:id/children` returns child stacks; batch `POST /iac-stacks/:id/plan-all` plans changed stacks only | `TODO` |
-| FARM-T261 | Task | Frontend: monorepo tree view showing account/region/env hierarchy, per-stack status badges, batch plan/apply controls with aggregated progress | `TODO` |
+### FARM-E70: Cultivator Integration `TODO`
 
-> Visualize Terraform/OpenTofu state files, show resource graphs, and integrate with Infracost for pre-apply cost estimation on plan output.
+> [Cultivator](https://github.com/Ops-Talks/cultivator) is a CLI tool that orchestrates Terragrunt stack discovery, dependency-aware execution, and CI/CD integration. It has no server and no UI. Farm complements it by acting as the visibility and history layer: Cultivator handles plan/apply execution; Farm ingests the run reports, catalogs the discovered stacks, and surfaces a unified dashboard across environments. This follows the same integration model used for Prometheus, Flux, and ArgoCD — Farm consumes results, it does not execute.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S282 | Story | State file reader -- parse `terraform.tfstate` (local or S3/GCS remote backend) and display resource inventory with attributes | `TODO` |
-| FARM-S283 | Story | Resource dependency graph -- extract `depends_on` and implicit references from state, render as interactive D3 graph | `TODO` |
-| FARM-S284 | Story | Infracost integration -- run `infracost diff --plan-json` on plan output, display cost delta (monthly before/after) in plan review UI | `TODO` |
+| FARM-S281 | Story | Run ingest API: `POST /api/iac/runs/ingest` webhook endpoint that receives Cultivator run reports and persists them as `IacRun` records linked to the matching `IacStack` | `TODO` |
+| FARM-S282 | Story | Stack auto-registration via Cultivator discovery: the team runs `cultivator discover --output json` locally or in CI and pipes the result to `POST /api/iac/stacks/import`; Farm upserts one `IacStack` record per discovered stack, so stacks appear in the portal without anyone having to register them by hand through the UI | `TODO` |
+| FARM-S283 | Story | Per-stack run history in the Farm UI: after Cultivator finishes a plan or apply in CI/CD it posts the result to Farm; the stack detail page shows a chronological list of those runs with the outcome (success/failed/cancelled), what changed (resources added, modified, destroyed), how long it took, who triggered it, and a direct link back to the CI/CD pipeline job that produced it | `TODO` |
+| FARM-S284 | Story | Aggregated IaC dashboard: cross-environment overview of all stacks showing last run status, drift indicators, and resource count trends over time | `TODO` |
+| FARM-S285 | Story | Agronomist integration: `POST /api/iac/module-drift/ingest` ingests the Agronomist JSON report generated in CI/CD; Farm surfaces outdated module references per stack in the IaC dashboard, showing current vs latest version and how many releases behind each reference is | `TODO` |
+
+#### FARM-S281 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T251 | Task | `IacRun` entity (stackId FK, provider, environment, status: succeeded/failed/cancelled, type: plan/apply, resourceChanges JSONB `{add,change,destroy}`, triggeredBy string, pipelineUrl, startedAt, finishedAt, durationMs); migration | `TODO` |
+| FARM-T252 | Task | `POST /api/iac/runs/ingest` controller: validate payload via DTO, resolve `IacStack` by `stackName` + `environment` (create if not found with `autoImported: true`), persist `IacRun`; secured with a static bearer token configured via `IAC_INGEST_TOKEN` env var | `TODO` |
+| FARM-T253 | Task | Cultivator reporter documentation: document the expected ingest payload schema and provide a ready-to-use GitHub Actions step (`curl` snippet) that posts the Cultivator JSON summary to Farm after each plan/apply run | `TODO` |
 
 #### FARM-S282 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T252 | Task | `StateReaderService`: fetch state from local file, S3, or GCS based on stack backend config; parse JSON into typed `TerraformState` interface | `TODO` |
-| FARM-T253 | Task | `GET /iac-stacks/:id/state` returns parsed state with resource list, provider info, and serial number; `GET /iac-stacks/:id/state/resources` returns flat resource inventory | `TODO` |
+| FARM-T254 | Task | `POST /api/iac/stacks/import` endpoint: accepts Cultivator `discover` JSON output (array of `{ name, path, environment, provider, dependencies[] }`); upserts `IacStack` records preserving existing `componentId` and `externalToolUrl` associations; returns created and updated counts | `TODO` |
+| FARM-T255 | Task | `autoImported` boolean flag on `IacStack` entity to distinguish stacks registered manually from those imported via Cultivator discovery; migration | `TODO` |
 
 #### FARM-S283 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T254 | Task | Build adjacency graph from state `depends_on` fields and implicit resource references; expose via `GET /iac-stacks/:id/state/graph` | `TODO` |
+| FARM-T256 | Task | `GET /api/iac/stacks/:id/runs` paginated endpoint: returns `IacRun` list sorted by `startedAt` DESC with status, type, resource change counts, duration, triggered-by, and pipeline URL | `TODO` |
+| FARM-T257 | Task | Stack detail Runs tab: timeline list of past runs with status icon (success/failed/cancelled), type badge (plan/apply), resource change chips (`+N ~N -N`), duration, actor, and external pipeline link | `TODO` |
 
 #### FARM-S284 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T255 | Task | `InfracostService`: run `infracost diff --path plan.json --format json`, parse output into `{ totalMonthlyCost, diffMonthlyCost, resources[] }` | `TODO` |
-| FARM-T256 | Task | Display cost estimate card in plan review UI; warn when monthly cost increase exceeds configurable threshold (`IAC_COST_WARN_THRESHOLD`, default $100) | `TODO` |
+| FARM-T258 | Task | `GET /api/iac/dashboard` endpoint: aggregate last run status per stack grouped by environment; include total stack count, last-run-failed count, and resource change totals for the last 30 days | `TODO` |
+| FARM-T259 | Task | IaC dashboard page (`/iac`): environment selector tabs (all / dev / staging / prod); per-stack status cards showing last run status badge, resource counts, last run time, and Cultivator actor; failed stacks surfaced at the top | `TODO` |
+
+#### FARM-S285 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T260 | Task | `POST /api/iac/module-drift/ingest` endpoint: receives the Agronomist JSON report (`agronomist report --root . --json report.json`), persists one `IacModuleDrift` record per outdated module reference found (stackPath, currentRef, latestRef, moduleName, sourceUrl, detectedAt); secured with `IAC_INGEST_TOKEN` | `TODO` |
+| FARM-T261 | Task | Module drift panel in the IaC dashboard: list of outdated module references grouped by stack, showing current vs latest version, how many versions behind, and a link to the module in FARM-E68 catalog if a matching `IacModule` record exists | `TODO` |
 
 ---
 
@@ -687,7 +692,7 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 20: Service Mesh Expansion | 1 | 4 | `DONE` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `DONE` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
-| Phase 23: IaC Platform | 3 | 14 | `TODO` |
+| Phase 23: IaC Visibility and Cataloging | 3 | 13 | `TODO` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
 | Phase 25: Feature Availability UX | 1 | 11 | `DONE` |
 | Phase 26: Auth Provider Expansion | 1 | 5 | `TODO` |
@@ -698,4 +703,4 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `TODO` |
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
-| **Total** | **81** | **327** | |
+| **Total** | **81** | **326** | |

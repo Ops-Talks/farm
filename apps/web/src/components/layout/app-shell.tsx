@@ -53,6 +53,7 @@ import {
   UserCircle,
   DollarSign,
   Search,
+  Code2,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -85,6 +86,7 @@ const navSections = [
     items: [
       { href: "/operators", label: "Operators", icon: Cpu },
       { href: "/gitops", label: "GitOps", icon: GitBranch },
+      { href: "/iac", label: "IaC", icon: Code2 },
       { href: "/queues", label: "Queues", icon: List },
       { href: "/cost", label: "Cost", icon: DollarSign },
     ],

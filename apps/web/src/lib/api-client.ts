@@ -147,6 +147,9 @@ import type {
   OpaEvaluateRequest,
   OpaEvaluateResult,
   OpaStoredResult,
+  IacDashboard,
+  IacModuleDrift,
+  IacStackRunsResponse,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -2533,3 +2536,33 @@ export const opa = {
     return request<OpaStoredResult[]>(`/v1/opa/results/${encodeURIComponent(componentId)}`);
   },
 };
+
+// -- IaC API (FARM-E70) --
+
+export const iac = {
+  /**
+   * Fetches the IaC dashboard summary grouped by environment.
+   */
+  getDashboard(): Promise<IacDashboard> {
+    return request<IacDashboard>('/v1/iac/dashboard');
+  },
+
+  /**
+   * Fetches paginated run history for a specific IaC stack.
+   * @param stackId - IacStack UUID
+   * @param page - 1-based page number (default: 1)
+   */
+  getStackRuns(stackId: string, page = 1): Promise<IacStackRunsResponse> {
+    return request<IacStackRunsResponse>(
+      `/v1/iac/stacks/${encodeURIComponent(stackId)}/runs?page=${page}&limit=20`,
+    );
+  },
+
+  /**
+   * Fetches all module drift records ordered by detection time (newest first).
+   */
+  getModuleDrift(): Promise<IacModuleDrift[]> {
+    return request<IacModuleDrift[]>('/v1/iac/module-drift');
+  },
+};
+

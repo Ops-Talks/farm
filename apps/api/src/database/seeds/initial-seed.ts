@@ -140,9 +140,7 @@ export async function seedOrganization(
     where: { userId: users["admin"].id, organizationId: org.id },
   });
   if (membershipExists) {
-    console.log(
-      `  Membership admin -> Farm Demo already exists, skipping.`,
-    );
+    console.log(`  Membership admin -> Farm Demo already exists, skipping.`);
   } else {
     const userOrg = userOrgRepo.create({
       userId: users["admin"].id,
@@ -349,7 +347,9 @@ export async function seedDeployments(
     const environmentId = environment.id;
     const label = `${deploymentData.componentKey}@${deploymentData.version} -> ${deploymentData.environmentKey}`;
 
-    const exists = await repo.findOne({ where: { componentId, environmentId } });
+    const exists = await repo.findOne({
+      where: { componentId, environmentId },
+    });
     if (exists) {
       console.log(`  Deployment "${label}" already exists, skipping.`);
       continue;
@@ -466,7 +466,9 @@ export async function seedAlertingRules(
   for (const ruleData of rules) {
     const exists = await repo.findOne({ where: { name: ruleData.name } });
     if (exists) {
-      console.log(`  AlertingRule "${ruleData.name}" already exists, skipping.`);
+      console.log(
+        `  AlertingRule "${ruleData.name}" already exists, skipping.`,
+      );
       continue;
     }
 
@@ -528,8 +530,7 @@ export async function seedServiceTemplates(
       name: "react-web-app",
       language: "typescript",
       framework: "react",
-      description:
-        "Next.js web application with Tailwind CSS and TypeScript",
+      description: "Next.js web application with Tailwind CSS and TypeScript",
       repositoryUrl: "https://github.com/farm-templates/react-web-app",
       tags: ["frontend", "react", "nextjs", "typescript"],
       isBuiltIn: true,
@@ -863,9 +864,7 @@ export async function seedIncident(
   }
 
   await repo.save(incident);
-  console.log(
-    `  Created incident "${incidentTitle}" (P2, resolved)`,
-  );
+  console.log(`  Created incident "${incidentTitle}" (P2, resolved)`);
 }
 
 /**
