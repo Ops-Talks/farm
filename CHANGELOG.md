@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-04-14
+
+### Added
+- **phase-23**: New Features.
+- **phase-23**: New Features.
+- **phase-23**: New Features.
+
+### Changed
+- extract startedAt fallback and normalizeUrl helper for readability.
+- update ROADMAP.
+- feat(seeds) - Update mocking new examples.
+
+### Fixed
+- **iac**: address PR review feedback — query perf, validation, entity types, a11y, docs.
+- address PR review comments — optimize dashboard query, fix validation, entity types, UI accessibility, and docs.
+
 ## [0.17.4] - 2026-04-13
 
 ### Changed
