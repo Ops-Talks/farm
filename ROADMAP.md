@@ -147,46 +147,46 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S281 | Story | Run ingest API: `POST /api/iac/runs/ingest` webhook endpoint that receives Cultivator run reports and persists them as `IacRun` records linked to the matching `IacStack` | `DONE` |
-| FARM-S282 | Story | Stack auto-registration via Cultivator discovery: the team runs `cultivator discover --output json` locally or in CI and pipes the result to `POST /api/iac/stacks/import`; Farm upserts one `IacStack` record per discovered stack, so stacks appear in the portal without anyone having to register them by hand through the UI | `DONE` |
+| FARM-S281 | Story | Run ingest API: `POST /api/v1/iac/runs/ingest` webhook endpoint that receives Cultivator run reports and persists them as `IacRun` records linked to the matching `IacStack` | `DONE` |
+| FARM-S282 | Story | Stack auto-registration via Cultivator discovery: the team runs `cultivator discover --output json` locally or in CI and pipes the result to `POST /api/v1/iac/stacks/import`; Farm upserts one `IacStack` record per discovered stack, so stacks appear in the portal without anyone having to register them by hand through the UI | `DONE` |
 | FARM-S283 | Story | Per-stack run history in the Farm UI: after Cultivator finishes a plan or apply in CI/CD it posts the result to Farm; the stack detail page shows a chronological list of those runs with the outcome (success/failed/cancelled), what changed (resources added, modified, destroyed), how long it took, who triggered it, and a direct link back to the CI/CD pipeline job that produced it | `DONE` |
 | FARM-S284 | Story | Aggregated IaC dashboard: cross-environment overview of all stacks showing last run status, drift indicators, and resource count trends over time | `DONE` |
-| FARM-S285 | Story | Agronomist integration: `POST /api/iac/module-drift/ingest` ingests the Agronomist JSON report generated in CI/CD; Farm surfaces outdated module references per stack in the IaC dashboard, showing current vs latest version and how many releases behind each reference is | `DONE` |
+| FARM-S285 | Story | Agronomist integration: `POST /api/v1/iac/module-drift/ingest` ingests the Agronomist JSON report generated in CI/CD; Farm surfaces outdated module references per stack in the IaC dashboard, showing current vs latest version and how many releases behind each reference is | `DONE` |
 
 #### FARM-S281 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
 | FARM-T251 | Task | `IacRun` entity (stackId FK, provider, environment, status: succeeded/failed/cancelled, type: plan/apply, resourceChanges JSONB `{add,change,destroy}`, triggeredBy string, pipelineUrl, startedAt, finishedAt, durationMs); migration | `DONE` |
-| FARM-T252 | Task | `POST /api/iac/runs/ingest` controller: validate payload via DTO, resolve `IacStack` by `stackName` + `environment` (create if not found with `autoImported: true`), persist `IacRun`; secured with a static bearer token configured via `IAC_INGEST_TOKEN` env var | `DONE` |
+| FARM-T252 | Task | `POST /api/v1/iac/runs/ingest` controller: validate payload via DTO, resolve `IacStack` by `stackName` + `environment` (create if not found with `autoImported: true`), persist `IacRun`; secured with a static bearer token configured via `IAC_INGEST_TOKEN` env var | `DONE` |
 | FARM-T253 | Task | Cultivator reporter documentation: document the expected ingest payload schema and provide a ready-to-use GitHub Actions step (`curl` snippet) that posts the Cultivator JSON summary to Farm after each plan/apply run | `DONE` |
 
 #### FARM-S282 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T254 | Task | `POST /api/iac/stacks/import` endpoint: accepts Cultivator `discover` JSON output (array of `{ name, path, environment, provider, dependencies[] }`); upserts `IacStack` records preserving existing `componentId` and `externalToolUrl` associations; returns created and updated counts | `DONE` |
+| FARM-T254 | Task | `POST /api/v1/iac/stacks/import` endpoint: accepts Cultivator `discover` JSON output (array of `{ name, path, environment, provider, dependencies[] }`); upserts `IacStack` records preserving existing `componentId` and `externalToolUrl` associations; returns created and updated counts | `DONE` |
 | FARM-T255 | Task | `autoImported` boolean flag on `IacStack` entity to distinguish stacks registered manually from those imported via Cultivator discovery; migration | `DONE` |
 
 #### FARM-S283 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T256 | Task | `GET /api/iac/stacks/:id/runs` paginated endpoint: returns `IacRun` list sorted by `startedAt` DESC with status, type, resource change counts, duration, triggered-by, and pipeline URL | `DONE` |
+| FARM-T256 | Task | `GET /api/v1/iac/stacks/:id/runs` paginated endpoint: returns `IacRun` list sorted by `startedAt` DESC with status, type, resource change counts, duration, triggered-by, and pipeline URL | `DONE` |
 | FARM-T257 | Task | Stack detail Runs tab: timeline list of past runs with status icon (success/failed/cancelled), type badge (plan/apply), resource change chips (`+N ~N -N`), duration, actor, and external pipeline link | `DONE` |
 
 #### FARM-S284 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T258 | Task | `GET /api/iac/dashboard` endpoint: aggregate last run status per stack grouped by environment; include total stack count, last-run-failed count, and resource change totals for the last 30 days | `DONE` |
+| FARM-T258 | Task | `GET /api/v1/iac/dashboard` endpoint: aggregate last run status per stack grouped by environment; include total stack count, last-run-failed count, and resource change totals for the last 30 days | `DONE` |
 | FARM-T259 | Task | IaC dashboard page (`/iac`): environment selector tabs (all / dev / staging / prod); per-stack status cards showing last run status badge, resource counts, last run time, and Cultivator actor; failed stacks surfaced at the top | `DONE` |
 
 #### FARM-S285 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T260 | Task | `POST /api/iac/module-drift/ingest` endpoint: receives the Agronomist JSON report (`agronomist report --root . --json report.json`), persists one `IacModuleDrift` record per outdated module reference found (stackPath, currentRef, latestRef, moduleName, sourceUrl, detectedAt); secured with `IAC_INGEST_TOKEN` | `DONE` |
+| FARM-T260 | Task | `POST /api/v1/iac/module-drift/ingest` endpoint: receives the Agronomist JSON report (`agronomist report --root . --json report.json`), persists one `IacModuleDrift` record per outdated module reference found (stackPath, currentRef, latestRef, moduleName, sourceUrl, detectedAt); secured with `IAC_INGEST_TOKEN` | `DONE` |
 | FARM-T261 | Task | Module drift panel in the IaC dashboard: list of outdated module references grouped by stack, showing current vs latest version, how many versions behind, and a link to the module in FARM-E68 catalog if a matching `IacModule` record exists | `DONE` |
 
 ---
