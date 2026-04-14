@@ -125,6 +125,33 @@ describe("IacService", () => {
       ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
+    it("should throw UnauthorizedException when no token is configured", async () => {
+      const moduleNoToken = await Test.createTestingModule({
+        providers: [
+          IacService,
+          { provide: getRepositoryToken(IacStack), useValue: stackRepo },
+          { provide: getRepositoryToken(IacRun), useValue: runRepo },
+          { provide: getRepositoryToken(IacModuleDrift), useValue: driftRepo },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn().mockReturnValue(undefined) },
+          },
+        ],
+      }).compile();
+      const serviceNoToken = moduleNoToken.get<IacService>(IacService);
+
+      await expect(
+        serviceNoToken.ingestRun(dto, "any-token"),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it("should throw UnauthorizedException for a same-length token with wrong content", async () => {
+      // VALID_TOKEN is "test-ingest-token" (17 chars); use a different 17-char token
+      await expect(
+        service.ingestRun(dto, "test-ingest-XXXXX"),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
     it("should create a run when the stack already exists", async () => {
       stackRepo.findOne.mockResolvedValue(mockStack);
       runRepo.create.mockReturnValue(mockRun);
@@ -156,6 +183,54 @@ describe("IacService", () => {
       );
       expect(stackRepo.save).toHaveBeenCalled();
       expect(result).toEqual(mockRun);
+    });
+
+    it("should use finishedAt as fallback startedAt and record durationMs", async () => {
+      const dtoWithTimes: IngestRunDto = {
+        stackName: "core-networking",
+        environment: "production",
+        type: IacRunType.APPLY,
+        status: IacRunStatus.SUCCEEDED,
+        startedAt: "2024-06-01T09:00:00Z",
+        finishedAt: "2024-06-01T09:05:00Z",
+        durationMs: 300000,
+      };
+      stackRepo.findOne.mockResolvedValue(mockStack);
+      runRepo.create.mockImplementation(
+        (data: Partial<IacRun>) => data as IacRun,
+      );
+      runRepo.save.mockImplementation((r: IacRun) => Promise.resolve(r));
+
+      await service.ingestRun(dtoWithTimes, VALID_TOKEN);
+
+      const createArg = (runRepo.create.mock.calls as IacRun[][])[0][0];
+      expect(createArg.startedAt).toEqual(new Date("2024-06-01T09:00:00Z"));
+      expect(createArg.finishedAt).toEqual(new Date("2024-06-01T09:05:00Z"));
+      expect(createArg.durationMs).toBe(300000);
+    });
+
+    it("should default optional run fields to null when omitted", async () => {
+      const dtoMinimal: IngestRunDto = {
+        stackName: "core-networking",
+        environment: "production",
+        type: IacRunType.PLAN,
+        status: IacRunStatus.SUCCEEDED,
+      };
+      stackRepo.findOne.mockResolvedValue(mockStack);
+      runRepo.create.mockImplementation(
+        (data: Partial<IacRun>) => data as IacRun,
+      );
+      runRepo.save.mockImplementation((r: IacRun) => Promise.resolve(r));
+
+      await service.ingestRun(dtoMinimal, VALID_TOKEN);
+
+      const createArg = (runRepo.create.mock.calls as IacRun[][])[0][0];
+      expect(createArg.provider).toBeNull();
+      expect(createArg.resourceChanges).toBeNull();
+      expect(createArg.triggeredBy).toBeNull();
+      expect(createArg.pipelineUrl).toBeNull();
+      expect(createArg.finishedAt).toBeNull();
+      expect(createArg.durationMs).toBeNull();
     });
   });
 
@@ -226,6 +301,54 @@ describe("IacService", () => {
 
       const savedArg = (stackRepo.save.mock.calls as IacStack[][])[0][0];
       expect(savedArg.componentId).toBe("comp-uuid-kept");
+    });
+
+    it("should update externalToolUrl when provided in import item", async () => {
+      const existing = { ...mockStack, externalToolUrl: null };
+      stackRepo.findOne.mockResolvedValue(existing);
+      stackRepo.save.mockImplementation((s: IacStack) => Promise.resolve(s));
+
+      const dtoWithUrl: ImportStacksDto = {
+        stacks: [
+          {
+            name: "core-networking",
+            environment: "production",
+            externalToolUrl: "https://atlantis.example.com/runs/42",
+          },
+        ],
+      };
+
+      await service.importStacks(dtoWithUrl, VALID_TOKEN);
+
+      const savedArg = (stackRepo.save.mock.calls as IacStack[][])[0][0];
+      expect(savedArg.externalToolUrl).toBe(
+        "https://atlantis.example.com/runs/42",
+      );
+    });
+
+    it("should set externalToolUrl on newly created stacks when provided", async () => {
+      stackRepo.findOne.mockResolvedValue(null);
+      stackRepo.create.mockImplementation(
+        (data: Partial<IacStack>) => data as IacStack,
+      );
+      stackRepo.save.mockImplementation((s: IacStack) => Promise.resolve(s));
+
+      const dtoNewWithUrl: ImportStacksDto = {
+        stacks: [
+          {
+            name: "new-stack",
+            environment: "production",
+            externalToolUrl: "https://atlantis.example.com/runs/1",
+          },
+        ],
+      };
+
+      await service.importStacks(dtoNewWithUrl, VALID_TOKEN);
+
+      const createArg = (stackRepo.create.mock.calls as IacStack[][])[0][0];
+      expect(createArg.externalToolUrl).toBe(
+        "https://atlantis.example.com/runs/1",
+      );
     });
 
     it("should return correct counts when some stacks exist and some do not", async () => {
@@ -324,6 +447,114 @@ describe("IacService", () => {
       // "main" vs "v5.0.0" — non-semver current ref defaults to 1
       expect(secondCreateArg.versionsBehind).toBe(1);
     });
+
+    it("should return 0 versionsBehind when latest is not newer than current", async () => {
+      const dtoPinned: IngestModuleDriftDto = {
+        modules: [
+          {
+            stackPath: "stacks/networking/main.tf",
+            moduleName: "terraform-aws-modules/vpc/aws",
+            sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+            currentRef: "v3.19.0",
+            latestRef: "v3.14.0",
+          },
+        ],
+      };
+      driftRepo.create.mockImplementation(
+        (data: Partial<IacModuleDrift>) => data as IacModuleDrift,
+      );
+      driftRepo.save.mockImplementation((d: IacModuleDrift) =>
+        Promise.resolve(d),
+      );
+
+      await service.ingestModuleDrift(dtoPinned, VALID_TOKEN);
+
+      const createArg = (
+        driftRepo.create.mock.calls as IacModuleDrift[][]
+      )[0][0];
+      expect(createArg.versionsBehind).toBe(0);
+    });
+
+    it("should compute versionsBehind by patch only when major and minor are equal", async () => {
+      const dtoPatch: IngestModuleDriftDto = {
+        modules: [
+          {
+            stackPath: "stacks/networking/main.tf",
+            moduleName: "terraform-aws-modules/vpc/aws",
+            sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+            currentRef: "v3.14.0",
+            latestRef: "v3.14.2",
+          },
+        ],
+      };
+      driftRepo.create.mockImplementation(
+        (data: Partial<IacModuleDrift>) => data as IacModuleDrift,
+      );
+      driftRepo.save.mockImplementation((d: IacModuleDrift) =>
+        Promise.resolve(d),
+      );
+
+      await service.ingestModuleDrift(dtoPatch, VALID_TOKEN);
+
+      const createArg = (
+        driftRepo.create.mock.calls as IacModuleDrift[][]
+      )[0][0];
+      expect(createArg.versionsBehind).toBe(2);
+    });
+
+    it("should compute versionsBehind by major when major versions differ", async () => {
+      const dtoMajor: IngestModuleDriftDto = {
+        modules: [
+          {
+            stackPath: "stacks/networking/main.tf",
+            moduleName: "terraform-aws-modules/vpc/aws",
+            sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+            currentRef: "v2.0.0",
+            latestRef: "v4.0.0",
+          },
+        ],
+      };
+      driftRepo.create.mockImplementation(
+        (data: Partial<IacModuleDrift>) => data as IacModuleDrift,
+      );
+      driftRepo.save.mockImplementation((d: IacModuleDrift) =>
+        Promise.resolve(d),
+      );
+
+      await service.ingestModuleDrift(dtoMajor, VALID_TOKEN);
+
+      const createArg = (
+        driftRepo.create.mock.calls as IacModuleDrift[][]
+      )[0][0];
+      expect(createArg.versionsBehind).toBe(2);
+    });
+
+    it("should default versionsBehind to 1 when latestRef contains non-numeric parts", async () => {
+      const dtoNaN: IngestModuleDriftDto = {
+        modules: [
+          {
+            stackPath: "stacks/networking/main.tf",
+            moduleName: "terraform-aws-modules/vpc/aws",
+            sourceUrl: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+            currentRef: "v3.14.0",
+            latestRef: "v3.14.x",
+          },
+        ],
+      };
+      driftRepo.create.mockImplementation(
+        (data: Partial<IacModuleDrift>) => data as IacModuleDrift,
+      );
+      driftRepo.save.mockImplementation((d: IacModuleDrift) =>
+        Promise.resolve(d),
+      );
+
+      await service.ingestModuleDrift(dtoNaN, VALID_TOKEN);
+
+      const createArg = (
+        driftRepo.create.mock.calls as IacModuleDrift[][]
+      )[0][0];
+      expect(createArg.versionsBehind).toBe(1);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -362,11 +593,25 @@ describe("IacService", () => {
   describe("getDashboard", () => {
     /**
      * Creates a chainable mock for runRepository.createQueryBuilder that
-     * ultimately resolves to the provided array of runs via getMany().
+     * invokes the innerJoin subquery callback so Istanbul tracks that branch,
+     * and ultimately resolves to the provided array of runs via getMany().
      */
     function mockQueryBuilder(runs: IacRun[]) {
-      const qb = {
-        innerJoin: jest.fn().mockReturnThis(),
+      const subQb = {
+        subQuery: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+      };
+      const qb: Record<string, jest.Mock> = {
+        innerJoin: jest.fn().mockImplementation((callbackOrEntity) => {
+          if (typeof callbackOrEntity === "function") {
+            (callbackOrEntity as (qb: unknown) => void)(subQb);
+          }
+          return qb;
+        }),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue(runs),
       };
@@ -431,6 +676,19 @@ describe("IacService", () => {
       expect(result.totalStacks).toBe(0);
       expect(result.environments).toHaveLength(0);
       expect(result.failedLastRun).toBe(0);
+    });
+
+    it("should show null lastRunStatus for stacks with no recorded runs", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockQueryBuilder([]);
+
+      const result = await service.getDashboard();
+
+      const envStack = result.stacksByEnvironment["production"][0];
+      expect(envStack.lastRunStatus).toBeNull();
+      expect(envStack.lastRunAt).toBeNull();
+      expect(envStack.lastRunType).toBeNull();
+      expect(envStack.resourceChanges).toBeNull();
     });
   });
 
