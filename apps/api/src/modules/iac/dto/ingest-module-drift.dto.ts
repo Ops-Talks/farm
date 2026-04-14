@@ -3,7 +3,7 @@ import {
   IsNotEmpty,
   IsArray,
   ValidateNested,
-  IsUrl,
+  Matches,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
@@ -29,12 +29,15 @@ export class ModuleDriftItemDto {
   moduleName: string;
 
   @ApiProperty({
-    example:
-      "https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws",
-    description: "Absolute HTTPS source URL for the module",
+    example: "registry.terraform.io/terraform-aws-modules/vpc/aws",
+    description:
+      "Full source URL for the module. Must not use dangerous URI schemes such as javascript: or data:.",
   })
-  @IsUrl({ require_protocol: true, protocols: ["https"] })
+  @IsString()
   @IsNotEmpty()
+  @Matches(/^(?!javascript:|data:|vbscript:)/i, {
+    message: "sourceUrl must not use a dangerous URI scheme",
+  })
   sourceUrl: string;
 
   @ApiProperty({
