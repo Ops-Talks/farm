@@ -61,43 +61,43 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ## Phase 23: IaC Visibility and Cataloging `IN PROGRESS`
 
-### FARM-E68: IaC Module Catalog `TODO`
+### FARM-E68: IaC Module Catalog `DONE`
 
 > A built-in catalog of Terraform, OpenTofu, and Pulumi modules that teams can browse and consume from Farm. The catalog stores structured metadata (variables, outputs, versions) parsed from source repositories. Farm acts as a discoverability layer; plan, apply, and approval workflows remain in dedicated tools (Terraform Cloud, Atlantis, Spacelift, or local CLI).
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: terraform/opentofu/pulumi, sourceRepoUrl, description, latestVersion, variablesMeta JSONB, outputsMeta JSONB); optional link to a catalog `Component` via `componentId` FK | `TODO` |
-| FARM-S274 | Story | Metadata sync service: fetch semver tags from the source repository, parse `variables.tf` and `outputs.tf` per tag into structured JSONB; triggered manually via `POST /iac-modules/:id/sync` | `TODO` |
-| FARM-S275 | Story | Frontend: module browser page with search, provider filter, version selector, variable and output documentation tables, and copyable usage snippet | `TODO` |
-| FARM-S276 | Story | Component detail IaC tab: list modules linked to the component with version badge, source repository link, and variable summary | `TODO` |
+| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: terraform/opentofu/pulumi, sourceRepoUrl, description, latestVersion, variablesMeta JSONB, outputsMeta JSONB); optional link to a catalog `Component` via `componentId` FK | `DONE` |
+| FARM-S274 | Story | Metadata sync service: fetch semver tags from the source repository, parse `variables.tf` and `outputs.tf` per tag into structured JSONB; triggered manually via `POST /iac-modules/:id/sync` | `DONE` |
+| FARM-S275 | Story | Frontend: module browser page with search, provider filter, version selector, variable and output documentation tables, and copyable usage snippet | `DONE` |
+| FARM-S276 | Story | Component detail IaC tab: list modules linked to the component with version badge, source repository link, and variable summary | `DONE` |
 
 #### FARM-S273 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T237 | Task | `IacModule` entity with `IacProvider` enum (terraform, opentofu, pulumi); `IacModuleVersion` child entity (version semver, variablesMeta JSONB, outputsMeta JSONB, syncedAt); `IacModuleModule` with full CRUD service and controller; migration | `TODO` |
-| FARM-T238 | Task | `GET /components/:id/iac-modules` and `POST /iac-modules/:id/link-component` endpoints to associate modules with catalog components; `DELETE /iac-modules/:id/unlink-component` to remove the association | `TODO` |
+| FARM-T237 | Task | `IacModule` entity with `IacProvider` enum (terraform, opentofu, pulumi); `IacModuleVersion` child entity (version semver, variablesMeta JSONB, outputsMeta JSONB, syncedAt); `IacModuleModule` with full CRUD service and controller; migration | `DONE` |
+| FARM-T238 | Task | `GET /components/:id/iac-modules` and `POST /iac-modules/:id/link-component` endpoints to associate modules with catalog components; `DELETE /iac-modules/:id/unlink-component` to remove the association | `DONE` |
 
 #### FARM-S274 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T239 | Task | `IacModuleSyncService.sync(module)`: run `git ls-remote --tags <sourceRepoUrl>`, detect semver tags not yet stored, shallow-clone each new tag, parse HCL files, persist as `IacModuleVersion` records | `TODO` |
-| FARM-T240 | Task | HCL variable parser: extract name, type, description, default, and validation rules from `variables.tf`; same structure for `outputs.tf`; store result as typed JSONB on `IacModuleVersion` | `TODO` |
+| FARM-T239 | Task | `IacModuleSyncService.sync(module)`: run `git ls-remote --tags <sourceRepoUrl>`, detect semver tags not yet stored, shallow-clone each new tag, parse HCL files, persist as `IacModuleVersion` records | `DONE` |
+| FARM-T240 | Task | HCL variable parser: extract name, type, description, default, and validation rules from `variables.tf`; same structure for `outputs.tf`; store result as typed JSONB on `IacModuleVersion` | `DONE` |
 
 #### FARM-S275 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T241 | Task | Module browser page (`/iac-modules`): card/list view with provider badge, latest version chip, description, and link to detail; search by name, filter by provider | `TODO` |
-| FARM-T242 | Task | Module detail page: version selector dropdown; variable documentation table (name, type, description, default, required flag); output table; copyable usage snippet rendered from selected version (Terraform `module {}` block or Pulumi constructor call) | `TODO` |
+| FARM-T241 | Task | Module browser page (`/iac-modules`): card/list view with provider badge, latest version chip, description, and link to detail; search by name, filter by provider | `DONE` |
+| FARM-T242 | Task | Module detail page: version selector dropdown; variable documentation table (name, type, description, default, required flag); output table; copyable usage snippet rendered from selected version (Terraform `module {}` block or Pulumi constructor call) | `DONE` |
 
 #### FARM-S276 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T243 | Task | IaC tab in component detail (`/catalog/:id`): table of linked modules with provider badge, version chip, source repository link; empty state with "Link IaC Module" action that opens a search dialog over existing `IacModule` records | `TODO` |
+| FARM-T243 | Task | IaC tab in component detail (`/catalog/:id`): table of linked modules with provider badge, version chip, source repository link; empty state with "Link IaC Module" action that opens a search dialog over existing `IacModule` records | `DONE` |
 
 ---
 

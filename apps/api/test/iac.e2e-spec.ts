@@ -28,7 +28,7 @@ describe("IaC Module (e2e)", () => {
       const dto = {
         stackName: "core-networking",
         environment: "production",
-        provider: "terraform",
+        provider: "aws",
         type: "plan",
         status: "succeeded",
         resourceChanges: { add: 2, change: 1, destroy: 0 },
@@ -96,13 +96,13 @@ describe("IaC Module (e2e)", () => {
           {
             name: "core-database",
             environment: "staging",
-            provider: "terraform",
+            provider: "aws",
             repositoryUrl: "https://github.com/acme/infra",
           },
           {
             name: "core-cache",
             environment: "staging",
-            provider: "opentofu",
+            provider: "gcp",
           },
         ],
       };
@@ -248,6 +248,238 @@ describe("IaC Module (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/iac/module-drift")
         .expect(401);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IaC Module Catalog E2E (FARM-E68)
+// ---------------------------------------------------------------------------
+
+describe("IaC Module Catalog (e2e)", () => {
+  let app: INestApplication<App>;
+  let token: string;
+
+  beforeAll(async () => {
+    app = await createE2EApp();
+    ({ token } = await registerAndLogin(app));
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe("POST /api/v1/iac-modules", () => {
+    it("creates a module and returns 201", async () => {
+      const dto = {
+        name: "terraform-aws-vpc",
+        provider: "aws",
+        sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+        description: "Creates a VPC on AWS",
+      };
+
+      const res = await request(app.getHttpServer())
+        .post("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`)
+        .send(dto)
+        .expect(201);
+
+      const body = res.body as {
+        id: string;
+        name: string;
+        provider: string;
+        latestVersion: string | null;
+      };
+      expect(body.id).toBeDefined();
+      expect(body.name).toBe("terraform-aws-vpc");
+      expect(body.provider).toBe("aws");
+      expect(body.latestVersion).toBeNull();
+    });
+
+    it("returns 409 when a module with the same name+provider exists", async () => {
+      const dto = {
+        name: "terraform-aws-vpc",
+        provider: "aws",
+        sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+      };
+
+      await request(app.getHttpServer())
+        .post("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`)
+        .send(dto)
+        .expect(409);
+    });
+
+    it("returns 401 without JWT", async () => {
+      await request(app.getHttpServer())
+        .post("/api/v1/iac-modules")
+        .send({ name: "x", provider: "aws", sourceRepoUrl: "https://github.com/x/y" })
+        .expect(401);
+    });
+  });
+
+  describe("GET /api/v1/iac-modules", () => {
+    it("returns a list of modules", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      expect((res.body as unknown[]).length).toBeGreaterThan(0);
+    });
+
+    it("filters by provider", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules?provider=aws")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body = res.body as { provider: string }[];
+      expect(body.every((m) => m.provider === "aws")).toBe(true);
+    });
+  });
+
+  describe("GET /api/v1/iac-modules/:id", () => {
+    let moduleId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`);
+      const modules = res.body as { id: string }[];
+      moduleId = modules[0].id;
+    });
+
+    it("returns the module", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac-modules/${moduleId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body = res.body as { id: string; name: string };
+      expect(body.id).toBe(moduleId);
+    });
+
+    it("returns 404 for unknown ID", async () => {
+      await request(app.getHttpServer())
+        .get("/api/v1/iac-modules/00000000-0000-0000-0000-000000000000")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
+    });
+  });
+
+  describe("PATCH /api/v1/iac-modules/:id", () => {
+    let moduleId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`);
+      const modules = res.body as { id: string }[];
+      moduleId = modules[0].id;
+    });
+
+    it("updates the module description", async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/v1/iac-modules/${moduleId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ description: "Updated description" })
+        .expect(200);
+
+      const body = res.body as { description: string };
+      expect(body.description).toBe("Updated description");
+    });
+  });
+
+  describe("POST /api/v1/iac-modules/:id/link-component", () => {
+    let moduleId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`);
+      const modules = res.body as { id: string }[];
+      moduleId = modules[0].id;
+    });
+
+    it("links the module to a component", async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/iac-modules/${moduleId}/link-component`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ componentId: "comp-test-uuid" })
+        .expect(200);
+
+      const body = res.body as { componentId: string };
+      expect(body.componentId).toBe("comp-test-uuid");
+    });
+  });
+
+  describe("DELETE /api/v1/iac-modules/:id/unlink-component", () => {
+    let moduleId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`);
+      const modules = res.body as { id: string }[];
+      moduleId = modules[0].id;
+    });
+
+    it("removes the component association", async () => {
+      const res = await request(app.getHttpServer())
+        .delete(`/api/v1/iac-modules/${moduleId}/unlink-component`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body = res.body as { componentId: string | null };
+      expect(body.componentId).toBeNull();
+    });
+  });
+
+  describe("GET /api/v1/iac-modules/versions", () => {
+    let moduleId: string;
+
+    beforeAll(async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`);
+      const modules = res.body as { id: string }[];
+      moduleId = modules[0].id;
+    });
+
+    it("returns empty versions list for a new module", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac-modules/${moduleId}/versions`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+    });
+  });
+
+  describe("DELETE /api/v1/iac-modules/:id", () => {
+    it("deletes the module and returns 204", async () => {
+      const createRes = await request(app.getHttpServer())
+        .post("/api/v1/iac-modules")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "temp-module-to-delete",
+          provider: "gcp",
+          sourceRepoUrl: "https://github.com/example/temp-module",
+        });
+
+      const created = createRes.body as { id: string };
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/iac-modules/${created.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .get(`/api/v1/iac-modules/${created.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
     });
   });
 });

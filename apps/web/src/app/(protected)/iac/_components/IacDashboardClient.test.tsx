@@ -152,7 +152,7 @@ describe("IacDashboardClient", () => {
       expect(screen.getByText("core-networking")).toBeDefined();
     });
 
-    await user.click(screen.getByRole("button", { name: /module drift/i }));
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
 
     await waitFor(() => {
       expect(screen.getByText("terraform-aws-modules/vpc/aws")).toBeDefined();
@@ -170,7 +170,7 @@ describe("IacDashboardClient", () => {
       expect(screen.getByText("core-networking")).toBeDefined();
     });
 
-    await user.click(screen.getByRole("button", { name: /module drift/i }));
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/all modules are up to date/i)).toBeDefined();
@@ -201,7 +201,7 @@ describe("IacDashboardClient", () => {
     // After drift error, switching to drift view should not crash and
     // should display the empty state (no drift data).
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /module drift/i }));
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/all modules are up to date/i)).toBeDefined();
@@ -415,7 +415,7 @@ describe("IacDashboardClient", () => {
     });
 
     // Go to drift view
-    await user.click(screen.getByRole("button", { name: /module drift/i }));
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
 
     await waitFor(() => {
       expect(screen.getByText("terraform-aws-modules/vpc/aws")).toBeDefined();

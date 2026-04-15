@@ -1756,3 +1756,61 @@ export interface IacStackRunsResponse {
   data: IacRun[];
   total: number;
 }
+
+// ---------------------------------------------------------------------------
+// IaC Module Catalog (FARM-E68)
+// ---------------------------------------------------------------------------
+
+export type IacProvider =
+  | "aws"
+  | "gcp"
+  | "azure"
+  | "kubernetes"
+  | "mongodb"
+  | "postgres"
+  | "mysql"
+  | "github"
+  | "cloudflare"
+  | "generic";
+
+export type IacEngine = "terraform" | "opentofu" | "pulumi";
+
+export interface IacModuleVariable {
+  name: string;
+  type: string | null;
+  description: string | null;
+  default: string | null;
+  required: boolean;
+  validation: { condition: string; errorMessage: string } | null;
+}
+
+export interface IacModuleOutput {
+  name: string;
+  description: string | null;
+  value: string | null;
+}
+
+export interface IacModuleVersion {
+  id: string;
+  version: string;
+  isLatest: boolean;
+  variablesMeta: IacModuleVariable[];
+  outputsMeta: IacModuleOutput[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IacModule {
+  id: string;
+  name: string;
+  provider: IacProvider;
+  engine: IacEngine | null;
+  sourceRepoUrl: string;
+  description: string | null;
+  latestVersion: string | null;
+  componentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type IacModulesResponse = IacModule[];

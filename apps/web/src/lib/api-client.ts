@@ -150,6 +150,9 @@ import type {
   IacDashboard,
   IacModuleDrift,
   IacStackRunsResponse,
+  IacModule,
+  IacModuleVersion,
+  IacModulesResponse,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -2563,6 +2566,78 @@ export const iac = {
    */
   getModuleDrift(): Promise<IacModuleDrift[]> {
     return request<IacModuleDrift[]>('/v1/iac/module-drift');
+  },
+};
+
+// ---------------------------------------------------------------------------
+// IaC Module Catalog (FARM-E68)
+// ---------------------------------------------------------------------------
+
+export const iacModules = {
+  list(params?: { search?: string; provider?: string }): Promise<IacModulesResponse> {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set('search', params.search);
+    if (params?.provider) qs.set('provider', params.provider);
+    const query = qs.toString();
+    return request<IacModulesResponse>(`/v1/iac-modules${query ? `?${query}` : ''}`);
+  },
+
+  get(id: string): Promise<IacModule> {
+    return request<IacModule>(`/v1/iac-modules/${encodeURIComponent(id)}`);
+  },
+
+  getVersions(id: string): Promise<IacModuleVersion[]> {
+    return request<IacModuleVersion[]>(`/v1/iac-modules/${encodeURIComponent(id)}/versions`);
+  },
+
+  create(dto: {
+    name: string;
+    provider: string;
+    sourceRepoUrl: string;
+    description?: string;
+  }): Promise<IacModule> {
+    return request<IacModule>('/v1/iac-modules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dto),
+    });
+  },
+
+  update(id: string, dto: Partial<{ name: string; sourceRepoUrl: string; description: string }>): Promise<IacModule> {
+    return request<IacModule>(`/v1/iac-modules/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dto),
+    });
+  },
+
+  remove(id: string): Promise<void> {
+    return request<void>(`/v1/iac-modules/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  sync(id: string): Promise<{ newVersions: number; latestVersion: string | null }> {
+    return request<{ newVersions: number; latestVersion: string | null }>(
+      `/v1/iac-modules/${encodeURIComponent(id)}/sync`,
+      { method: 'POST' },
+    );
+  },
+
+  linkComponent(id: string, componentId: string): Promise<IacModule> {
+    return request<IacModule>(`/v1/iac-modules/${encodeURIComponent(id)}/link-component`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ componentId }),
+    });
+  },
+
+  unlinkComponent(id: string): Promise<IacModule> {
+    return request<IacModule>(`/v1/iac-modules/${encodeURIComponent(id)}/unlink-component`, {
+      method: 'DELETE',
+    });
+  },
+
+  getComponentModules(componentId: string): Promise<IacModulesResponse> {
+    return request<IacModulesResponse>(`/v1/iac-modules/component/${encodeURIComponent(componentId)}`);
   },
 };
 
