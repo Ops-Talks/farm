@@ -110,6 +110,9 @@ export function parseOutputs(src: string): IacModuleOutput[] {
 // Sync service
 // ---------------------------------------------------------------------------
 
+/** Matches a clean semver tag: optional v prefix, exactly X.Y.Z */
+const SEMVER_TAG_RE = /^v?\d+\.\d+\.\d+$/;
+
 export interface SyncResult {
   newVersions: number;
   latestVersion: string | null;
@@ -209,7 +212,7 @@ export class IacModuleSyncService {
         // Skip peeled tag refs (^{})
         if (ref.endsWith("^{}")) continue;
         const tagName = ref.replace("refs/tags/", "");
-        if (/^v?\d+\.\d+\.\d+$/.test(tagName)) {
+        if (SEMVER_TAG_RE.test(tagName)) {
           tags.push(tagName);
         }
       }
@@ -229,7 +232,7 @@ export class IacModuleSyncService {
     tag: string,
   ): { variables: IacModuleVariable[]; outputs: IacModuleOutput[] } {
     // Validate tag to ensure it is a clean semver string
-    if (!/^v?\d+\.\d+\.\d+$/.test(tag)) {
+    if (!SEMVER_TAG_RE.test(tag)) {
       this.logger.warn(`Skipping invalid tag "${tag}"`);
       return { variables: [], outputs: [] };
     }
