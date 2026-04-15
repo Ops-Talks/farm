@@ -41,7 +41,9 @@ export class IacModuleService {
    * @throws ConflictException when a module with the same name+provider exists
    */
   async create(dto: CreateIacModuleDto): Promise<IacModule> {
-    const safeName = dto.name.replace(/[%_]/g, "\\$&");
+    const safeName = dto.name
+      .replace(/\\/g, "\\\\")
+      .replace(/[%_]/g, "\\$&");
     const existing = await this.moduleRepository.findOne({
       where: { name: ILike(safeName), provider: dto.provider },
     });
