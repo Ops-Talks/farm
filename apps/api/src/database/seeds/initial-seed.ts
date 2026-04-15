@@ -184,7 +184,13 @@ async function seedTeams(
   for (const teamData of teams) {
     let team = await repo.findOne({ where: { name: teamData.name } });
     if (team) {
-      console.log(`  Team "${teamData.name}" already exists, skipping.`);
+      if (!team.organizationId) {
+        team.organizationId = org.id;
+        team = await repo.save(team);
+        console.log(`  Updated team "${teamData.name}" with organizationId.`);
+      } else {
+        console.log(`  Team "${teamData.name}" already exists, skipping.`);
+      }
     } else {
       team = repo.create({ ...teamData, organizationId: org.id });
       team = await repo.save(team);
@@ -241,9 +247,17 @@ async function seedComponents(
       where: { name: componentData.name },
     });
     if (component) {
-      console.log(
-        `  Component "${componentData.name}" already exists, skipping.`,
-      );
+      if (!component.organizationId) {
+        component.organizationId = org.id;
+        component = await repo.save(component);
+        console.log(
+          `  Updated component "${componentData.name}" with organizationId.`,
+        );
+      } else {
+        console.log(
+          `  Component "${componentData.name}" already exists, skipping.`,
+        );
+      }
     } else {
       component = repo.create({ ...componentData, organizationId: org.id });
       component = await repo.save(component);

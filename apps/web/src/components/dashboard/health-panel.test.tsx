@@ -319,6 +319,23 @@ describe("HealthPanel", () => {
       });
     });
 
+    it("applies formatBytes for a key containing 'used' (but not heap or rss) with a numeric value", async () => {
+      mockHealthCheck.mockResolvedValue(
+        makeHealthStatus({
+          status: "ok",
+          details: {
+            memory: { status: "up", bytesUsed: 512 },
+          },
+        }),
+      );
+
+      render(<HealthPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/512 B/)).toBeInTheDocument();
+      });
+    });
+
     it("applies formatBytes for a key containing 'available' with a numeric value", async () => {
       mockHealthCheck.mockResolvedValue(
         makeHealthStatus({

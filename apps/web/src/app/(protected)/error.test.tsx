@@ -42,5 +42,23 @@ describe("Error page", () => {
     render(<ErrorPage error={err} reset={vi.fn()} />);
     expect(screen.getByText(/TypeError: crash message/)).toBeInTheDocument();
   });
+
+  it("renders the digest when error.digest is set", () => {
+    const err = Object.assign(new globalThis.Error("Test error"), {
+      digest: "abc123",
+    });
+    render(<ErrorPage error={err} reset={vi.fn()} />);
+    expect(screen.getByText(/Digest: abc123/)).toBeInTheDocument();
+  });
+
+  it("renders the stack trace when error.stack is set", () => {
+    const err = Object.assign(new globalThis.Error("Test error"), {
+      stack: "Error: Test error\n    at Object.<anonymous>",
+    });
+    render(<ErrorPage error={err} reset={vi.fn()} />);
+    expect(
+      screen.getByText(/Error: Test error/),
+    ).toBeInTheDocument();
+  });
 });
 
