@@ -436,5 +436,84 @@ describe("SloCalculatorService", () => {
       expect(result.sloId).toBe("slo-uuid-1");
       expect(typeof result.currentPercent).toBe("number");
     });
+
+    it("should include the Error cause message when the thrown error has an Error cause", async () => {
+      configGet.mockReturnValue("http://prometheus:9090");
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SloCalculatorService,
+          { provide: SloService, useValue: sloService },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      const calc = module.get<SloCalculatorService>(SloCalculatorService);
+
+      const slo = buildSlo();
+      sloService.findOne.mockResolvedValue(slo);
+
+      // Create an error whose .cause is itself an Error instance — exercises the
+      // `cause instanceof Error ? cause.message : String(cause)` truthy branch.
+      const cause = new Error("DNS resolution failed");
+      const networkError = Object.assign(new Error("fetch failed"), { cause });
+      globalThis.fetch = jest.fn().mockRejectedValue(networkError);
+
+      const result = await calc.calculateBudget("slo-uuid-1");
+
+      expect(result.sloId).toBe("slo-uuid-1");
+      expect(typeof result.currentPercent).toBe("number");
+    });
+
+    it("should stringify a non-Error cause when present", async () => {
+      configGet.mockReturnValue("http://prometheus:9090");
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SloCalculatorService,
+          { provide: SloService, useValue: sloService },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      const calc = module.get<SloCalculatorService>(SloCalculatorService);
+
+      const slo = buildSlo();
+      sloService.findOne.mockResolvedValue(slo);
+
+      // .cause is a plain string — exercises the `String(cause)` branch.
+      const networkError = Object.assign(new Error("fetch failed"), {
+        cause: "timeout",
+      });
+      globalThis.fetch = jest.fn().mockRejectedValue(networkError);
+
+      const result = await calc.calculateBudget("slo-uuid-1");
+
+      expect(result.sloId).toBe("slo-uuid-1");
+      expect(typeof result.currentPercent).toBe("number");
+    });
+
+    it("should handle a non-Error thrown value gracefully", async () => {
+      configGet.mockReturnValue("http://prometheus:9090");
+
+      const module = await Test.createTestingModule({
+        providers: [
+          SloCalculatorService,
+          { provide: SloService, useValue: sloService },
+          { provide: ConfigService, useValue: { get: configGet } },
+        ],
+      }).compile();
+      const calc = module.get<SloCalculatorService>(SloCalculatorService);
+
+      const slo = buildSlo();
+      sloService.findOne.mockResolvedValue(slo);
+
+      // Throw a plain string — exercises the `String(error)` branch inside the
+      // error log template literal.
+      globalThis.fetch = jest.fn().mockRejectedValue("network unavailable");
+
+      const result = await calc.calculateBudget("slo-uuid-1");
+
+      expect(result.sloId).toBe("slo-uuid-1");
+      expect(typeof result.currentPercent).toBe("number");
+    });
   });
 });

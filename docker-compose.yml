@@ -73,7 +73,7 @@ services:
       NEXT_PUBLIC_API_URL: http://api:3000/api
       NEXT_PUBLIC_WS_URL: http://api:3000
     healthcheck:
-      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request({hostname:'localhost',port:3001,path:'/',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"]
+      test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request({hostname:'localhost',port:3001,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -85,6 +85,21 @@ describe("HealthPanel", () => {
   // ── Success state — overall status card ────────────────────────────────────
 
   describe("overall status card", () => {
+    it("renders without error when healthData.details is undefined", async () => {
+      mockHealthCheck.mockResolvedValue({
+        status: "ok",
+        info: {},
+        error: {},
+        // details intentionally omitted to exercise the `?? {}` fallback
+      } as unknown as HealthStatus);
+
+      render(<HealthPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Overall Status")).toBeInTheDocument();
+      });
+    });
+
     it("shows the 'Overall Status' title after a successful fetch", async () => {
       mockHealthCheck.mockResolvedValue(makeHealthStatus({ status: "ok" }));
 
@@ -316,6 +331,23 @@ describe("HealthPanel", () => {
 
       await waitFor(() => {
         expect(screen.getByText(/1\.0 MB/)).toBeInTheDocument();
+      });
+    });
+
+    it("applies formatBytes for a key containing 'used' (but not heap or rss) with a numeric value", async () => {
+      mockHealthCheck.mockResolvedValue(
+        makeHealthStatus({
+          status: "ok",
+          details: {
+            memory: { status: "up", bytesUsed: 512 },
+          },
+        }),
+      );
+
+      render(<HealthPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/512 B/)).toBeInTheDocument();
       });
     });
 

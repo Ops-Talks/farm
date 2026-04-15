@@ -59,13 +59,13 @@ export const configuration = () => ({
     url: process.env.GRAFANA_URL || "",
   },
   prometheus: {
-    url: process.env.PROMETHEUS_URL || "http://localhost:9090",
+    url: process.env.PROMETHEUS_URL,
   },
   tracing: {
-    jaegerUrl: process.env.JAEGER_URL || "http://localhost:16686",
+    jaegerUrl: process.env.JAEGER_URL,
   },
   loki: {
-    url: process.env.LOKI_URL || "http://localhost:3100",
+    url: process.env.LOKI_URL,
   },
   oauth: {
     github: {
@@ -177,9 +177,9 @@ export const validationSchema = Joi.object({
   SMTP_PASS: Joi.string().allow("").default(""),
   SMTP_FROM: Joi.string().default("Farm <noreply@farm.local>"),
   GRAFANA_URL: Joi.string().allow("").default(""),
-  PROMETHEUS_URL: Joi.string().uri().default("http://localhost:9090"),
-  JAEGER_URL: Joi.string().uri().default("http://localhost:16686"),
-  LOKI_URL: Joi.string().uri().default("http://localhost:3100"),
+  PROMETHEUS_URL: Joi.string().uri().optional(),
+  JAEGER_URL: Joi.string().uri().optional(),
+  LOKI_URL: Joi.string().uri().optional(),
   // OAuth providers (all optional)
   GITHUB_CLIENT_ID: Joi.string().allow("").default(""),
   GITHUB_CLIENT_SECRET: Joi.string().allow("").default(""),

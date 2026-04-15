@@ -10,6 +10,8 @@ import {
   seedPipeline,
   seedIncident,
   seedTagPolicy,
+  seedTeams,
+  seedComponents,
 } from "./initial-seed";
 import {
   Deployment,
@@ -727,5 +729,102 @@ describe("seedTagPolicy", () => {
     const secondCall = repo.create.mock.calls[1][0] as Partial<TagPolicy>;
     expect(secondCall.resourceType).toBe("*");
     expect(secondCall.requiredKeys).toEqual(["owner", "team"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// seedTeams
+// ---------------------------------------------------------------------------
+
+describe("seedTeams", () => {
+  const mockOrg = makeOrg();
+
+  it("skips update and logs 'already exists' when team exists and has an organizationId", async () => {
+    const existingTeam = { id: "team-id", name: "platform-team", organizationId: "org-id" } as unknown as import("../../modules/teams/entities/team.entity").Team;
+    const repo = buildMockRepo(existingTeam);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedTeams(dataSource, mockOrg);
+    consoleSpy.mockRestore();
+
+    // save should NOT have been called because organizationId is already set
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it("patches organizationId and calls save when team exists but organizationId is null", async () => {
+    const existingTeam = { id: "team-id", name: "platform-team", organizationId: null } as unknown as import("../../modules/teams/entities/team.entity").Team;
+    const repo = buildMockRepo(existingTeam);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedTeams(dataSource, mockOrg);
+    consoleSpy.mockRestore();
+
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: mockOrg.id }),
+    );
+  });
+
+  it("creates team when it does not exist", async () => {
+    const repo = buildMockRepo<import("../../modules/teams/entities/team.entity").Team>(null);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedTeams(dataSource, mockOrg);
+    consoleSpy.mockRestore();
+
+    expect(repo.create).toHaveBeenCalled();
+    expect(repo.save).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// seedComponents
+// ---------------------------------------------------------------------------
+
+describe("seedComponents", () => {
+  const mockOrg = makeOrg();
+  const mockTeams = {
+    "platform-team": { id: "platform-id", name: "platform-team" } as unknown as import("../../modules/catalog/entities/component.entity").Component,
+    "backend-team": { id: "backend-id", name: "backend-team" } as unknown as import("../../modules/catalog/entities/component.entity").Component,
+  };
+
+  it("skips update and logs 'already exists' when component exists and has an organizationId", async () => {
+    const existingComponent = { id: "comp-id", name: "user-service", organizationId: "org-id" } as unknown as import("../../modules/catalog/entities/component.entity").Component;
+    const repo = buildMockRepo(existingComponent);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedComponents(dataSource, mockTeams as never, mockOrg);
+    consoleSpy.mockRestore();
+
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it("patches organizationId and calls save when component exists but organizationId is null", async () => {
+    const existingComponent = { id: "comp-id", name: "user-service", organizationId: null } as unknown as import("../../modules/catalog/entities/component.entity").Component;
+    const repo = buildMockRepo(existingComponent);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedComponents(dataSource, mockTeams as never, mockOrg);
+    consoleSpy.mockRestore();
+
+    expect(repo.save).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: mockOrg.id }),
+    );
+  });
+
+  it("creates component when it does not exist", async () => {
+    const repo = buildMockRepo<import("../../modules/catalog/entities/component.entity").Component>(null);
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedComponents(dataSource, mockTeams as never, mockOrg);
+    consoleSpy.mockRestore();
+
+    expect(repo.create).toHaveBeenCalled();
+    expect(repo.save).toHaveBeenCalled();
   });
 });

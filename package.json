@@ -19,6 +19,13 @@
     "lint": "npm run lint -w apps/api && npm run web:lint"
   },
   "devDependencies": {},
+  "optionalDependencies": {
+    "@next/swc-linux-x64-musl": "16.2.3",
+    "@rollup/rollup-linux-x64-musl": "4.60.1",
+    "@tailwindcss/oxide-linux-x64-musl": "4.2.2",
+    "@unrs/resolver-binding-linux-x64-musl": "1.11.1",
+    "lightningcss-linux-x64-musl": "1.32.0"
+  },
   "overrides": {
     "@angular-devkit/core": "19.2.23",
     "@nestjs/core": {
@@ -39,6 +46,7 @@
     "release-it": {
       "undici": "6.24.1"
     },
-    "picomatch": "4.0.4"
+    "picomatch": "4.0.4",
+    "follow-redirects": "1.15.12"
   }
 }
