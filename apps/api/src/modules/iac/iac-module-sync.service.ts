@@ -6,7 +6,11 @@ import { mkdtempSync, readFileSync, rmSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { IacModule } from "./entities/iac-module.entity";
-import { IacModuleVersion, IacModuleVariable, IacModuleOutput } from "./entities/iac-module-version.entity";
+import {
+  IacModuleVersion,
+  IacModuleVariable,
+  IacModuleOutput,
+} from "./entities/iac-module-version.entity";
 
 // ---------------------------------------------------------------------------
 // HCL parser (regex-based, covers common variable and output patterns)
@@ -16,7 +20,10 @@ import { IacModuleVersion, IacModuleVariable, IacModuleOutput } from "./entities
  * Extracts the content of the outermost braces following a given pattern.
  * Used to isolate individual variable/output blocks from an HCL file.
  */
-function extractBlocks(src: string, keyword: "variable" | "output"): { label: string; body: string }[] {
+function extractBlocks(
+  src: string,
+  keyword: "variable" | "output",
+): { label: string; body: string }[] {
   const results: { label: string; body: string }[] = [];
   const headerRe = new RegExp(`${keyword}\\s+"([^"]+)"\\s*\\{`, "g");
   let match: RegExpExecArray | null;
@@ -69,7 +76,9 @@ function extractDefault(body: string): string | null {
 /**
  * Parses a variable block body and returns a validation object when present.
  */
-function extractValidation(body: string): { condition: string; errorMessage: string } | null {
+function extractValidation(
+  body: string,
+): { condition: string; errorMessage: string } | null {
   const valMatch = body.match(/validation\s*\{([^}]+)\}/s);
   if (!valMatch) return null;
   const vBody = valMatch[1];
@@ -165,7 +174,10 @@ export class IacModuleSyncService {
     );
 
     for (const tag of newTags) {
-      const { variables, outputs } = this.cloneAndParse(module.sourceRepoUrl, tag);
+      const { variables, outputs } = this.cloneAndParse(
+        module.sourceRepoUrl,
+        tag,
+      );
 
       const version = this.versionRepository.create({
         moduleId: module.id,

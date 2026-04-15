@@ -5,14 +5,17 @@ import {
 } from "./iac-module-sync.service";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { IacModule as IacModuleEntity, IacProvider } from "./entities/iac-module.entity";
+import {
+  IacModule as IacModuleEntity,
+  IacProvider,
+} from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 import { spawnSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 
 jest.mock("child_process", () => ({ spawnSync: jest.fn() }));
 jest.mock("fs", () => ({
-  ...jest.requireActual("fs"),
+  ...jest.requireActual<typeof import("fs")>("fs"),
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
   mkdtempSync: jest.fn().mockReturnValue("/tmp/farm-iac-sync-test"),
@@ -21,7 +24,9 @@ jest.mock("fs", () => ({
 
 const mockSpawnSync = spawnSync as jest.MockedFunction<typeof spawnSync>;
 const mockExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+const mockReadFileSync = readFileSync as jest.MockedFunction<
+  typeof readFileSync
+>;
 
 // ---------------------------------------------------------------------------
 // HCL parser unit tests
@@ -78,7 +83,9 @@ variable "environment" {
     const result = parseVariables(src);
     expect(result).toHaveLength(1);
     expect(result[0].validation).not.toBeNull();
-    expect(result[0].validation?.errorMessage).toBe("Must be dev, staging, or prod.");
+    expect(result[0].validation?.errorMessage).toBe(
+      "Must be dev, staging, or prod.",
+    );
   });
 
   it("parses multiple variable blocks", () => {
@@ -211,7 +218,10 @@ describe("IacModuleSyncService", () => {
       providers: [
         IacModuleSyncService,
         { provide: getRepositoryToken(IacModuleEntity), useValue: moduleRepo },
-        { provide: getRepositoryToken(IacModuleVersion), useValue: versionRepo },
+        {
+          provide: getRepositoryToken(IacModuleVersion),
+          useValue: versionRepo,
+        },
       ],
     }).compile();
 
@@ -239,7 +249,9 @@ describe("IacModuleSyncService", () => {
     });
 
     it("picks the higher patch version when major and minor are equal", () => {
-      expect(service.resolveLatest(["v1.2.0", "v1.2.5", "v1.2.3"])).toBe("v1.2.5");
+      expect(service.resolveLatest(["v1.2.0", "v1.2.5", "v1.2.3"])).toBe(
+        "v1.2.5",
+      );
     });
 
     it("handles versions without patch segment using zero as default", () => {
@@ -254,7 +266,9 @@ describe("IacModuleSyncService", () => {
   describe("listRemoteTags", () => {
     it("returns an empty array when the repo URL is unreachable", () => {
       // Service catches the execSync exception and returns []
-      const tags = service.listRemoteTags("https://invalid-host.invalid/repo.git");
+      const tags = service.listRemoteTags(
+        "https://invalid-host.invalid/repo.git",
+      );
       expect(Array.isArray(tags)).toBe(true);
     });
 
@@ -300,7 +314,10 @@ output "bucket_arn" {
         .mockReturnValueOnce(variablesTf as never)
         .mockReturnValueOnce(outputsTf as never);
 
-      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0");
+      const result = service.cloneAndParse(
+        "https://github.com/example/repo",
+        "v1.0.0",
+      );
 
       expect(result.variables).toHaveLength(1);
       expect(result.variables[0].name).toBe("region");
@@ -312,7 +329,10 @@ output "bucket_arn" {
       mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
       mockExistsSync.mockReturnValue(false);
 
-      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0");
+      const result = service.cloneAndParse(
+        "https://github.com/example/repo",
+        "v1.0.0",
+      );
 
       expect(result.variables).toEqual([]);
       expect(result.outputs).toEqual([]);
@@ -321,14 +341,20 @@ output "bucket_arn" {
     it("returns empty arrays when git clone fails", () => {
       mockSpawnSync.mockReturnValueOnce({ status: 1 } as never);
 
-      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0");
+      const result = service.cloneAndParse(
+        "https://github.com/example/repo",
+        "v1.0.0",
+      );
 
       expect(result.variables).toEqual([]);
       expect(result.outputs).toEqual([]);
     });
 
     it("returns empty arrays for invalid tag format", () => {
-      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0-rc1");
+      const result = service.cloneAndParse(
+        "https://github.com/example/repo",
+        "v1.0.0-rc1",
+      );
 
       expect(result.variables).toEqual([]);
       expect(result.outputs).toEqual([]);
@@ -346,8 +372,13 @@ output "bucket_arn" {
     });
 
     it("skips tags that are already persisted", async () => {
-      jest.spyOn(service, "listRemoteTags").mockReturnValue(["v1.0.0", "v2.0.0"]);
-      versionRepo.find.mockResolvedValue([{ version: "v1.0.0" }, { version: "v2.0.0" }]);
+      jest
+        .spyOn(service, "listRemoteTags")
+        .mockReturnValue(["v1.0.0", "v2.0.0"]);
+      versionRepo.find.mockResolvedValue([
+        { version: "v1.0.0" },
+        { version: "v2.0.0" },
+      ]);
 
       const result = await service.sync(mockModule);
 
@@ -357,11 +388,18 @@ output "bucket_arn" {
 
     it("persists a new version and updates latestVersion", async () => {
       jest.spyOn(service, "listRemoteTags").mockReturnValue(["v1.0.0"]);
-      jest.spyOn(service, "cloneAndParse").mockReturnValue({ variables: [], outputs: [] });
+      jest
+        .spyOn(service, "cloneAndParse")
+        .mockReturnValue({ variables: [], outputs: [] });
       versionRepo.find.mockResolvedValue([]);
-      versionRepo.create.mockImplementation((v) => v);
+      versionRepo.create.mockImplementation(
+        (v: unknown) => v as IacModuleVersion,
+      );
       versionRepo.save.mockResolvedValue({});
-      moduleRepo.save.mockResolvedValue({ ...mockModule, latestVersion: "v1.0.0" });
+      moduleRepo.save.mockResolvedValue({
+        ...mockModule,
+        latestVersion: "v1.0.0",
+      });
 
       const result = await service.sync(mockModule);
 
@@ -372,18 +410,38 @@ output "bucket_arn" {
     });
 
     it("stores JSON metadata when cloneAndParse returns non-empty variables and outputs", async () => {
-      const vars = [{ name: "region", type: "string", description: null, required: true, default: null, validation: null }];
-      const outs = [{ name: "arn", description: "Resource ARN", value: "aws_resource.arn" }];
+      const vars = [
+        {
+          name: "region",
+          type: "string",
+          description: null,
+          required: true,
+          default: null,
+          validation: null,
+        },
+      ];
+      const outs = [
+        { name: "arn", description: "Resource ARN", value: "aws_resource.arn" },
+      ];
       jest.spyOn(service, "listRemoteTags").mockReturnValue(["v1.0.0"]);
-      jest.spyOn(service, "cloneAndParse").mockReturnValue({ variables: vars, outputs: outs });
+      jest
+        .spyOn(service, "cloneAndParse")
+        .mockReturnValue({ variables: vars, outputs: outs });
       versionRepo.find.mockResolvedValue([]);
-      versionRepo.create.mockImplementation((v) => v);
+      versionRepo.create.mockImplementation(
+        (v: unknown) => v as IacModuleVersion,
+      );
       versionRepo.save.mockResolvedValue({});
-      moduleRepo.save.mockResolvedValue({ ...mockModule, latestVersion: "v1.0.0" });
+      moduleRepo.save.mockResolvedValue({
+        ...mockModule,
+        latestVersion: "v1.0.0",
+      });
 
       await service.sync(mockModule);
 
-      const createCall = versionRepo.create.mock.calls[0][0];
+      const createCall = (
+        versionRepo.create.mock.calls[0] as unknown[]
+      )[0] as Partial<IacModuleVersion>;
       expect(createCall.variablesMeta).toEqual(vars);
       expect(createCall.outputsMeta).toEqual(outs);
     });
@@ -391,9 +449,13 @@ output "bucket_arn" {
     it("does not update module when latestVersion is already current", async () => {
       const moduleWithVersion = { ...mockModule, latestVersion: "v1.0.0" };
       jest.spyOn(service, "listRemoteTags").mockReturnValue(["v1.0.0"]);
-      jest.spyOn(service, "cloneAndParse").mockReturnValue({ variables: [], outputs: [] });
+      jest
+        .spyOn(service, "cloneAndParse")
+        .mockReturnValue({ variables: [], outputs: [] });
       versionRepo.find.mockResolvedValue([]);
-      versionRepo.create.mockImplementation((v) => v);
+      versionRepo.create.mockImplementation(
+        (v: unknown) => v as IacModuleVersion,
+      );
       versionRepo.save.mockResolvedValue({});
 
       await service.sync(moduleWithVersion);

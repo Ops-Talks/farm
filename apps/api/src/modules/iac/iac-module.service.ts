@@ -6,7 +6,11 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, ILike } from "typeorm";
-import { IacModule, IacEngine, IacProvider } from "./entities/iac-module.entity";
+import {
+  IacModule,
+  IacEngine,
+  IacProvider,
+} from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 import { CreateIacModuleDto } from "./dto/create-iac-module.dto";
 import { UpdateIacModuleDto } from "./dto/update-iac-module.dto";
@@ -41,9 +45,7 @@ export class IacModuleService {
    * @throws ConflictException when a module with the same name+provider exists
    */
   async create(dto: CreateIacModuleDto): Promise<IacModule> {
-    const safeName = dto.name
-      .replace(/\\/g, "\\\\")
-      .replace(/[%_]/g, "\\$&");
+    const safeName = dto.name.replace(/\\/g, "\\\\").replace(/[%_]/g, "\\$&");
     const existing = await this.moduleRepository.findOne({
       where: { name: ILike(safeName), provider: dto.provider },
     });
@@ -117,7 +119,9 @@ export class IacModuleService {
    * @param moduleId - IacModule UUID
    * @returns Version records with isLatest flag
    */
-  async findVersions(moduleId: string): Promise<(IacModuleVersion & { isLatest: boolean })[]> {
+  async findVersions(
+    moduleId: string,
+  ): Promise<(IacModuleVersion & { isLatest: boolean })[]> {
     const module = await this.findOne(moduleId);
     const versions = await this.versionRepository.find({
       where: { moduleId },
@@ -144,9 +148,12 @@ export class IacModuleService {
     if (dto.name !== undefined) module.name = dto.name;
     if (dto.provider !== undefined) module.provider = dto.provider;
     if (dto.engine !== undefined) module.engine = dto.engine ?? null;
-    if (dto.sourceRepoUrl !== undefined) module.sourceRepoUrl = dto.sourceRepoUrl;
-    if (dto.description !== undefined) module.description = dto.description ?? null;
-    if (dto.componentId !== undefined) module.componentId = dto.componentId ?? null;
+    if (dto.sourceRepoUrl !== undefined)
+      module.sourceRepoUrl = dto.sourceRepoUrl;
+    if (dto.description !== undefined)
+      module.description = dto.description ?? null;
+    if (dto.componentId !== undefined)
+      module.componentId = dto.componentId ?? null;
 
     const updated = await this.moduleRepository.save(module);
     this.logger.log(`Updated IacModule "${updated.id}"`);

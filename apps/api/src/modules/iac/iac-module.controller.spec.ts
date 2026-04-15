@@ -2,7 +2,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { IacModuleController } from "./iac-module.controller";
 import { IacModuleService } from "./iac-module.service";
 import { IacModuleSyncService } from "./iac-module-sync.service";
-import { IacModule as IacModuleEntity, IacProvider } from "./entities/iac-module.entity";
+import {
+  IacModule as IacModuleEntity,
+  IacProvider,
+} from "./entities/iac-module.entity";
 
 describe("IacModuleController", () => {
   let controller: IacModuleController;
@@ -31,13 +34,19 @@ describe("IacModuleController", () => {
       findVersions: jest.fn().mockResolvedValue([]),
       update: jest.fn().mockResolvedValue(mockModule),
       remove: jest.fn().mockResolvedValue(undefined),
-      linkComponent: jest.fn().mockResolvedValue({ ...mockModule, componentId: "comp-1" }),
-      unlinkComponent: jest.fn().mockResolvedValue({ ...mockModule, componentId: null }),
+      linkComponent: jest
+        .fn()
+        .mockResolvedValue({ ...mockModule, componentId: "comp-1" }),
+      unlinkComponent: jest
+        .fn()
+        .mockResolvedValue({ ...mockModule, componentId: null }),
       getModulesByComponent: jest.fn().mockResolvedValue([mockModule]),
     };
 
     syncService = {
-      sync: jest.fn().mockResolvedValue({ newVersions: 2, latestVersion: "v5.1.2" }),
+      sync: jest
+        .fn()
+        .mockResolvedValue({ newVersions: 2, latestVersion: "v5.1.2" }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,7 +82,8 @@ describe("IacModuleController", () => {
     const dto = {
       name: "terraform-aws-vpc",
       provider: IacProvider.AWS,
-      sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+      sourceRepoUrl:
+        "https://github.com/terraform-aws-modules/terraform-aws-vpc",
     };
     const result = await controller.create(dto);
     expect(moduleService.create).toHaveBeenCalledWith(dto);
@@ -114,7 +124,10 @@ describe("IacModuleController", () => {
     const result = await controller.linkComponent("module-uuid-1", {
       componentId: "comp-1",
     });
-    expect(moduleService.linkComponent).toHaveBeenCalledWith("module-uuid-1", "comp-1");
+    expect(moduleService.linkComponent).toHaveBeenCalledWith(
+      "module-uuid-1",
+      "comp-1",
+    );
     expect(result.componentId).toBe("comp-1");
   });
 
@@ -126,7 +139,9 @@ describe("IacModuleController", () => {
 
   it("getByComponent delegates to service", async () => {
     const result = await controller.getByComponent("comp-uuid-1");
-    expect(moduleService.getModulesByComponent).toHaveBeenCalledWith("comp-uuid-1");
+    expect(moduleService.getModulesByComponent).toHaveBeenCalledWith(
+      "comp-uuid-1",
+    );
     expect(result).toHaveLength(1);
   });
 });

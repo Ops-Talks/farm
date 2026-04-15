@@ -274,7 +274,8 @@ describe("IaC Module Catalog (e2e)", () => {
       const dto = {
         name: "terraform-aws-vpc",
         provider: "aws",
-        sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+        sourceRepoUrl:
+          "https://github.com/terraform-aws-modules/terraform-aws-vpc",
         description: "Creates a VPC on AWS",
       };
 
@@ -300,7 +301,8 @@ describe("IaC Module Catalog (e2e)", () => {
       const dto = {
         name: "terraform-aws-vpc",
         provider: "aws",
-        sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+        sourceRepoUrl:
+          "https://github.com/terraform-aws-modules/terraform-aws-vpc",
       };
 
       await request(app.getHttpServer())
@@ -313,7 +315,11 @@ describe("IaC Module Catalog (e2e)", () => {
     it("returns 401 without JWT", async () => {
       await request(app.getHttpServer())
         .post("/api/v1/iac-modules")
-        .send({ name: "x", provider: "aws", sourceRepoUrl: "https://github.com/x/y" })
+        .send({
+          name: "x",
+          provider: "aws",
+          sourceRepoUrl: "https://github.com/x/y",
+        })
         .expect(401);
     });
   });

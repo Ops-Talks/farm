@@ -2,7 +2,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConflictException, NotFoundException } from "@nestjs/common";
 import { IacModuleService } from "./iac-module.service";
-import { IacModule as IacModuleEntity, IacProvider } from "./entities/iac-module.entity";
+import {
+  IacModule as IacModuleEntity,
+  IacProvider,
+} from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 import { CreateIacModuleDto } from "./dto/create-iac-module.dto";
 
@@ -41,7 +44,11 @@ describe("IacModuleService", () => {
       },
     ],
     outputsMeta: [
-      { name: "vpc_id", description: "The ID of the VPC", value: "aws_vpc.main.id" },
+      {
+        name: "vpc_id",
+        description: "The ID of the VPC",
+        value: "aws_vpc.main.id",
+      },
     ],
     syncedAt: new Date("2024-01-01T10:00:00Z"),
     createdAt: new Date("2024-01-01T00:00:00Z"),
@@ -70,7 +77,10 @@ describe("IacModuleService", () => {
       providers: [
         IacModuleService,
         { provide: getRepositoryToken(IacModuleEntity), useValue: moduleRepo },
-        { provide: getRepositoryToken(IacModuleVersion), useValue: versionRepo },
+        {
+          provide: getRepositoryToken(IacModuleVersion),
+          useValue: versionRepo,
+        },
       ],
     }).compile();
 
@@ -87,7 +97,8 @@ describe("IacModuleService", () => {
     const dto: CreateIacModuleDto = {
       name: "terraform-aws-vpc",
       provider: IacProvider.AWS,
-      sourceRepoUrl: "https://github.com/terraform-aws-modules/terraform-aws-vpc",
+      sourceRepoUrl:
+        "https://github.com/terraform-aws-modules/terraform-aws-vpc",
       description: "Creates a VPC on AWS",
     };
 
@@ -102,7 +113,7 @@ describe("IacModuleService", () => {
         expect.objectContaining({
           where: expect.objectContaining({
             provider: dto.provider,
-          }),
+          }) as unknown,
         }),
       );
       expect(moduleRepo.save).toHaveBeenCalled();
@@ -114,7 +125,10 @@ describe("IacModuleService", () => {
         ...dto,
         componentId: "comp-uuid-99",
       };
-      const moduleWithComponent = { ...mockModule, componentId: "comp-uuid-99" };
+      const moduleWithComponent = {
+        ...mockModule,
+        componentId: "comp-uuid-99",
+      };
       moduleRepo.findOne.mockResolvedValue(null);
       moduleRepo.create.mockReturnValue(moduleWithComponent);
       moduleRepo.save.mockResolvedValue(moduleWithComponent);
@@ -130,7 +144,11 @@ describe("IacModuleService", () => {
         provider: IacProvider.AWS,
         sourceRepoUrl: "https://github.com/example/minimal",
       };
-      const minimalModule = { ...mockModule, description: null, componentId: null };
+      const minimalModule = {
+        ...mockModule,
+        description: null,
+        componentId: null,
+      };
       moduleRepo.findOne.mockResolvedValue(null);
       moduleRepo.create.mockReturnValue(minimalModule);
       moduleRepo.save.mockResolvedValue(minimalModule);
@@ -170,7 +188,9 @@ describe("IacModuleService", () => {
 
       await service.findAll({ provider: IacProvider.AWS });
 
-      const call = moduleRepo.find.mock.calls[0][0];
+      const call = (moduleRepo.find.mock.calls[0] as unknown[])[0] as {
+        where: Record<string, unknown>;
+      };
       expect(call.where.provider).toBe(IacProvider.AWS);
     });
 
@@ -179,7 +199,9 @@ describe("IacModuleService", () => {
 
       await service.findAll({ search: "vpc" });
 
-      const call = moduleRepo.find.mock.calls[0][0];
+      const call = (moduleRepo.find.mock.calls[0] as unknown[])[0] as {
+        where: Record<string, unknown>;
+      };
       expect(call.where.name).toBeDefined();
     });
   });
@@ -199,7 +221,9 @@ describe("IacModuleService", () => {
     it("throws NotFoundException when module does not exist", async () => {
       moduleRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne("missing")).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("missing")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -225,7 +249,9 @@ describe("IacModuleService", () => {
     it("throws NotFoundException when module does not exist", async () => {
       moduleRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.findVersions("missing")).rejects.toThrow(NotFoundException);
+      await expect(service.findVersions("missing")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -239,7 +265,9 @@ describe("IacModuleService", () => {
       moduleRepo.findOne.mockResolvedValue({ ...mockModule });
       moduleRepo.save.mockResolvedValue(updated);
 
-      const result = await service.update("module-uuid-1", { description: "Updated description" });
+      const result = await service.update("module-uuid-1", {
+        description: "Updated description",
+      });
 
       expect(moduleRepo.save).toHaveBeenCalled();
       expect(result.description).toBe("Updated description");
@@ -270,14 +298,20 @@ describe("IacModuleService", () => {
       moduleRepo.findOne.mockResolvedValue(base);
       moduleRepo.save.mockImplementation((m) => Promise.resolve(m));
 
-      const result = await service.update("module-uuid-1", { name: "renamed-module" });
+      const result = await service.update("module-uuid-1", {
+        name: "renamed-module",
+      });
 
       expect(result.name).toBe("renamed-module");
       expect(result.description).toBe(mockModule.description);
     });
 
     it("sets description and componentId to null when explicitly passed null", async () => {
-      const base = { ...mockModule, description: "Old desc", componentId: "old-comp" };
+      const base = {
+        ...mockModule,
+        description: "Old desc",
+        componentId: "old-comp",
+      };
       moduleRepo.findOne.mockResolvedValue(base);
       moduleRepo.save.mockImplementation((m) => Promise.resolve(m));
 
@@ -293,7 +327,9 @@ describe("IacModuleService", () => {
     it("throws NotFoundException when module does not exist", async () => {
       moduleRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.update("missing", { description: "x" })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update("missing", { description: "x" }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -314,7 +350,9 @@ describe("IacModuleService", () => {
     it("throws NotFoundException when module does not exist", async () => {
       moduleRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.remove("missing")).rejects.toThrow(NotFoundException);
+      await expect(service.remove("missing")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -328,7 +366,10 @@ describe("IacModuleService", () => {
       moduleRepo.findOne.mockResolvedValue(mutableModule);
       moduleRepo.save.mockImplementation((m) => Promise.resolve({ ...m }));
 
-      const result = await service.linkComponent("module-uuid-1", "comp-uuid-1");
+      const result = await service.linkComponent(
+        "module-uuid-1",
+        "comp-uuid-1",
+      );
 
       expect(result.componentId).toBe("comp-uuid-1");
     });

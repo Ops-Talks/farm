@@ -740,7 +740,11 @@ describe("seedTeams", () => {
   const mockOrg = makeOrg();
 
   it("skips update and logs 'already exists' when team exists and has an organizationId", async () => {
-    const existingTeam = { id: "team-id", name: "platform-team", organizationId: "org-id" } as unknown as import("../../modules/teams/entities/team.entity").Team;
+    const existingTeam = {
+      id: "team-id",
+      name: "platform-team",
+      organizationId: "org-id",
+    } as unknown as import("../../modules/teams/entities/team.entity").Team;
     const repo = buildMockRepo(existingTeam);
     const dataSource = buildMockDataSource(repo);
 
@@ -753,7 +757,11 @@ describe("seedTeams", () => {
   });
 
   it("patches organizationId and calls save when team exists but organizationId is null", async () => {
-    const existingTeam = { id: "team-id", name: "platform-team", organizationId: null } as unknown as import("../../modules/teams/entities/team.entity").Team;
+    const existingTeam = {
+      id: "team-id",
+      name: "platform-team",
+      organizationId: null,
+    } as unknown as import("../../modules/teams/entities/team.entity").Team;
     const repo = buildMockRepo(existingTeam);
     const dataSource = buildMockDataSource(repo);
 
@@ -767,7 +775,10 @@ describe("seedTeams", () => {
   });
 
   it("creates team when it does not exist", async () => {
-    const repo = buildMockRepo<import("../../modules/teams/entities/team.entity").Team>(null);
+    const repo =
+      buildMockRepo<import("../../modules/teams/entities/team.entity").Team>(
+        null,
+      );
     const dataSource = buildMockDataSource(repo);
 
     const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
@@ -786,12 +797,22 @@ describe("seedTeams", () => {
 describe("seedComponents", () => {
   const mockOrg = makeOrg();
   const mockTeams = {
-    "platform-team": { id: "platform-id", name: "platform-team" } as unknown as import("../../modules/catalog/entities/component.entity").Component,
-    "backend-team": { id: "backend-id", name: "backend-team" } as unknown as import("../../modules/catalog/entities/component.entity").Component,
+    "platform-team": {
+      id: "platform-id",
+      name: "platform-team",
+    } as unknown as import("../../modules/catalog/entities/component.entity").Component,
+    "backend-team": {
+      id: "backend-id",
+      name: "backend-team",
+    } as unknown as import("../../modules/catalog/entities/component.entity").Component,
   };
 
   it("skips update and logs 'already exists' when component exists and has an organizationId", async () => {
-    const existingComponent = { id: "comp-id", name: "user-service", organizationId: "org-id" } as unknown as import("../../modules/catalog/entities/component.entity").Component;
+    const existingComponent = {
+      id: "comp-id",
+      name: "user-service",
+      organizationId: "org-id",
+    } as unknown as import("../../modules/catalog/entities/component.entity").Component;
     const repo = buildMockRepo(existingComponent);
     const dataSource = buildMockDataSource(repo);
 
@@ -803,7 +824,11 @@ describe("seedComponents", () => {
   });
 
   it("patches organizationId and calls save when component exists but organizationId is null", async () => {
-    const existingComponent = { id: "comp-id", name: "user-service", organizationId: null } as unknown as import("../../modules/catalog/entities/component.entity").Component;
+    const existingComponent = {
+      id: "comp-id",
+      name: "user-service",
+      organizationId: null,
+    } as unknown as import("../../modules/catalog/entities/component.entity").Component;
     const repo = buildMockRepo(existingComponent);
     const dataSource = buildMockDataSource(repo);
 
@@ -817,7 +842,10 @@ describe("seedComponents", () => {
   });
 
   it("creates component when it does not exist", async () => {
-    const repo = buildMockRepo<import("../../modules/catalog/entities/component.entity").Component>(null);
+    const repo =
+      buildMockRepo<
+        import("../../modules/catalog/entities/component.entity").Component
+      >(null);
     const dataSource = buildMockDataSource(repo);
 
     const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});

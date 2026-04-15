@@ -1,7 +1,8 @@
 import { IacModuleVersion } from "./iac-module-version.entity";
-import { IacProvider } from "./iac-module.entity";
 
-const makeVersion = (overrides: Partial<IacModuleVersion> = {}): IacModuleVersion => {
+const makeVersion = (
+  overrides: Partial<IacModuleVersion> = {},
+): IacModuleVersion => {
   const v = new IacModuleVersion();
   v.id = "ver-uuid-1";
   v.version = "v1.0.0";
@@ -19,7 +20,14 @@ describe("IacModuleVersion", () => {
     });
 
     it("returns parsed variables from valid JSON", () => {
-      const vars = [{ name: "region", type: "string", description: "AWS region", required: true }];
+      const vars = [
+        {
+          name: "region",
+          type: "string",
+          description: "AWS region",
+          required: true,
+        },
+      ];
       const v = makeVersion({ variablesMeta: JSON.stringify(vars) });
       expect(v.getParsedVariables()).toEqual(vars);
     });

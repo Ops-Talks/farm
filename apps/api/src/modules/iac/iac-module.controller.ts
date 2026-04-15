@@ -31,7 +31,11 @@ import { IacModuleSyncService } from "./iac-module-sync.service";
 import { CreateIacModuleDto } from "./dto/create-iac-module.dto";
 import { UpdateIacModuleDto } from "./dto/update-iac-module.dto";
 import { LinkComponentDto } from "./dto/link-component.dto";
-import { IacModule, IacEngine, IacProvider } from "./entities/iac-module.entity";
+import {
+  IacModule,
+  IacEngine,
+  IacProvider,
+} from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 
 /**

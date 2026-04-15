@@ -95,7 +95,8 @@ export class IacModule {
 
   @ApiProperty({
     example: "comp-uuid-1234",
-    description: "Optional FK to a catalog component that owns or uses this module",
+    description:
+      "Optional FK to a catalog component that owns or uses this module",
     nullable: true,
   })
   @Index()
