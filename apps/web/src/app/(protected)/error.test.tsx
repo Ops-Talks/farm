@@ -60,5 +60,17 @@ describe("Error page", () => {
       screen.getByText(/Error: Test error/),
     ).toBeInTheDocument();
   });
+
+  it("calls window.location.reload when Reload Page is clicked", async () => {
+    const user = (await import("@testing-library/user-event")).default.setup();
+    const reloadMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      value: { reload: reloadMock },
+      writable: true,
+    });
+    render(<ErrorPage error={new globalThis.Error("Test error")} reset={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Reload Page" }));
+    expect(reloadMock).toHaveBeenCalled();
+  });
 });
 

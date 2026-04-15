@@ -154,7 +154,7 @@ export async function seedOrganization(
   return org;
 }
 
-async function seedTeams(
+export async function seedTeams(
   dataSource: DataSource,
   org: Organization,
 ): Promise<Record<string, Team>> {
@@ -202,7 +202,7 @@ async function seedTeams(
   return result;
 }
 
-async function seedComponents(
+export async function seedComponents(
   dataSource: DataSource,
   teams: Record<string, Team>,
   org: Organization,
