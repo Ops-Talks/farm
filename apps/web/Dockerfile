@@ -1,6 +1,9 @@
 # Stage 1: Install dependencies
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
 FROM node:20-alpine AS deps
+LABEL org.opencontainers.image.title="farm-web" \
+      org.opencontainers.image.description="Farm portal — Next.js web application" \
+      org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
 WORKDIR /app
 
 # Copy root workspace manifest and lockfile first for layer caching.
@@ -34,6 +37,7 @@ WORKDIR /app/apps/web
 
 ARG API_INTERNAL_URL=http://api:3000/api
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Production
@@ -55,7 +59,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # When outputFileTracingRoot points to the monorepo root, the standalone output
 # mirrors the full directory structure: server.js lands at apps/web/server.js.
-COPY --from=builder /app/apps/web/public                           ./apps/web/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public           ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static    ./apps/web/.next/static
 
@@ -63,5 +67,8 @@ USER nextjs
 EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "const http = require('http'); const req = http.request({hostname:'localhost',port:3001,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"
 
 CMD ["node", "apps/web/server.js"]

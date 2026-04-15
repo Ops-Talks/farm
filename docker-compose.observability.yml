@@ -5,6 +5,7 @@ services:
       OTEL_EXPORTER_ENDPOINT: "http://tempo:4318/v1/traces"
       OTEL_SERVICE_NAME: "farm-api"
       LOKI_URL: "http://loki:3100"
+      PROMETHEUS_URL: "http://prometheus:9090"
     depends_on:
       tempo:
         condition: service_started

@@ -283,7 +283,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 40
       },
       "datasource": {
         "type": "loki",
@@ -307,10 +307,43 @@
         "sortOrder": "Descending",
         "dedupStrategy": "none"
       }
+    },
+    {
+      "id": 8,
+      "title": "Web Logs \u2014 farm-web",
+      "type": "logs",
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "expr": "{project=\"farm\", container=\"farm-web\"}",
+          "legendFormat": "",
+          "refId": "A",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
     }
   ],
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "tags": [
     "farm",
     "logs"

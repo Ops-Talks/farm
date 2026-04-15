@@ -34,7 +34,13 @@ describe("Error page", () => {
   it("logs the error to console.error on mount", () => {
     const err = new globalThis.Error("Something bad");
     render(<ErrorPage error={err} reset={vi.fn()} />);
-    expect(console.error).toHaveBeenCalledWith(err);
+    expect(console.error).toHaveBeenCalledWith("[ErrorBoundary]", err);
+  });
+
+  it("renders a details block exposing error.name and error.message", () => {
+    const err = Object.assign(new globalThis.Error("crash message"), { name: "TypeError" });
+    render(<ErrorPage error={err} reset={vi.fn()} />);
+    expect(screen.getByText(/TypeError: crash message/)).toBeInTheDocument();
   });
 });
 

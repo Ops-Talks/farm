@@ -142,8 +142,13 @@ export class SloCalculatorService {
 
       return this.extractPercentage(slo.metricType, body.data.result[0].values);
     } catch (error) {
+      const cause =
+        error instanceof Error && (error as Error & { cause?: Error }).cause;
       this.logger.error(
-        `Failed to query Prometheus: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to query Prometheus: ${error instanceof Error ? error.message : String(error)}` +
+          (cause
+            ? ` — cause: ${cause instanceof Error ? cause.message : String(cause)}`
+            : ""),
       );
       return this.simulateMetric(slo);
     }

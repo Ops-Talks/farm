@@ -114,7 +114,7 @@ export function HealthPanel() {
       </Card>
 
       {/* Individual health check cards */}
-      {Object.entries(healthData.details).map(([key, detail]) => (
+      {Object.entries(healthData.details ?? {}).map(([key, detail]) => (
         <Card key={key}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium capitalize text-muted-foreground">

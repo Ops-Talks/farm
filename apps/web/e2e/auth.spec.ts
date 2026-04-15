@@ -39,8 +39,7 @@ test("user can log in with valid credentials and is redirected to dashboard", as
     }),
   );
 
-  // Stub array-returning Phase 25 endpoints so components don't crash on
-  // the generic { data: [], total: 0 } shape above.
+  // Stub endpoints that require a specific shape to avoid render crashes.
   await page.route("**/api/v1/setup/checklist", (route) =>
     route.fulfill({
       status: 200,
@@ -53,12 +52,23 @@ test("user can log in with valid credentials and is redirected to dashboard", as
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        kubernetes: { available: false },
-        cost: { available: false },
-        registry: { available: false },
-        helm: { available: false },
-        istio: { available: false },
+        kubernetes: false,
+        cost: false,
+        registry: false,
+        helm: false,
+        istio: false,
+        linkerd: false,
+        allConfigured: false,
       }),
+    }),
+  );
+  // health.check() calls GET /api/health (no version prefix) — must include
+  // `details` or HealthPanel throws during Object.entries(healthData.details).
+  await page.route("**/api/health", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "ok", details: {} }),
     }),
   );
 

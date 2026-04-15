@@ -18,7 +18,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -42,7 +42,8 @@
           "legendFormat": "5xx Errors",
           "refId": "B"
         }
-      ]
+      ],
+      "id": 1
     },
     {
       "title": "Request Rate by Route",
@@ -55,7 +56,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -74,7 +75,8 @@
           "legendFormat": "{{method}} {{route}}",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 2
     },
     {
       "title": "Latency Percentiles",
@@ -87,7 +89,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -116,7 +118,8 @@
           "legendFormat": "p99",
           "refId": "C"
         }
-      ]
+      ],
+      "id": 3
     },
     {
       "title": "Error Rate (%)",
@@ -129,7 +132,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -160,7 +163,8 @@
           "legendFormat": "Error Rate",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 4
     },
     {
       "title": "Total Requests",
@@ -173,7 +177,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -196,7 +200,8 @@
           "legendFormat": "Total",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 5
     },
     {
       "title": "Avg Response Time",
@@ -209,7 +214,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -240,7 +245,8 @@
           "legendFormat": "Avg",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 6
     },
     {
       "title": "Request Duration Heatmap",
@@ -253,7 +259,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "options": {
         "calculate": false,
@@ -271,7 +277,8 @@
           "refId": "A",
           "format": "heatmap"
         }
-      ]
+      ],
+      "id": 7
     },
     {
       "title": "Traces -- Recent",
@@ -300,7 +307,8 @@
           "limit": 20,
           "refId": "B"
         }
-      ]
+      ],
+      "id": 8
     },
     {
       "title": "Business Metrics",
@@ -313,7 +321,8 @@
         "y": 32
       },
       "datasource": null,
-      "panels": []
+      "panels": [],
+      "id": 9
     },
     {
       "title": "Pipeline Executions Rate",
@@ -326,7 +335,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -345,7 +354,8 @@
           "legendFormat": "{{status}}",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 10
     },
     {
       "title": "Component Operations Rate",
@@ -358,7 +368,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -377,7 +387,8 @@
           "legendFormat": "{{operation}}",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 11
     },
     {
       "title": "Deployment Operations Total",
@@ -390,7 +401,7 @@
       },
       "datasource": {
         "type": "prometheus",
-        "uid": ""
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -431,7 +442,8 @@
           "legendFormat": "{{operation}}/{{status}}",
           "refId": "A"
         }
-      ]
+      ],
+      "id": 12
     }
   ],
   "schemaVersion": 39,
@@ -451,5 +463,5 @@
   "timezone": "browser",
   "title": "Farm API Overview",
   "uid": "farm-api-overview",
-  "version": 1
+  "version": 2
 }

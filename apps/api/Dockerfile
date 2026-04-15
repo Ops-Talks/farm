@@ -2,6 +2,9 @@
 
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
+LABEL org.opencontainers.image.title="farm-api" \
+      org.opencontainers.image.description="Farm portal — NestJS API service" \
+      org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
 WORKDIR /app
 
 # Copy root workspace manifest and lockfile for layer caching.
@@ -42,7 +45,7 @@ ENV NODE_ENV=production
 #   libssl3    >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
 #   libcrypto3 >=3.5.6-r0  CVE-2026-28390, CVE-2026-31790
 #   musl       >=1.2.5-r22 CVE-2026-6042 (security flaw in musl libc up to 1.2.6)
-RUN apk add --no-cache "zlib>=1.3.2-r0" "libssl3>=3.5.6-r0" "libcrypto3>=3.5.6-r0" \
+RUN apk add --no-cache --upgrade "zlib>=1.3.2-r0" "libssl3>=3.5.6-r0" "libcrypto3>=3.5.6-r0" \
  "musl>=1.2.5-r22" "musl-utils>=1.2.5-r22"
 
 # Copy root manifests for npm ci --omit=dev
@@ -52,10 +55,10 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
 COPY apps/web/package.json               ./apps/web/
 
-# Install production dependencies then remove npm and npx — the running
-# application only needs node. Removing npm eliminates all CVEs in its
-# bundled packages (picomatch, brace-expansion, tar, etc.) permanently.
-RUN npm ci --omit=dev --ignore-scripts \
+# Install ONLY the API workspace's production dependencies.
+# Without --workspace, npm ci would install all workspaces (including apps/web with
+# Next.js, React, Tailwind, etc.), inflating the production image by ~1GB+.
+RUN npm ci --omit=dev --ignore-scripts --workspace=apps/api \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Copy compiled @farm/types (needed at runtime for any require('@farm/types'))
