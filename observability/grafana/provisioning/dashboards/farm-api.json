@@ -159,7 +159,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"farm-api\", status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"farm-api\"}[5m]))",
+          "expr": "(sum(rate(http_requests_total{job=\"farm-api\", status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_requests_total{job=\"farm-api\"}[5m])) * 100",
           "legendFormat": "Error Rate",
           "refId": "A"
         }
