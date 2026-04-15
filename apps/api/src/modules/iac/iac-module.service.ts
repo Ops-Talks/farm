@@ -42,7 +42,7 @@ export class IacModuleService {
    */
   async create(dto: CreateIacModuleDto): Promise<IacModule> {
     const existing = await this.moduleRepository.findOne({
-      where: { name: dto.name, provider: dto.provider },
+      where: { name: ILike(dto.name), provider: dto.provider },
     });
     if (existing) {
       throw new ConflictException(
@@ -109,17 +109,22 @@ export class IacModuleService {
 
   /**
    * Returns all version records for a specific IaC module, ordered by
-   * version descending.
+   * version descending, with an `isLatest` flag on each.
    *
    * @param moduleId - IacModule UUID
-   * @returns Version records with parsed metadata
+   * @returns Version records with isLatest flag
    */
-  async findVersions(moduleId: string): Promise<IacModuleVersion[]> {
-    await this.findOne(moduleId);
-    return this.versionRepository.find({
+  async findVersions(moduleId: string): Promise<(IacModuleVersion & { isLatest: boolean })[]> {
+    const module = await this.findOne(moduleId);
+    const versions = await this.versionRepository.find({
       where: { moduleId },
       order: { version: "DESC" },
     });
+
+    return versions.map((v) => ({
+      ...v,
+      isLatest: v.version === module.latestVersion,
+    }));
   }
 
   /**

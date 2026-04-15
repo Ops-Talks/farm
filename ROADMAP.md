@@ -67,7 +67,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: terraform/opentofu/pulumi, sourceRepoUrl, description, latestVersion, variablesMeta JSONB, outputsMeta JSONB); optional link to a catalog `Component` via `componentId` FK | `DONE` |
+| FARM-S273 | Story | `IacModule` entity and CRUD API (name, provider: aws/gcp/azure/kubernetes/..., engine: terraform/opentofu/pulumi, sourceRepoUrl, description, latestVersion, variablesMeta JSONB, outputsMeta JSONB); optional link to a catalog `Component` via `componentId` FK | `DONE` |
 | FARM-S274 | Story | Metadata sync service: fetch semver tags from the source repository, parse `variables.tf` and `outputs.tf` per tag into structured JSONB; triggered manually via `POST /iac-modules/:id/sync` | `DONE` |
 | FARM-S275 | Story | Frontend: module browser page with search, provider filter, version selector, variable and output documentation tables, and copyable usage snippet | `DONE` |
 | FARM-S276 | Story | Component detail IaC tab: list modules linked to the component with version badge, source repository link, and variable summary | `DONE` |
@@ -76,7 +76,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T237 | Task | `IacModule` entity with `IacProvider` enum (terraform, opentofu, pulumi); `IacModuleVersion` child entity (version semver, variablesMeta JSONB, outputsMeta JSONB, syncedAt); `IacModuleModule` with full CRUD service and controller; migration | `DONE` |
+| FARM-T237 | Task | `IacModule` entity with `IacProvider` enum (aws, gcp, azure, kubernetes, ...) and optional `IacEngine` enum (terraform, opentofu, pulumi); `IacModuleVersion` child entity (version semver, variablesMeta JSONB, outputsMeta JSONB, syncedAt); `IacModuleModule` with full CRUD service and controller; migration | `DONE` |
 | FARM-T238 | Task | `GET /components/:id/iac-modules` and `POST /iac-modules/:id/link-component` endpoints to associate modules with catalog components; `DELETE /iac-modules/:id/unlink-component` to remove the association | `DONE` |
 
 #### FARM-S274 Tasks

@@ -28,7 +28,7 @@ describe("IaC Module (e2e)", () => {
       const dto = {
         stackName: "core-networking",
         environment: "production",
-        provider: "aws",
+        provider: "terraform",
         type: "plan",
         status: "succeeded",
         resourceChanges: { add: 2, change: 1, destroy: 0 },
@@ -96,13 +96,13 @@ describe("IaC Module (e2e)", () => {
           {
             name: "core-database",
             environment: "staging",
-            provider: "aws",
+            provider: "terraform",
             repositoryUrl: "https://github.com/acme/infra",
           },
           {
             name: "core-cache",
             environment: "staging",
-            provider: "gcp",
+            provider: "opentofu",
           },
         ],
       };

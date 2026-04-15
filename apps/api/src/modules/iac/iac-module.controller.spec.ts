@@ -61,10 +61,12 @@ describe("IacModuleController", () => {
 
   it("findAll passes search and provider filters", async () => {
     await controller.findAll("vpc", IacProvider.AWS);
-    expect(moduleService.findAll).toHaveBeenCalledWith({
-      search: "vpc",
-      provider: IacProvider.AWS,
-    });
+    expect(moduleService.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: "vpc",
+        provider: IacProvider.AWS,
+      }),
+    );
   });
 
   it("create delegates to service", async () => {

@@ -7,10 +7,10 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { IacModule as IacModuleEntity, IacProvider } from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
 
-jest.mock("child_process", () => ({ execSync: jest.fn() }));
+jest.mock("child_process", () => ({ spawnSync: jest.fn() }));
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   existsSync: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock("fs", () => ({
   rmSync: jest.fn(),
 }));
 
-const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
+const mockSpawnSync = spawnSync as jest.MockedFunction<typeof spawnSync>;
 const mockExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
 const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
 
@@ -266,7 +266,10 @@ describe("IacModuleSyncService", () => {
         "jkl012\trefs/tags/not-a-version",
         "",
       ].join("\n");
-      mockExecSync.mockReturnValueOnce(Buffer.from(lsRemoteOutput) as never);
+      mockSpawnSync.mockReturnValueOnce({
+        status: 0,
+        stdout: Buffer.from(lsRemoteOutput),
+      } as never);
 
       const tags = service.listRemoteTags("https://github.com/example/repo");
 
@@ -291,7 +294,7 @@ output "bucket_arn" {
   value       = aws_s3_bucket.main.arn
 }
 `;
-      mockExecSync.mockReturnValueOnce(Buffer.from("") as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
       mockExistsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
       mockReadFileSync
         .mockReturnValueOnce(variablesTf as never)
@@ -306,7 +309,7 @@ output "bucket_arn" {
     });
 
     it("returns empty arrays when variables.tf and outputs.tf do not exist", () => {
-      mockExecSync.mockReturnValueOnce(Buffer.from("") as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
       mockExistsSync.mockReturnValue(false);
 
       const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0");
@@ -316,11 +319,16 @@ output "bucket_arn" {
     });
 
     it("returns empty arrays when git clone fails", () => {
-      mockExecSync.mockImplementationOnce(() => {
-        throw new Error("repository not found");
-      });
+      mockSpawnSync.mockReturnValueOnce({ status: 1 } as never);
 
-      const result = service.cloneAndParse("https://github.com/example/repo", "v-bad");
+      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0");
+
+      expect(result.variables).toEqual([]);
+      expect(result.outputs).toEqual([]);
+    });
+
+    it("returns empty arrays for invalid tag format", () => {
+      const result = service.cloneAndParse("https://github.com/example/repo", "v1.0.0-rc1");
 
       expect(result.variables).toEqual([]);
       expect(result.outputs).toEqual([]);
@@ -376,8 +384,8 @@ output "bucket_arn" {
       await service.sync(mockModule);
 
       const createCall = versionRepo.create.mock.calls[0][0];
-      expect(createCall.variablesMeta).toBe(JSON.stringify(vars));
-      expect(createCall.outputsMeta).toBe(JSON.stringify(outs));
+      expect(createCall.variablesMeta).toEqual(vars);
+      expect(createCall.outputsMeta).toEqual(outs);
     });
 
     it("does not update module when latestVersion is already current", async () => {

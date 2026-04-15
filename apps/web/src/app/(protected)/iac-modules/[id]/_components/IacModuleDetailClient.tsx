@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { iacModules } from "@/lib/api-client";
-import type { IacModule, IacModuleVersion, IacModuleVariable, IacModuleOutput, IacProvider } from "@/types/api";
+import type { IacModule, IacModuleVersion, IacModuleVariable, IacModuleOutput } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,36 +17,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
+import { providerBadgeClass } from "@/lib/iac-utils";
 import { ChevronLeft, Copy, ExternalLink, RefreshCw } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Provider badge
+// Usage snippet
 // ---------------------------------------------------------------------------
-
-function providerBadgeClass(provider: IacProvider): string {
-  switch (provider) {
-    case "aws":
-      return "bg-orange-500/20 text-orange-700 dark:text-orange-400";
-    case "gcp":
-      return "bg-blue-500/20 text-blue-700 dark:text-blue-400";
-    case "azure":
-      return "bg-sky-500/20 text-sky-700 dark:text-sky-400";
-    case "kubernetes":
-      return "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400";
-    case "mongodb":
-      return "bg-green-500/20 text-green-700 dark:text-green-400";
-    case "postgres":
-      return "bg-cyan-500/20 text-cyan-700 dark:text-cyan-400";
-    case "mysql":
-      return "bg-teal-500/20 text-teal-700 dark:text-teal-400";
-    case "github":
-      return "bg-gray-500/20 text-gray-700 dark:text-gray-400";
-    case "cloudflare":
-      return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400";
-    default:
-      return "bg-slate-500/20 text-slate-700 dark:text-slate-400";
-  }
-}
 
 function buildUsageSnippet(mod: IacModule, version: IacModuleVersion | null): string {
   const tag = version?.version ?? mod.latestVersion ?? "latest";

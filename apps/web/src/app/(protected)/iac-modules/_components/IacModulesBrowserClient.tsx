@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { iacModules } from "@/lib/api-client";
-import type { IacProvider } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { providerBadgeClass } from "@/lib/iac-utils";
 import { ExternalLink, Search } from "lucide-react";
 
 const PROVIDER_OPTIONS = [
@@ -26,31 +26,6 @@ const PROVIDER_OPTIONS = [
   { value: "generic", label: "Generic" },
 ];
 
-function providerBadgeClass(provider: IacProvider): string {
-  switch (provider) {
-    case "aws":
-      return "bg-orange-500/20 text-orange-700 dark:text-orange-400";
-    case "gcp":
-      return "bg-blue-500/20 text-blue-700 dark:text-blue-400";
-    case "azure":
-      return "bg-sky-500/20 text-sky-700 dark:text-sky-400";
-    case "kubernetes":
-      return "bg-indigo-500/20 text-indigo-700 dark:text-indigo-400";
-    case "mongodb":
-      return "bg-green-500/20 text-green-700 dark:text-green-400";
-    case "postgres":
-      return "bg-cyan-500/20 text-cyan-700 dark:text-cyan-400";
-    case "mysql":
-      return "bg-teal-500/20 text-teal-700 dark:text-teal-400";
-    case "github":
-      return "bg-gray-500/20 text-gray-700 dark:text-gray-400";
-    case "cloudflare":
-      return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400";
-    default:
-      return "bg-slate-500/20 text-slate-700 dark:text-slate-400";
-  }
-}
-
 const CardSkeleton = () => (
   <div className="rounded-xl border p-4 space-y-2">
     <Skeleton className="h-5 w-48" />
@@ -60,6 +35,7 @@ const CardSkeleton = () => (
 );
 
 export function IacModulesBrowserClient() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [provider, setProvider] = useState("all");
 
@@ -115,10 +91,18 @@ export function IacModulesBrowserClient() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {modules.map((mod) => (
-            <Link
+            <div
               key={mod.id}
-              href={`/iac-modules/${mod.id}`}
-              className="group rounded-xl border p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors block"
+              role="button"
+              tabIndex={0}
+              className="group rounded-xl border p-4 hover:border-primary/50 hover:bg-muted/30 transition-colors block cursor-pointer"
+              onClick={() => router.push(`/iac-modules/${mod.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push(`/iac-modules/${mod.id}`);
+                }
+              }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -151,12 +135,12 @@ export function IacModulesBrowserClient() {
                   rel="noopener noreferrer"
                   aria-label="Open source repository"
                   className={buttonVariants({ size: "icon", variant: "ghost", className: "h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" })}
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

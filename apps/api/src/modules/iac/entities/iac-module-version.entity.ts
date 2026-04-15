@@ -68,8 +68,8 @@ export class IacModuleVersion {
     items: { type: "object" },
     nullable: true,
   })
-  @Column({ type: "text", nullable: true })
-  variablesMeta: string | null;
+  @Column({ type: "simple-json", nullable: true })
+  variablesMeta: IacModuleVariable[] | null;
 
   @ApiProperty({
     description: "Parsed output declarations from outputs.tf",
@@ -77,8 +77,8 @@ export class IacModuleVersion {
     items: { type: "object" },
     nullable: true,
   })
-  @Column({ type: "text", nullable: true })
-  outputsMeta: string | null;
+  @Column({ type: "simple-json", nullable: true })
+  outputsMeta: IacModuleOutput[] | null;
 
   @ApiProperty({
     example: "2024-01-01T00:00:00Z",
@@ -103,28 +103,18 @@ export class IacModuleVersion {
   updatedAt: Date;
 
   /**
-   * Returns parsed variablesMeta as a typed array.
-   * Returns an empty array when the column is null or unparseable.
+   * Returns variablesMeta as a typed array.
+   * Returns an empty array when the column is null.
    */
   getParsedVariables(): IacModuleVariable[] {
-    if (!this.variablesMeta) return [];
-    try {
-      return JSON.parse(this.variablesMeta) as IacModuleVariable[];
-    } catch {
-      return [];
-    }
+    return this.variablesMeta ?? [];
   }
 
   /**
-   * Returns parsed outputsMeta as a typed array.
-   * Returns an empty array when the column is null or unparseable.
+   * Returns outputsMeta as a typed array.
+   * Returns an empty array when the column is null.
    */
   getParsedOutputs(): IacModuleOutput[] {
-    if (!this.outputsMeta) return [];
-    try {
-      return JSON.parse(this.outputsMeta) as IacModuleOutput[];
-    } catch {
-      return [];
-    }
+    return this.outputsMeta ?? [];
   }
 }

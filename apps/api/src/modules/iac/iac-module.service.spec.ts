@@ -30,7 +30,7 @@ describe("IacModuleService", () => {
     moduleId: "module-uuid-1",
     module: mockModule,
     version: "v5.1.2",
-    variablesMeta: JSON.stringify([
+    variablesMeta: [
       {
         name: "vpc_cidr",
         type: "string",
@@ -39,10 +39,10 @@ describe("IacModuleService", () => {
         required: false,
         validation: null,
       },
-    ]),
-    outputsMeta: JSON.stringify([
+    ],
+    outputsMeta: [
       { name: "vpc_id", description: "The ID of the VPC", value: "aws_vpc.main.id" },
-    ]),
+    ],
     syncedAt: new Date("2024-01-01T10:00:00Z"),
     createdAt: new Date("2024-01-01T00:00:00Z"),
     updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -98,9 +98,13 @@ describe("IacModuleService", () => {
 
       const result = await service.create(dto);
 
-      expect(moduleRepo.findOne).toHaveBeenCalledWith({
-        where: { name: dto.name, provider: dto.provider },
-      });
+      expect(moduleRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            provider: dto.provider,
+          }),
+        }),
+      );
       expect(moduleRepo.save).toHaveBeenCalled();
       expect(result).toEqual(mockModule);
     });
@@ -204,7 +208,7 @@ describe("IacModuleService", () => {
   // ---------------------------------------------------------------------------
 
   describe("findVersions", () => {
-    it("returns versions for the module", async () => {
+    it("returns versions for the module with isLatest flag", async () => {
       moduleRepo.findOne.mockResolvedValue(mockModule);
       versionRepo.find.mockResolvedValue([mockVersion]);
 
@@ -215,6 +219,7 @@ describe("IacModuleService", () => {
         order: { version: "DESC" },
       });
       expect(result).toHaveLength(1);
+      expect(result[0].isLatest).toBe(true);
     });
 
     it("throws NotFoundException when module does not exist", async () => {

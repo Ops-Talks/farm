@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import { mkdtempSync, readFileSync, rmSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -167,8 +167,8 @@ export class IacModuleSyncService {
       const version = this.versionRepository.create({
         moduleId: module.id,
         version: tag,
-        variablesMeta: variables.length > 0 ? JSON.stringify(variables) : null,
-        outputsMeta: outputs.length > 0 ? JSON.stringify(outputs) : null,
+        variablesMeta: variables.length > 0 ? variables : null,
+        outputsMeta: outputs.length > 0 ? outputs : null,
         syncedAt: new Date(),
       });
 
@@ -190,10 +190,17 @@ export class IacModuleSyncService {
    */
   listRemoteTags(repoUrl: string): string[] {
     try {
-      const output = execSync(`git ls-remote --tags "${repoUrl}"`, {
+      const result = spawnSync("git", ["ls-remote", "--tags", repoUrl], {
         timeout: 30_000,
         stdio: ["ignore", "pipe", "ignore"],
-      }).toString();
+      });
+
+      if (result.status !== 0 || !result.stdout) {
+        this.logger.warn(`Failed to list remote tags for "${repoUrl}"`);
+        return [];
+      }
+
+      const output = result.stdout.toString();
 
       const tags: string[] = [];
       for (const line of output.split("\n")) {
@@ -202,7 +209,7 @@ export class IacModuleSyncService {
         // Skip peeled tag refs (^{})
         if (ref.endsWith("^{}")) continue;
         const tagName = ref.replace("refs/tags/", "");
-        if (/^v?\d+\.\d+\.\d+/.test(tagName)) {
+        if (/^v?\d+\.\d+\.\d+$/.test(tagName)) {
           tags.push(tagName);
         }
       }
@@ -221,12 +228,24 @@ export class IacModuleSyncService {
     repoUrl: string,
     tag: string,
   ): { variables: IacModuleVariable[]; outputs: IacModuleOutput[] } {
+    // Validate tag to ensure it is a clean semver string
+    if (!/^v?\d+\.\d+\.\d+$/.test(tag)) {
+      this.logger.warn(`Skipping invalid tag "${tag}"`);
+      return { variables: [], outputs: [] };
+    }
+
     const tmpDir = mkdtempSync(join(tmpdir(), "farm-iac-sync-"));
     try {
-      execSync(
-        `git clone --depth 1 --branch "${tag}" "${repoUrl}" "${tmpDir}"`,
+      const result = spawnSync(
+        "git",
+        ["clone", "--depth", "1", "--branch", tag, repoUrl, tmpDir],
         { timeout: 120_000, stdio: ["ignore", "ignore", "ignore"] },
       );
+
+      if (result.status !== 0) {
+        this.logger.warn(`Failed to clone "${repoUrl}" at tag "${tag}"`);
+        return { variables: [], outputs: [] };
+      }
 
       const variablesPath = join(tmpDir, "variables.tf");
       const outputsPath = join(tmpDir, "outputs.tf");
