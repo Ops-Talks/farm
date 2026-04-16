@@ -47,6 +47,7 @@ import {
   setup,
   gatekeeper,
   opa,
+  iacModules,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -3532,6 +3533,100 @@ describe("api-client", () => {
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("/api/v1/opa/results/");
       expect(url).toContain("comp-uuid-1");
+    });
+  });
+
+  describe("iacModules", () => {
+    it("list sends GET to /v1/iac-modules with no params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await iacModules.list();
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/iac-modules");
+    });
+
+    it("list appends query params when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await iacModules.list({ search: "vpc", provider: "aws" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("search=vpc");
+      expect(url).toContain("provider=aws");
+    });
+
+    it("get sends GET to /v1/iac-modules/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "m1" }));
+      await iacModules.get("m1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/iac-modules/m1");
+    });
+
+    it("getVersions sends GET to /v1/iac-modules/:id/versions", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await iacModules.getVersions("m1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/iac-modules/m1/versions");
+    });
+
+    it("create sends POST to /v1/iac-modules", async () => {
+      const dto = { name: "mod", provider: "aws", sourceRepoUrl: "https://x.com" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "m1", ...dto }));
+      await iacModules.create(dto);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("update sends PATCH to /v1/iac-modules/:id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "m1" }));
+      await iacModules.update("m1", { description: "new" });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules/m1",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+    });
+
+    it("remove sends DELETE to /v1/iac-modules/:id", async () => {
+      mockFetch.mockReturnValueOnce(new Response(null, { status: 204 }));
+      await iacModules.remove("m1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules/m1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("sync sends POST to /v1/iac-modules/:id/sync", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ newVersions: 2, latestVersion: "v1.0.0" }));
+      const result = await iacModules.sync("m1");
+      expect(result.newVersions).toBe(2);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules/m1/sync",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("linkComponent sends POST to /v1/iac-modules/:id/link-component", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "m1", componentId: "c1" }));
+      await iacModules.linkComponent("m1", "c1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules/m1/link-component",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("unlinkComponent sends DELETE to /v1/iac-modules/:id/unlink-component", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "m1", componentId: null }));
+      await iacModules.unlinkComponent("m1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/iac-modules/m1/unlink-component",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("getComponentModules sends GET to /v1/iac-modules/component/:componentId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [], total: 0 }));
+      await iacModules.getComponentModules("c1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/iac-modules/component/c1");
     });
   });
 });

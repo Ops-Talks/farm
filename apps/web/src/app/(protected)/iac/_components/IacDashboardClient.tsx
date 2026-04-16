@@ -358,7 +358,7 @@ export function IacDashboardClient() {
           onClick={() => setActiveView("drift")}
         >
           <AlertTriangle className="h-4 w-4 mr-1" />
-          Module Drift
+          Outdated Modules
           {drift.length > 0 && (
             <Badge variant="secondary" className="ml-1.5 text-xs">
               {drift.length}

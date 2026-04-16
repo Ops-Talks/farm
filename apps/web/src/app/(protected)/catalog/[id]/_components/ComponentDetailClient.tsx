@@ -35,6 +35,7 @@ import { ApiSpecsTab } from "./ApiSpecsTab";
 import { GatewayRoutesTab } from "./GatewayRoutesTab";
 import { OperatorsTab } from "./OperatorsTab";
 import { ContainerSecurityTab } from "./ContainerSecurityTab";
+import { IacModulesTab } from "./IacModulesTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
@@ -359,6 +360,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="gateway">Gateway Routes</TabsTrigger>
           <TabsTrigger value="operators">Operators</TabsTrigger>
           <TabsTrigger value="container-security">Container Security</TabsTrigger>
+          <TabsTrigger value="iac-modules">IaC Modules</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -733,6 +735,11 @@ export function ComponentDetailClient() {
         <TabsContent value="container-security">
           <ErrorBoundary>
             <ContainerSecurityTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+        <TabsContent value="iac-modules">
+          <ErrorBoundary>
+            <IacModulesTab component={component} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

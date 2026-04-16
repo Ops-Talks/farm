@@ -54,6 +54,7 @@ import {
   DollarSign,
   Search,
   Code2,
+  Package,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -87,6 +88,7 @@ const navSections = [
       { href: "/operators", label: "Operators", icon: Cpu },
       { href: "/gitops", label: "GitOps", icon: GitBranch },
       { href: "/iac", label: "IaC", icon: Code2 },
+      { href: "/iac-modules", label: "IaC Modules", icon: Package },
       { href: "/queues", label: "Queues", icon: List },
       { href: "/cost", label: "Cost", icon: DollarSign },
     ],
