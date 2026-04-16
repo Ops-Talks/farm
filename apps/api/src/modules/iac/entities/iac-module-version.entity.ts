@@ -104,17 +104,45 @@ export class IacModuleVersion {
 
   /**
    * Returns variablesMeta as a typed array.
-   * Returns an empty array when the column is null.
+   * Handles raw JSON strings for cases where TypeORM has not yet deserialized
+   * the column (e.g. manually constructed entities in tests).
+   * Returns an empty array when the column is null or the string is invalid JSON.
    */
   getParsedVariables(): IacModuleVariable[] {
-    return this.variablesMeta ?? [];
+    if (this.variablesMeta === null || this.variablesMeta === undefined) {
+      return [];
+    }
+    if (typeof (this.variablesMeta as unknown) === "string") {
+      try {
+        return JSON.parse(
+          this.variablesMeta as unknown as string,
+        ) as IacModuleVariable[];
+      } catch {
+        return [];
+      }
+    }
+    return this.variablesMeta;
   }
 
   /**
    * Returns outputsMeta as a typed array.
-   * Returns an empty array when the column is null.
+   * Handles raw JSON strings for cases where TypeORM has not yet deserialized
+   * the column (e.g. manually constructed entities in tests).
+   * Returns an empty array when the column is null or the string is invalid JSON.
    */
   getParsedOutputs(): IacModuleOutput[] {
-    return this.outputsMeta ?? [];
+    if (this.outputsMeta === null || this.outputsMeta === undefined) {
+      return [];
+    }
+    if (typeof (this.outputsMeta as unknown) === "string") {
+      try {
+        return JSON.parse(
+          this.outputsMeta as unknown as string,
+        ) as IacModuleOutput[];
+      } catch {
+        return [];
+      }
+    }
+    return this.outputsMeta;
   }
 }

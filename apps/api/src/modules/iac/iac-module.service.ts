@@ -128,10 +128,9 @@ export class IacModuleService {
       order: { version: "DESC" },
     });
 
-    return versions.map((v) => ({
-      ...v,
-      isLatest: v.version === module.latestVersion,
-    }));
+    return versions.map((v) =>
+      Object.assign(v, { isLatest: v.version === module.latestVersion }),
+    );
   }
 
   /**
