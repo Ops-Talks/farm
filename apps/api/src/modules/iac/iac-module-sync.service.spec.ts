@@ -292,6 +292,14 @@ describe("IacModuleSyncService", () => {
       expect(tags).not.toContain("v2.1.0^{}");
       expect(tags).not.toContain("not-a-version");
     });
+
+    it("returns an empty array when spawnSync reports non-zero status", () => {
+      mockSpawnSync.mockReturnValueOnce({ status: 1, stdout: null } as never);
+
+      const tags = service.listRemoteTags("https://github.com/example/repo");
+
+      expect(tags).toEqual([]);
+    });
   });
 
   describe("cloneAndParse", () => {
@@ -354,6 +362,20 @@ output "bucket_arn" {
       const result = service.cloneAndParse(
         "https://github.com/example/repo",
         "v1.0.0-rc1",
+      );
+
+      expect(result.variables).toEqual([]);
+      expect(result.outputs).toEqual([]);
+    });
+
+    it("returns empty arrays when spawnSync throws an error", () => {
+      mockSpawnSync.mockImplementationOnce(() => {
+        throw new Error("spawnSync failed");
+      });
+
+      const result = service.cloneAndParse(
+        "https://github.com/example/repo",
+        "v1.0.0",
       );
 
       expect(result.variables).toEqual([]);

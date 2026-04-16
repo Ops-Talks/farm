@@ -204,6 +204,17 @@ describe("IacModuleService", () => {
       };
       expect(call.where.name).toBeDefined();
     });
+
+    it("applies engine filter when provided", async () => {
+      moduleRepo.find.mockResolvedValue([mockModule]);
+
+      await service.findAll({ engine: "terraform" as never });
+
+      const call = (moduleRepo.find.mock.calls[0] as unknown[])[0] as {
+        where: Record<string, unknown>;
+      };
+      expect(call.where.engine).toBe("terraform");
+    });
   });
 
   // ---------------------------------------------------------------------------

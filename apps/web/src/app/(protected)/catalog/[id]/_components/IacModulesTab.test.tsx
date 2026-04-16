@@ -145,4 +145,67 @@ describe("IacModulesTab", () => {
       expect(screen.getByText("terraform-aws-s3")).toBeInTheDocument();
     });
   });
+
+  it("closes link dialog when Cancel is clicked", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/link module/i));
+    await user.click(screen.getAllByRole("button", { name: /link module/i })[0]);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("selects module in dialog and calls linkComponent on Link click", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([
+      buildModule({ id: "mod-2", name: "terraform-aws-s3", componentId: null }),
+    ]);
+    mockLinkComponent.mockResolvedValue(
+      buildModule({ id: "mod-2", componentId: "comp-1" }),
+    );
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/link module/i));
+    await user.click(screen.getAllByRole("button", { name: /link module/i })[0]);
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-s3")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByText("terraform-aws-s3"));
+    const linkBtn = screen
+      .getAllByRole("button", { name: /^link$/i })
+      .find((b) => !b.hasAttribute("disabled"));
+    if (linkBtn) await user.click(linkBtn);
+    expect(mockLinkComponent).toHaveBeenCalledWith("mod-2", "comp-1");
+  });
+
+  it("renders module description when present", async () => {
+    mockGetComponentModules.mockResolvedValue([
+      buildModule({ description: "Provisions a VPC with subnets" }),
+    ]);
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Provisions a VPC with subnets"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("empty state secondary link button opens dialog", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/link a module/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument(),
+    );
+  });
 });

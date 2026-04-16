@@ -173,4 +173,121 @@ describe("IacModuleDetailClient", () => {
       expect(screen.getByText("Usage")).toBeInTheDocument();
     });
   });
+
+  it("renders required badge for required variable", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({
+        variablesMeta: [
+          {
+            name: "account_id",
+            type: "string",
+            description: "AWS account ID",
+            default: null,
+            required: true,
+            validation: null,
+          },
+        ],
+      }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("required")).toBeInTheDocument();
+    });
+  });
+
+  it("renders dash for output with null description", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({
+        outputsMeta: [{ name: "subnet_ids", description: null, value: null }],
+      }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("subnet_ids")).toBeInTheDocument();
+    });
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it("calls sync when Sync button is clicked", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([]);
+    mockSync.mockResolvedValue({ newVersions: 0, latestVersion: null });
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+    const syncButton = screen.getAllByRole("button").find((b) =>
+      b.textContent?.toLowerCase().includes("sync"),
+    );
+    expect(syncButton).toBeTruthy();
+    fireEvent.click(syncButton!);
+    await waitFor(() => expect(mockSync).toHaveBeenCalled());
+  });
+
+  it("shows Copied! after copy button click", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([buildVersion()]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /copy/i })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /copy/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Copied!")).toBeInTheDocument(),
+    );
+  });
+
+  it("changes selected version when version selector changes", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockGetModule.mockResolvedValue(buildModule());
+    const v1 = buildVersion({ id: "ver-1", version: "v3.19.0", isLatest: true });
+    const v2 = buildVersion({ id: "ver-2", version: "v3.18.0", isLatest: false });
+    mockGetVersions.mockResolvedValue([v1, v2]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("v3.19.0 (latest)")).toBeInTheDocument(),
+    );
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "ver-2" },
+    });
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("v3.18.0")).toBeInTheDocument(),
+    );
+  });
+
+  it("back button click in main view does not throw", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+    expect(() =>
+      fireEvent.click(screen.getByRole("button", { name: /iac modules/i })),
+    ).not.toThrow();
+  });
+
+  it("back to modules button click in not-found view does not throw", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockGetModule.mockResolvedValue(null);
+    mockGetVersions.mockResolvedValue([]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /back to modules/i }),
+      ).toBeInTheDocument(),
+    );
+    expect(() =>
+      fireEvent.click(screen.getByRole("button", { name: /back to modules/i })),
+    ).not.toThrow();
+  });
 });

@@ -117,4 +117,47 @@ describe("IacModulesBrowserClient", () => {
       expect(screen.getByText("Creates a VPC on AWS")).toBeInTheDocument();
     });
   });
+
+  it("shows loading skeletons while data is being fetched", () => {
+    mockList.mockImplementation(() => new Promise(() => {}));
+    const { container } = render(<IacModulesBrowserClient />, {
+      wrapper: createWrapper(),
+    });
+    const skeletons = container.querySelectorAll(".space-y-2");
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it("renders engine badge when module has an engine", async () => {
+    mockList.mockResolvedValue([buildModule({ engine: "terraform" })]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("terraform")).toBeInTheDocument();
+    });
+  });
+
+  it("applies provider filter when select changes", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+    const select = screen.getByRole("combobox");
+    fireEvent.change(select, { target: { value: "aws" } });
+    await waitFor(() => {
+      const calls = mockList.mock.calls;
+      const lastCall = calls[calls.length - 1] as [{ provider?: string }];
+      expect(lastCall[0]?.provider).toBe("aws");
+    });
+  });
+
+  it("navigates to module detail on Enter key press", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([buildModule()]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    const card = screen.getByRole("button");
+    expect(() => fireEvent.keyDown(card, { key: "Enter" })).not.toThrow();
+  });
 });

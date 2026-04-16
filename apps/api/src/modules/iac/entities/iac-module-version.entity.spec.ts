@@ -36,6 +36,21 @@ describe("IacModuleVersion", () => {
       const v = makeVersion({ variablesMeta: "not-valid-json{" });
       expect(v.getParsedVariables()).toEqual([]);
     });
+
+    it("returns the array directly when variablesMeta is already a parsed array", () => {
+      const vars = [
+        {
+          name: "region",
+          type: "string",
+          description: null,
+          required: true,
+          default: null,
+          validation: null,
+        },
+      ];
+      const v = makeVersion({ variablesMeta: vars as never });
+      expect(v.getParsedVariables()).toEqual(vars);
+    });
   });
 
   describe("getParsedOutputs", () => {
@@ -53,6 +68,14 @@ describe("IacModuleVersion", () => {
     it("returns an empty array when outputsMeta is invalid JSON", () => {
       const v = makeVersion({ outputsMeta: "[broken" });
       expect(v.getParsedOutputs()).toEqual([]);
+    });
+
+    it("returns the array directly when outputsMeta is already a parsed array", () => {
+      const outs = [
+        { name: "bucket_arn", description: "The ARN", value: null },
+      ];
+      const v = makeVersion({ outputsMeta: outs as never });
+      expect(v.getParsedOutputs()).toEqual(outs);
     });
   });
 });
