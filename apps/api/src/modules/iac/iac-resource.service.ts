@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -91,6 +92,20 @@ export class IacResourceService {
       }
 
       if (dto.dependencies.length > 0) {
+        const addressSet = new Set(dto.resources.map((r) => r.address));
+        const invalid = dto.dependencies.filter(
+          (d) => !addressSet.has(d.source) || !addressSet.has(d.target),
+        );
+        if (invalid.length > 0) {
+          const sample = invalid
+            .slice(0, 3)
+            .map((d) => `${d.source} -> ${d.target}`)
+            .join(", ");
+          throw new BadRequestException(
+            `Dependencies reference unknown resource addresses: ${sample}`,
+          );
+        }
+
         const deps = dto.dependencies.map((d) =>
           this.depRepository.create({
             stackId,

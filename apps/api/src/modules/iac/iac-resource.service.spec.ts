@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
-import { UnauthorizedException, NotFoundException } from "@nestjs/common";
+import { UnauthorizedException, NotFoundException, BadRequestException } from "@nestjs/common";
 import { IacResourceService } from "./iac-resource.service";
 import { IacStack } from "./entities/iac-stack.entity";
 import { IacResource } from "./entities/iac-resource.entity";
@@ -270,6 +270,36 @@ describe("IacResourceService", () => {
       await expect(
         service.ingestResources("stack-uuid-1", dto, "test-ingest-XXXXX"),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it("throws BadRequestException when dependencies reference unknown resource addresses", async () => {
+      stackRepo.findOne.mockResolvedValue(mockStack);
+
+      const badDto = {
+        resources: [
+          {
+            address: "aws_instance.web",
+            resourceType: "aws_instance",
+            resourceName: "web",
+            provider: "aws",
+          },
+        ],
+        dependencies: [
+          { source: "aws_instance.web", target: "aws_nonexistent.foo" },
+        ],
+      };
+
+      await expect(
+        service.ingestResources("stack-uuid-1", badDto, VALID_TOKEN),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("accepts dependencies when all source and target addresses exist in resources", async () => {
+      stackRepo.findOne.mockResolvedValue(mockStack);
+
+      await expect(
+        service.ingestResources("stack-uuid-1", dto, VALID_TOKEN),
+      ).resolves.toBeUndefined();
     });
   });
 

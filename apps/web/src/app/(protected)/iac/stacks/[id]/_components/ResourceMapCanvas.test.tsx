@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mock @xyflow/react so we avoid CSS imports and DOM complexity in unit tests
+// Mock @xyflow/react CSS import to avoid Vitest transform issues
+vi.mock("@xyflow/react/dist/style.css", () => ({}));
+
+// Mock @xyflow/react so we avoid DOM complexity in unit tests
 vi.mock("@xyflow/react", () => ({
   ReactFlow: vi.fn(
     ({

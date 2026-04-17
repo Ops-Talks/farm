@@ -1765,7 +1765,7 @@ export interface IacLastRunSummary {
   id: string;
   status: IacRunStatus;
   type: IacRunType;
-  startedAt: string;
+  startedAt: string | null;
 }
 
 export interface IacStack {

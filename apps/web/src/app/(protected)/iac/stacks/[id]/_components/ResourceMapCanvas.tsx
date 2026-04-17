@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -84,6 +85,14 @@ export function ResourceMapCanvas() {
     enabled: !!stackId,
   });
 
+  const { nodes, edges } = useMemo(
+    () =>
+      data && data.resources.length > 0
+        ? buildLayout(data.resources, data.dependencies)
+        : { nodes: [], edges: [] },
+    [data],
+  );
+
   if (isLoading) {
     return (
       <div
@@ -116,8 +125,6 @@ export function ResourceMapCanvas() {
       </div>
     );
   }
-
-  const { nodes, edges } = buildLayout(data.resources, data.dependencies);
 
   return (
     <div

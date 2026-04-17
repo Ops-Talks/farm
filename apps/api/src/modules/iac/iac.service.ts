@@ -424,12 +424,15 @@ export class IacService {
           qb
             .subQuery()
             .select("latest.stackId", "stackId")
-            .addSelect("MAX(latest.startedAt)", "startedAt")
+            .addSelect(
+              "MAX(COALESCE(latest.startedAt, latest.createdAt))",
+              "effectiveStartedAt",
+            )
             .from(IacRun, "latest")
             .where("latest.stackId IN (:...stackIds)", { stackIds })
             .groupBy("latest.stackId"),
         "latest_run",
-        'latest_run."stackId" = run."stackId" AND latest_run."startedAt" = run."startedAt"',
+        'latest_run."stackId" = run."stackId" AND latest_run."effectiveStartedAt" = COALESCE(run."startedAt", run."createdAt")',
       )
       .where('run."stackId" IN (:...stackIds)', { stackIds })
       .getMany();
