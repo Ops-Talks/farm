@@ -296,7 +296,7 @@ export function IacDashboardClient() {
   if (loading) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="IaC" description="Infrastructure-as-Code stack overview" />
+        <PageHeader title="IaC Overview" description="Infrastructure-as-Code stack overview" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-28 w-full rounded-lg" />
@@ -309,7 +309,7 @@ export function IacDashboardClient() {
   if (error) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="IaC" description="Infrastructure-as-Code stack overview" />
+        <PageHeader title="IaC Overview" description="Infrastructure-as-Code stack overview" />
         <EmptyState
           icon={<XCircle className="h-8 w-8 text-red-500" />}
           title="Failed to load"
@@ -329,7 +329,7 @@ export function IacDashboardClient() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="IaC"
+        title="IaC Overview"
         description="Infrastructure-as-Code stack overview — powered by Cultivator and Agronomist"
       >
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

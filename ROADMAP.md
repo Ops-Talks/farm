@@ -59,7 +59,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 23: IaC Visibility and Cataloging `IN PROGRESS`
+## Phase 23: IaC Visibility and Cataloging `DONE`
 
 ### FARM-E68: IaC Module Catalog `DONE`
 
@@ -101,43 +101,71 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-### FARM-E69: IaC Stack State Visibility `TODO`
+### FARM-E69: IaC Stack Visibility `DONE`
 
-> Read-only visibility into deployed infrastructure state. Farm fetches `terraform.tfstate` files from configured backends (local, S3, GCS) and surfaces the resource inventory and dependency graph for a given component or stack. Plan, apply, and approval workflows remain in the team's existing tooling; Farm stores a link-out URL pointing to the external tool in use (Atlantis, Spacelift, Terraform Cloud, or any custom runner).
+> The IaC stack records already exist in Farm, populated by Cultivator (E70). This Epic surfaces that data in the right places: a dedicated stack list, a stack detail page, a Stacks tab on the component detail page, and a visual resource map showing the topology of infrastructure resources and their dependencies within each stack. Farm does not manage IaC stacks, does not read state files, and does not hold cloud credentials — the same read-only portal pattern applied to Prometheus, ArgoCD, and Linkerd.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S277 | Story | `IacStack` entity (name, provider, repositoryUrl, basePath, backendType: local/s3/gcs, backendConfig JSONB, externalToolUrl, optional `componentId` FK) and CRUD API | `TODO` |
-| FARM-S278 | Story | State file reader: fetch and parse `terraform.tfstate` from the configured backend; expose typed resource inventory via REST API | `TODO` |
-| FARM-S279 | Story | Resource dependency graph: extract dependencies from state, expose as a graph API endpoint, and render as an interactive visualization in the frontend | `TODO` |
-| FARM-S280 | Story | Frontend: stack list page, stack detail with resource inventory and dependency graph tabs, and link-out button to the external execution tool | `TODO` |
+| FARM-S277 | Story | Read-only stack query API — `GET /api/v1/iac/stacks` (list with optional `?environment=` and `?componentId=` filters) and `GET /api/v1/iac/stacks/:id` (single stack with last run joined); no write operations | `DONE` |
+| FARM-S278 | Story | Stacks tab on component detail — lists all `IacStack` records with `componentId` matching the component; shows environment, last run status, last run date, and link-out to `externalToolUrl` | `DONE` |
+| FARM-S279 | Story | Stack list page at `/iac/stacks` — table view of all stacks with environment filter; "Stacks" navigation entry added to the IaC sidebar section | `DONE` |
+| FARM-S280 | Story | Stack detail page at `/iac/stacks/:id` — stack metadata (provider, repository, linked component) and embedded run history list reusing the existing runs data | `DONE` |
+| FARM-S286 | Story | Resource Map tab on stack detail page — Cultivator pushes a sanitized resource topology (resource addresses, types, and dependency edges; no attribute values, no secrets) via `POST /iac/stacks/:id/resources/ingest`; Farm stores the topology in `IacResource` and `IacResourceDependency` entities and renders an interactive directed graph showing each resource as a node (labelled with provider and type) and each dependency as a directed edge | `DONE` |
 
 #### FARM-S277 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T244 | Task | `IacStack` entity with `IacBackendType` enum (local, s3, gcs); `externalToolUrl` field for linking to Atlantis, Spacelift, Terraform Cloud, or any external runner; CRUD service and controller; migration; optional `componentId` FK to associate the stack with a catalog component | `TODO` |
+| FARM-T244 | Task | `GET /api/v1/iac/stacks`: returns all stacks ordered by environment then name; accepts optional `?environment=` and `?componentId=` query params; each record includes the most recent `IacRun` (status, type, startedAt) joined via a subquery; protected by `JwtAuthGuard`; unit + e2e tests | `DONE` |
+| FARM-T245 | Task | `GET /api/v1/iac/stacks/:id`: returns a single stack with its last run joined; returns 404 when not found; protected by `JwtAuthGuard`; unit tests | `DONE` |
+
+##### FARM-T244 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST400 | Sub-task | Unit test: `GET /api/v1/iac/stacks?componentId=x` returns only stacks matching the given componentId | `DONE` |
+| FARM-ST401 | Sub-task | Unit test: `GET /api/v1/iac/stacks?environment=production` returns only stacks in that environment | `DONE` |
 
 #### FARM-S278 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T245 | Task | `StateReaderService.fetch(stack)`: read local file by absolute path, or fetch from S3 via `GetObjectCommand`, or from GCS via `storage.bucket().file().download()`; credentials via env vars `IAC_AWS_ACCESS_KEY_ID`, `IAC_AWS_SECRET_ACCESS_KEY`, `IAC_AWS_REGION`, and `IAC_GOOGLE_APPLICATION_CREDENTIALS` validated in the Joi config schema at startup | `TODO` |
-| FARM-T246 | Task | `StateReaderService.parse(raw)`: typed `TerraformState` interface mapping `resources[]` to `{ type, name, provider, module, instances[] }`; `GET /iac-stacks/:id/state` returns parsed inventory; `GET /iac-stacks/:id/state/resources` returns flat resource list; "Refresh state" triggers a re-fetch | `TODO` |
+| FARM-T246 | Task | `IacStacksTab` component on the component detail page: fetches `GET /api/v1/iac/stacks?componentId=:id`; table with columns stack name, environment badge, last run status badge, last run date, and "Open in [tool]" link-out button (hidden when `externalToolUrl` is null); empty state when no stacks are linked; unit tests | `DONE` |
+
+##### FARM-T246 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST402 | Sub-task | Unit test: `IacStacksTab` renders empty state when the API returns an empty array | `DONE` |
+| FARM-ST403 | Sub-task | Unit test: "Open in [tool]" link-out button is not rendered when `externalToolUrl` is null | `DONE` |
 
 #### FARM-S279 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T247 | Task | Build adjacency list from state `depends_on` arrays and implicit resource references between instance attributes; expose via `GET /iac-stacks/:id/state/graph` as `{ nodes: [{ id, type, name }], edges: [{ source, target }] }` | `TODO` |
-| FARM-T248 | Task | Frontend resource graph: render nodes as labeled resource cards with provider-color coding; edges show dependency direction; pan and zoom via react-flow; clicking a node shows instance attributes in a side panel | `TODO` |
+| FARM-T247 | Task | Stack list page at `/iac/stacks`: table with stack name, provider badge, environment badge, linked component chip, last run status badge, last run date, and "Open in [tool]" link-out button; environment filter chips above the table; add "Stacks" navigation entry in the IaC sidebar section; unit tests | `DONE` |
 
 #### FARM-S280 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T249 | Task | Stack list page (`/iac`): table with stack name, provider badge, backend type, linked component chip, last state refresh timestamp, and "Open in [tool]" link-out button using `externalToolUrl` | `TODO` |
-| FARM-T250 | Task | Stack detail page: Resource Inventory tab (table with type, name, provider, module path, instance count) and Dependency Graph tab; "Refresh state" button re-fetches and re-parses the state file | `TODO` |
+| FARM-T248 | Task | Stack detail page at `/iac/stacks/:id`: header with stack name, provider badge, environment badge, repository URL, linked component chip, and "Open in [tool]" link-out button; run history list below the header reusing the existing `IacStackRunsClient` component already built in E70; unit tests | `DONE` |
+
+#### FARM-S286 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T249 | Task | `IacResource` entity (`id`, `stackId` FK, `address`, `resourceType`, `resourceName`, `provider`) and `IacResourceDependency` entity (`id`, `stackId` FK, `sourceAddress`, `targetAddress`) + TypeORM migrations | `DONE` |
+| FARM-T250 | Task | `POST /api/v1/iac/stacks/:id/resources/ingest` (IAC_INGEST_TOKEN protected): accepts `{ resources: [{address, resourceType, resourceName, provider}], dependencies: [{source, target}] }` and atomically replaces the full resource topology for that stack (delete existing records, insert new ones in a transaction); `GET /api/v1/iac/stacks/:id/resources` (JwtAuthGuard protected): returns `{ resources, dependencies }` in a single response; unit + e2e tests | `DONE` |
+| FARM-T262 | Task | `ResourceMapCanvas` component using `@xyflow/react` (React Flow): renders resources as nodes with provider icon and resource-type label, and dependencies as directed edges with arrow markers; automatic layout via `dagre`; embedded as a "Resource Map" tab on the stack detail page at `/iac/stacks/:id`; empty state panel when no resources have been pushed yet; unit tests | `DONE` |
+
+##### FARM-T250 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST404 | Sub-task | Unit test: `POST .../resources/ingest` replaces an existing snapshot atomically — old nodes are removed and new ones persisted in a single transaction | `DONE` |
+| FARM-ST405 | Sub-task | Unit test: `ResourceMapCanvas` renders the correct number of node and edge elements from a mocked API response | `DONE` |
 
 ---
 
@@ -663,6 +691,63 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 
 ---
 
+## Phase 34: Dead Code Elimination `TODO`
+
+### FARM-E80: Knip Dead Code and Dependency Hygiene `TODO`
+
+> Farm is a monorepo with 665+ source files across two workspaces (`apps/api` and `apps/web`). As each phase ships, unreferenced exports, orphaned components, and stale `package.json` entries accumulate. This Epic introduces [Knip](https://knip.dev) — a static analysis tool that finds unused files, unused exports, and unused dependencies at the workspace level, complementing ESLint which only sees within-file scope. The cleanup is split by workspace because NestJS (DI-based, decorator-heavy) requires a different ignore-rule strategy than Next.js. After cleanup, a CI step prevents regressions by failing on any new dead code introduced in a PR.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S347 | Story | Knip baseline setup — install Knip as a root devDependency, create a monorepo-aware `knip.config.ts` with workspace entries, Next.js plugin for `apps/web`, and NestJS-aware ignore rules for `apps/api`; capture initial dead-code report | `TODO` |
+| FARM-S348 | Story | Web workspace cleanup — resolve all Knip findings in `apps/web`: unused React components, hooks, utility functions, and unused `package.json` dependencies; full Vitest and Playwright suites must pass after each removal batch | `TODO` |
+| FARM-S349 | Story | API workspace cleanup — resolve all Knip findings in `apps/api` after NestJS ignore rules are applied: unused DTOs, enums, and utility exports; unused `package.json` dependencies; all unit and e2e tests must pass | `TODO` |
+| FARM-S350 | Story | CI enforcement — add a Knip step to the GitHub Actions workflows in report-only mode first; escalate to hard-fail after the initial cleanup lands; add `knip` to `make check` for local developer feedback | `TODO` |
+
+#### FARM-S347 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T393 | Task | Install `knip` as a root devDependency; create `knip.config.ts` with workspace entries for `apps/api` and `apps/web`; enable the Knip `next` plugin for the web workspace; run `knip --reporter json` to capture the initial dead-code baseline and commit it as `knip-baseline.json` | `TODO` |
+| FARM-T394 | Task | Configure NestJS-aware ignore rules for `apps/api`: exclude DI-registered classes (modules, providers, guards, interceptors, pipes declared in `@Module()` arrays), TypeORM entities and migration files loaded dynamically, decorator factories, and the `main.ts` entry point from unused-export checks; document each rule with an inline comment explaining why it is needed | `TODO` |
+
+##### FARM-T393 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST406 | Sub-task | Verify `knip --reporter compact` exits with a known, documented count on the baseline run after all structural ignores are applied; this count becomes the acceptance threshold for FARM-S348 and FARM-S349 | `TODO` |
+| FARM-ST407 | Sub-task | Add a `"knip"` script to the root `package.json` (`knip --reporter compact`) and a `"knip:ci"` variant that writes findings to `knip-report.json` for CI artifact upload | `TODO` |
+
+#### FARM-S348 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T395 | Task | Remove unused React components, hooks, and utility functions found in `apps/web` by Knip; run `npx vitest run` after each removal batch to confirm no regressions; update barrel exports and re-exports as needed | `TODO` |
+| FARM-T396 | Task | Remove unused `package.json` dependencies and devDependencies in `apps/web` identified by Knip; run `npm install` and `npm run build` after removal; full Vitest suite and Playwright e2e suite must pass | `TODO` |
+
+#### FARM-S349 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T397 | Task | Remove unused TypeScript exports in `apps/api` (DTOs, enums, utility functions) after NestJS ignore rules are applied; run `npm run test` and `npm run test:e2e` to confirm no regressions | `TODO` |
+| FARM-T398 | Task | Remove unused `package.json` dependencies in `apps/api` identified by Knip; run `npm run build` to confirm a clean compilation; all unit and e2e tests must pass | `TODO` |
+
+#### FARM-S350 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T399 | Task | Add `knip --reporter compact --no-exit-code` step to both `ci.yml` and `web-ci.yml`; upload the JSON report as a workflow artifact; step never blocks the build in this first iteration | `TODO` |
+| FARM-T400 | Task | After FARM-S348 and FARM-S349 are merged and the CI baseline is clean, remove `--no-exit-code` from both workflow steps so any new dead code introduced in a PR causes the workflow to fail; update `CONTRIBUTING.md` with Knip usage guidance (how to add an ignore rule, how to verify locally before opening a PR) | `TODO` |
+
+##### FARM-T400 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST408 | Sub-task | Verify the hard-fail gate works: introduce a deliberately unused export in a test branch, confirm Knip exits with code 1 and the CI workflow is blocked before enabling the gate on main | `TODO` |
+| FARM-ST409 | Sub-task | Add `knip` to the `check` target in the root `Makefile` so developers receive Knip feedback alongside lint, format, and tests in a single `make check` run | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -692,7 +777,7 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 20: Service Mesh Expansion | 1 | 4 | `DONE` |
 | Phase 21: Policy Engine Expansion | 1 | 4 | `DONE` |
 | Phase 22: CI/CD Hardening | 1 | 3 | `DONE` |
-| Phase 23: IaC Visibility and Cataloging | 3 | 13 | `TODO` |
+| Phase 23: IaC Visibility and Cataloging | 3 | 13 | `DONE` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
 | Phase 25: Feature Availability UX | 1 | 11 | `DONE` |
 | Phase 26: Auth Provider Expansion | 1 | 5 | `TODO` |
@@ -703,4 +788,5 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `TODO` |
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
-| **Total** | **81** | **326** | |
+| Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
+| **Total** | **82** | **330** | |

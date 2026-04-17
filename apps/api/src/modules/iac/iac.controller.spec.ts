@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { IacController } from "./iac.controller";
 import { IacService } from "./iac.service";
+import { IacResourceService } from "./iac-resource.service";
 import { IacRunType, IacRunStatus } from "./entities/iac-run.entity";
 import type { IacRun } from "./entities/iac-run.entity";
 import type { IacModuleDrift } from "./entities/iac-module-drift.entity";
@@ -65,6 +66,15 @@ describe("IacController", () => {
               .mockResolvedValue({ data: [mockRun], total: 1 }),
             getDashboard: jest.fn().mockResolvedValue(mockDashboard),
             getModuleDrift: jest.fn().mockResolvedValue([mockDrift]),
+          },
+        },
+        {
+          provide: IacResourceService,
+          useValue: {
+            ingestResources: jest.fn().mockResolvedValue(undefined),
+            getResources: jest
+              .fn()
+              .mockResolvedValue({ resources: [], dependencies: [] }),
           },
         },
       ],
@@ -190,6 +200,13 @@ describe("IacController", () => {
       );
       expect(service.getStackRuns).toHaveBeenCalledWith("stack-uuid-1", 2, 50);
     });
+
+    it("should use default page=1 and limit=20 when no params are provided", async () => {
+      await (controller.getStackRuns as (id: string) => Promise<unknown>)(
+        "stack-uuid-1",
+      );
+      expect(service.getStackRuns).toHaveBeenCalledWith("stack-uuid-1", 1, 20);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -211,6 +228,192 @@ describe("IacController", () => {
       const result = await controller.getModuleDrift();
       expect(service.getModuleDrift).toHaveBeenCalled();
       expect(result).toEqual([mockDrift]);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// IacController — stack endpoints (FARM-S277)
+// ---------------------------------------------------------------------------
+describe("IacController (stack endpoints)", () => {
+  let controller: IacController;
+  let service: IacService;
+
+  const mockStackDetail = {
+    id: "stack-uuid-1",
+    name: "core-networking",
+    environment: "production",
+    provider: "terraform",
+    repositoryUrl: "https://github.com/acme/infra",
+    basePath: "stacks/networking",
+    externalToolUrl: null,
+    componentId: "comp-uuid-1",
+    autoImported: false,
+    lastRun: {
+      id: "run-uuid-1",
+      status: "succeeded",
+      type: "plan",
+      startedAt: new Date("2024-01-01T10:00:00Z"),
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [IacController],
+      providers: [
+        {
+          provide: IacService,
+          useValue: {
+            listStacks: jest.fn().mockResolvedValue([mockStackDetail]),
+            getStack: jest.fn().mockResolvedValue(mockStackDetail),
+            ingestRun: jest.fn(),
+            importStacks: jest.fn(),
+            ingestModuleDrift: jest.fn(),
+            getStackRuns: jest.fn(),
+            getDashboard: jest.fn(),
+            getModuleDrift: jest.fn(),
+          },
+        },
+        {
+          provide: IacResourceService,
+          useValue: {
+            ingestResources: jest.fn().mockResolvedValue(undefined),
+            getResources: jest
+              .fn()
+              .mockResolvedValue({ resources: [], dependencies: [] }),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<IacController>(IacController);
+    service = module.get<IacService>(IacService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  // -------------------------------------------------------------------------
+  // listStacks
+  // -------------------------------------------------------------------------
+  describe("listStacks", () => {
+    it("should delegate to IacService.listStacks and return the result", async () => {
+      const query = { environment: "production" };
+      const result = await controller.listStacks(query as never);
+
+      expect(service.listStacks).toHaveBeenCalledWith(query);
+      expect(result).toEqual([mockStackDetail]);
+    });
+
+    it("should pass an empty query object when no filters are provided", async () => {
+      await controller.listStacks({} as never);
+      expect(service.listStacks).toHaveBeenCalledWith({});
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // getStack
+  // -------------------------------------------------------------------------
+  describe("getStack", () => {
+    it("should delegate to IacService.getStack with the provided id", async () => {
+      const result = await controller.getStack("stack-uuid-1");
+
+      expect(service.getStack).toHaveBeenCalledWith("stack-uuid-1");
+      expect(result).toEqual(mockStackDetail);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FARM-S286 — Resource endpoints
+// ---------------------------------------------------------------------------
+
+describe("IacController — resource endpoints (FARM-S286)", () => {
+  let controller: IacController;
+  let iacResourceService: {
+    ingestResources: jest.Mock;
+    getResources: jest.Mock;
+  };
+
+  const mockResourceMap = {
+    resources: [
+      {
+        address: "aws_instance.web",
+        resourceType: "aws_instance",
+        resourceName: "web",
+        provider: "aws",
+      },
+    ],
+    dependencies: [],
+  };
+
+  beforeEach(async () => {
+    iacResourceService = {
+      ingestResources: jest.fn().mockResolvedValue(undefined),
+      getResources: jest.fn().mockResolvedValue(mockResourceMap),
+    };
+
+    const module = await Test.createTestingModule({
+      controllers: [IacController],
+      providers: [
+        {
+          provide: IacService,
+          useValue: {
+            ingestRun: jest.fn(),
+            importStacks: jest.fn(),
+            ingestModuleDrift: jest.fn(),
+            getStackRuns: jest.fn(),
+            getDashboard: jest.fn(),
+            getModuleDrift: jest.fn(),
+            getStack: jest.fn(),
+          },
+        },
+        { provide: IacResourceService, useValue: iacResourceService },
+      ],
+    }).compile();
+
+    controller = module.get<IacController>(IacController);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe("ingestResources", () => {
+    it("delegates to IacResourceService.ingestResources", async () => {
+      const dto = { resources: [], dependencies: [] };
+
+      await controller.ingestResources(
+        "stack-uuid-1",
+        "Bearer test-token",
+        dto,
+      );
+
+      expect(iacResourceService.ingestResources).toHaveBeenCalledWith(
+        "stack-uuid-1",
+        dto,
+        "test-token",
+      );
+    });
+
+    it("returns undefined (void / 201)", async () => {
+      const dto = { resources: [], dependencies: [] };
+      const result = await controller.ingestResources(
+        "stack-uuid-1",
+        "Bearer test-token",
+        dto,
+      );
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("getResources", () => {
+    it("delegates to IacResourceService.getResources", async () => {
+      const result = await controller.getResources("stack-uuid-1");
+
+      expect(iacResourceService.getResources).toHaveBeenCalledWith(
+        "stack-uuid-1",
+      );
+      expect(result).toEqual(mockResourceMap);
     });
   });
 });

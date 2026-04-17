@@ -250,6 +250,133 @@ describe("IaC Module (e2e)", () => {
         .expect(401);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /api/v1/iac/stacks (FARM-S277 / FARM-T244)
+  // ---------------------------------------------------------------------------
+  describe("GET /api/v1/iac/stacks", () => {
+    beforeAll(async () => {
+      // Ingest a run so we always have at least one stack in staging
+      await request(app.getHttpServer())
+        .post("/api/v1/iac/runs/ingest")
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send({
+          stackName: "stack-list-e2e",
+          environment: "staging",
+          provider: "terraform",
+          type: "plan",
+          status: "succeeded",
+        })
+        .expect(201);
+    });
+
+    it("should return 200 with an array of stacks", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac/stacks")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      expect((res.body as unknown[]).length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should return 401 without JWT", async () => {
+      await request(app.getHttpServer()).get("/api/v1/iac/stacks").expect(401);
+    });
+
+    it("should filter by environment and return only matching stacks (FARM-ST401)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac/stacks?environment=staging")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const stacks = res.body as { environment: string }[];
+      expect(Array.isArray(stacks)).toBe(true);
+      stacks.forEach((s) => {
+        expect(s.environment).toBe("staging");
+      });
+    });
+
+    it("should return an empty array when no stacks match the environment filter (FARM-ST401)", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac/stacks?environment=nonexistent-env-xyz")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toEqual([]);
+    });
+
+    it("should return an empty array when componentId filter matches nothing (FARM-ST400)", async () => {
+      const res = await request(app.getHttpServer())
+        .get(
+          "/api/v1/iac/stacks?componentId=00000000-0000-0000-0000-000000000000",
+        )
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toEqual([]);
+    });
+
+    it("should include lastRun field on each stack", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/iac/stacks?environment=staging")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const stacks = res.body as Record<string, unknown>[];
+      expect(stacks.length).toBeGreaterThanOrEqual(1);
+      expect("lastRun" in stacks[0]).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // GET /api/v1/iac/stacks/:id (FARM-S277 / FARM-T245)
+  // ---------------------------------------------------------------------------
+  describe("GET /api/v1/iac/stacks/:id", () => {
+    let stackDetailId: string;
+
+    beforeAll(async () => {
+      const ingestRes = await request(app.getHttpServer())
+        .post("/api/v1/iac/runs/ingest")
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send({
+          stackName: "stack-detail-e2e",
+          environment: "production",
+          provider: "terraform",
+          type: "apply",
+          status: "succeeded",
+        })
+        .expect(201);
+
+      stackDetailId = (ingestRes.body as { stackId: string }).stackId;
+    });
+
+    it("should return 200 with the correct stack shape", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${stackDetailId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body = res.body as Record<string, unknown>;
+      expect(body.id).toBe(stackDetailId);
+      expect(typeof body.name).toBe("string");
+      expect(typeof body.environment).toBe("string");
+      expect("lastRun" in body).toBe(true);
+    });
+
+    it("should return 401 without JWT", async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${stackDetailId}`)
+        .expect(401);
+    });
+
+    it("should return 404 for a non-existent stack ID", async () => {
+      await request(app.getHttpServer())
+        .get("/api/v1/iac/stacks/00000000-0000-0000-0000-000000000000")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -486,6 +613,225 @@ describe("IaC Module Catalog (e2e)", () => {
         .get(`/api/v1/iac-modules/${created.id}`)
         .set("Authorization", `Bearer ${token}`)
         .expect(404);
+    });
+  });
+});
+
+describe("IaC Resource Topology (e2e)", () => {
+  let app: INestApplication<App>;
+  let token: string;
+  let stackId: string;
+
+  beforeAll(async () => {
+    process.env.IAC_INGEST_TOKEN = INGEST_TOKEN;
+    app = await createE2EApp();
+    ({ token } = await registerAndLogin(app));
+
+    // Create a stack via run ingest which returns stackId directly
+    const ingestRes = await request(app.getHttpServer())
+      .post("/api/v1/iac/runs/ingest")
+      .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+      .send({
+        stackName: "resource-map-test",
+        environment: "staging",
+        type: "plan",
+        status: "succeeded",
+        startedAt: "2024-01-01T10:00:00Z",
+      })
+      .expect(201);
+
+    stackId = (ingestRes.body as { stackId: string }).stackId;
+  });
+
+  afterAll(async () => {
+    delete process.env.IAC_INGEST_TOKEN;
+    await app.close();
+  });
+
+  describe("POST /api/v1/iac/stacks/:id/resources/ingest", () => {
+    it("returns 401 for an invalid ingest token", async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/iac/stacks/${stackId}/resources/ingest`)
+        .set("Authorization", "Bearer wrong-token")
+        .send({ resources: [], dependencies: [] })
+        .expect(401);
+    });
+
+    it("returns 404 when the stack does not exist", async () => {
+      await request(app.getHttpServer())
+        .post(
+          "/api/v1/iac/stacks/00000000-0000-0000-0000-000000000000/resources/ingest",
+        )
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send({ resources: [], dependencies: [] })
+        .expect(404);
+    });
+
+    it("returns 201 and persists resources atomically (ST404)", async () => {
+      const payload = {
+        resources: [
+          {
+            address: "aws_instance.web",
+            resourceType: "aws_instance",
+            resourceName: "web",
+            provider: "aws",
+          },
+          {
+            address: "aws_security_group.web",
+            resourceType: "aws_security_group",
+            resourceName: "web",
+            provider: "aws",
+          },
+        ],
+        dependencies: [
+          { source: "aws_instance.web", target: "aws_security_group.web" },
+        ],
+      };
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/iac/stacks/${stackId}/resources/ingest`)
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send(payload)
+        .expect(201);
+    });
+
+    it("replaces existing topology on second ingest (ST404 atomicity)", async () => {
+      const first = {
+        resources: [
+          {
+            address: "old_resource.a",
+            resourceType: "old_type",
+            resourceName: "a",
+            provider: "aws",
+          },
+        ],
+        dependencies: [],
+      };
+      const second = {
+        resources: [
+          {
+            address: "new_resource.b",
+            resourceType: "new_type",
+            resourceName: "b",
+            provider: "aws",
+          },
+        ],
+        dependencies: [],
+      };
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/iac/stacks/${stackId}/resources/ingest`)
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send(first)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/iac/stacks/${stackId}/resources/ingest`)
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send(second)
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${stackId}/resources`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const body739 = res.body as { resources: { address: string }[] };
+      const addresses = body739.resources.map(
+        (r: { address: string }) => r.address,
+      );
+      expect(addresses).not.toContain("old_resource.a");
+      expect(addresses).toContain("new_resource.b");
+    });
+  });
+
+  describe("GET /api/v1/iac/stacks/:id/resources", () => {
+    it("returns 401 when not authenticated", async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${stackId}/resources`)
+        .expect(401);
+    });
+
+    it("returns 404 when the stack does not exist", async () => {
+      await request(app.getHttpServer())
+        .get(
+          "/api/v1/iac/stacks/00000000-0000-0000-0000-000000000000/resources",
+        )
+        .set("Authorization", `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it("returns 200 with resources and dependencies in expected DTO shape", async () => {
+      const ingest = {
+        resources: [
+          {
+            address: "aws_vpc.main",
+            resourceType: "aws_vpc",
+            resourceName: "main",
+            provider: "aws",
+          },
+        ],
+        dependencies: [],
+      };
+
+      await request(app.getHttpServer())
+        .post(`/api/v1/iac/stacks/${stackId}/resources/ingest`)
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send(ingest)
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${stackId}/resources`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const resBody = res.body as {
+        resources: {
+          address: string;
+          resourceType: string;
+          resourceName: string;
+          provider: string;
+        }[];
+        dependencies: unknown[];
+      };
+      expect(resBody).toHaveProperty("resources");
+      expect(resBody).toHaveProperty("dependencies");
+      expect(Array.isArray(resBody.resources)).toBe(true);
+      expect(resBody.resources[0]).toMatchObject({
+        address: "aws_vpc.main",
+        resourceType: "aws_vpc",
+        resourceName: "main",
+        provider: "aws",
+      });
+    });
+
+    it("returns empty resource map before any ingest (ST405)", async () => {
+      // Create a fresh stack with no topology via run ingest
+      const ingestRes = await request(app.getHttpServer())
+        .post("/api/v1/iac/runs/ingest")
+        .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .send({
+          stackName: "empty-resource-stack",
+          environment: "dev",
+          type: "plan",
+          status: "succeeded",
+          startedAt: "2024-01-01T10:00:00Z",
+        })
+        .expect(201);
+
+      const emptyStackId = (ingestRes.body as { stackId: string }).stackId;
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/iac/stacks/${emptyStackId}/resources`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const emptyBody = res.body as {
+        resources: unknown[];
+        dependencies: unknown[];
+      };
+      expect(emptyBody.resources).toHaveLength(0);
+      expect(emptyBody.dependencies).toHaveLength(0);
     });
   });
 });

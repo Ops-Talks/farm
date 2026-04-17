@@ -4,7 +4,7 @@
 import { IacDashboardClient } from "./_components/IacDashboardClient";
 
 export const metadata = {
-  title: "IaC",
+  title: "IaC Overview",
 };
 
 export default function IacPage() {

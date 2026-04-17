@@ -290,4 +290,107 @@ describe("IacModuleDetailClient", () => {
       fireEvent.click(screen.getByRole("button", { name: /back to modules/i })),
     ).not.toThrow();
   });
+
+  it("renders 'No variables' message when version has empty variablesMeta", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([buildVersion({ variablesMeta: [] })]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(
+        screen.getByText(/no variables declared in this version/i),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("renders 'any' when variable type is null", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({
+        variablesMeta: [
+          { name: "region", type: null, description: "AWS region", default: null, required: false, validation: null },
+        ],
+      }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("region")).toBeInTheDocument();
+    });
+    expect(screen.getByText("any")).toBeInTheDocument();
+  });
+
+  it("renders dash placeholder when variable description is null", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({
+        variablesMeta: [
+          { name: "region", type: "string", description: null, default: null, required: false, validation: null },
+        ],
+      }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("region")).toBeInTheDocument();
+    });
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it("renders 'No outputs' message when version has empty outputsMeta", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([buildVersion({ outputsMeta: [] })]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(
+        screen.getByText(/no outputs declared in this version/i),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("does not render description paragraph when module description is null", async () => {
+    mockGetModule.mockResolvedValue(buildModule({ description: null }));
+    mockGetVersions.mockResolvedValue([]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Creates a VPC on AWS")).not.toBeInTheDocument();
+  });
+
+  it("disables Sync button while mutation is pending", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([]);
+    mockSync.mockReturnValue(new Promise(() => {}));
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+    const syncBtn = screen
+      .getAllByRole("button")
+      .find((b) => b.textContent?.toLowerCase().includes("sync"))!;
+    fireEvent.click(syncBtn);
+    await waitFor(() => expect(syncBtn).toBeDisabled());
+  });
+
+  it("renders version option without (latest) suffix when isLatest is false", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({ id: "ver-only", version: "v1.0.0", isLatest: false }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("v1.0.0")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/\(latest\)/i)).not.toBeInTheDocument();
+  });
+
+  it("shows inner skeleton while versions are loading after module resolves", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+    expect(container.querySelectorAll("[data-slot='skeleton']").length).toBeGreaterThan(0);
+  });
 });

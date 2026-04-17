@@ -160,4 +160,30 @@ describe("IacModulesBrowserClient", () => {
     const card = screen.getByRole("button");
     expect(() => fireEvent.keyDown(card, { key: "Enter" })).not.toThrow();
   });
+
+  it("navigates to module detail on Space key press", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([buildModule()]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    const card = screen.getByRole("button");
+    expect(() => fireEvent.keyDown(card, { key: " " })).not.toThrow();
+  });
+
+  it("does not navigate on unrecognized key press", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([buildModule()]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    const card = screen.getByRole("button");
+    expect(() => fireEvent.keyDown(card, { key: "Tab" })).not.toThrow();
+  });
 });
