@@ -499,4 +499,101 @@ describe("IacStackRunsClient", () => {
       expect(screen.getByText("45s")).toBeDefined();
     });
   });
+
+  // -------------------------------------------------------------------------
+  // timeAgo branches: seconds / minutes / hours (lines 32-36)
+  // -------------------------------------------------------------------------
+
+  it("shows 'Xs ago' format when startedAt is less than 60 seconds ago", async () => {
+    const startedAt = new Date(Date.now() - 30 * 1000).toISOString();
+    mockGetStackRuns.mockResolvedValue({
+      data: [
+        {
+          id: "run-seconds",
+          stackId: "stack-uuid-1",
+          type: "plan" as const,
+          status: "succeeded" as const,
+          triggeredBy: null,
+          pipelineUrl: null,
+          durationMs: null,
+          resourceChanges: null,
+          startedAt,
+          createdAt: startedAt,
+          updatedAt: startedAt,
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    render(<IacStackRunsClient />);
+
+    await waitFor(() => {
+      const elements = screen.getAllByText(/\d+s ago/);
+      expect(elements.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows 'Xm ago' format when startedAt is a few minutes ago", async () => {
+    const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    mockGetStackRuns.mockResolvedValue({
+      data: [
+        {
+          id: "run-minutes",
+          stackId: "stack-uuid-1",
+          type: "plan" as const,
+          status: "succeeded" as const,
+          triggeredBy: null,
+          pipelineUrl: null,
+          durationMs: null,
+          resourceChanges: null,
+          startedAt,
+          createdAt: startedAt,
+          updatedAt: startedAt,
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    render(<IacStackRunsClient />);
+
+    await waitFor(() => {
+      const elements = screen.getAllByText(/\d+m ago/);
+      expect(elements.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows 'Xh ago' format when startedAt is a few hours ago", async () => {
+    const startedAt = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    mockGetStackRuns.mockResolvedValue({
+      data: [
+        {
+          id: "run-hours",
+          stackId: "stack-uuid-1",
+          type: "plan" as const,
+          status: "succeeded" as const,
+          triggeredBy: null,
+          pipelineUrl: null,
+          durationMs: null,
+          resourceChanges: null,
+          startedAt,
+          createdAt: startedAt,
+          updatedAt: startedAt,
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+
+    render(<IacStackRunsClient />);
+
+    await waitFor(() => {
+      const elements = screen.getAllByText(/\d+h ago/);
+      expect(elements.length).toBeGreaterThan(0);
+    });
+  });
 });

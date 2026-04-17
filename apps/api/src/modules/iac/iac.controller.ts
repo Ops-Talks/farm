@@ -26,10 +26,15 @@ import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { IacService } from "./iac.service";
+import { IacResourceService } from "./iac-resource.service";
 import { IngestRunDto } from "./dto/ingest-run.dto";
 import { ImportStacksDto } from "./dto/import-stacks.dto";
 import { IngestModuleDriftDto } from "./dto/ingest-module-drift.dto";
+import { IngestResourcesDto } from "./dto/ingest-resources.dto";
+import { ResourceMapDto } from "./dto/resource-map.dto";
 import { DashboardDto } from "./dto/dashboard.dto";
+import { StackListQueryDto } from "./dto/stack-list-query.dto";
+import { StackDetailDto } from "./dto/stack-detail.dto";
 import { IacRun } from "./entities/iac-run.entity";
 import { IacModuleDrift } from "./entities/iac-module-drift.entity";
 
@@ -66,7 +71,10 @@ function extractBearer(authHeader: string | undefined): string {
   type: ErrorResponseDto,
 })
 export class IacController {
-  constructor(private readonly iacService: IacService) {}
+  constructor(
+    private readonly iacService: IacService,
+    private readonly iacResourceService: IacResourceService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // Machine-to-machine ingest endpoints (no JwtAuthGuard)
@@ -181,6 +189,53 @@ export class IacController {
   // ---------------------------------------------------------------------------
 
   /**
+   * Returns all IaC stacks, optionally filtered by environment and/or
+   * linked component ID. Each record includes the most recent run summary.
+   *
+   * @param query - Optional environment and componentId filters
+   * @returns Array of StackDetailDto
+   */
+  @Get("stacks")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List IaC stacks with optional filters" })
+  @ApiQuery({ name: "environment", required: false, type: String })
+  @ApiQuery({ name: "componentId", required: false, type: String })
+  @ApiOkResponse({
+    description: "Successfully retrieved stack list.",
+    type: [StackDetailDto],
+  })
+  async listStacks(
+    @Query() query: StackListQueryDto,
+  ): Promise<StackDetailDto[]> {
+    return this.iacService.listStacks(query);
+  }
+
+  /**
+   * Returns a single IaC stack by UUID with its most recent run summary.
+   *
+   * @param id - IacStack UUID
+   * @returns StackDetailDto
+   */
+  @Get("stacks/:id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get an IaC stack by ID" })
+  @ApiParam({ name: "id", description: "IacStack UUID" })
+  @ApiOkResponse({
+    description: "Successfully retrieved stack.",
+    type: StackDetailDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "IacStack not found.",
+    type: ErrorResponseDto,
+  })
+  async getStack(@Param("id") id: string): Promise<StackDetailDto> {
+    return this.iacService.getStack(id);
+  }
+
+  /**
    * Returns paginated run history for a specific IaC stack.
    *
    * @param id - IacStack UUID
@@ -242,5 +297,73 @@ export class IacController {
   })
   async getModuleDrift(): Promise<IacModuleDrift[]> {
     return this.iacService.getModuleDrift();
+  }
+
+  /**
+   * Atomically replaces the full resource topology for a stack.
+   * Authenticated via static IAC_INGEST_TOKEN bearer token.
+   *
+   * @param id - IacStack UUID
+   * @param authorization - Authorization header containing the static bearer token
+   * @param dto - Resource topology payload
+   */
+  @Post("stacks/:id/resources/ingest")
+  @SkipThrottle({ long: true })
+  @Throttle({ short: { ttl: 1000, limit: 3 } })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: "Ingest resource topology for a stack (machine-to-machine)",
+    description:
+      "Atomically replaces the full resource topology for the given stack. " +
+      "Authenticated via static IAC_INGEST_TOKEN bearer token.",
+  })
+  @ApiParam({ name: "id", description: "IacStack UUID" })
+  @ApiCreatedResponse({
+    description: "Resource topology ingested successfully.",
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Invalid or missing IAC_INGEST_TOKEN.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "IacStack not found.",
+    type: ErrorResponseDto,
+  })
+  async ingestResources(
+    @Param("id") id: string,
+    @Headers("authorization") authorization: string | undefined,
+    @Body() dto: IngestResourcesDto,
+  ): Promise<void> {
+    return this.iacResourceService.ingestResources(
+      id,
+      dto,
+      extractBearer(authorization),
+    );
+  }
+
+  /**
+   * Returns the resource topology (nodes and edges) for a stack.
+   *
+   * @param id - IacStack UUID
+   * @returns ResourceMapDto
+   */
+  @Get("stacks/:id/resources")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Get resource topology for a stack" })
+  @ApiParam({ name: "id", description: "IacStack UUID" })
+  @ApiOkResponse({
+    description: "Successfully retrieved resource topology.",
+    type: ResourceMapDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "IacStack not found.",
+    type: ErrorResponseDto,
+  })
+  async getResources(@Param("id") id: string): Promise<ResourceMapDto> {
+    return this.iacResourceService.getResources(id);
   }
 }

@@ -150,9 +150,11 @@ import type {
   IacDashboard,
   IacModuleDrift,
   IacStackRunsResponse,
+  IacStack,
   IacModule,
   IacModuleVersion,
   IacModulesResponse,
+  IacResourceMap,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -2566,6 +2568,38 @@ export const iac = {
    */
   getModuleDrift(): Promise<IacModuleDrift[]> {
     return request<IacModuleDrift[]>('/v1/iac/module-drift');
+  },
+
+  /**
+   * Lists all IaC stacks with optional environment and componentId filters.
+   * Each stack includes a summary of its most recent run.
+   *
+   * @param params - Optional environment and/or componentId filters
+   */
+  listStacks(params?: {
+    environment?: string;
+    componentId?: string;
+  }): Promise<IacStack[]> {
+    const qs = new URLSearchParams();
+    if (params?.environment) qs.set('environment', params.environment);
+    if (params?.componentId) qs.set('componentId', params.componentId);
+    const query = qs.toString();
+    return request<IacStack[]>(`/v1/iac/stacks${query ? `?${query}` : ''}`);
+  },
+
+  /**
+   * Fetches a single IaC stack by UUID with its most recent run summary.
+   *
+   * @param id - IacStack UUID
+   */
+  getStack(id: string): Promise<IacStack> {
+    return request<IacStack>(`/v1/iac/stacks/${encodeURIComponent(id)}`);
+  },
+
+  getResources(stackId: string): Promise<IacResourceMap> {
+    return request<IacResourceMap>(
+      `/v1/iac/stacks/${encodeURIComponent(stackId)}/resources`,
+    );
   },
 };
 

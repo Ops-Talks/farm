@@ -1,7 +1,12 @@
 import { timingSafeEqual } from "crypto";
-import { Injectable, UnauthorizedException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+  Logger,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, FindOptionsWhere } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { IacStack } from "./entities/iac-stack.entity";
 import { IacRun, IacRunStatus } from "./entities/iac-run.entity";
@@ -10,6 +15,8 @@ import { IngestRunDto } from "./dto/ingest-run.dto";
 import { ImportStacksDto } from "./dto/import-stacks.dto";
 import { IngestModuleDriftDto } from "./dto/ingest-module-drift.dto";
 import { DashboardDto, StackSummaryDto } from "./dto/dashboard.dto";
+import { StackListQueryDto } from "./dto/stack-list-query.dto";
+import { StackDetailDto } from "./dto/stack-detail.dto";
 
 /**
  * Parses a version tag of the form "vX.Y.Z" or "X.Y.Z" and returns the
@@ -347,6 +354,120 @@ export class IacService {
       failedLastRun,
       environments,
       stacksByEnvironment,
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Read-only stack query (FARM-S277)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns all stacks ordered by environment then name, with optional
+   * filtering by environment and/or componentId.
+   * Each result includes the most recent run summary.
+   *
+   * @param query - Optional environment and componentId filters
+   * @returns Array of StackDetailDto
+   */
+  async listStacks(query: StackListQueryDto): Promise<StackDetailDto[]> {
+    const where: FindOptionsWhere<IacStack> = {};
+    if (query.environment) where.environment = query.environment;
+    if (query.componentId) where.componentId = query.componentId;
+
+    const stacks = await this.stackRepository.find({
+      where,
+      order: { environment: "ASC", name: "ASC" },
+    });
+
+    if (stacks.length === 0) return [];
+
+    const stackIds = stacks.map((s) => s.id);
+    const lastRunMap = await this.fetchLastRunMap(stackIds);
+    return stacks.map((stack) =>
+      this.toStackDetail(stack, lastRunMap.get(stack.id) ?? null),
+    );
+  }
+
+  /**
+   * Returns a single stack by UUID with its most recent run summary.
+   *
+   * @param id - IacStack UUID
+   * @returns StackDetailDto
+   * @throws NotFoundException when no stack with that id exists
+   */
+  async getStack(id: string): Promise<StackDetailDto> {
+    const stack = await this.stackRepository.findOne({ where: { id } });
+    if (!stack) {
+      throw new NotFoundException(`IacStack ${id} not found`);
+    }
+    const lastRunMap = await this.fetchLastRunMap([id]);
+    return this.toStackDetail(stack, lastRunMap.get(id) ?? null);
+  }
+
+  /**
+   * Fetches the most recent run for each of the given stack IDs in a single
+   * query using a correlated subquery, and returns the results as a Map keyed
+   * by stackId.
+   *
+   * @param stackIds - List of IacStack UUIDs to look up
+   * @returns Map from stackId to the latest IacRun for that stack
+   */
+  private async fetchLastRunMap(
+    stackIds: string[],
+  ): Promise<Map<string, IacRun>> {
+    if (stackIds.length === 0) return new Map();
+
+    const latestRuns = await this.runRepository
+      .createQueryBuilder("run")
+      .innerJoin(
+        (qb) =>
+          qb
+            .subQuery()
+            .select("latest.stackId", "stackId")
+            .addSelect("MAX(latest.startedAt)", "startedAt")
+            .from(IacRun, "latest")
+            .where("latest.stackId IN (:...stackIds)", { stackIds })
+            .groupBy("latest.stackId"),
+        "latest_run",
+        'latest_run."stackId" = run."stackId" AND latest_run."startedAt" = run."startedAt"',
+      )
+      .where('run."stackId" IN (:...stackIds)', { stackIds })
+      .getMany();
+
+    const map = new Map<string, IacRun>();
+    for (const run of latestRuns) {
+      map.set(run.stackId, run);
+    }
+    return map;
+  }
+
+  /**
+   * Maps an IacStack entity and an optional last run to a StackDetailDto.
+   */
+  private toStackDetail(
+    stack: IacStack,
+    lastRun: IacRun | null,
+  ): StackDetailDto {
+    return {
+      id: stack.id,
+      name: stack.name,
+      environment: stack.environment,
+      provider: stack.provider,
+      repositoryUrl: stack.repositoryUrl,
+      basePath: stack.basePath,
+      externalToolUrl: stack.externalToolUrl,
+      componentId: stack.componentId,
+      autoImported: stack.autoImported,
+      lastRun: lastRun
+        ? {
+            id: lastRun.id,
+            status: lastRun.status,
+            type: lastRun.type,
+            startedAt: lastRun.startedAt,
+          }
+        : null,
+      createdAt: stack.createdAt,
+      updatedAt: stack.updatedAt,
     };
   }
 

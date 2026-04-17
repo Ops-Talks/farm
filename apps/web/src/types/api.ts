@@ -1758,6 +1758,32 @@ export interface IacStackRunsResponse {
 }
 
 // ---------------------------------------------------------------------------
+// IaC Stack read endpoints (FARM-S277)
+// ---------------------------------------------------------------------------
+
+export interface IacLastRunSummary {
+  id: string;
+  status: IacRunStatus;
+  type: IacRunType;
+  startedAt: string;
+}
+
+export interface IacStack {
+  id: string;
+  name: string;
+  environment: string;
+  provider: string;
+  repositoryUrl: string | null;
+  basePath: string | null;
+  externalToolUrl: string | null;
+  componentId: string | null;
+  autoImported: boolean;
+  lastRun: IacLastRunSummary | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
 // IaC Module Catalog (FARM-E68)
 // ---------------------------------------------------------------------------
 
@@ -1814,3 +1840,20 @@ export interface IacModule {
 }
 
 export type IacModulesResponse = IacModule[];
+
+export interface IacResourceNode {
+  address: string;
+  resourceType: string;
+  resourceName: string;
+  provider: string;
+}
+
+export interface IacResourceEdge {
+  source: string;
+  target: string;
+}
+
+export interface IacResourceMap {
+  resources: IacResourceNode[];
+  dependencies: IacResourceEdge[];
+}

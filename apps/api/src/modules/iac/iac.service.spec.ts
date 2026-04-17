@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
-import { UnauthorizedException } from "@nestjs/common";
+import { UnauthorizedException, NotFoundException } from "@nestjs/common";
 import { IacService } from "./iac.service";
 import { IacStack } from "./entities/iac-stack.entity";
 import { IacRun, IacRunType, IacRunStatus } from "./entities/iac-run.entity";
@@ -185,6 +185,31 @@ describe("IacService", () => {
       expect(result).toEqual(mockRun);
     });
 
+    it("should default provider to 'terraform' when auto-creating a stack without a provider field", async () => {
+      const dtoNoProvider: IngestRunDto = {
+        stackName: "core-networking",
+        environment: "production",
+        type: IacRunType.PLAN,
+        status: IacRunStatus.SUCCEEDED,
+      };
+      const autoStack = {
+        ...mockStack,
+        provider: "terraform",
+        autoImported: true,
+      };
+      stackRepo.findOne.mockResolvedValue(null);
+      stackRepo.create.mockReturnValue(autoStack);
+      stackRepo.save.mockResolvedValue(autoStack);
+      runRepo.create.mockReturnValue(mockRun);
+      runRepo.save.mockResolvedValue(mockRun);
+
+      await service.ingestRun(dtoNoProvider, VALID_TOKEN);
+
+      expect(stackRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: "terraform" }),
+      );
+    });
+
     it("should use finishedAt as fallback startedAt and record durationMs", async () => {
       const dtoWithTimes: IngestRunDto = {
         stackName: "core-networking",
@@ -207,6 +232,27 @@ describe("IacService", () => {
       expect(createArg.startedAt).toEqual(new Date("2024-06-01T09:00:00Z"));
       expect(createArg.finishedAt).toEqual(new Date("2024-06-01T09:05:00Z"));
       expect(createArg.durationMs).toBe(300000);
+    });
+
+    it("should use finishedAt as startedAt when startedAt is absent but finishedAt is present", async () => {
+      const dtoFinishedOnly: IngestRunDto = {
+        stackName: "core-networking",
+        environment: "production",
+        type: IacRunType.APPLY,
+        status: IacRunStatus.SUCCEEDED,
+        finishedAt: "2024-06-01T09:05:00Z",
+      };
+      stackRepo.findOne.mockResolvedValue(mockStack);
+      runRepo.create.mockImplementation(
+        (data: Partial<IacRun>) => data as IacRun,
+      );
+      runRepo.save.mockImplementation((r: IacRun) => Promise.resolve(r));
+
+      await service.ingestRun(dtoFinishedOnly, VALID_TOKEN);
+
+      const createArg = (runRepo.create.mock.calls as IacRun[][])[0][0];
+      expect(createArg.startedAt).toEqual(new Date("2024-06-01T09:05:00Z"));
+      expect(createArg.finishedAt).toEqual(new Date("2024-06-01T09:05:00Z"));
     });
 
     it("should default optional run fields to null when omitted", async () => {
@@ -689,6 +735,163 @@ describe("IacService", () => {
       expect(envStack.lastRunAt).toBeNull();
       expect(envStack.lastRunType).toBeNull();
       expect(envStack.resourceChanges).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // listStacks (FARM-S277 / FARM-T244)
+  // ---------------------------------------------------------------------------
+  describe("listStacks", () => {
+    /**
+     * Sets up a chainable QueryBuilder mock that returns the provided runs
+     * from getMany(), mirroring the fetchLastRunMap subquery structure.
+     */
+    function mockLastRunQb(runs: IacRun[]) {
+      const subQb = {
+        subQuery: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+      };
+      const qb: Record<string, jest.Mock> = {
+        innerJoin: jest.fn().mockImplementation((callbackOrEntity) => {
+          if (typeof callbackOrEntity === "function") {
+            (callbackOrEntity as (qb: unknown) => void)(subQb);
+          }
+          return qb;
+        }),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(runs),
+      };
+      runRepo.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    }
+
+    it("should return an empty array when no stacks match", async () => {
+      stackRepo.find.mockResolvedValue([]);
+
+      const result = await service.listStacks({});
+
+      expect(result).toEqual([]);
+      expect(runRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("should return all stacks with lastRun when no filter is provided", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockLastRunQb([mockRun]);
+
+      const result = await service.listStacks({});
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(mockStack.id);
+      expect(result[0].lastRun).not.toBeNull();
+      expect(result[0].lastRun?.status).toBe(mockRun.status);
+    });
+
+    it("should pass componentId filter to repository.find (FARM-ST400)", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockLastRunQb([mockRun]);
+
+      await service.listStacks({ componentId: "comp-uuid-1234" });
+
+      expect(stackRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { componentId: "comp-uuid-1234" },
+        }),
+      );
+    });
+
+    it("should pass environment filter to repository.find (FARM-ST401)", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockLastRunQb([mockRun]);
+
+      await service.listStacks({ environment: "production" });
+
+      expect(stackRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { environment: "production" },
+        }),
+      );
+    });
+
+    it("should set lastRun to null for stacks with no runs", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockLastRunQb([]);
+
+      const result = await service.listStacks({});
+
+      expect(result[0].lastRun).toBeNull();
+    });
+
+    it("should return stacks ordered by environment then name", async () => {
+      stackRepo.find.mockResolvedValue([mockStack]);
+      mockLastRunQb([]);
+
+      await service.listStacks({});
+
+      expect(stackRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          order: { environment: "ASC", name: "ASC" },
+        }),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getStack (FARM-S277 / FARM-T245)
+  // ---------------------------------------------------------------------------
+  describe("getStack", () => {
+    function mockLastRunQb(runs: IacRun[]) {
+      const subQb = {
+        subQuery: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+      };
+      const qb: Record<string, jest.Mock> = {
+        innerJoin: jest.fn().mockImplementation((callbackOrEntity) => {
+          if (typeof callbackOrEntity === "function") {
+            (callbackOrEntity as (qb: unknown) => void)(subQb);
+          }
+          return qb;
+        }),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(runs),
+      };
+      runRepo.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    }
+
+    it("should return a StackDetailDto when the stack exists", async () => {
+      stackRepo.findOne.mockResolvedValue(mockStack);
+      mockLastRunQb([mockRun]);
+
+      const result = await service.getStack("stack-uuid-1");
+
+      expect(result.id).toBe(mockStack.id);
+      expect(result.name).toBe(mockStack.name);
+      expect(result.lastRun?.id).toBe(mockRun.id);
+    });
+
+    it("should throw NotFoundException when the stack does not exist", async () => {
+      stackRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.getStack("non-existent-id")).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it("should set lastRun to null when no runs exist for the stack", async () => {
+      stackRepo.findOne.mockResolvedValue(mockStack);
+      mockLastRunQb([]);
+
+      const result = await service.getStack("stack-uuid-1");
+
+      expect(result.lastRun).toBeNull();
     });
   });
 

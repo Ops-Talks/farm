@@ -335,6 +335,16 @@ describe("IacModuleService", () => {
       expect(result.componentId).toBeNull();
     });
 
+    it("sets engine to null when dto.engine is explicitly null", async () => {
+      const base = { ...mockModule, engine: "terraform" as never };
+      moduleRepo.findOne.mockResolvedValue(base);
+      moduleRepo.save.mockImplementation((m) => Promise.resolve(m));
+
+      const result = await service.update("module-uuid-1", { engine: null });
+
+      expect(result.engine).toBeNull();
+    });
+
     it("throws NotFoundException when module does not exist", async () => {
       moduleRepo.findOne.mockResolvedValue(null);
 

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@dagrejs/dagre": "^3.0.0",
     "@farm/types": "^0.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@opentelemetry/api": "^1.9.0",
@@ -29,6 +30,7 @@
     "@opentelemetry/semantic-conventions": "^1.40.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.21",
+    "@xyflow/react": "^12.10.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",

@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.0] - 2026-04-14
 
 ### Added
-- **phase-23**: New Features.
-- **phase-23**: New Features.
-- **phase-23**: New Features.
+- **FARM-E69** (IaC Stack Visibility): `GET /api/v1/iac/stacks` and `GET /api/v1/iac/stacks/:id` endpoints with optional `?environment=` and `?componentId=` filters; each record includes the latest `IacRun` joined via a correlated subquery.
+- **FARM-E69**: `IacStacksTab` on the component detail page lists all stacks linked to that component with environment badge, run status, and link-out to the external tool.
+- **FARM-E69**: Stack list page at `/iac/stacks` with environment filter chips and a new "Stacks" sidebar navigation entry.
+- **FARM-E69**: Stack detail page at `/iac/stacks/:id` showing metadata (provider, repository, linked component) and embedded run history.
+- **FARM-E69**: `IacResource` and `IacResourceDependency` entities with `POST /iac/stacks/:id/resources/ingest` (IAC_INGEST_TOKEN auth, atomic replace) and `GET /iac/stacks/:id/resources`; `ResourceMapCanvas` renders an interactive directed graph using `@xyflow/react` + `dagre`.
+- **FARM-E68** (IaC Module Catalog): module registry, version tracking, component linking, and drift detection panel.
+- **FARM-E70** (Cultivator Integration): `IacStack`, `IacRun`, `IacModuleDrift` entities; 6 ingest endpoints; IaC dashboard with run status and drift panel.
 
 ### Changed
 - extract startedAt fallback and normalizeUrl helper for readability.

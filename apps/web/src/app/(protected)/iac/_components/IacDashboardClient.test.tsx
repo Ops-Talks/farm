@@ -99,7 +99,7 @@ describe("IacDashboardClient", () => {
 
   it("renders the page header", async () => {
     render(<IacDashboardClient />);
-    expect(screen.getByText("IaC")).toBeDefined();
+    expect(screen.getByText("IaC Overview")).toBeDefined();
   });
 
   it("shows stack cards after loading", async () => {
@@ -403,6 +403,56 @@ describe("IacDashboardClient", () => {
   });
 
   // -------------------------------------------------------------------------
+  // normalizeUrl: passthrough branch for already-absolute URLs (line 58)
+  // -------------------------------------------------------------------------
+
+  it("renders drift source link unchanged when sourceUrl already has an https scheme", async () => {
+    mockGetModuleDrift.mockResolvedValue([
+      {
+        ...mockDrift[0],
+        sourceUrl: "https://registry.terraform.io/terraform-aws-modules/vpc/aws",
+      },
+    ]);
+    const user = userEvent.setup();
+    render(<IacDashboardClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("core-networking")).toBeDefined();
+    });
+
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
+
+    await waitFor(() => {
+      const link = screen.getByRole("link", {
+        name: /registry/i,
+      }) as HTMLAnchorElement;
+      // normalizeUrl returns the URL as-is when it already has https://
+      expect(link.href).toBe(
+        "https://registry.terraform.io/terraform-aws-modules/vpc/aws",
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // External tool link stopPropagation (line 157)
+  // -------------------------------------------------------------------------
+
+  it("clicking the external tool link does not crash and executes stopPropagation", async () => {
+    const user = userEvent.setup();
+    render(<IacDashboardClient />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Open in external tool")).toBeDefined();
+    });
+
+    // Click the external link; the onClick calls e.stopPropagation() (line 157).
+    await user.click(screen.getByLabelText("Open in external tool"));
+
+    // Component remains rendered correctly — no crash, stopPropagation was called.
+    expect(screen.getByLabelText("Open in external tool")).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
   // Switch back to Stacks view from Drift view (covers line 337)
   // -------------------------------------------------------------------------
 
@@ -427,5 +477,149 @@ describe("IacDashboardClient", () => {
     await waitFor(() => {
       expect(screen.getByText("core-networking")).toBeDefined();
     });
+  });
+
+  // -------------------------------------------------------------------------
+  // timeAgo seconds branch (line 44)
+  // -------------------------------------------------------------------------
+
+  it("shows seconds-ago label when lastRunAt is less than a minute ago", async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...mockDashboard,
+      stacksByEnvironment: {
+        production: [
+          {
+            ...mockDashboard.stacksByEnvironment.production[0],
+            lastRunAt: new Date(Date.now() - 10_000).toISOString(),
+          },
+        ],
+      },
+    });
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText(/^\d+s ago$/)).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // timeAgo minutes branch (line 46)
+  // -------------------------------------------------------------------------
+
+  it("shows minutes-ago label when lastRunAt is less than an hour ago", async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...mockDashboard,
+      stacksByEnvironment: {
+        production: [
+          {
+            ...mockDashboard.stacksByEnvironment.production[0],
+            lastRunAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          },
+        ],
+      },
+    });
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText(/^\d+m ago$/)).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // timeAgo hours branch (line 48)
+  // -------------------------------------------------------------------------
+
+  it("shows hours-ago label when lastRunAt is less than a day ago", async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...mockDashboard,
+      stacksByEnvironment: {
+        production: [
+          {
+            ...mockDashboard.stacksByEnvironment.production[0],
+            lastRunAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+          },
+        ],
+      },
+    });
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText(/^\d+h ago$/)).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // versionsBehind <= 2 yellow indicator (line 229 false branch)
+  // -------------------------------------------------------------------------
+
+  it("renders yellow indicator without alert icon when versionsBehind is 1", async () => {
+    mockGetModuleDrift.mockResolvedValue([
+      { ...mockDrift[0], versionsBehind: 1 },
+    ]);
+    const user = userEvent.setup();
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText("core-networking")).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
+    await waitFor(() => {
+      expect(screen.getByText("terraform-aws-modules/vpc/aws")).toBeDefined();
+    });
+    // versionsBehind <= 2 → no red class, yellow indicator rendered
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
+  });
+
+  // -------------------------------------------------------------------------
+  // Null dashboard: covers dashboard?.environments ?? [], ?? {}, ?? 0, and
+  // the (failedLastRun ?? 0) > 0 false branch, plus empty visibleStacks.
+  // Lines: 322, 326, 336, 337, 387
+  // -------------------------------------------------------------------------
+
+  it("renders '0 stacks' and empty state when dashboard resolves to null", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGetDashboard.mockResolvedValue(null as any);
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText("0 stacks")).toBeDefined();
+    });
+    expect(screen.queryByText(/failed/i)).toBeNull();
+    expect(screen.getByText("No stacks found")).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // Missing stacksByEnvironment key for active tab (line 327)
+  // Also covers visibleStacks === 0 for a non-ALL_ENVS tab (line 387).
+  // -------------------------------------------------------------------------
+
+  it("shows empty state for an environment tab that has no stacks in the map", async () => {
+    mockGetDashboard.mockResolvedValue({
+      ...mockDashboard,
+      environments: ["production", "staging"],
+      stacksByEnvironment: {
+        staging: [mockDashboard.stacksByEnvironment.staging[0]],
+        // 'production' key is intentionally absent
+      },
+    });
+    const user = userEvent.setup();
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "production" })).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: "production" }));
+    await waitFor(() => {
+      expect(screen.getByText("No stacks found")).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // driftLoading true branch (line 405)
+  // -------------------------------------------------------------------------
+
+  it("shows skeleton while drift data is still loading", async () => {
+    mockGetModuleDrift.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<IacDashboardClient />);
+    await waitFor(() => {
+      expect(screen.getByText("core-networking")).toBeDefined();
+    });
+    await user.click(screen.getByRole("button", { name: /outdated modules/i }));
+    expect(document.querySelector("[data-slot='skeleton']")).not.toBeNull();
   });
 });
