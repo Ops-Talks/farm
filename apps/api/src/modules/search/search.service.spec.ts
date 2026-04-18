@@ -244,13 +244,14 @@ describe("SearchService", () => {
           description: "Core service",
           tags: ["core"],
           namespace: "default",
-          highlights: ["<em>platform</em>-service"],
+          highlights: { name: ["<em>platform</em>-service"] },
           score: 4.2,
         },
       ],
       total: 1,
       facets: {
         types: [{ key: "component", count: 1 }],
+        namespaces: [{ key: "default", count: 1 }],
         tags: [{ key: "core", count: 1 }],
       },
     };
@@ -267,7 +268,7 @@ describe("SearchService", () => {
       expect(result.hits[0]).toMatchObject({
         id: "c-1",
         type: "component",
-        title: "platform-service",
+        name: "platform-service",
         url: "/catalog/c-1",
         score: 4.2,
       });
@@ -287,7 +288,7 @@ describe("SearchService", () => {
 
       expect(result.source).toBe("database");
       expect(result.hits.length).toBeGreaterThanOrEqual(0);
-      expect(result.facets).toEqual({ types: [], tags: [] });
+      expect(result.facets).toEqual({ types: [], namespaces: [], tags: [] });
     });
 
     it("filters DB fallback results by dto.types when provided", async () => {

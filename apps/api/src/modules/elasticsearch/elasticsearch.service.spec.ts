@@ -246,7 +246,7 @@ describe("ElasticsearchService", () => {
       expect(result).toEqual({
         hits: [],
         total: 0,
-        facets: { types: [], tags: [] },
+        facets: { types: [], namespaces: [], tags: [] },
       });
     });
 
@@ -279,6 +279,9 @@ describe("ElasticsearchService", () => {
         aggregations: {
           types: {
             buckets: [{ key: "component", doc_count: 1 }],
+          },
+          namespaces: {
+            buckets: [],
           },
           tags: {
             buckets: [{ key: "java", doc_count: 1 }],

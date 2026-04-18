@@ -46,6 +46,7 @@ import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { KeycloakSyncJobData } from "./keycloak-sync.service";
+import { LdapAuthGuard } from "./guards/ldap-auth.guard";
 
 /**
  * Controller for authentication and user management operations.
@@ -471,18 +472,13 @@ export class AuthController {
    */
   @Post("login/ldap")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AuthGuard("ldapauth"))
+  @UseGuards(LdapAuthGuard)
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 60000, limit: 5 } })
   @ApiExcludeEndpoint()
   async ldapLogin(
     @Req() req: Request & { user: User },
   ): Promise<{ user: User; token: string; refreshToken: string }> {
-    if (!this.configService?.get<string>("ldap.url")) {
-      throw new ServiceUnavailableException(
-        "LDAP authentication is not configured",
-      );
-    }
     return this.authService.generateTokensForUser(req.user);
   }
 

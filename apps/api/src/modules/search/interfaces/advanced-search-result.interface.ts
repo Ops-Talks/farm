@@ -8,16 +8,20 @@ export interface AdvancedSearchHit {
   id: string;
   /** Entity type (component, team, documentation, environment, pipeline). */
   type: string;
-  /** Primary display name / title of the entity. */
-  title: string;
+  /** Primary display name of the entity. */
+  name: string;
   /** Optional human-readable description. */
   description?: string;
   /** Tags associated with the entity. */
   tags?: string[];
   /** Kubernetes / platform namespace, if applicable. */
   namespace?: string;
-  /** Highlighted excerpt fragments from matched fields. */
-  highlights?: string[];
+  /** Highlighted excerpt fragments keyed by matched field. */
+  highlights?: {
+    name?: string[];
+    description?: string[];
+    tags?: string[];
+  };
   /** Front-end navigation path for the entity. */
   url: string;
   /** Elasticsearch relevance score; undefined for database fallback results. */
@@ -35,11 +39,12 @@ export interface AdvancedSearchResult {
   total: number;
   /** Current page number (1-based). */
   page: number;
-  /** Number of results per page. */
-  limit: number;
-  /** Aggregated facet counts for types and tags. */
+  /** Total number of pages. */
+  totalPages: number;
+  /** Aggregated facet counts for types, namespaces, and tags. */
   facets: {
     types: Array<{ key: string; count: number }>;
+    namespaces: Array<{ key: string; count: number }>;
     tags: Array<{ key: string; count: number }>;
   };
   /**

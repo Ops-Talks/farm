@@ -78,8 +78,12 @@ export interface EsHit {
   tags?: string[];
   /** Namespace of the matched document. */
   namespace?: string;
-  /** Highlighted excerpt fragments from the matched fields. */
-  highlights?: string[];
+  /** Highlighted excerpt fragments keyed by matched field. */
+  highlights?: {
+    name?: string[];
+    description?: string[];
+    tags?: string[];
+  };
   /** Elasticsearch relevance score. */
   score: number;
 }
@@ -106,6 +110,8 @@ export interface EsSearchResponse {
   facets: {
     /** Breakdown of result counts by entity type. */
     types: EsFacetBucket[];
+    /** Breakdown of result counts by namespace. */
+    namespaces: EsFacetBucket[];
     /** Breakdown of result counts by tag. */
     tags: EsFacetBucket[];
   };

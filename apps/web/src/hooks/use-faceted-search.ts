@@ -31,6 +31,7 @@ export function useFacetedSearch(enabled: boolean) {
     (q: string, f: FacetFilters, p: number) => {
       if (!enabled || q.trim().length < 2) {
         setResult(EMPTY_RESULT);
+        setIsLoading(false);
         return;
       }
       setIsLoading(true);

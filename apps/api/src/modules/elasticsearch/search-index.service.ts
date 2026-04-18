@@ -46,6 +46,15 @@ export class SearchIndexService {
   }
 
   /**
+   * Removes a document from the Elasticsearch index by its entity UUID.
+   *
+   * @param id - The UUID of the entity whose document should be removed.
+   */
+  async removeDocument(id: string): Promise<void> {
+    await this.elasticsearchService.deleteFromIndex(id);
+  }
+
+  /**
    * Fetches all entities from every repository, builds a SearchDocument array,
    * and performs a bulk index operation.
    *

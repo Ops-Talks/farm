@@ -271,7 +271,7 @@ export class SearchService {
       const hits: AdvancedSearchHit[] = esResponse.hits.map((hit) => ({
         id: hit.id,
         type: hit.type,
-        title: hit.title,
+        name: hit.title,
         description: hit.description,
         tags: hit.tags,
         namespace: hit.namespace,
@@ -284,9 +284,10 @@ export class SearchService {
         hits,
         total: esResponse.total,
         page,
-        limit,
+        totalPages: Math.ceil(esResponse.total / limit),
         facets: {
           types: esResponse.facets.types,
+          namespaces: esResponse.facets.namespaces,
           tags: esResponse.facets.tags,
         },
         source: "elasticsearch",
@@ -305,7 +306,7 @@ export class SearchService {
       const hits: AdvancedSearchHit[] = filtered.map((r) => ({
         id: r.id,
         type: r.type,
-        title: r.name,
+        name: r.name,
         description: r.description,
         url: r.url,
       }));
@@ -314,8 +315,8 @@ export class SearchService {
         hits,
         total: hits.length,
         page,
-        limit,
-        facets: { types: [], tags: [] },
+        totalPages: Math.ceil(hits.length / limit),
+        facets: { types: [], namespaces: [], tags: [] },
         source: "database",
       };
     } catch (error) {
@@ -330,8 +331,8 @@ export class SearchService {
         hits: [],
         total: 0,
         page,
-        limit,
-        facets: { types: [], tags: [] },
+        totalPages: 0,
+        facets: { types: [], namespaces: [], tags: [] },
         source: "database",
       };
     }

@@ -26,7 +26,15 @@ function renderHighlight(fragments: string[] | undefined, fallback: string): str
   const raw = fragments[0]!;
   const withStrong = raw.replace(/<em>/gi, '<strong>').replace(/<\/em>/gi, '</strong>');
   // strip any remaining tags except <strong> and </strong>
-  return withStrong.replace(/<(?!\/?strong[ />])[^>]+>/gi, '');
+  // Loop until stable to handle incomplete multi-character sanitization
+  // (e.g. nested or reconstructed tags like <<script>script>).
+  let sanitized = withStrong;
+  let prev: string;
+  do {
+    prev = sanitized;
+    sanitized = sanitized.replace(/<(?!\/?strong[ />])[^>]+>/gi, '');
+  } while (sanitized !== prev);
+  return sanitized;
 }
 
 // ── Type icon map ────────────────────────────────────────────────────────────

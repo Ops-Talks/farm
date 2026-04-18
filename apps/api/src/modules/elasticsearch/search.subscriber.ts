@@ -5,6 +5,7 @@ import {
   EntitySubscriberInterface,
   InsertEvent,
   UpdateEvent,
+  RemoveEvent,
 } from "typeorm";
 import { Component } from "../catalog/entities/component.entity";
 import { Team } from "../teams/entities/team.entity";
@@ -109,6 +110,33 @@ export class SearchSubscriber
       .catch((e: unknown) =>
         this.logger.error(
           `afterUpdate: failed to re-index ${type} ${(entity as { id?: string }).id}`,
+          e,
+        ),
+      );
+  }
+
+  /**
+   * Fired after an entity row is removed from the database.
+   * Triggers an asynchronous Elasticsearch deletion so that stale documents
+   * do not remain searchable.
+   */
+  afterRemove(event: RemoveEvent<unknown>): void {
+    const type = this.resolveType(event.entity);
+
+    if (!type || !event.entity) {
+      return;
+    }
+
+    const id = (event.entity as { id?: string }).id;
+    if (!id) {
+      return;
+    }
+
+    void Promise.resolve()
+      .then(() => this.searchIndexService.removeDocument(id))
+      .catch((e: unknown) =>
+        this.logger.error(
+          `afterRemove: failed to delete ${type} ${id} from index`,
           e,
         ),
       );

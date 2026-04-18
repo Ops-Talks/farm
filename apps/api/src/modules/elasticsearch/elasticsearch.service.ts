@@ -104,7 +104,7 @@ export class ElasticsearchService {
   }
 
   /**
-   * Bulk-indexes an array of documents using Elasticsearch bulk API create operations.
+   * Bulk-indexes an array of documents using Elasticsearch bulk API index (upsert) operations.
    *
    * Silently returns when Elasticsearch is disabled or when the array is empty.
    * Errors are logged but not re-thrown.
@@ -117,7 +117,7 @@ export class ElasticsearchService {
     }
 
     const operations = docs.flatMap((doc) => [
-      { create: { _index: FARM_INDEX, _id: doc.id } },
+      { index: { _index: FARM_INDEX, _id: doc.id } },
       doc,
     ]);
 
@@ -184,7 +184,7 @@ export class ElasticsearchService {
     const empty: EsSearchResponse = {
       hits: [],
       total: 0,
-      facets: { types: [], tags: [] },
+      facets: { types: [], namespaces: [], tags: [] },
     };
 
     if (!this.isEnabled()) {
@@ -208,7 +208,11 @@ export class ElasticsearchService {
     }
 
     if (filters.tags && filters.tags.length > 0) {
-      filterClauses.push({ terms: { tags: filters.tags } });
+      filterClauses.push({
+        bool: {
+          filter: filters.tags.map((tag) => ({ term: { tags: tag } })),
+        },
+      });
     }
 
     if (filters.orgId) {
@@ -249,6 +253,9 @@ export class ElasticsearchService {
           types: {
             terms: { field: "type" },
           },
+          namespaces: {
+            terms: { field: "namespace" },
+          },
           tags: {
             terms: { field: "tags" },
           },
@@ -261,15 +268,14 @@ export class ElasticsearchService {
 
       const hits: EsHit[] = response.hits.hits.map((hit) => {
         const source = hit._source as SearchDocument;
-        const highlights: string[] = [];
+        const hl = hit.highlight as Record<string, string[]> | undefined;
 
-        if (hit.highlight) {
-          for (const fragments of Object.values(hit.highlight)) {
-            if (Array.isArray(fragments)) {
-              highlights.push(...fragments);
-            }
-          }
-        }
+        const fieldHighlights: EsHit["highlights"] = {};
+        if (hl?.title) fieldHighlights.name = hl.title;
+        if (hl?.description) fieldHighlights.description = hl.description;
+        if (hl?.tags) fieldHighlights.tags = hl.tags;
+
+        const hasHighlights = Object.keys(fieldHighlights).length > 0;
 
         return {
           id: hit._id ?? source.id,
@@ -278,7 +284,7 @@ export class ElasticsearchService {
           description: source.description,
           tags: source.tags,
           namespace: source.namespace,
-          highlights: highlights.length > 0 ? highlights : undefined,
+          highlights: hasHighlights ? fieldHighlights : undefined,
           score: hit._score ?? 0,
         };
       });
@@ -293,6 +299,12 @@ export class ElasticsearchService {
           count: b.doc_count,
         })) ?? [];
 
+      const namespaceBuckets: EsFacetBucket[] =
+        aggregations?.namespaces?.buckets?.map((b) => ({
+          key: b.key,
+          count: b.doc_count,
+        })) ?? [];
+
       const tagBuckets: EsFacetBucket[] =
         aggregations?.tags?.buckets?.map((b) => ({
           key: b.key,
@@ -302,7 +314,7 @@ export class ElasticsearchService {
       return {
         hits,
         total,
-        facets: { types: typeBuckets, tags: tagBuckets },
+        facets: { types: typeBuckets, namespaces: namespaceBuckets, tags: tagBuckets },
       };
     } catch (error) {
       this.logger.error("Elasticsearch search query failed", error);

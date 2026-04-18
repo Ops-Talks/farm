@@ -50,9 +50,11 @@ export class LdapAuthStrategy extends PassportStrategy(
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const ldapUrl = configService.get<string>("ldap.url") || "";
+
     super({
       server: {
-        url: configService.get<string>("ldap.url") || "ldap://localhost:389",
+        url: ldapUrl || "ldap://noop",
         bindDN: configService.get<string>("ldap.bindDn") || "",
         bindCredentials: configService.get<string>("ldap.bindPassword") || "",
         searchBase: configService.get<string>("ldap.searchBase") || "",
@@ -61,6 +63,12 @@ export class LdapAuthStrategy extends PassportStrategy(
           "(uid={{username}})",
       },
     });
+
+    if (!ldapUrl) {
+      this.logger.warn(
+        "LDAP_URL is not configured — LDAP authentication strategy is registered but will not connect",
+      );
+    }
   }
 
   /**
@@ -74,9 +82,10 @@ export class LdapAuthStrategy extends PassportStrategy(
       // Build an email address: prefer the mail attribute, fall back to
       // uid-based or DN-based synthetic addresses.
       const email =
-        ldapUser.mail || ldapUser.uid
-          ? `${ldapUser.uid ?? ldapUser.dn.split(",")[0].replace(/^[^=]+=/, "")}@ldap.local`
-          : `${ldapUser.dn}@ldap.local`;
+        ldapUser.mail ??
+        (ldapUser.uid
+          ? `${ldapUser.uid}@ldap.local`
+          : `${ldapUser.dn.split(",")[0].replace(/^[^=]+=/, "")}@ldap.local`);
 
       const displayName = ldapUser.displayName || ldapUser.cn || email;
       const firstName = ldapUser.givenName;
