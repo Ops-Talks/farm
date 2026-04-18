@@ -5,11 +5,15 @@ import { Team } from "../teams/entities/team.entity";
 import { Documentation } from "../documentation/entities/documentation.entity";
 import { Environment } from "../environments/entities/environment.entity";
 import { Pipeline } from "../pipelines/entities/pipeline.entity";
+import { ElasticsearchModule } from "../elasticsearch/elasticsearch.module";
+import { SearchConfig } from "./entities/search-config.entity";
 import { SearchService } from "./search.service";
 import { SearchController } from "./search.controller";
+import { SearchConfigController } from "./search-config.controller";
 
 /**
- * Feature module providing cross-entity quick search functionality.
+ * Feature module providing quick search and advanced faceted search
+ * functionality across catalog entities.
  */
 @Module({
   imports: [
@@ -19,9 +23,11 @@ import { SearchController } from "./search.controller";
       Documentation,
       Environment,
       Pipeline,
+      SearchConfig,
     ]),
+    ElasticsearchModule,
   ],
-  controllers: [SearchController],
+  controllers: [SearchController, SearchConfigController],
   providers: [SearchService],
   exports: [SearchService],
 })

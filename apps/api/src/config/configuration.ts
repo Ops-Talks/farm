@@ -83,6 +83,14 @@ export const configuration = () => ({
         "http://localhost:3000/api/v1/auth/google/callback",
     },
   },
+  ldap: {
+    url: process.env.LDAP_URL || "",
+    bindDn: process.env.LDAP_BIND_DN || "",
+    bindPassword: process.env.LDAP_BIND_PASSWORD || "",
+    searchBase: process.env.LDAP_SEARCH_BASE || "",
+    searchFilter: process.env.LDAP_SEARCH_FILTER || "(uid={{username}})",
+    adminGroup: process.env.LDAP_ADMIN_GROUP || "",
+  },
   integrations: {
     slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || "",
     teamsWebhookUrl: process.env.TEAMS_WEBHOOK_URL || "",
@@ -129,6 +137,9 @@ export const configuration = () => ({
       parseInt(process.env.HEALTH_HEAP_THRESHOLD_MB ?? "512", 10) || 512,
     rssThresholdMb:
       parseInt(process.env.HEALTH_RSS_THRESHOLD_MB ?? "1024", 10) || 1024,
+  },
+  elasticsearch: {
+    url: process.env.ELASTICSEARCH_URL || "",
   },
 });
 
@@ -187,6 +198,13 @@ export const validationSchema = Joi.object({
   GOOGLE_CLIENT_ID: Joi.string().allow("").default(""),
   GOOGLE_CLIENT_SECRET: Joi.string().allow("").default(""),
   GOOGLE_CALLBACK_URL: Joi.string().allow("").default(""),
+  // LDAP / Active Directory (all optional)
+  LDAP_URL: Joi.string().allow("").default(""),
+  LDAP_BIND_DN: Joi.string().allow("").default(""),
+  LDAP_BIND_PASSWORD: Joi.string().allow("").default(""),
+  LDAP_SEARCH_BASE: Joi.string().allow("").default(""),
+  LDAP_SEARCH_FILTER: Joi.string().allow("").default("(uid={{username}})"),
+  LDAP_ADMIN_GROUP: Joi.string().allow("").default(""),
   // Webhook integrations (optional)
   SLACK_WEBHOOK_URL: Joi.string().allow("").default(""),
   TEAMS_WEBHOOK_URL: Joi.string().allow("").default(""),
@@ -221,4 +239,6 @@ export const validationSchema = Joi.object({
   // Health check memory thresholds (MB)
   HEALTH_HEAP_THRESHOLD_MB: Joi.number().integer().min(64).default(512),
   HEALTH_RSS_THRESHOLD_MB: Joi.number().integer().min(64).default(1024),
+  // Elasticsearch (optional — advanced search backend)
+  ELASTICSEARCH_URL: Joi.string().uri().allow("").optional(),
 });

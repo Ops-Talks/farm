@@ -1857,3 +1857,39 @@ export interface IacResourceMap {
   resources: IacResourceNode[];
   dependencies: IacResourceEdge[];
 }
+
+// -- Advanced Search (FARM-S318) --
+
+export interface AdvancedSearchHit {
+  id: string;
+  type: string;
+  name: string;
+  description?: string;
+  namespace?: string;
+  tags?: string[];
+  url: string;
+  score: number;
+  highlights?: {
+    name?: string[];
+    description?: string[];
+    tags?: string[];
+  };
+}
+
+export interface FacetBucket {
+  key: string;
+  count: number;
+}
+
+export interface AdvancedSearchResult {
+  hits: AdvancedSearchHit[];
+  total: number;
+  page: number;
+  totalPages: number;
+  facets: {
+    types: FacetBucket[];
+    namespaces: FacetBucket[];
+    tags: FacetBucket[];
+  };
+  source: 'elasticsearch' | 'database';
+}

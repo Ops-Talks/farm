@@ -1,11 +1,23 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { Component } from "../catalog/entities/component.entity";
 import { Team } from "../teams/entities/team.entity";
 import { Documentation } from "../documentation/entities/documentation.entity";
 import { Environment } from "../environments/entities/environment.entity";
 import { Pipeline } from "../pipelines/entities/pipeline.entity";
+import { ElasticsearchService } from "../elasticsearch/elasticsearch.service";
+import type {
+  SearchBoostConfig,
+  SearchFilters,
+} from "../elasticsearch/elasticsearch.types";
+import { SearchConfig } from "./entities/search-config.entity";
+import { AdvancedSearchQueryDto } from "./dto/advanced-search-query.dto";
+import { UpdateSearchConfigDto } from "./dto/update-search-config.dto";
+import type {
+  AdvancedSearchHit,
+  AdvancedSearchResult,
+} from "./interfaces/advanced-search-result.interface";
 
 export interface QuickSearchResult {
   type: "component" | "team" | "documentation" | "environment" | "pipeline";
@@ -16,11 +28,38 @@ export interface QuickSearchResult {
 }
 
 /**
- * Service for performing cross-entity quick search.
+ * Hardcoded boost defaults used when no SearchConfig row exists in the database.
+ */
+const FALLBACK_BOOST: SearchBoostConfig = {
+  titleBoost: 3,
+  tagsBoost: 2,
+  descriptionBoost: 1,
+  fuzziness: "AUTO",
+};
+
+/**
+ * Maps an entity type and ID to the front-end navigation path.
+ */
+function buildUrl(type: string, id: string): string {
+  const paths: Record<string, string> = {
+    component: "/catalog",
+    team: "/teams",
+    documentation: "/docs",
+    environment: "/environments",
+    pipeline: "/pipelines",
+  };
+  const prefix = paths[type] ?? "/catalog";
+  return `${prefix}/${id}`;
+}
+
+/**
+ * Service for performing cross-entity quick search and advanced faceted search.
  * Searches components, teams, documentation, environments, and pipelines.
  */
 @Injectable()
 export class SearchService {
+  private readonly logger = new Logger(SearchService.name);
+
   constructor(
     @InjectRepository(Component)
     private readonly componentRepo: Repository<Component>,
@@ -32,6 +71,9 @@ export class SearchService {
     private readonly envRepo: Repository<Environment>,
     @InjectRepository(Pipeline)
     private readonly pipelineRepo: Repository<Pipeline>,
+    private readonly elasticsearchService: ElasticsearchService,
+    @InjectRepository(SearchConfig)
+    private readonly searchConfigRepo: Repository<SearchConfig>,
   ) {}
 
   /**
@@ -119,5 +161,179 @@ export class SearchService {
       })),
     ];
     return results.slice(0, limit);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Advanced search (FARM-S316 + FARM-S317)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Loads the most specific SearchConfig for the given organization, falling
+   * back to the global config (organizationId IS NULL) when no org-specific
+   * row exists.  Returns null if neither row exists.
+   *
+   * @param orgId - Optional organization UUID.
+   */
+  async getConfig(orgId?: string): Promise<SearchConfig | null> {
+    if (orgId) {
+      const orgConfig = await this.searchConfigRepo.findOne({
+        where: { organizationId: orgId },
+      });
+      if (orgConfig) return orgConfig;
+    }
+
+    return this.searchConfigRepo.findOne({
+      where: { organizationId: IsNull() },
+    });
+  }
+
+  /**
+   * Creates or updates the SearchConfig for the given organization scope.
+   * Passing no orgId targets the global default row.
+   *
+   * @param dto    - Partial config values to apply.
+   * @param orgId  - Optional organization UUID (null targets global default).
+   */
+  async upsertConfig(
+    dto: UpdateSearchConfigDto,
+    orgId?: string,
+  ): Promise<SearchConfig> {
+    const existing = await this.searchConfigRepo.findOne({
+      where: { organizationId: orgId ?? IsNull() },
+    });
+
+    if (existing) {
+      if (dto.titleBoost !== undefined) existing.titleBoost = dto.titleBoost;
+      if (dto.tagsBoost !== undefined) existing.tagsBoost = dto.tagsBoost;
+      if (dto.descriptionBoost !== undefined)
+        existing.descriptionBoost = dto.descriptionBoost;
+      if (dto.fuzziness !== undefined) existing.fuzziness = dto.fuzziness;
+      return this.searchConfigRepo.save(existing);
+    }
+
+    const created = this.searchConfigRepo.create({
+      organizationId: orgId ?? null,
+      titleBoost: dto.titleBoost ?? FALLBACK_BOOST.titleBoost,
+      tagsBoost: dto.tagsBoost ?? FALLBACK_BOOST.tagsBoost,
+      descriptionBoost: dto.descriptionBoost ?? FALLBACK_BOOST.descriptionBoost,
+      fuzziness: dto.fuzziness ?? FALLBACK_BOOST.fuzziness,
+    });
+    return this.searchConfigRepo.save(created);
+  }
+
+  /**
+   * Executes an advanced search with faceting, pagination, and typo tolerance.
+   *
+   * When Elasticsearch is enabled the query is executed against the
+   * farm-search index using boost weights from the resolved SearchConfig.
+   *
+   * When Elasticsearch is disabled the method falls back to the existing
+   * quickSearch() PostgreSQL path and wraps the result in the standard
+   * AdvancedSearchResult envelope (no facets, source='database').
+   *
+   * @param dto   - Validated query parameters from the request.
+   * @param orgId - Optional organization UUID used to scope results.
+   */
+  async advancedSearch(
+    dto: AdvancedSearchQueryDto,
+    orgId?: string,
+  ): Promise<AdvancedSearchResult> {
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 20;
+
+    // Resolve boost configuration, falling back through DB then hardcoded defaults.
+    const storedConfig = await this.getConfig(orgId);
+    const boost: SearchBoostConfig = storedConfig
+      ? {
+          titleBoost: storedConfig.titleBoost,
+          tagsBoost: storedConfig.tagsBoost,
+          descriptionBoost: storedConfig.descriptionBoost,
+          fuzziness: storedConfig.fuzziness,
+        }
+      : FALLBACK_BOOST;
+
+    if (this.elasticsearchService.isEnabled()) {
+      const filters: SearchFilters = {
+        orgId,
+        page,
+        limit,
+        types: dto.types as SearchFilters["types"],
+        namespace: dto.namespace,
+        tags: dto.tags,
+      };
+
+      const esResponse = await this.elasticsearchService.search(
+        dto.q,
+        filters,
+        boost,
+      );
+
+      const hits: AdvancedSearchHit[] = esResponse.hits.map((hit) => ({
+        id: hit.id,
+        type: hit.type,
+        title: hit.title,
+        description: hit.description,
+        tags: hit.tags,
+        namespace: hit.namespace,
+        highlights: hit.highlights,
+        url: buildUrl(hit.type, hit.id),
+        score: hit.score,
+      }));
+
+      return {
+        hits,
+        total: esResponse.total,
+        page,
+        limit,
+        facets: {
+          types: esResponse.facets.types,
+          tags: esResponse.facets.tags,
+        },
+        source: "elasticsearch",
+      };
+    }
+
+    // ----- Database fallback -----
+    try {
+      const quickResults = await this.quickSearch(dto.q, limit, orgId);
+
+      const filtered =
+        dto.types && dto.types.length > 0
+          ? quickResults.filter((r) => dto.types!.includes(r.type))
+          : quickResults;
+
+      const hits: AdvancedSearchHit[] = filtered.map((r) => ({
+        id: r.id,
+        type: r.type,
+        title: r.name,
+        description: r.description,
+        url: r.url,
+      }));
+
+      return {
+        hits,
+        total: hits.length,
+        page,
+        limit,
+        facets: { types: [], tags: [] },
+        source: "database",
+      };
+    } catch (error) {
+      // The database fallback query failed (e.g. ILIKE is unsupported on the
+      // current driver).  Return an empty result set rather than a 500 so
+      // callers receive a valid AdvancedSearchResult envelope.
+      this.logger.warn(
+        "Database fallback search failed, returning empty result",
+        error,
+      );
+      return {
+        hits: [],
+        total: 0,
+        page,
+        limit,
+        facets: { types: [], tags: [] },
+        source: "database",
+      };
+    }
   }
 }

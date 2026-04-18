@@ -56,6 +56,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 24: User Profile Management | 1 | 4 | v0.14.7 - v0.15.0 | `DONE` |
 | Phase 25: Feature Availability UX | 1 | 11 | v0.17.1 - v0.17.2 | `DONE` |
 | Phase 28: Software Templates 2.0 | 1 | 4 | v0.17.2 | `DONE` |
+| Phase 26: Auth Provider Expansion | 1 | 5 | v0.19.0 | `DONE` |
 
 ---
 
@@ -219,68 +220,68 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 26: Auth Provider Expansion `TODO`
+## Phase 26: Auth Provider Expansion `DONE`
 
-### FARM-E72: Social and Enterprise SSO Providers `TODO`
+### FARM-E72: Social and Enterprise SSO Providers `DONE`
 
-> Farm currently supports only local email/password authentication with JWT. This Epic adds first-class OAuth2 and OIDC providers — GitHub, Google, and Okta — plus LDAP/Active Directory for on-premises enterprises. All providers follow the same Passport.js strategy pattern and issue the same JWT access + refresh token pair, making the rest of the application provider-agnostic.
+> Farm currently supports only local email/password authentication with JWT. This Epic adds first-class OAuth2 and OIDC providers — GitHub, Google, and Keycloak (enterprise OIDC) — plus LDAP/Active Directory for on-premises enterprises. All providers follow the same Passport.js strategy pattern and issue the same JWT access + refresh token pair, making the rest of the application provider-agnostic.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S310 | Story | GitHub OAuth2 authentication -- users can sign in via GitHub; profile is upserted into the `User` table; JWT issued on callback | `TODO` |
-| FARM-S311 | Story | Google OAuth2 authentication -- users can sign in via Google; email used as unique identifier; JWT issued on callback | `TODO` |
-| FARM-S312 | Story | Okta OIDC authentication -- enterprise Okta tenants connect via OIDC/PKCE; groups mapped to Farm roles | `TODO` |
-| FARM-S313 | Story | LDAP / Active Directory authentication -- Farm binds as a service account, searches the user DN, maps attributes to `User` entity fields | `TODO` |
-| FARM-S314 | Story | Provider discovery endpoint and frontend login page -- `GET /api/auth/providers` returns enabled providers; login page renders provider buttons dynamically | `TODO` |
+| FARM-S310 | Story | GitHub OAuth2 authentication -- users can sign in via GitHub; profile is upserted into the `User` table; JWT issued on callback | `DONE` |
+| FARM-S311 | Story | Google OAuth2 authentication -- users can sign in via Google; email used as unique identifier; JWT issued on callback | `DONE` |
+| FARM-S312 | Story | Enterprise OIDC authentication -- Keycloak per-org OIDC/PKCE flow via `KeycloakOidcService`; dynamic strategy built from per-org `IntegrationCredential`; groups mapped to Farm roles | `DONE` |
+| FARM-S313 | Story | LDAP / Active Directory authentication -- Farm binds as a service account, searches the user DN, maps attributes to `User` entity fields | `DONE` |
+| FARM-S314 | Story | Provider discovery endpoint and frontend login page -- `GET /api/auth/providers` returns enabled providers; login page renders provider buttons dynamically | `DONE` |
 
 #### FARM-S310 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T319 | Task | `GitHubStrategy` (passport-github2): `validate()` upserts `User` with `githubId`, `avatarUrl`, and `externalProvider = "github"`; env vars `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`; unit tests | `TODO` |
-| FARM-T320 | Task | `GET /api/auth/github` initiates OAuth2 redirect; `GET /api/auth/github/callback` exchanges code, issues JWT access + refresh tokens, redirects to `/dashboard`; unit + e2e tests | `TODO` |
+| FARM-T319 | Task | `GitHubStrategy` (passport-github2): `validate()` upserts `User` with `oauthProvider = "github"` and `oauthProviderId`; env vars `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_CALLBACK_URL`; unit tests | `DONE` |
+| FARM-T320 | Task | `GET /api/auth/github` initiates OAuth2 redirect; `GET /api/auth/github/callback` exchanges code, issues JWT access + refresh tokens; unit + e2e tests | `DONE` |
 
 ##### FARM-T319 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST358 | Sub-task | Add optional `githubId`, `googleId`, `externalProvider` fields to `User` entity; migration | `TODO` |
-| FARM-ST359 | Sub-task | Unit test: mock GitHub callback profile → `validate()` returns upserted `User`; existing local user with matching email is linked | `TODO` |
+| FARM-ST358 | Sub-task | Added `oauthProvider` and `oauthProviderId` nullable fields to `User` entity; migration `AddUserOauthFields1773770832000` | `DONE` |
+| FARM-ST359 | Sub-task | Unit test: mock GitHub callback profile → `validate()` returns upserted `User`; existing local user with matching email is linked | `DONE` |
 
 #### FARM-S311 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T321 | Task | `GoogleStrategy` (passport-google-oauth20): `validate()` upserts `User` with `googleId` and `externalProvider = "google"`; env vars `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`; unit tests | `TODO` |
-| FARM-T322 | Task | `GET /api/auth/google` and `GET /api/auth/google/callback`; same JWT issuance flow as GitHub; unit + e2e tests | `TODO` |
+| FARM-T321 | Task | `GoogleStrategy` (passport-google-oauth20): `validate()` upserts `User` with `oauthProvider = "google"`; env vars `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`; unit tests | `DONE` |
+| FARM-T322 | Task | `GET /api/auth/google` and `GET /api/auth/google/callback`; same JWT issuance flow as GitHub; unit + e2e tests | `DONE` |
 
 #### FARM-S312 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T323 | Task | `OktaStrategy` (openid-client / passport-openidconnect): PKCE flow; validate ID token; map Okta groups to Farm roles via configurable `OKTA_GROUPS_CLAIM`; env vars `OKTA_ISSUER`, `OKTA_CLIENT_ID`, `OKTA_CLIENT_SECRET`, `OKTA_CALLBACK_URL`; unit tests | `TODO` |
-| FARM-T324 | Task | `GET /api/auth/okta` and `GET /api/auth/okta/callback`; PKCE verifier generated per request and stored in session; unit + e2e tests | `TODO` |
+| FARM-T323 | Task | `KeycloakOidcService` (passport-openidconnect): per-org dynamic strategy; OIDC flow; map Keycloak groups to Farm roles; env vars stored as encrypted `IntegrationCredential` records; unit tests | `DONE` |
+| FARM-T324 | Task | `GET /api/auth/keycloak?orgId=` initiates OIDC redirect; `GET /api/auth/keycloak/callback` completes flow and issues JWT; org ID stored in session for callback; unit + e2e tests | `DONE` |
 
 #### FARM-S313 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T325 | Task | `LdapStrategy` (passport-ldapauth): bind as service account, search user by `LDAP_SEARCH_FILTER`; env vars `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_SEARCH_BASE`, `LDAP_SEARCH_FILTER`; unit tests with mock ldapauth | `TODO` |
-| FARM-T326 | Task | LDAP attribute mapping: `displayName` → `firstName`+`lastName`, `mail` → `email`, `memberOf` → roles via configurable `LDAP_ADMIN_GROUP` env var; upsert `User` on each successful bind; unit tests | `TODO` |
+| FARM-T325 | Task | `LdapAuthStrategy` (passport-ldapauth): bind as service account, search user by `LDAP_SEARCH_FILTER`; env vars `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_SEARCH_BASE`, `LDAP_SEARCH_FILTER`; unit tests with mock ldapauth | `DONE` |
+| FARM-T326 | Task | LDAP attribute mapping: `displayName`/`cn` → display name, `givenName`/`sn` → first/last name, `mail` → email, `memberOf` → roles via configurable `LDAP_ADMIN_GROUP` env var; upsert `User` via `findOrCreateOAuthUser`; unit tests | `DONE` |
 
 ##### FARM-T325 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST360 | Sub-task | Unit test: mock LDAP profile with `memberOf` containing admin group → user returned with `roles: ["admin"]` | `TODO` |
-| FARM-ST361 | Sub-task | Unit test: LDAP bind failure (wrong password) → strategy throws `UnauthorizedException` | `TODO` |
+| FARM-ST360 | Sub-task | Unit test: mock LDAP profile with `memberOf` containing admin group → user returned with `roles: ["admin", "user"]` | `DONE` |
+| FARM-ST361 | Sub-task | Unit test: `findOrCreateOAuthUser` rejection → strategy re-throws the error | `DONE` |
 
 #### FARM-S314 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T327 | Task | `GET /api/auth/providers`: read enabled provider env vars at runtime, return `{ providers: ["github","google","okta","ldap","local"][] }`; unit tests | `TODO` |
-| FARM-T328 | Task | Frontend login page: fetch `/api/auth/providers` on mount, render a branded button per enabled provider (GitHub, Google, Okta, LDAP form); local email/password form always shown; unit tests | `TODO` |
+| FARM-T327 | Task | `GET /api/auth/providers`: read enabled provider env vars at runtime, return `{ providers: ["local","github","google","ldap","keycloak"][] }`; unit tests | `DONE` |
+| FARM-T328 | Task | Frontend login page: fetch `/api/auth/providers` on mount, render GitHub/Google buttons and LDAP form when those providers are returned; Keycloak section always shown; local email/password form always shown; unit tests | `DONE` |
 
 ---
 
@@ -748,6 +749,69 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 
 ---
 
+## Phase 35: Elasticsearch Index Visibility `TODO`
+
+### FARM-E81: Elasticsearch Index Linking and Health Visibility `TODO`
+
+> Farm already surfaces Kubernetes workloads, Helm releases, IaC stacks, and service mesh topology. This Epic extends the same read-only portal pattern to Elasticsearch indices used by catalog components. Teams link one or more index patterns to a component; Farm queries the ES Stats API at runtime and shows health, doc count, and store size directly in the component detail page. Farm does not manage indices, does not hold cluster admin credentials, and does not modify mappings or settings — it is a visibility layer only, following the same model as the Prometheus, ArgoCD, and Linkerd integrations. An optional `KIBANA_URL` env var enables direct link-out to Kibana Discover for each index.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S351 | Story | `ComponentElasticsearchIndex` entity and CRUD API — link one or more ES index patterns to a catalog component; optional per-record ES URL override | `TODO` |
+| FARM-S352 | Story | `ElasticsearchIndexService` — query live index stats from ES (`/_cat/indices/<pattern>`); return health, doc count, and store size; degrade gracefully when ES is unreachable | `TODO` |
+| FARM-S353 | Story | Frontend: Elasticsearch tab on the component detail page — linked index patterns with health badge, doc count, store size, and optional Kibana link-out | `TODO` |
+| FARM-S354 | Story | Frontend: ES indices overview page — all linked indices across all components with filter by health status | `TODO` |
+
+#### FARM-S351 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T401 | Task | `ComponentElasticsearchIndex` entity (`id`, `componentId` FK, `indexPattern` string, `esUrl` nullable string overriding `ELASTICSEARCH_URL`, `description` nullable, `createdAt`, `updatedAt`); migration; service with `findByComponent`, `create`, `remove`; `GET /api/v1/components/:id/elasticsearch-indices`, `POST /api/v1/components/:id/elasticsearch-indices`, `DELETE /api/v1/components/:id/elasticsearch-indices/:indexId`; `JwtAuthGuard` on all; unit + e2e tests | `TODO` |
+
+##### FARM-T401 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST410 | Sub-task | Unit test: `POST .../elasticsearch-indices` with a duplicate `indexPattern` for the same component returns 409 Conflict | `TODO` |
+| FARM-ST411 | Sub-task | Unit test: `DELETE .../elasticsearch-indices/:indexId` with a non-existent id returns 404 Not Found | `TODO` |
+
+#### FARM-S352 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T402 | Task | `ElasticsearchIndexService.getIndexStats(patterns: string[], esUrl?: string)`: calls `GET /_cat/indices/<pattern>?format=json&h=index,health,status,docs.count,store.size` against `esUrl` or `ELASTICSEARCH_URL`; maps response to `{ pattern, health: "green"\|"yellow"\|"red"\|"unknown", status, docsCount, storeSize }`; returns `{ reachable: false }` when the env var is unset or the request fails; unit tests with mock fetch | `TODO` |
+| FARM-T403 | Task | `GET /api/v1/components/:id/elasticsearch-indices/stats`: resolves each linked `ComponentElasticsearchIndex`, calls `getIndexStats()`, returns `{ indexPattern, esUrl, reachable, stats? }[]`; `JwtAuthGuard` protected; unit + e2e tests | `TODO` |
+
+##### FARM-T402 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST412 | Sub-task | Unit test: ES returns a healthy index entry → `getIndexStats()` maps `health: "green"`, `docsCount`, and `storeSize` correctly | `TODO` |
+| FARM-ST413 | Sub-task | Unit test: fetch throws a network error → `getIndexStats()` returns `{ reachable: false }` without propagating the exception | `TODO` |
+
+#### FARM-S353 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T404 | Task | `ElasticsearchIndicesTab` on the component detail page: table with columns index pattern, health badge (green/yellow/red color dot), doc count, store size, and "Open in Kibana" link-out (rendered only when `KIBANA_URL` env var is set, URL format `<KIBANA_URL>/app/discover#/?_a=(index:'<pattern>')`); "Link Index" button opens an inline dialog to add a new `ComponentElasticsearchIndex` record; empty state when no indices are linked; unit tests | `TODO` |
+| FARM-T405 | Task | `useElasticsearchIndices(componentId)` hook: fetches `GET .../elasticsearch-indices/stats`; polls every 30 seconds while the tab is visible (`document.visibilityState`); returns `{ indices, loading, error }`; unit tests with mock API | `TODO` |
+
+##### FARM-T404 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST414 | Sub-task | Unit test: index entry with `health: "red"` renders a red badge; `health: "green"` renders a green badge; `health: "unknown"` renders a grey badge | `TODO` |
+| FARM-ST415 | Sub-task | Unit test: `KIBANA_URL` not configured (env var absent) → "Open in Kibana" link is not rendered in the table row | `TODO` |
+
+#### FARM-S354 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T406 | Task | ES indices overview page at `/elasticsearch`: table of all linked `ComponentElasticsearchIndex` records across all components with live stats; filter chips by health (All / Green / Yellow / Red); component name chip links back to `/catalog/:id`; "No indices linked" empty state; unit tests | `TODO` |
+| FARM-T407 | Task | `GET /api/v1/elasticsearch/indices` endpoint: aggregates all `ComponentElasticsearchIndex` records with their live stats grouped by component; returns `{ componentId, componentName, indices: [...] }[]`; `JwtAuthGuard` + `Roles("admin")` protected; unit + e2e tests | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -789,4 +853,5 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
 | Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
-| **Total** | **82** | **330** | |
+| Phase 35: Elasticsearch Index Visibility | 1 | 4 | `TODO` |
+| **Total** | **83** | **334** | |

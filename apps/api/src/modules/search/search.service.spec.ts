@@ -6,6 +6,10 @@ import { Team } from "../teams/entities/team.entity";
 import { Documentation } from "../documentation/entities/documentation.entity";
 import { Environment } from "../environments/entities/environment.entity";
 import { Pipeline } from "../pipelines/entities/pipeline.entity";
+import { ElasticsearchService } from "../elasticsearch/elasticsearch.service";
+import { SearchConfig } from "./entities/search-config.entity";
+import type { EsSearchResponse } from "../elasticsearch/elasticsearch.types";
+import type { AdvancedSearchQueryDto } from "./dto/advanced-search-query.dto";
 
 /**
  * Unit tests for SearchService.
@@ -25,6 +29,15 @@ describe("SearchService", () => {
   const mockDocRepo = { createQueryBuilder: jest.fn() };
   const mockEnvRepo = { createQueryBuilder: jest.fn() };
   const mockPipelineRepo = { createQueryBuilder: jest.fn() };
+  const mockElasticsearchService = {
+    isEnabled: jest.fn(),
+    search: jest.fn(),
+  };
+  const mockSearchConfigRepo = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -34,6 +47,7 @@ describe("SearchService", () => {
     mockDocRepo.createQueryBuilder.mockReturnValue(createQb([]));
     mockEnvRepo.createQueryBuilder.mockReturnValue(createQb([]));
     mockPipelineRepo.createQueryBuilder.mockReturnValue(createQb([]));
+    mockElasticsearchService.isEnabled.mockReturnValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,10 +60,22 @@ describe("SearchService", () => {
         },
         { provide: getRepositoryToken(Environment), useValue: mockEnvRepo },
         { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+        {
+          provide: ElasticsearchService,
+          useValue: mockElasticsearchService,
+        },
+        {
+          provide: getRepositoryToken(SearchConfig),
+          useValue: mockSearchConfigRepo,
+        },
       ],
     }).compile();
 
     service = module.get<SearchService>(SearchService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should be defined", () => {
@@ -195,6 +221,222 @@ describe("SearchService", () => {
       const results = await service.quickSearch("infra");
       const team = results.find((r) => r.type === "team");
       expect(team?.description).toBe("Infrastructure team");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // advancedSearch() — FARM-S316 + FARM-S317
+  // ---------------------------------------------------------------------------
+
+  describe("advancedSearch()", () => {
+    const baseDto: AdvancedSearchQueryDto = {
+      q: "platform",
+      page: 1,
+      limit: 10,
+    };
+
+    const esResponse: EsSearchResponse = {
+      hits: [
+        {
+          id: "c-1",
+          type: "component",
+          title: "platform-service",
+          description: "Core service",
+          tags: ["core"],
+          namespace: "default",
+          highlights: ["<em>platform</em>-service"],
+          score: 4.2,
+        },
+      ],
+      total: 1,
+      facets: {
+        types: [{ key: "component", count: 1 }],
+        tags: [{ key: "core", count: 1 }],
+      },
+    };
+
+    it("returns ES results mapped to AdvancedSearchResult with source='elasticsearch' when ES is enabled", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(true);
+      mockElasticsearchService.search.mockResolvedValue(esResponse);
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.advancedSearch(baseDto, "org-1");
+
+      expect(result.source).toBe("elasticsearch");
+      expect(result.hits).toHaveLength(1);
+      expect(result.hits[0]).toMatchObject({
+        id: "c-1",
+        type: "component",
+        title: "platform-service",
+        url: "/catalog/c-1",
+        score: 4.2,
+      });
+      expect(result.total).toBe(1);
+      expect(result.facets.types).toEqual([{ key: "component", count: 1 }]);
+      expect(result.facets.tags).toEqual([{ key: "core", count: 1 }]);
+    });
+
+    it("falls back to database results with source='database' when ES is disabled", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(false);
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+      mockComponentRepo.createQueryBuilder.mockReturnValue(
+        createQb([{ id: "c-2", name: "api-gateway", description: "Gateway" }]),
+      );
+
+      const result = await service.advancedSearch(baseDto, "org-1");
+
+      expect(result.source).toBe("database");
+      expect(result.hits.length).toBeGreaterThanOrEqual(0);
+      expect(result.facets).toEqual({ types: [], tags: [] });
+    });
+
+    it("filters DB fallback results by dto.types when provided", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(false);
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+      mockComponentRepo.createQueryBuilder.mockReturnValue(
+        createQb([{ id: "c-3", name: "search-svc", description: null }]),
+      );
+      mockTeamRepo.createQueryBuilder.mockReturnValue(
+        createQb([{ id: "t-3", name: "search-team", description: null }]),
+      );
+
+      const dto: AdvancedSearchQueryDto = {
+        ...baseDto,
+        types: ["component"],
+      };
+      const result = await service.advancedSearch(dto, "org-1");
+
+      expect(result.source).toBe("database");
+      // Only component type results should be present
+      expect(result.hits.every((h) => h.type === "component")).toBe(true);
+    });
+
+    it("uses hardcoded defaults when no SearchConfig is found in DB", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(true);
+      mockElasticsearchService.search.mockResolvedValue(esResponse);
+      // Both findOne calls return null (no org config, no global config)
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+
+      await service.advancedSearch(baseDto, "org-1");
+
+      expect(mockElasticsearchService.search).toHaveBeenCalledWith(
+        baseDto.q,
+        expect.objectContaining({ orgId: "org-1" }),
+        expect.objectContaining({
+          titleBoost: 3,
+          tagsBoost: 2,
+          descriptionBoost: 1,
+          fuzziness: "AUTO",
+        }),
+      );
+    });
+
+    it("uses org-specific config boost weights when a SearchConfig record exists for the org", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(true);
+      mockElasticsearchService.search.mockResolvedValue(esResponse);
+
+      const orgConfig: Partial<SearchConfig> = {
+        id: "cfg-1",
+        organizationId: "org-1",
+        titleBoost: 5,
+        tagsBoost: 4,
+        descriptionBoost: 2,
+        fuzziness: "1",
+      };
+      // First findOne (org-specific) returns the config
+      mockSearchConfigRepo.findOne.mockResolvedValueOnce(orgConfig);
+
+      await service.advancedSearch(baseDto, "org-1");
+
+      expect(mockElasticsearchService.search).toHaveBeenCalledWith(
+        baseDto.q,
+        expect.objectContaining({ orgId: "org-1" }),
+        expect.objectContaining({
+          titleBoost: 5,
+          tagsBoost: 4,
+          descriptionBoost: 2,
+          fuzziness: "1",
+        }),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getConfig() and upsertConfig()
+  // ---------------------------------------------------------------------------
+
+  describe("getConfig()", () => {
+    it("returns org-specific config when it exists", async () => {
+      const orgConfig = { id: "cfg-1", organizationId: "org-1" };
+      mockSearchConfigRepo.findOne.mockResolvedValueOnce(orgConfig);
+
+      const result = await service.getConfig("org-1");
+
+      expect(result).toBe(orgConfig);
+      expect(mockSearchConfigRepo.findOne).toHaveBeenCalledWith({
+        where: { organizationId: "org-1" },
+      });
+    });
+
+    it("falls back to global config when no org-specific config exists", async () => {
+      const globalConfig = { id: "cfg-global", organizationId: null };
+      mockSearchConfigRepo.findOne
+        .mockResolvedValueOnce(null) // org-specific lookup
+        .mockResolvedValueOnce(globalConfig); // global lookup
+
+      const result = await service.getConfig("org-1");
+
+      expect(result).toBe(globalConfig);
+    });
+
+    it("returns null when neither org-specific nor global config exists", async () => {
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.getConfig("org-1");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("upsertConfig()", () => {
+    it("updates existing config and returns saved entity", async () => {
+      const existing = {
+        id: "cfg-1",
+        organizationId: "org-1",
+        titleBoost: 3,
+        tagsBoost: 2,
+        descriptionBoost: 1,
+        fuzziness: "AUTO",
+      };
+      const saved = { ...existing, titleBoost: 5 };
+      mockSearchConfigRepo.findOne.mockResolvedValue(existing);
+      mockSearchConfigRepo.save.mockResolvedValue(saved);
+
+      const result = await service.upsertConfig({ titleBoost: 5 }, "org-1");
+
+      expect(result.titleBoost).toBe(5);
+      expect(mockSearchConfigRepo.save).toHaveBeenCalled();
+    });
+
+    it("creates new config when none exists", async () => {
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+      const created = {
+        organizationId: "org-new",
+        titleBoost: 3,
+        tagsBoost: 2,
+        descriptionBoost: 1,
+        fuzziness: "AUTO",
+      };
+      mockSearchConfigRepo.create.mockReturnValue(created);
+      mockSearchConfigRepo.save.mockResolvedValue({
+        id: "cfg-new",
+        ...created,
+      });
+
+      const result = await service.upsertConfig({}, "org-new");
+
+      expect(mockSearchConfigRepo.create).toHaveBeenCalled();
+      expect(result.id).toBe("cfg-new");
     });
   });
 });

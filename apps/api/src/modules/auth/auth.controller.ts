@@ -13,6 +13,7 @@ import {
   HttpStatus,
   Next,
   Optional,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -28,6 +29,7 @@ import type { Response } from "express";
 import * as passport from "passport";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+import { ConfigService } from "@nestjs/config";
 import { AuthService } from "./auth.service";
 import { KeycloakOidcService } from "./keycloak-oidc.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
@@ -64,6 +66,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly keycloakOidcService: KeycloakOidcService,
+    @Optional() private readonly configService: ConfigService,
     @Optional()
     @InjectQueue(QUEUE_NAMES.KEYCLOAK_SYNC)
     private readonly keycloakSyncQueue: Queue<KeycloakSyncJobData> | null,
@@ -456,6 +459,72 @@ export class AuthController {
         },
       ) as (req: Request, res: Response, next: NextFunction) => void
     )(req, res, next);
+  }
+
+  /**
+   * Authenticates a user via LDAP / Active Directory.
+   * Accepts username and password in the request body.
+   * Returns JWT access and refresh tokens on success.
+   * Returns 503 when LDAP is not configured.
+   * @param req - Express request carrying the validated LDAP user
+   * @returns JWT tokens and user profile
+   */
+  @Post("login/ldap")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard("ldapauth"))
+  @SkipThrottle({ long: true })
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @ApiExcludeEndpoint()
+  async ldapLogin(
+    @Req() req: Request & { user: User },
+  ): Promise<{ user: User; token: string; refreshToken: string }> {
+    if (!this.configService?.get<string>("ldap.url")) {
+      throw new ServiceUnavailableException(
+        "LDAP authentication is not configured",
+      );
+    }
+    return this.authService.generateTokensForUser(req.user);
+  }
+
+  /**
+   * Returns the list of enabled authentication providers.
+   * Always includes "local". Other providers are listed when their
+   * required environment variables are set.
+   */
+  @Get("providers")
+  @SkipThrottle()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "List enabled authentication providers" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Returns enabled auth providers.",
+    schema: {
+      type: "object",
+      properties: {
+        providers: {
+          type: "array",
+          items: { type: "string" },
+          example: ["local", "github", "google", "ldap", "keycloak"],
+        },
+      },
+    },
+  })
+  getProviders(): { providers: string[] } {
+    const providers: string[] = ["local"];
+
+    if (this.configService?.get<string>("oauth.github.clientId")) {
+      providers.push("github");
+    }
+    if (this.configService?.get<string>("oauth.google.clientId")) {
+      providers.push("google");
+    }
+    if (this.configService?.get<string>("ldap.url")) {
+      providers.push("ldap");
+    }
+    // Keycloak is per-org (dynamic), so it is always listed.
+    providers.push("keycloak");
+
+    return { providers };
   }
 
   /**

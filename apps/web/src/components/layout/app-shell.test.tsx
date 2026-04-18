@@ -85,6 +85,12 @@ vi.mock("@/components/search/search-modal", () => ({
     open ? <div data-testid="search-modal-stub" /> : null,
 }));
 
+// AdvancedSearchModal replaced SearchModal in app-shell — stub it with the same testid.
+vi.mock("@/components/search/advanced-search-modal", () => ({
+  AdvancedSearchModal: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="search-modal-stub" /> : null,
+}));
+
 // Mock OTel helpers — org-switcher now imports these.
 vi.mock("@/lib/otel-spans", () => ({
   recordSpan: vi.fn((_name: unknown, fn: () => unknown) => fn()),
