@@ -121,9 +121,12 @@ export class SearchSubscriber
    * do not remain searchable.
    */
   afterRemove(event: RemoveEvent<unknown>): void {
-    const type = this.resolveType(event.entity);
+    if (!event.entity) {
+      return;
+    }
 
-    if (!type || !event.entity) {
+    const type = this.resolveType(event.entity);
+    if (!type) {
       return;
     }
 

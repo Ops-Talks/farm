@@ -36,6 +36,13 @@ interface LdapUser {
 }
 
 /**
+ * Non-functional placeholder URL used when LDAP_URL is not configured.
+ * The LdapAuthGuard prevents any request from reaching this strategy when
+ * LDAP is not set up, so this URL is never actually contacted.
+ */
+const LDAP_NOOP_URL = "ldap://noop";
+
+/**
  * Passport strategy for LDAP / Active Directory authentication.
  * Disabled gracefully when LDAP_URL is not configured.
  */
@@ -54,7 +61,7 @@ export class LdapAuthStrategy extends PassportStrategy(
 
     super({
       server: {
-        url: ldapUrl || "ldap://noop",
+        url: ldapUrl || LDAP_NOOP_URL,
         bindDN: configService.get<string>("ldap.bindDn") || "",
         bindCredentials: configService.get<string>("ldap.bindPassword") || "",
         searchBase: configService.get<string>("ldap.searchBase") || "",
