@@ -1,4 +1,5 @@
 import { DocBuilder } from "./builders/doc-builder.interface";
+import { MkDocsBuilder } from "./builders/mkdocs.builder";
 import { Test, TestingModule } from "@nestjs/testing";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Job } from "bullmq";
@@ -202,6 +203,37 @@ describe("DocsBuildProcessor", () => {
     });
   });
 
+  it("uses String(error) as buildLog when the thrown value is not an Error instance", async () => {
+    const build = makeBuild();
+    buildService.create.mockResolvedValue(build);
+    buildService.updateStatus.mockResolvedValue(
+      makeBuild({ status: "failed" }),
+    );
+
+    jest
+      .spyOn(DocBuilderFactory, "resolve")
+
+      .mockRejectedValue("plain string error");
+
+    const job = makeJob({
+      repoUrl: "https://github.com/acme/docs.git",
+      ref: "refs/heads/main",
+      componentId: null,
+    });
+
+    await processor.process(job);
+
+    expect(buildService.updateStatus).toHaveBeenCalledWith(
+      "build-uuid-1",
+      "failed",
+      expect.objectContaining({ buildLog: "plain string error" }),
+    );
+    expect(eventEmitter.emit).toHaveBeenCalledWith("docs.build-complete", {
+      buildId: "build-uuid-1",
+      status: "failed",
+    });
+  });
+
   it("parses tag refs into a short version string", async () => {
     const build = makeBuild({ version: "v2.3.1" });
     buildService.create.mockResolvedValue(build);
@@ -227,6 +259,41 @@ describe("DocsBuildProcessor", () => {
       "v2.3.1",
       "markdown",
       "https://github.com/acme/docs.git",
+    );
+  });
+
+  it("sets sourceType to mkdocs when the resolved builder is an MkDocsBuilder instance", async () => {
+    const build = makeBuild();
+    buildService.create.mockResolvedValue(build);
+    buildService.updateStatus.mockResolvedValue(makeBuild({ status: "ready" }));
+
+    const mkdocsBuilder = Object.create(
+      MkDocsBuilder.prototype,
+    ) as MkDocsBuilder;
+    (mkdocsBuilder as unknown as { build: jest.Mock }).build = jest
+      .fn()
+      .mockResolvedValue({
+        status: "ready",
+        artifactsPath: "/out",
+        buildLog: "",
+      });
+
+    jest
+      .spyOn(DocBuilderFactory, "resolve")
+      .mockResolvedValue(mkdocsBuilder as unknown as DocBuilder);
+
+    const job = makeJob({
+      repoUrl: "https://github.com/acme/docs.git",
+      ref: "refs/heads/main",
+      componentId: null,
+    });
+
+    await processor.process(job);
+
+    expect(buildService.updateStatus).toHaveBeenCalledWith(
+      "build-uuid-1",
+      "ready",
+      expect.objectContaining({ sourceType: "mkdocs" }),
     );
   });
 });

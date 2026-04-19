@@ -176,4 +176,45 @@ describe("DocsWebhookController", () => {
 
     expect(buildQueue.add).not.toHaveBeenCalled();
   });
+
+  it("rejects with 401 when X-Hub-Signature-256 header is absent and secret is configured", async () => {
+    const body: DocsWebhookDto = {
+      ref: "refs/heads/main",
+      repository: { clone_url: "https://github.com/acme/docs.git" },
+    };
+    const req = makeReq(body);
+
+    await expect(
+      controller.handleWebhook(undefined, req as never, body),
+    ).rejects.toThrow(UnauthorizedException);
+
+    expect(buildQueue.add).not.toHaveBeenCalled();
+  });
+
+  it("falls back to JSON.stringify when rawBody is absent on the request", async () => {
+    const body: DocsWebhookDto = {
+      ref: "refs/heads/main",
+      repository: { clone_url: "https://github.com/acme/docs.git" },
+    };
+    const sig = makeSignature(body);
+
+    const result = await controller.handleWebhook(sig, {} as never, body);
+
+    expect(result).toEqual({ queued: true });
+    expect(buildQueue.add).toHaveBeenCalled();
+  });
+
+  it("treats a commit with undefined added/removed/modified fields as relevant", async () => {
+    const body: DocsWebhookDto = {
+      ref: "refs/heads/main",
+      repository: { clone_url: "https://github.com/acme/docs.git" },
+      commits: [{}],
+    };
+    const sig = makeSignature(body);
+    const req = makeReq(body);
+
+    const result = await controller.handleWebhook(sig, req as never, body);
+
+    expect(result).toEqual({ queued: false });
+  });
 });

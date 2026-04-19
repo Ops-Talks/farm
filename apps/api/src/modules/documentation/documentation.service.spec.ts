@@ -298,6 +298,48 @@ describe("DocumentationService", () => {
     });
   });
 
+  describe("findByComponent", () => {
+    it("should return documentation entries for a given componentId", async () => {
+      mockRepository.find.mockResolvedValue([mockDoc]);
+
+      const result = await service.findByComponent("comp-uuid");
+
+      expect(result).toEqual([mockDoc]);
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { componentId: "comp-uuid" },
+      });
+    });
+  });
+
+  describe("update", () => {
+    it("should merge and save the updated documentation", async () => {
+      const updated = { ...mockDoc, title: "Updated Title" };
+      mockRepository.findOneBy.mockResolvedValue(mockDoc);
+      mockRepository.merge.mockReturnValue(updated as Documentation);
+      mockRepository.save.mockResolvedValue(updated as Documentation);
+
+      const result = await service.update("uuid", { title: "Updated Title" });
+
+      expect(mockRepository.merge).toHaveBeenCalledWith(mockDoc, {
+        title: "Updated Title",
+      });
+      expect(mockRepository.save).toHaveBeenCalledWith(updated);
+      expect(result.title).toBe("Updated Title");
+    });
+  });
+
+  describe("remove", () => {
+    it("should find and remove the documentation entry", async () => {
+      mockRepository.findOneBy.mockResolvedValue(mockDoc);
+      mockRepository.remove.mockResolvedValue(undefined);
+
+      await service.remove("uuid");
+
+      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: "uuid" });
+      expect(mockRepository.remove).toHaveBeenCalledWith(mockDoc);
+    });
+  });
+
   describe("findOne — NotFoundException", () => {
     it("should throw NotFoundException when documentation is not found", async () => {
       mockRepository.findOneBy.mockResolvedValue(null);
