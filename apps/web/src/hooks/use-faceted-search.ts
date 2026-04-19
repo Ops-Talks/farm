@@ -14,6 +14,7 @@ const EMPTY_RESULT: AdvancedSearchResult = {
   hits: [],
   total: 0,
   page: 1,
+  limit: 20,
   totalPages: 0,
   facets: { types: [], namespaces: [], tags: [] },
   source: 'elasticsearch',

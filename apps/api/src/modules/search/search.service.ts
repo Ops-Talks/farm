@@ -284,6 +284,7 @@ export class SearchService {
         hits,
         total: esResponse.total,
         page,
+        limit,
         totalPages: Math.ceil(esResponse.total / limit),
         facets: {
           types: esResponse.facets.types,
@@ -315,6 +316,7 @@ export class SearchService {
         hits,
         total: hits.length,
         page,
+        limit,
         totalPages: Math.ceil(hits.length / limit),
         facets: { types: [], namespaces: [], tags: [] },
         source: "database",
@@ -331,6 +333,7 @@ export class SearchService {
         hits: [],
         total: 0,
         page,
+        limit,
         totalPages: 0,
         facets: { types: [], namespaces: [], tags: [] },
         source: "database",

@@ -1885,6 +1885,7 @@ export interface AdvancedSearchResult {
   hits: AdvancedSearchHit[];
   total: number;
   page: number;
+  limit: number;
   totalPages: number;
   facets: {
     types: FacetBucket[];

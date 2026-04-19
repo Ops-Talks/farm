@@ -268,7 +268,7 @@ export class ElasticsearchService {
 
       const hits: EsHit[] = response.hits.hits.map((hit) => {
         const source = hit._source as SearchDocument;
-        const hl = hit.highlight as Record<string, string[]> | undefined;
+        const hl = hit.highlight as Record<string, string[]> | undefined; // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
 
         const fieldHighlights: EsHit["highlights"] = {};
         if (hl?.title) fieldHighlights.name = hl.title;
@@ -314,7 +314,11 @@ export class ElasticsearchService {
       return {
         hits,
         total,
-        facets: { types: typeBuckets, namespaces: namespaceBuckets, tags: tagBuckets },
+        facets: {
+          types: typeBuckets,
+          namespaces: namespaceBuckets,
+          tags: tagBuckets,
+        },
       };
     } catch (error) {
       this.logger.error("Elasticsearch search query failed", error);

@@ -39,6 +39,8 @@ export interface AdvancedSearchResult {
   total: number;
   /** Current page number (1-based). */
   page: number;
+  /** Maximum number of hits per page. */
+  limit: number;
   /** Total number of pages. */
   totalPages: number;
   /** Aggregated facet counts for types, namespaces, and tags. */

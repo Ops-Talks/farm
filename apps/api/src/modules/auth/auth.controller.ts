@@ -13,7 +13,6 @@ import {
   HttpStatus,
   Next,
   Optional,
-  ServiceUnavailableException,
 } from "@nestjs/common";
 import {
   ApiTags,

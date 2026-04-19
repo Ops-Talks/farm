@@ -20,6 +20,7 @@ const makeResult = (overrides: Partial<AdvancedSearchResult> = {}): AdvancedSear
   ],
   total: 1,
   page: 1,
+  limit: 20,
   totalPages: 1,
   facets: {
     types: [{ key: "component", count: 1 }],
@@ -34,6 +35,7 @@ const EMPTY_RESULT: AdvancedSearchResult = {
   hits: [],
   total: 0,
   page: 1,
+  limit: 20,
   totalPages: 0,
   facets: { types: [], namespaces: [], tags: [] },
   source: "elasticsearch",

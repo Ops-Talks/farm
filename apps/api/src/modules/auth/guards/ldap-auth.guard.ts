@@ -16,7 +16,10 @@ import { AuthGuard } from "@nestjs/passport";
  * a connection to a non-existent LDAP server.
  */
 @Injectable()
-export class LdapAuthGuard extends AuthGuard("ldapauth") implements CanActivate {
+export class LdapAuthGuard
+  extends AuthGuard("ldapauth")
+  implements CanActivate
+{
   constructor(private readonly configService: ConfigService) {
     super();
   }
