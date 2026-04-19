@@ -393,4 +393,36 @@ describe("IacModuleDetailClient", () => {
     );
     expect(container.querySelectorAll("[data-slot='skeleton']").length).toBeGreaterThan(0);
   });
+
+  it("uses 'latest' tag in snippet when both selectedVersion and latestVersion are null", async () => {
+    mockGetModule.mockResolvedValue(buildModule({ latestVersion: null }));
+    mockGetVersions.mockResolvedValue([]);
+    const { container } = render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument());
+    // With no selected version and no latestVersion the tag falls back to "latest"
+    const preEl = container.querySelector("pre");
+    expect(preEl?.textContent).toContain("?ref=latest");
+  });
+
+  it("falls back to versions[0] when no version has isLatest true", async () => {
+    mockGetModule.mockResolvedValue(buildModule());
+    mockGetVersions.mockResolvedValue([
+      buildVersion({ id: "ver-only", version: "v1.0.0", isLatest: false }),
+    ]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    // The variables table for the fallback version should be rendered
+    await waitFor(() => {
+      expect(screen.getByText("region")).toBeInTheDocument();
+    });
+    expect(screen.getByText("AWS region")).toBeInTheDocument();
+  });
+
+  it("does not render latestVersion badge when module latestVersion is null", async () => {
+    mockGetModule.mockResolvedValue(buildModule({ latestVersion: null }));
+    mockGetVersions.mockResolvedValue([]);
+    render(<IacModuleDetailClient />, { wrapper: createWrapper() });
+    await waitFor(() => expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument());
+    // Provider badge "aws" is present but no latestVersion badge ("v3.19.0") rendered
+    expect(screen.queryByText("v3.19.0")).not.toBeInTheDocument();
+  });
 });
