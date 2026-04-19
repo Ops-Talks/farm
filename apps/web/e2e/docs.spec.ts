@@ -74,7 +74,9 @@ const MOCK_COMPONENT = {
 //   5. /api/v1/docs/:id                    (individual doc metadata)
 //   6. /api/v1/docs/:id/rendered           (rendered HTML — overrides #5)
 //   7. /api/v1/docs/tree**                 (tree endpoint)
-//   8. /api/v1/docs/search**               (search endpoint, highest priority)
+//   8. /api/v1/docs/search**               (search endpoint)
+//   9. /api/v1/docs/builds/**              (Phase 29 — build history)
+//  10. /api/v1/docs/*/versions             (Phase 29 — versions, highest priority)
 // ---------------------------------------------------------------------------
 async function mockDocsRoutes(
   page: import("@playwright/test").Page,
@@ -177,6 +179,24 @@ async function mockDocsRoutes(
       status: 200,
       contentType: "application/json",
       body: JSON.stringify([MOCK_SEARCH_RESULT]),
+    }),
+  );
+
+  // 9. Phase 29 — builds list: GET /api/v1/docs/builds/:componentId
+  await page.route("**/api/v1/docs/builds/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    }),
+  );
+
+  // 10. Phase 29 — versions list: GET /api/v1/docs/:componentId/versions
+  await page.route("**/api/v1/docs/*/versions", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
     }),
   );
 }

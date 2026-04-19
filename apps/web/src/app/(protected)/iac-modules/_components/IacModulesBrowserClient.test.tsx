@@ -33,6 +33,22 @@ vi.mock("@/components/shared/page-header", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Stable router mock — vi.hoisted ensures the ref is available when the
+// vi.mock factory runs (which is hoisted above all import statements).
+// The existing beforeEach calls vi.clearAllMocks(), so mockPush is
+// automatically reset before every test without needing extra setup.
+// ---------------------------------------------------------------------------
+
+const mockPush = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  usePathname: () => "/iac-modules",
+  useParams: () => ({}),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
+// ---------------------------------------------------------------------------
 // Import component AFTER mocks
 // ---------------------------------------------------------------------------
 
@@ -185,5 +201,85 @@ describe("IacModulesBrowserClient", () => {
 
     const card = screen.getByRole("button");
     expect(() => fireEvent.keyDown(card, { key: "Tab" })).not.toThrow();
+  });
+
+  // -------------------------------------------------------------------------
+  // New tests — added to improve statement/function coverage
+  // -------------------------------------------------------------------------
+
+  it("calls list with search term when search input changes", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    // Wait for the initial query to settle
+    await waitFor(() => expect(mockList).toHaveBeenCalled());
+
+    const searchInput = screen.getByPlaceholderText("Search modules...");
+    fireEvent.change(searchInput, { target: { value: "vpc" } });
+
+    await waitFor(() => {
+      const calls = mockList.mock.calls;
+      const lastCall = calls[calls.length - 1] as [{ search?: string }];
+      expect(lastCall[0]?.search).toBe("vpc");
+    });
+  });
+
+  it("navigates to module detail page when a card is clicked", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([buildModule()]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    const card = screen.getByRole("button");
+    fireEvent.click(card);
+
+    expect(mockPush).toHaveBeenCalledWith("/iac-modules/mod-1");
+  });
+
+  it("external link click stops propagation and does not trigger card navigation", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    mockList.mockResolvedValue([buildModule()]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    // The anchor has aria-label="Open source repository"
+    const externalLink = screen.getByRole("link", {
+      name: /open source repository/i,
+    });
+    fireEvent.click(externalLink);
+
+    // stopPropagation() must have prevented the card onClick from firing
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("does not render version badge when latestVersion is null", async () => {
+    mockList.mockResolvedValue([buildModule({ latestVersion: null })]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    // The conditional {mod.latestVersion && <Badge>} branch is NOT taken
+    expect(screen.queryByText("v3.19.0")).not.toBeInTheDocument();
+  });
+
+  it("does not render description paragraph when description is null", async () => {
+    mockList.mockResolvedValue([buildModule({ description: null })]);
+    render(<IacModulesBrowserClient />, { wrapper: createWrapper() });
+
+    await waitFor(() =>
+      expect(screen.getByText("terraform-aws-vpc")).toBeInTheDocument(),
+    );
+
+    // The conditional {mod.description && <p>} branch is NOT taken
+    expect(screen.queryByText("Creates a VPC on AWS")).not.toBeInTheDocument();
   });
 });

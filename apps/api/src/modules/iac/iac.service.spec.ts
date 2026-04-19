@@ -736,6 +736,32 @@ describe("IacService", () => {
       expect(envStack.lastRunType).toBeNull();
       expect(envStack.resourceChanges).toBeNull();
     });
+
+    it("should cover sort comparator true-branch when failed stack is already first in the find result", async () => {
+      // Place the failed stack first so the sort comparator receives
+      // (failed_summary, succeeded_summary) as its (a, b) arguments.
+      // This exercises the aFailed = -1 branch (line 345) and the
+      // bFailed = 0 branch (line 346) that are not reached when the
+      // succeeded stack is first.
+      const failedStackFirst: IacStack = {
+        ...mockStack,
+        id: "stack-uuid-fail-first",
+        name: "aaa-broken",
+      };
+      const failedRunFirst: IacRun = {
+        ...mockRun,
+        stackId: "stack-uuid-fail-first",
+        status: IacRunStatus.FAILED,
+      };
+      stackRepo.find.mockResolvedValue([failedStackFirst, mockStack]);
+      mockQueryBuilder([failedRunFirst, mockRun]);
+
+      const result = await service.getDashboard();
+
+      const envStacks = result.stacksByEnvironment["production"];
+      expect(envStacks[0].lastRunStatus).toBe(IacRunStatus.FAILED);
+      expect(result.failedLastRun).toBe(1);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -836,6 +862,22 @@ describe("IacService", () => {
           order: { environment: "ASC", name: "ASC" },
         }),
       );
+    });
+
+    it("should return an empty Map immediately when fetchLastRunMap receives an empty stackIds array", async () => {
+      // fetchLastRunMap is private and its early-exit guard (line 418) is not
+      // reachable through listStacks because listStacks returns [] before
+      // calling fetchLastRunMap when stacks is empty. Access it directly to
+      // guarantee the defensive branch is covered.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      const result = (await (service as any).fetchLastRunMap([])) as Map<
+        string,
+        IacRun
+      >;
+
+      expect(result).toBeInstanceOf(Map);
+      expect(result.size).toBe(0);
+      expect(runRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 

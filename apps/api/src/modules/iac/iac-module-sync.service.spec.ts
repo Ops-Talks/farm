@@ -484,5 +484,28 @@ output "bucket_arn" {
 
       expect(moduleRepo.save).not.toHaveBeenCalled();
     });
+
+    it("should resolve the correct latest version when remote tags have fewer than three semver segments", async () => {
+      // Tags "v1" and "v2" have only one segment each. When resolveLatest
+      // reduces them it calls compareSemver, whose inner parse() accesses
+      // parts[1] ?? 0 and parts[2] ?? 0 (line 305) — the nullish-coalescing
+      // fallback that is otherwise dead code for full X.Y.Z tags.
+      jest.spyOn(service, "listRemoteTags").mockReturnValue(["v1", "v2"]);
+      versionRepo.find.mockResolvedValue([]);
+      versionRepo.create.mockImplementation(
+        (v: unknown) => v as IacModuleVersion,
+      );
+      versionRepo.save.mockResolvedValue({});
+      moduleRepo.save.mockResolvedValue({
+        ...mockModule,
+        latestVersion: "v2",
+      });
+
+      const result = await service.sync(mockModule);
+
+      // "v2" is numerically higher than "v1" even with zero-padded minor/patch
+      expect(result.latestVersion).toBe("v2");
+      expect(result.newVersions).toBe(2);
+    });
   });
 });

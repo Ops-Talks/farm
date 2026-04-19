@@ -29,6 +29,21 @@ async function bootstrap() {
 
   // OTLP trace payloads from the browser SDK can be large (many batched spans).
   app.use("/api/v1/traces/ingest", express.json({ limit: "10mb" }));
+  // Capture the raw request body on the webhook route so HMAC verification
+  // can hash the exact bytes GitHub sent instead of re-serialized JSON.
+  app.use(
+    "/api/v1/docs/webhook",
+    express.json({
+      limit: "1mb",
+      verify: (
+        req: express.Request & { rawBody?: Buffer },
+        _res: express.Response,
+        buf: Buffer,
+      ) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   // Standard limit for all other routes.
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));

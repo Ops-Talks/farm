@@ -22,9 +22,11 @@ import {
   ApiBearerAuth,
 } from "@nestjs/swagger";
 import { DocumentationService } from "./documentation.service";
+import { DocumentationBuildService } from "./documentation-build.service";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 import { UpdateDocumentationDto } from "./dto/update-documentation.dto";
 import { Documentation } from "./entities/documentation.entity";
+import { DocumentationBuild } from "./entities/documentation-build.entity";
 import {
   DocumentationTreeNode,
   SearchResult,
@@ -65,7 +67,10 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
   type: ErrorResponseDto,
 })
 export class DocumentationController {
-  constructor(private readonly documentationService: DocumentationService) {}
+  constructor(
+    private readonly documentationService: DocumentationService,
+    private readonly documentationBuildService: DocumentationBuildService,
+  ) {}
 
   /**
    * Creates a new documentation entry.
@@ -179,6 +184,40 @@ export class DocumentationController {
     @Query("componentId") componentId: string,
   ): Promise<DocumentationTreeNode[]> {
     return await this.documentationService.buildTree(componentId);
+  }
+
+  /**
+   * Returns the full build history for a component, ordered most-recent first.
+   * @param componentId - The UUID of the component
+   * @returns Array of documentation build records
+   */
+  @Get("builds/:componentId")
+  @ApiOperation({ summary: "Get build history for a component" })
+  @ApiParam({ name: "componentId", description: "Component UUID" })
+  @ApiResponse({ status: 200, type: [DocumentationBuild] })
+  async getBuilds(
+    @Param("componentId") componentId: string,
+  ): Promise<DocumentationBuild[]> {
+    return this.documentationBuildService.findByComponent(componentId);
+  }
+
+  /**
+   * Returns all ready documentation builds for a component sorted by date descending.
+   * The first element represents the latest build and is used as the default selection.
+   * @param componentId - The UUID of the component
+   * @returns Array of ready build records, most recent first
+   */
+  @Get(":componentId/versions")
+  @ApiOperation({
+    summary:
+      "List ready documentation builds for a component sorted by date desc",
+  })
+  @ApiParam({ name: "componentId", description: "Component UUID" })
+  @ApiResponse({ status: 200, type: [DocumentationBuild] })
+  async getVersions(
+    @Param("componentId") componentId: string,
+  ): Promise<DocumentationBuild[]> {
+    return this.documentationBuildService.findVersions(componentId);
   }
 
   /**

@@ -129,6 +129,11 @@ vi.mock("./doc-form", () => ({
   ),
 }));
 
+// Stub out VersionSelector to avoid triggering docs.getBuilds in DocsClient tests.
+vi.mock("./VersionSelector", () => ({
+  VersionSelector: () => null,
+}));
+
 // ---------------------------------------------------------------------------
 // Shared test fixtures
 // ---------------------------------------------------------------------------

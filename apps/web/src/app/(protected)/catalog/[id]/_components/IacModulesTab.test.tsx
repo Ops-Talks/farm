@@ -208,4 +208,84 @@ describe("IacModulesTab", () => {
       expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument(),
     );
   });
+
+  it("typing in search box calls list with the search term", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText(/search modules/i)).toBeInTheDocument(),
+    );
+    await user.type(screen.getByPlaceholderText(/search modules/i), "vpc");
+    await waitFor(() => {
+      expect(mockListModules).toHaveBeenCalledWith({ search: "vpc" });
+    });
+  });
+
+  it("shows skeleton inside dialog while available modules are loading", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(
+      <IacModulesTab component={buildComponent()} />,
+      { wrapper: createWrapper() },
+    );
+    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    // The dialog mounts in a portal (document.body), so query the full body for skeletons
+    await waitFor(() => {
+      expect(
+        document.body.querySelectorAll("[data-slot='skeleton']").length,
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it("shows 'No modules found.' text in dialog when available list is empty", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    await waitFor(() =>
+      expect(screen.getByText("No modules found.")).toBeInTheDocument(),
+    );
+  });
+
+  it("Link button in dialog is disabled when no module is selected", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([
+      buildModule({ id: "mod-2", name: "terraform-aws-s3", componentId: null }),
+    ]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    await waitFor(() => screen.getByText("terraform-aws-s3"));
+    const linkBtn = screen.getByRole("button", { name: /^link$/i });
+    expect(linkBtn).toBeDisabled();
+  });
+
+  it("does not render version badge in dialog list when module latestVersion is null", async () => {
+    mockGetComponentModules.mockResolvedValue([]);
+    mockListModules.mockResolvedValue([
+      buildModule({
+        id: "mod-2",
+        name: "terraform-aws-s3",
+        componentId: null,
+        latestVersion: null,
+      }),
+    ]);
+    const user = userEvent.setup();
+    render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
+    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await user.click(screen.getByRole("button", { name: /link a module/i }));
+    await waitFor(() => screen.getByText("terraform-aws-s3"));
+    expect(screen.getByText("terraform-aws-s3")).toBeInTheDocument();
+    // latestVersion is null so no version badge ("v3.19.0") should appear
+    expect(screen.queryByText("v3.19.0")).not.toBeInTheDocument();
+  });
 });

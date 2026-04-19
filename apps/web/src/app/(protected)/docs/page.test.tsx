@@ -19,6 +19,8 @@ vi.mock("@/lib/api-client", () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    getBuilds: vi.fn().mockResolvedValue([]),
+    getVersions: vi.fn().mockResolvedValue([]),
   },
   catalog: {
     listComponents: (...args: unknown[]) => mockListComponents(...args),

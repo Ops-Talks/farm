@@ -132,6 +132,9 @@ export const configuration = () => ({
   iac: {
     ingestToken: process.env.IAC_INGEST_TOKEN || "",
   },
+  docs: {
+    webhookSecret: process.env.DOCS_WEBHOOK_SECRET || "",
+  },
   health: {
     heapThresholdMb:
       parseInt(process.env.HEALTH_HEAP_THRESHOLD_MB ?? "512", 10) || 512,
@@ -236,6 +239,8 @@ export const validationSchema = Joi.object({
   OPA_URL: Joi.string().uri().default("http://localhost:8181"),
   // IaC ingest token (optional — required when using Cultivator/Agronomist integration)
   IAC_INGEST_TOKEN: Joi.string().allow("").default(""),
+  // Docs webhook HMAC secret (optional — when set, incoming webhook payloads are verified)
+  DOCS_WEBHOOK_SECRET: Joi.string().allow("").optional(),
   // Health check memory thresholds (MB)
   HEALTH_HEAP_THRESHOLD_MB: Joi.number().integer().min(64).default(512),
   HEALTH_RSS_THRESHOLD_MB: Joi.number().integer().min(64).default(1024),

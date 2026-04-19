@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-04-19
+
+### Added
+- **phase-29 (FARM-S323)**: `DocBuilder` strategy interface and `DocBuilderFactory` auto-detection — probes repository for `mkdocs.yml` and routes to `MkDocsBuilder`; falls back to `MarkdownBuilder` when no build config is found. `MKDOCS_ENABLED` env var gates MkDocs support.
+- **phase-29 (FARM-S324)**: `DocumentationBuild` entity and migration (`documentation_builds` table) tracking build history per component with status, version, sourceType, buildLog, and artifactsPath. `DocumentationBuildService` provides CRUD and version query operations. `GET /api/v1/docs/builds/:componentId` endpoint.
+- **phase-29 (FARM-S325)**: Webhook-driven CI publishing pipeline — `POST /api/v1/docs/webhook` with HMAC-SHA256 verification (`DOCS_WEBHOOK_SECRET`), relevant-path filtering, and `DOCS_BUILD` BullMQ queue. `DocsBuildProcessor` resolves the correct builder via factory, runs the build, and updates build status.
+- **phase-29 (FARM-S326)**: Versioned documentation — `GET /api/v1/docs/:componentId/versions` returns all ready builds for a component. `VersionSelector` React component in the docs frontend lets users switch between tagged builds.
+
+### Fixed
+- `better-sqlite3-compat.ts` shim extended to map `timestamptz` column type to `datetime` for SQLite e2e test compatibility.
+
 ## [0.20.0] - 2026-04-19
 
 ### Added

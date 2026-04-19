@@ -62,6 +62,7 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+import * as NextNavigation from "next/navigation";
 import { ResourceMapCanvas } from "./ResourceMapCanvas";
 import { iac } from "@/lib/api-client";
 
@@ -166,5 +167,23 @@ describe("ResourceMapCanvas", () => {
     const flow = await screen.findByTestId("react-flow-mock");
     expect(flow).toHaveAttribute("data-nodes", "1");
     expect(flow).toHaveAttribute("data-edges", "0");
+  });
+
+  it("renders empty state when useParams returns no id (stackId defaults to empty string)", async () => {
+    // Override useParams for this single test: params has no "id" key so stackId = "" and
+    // the query is disabled (enabled: !!stackId === false), which means getResources is never
+    // called and data stays undefined → the component renders the empty state.
+    const spy = vi
+      .spyOn(NextNavigation, "useParams")
+      .mockReturnValueOnce({} as never);
+    vi.mocked(iac.getResources).mockResolvedValue({ resources: [], dependencies: [] });
+
+    render(<ResourceMapCanvas />, { wrapper: createWrapper() });
+
+    expect(await screen.findByTestId("resource-map-empty")).toBeInTheDocument();
+    // Query must not have fired because the stack id was empty
+    expect(iac.getResources).not.toHaveBeenCalled();
+
+    spy.mockRestore();
   });
 });

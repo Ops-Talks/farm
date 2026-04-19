@@ -34,9 +34,10 @@ const originalNormalizeType =
 bsDriverModule.BetterSqlite3Driver.prototype.normalizeType = function (column: {
   type: unknown;
 }): string {
-  // Map "timestamp" to "datetime" so the EntityMetadataValidator accepts it.
-  // Both types are stored identically in SQLite; no data fidelity is lost.
-  if (column.type === "timestamp") {
+  // Map Postgres temporal types to "datetime" so the EntityMetadataValidator
+  // accepts them with better-sqlite3. All three are stored identically in
+  // SQLite as ISO-8601 text; no data fidelity is lost.
+  if (column.type === "timestamp" || column.type === "timestamptz") {
     return "datetime";
   }
   return originalNormalizeType.call(this, column);
