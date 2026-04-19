@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { DocumentationBuild } from "./entities/documentation-build.entity";
@@ -20,12 +20,14 @@ export class DocumentationBuildService {
    * @param componentId - The UUID of the component being built
    * @param version - The version tag for this build
    * @param sourceType - The documentation source format (mkdocs or markdown)
+   * @param repoUrl - The remote Git URL used for this build (optional)
    * @returns The newly created build record
    */
   async create(
     componentId: string,
     version: string,
     sourceType: "mkdocs" | "markdown",
+    repoUrl?: string,
   ): Promise<DocumentationBuild> {
     this.logger.log(
       `Creating build record for component ${componentId} version ${version}`,
@@ -34,6 +36,7 @@ export class DocumentationBuildService {
       componentId,
       version,
       sourceType,
+      repoUrl: repoUrl ?? null,
       status: "building",
       buildLog: null,
       artifactsPath: null,
@@ -56,13 +59,16 @@ export class DocumentationBuildService {
       buildLog?: string;
       artifactsPath?: string;
       completedAt?: Date;
+      sourceType?: "mkdocs" | "markdown";
     },
   ): Promise<DocumentationBuild> {
     this.logger.log(`Updating build ${id} status to ${status}`);
     await this.buildRepository.update(id, { status, ...extras });
-    return this.buildRepository.findOneBy({
-      id,
-    }) as Promise<DocumentationBuild>;
+    const build = await this.buildRepository.findOneBy({ id });
+    if (!build) {
+      throw new NotFoundException(`Documentation build ${id} not found`);
+    }
+    return build;
   }
 
   /**

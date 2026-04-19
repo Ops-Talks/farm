@@ -6,6 +6,7 @@ import { promisify } from "util";
 import { DocBuilder } from "./doc-builder.interface";
 import { MarkdownBuilder } from "./markdown.builder";
 import { MkDocsBuilder } from "./mkdocs.builder";
+import { normalizeRef } from "./normalize-ref";
 
 const execFileAsync = promisify(execFile);
 
@@ -31,10 +32,11 @@ export class DocBuilderFactory {
    * priority order, and cleaning up the detection clone afterwards.
    *
    * @param repoUrl - Remote Git URL of the repository to inspect
-   * @param ref - Branch, tag, or commit ref to check out for detection
+   * @param ref - Branch or tag name (full refs like refs/heads/main are normalized automatically)
    * @returns The first matching DocBuilder, or MarkdownBuilder if none match
    */
   static async resolve(repoUrl: string, ref: string): Promise<DocBuilder> {
+    ref = normalizeRef(ref);
     const detectionDir = path.join(
       os.tmpdir(),
       `farm-detect-${Date.now()}-${Math.random().toString(36).slice(2)}`,

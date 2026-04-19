@@ -15,7 +15,7 @@ import type { DocumentationBuild } from "@/types/api";
 // Hoisted mock factories — must be created before vi.mock() factories run.
 // ---------------------------------------------------------------------------
 const mocks = vi.hoisted(() => ({
-  docsGetBuilds: vi.fn(),
+  docsGetVersions: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/api-client", () => ({
   docs: {
-    getBuilds: mocks.docsGetBuilds,
+    getVersions: mocks.docsGetVersions,
   },
 }));
 
@@ -35,6 +35,7 @@ vi.mock("@/lib/api-client", () => ({
 const buildReady1: DocumentationBuild = {
   id: "build-1",
   componentId: "comp-1",
+  repoUrl: null,
   version: "1.0.0",
   sourceType: "mkdocs",
   status: "ready",
@@ -47,6 +48,7 @@ const buildReady1: DocumentationBuild = {
 const buildReady2: DocumentationBuild = {
   id: "build-2",
   componentId: "comp-1",
+  repoUrl: null,
   version: "2.0.0",
   sourceType: "markdown",
   status: "ready",
@@ -59,6 +61,7 @@ const buildReady2: DocumentationBuild = {
 const buildBuilding: DocumentationBuild = {
   id: "build-3",
   componentId: "comp-1",
+  repoUrl: null,
   version: "3.0.0",
   sourceType: "mkdocs",
   status: "building",
@@ -71,6 +74,7 @@ const buildBuilding: DocumentationBuild = {
 const buildFailed: DocumentationBuild = {
   id: "build-4",
   componentId: "comp-1",
+  repoUrl: null,
   version: "4.0.0",
   sourceType: "markdown",
   status: "failed",
@@ -92,8 +96,8 @@ describe("VersionSelector", () => {
   // -------------------------------------------------------------------------
   // 1. Renders nothing while loading or when no ready builds
   // -------------------------------------------------------------------------
-  it("renders nothing when getBuilds returns an empty array", async () => {
-    mocks.docsGetBuilds.mockResolvedValue([]);
+  it("renders nothing when getVersions returns an empty array", async () => {
+    mocks.docsGetVersions.mockResolvedValue([]);
     const onBuildSelected = vi.fn();
 
     const { container } = render(
@@ -101,7 +105,7 @@ describe("VersionSelector", () => {
     );
 
     // Wait for the promise to settle
-    await waitFor(() => expect(mocks.docsGetBuilds).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.docsGetVersions).toHaveBeenCalledOnce());
 
     // Component should render nothing (null)
     expect(container.firstChild).toBeNull();
@@ -111,7 +115,7 @@ describe("VersionSelector", () => {
   // 2. Renders version selector with ready builds
   // -------------------------------------------------------------------------
   it("renders a select element when ready builds are returned", async () => {
-    mocks.docsGetBuilds.mockResolvedValue([buildReady1, buildReady2]);
+    mocks.docsGetVersions.mockResolvedValue([buildReady1, buildReady2]);
     const onBuildSelected = vi.fn();
 
     render(
@@ -134,7 +138,7 @@ describe("VersionSelector", () => {
   // 3. Calls onBuildSelected with the first ready build on mount
   // -------------------------------------------------------------------------
   it("calls onBuildSelected with the first ready build immediately after load", async () => {
-    mocks.docsGetBuilds.mockResolvedValue([buildReady1, buildReady2]);
+    mocks.docsGetVersions.mockResolvedValue([buildReady1, buildReady2]);
     const onBuildSelected = vi.fn();
 
     render(
@@ -147,17 +151,19 @@ describe("VersionSelector", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 4. Filters out non-ready builds (building + failed)
+  // 4. Renders nothing when API returns no ready versions
   // -------------------------------------------------------------------------
-  it("renders nothing when all returned builds have non-ready status", async () => {
-    mocks.docsGetBuilds.mockResolvedValue([buildBuilding, buildFailed]);
+  it("renders nothing when getVersions returns an empty result (server-side filter)", async () => {
+    // getVersions() only returns ready builds — an empty result means no
+    // ready versions exist for this component.
+    mocks.docsGetVersions.mockResolvedValue([]);
     const onBuildSelected = vi.fn();
 
     const { container } = render(
       <VersionSelector componentId="comp-1" onBuildSelected={onBuildSelected} />,
     );
 
-    await waitFor(() => expect(mocks.docsGetBuilds).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.docsGetVersions).toHaveBeenCalledOnce());
 
     // No ready builds — component must render null
     expect(container.firstChild).toBeNull();
@@ -167,17 +173,17 @@ describe("VersionSelector", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 5. Calls onBuildSelected with null when getBuilds rejects
+  // 5. Calls onBuildSelected with null when getVersions rejects
   // -------------------------------------------------------------------------
   it("calls onBuildSelected with null and renders nothing on error", async () => {
-    mocks.docsGetBuilds.mockRejectedValue(new Error("Network error"));
+    mocks.docsGetVersions.mockRejectedValue(new Error("Network error"));
     const onBuildSelected = vi.fn();
 
     const { container } = render(
       <VersionSelector componentId="comp-1" onBuildSelected={onBuildSelected} />,
     );
 
-    await waitFor(() => expect(mocks.docsGetBuilds).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.docsGetVersions).toHaveBeenCalledOnce());
 
     expect(container.firstChild).toBeNull();
     expect(onBuildSelected).toHaveBeenCalledWith(null);

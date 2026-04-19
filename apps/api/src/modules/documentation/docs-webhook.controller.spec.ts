@@ -2,7 +2,7 @@ import * as crypto from "crypto";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { getQueueToken } from "@nestjs/bullmq";
-import { UnauthorizedException } from "@nestjs/common";
+import { ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import { DocsWebhookController } from "./docs-webhook.controller";
 import { DocsWebhookDto } from "./dto/docs-webhook.dto";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
@@ -21,6 +21,15 @@ function makeSignature(body: object, secret: string = SECRET): string {
       .update(JSON.stringify(body))
       .digest("hex")
   );
+}
+
+/**
+ * Creates a minimal Express-like request object for test purposes.
+ * The rawBody field mirrors the behaviour configured in main.ts via the
+ * express.json verify callback.
+ */
+function makeReq(body: object): { rawBody: Buffer } {
+  return { rawBody: Buffer.from(JSON.stringify(body)) };
 }
 
 describe("DocsWebhookController", () => {
@@ -57,9 +66,10 @@ describe("DocsWebhookController", () => {
       ref: "refs/heads/main",
       repository: { clone_url: "https://github.com/acme/docs.git" },
     };
+    const req = makeReq(body);
 
     await expect(
-      controller.handleWebhook("sha256=invalidsignature", body),
+      controller.handleWebhook("sha256=invalidsignature", req as never, body),
     ).rejects.toThrow(UnauthorizedException);
 
     expect(buildQueue.add).not.toHaveBeenCalled();
@@ -79,8 +89,9 @@ describe("DocsWebhookController", () => {
       ],
     };
     const sig = makeSignature(body);
+    const req = makeReq(body);
 
-    const result = await controller.handleWebhook(sig, body);
+    const result = await controller.handleWebhook(sig, req as never, body);
 
     expect(result).toEqual({ queued: false });
     expect(buildQueue.add).not.toHaveBeenCalled();
@@ -99,8 +110,9 @@ describe("DocsWebhookController", () => {
       ],
     };
     const sig = makeSignature(body);
+    const req = makeReq(body);
 
-    const result = await controller.handleWebhook(sig, body);
+    const result = await controller.handleWebhook(sig, req as never, body);
 
     expect(result).toEqual({ queued: true });
     expect(buildQueue.add).toHaveBeenCalledWith(QUEUE_NAMES.DOCS_BUILD, {
@@ -123,8 +135,9 @@ describe("DocsWebhookController", () => {
       ],
     };
     const sig = makeSignature(body);
+    const req = makeReq(body);
 
-    const result = await controller.handleWebhook(sig, body);
+    const result = await controller.handleWebhook(sig, req as never, body);
 
     expect(result).toEqual({ queued: true });
     expect(buildQueue.add).toHaveBeenCalledWith(QUEUE_NAMES.DOCS_BUILD, {
@@ -140,25 +153,27 @@ describe("DocsWebhookController", () => {
       repository: { clone_url: "https://github.com/acme/docs.git" },
     };
     const sig = makeSignature(body);
+    const req = makeReq(body);
 
-    const result = await controller.handleWebhook(sig, body);
+    const result = await controller.handleWebhook(sig, req as never, body);
 
     expect(result).toEqual({ queued: true });
     expect(buildQueue.add).toHaveBeenCalled();
   });
 
-  it("skips HMAC verification and logs a warning when secret is not configured", async () => {
+  it("rejects with 403 when DOCS_WEBHOOK_SECRET is not configured", async () => {
     configService.get.mockReturnValue("");
 
     const body: DocsWebhookDto = {
       ref: "refs/heads/main",
       repository: { clone_url: "https://github.com/acme/docs.git" },
     };
+    const req = makeReq(body);
 
-    // No signature provided — should still succeed because secret is empty
-    const result = await controller.handleWebhook(undefined, body);
+    await expect(
+      controller.handleWebhook(undefined, req as never, body),
+    ).rejects.toThrow(ForbiddenException);
 
-    expect(result).toEqual({ queued: true });
-    expect(buildQueue.add).toHaveBeenCalled();
+    expect(buildQueue.add).not.toHaveBeenCalled();
   });
 });

@@ -77,7 +77,8 @@ vi.mock("@/contexts/auth-context", () => ({
 }));
 
 // Simple stand-in for DocTree — exposes a button that triggers onSelect.
-vi.mock("./doc-tree", () => ({  DocTree: ({
+vi.mock("./doc-tree", () => ({
+  DocTree: ({
     onSelect,
   }: {
     tree: DocumentationTreeNode[];

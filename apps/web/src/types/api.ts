@@ -411,6 +411,7 @@ export interface DocumentationSearchResult {
 export interface DocumentationBuild {
   id: string;
   componentId: string;
+  repoUrl: string | null;
   version: string;
   sourceType: 'mkdocs' | 'markdown';
   status: 'building' | 'ready' | 'failed';

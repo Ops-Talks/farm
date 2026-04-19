@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { docs } from "@/lib/api-client";
 import type { DocumentationBuild } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
@@ -22,13 +22,12 @@ export function VersionSelector({
     if (!componentId) return;
     setLoading(true);
     docs
-      .getBuilds(componentId)
+      .getVersions(componentId)
       .then((data) => {
-        const ready = data.filter((b) => b.status === "ready");
-        setBuilds(ready);
-        if (ready.length > 0 && ready[0]) {
-          setSelectedId(ready[0].id);
-          onBuildSelected(ready[0]);
+        setBuilds(data);
+        if (data.length > 0 && data[0]) {
+          setSelectedId(data[0].id);
+          onBuildSelected(data[0]);
         } else {
           onBuildSelected(null);
         }
@@ -44,7 +43,7 @@ export function VersionSelector({
 
   if (loading || builds.length === 0) return null;
 
-  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+  function handleChange(e: ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
     setSelectedId(id);
     const build = builds.find((b) => b.id === id) ?? null;

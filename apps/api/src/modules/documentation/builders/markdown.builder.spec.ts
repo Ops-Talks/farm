@@ -117,7 +117,7 @@ describe("MarkdownBuilder", () => {
       expect(result.buildLog).toBe("repository not found");
     });
 
-    it("cleans up tmpDir via fs.rm in the finally block on success", async () => {
+    it("does not clean up tmpDir on success so artifacts remain accessible", async () => {
       mockExecFileSuccess();
 
       mockedFs.readdir
@@ -132,13 +132,10 @@ describe("MarkdownBuilder", () => {
 
       await builder.build("comp-4", "https://git.example.com/repo.git", "main");
 
-      expect(mockedFs.rm).toHaveBeenCalledWith(
-        expect.stringContaining("farm-md-comp-4"),
-        { recursive: true, force: true },
-      );
+      expect(mockedFs.rm).not.toHaveBeenCalled();
     });
 
-    it("cleans up tmpDir via fs.rm in the finally block on failure", async () => {
+    it("cleans up tmpDir via fs.rm in the catch block on failure", async () => {
       mockExecFileFailure("clone error");
       mockedFs.rm.mockResolvedValue(undefined);
 

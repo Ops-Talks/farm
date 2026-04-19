@@ -5,6 +5,7 @@ import * as os from "os";
 import * as path from "path";
 import { promisify } from "util";
 import { BuildResult, DocBuilder } from "./doc-builder.interface";
+import { normalizeRef } from "./normalize-ref";
 
 const execFileAsync = promisify(execFile);
 
@@ -46,13 +47,14 @@ export class MkDocsBuilder implements DocBuilder {
    *
    * @param componentId - Identifier of the component being built
    * @param repoUrl - Remote Git URL to clone
-   * @param ref - Branch, tag, or commit ref to check out
+   * @param ref - Branch or tag name (full refs like refs/heads/main are normalized automatically)
    */
   async build(
     componentId: string,
     repoUrl: string,
     ref: string,
   ): Promise<BuildResult> {
+    ref = normalizeRef(ref);
     const tmpDir = path.join(
       os.tmpdir(),
       `farm-mkdocs-${componentId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,

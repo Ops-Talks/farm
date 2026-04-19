@@ -67,7 +67,8 @@ export class DocsBuildProcessor extends WorkerHost {
     const build = await this.buildService.create(
       componentId ?? repoUrl,
       version,
-      "markdown", // sourceType determined after resolution; default until builder is known
+      "markdown",
+      repoUrl,
     );
 
     let finalStatus: "ready" | "failed" = "failed";
@@ -88,6 +89,7 @@ export class DocsBuildProcessor extends WorkerHost {
         buildLog: result.buildLog,
         artifactsPath: result.artifactsPath,
         completedAt: new Date(),
+        sourceType,
       });
 
       this.logger.log(

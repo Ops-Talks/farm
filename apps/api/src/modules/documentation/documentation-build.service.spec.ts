@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { NotFoundException } from "@nestjs/common";
 import { DocumentationBuildService } from "./documentation-build.service";
 import { DocumentationBuild } from "./entities/documentation-build.entity";
 
@@ -17,6 +18,7 @@ describe("DocumentationBuildService", () => {
       status: "building",
       buildLog: null,
       artifactsPath: null,
+      repoUrl: null,
       triggeredAt: new Date("2024-01-01T00:00:00Z"),
       completedAt: null,
       ...overrides,
@@ -58,6 +60,7 @@ describe("DocumentationBuildService", () => {
         componentId: "comp-uuid-1",
         version: "1.0.0",
         sourceType: "markdown",
+        repoUrl: null,
         status: "building",
         buildLog: null,
         artifactsPath: null,
@@ -65,6 +68,33 @@ describe("DocumentationBuildService", () => {
       });
       expect(mockRepository.save).toHaveBeenCalledWith(build);
       expect(result.status).toBe("building");
+    });
+
+    it("saves repoUrl when provided", async () => {
+      const build = makeBuild({
+        repoUrl: "https://github.com/acme/docs.git",
+      });
+      mockRepository.create.mockReturnValue(build);
+      mockRepository.save.mockResolvedValue(build);
+
+      const result = await service.create(
+        "comp-uuid-1",
+        "1.0.0",
+        "markdown",
+        "https://github.com/acme/docs.git",
+      );
+
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        componentId: "comp-uuid-1",
+        version: "1.0.0",
+        sourceType: "markdown",
+        repoUrl: "https://github.com/acme/docs.git",
+        status: "building",
+        buildLog: null,
+        artifactsPath: null,
+        completedAt: null,
+      });
+      expect(result.repoUrl).toBe("https://github.com/acme/docs.git");
     });
   });
 
@@ -97,6 +127,15 @@ describe("DocumentationBuildService", () => {
       });
       expect(result.status).toBe("ready");
       expect(result.buildLog).toBe("Build succeeded");
+    });
+
+    it("throws NotFoundException when build does not exist", async () => {
+      mockRepository.update.mockResolvedValue({ affected: 0 });
+      mockRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        service.updateStatus("non-existent-id", "ready"),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

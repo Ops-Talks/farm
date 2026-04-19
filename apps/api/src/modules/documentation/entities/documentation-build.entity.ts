@@ -29,6 +29,16 @@ export class DocumentationBuild {
   componentId: string;
 
   @ApiProperty({
+    example: "https://github.com/acme/docs.git",
+    description:
+      "The remote Git URL used to clone the repository for this build",
+    nullable: true,
+    required: false,
+  })
+  @Column({ type: "text", nullable: true })
+  repoUrl: string | null;
+
+  @ApiProperty({
     example: "1.2.3",
     description: "The documentation version tag associated with this build",
     default: "unknown",

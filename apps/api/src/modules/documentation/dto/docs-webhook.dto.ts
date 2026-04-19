@@ -3,19 +3,19 @@ import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
 /**
- * Represents the repository object included in a GitHub/GitLab push webhook payload.
+ * Represents the repository object included in a GitHub push webhook payload.
  */
 export class DocsWebhookRepositoryDto {
   @ApiProperty({
     example: "https://github.com/acme/docs.git",
-    description: "Remote clone URL of the repository",
+    description: "GitHub repository clone URL",
   })
   @IsString()
   clone_url: string;
 }
 
 /**
- * Data Transfer Object for an inbound GitHub or GitLab push webhook payload.
+ * Data Transfer Object for an inbound GitHub push webhook payload.
  * Only fields required for documentation build triggering are declared here.
  */
 export class DocsWebhookDto {

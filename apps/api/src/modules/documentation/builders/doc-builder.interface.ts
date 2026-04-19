@@ -35,7 +35,7 @@ export interface DocBuilder {
    * Executes the build for the given component repository.
    * @param componentId - Identifier of the component owning the documentation
    * @param repoUrl - Remote Git URL to clone
-   * @param ref - Git branch, tag, or commit ref to check out
+   * @param ref - Git branch or tag name to check out (full refs like refs/heads/main are normalized automatically)
    * @returns A BuildResult describing the outcome
    */
   build(

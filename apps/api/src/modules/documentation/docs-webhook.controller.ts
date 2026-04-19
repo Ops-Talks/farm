@@ -4,15 +4,18 @@ import {
   Post,
   Body,
   Headers,
+  Req,
   HttpCode,
   HttpStatus,
   Logger,
+  ForbiddenException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Request } from "express";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { DocsWebhookDto } from "./dto/docs-webhook.dto";
 import { DocsBuildJobData } from "./docs-build.processor";
@@ -42,12 +45,12 @@ function hasRelevantChanges(commits: DocsWebhookDto["commits"]): boolean {
 }
 
 /**
- * Controller that receives push webhook events from GitHub or GitLab and
- * enqueues a documentation build job when relevant files are detected.
+ * Controller that receives push webhook events from GitHub and enqueues a
+ * documentation build job when relevant files are detected.
  *
- * HMAC signature verification is performed when DOCS_WEBHOOK_SECRET is set
- * in the application configuration. Requests with an invalid signature are
- * rejected with HTTP 401.
+ * HMAC signature verification is always performed. The DOCS_WEBHOOK_SECRET
+ * environment variable must be configured; requests are rejected with HTTP 403
+ * when the secret is not set.
  */
 @ApiTags("Documentation")
 @Controller("docs")
@@ -61,10 +64,11 @@ export class DocsWebhookController {
   ) {}
 
   /**
-   * Receives a GitHub or GitLab push webhook and optionally triggers a
-   * documentation build by enqueuing a DocsBuildJob.
+   * Receives a GitHub push webhook and optionally triggers a documentation
+   * build by enqueuing a DocsBuildJob.
    *
    * @param signature - Value of the X-Hub-Signature-256 header
+   * @param req - Express request (may contain rawBody for HMAC verification)
    * @param body - Parsed webhook payload
    * @returns Object indicating whether a build job was enqueued
    */
@@ -72,41 +76,43 @@ export class DocsWebhookController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
-      "Receive GitHub/GitLab push webhook and trigger a documentation build",
+      "Receive GitHub push webhook and trigger a documentation build",
   })
   async handleWebhook(
     @Headers("x-hub-signature-256") signature: string | undefined,
+    @Req() req: Request & { rawBody?: Buffer },
     @Body() body: DocsWebhookDto,
   ): Promise<{ queued: boolean }> {
     const secret = this.configService.get<string>("docs.webhookSecret");
 
-    if (secret) {
-      if (!signature) {
-        this.logger.warn("Webhook received without X-Hub-Signature-256 header");
-        throw new UnauthorizedException("Missing webhook signature");
-      }
-
-      const expected =
-        "sha256=" +
-        crypto
-          .createHmac("sha256", secret)
-          .update(JSON.stringify(body))
-          .digest("hex");
-
-      const sigBuffer = Buffer.from(signature);
-      const expectedBuffer = Buffer.from(expected);
-
-      if (
-        sigBuffer.length !== expectedBuffer.length ||
-        !crypto.timingSafeEqual(sigBuffer, expectedBuffer)
-      ) {
-        this.logger.warn("Webhook signature mismatch");
-        throw new UnauthorizedException("Invalid webhook signature");
-      }
-    } else {
+    if (!secret) {
       this.logger.warn(
-        "DOCS_WEBHOOK_SECRET is not configured — skipping HMAC verification",
+        "DOCS_WEBHOOK_SECRET is not configured — rejecting webhook request",
       );
+      throw new ForbiddenException(
+        "Webhook endpoint is disabled: DOCS_WEBHOOK_SECRET is not configured",
+      );
+    }
+
+    if (!signature) {
+      this.logger.warn("Webhook received without X-Hub-Signature-256 header");
+      throw new UnauthorizedException("Missing webhook signature");
+    }
+
+    const payload = req.rawBody ?? Buffer.from(JSON.stringify(body));
+    const expected =
+      "sha256=" +
+      crypto.createHmac("sha256", secret).update(payload).digest("hex");
+
+    const sigBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+
+    if (
+      sigBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(sigBuffer, expectedBuffer)
+    ) {
+      this.logger.warn("Webhook signature mismatch");
+      throw new UnauthorizedException("Invalid webhook signature");
     }
 
     if (!hasRelevantChanges(body.commits)) {

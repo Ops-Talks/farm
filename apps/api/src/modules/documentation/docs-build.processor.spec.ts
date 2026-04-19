@@ -18,6 +18,7 @@ const makeBuild = (
     status: "building",
     buildLog: null,
     artifactsPath: null,
+    repoUrl: "https://github.com/acme/docs.git",
     triggeredAt: new Date("2024-01-01T00:00:00Z"),
     completedAt: null,
     ...overrides,
@@ -81,6 +82,7 @@ describe("DocsBuildProcessor", () => {
       "https://github.com/acme/docs.git",
       "main",
       "markdown",
+      "https://github.com/acme/docs.git",
     );
     expect(DocBuilderFactory.resolve).toHaveBeenCalledWith(
       "https://github.com/acme/docs.git",
@@ -97,6 +99,7 @@ describe("DocsBuildProcessor", () => {
       expect.objectContaining({
         artifactsPath: "/artifacts/acme/main",
         buildLog: "Build completed successfully",
+        sourceType: "markdown",
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         completedAt: expect.any(Date),
       }),
@@ -223,6 +226,7 @@ describe("DocsBuildProcessor", () => {
       "comp-uuid-1",
       "v2.3.1",
       "markdown",
+      "https://github.com/acme/docs.git",
     );
   });
 });
