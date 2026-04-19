@@ -11,6 +11,7 @@ import type {
   Deployment,
   DeploymentMatrixRow,
   DocumentationEntry,
+  DocumentationBuild,
   DocumentationSearchResult,
   DocumentationTreeNode,
   Environment,
@@ -675,6 +676,14 @@ export const docs = {
 
   delete(id: string): Promise<void> {
     return request(`/v1/docs/${id}`, { method: "DELETE" });
+  },
+
+  getBuilds(componentId: string): Promise<DocumentationBuild[]> {
+    return request(`/v1/docs/builds/${encodeURIComponent(componentId)}`);
+  },
+
+  getVersions(componentId: string): Promise<DocumentationBuild[]> {
+    return request(`/v1/docs/${encodeURIComponent(componentId)}/versions`);
   },
 };
 

@@ -408,6 +408,18 @@ export interface DocumentationSearchResult {
   score: number;
 }
 
+export interface DocumentationBuild {
+  id: string;
+  componentId: string;
+  version: string;
+  sourceType: 'mkdocs' | 'markdown';
+  status: 'building' | 'ready' | 'failed';
+  buildLog: string | null;
+  artifactsPath: string | null;
+  triggeredAt: string;
+  completedAt: string | null;
+}
+
 // -- Pipelines --
 
 export interface PipelineStage {

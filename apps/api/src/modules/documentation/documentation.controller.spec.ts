@@ -1,11 +1,25 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { DocumentationController } from "./documentation.controller";
 import { DocumentationService } from "./documentation.service";
+import { DocumentationBuildService } from "./documentation-build.service";
 import { PaginatedResponseDto } from "../../common/dto";
 
 describe("DocumentationController", () => {
   let controller: DocumentationController;
   let service: DocumentationService;
+  let buildService: DocumentationBuildService;
+
+  const mockBuild = {
+    id: "build-uuid-1",
+    componentId: "comp-uuid-1",
+    version: "1.0.0",
+    sourceType: "markdown" as const,
+    status: "ready" as const,
+    buildLog: null,
+    artifactsPath: null,
+    triggeredAt: new Date("2024-01-01T00:00:00Z"),
+    completedAt: null,
+  };
 
   const mockDoc = {
     id: "doc-uuid-1",
@@ -57,12 +71,24 @@ describe("DocumentationController", () => {
             remove: jest.fn().mockResolvedValue(undefined),
           },
         },
+        {
+          provide: DocumentationBuildService,
+          useValue: {
+            findByComponent: jest.fn().mockResolvedValue([mockBuild]),
+            findVersions: jest.fn().mockResolvedValue([mockBuild]),
+          },
+        },
       ],
     }).compile();
 
     controller = module.get<DocumentationController>(DocumentationController);
     service = module.get<DocumentationService>(DocumentationService);
+    buildService = module.get<DocumentationBuildService>(
+      DocumentationBuildService,
+    );
   });
+
+  afterEach(() => jest.clearAllMocks());
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
@@ -195,6 +221,24 @@ describe("DocumentationController", () => {
     it("should remove a documentation entry", async () => {
       await controller.remove("doc-uuid-1");
       expect(service.remove).toHaveBeenCalledWith("doc-uuid-1");
+    });
+  });
+
+  describe("GET /docs/builds/:componentId", () => {
+    it("returns build history for a component", async () => {
+      const result = await controller.getBuilds("comp-uuid-1");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(mockBuild);
+      expect(buildService.findByComponent).toHaveBeenCalledWith("comp-uuid-1");
+    });
+  });
+
+  describe("GET /docs/:componentId/versions", () => {
+    it("returns ready builds for the component", async () => {
+      const result = await controller.getVersions("comp-uuid-1");
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(mockBuild);
+      expect(buildService.findVersions).toHaveBeenCalledWith("comp-uuid-1");
     });
   });
 });

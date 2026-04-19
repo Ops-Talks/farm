@@ -57,6 +57,8 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 25: Feature Availability UX | 1 | 11 | v0.17.1 - v0.17.2 | `DONE` |
 | Phase 28: Software Templates 2.0 | 1 | 4 | v0.17.2 | `DONE` |
 | Phase 26: Auth Provider Expansion | 1 | 5 | v0.19.0 | `DONE` |
+| Phase 27: Advanced Search | 1 | 4 | v0.20.0 | `DONE` |
+| Phase 29: TechDocs 2.0 | 1 | 4 | v0.21.0 | `DONE` |
 
 ---
 
@@ -285,65 +287,65 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 27: Advanced Search `TODO`
+## Phase 27: Advanced Search `DONE`
 
-### FARM-E73: Elasticsearch-backed Search with Facets and Ranking `TODO`
+### FARM-E73: Elasticsearch-backed Search with Facets and Ranking `DONE`
 
 > The current quick-search queries PostgreSQL with `ILIKE` across a handful of fields. This Epic replaces the search backend with Elasticsearch (or OpenSearch), adding faceted filtering by type, namespace, and tags; relevance ranking with per-field boost weights; typo tolerance via fuzzy matching; and result snippet highlighting. The system degrades gracefully to the existing DB search when Elasticsearch is unavailable.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S315 | Story | Elasticsearch integration -- `ElasticsearchModule` wrapping `@elastic/elasticsearch`; health check; document indexing on entity create/update via TypeORM subscribers | `TODO` |
-| FARM-S316 | Story | Faceted search API -- `GET /api/v1/search/advanced` with `types[]`, `namespace`, `tags[]` filters and aggregation buckets | `TODO` |
-| FARM-S317 | Story | Relevance ranking and typo tolerance -- per-field boost weights (`title^3`, `tags^2`, `description^1`), `fuzziness: AUTO`, snippet highlighting with `<em>` markers | `TODO` |
-| FARM-S318 | Story | Frontend advanced search UI -- two-pane modal (facet panel + result list with highlighted snippets); replaces existing quick-search modal | `TODO` |
+| FARM-S315 | Story | Elasticsearch integration -- `ElasticsearchModule` wrapping `@elastic/elasticsearch`; health check; document indexing on entity create/update via TypeORM subscribers | `DONE` |
+| FARM-S316 | Story | Faceted search API -- `GET /api/v1/search/advanced` with `types[]`, `namespace`, `tags[]` filters and aggregation buckets | `DONE` |
+| FARM-S317 | Story | Relevance ranking and typo tolerance -- per-field boost weights (`title^3`, `tags^2`, `description^1`), `fuzziness: AUTO`, snippet highlighting with `<em>` markers | `DONE` |
+| FARM-S318 | Story | Frontend advanced search UI -- two-pane modal (facet panel + result list with highlighted snippets); replaces existing quick-search modal | `DONE` |
 
 #### FARM-S315 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T329 | Task | `ElasticsearchModule`: configure `@elastic/elasticsearch` client with `ELASTICSEARCH_URL` env var (default `http://localhost:9200`); `isElasticsearchEnabled()` pings `/_cluster/health`; graceful `false` on timeout; unit tests | `TODO` |
-| FARM-T330 | Task | `SearchIndexService.index(doc)` and `bulkIndex(docs[])`: index component, documentation, team, environment, and API spec documents; document schema: `{ id, type, title, description, tags, namespace, updatedAt }`; TypeORM subscriber triggers on create/update; unit tests | `TODO` |
-| FARM-T331 | Task | `POST /api/v1/search/reindex` (admin-only): truncate and rebuild all indices from DB; returns job status; unit + e2e tests | `TODO` |
+| FARM-T329 | Task | `ElasticsearchModule`: configure `@elastic/elasticsearch` client with `ELASTICSEARCH_URL` env var (default `http://localhost:9200`); `isElasticsearchEnabled()` pings `/_cluster/health`; graceful `false` on timeout; unit tests | `DONE` |
+| FARM-T330 | Task | `SearchIndexService.index(doc)` and `bulkIndex(docs[])`: index component, documentation, team, environment, and API spec documents; document schema: `{ id, type, title, description, tags, namespace, updatedAt }`; TypeORM subscriber triggers on create/update; unit tests | `DONE` |
+| FARM-T331 | Task | `POST /api/v1/search/reindex` (admin-only): truncate and rebuild all indices from DB; returns job status; unit + e2e tests | `DONE` |
 
 ##### FARM-T329 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST362 | Sub-task | Unit test: ES client ping succeeds → `isElasticsearchEnabled()` returns true | `TODO` |
-| FARM-ST363 | Sub-task | Unit test: ES client throws `ConnectionError` → `isElasticsearchEnabled()` returns false; logs warn; falls back to DB search | `TODO` |
+| FARM-ST362 | Sub-task | Unit test: ES client ping succeeds → `isElasticsearchEnabled()` returns true | `DONE` |
+| FARM-ST363 | Sub-task | Unit test: ES client throws `ConnectionError` → `isElasticsearchEnabled()` returns false; logs warn; falls back to DB search | `DONE` |
 
 #### FARM-S316 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T332 | Task | `SearchService.search(query, filters)`: Elasticsearch `multi_match` query with `filter` clauses for `type`, `namespace`, and `tags`; return hits with `_source` and aggregation buckets for type and tags | `TODO` |
-| FARM-T333 | Task | `GET /api/v1/search/advanced` controller: DTO `{ q, types?, namespace?, tags?, page?, limit? }`; pagination via `from`/`size`; unit + e2e tests | `TODO` |
+| FARM-T332 | Task | `SearchService.search(query, filters)`: Elasticsearch `multi_match` query with `filter` clauses for `type`, `namespace`, and `tags`; return hits with `_source` and aggregation buckets for type and tags | `DONE` |
+| FARM-T333 | Task | `GET /api/v1/search/advanced` controller: DTO `{ q, types?, namespace?, tags?, page?, limit? }`; pagination via `from`/`size`; unit + e2e tests | `DONE` |
 
 #### FARM-S317 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T334 | Task | Boost and fuzzy config: `title^3`, `tags^2`, `description^1`; `fuzziness: "AUTO"`; `highlight` option returns fragment list with `<em>` markers; configurable via `SearchConfig` entity | `TODO` |
-| FARM-T335 | Task | Admin endpoint `PATCH /api/v1/search/config` to update boost weights at runtime; persisted in `SearchConfig` entity (`titleBoost`, `tagsBoost`, `descriptionBoost`, `fuzziness`); migration; unit tests | `TODO` |
+| FARM-T334 | Task | Boost and fuzzy config: `title^3`, `tags^2`, `description^1`; `fuzziness: "AUTO"`; `highlight` option returns fragment list with `<em>` markers; configurable via `SearchConfig` entity | `DONE` |
+| FARM-T335 | Task | Admin endpoint `PATCH /api/v1/search/config` to update boost weights at runtime; persisted in `SearchConfig` entity (`titleBoost`, `tagsBoost`, `descriptionBoost`, `fuzziness`); migration; unit tests | `DONE` |
 
 #### FARM-S318 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T336 | Task | `AdvancedSearchModal` component: two-pane layout (left: facet checkboxes for type/namespace/tags; right: paginated result list with snippet highlights rendered as bold text); keyboard navigation (ArrowUp/Down, Enter, Escape); replaces `SearchModal` | `TODO` |
-| FARM-T337 | Task | `useFacetedSearch` hook: debounced query (300ms), manages active filter state, calls `GET /api/v1/search/advanced`, returns `{ results, facets, loading, error }`; unit tests with mock API | `TODO` |
+| FARM-T336 | Task | `AdvancedSearchModal` component: two-pane layout (left: facet checkboxes for type/namespace/tags; right: paginated result list with snippet highlights rendered as bold text); keyboard navigation (ArrowUp/Down, Enter, Escape); replaces `SearchModal` | `DONE` |
+| FARM-T337 | Task | `useFacetedSearch` hook: debounced query (300ms), manages active filter state, calls `GET /api/v1/search/advanced`, returns `{ results, facets, loading, error }`; unit tests with mock API | `DONE` |
 
 ##### FARM-T336 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST364 | Sub-task | Unit test: toggling a facet checkbox adds/removes the filter from the active set and re-triggers the search | `TODO` |
-| FARM-ST365 | Sub-task | Unit test: snippet `<em>` markers are rendered as `<strong>` via sanitized `dangerouslySetInnerHTML`; raw HTML from other fields is stripped | `TODO` |
+| FARM-ST364 | Sub-task | Unit test: toggling a facet checkbox adds/removes the filter from the active set and re-triggers the search | `DONE` |
+| FARM-ST365 | Sub-task | Unit test: snippet `<em>` markers are rendered as `<strong>` via sanitized `dangerouslySetInnerHTML`; raw HTML from other fields is stripped | `DONE` |
 
 ---
 
-## Phase 29: TechDocs 2.0 `TODO`
+## Phase 29: TechDocs 2.0 `DONE`
 
 ### FARM-E75: Multi-Builder Documentation Platform `TODO`
 
@@ -351,10 +353,10 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S323 | Story | `DocBuilder` strategy interface and `DocBuilderFactory` auto-detection -- probe repo for build configs (`mkdocs.yml` → MkDocs; none found → Markdown fallback); `MarkdownBuilder` collects `.md` files with no external tool required | `TODO` |
-| FARM-S324 | Story | `MkDocsBuilder` implementation and `DocumentationBuild` entity -- recommended builder; clone repo, run `mkdocs build`, store versioned artifacts | `TODO` |
-| FARM-S325 | Story | CI publishing pipeline -- webhook endpoint triggered by GitHub/GitLab push; HMAC verification; `DocsBuildJob` BullMQ processor resolves the correct builder via `DocBuilderFactory` | `TODO` |
-| FARM-S326 | Story | Versioned documentation and optional full-text search -- each build tagged with semver or branch name from webhook ref; `VersionSelector` dropdown in frontend; Elasticsearch indexing after build degrades gracefully to DB search when unavailable | `TODO` |
+| FARM-S323 | Story | `DocBuilder` strategy interface and `DocBuilderFactory` auto-detection -- probe repo for build configs (`mkdocs.yml` → MkDocs; none found → Markdown fallback); `MarkdownBuilder` collects `.md` files with no external tool required | `DONE` |
+| FARM-S324 | Story | `MkDocsBuilder` implementation and `DocumentationBuild` entity -- recommended builder; clone repo, run `mkdocs build`, store versioned artifacts | `DONE` |
+| FARM-S325 | Story | CI publishing pipeline -- webhook endpoint triggered by GitHub/GitLab push; HMAC verification; `DocsBuildJob` BullMQ processor resolves the correct builder via `DocBuilderFactory` | `DONE` |
+| FARM-S326 | Story | Versioned documentation and optional full-text search -- each build tagged with semver or branch name from webhook ref; `VersionSelector` dropdown in frontend; Elasticsearch indexing after build degrades gracefully to DB search when unavailable | `DONE` |
 
 #### FARM-S323 Tasks
 

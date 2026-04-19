@@ -46,6 +46,7 @@ export class QueuesModule {
           { name: QUEUE_NAMES.PIPELINE_EXECUTION },
           { name: QUEUE_NAMES.COMPLIANCE_AUDIT },
           { name: QUEUE_NAMES.KEYCLOAK_SYNC },
+          { name: QUEUE_NAMES.DOCS_BUILD },
         ),
         BullBoardModule.forRoot({
           route: "/admin/queues",
@@ -57,6 +58,7 @@ export class QueuesModule {
           { name: QUEUE_NAMES.PIPELINE_EXECUTION, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.COMPLIANCE_AUDIT, adapter: BullMQAdapter },
           { name: QUEUE_NAMES.KEYCLOAK_SYNC, adapter: BullMQAdapter },
+          { name: QUEUE_NAMES.DOCS_BUILD, adapter: BullMQAdapter },
         ),
       ],
       controllers: [QueuesController],

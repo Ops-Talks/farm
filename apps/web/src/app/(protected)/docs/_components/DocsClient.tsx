@@ -7,6 +7,7 @@ import type {
   DocumentationEntry,
   DocumentationTreeNode,
   DocumentationSearchResult,
+  DocumentationBuild,
   CatalogComponent,
 } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { PageHeader } from "@/components/shared/page-header";
 // Co-located sub-components — same _components/ directory
 import { DocTree } from "./doc-tree";
 import { DocForm } from "./doc-form";
+import { VersionSelector } from "./VersionSelector";
 
 export function DocsClient() {
   const { hasRole } = useAuth();
@@ -48,6 +50,9 @@ export function DocsClient() {
 
   // Selected component for tree
   const [selectedComponentId, setSelectedComponentId] = useState<string>("");
+
+  // Build version selected from VersionSelector
+  const [selectedBuild, setSelectedBuild] = useState<DocumentationBuild | null>(null);
 
   const fetchDocs = useCallback(() => {
     docs
@@ -227,6 +232,12 @@ export function DocsClient() {
         title="Documentation"
         description={`${allDocs.length} document${allDocs.length !== 1 ? "s" : ""} registered`}
       >
+        {selectedComponentId && (
+          <VersionSelector
+            componentId={selectedComponentId}
+            onBuildSelected={setSelectedBuild}
+          />
+        )}
         {isAdmin && (
           <Button
             onClick={() => {
@@ -392,6 +403,16 @@ export function DocsClient() {
                         </Button>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Build version info */}
+                {selectedBuild && selectedDoc && (
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Built from{" "}
+                    <span className="font-medium">{selectedBuild.sourceType}</span>{" "}
+                    — version{" "}
+                    <span className="font-medium">{selectedBuild.version}</span>
                   </div>
                 )}
 

@@ -7,4 +7,5 @@ export const QUEUE_NAMES = {
   GATEWAY_SYNC: "gateway-sync",
   API_HEALTH_CHECK: "api-health-check",
   COST_SYNC: "cost-sync",
+  DOCS_BUILD: "docs-build",
 } as const;

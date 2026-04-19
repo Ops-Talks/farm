@@ -2,6 +2,7 @@ import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import { DocumentationBuildService } from "../src/modules/documentation/documentation-build.service";
 
 interface ComponentResponse {
   id: string;
@@ -175,6 +176,45 @@ describe("Documentation CRUD (e2e)", () => {
         version: "1.0.0",
       })
       .expect(400);
+  });
+
+  describe("GET /api/v1/docs/builds/:componentId", () => {
+    let buildService: DocumentationBuildService;
+
+    beforeAll(() => {
+      buildService = app.get(DocumentationBuildService);
+    });
+
+    it("returns empty array when no builds exist for component", async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/docs/builds/${componentId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(0);
+    });
+
+    it("returns 401 when not authenticated", async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/docs/builds/${componentId}`)
+        .expect(401);
+    });
+
+    it("returns build records seeded for the component", async () => {
+      await buildService.create(componentId, "v1.0.0", "markdown");
+
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/docs/builds/${componentId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(1);
+      const build = res.body as Array<{ componentId: string; status: string }>;
+      expect(build[0].componentId).toBe(componentId);
+      expect(build[0].status).toBe("building");
+    });
   });
 
   describe("org isolation", () => {
