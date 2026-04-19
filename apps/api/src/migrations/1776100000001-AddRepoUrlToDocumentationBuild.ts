@@ -5,9 +5,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  * Adds a nullable repoUrl column to documentation_builds so webhook-triggered
  * builds can store the source repository URL independently of componentId.
  */
-export class AddRepoUrlToDocumentationBuild1776100000001
-  implements MigrationInterface
-{
+export class AddRepoUrlToDocumentationBuild1776100000001 implements MigrationInterface {
   name = "AddRepoUrlToDocumentationBuild1776100000001";
 
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -75,8 +75,7 @@ export class DocsWebhookController {
   @Post("webhook")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary:
-      "Receive GitHub push webhook and trigger a documentation build",
+    summary: "Receive GitHub push webhook and trigger a documentation build",
   })
   async handleWebhook(
     @Headers("x-hub-signature-256") signature: string | undefined,
