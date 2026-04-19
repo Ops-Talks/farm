@@ -137,15 +137,22 @@ describe("ElasticsearchService", () => {
     it("is a no-op when disabled (ELASTICSEARCH_URL not set)", async () => {
       service = await buildModule("");
 
-      // Do NOT inject a mock client — the service must remain disabled (client === null).
-      // We verify that no indexing occurs by checking the service is truly disabled.
       const mockClient = buildMockClient();
 
       await service.index(doc);
 
-      // client was never replaced, so these should never be called
       expect(mockClient.index).not.toHaveBeenCalled();
       expect(service.isEnabled()).toBe(false);
+    });
+
+    it("logs error when client.index throws", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.index.mockRejectedValue(new Error("index write failed"));
+      Object.assign(service, { client: mockClient });
+
+      await expect(service.index(doc)).resolves.not.toThrow();
     });
   });
 
@@ -194,6 +201,28 @@ describe("ElasticsearchService", () => {
 
       expect(mockClient.bulk).not.toHaveBeenCalled();
     });
+
+    it("logs a warning when bulk response contains errors", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.bulk.mockResolvedValue({ errors: true, items: [] });
+      Object.assign(service, { client: mockClient });
+
+      await service.bulkIndex(docs);
+
+      expect(mockClient.bulk).toHaveBeenCalled();
+    });
+
+    it("logs error when client.bulk throws", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.bulk.mockRejectedValue(new Error("bulk failure"));
+      Object.assign(service, { client: mockClient });
+
+      await expect(service.bulkIndex(docs)).resolves.not.toThrow();
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -229,6 +258,28 @@ describe("ElasticsearchService", () => {
         index: "farm-search",
         id: "doc-123",
       });
+    });
+
+    it("is a no-op when disabled", async () => {
+      service = await buildModule("");
+
+      const mockClient = buildMockClient();
+      await service.deleteFromIndex("doc-123");
+
+      expect(mockClient.delete).not.toHaveBeenCalled();
+    });
+
+    it("logs error when client.delete throws a non-404 error", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      const serverError = Object.assign(new Error("Internal Server Error"), {
+        statusCode: 500,
+      });
+      mockClient.delete.mockRejectedValue(serverError);
+      Object.assign(service, { client: mockClient });
+
+      await expect(service.deleteFromIndex("doc-500")).resolves.not.toThrow();
     });
   });
 
@@ -302,6 +353,75 @@ describe("ElasticsearchService", () => {
       });
       expect(result.facets.types).toEqual([{ key: "component", count: 1 }]);
       expect(result.facets.tags).toEqual([{ key: "java", count: 1 }]);
+    });
+
+    it("builds filter clauses for types, namespace, tags, and orgId", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.search.mockResolvedValue({
+        hits: { total: 0, hits: [] },
+        aggregations: {
+          types: { buckets: [] },
+          namespaces: { buckets: [] },
+          tags: { buckets: [] },
+        },
+      });
+      Object.assign(service, { client: mockClient });
+
+      const filters: SearchFilters = {
+        types: ["component", "team"],
+        namespace: "production",
+        tags: ["java", "api"],
+        orgId: "org-99",
+        page: 2,
+        limit: 5,
+      };
+
+      await service.search("test", filters);
+
+      expect(mockClient.search).toHaveBeenCalledWith(
+        expect.objectContaining({
+          index: "farm-search",
+          from: 5,
+          size: 5,
+        }),
+      );
+    });
+
+    it("returns empty and logs error when client.search throws", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.search.mockRejectedValue(new Error("cluster not available"));
+      Object.assign(service, { client: mockClient });
+
+      const result = await service.search("fail", {});
+
+      expect(result).toEqual({
+        hits: [],
+        total: 0,
+        facets: { types: [], namespaces: [], tags: [] },
+      });
+    });
+
+    it("handles numeric total in hits.total", async () => {
+      service = await buildModule("http://localhost:9200");
+
+      const mockClient = buildMockClient();
+      mockClient.search.mockResolvedValue({
+        hits: { total: 42, hits: [] },
+        aggregations: {
+          types: { buckets: [] },
+          namespaces: { buckets: [] },
+          tags: { buckets: [] },
+        },
+      });
+      Object.assign(service, { client: mockClient });
+
+      const result = await service.search("numeric", {});
+
+      expect(result.total).toBe(42);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AdvancedSearchModal } from "./advanced-search-modal";
 import type { AdvancedSearchResult } from "@/types/api";
@@ -241,5 +241,79 @@ describe("AdvancedSearchModal", () => {
     fireEvent.click(screen.getByLabelText("Previous page"));
     // page 1 prev button is disabled, so setPage should not be called with 0
     expect(setPage).not.toHaveBeenCalledWith(0);
+  });
+
+  it("clicking a result item via button fires handleNavigate", () => {
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({ query: "service", isLoading: false, result: makeResult() }),
+    );
+    const { container } = render(<AdvancedSearchModal open={true} onClose={onClose} />);
+
+    const resultsList = container.querySelector<HTMLUListElement>("#advanced-search-results");
+    const firstBtn = resultsList?.querySelector<HTMLButtonElement>("button");
+    if (firstBtn) {
+      fireEvent.click(firstBtn);
+      expect(mockPush).toHaveBeenCalledWith("/catalog/c-1");
+    } else {
+      throw new Error("No result buttons found — verify the results list renders");
+    }
+  });
+
+  it("clicking a namespace facet button calls setNamespace", () => {
+    const setNamespace = vi.fn();
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({
+        query: "service",
+        result: makeResult(),
+        setNamespace,
+      }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+    const aside = screen.getByLabelText("Search filters");
+    const nsBtn = within(aside).getByText("platform");
+    fireEvent.click(nsBtn.closest("button") ?? nsBtn);
+    expect(setNamespace).toHaveBeenCalled();
+  });
+
+  it("toggling a tag facet checkbox calls toggleTag", () => {
+    const toggleTag = vi.fn();
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({
+        query: "service",
+        result: makeResult(),
+        toggleTag,
+      }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+    const tagCheckbox = screen.getByLabelText("Filter by tag api");
+    fireEvent.click(tagCheckbox);
+    expect(toggleTag).toHaveBeenCalledWith("api");
+  });
+
+  it("Prev page button calls setPage when page > 1", () => {
+    const setPage = vi.fn();
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({
+        query: "service",
+        isLoading: false,
+        result: makeResult(),
+        page: 2,
+        setPage,
+      }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+    fireEvent.click(screen.getByLabelText("Previous page"));
+    expect(setPage).toHaveBeenCalledWith(1);
+  });
+
+  it("typing in the search input calls setQuery", () => {
+    const setQuery = vi.fn();
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({ setQuery }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+    const input = screen.getByLabelText("Search query");
+    fireEvent.change(input, { target: { value: "new-query" } });
+    expect(setQuery).toHaveBeenCalledWith("new-query");
   });
 });

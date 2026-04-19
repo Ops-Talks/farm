@@ -332,6 +332,25 @@ describe("SearchService", () => {
       );
     });
 
+    it("returns empty result when DB fallback query throws", async () => {
+      mockElasticsearchService.isEnabled.mockReturnValue(false);
+      mockSearchConfigRepo.findOne.mockResolvedValue(null);
+      mockComponentRepo.createQueryBuilder.mockReturnValue(
+        (() => {
+          const qb = createQb([]);
+          qb.getRawMany = jest.fn().mockRejectedValue(new Error("DB error"));
+          return qb;
+        })(),
+      );
+
+      const result = await service.advancedSearch(baseDto, "org-1");
+
+      expect(result.source).toBe("database");
+      expect(result.hits).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.totalPages).toBe(0);
+    });
+
     it("uses org-specific config boost weights when a SearchConfig record exists for the org", async () => {
       mockElasticsearchService.isEnabled.mockReturnValue(true);
       mockElasticsearchService.search.mockResolvedValue(esResponse);
@@ -416,6 +435,28 @@ describe("SearchService", () => {
       const result = await service.upsertConfig({ titleBoost: 5 }, "org-1");
 
       expect(result.titleBoost).toBe(5);
+      expect(mockSearchConfigRepo.save).toHaveBeenCalled();
+    });
+
+    it("updates descriptionBoost on existing config when provided", async () => {
+      const existing = {
+        id: "cfg-2",
+        organizationId: "org-1",
+        titleBoost: 3,
+        tagsBoost: 2,
+        descriptionBoost: 1,
+        fuzziness: "AUTO",
+      };
+      const saved = { ...existing, descriptionBoost: 4 };
+      mockSearchConfigRepo.findOne.mockResolvedValue(existing);
+      mockSearchConfigRepo.save.mockResolvedValue(saved);
+
+      const result = await service.upsertConfig(
+        { descriptionBoost: 4 },
+        "org-1",
+      );
+
+      expect(result.descriptionBoost).toBe(4);
       expect(mockSearchConfigRepo.save).toHaveBeenCalled();
     });
 

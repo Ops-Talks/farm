@@ -203,4 +203,76 @@ describe("useFacetedSearch", () => {
     expect(result.current.filters.types).toEqual([]);
     expect(result.current.result).toEqual(EMPTY_RESULT);
   });
+
+  it("toggleType removes a type that is already active", async () => {
+    mockAdvanced.mockResolvedValue(makeResult());
+    const { result } = renderHook(() => useFacetedSearch(true));
+
+    act(() => {
+      result.current.setQuery("service");
+      result.current.toggleType("component");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      result.current.toggleType("component");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    expect(result.current.filters.types).toEqual([]);
+  });
+
+  it("toggleTag adds and then removes a tag", async () => {
+    mockAdvanced.mockResolvedValue(makeResult());
+    const { result } = renderHook(() => useFacetedSearch(true));
+
+    act(() => {
+      result.current.setQuery("service");
+      result.current.toggleTag("api");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      result.current.toggleTag("api");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    expect(result.current.filters.tags).toEqual([]);
+  });
+
+  it("setNamespace updates the namespace filter and resets the page", async () => {
+    mockAdvanced.mockResolvedValue(makeResult());
+    const { result } = renderHook(() => useFacetedSearch(true));
+
+    act(() => {
+      result.current.setQuery("service");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    act(() => {
+      result.current.setNamespace("platform");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+      await Promise.resolve();
+    });
+
+    expect(result.current.filters.namespace).toBe("platform");
+    expect(result.current.page).toBe(1);
+  });
 });

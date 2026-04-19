@@ -353,4 +353,38 @@ describe("AuthService", () => {
       );
     });
   });
+
+  describe("generateTokensForUser", () => {
+    it("should return user, signed token, and a refresh token", async () => {
+      const targetUser: User = {
+        id: "u-1",
+        username: "alice",
+        roles: ["user"],
+      } as User;
+      repo.update.mockResolvedValue(undefined);
+      mockJwtService.sign.mockReturnValue("access-token");
+
+      const result = await service.generateTokensForUser(targetUser);
+
+      expect(result.user).toBe(targetUser);
+      expect(result.token).toBe("access-token");
+      expect(typeof result.refreshToken).toBe("string");
+      expect(result.refreshToken.length).toBeGreaterThan(0);
+    });
+
+    it("should persist hashed refresh token via userRepository.update", async () => {
+      const targetUser: User = {
+        id: "u-2",
+        username: "bob",
+        roles: ["user"],
+      } as User;
+      repo.update.mockResolvedValue(undefined);
+
+      await service.generateTokensForUser(targetUser);
+
+      expect(repo.update).toHaveBeenCalled();
+      const lastId = (repo.update.mock.calls as [[string, object]])[0][0];
+      expect(lastId).toBe("u-2");
+    });
+  });
 });

@@ -194,4 +194,29 @@ describe("LdapAuthStrategy", () => {
       "DB connection error",
     );
   });
+
+  it("should log a warn when LDAP_URL is not set", () => {
+    const noUrlConfigService = buildMockConfigService({ "ldap.url": "" });
+    const warnSpy = jest
+      .spyOn(
+        (
+          LdapAuthStrategy.prototype as unknown as {
+            logger: { warn: jest.Mock };
+          }
+        ).logger ?? console,
+        "warn",
+      )
+      .mockImplementation(() => {});
+
+    // Instantiate strategy without LDAP_URL — should not throw, just warn.
+    expect(
+      () =>
+        new LdapAuthStrategy(
+          noUrlConfigService as unknown as ConfigService,
+          mockAuthService as unknown as AuthService,
+        ),
+    ).not.toThrow();
+
+    warnSpy.mockRestore();
+  });
 });

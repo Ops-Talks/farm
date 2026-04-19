@@ -88,6 +88,30 @@ describe("Advanced Search (e2e)", () => {
       .expect(401);
   });
 
+  it("accepts a single string value for types and coerces it to an array", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/api/v1/search/advanced?q=platform&types=component")
+      .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
+      .expect(200);
+
+    const body = res.body as { hits: unknown[]; source: string };
+    expect(body.source).toBeDefined();
+    expect(Array.isArray(body.hits)).toBe(true);
+  });
+
+  it("accepts multiple types values and a single tags value", async () => {
+    const res = await request(app.getHttpServer())
+      .get(
+        "/api/v1/search/advanced?q=platform&types=component&types=team&tags=api",
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
+      .expect(200);
+
+    expect((res.body as { source: string }).source).toBeDefined();
+  });
+
   // ---------------------------------------------------------------------------
   // PATCH + GET /api/v1/search/config
   // ---------------------------------------------------------------------------

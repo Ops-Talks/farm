@@ -3438,6 +3438,54 @@ describe("api-client", () => {
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("q=my-service");
     });
+
+    it("advanced sends GET to the advanced-search endpoint with q param", async () => {
+      const payload = {
+        hits: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0,
+        facets: { types: [], namespaces: [], tags: [] },
+        source: "elasticsearch",
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const result = await search.advanced({ q: "platform" });
+      expect(result.total).toBe(0);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/search/advanced");
+      expect(url).toContain("q=platform");
+    });
+
+    it("advanced appends types, namespace, tags, page and limit to the query string", async () => {
+      const payload = {
+        hits: [],
+        total: 0,
+        page: 2,
+        limit: 10,
+        totalPages: 3,
+        facets: { types: [], namespaces: [], tags: [] },
+        source: "elasticsearch",
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      await search.advanced({
+        q: "svc",
+        types: ["component", "team"],
+        namespace: "platform",
+        tags: ["api", "core"],
+        page: 2,
+        limit: 10,
+      });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("q=svc");
+      expect(url).toContain("types=component");
+      expect(url).toContain("types=team");
+      expect(url).toContain("namespace=platform");
+      expect(url).toContain("tags=api");
+      expect(url).toContain("tags=core");
+      expect(url).toContain("page=2");
+      expect(url).toContain("limit=10");
+    });
   });
 
   describe("setup", () => {
