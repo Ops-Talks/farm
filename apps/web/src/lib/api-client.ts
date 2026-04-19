@@ -155,6 +155,7 @@ import type {
   IacModuleVersion,
   IacModulesResponse,
   IacResourceMap,
+  AdvancedSearchResult,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -424,6 +425,23 @@ export const auth = {
   changePassword(data: ChangePasswordData): Promise<void> {
     return request<void>('/v1/auth/profile/password', {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Fetch the list of enabled authentication providers from the API. */
+  getProviders(): Promise<{ providers: string[] }> {
+    return request<{ providers: string[] }>('/v1/auth/providers');
+  },
+
+  /**
+   * Authenticate with LDAP / Active Directory credentials.
+   * Returns the same LoginResponse shape as the local login endpoint.
+   */
+  loginLdap(data: { username: string; password: string }): Promise<LoginResponse> {
+    return request<LoginResponse>('/v1/auth/login/ldap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
   },
@@ -2494,6 +2512,23 @@ export const features = {
 export const search = {
   quick(q: string): Promise<QuickSearchResult[]> {
     return request<QuickSearchResult[]>(`/v1/search/quick${toQueryString({ q })}`);
+  },
+  advanced(params: {
+    q: string;
+    types?: string[];
+    namespace?: string;
+    tags?: string[];
+    page?: number;
+    limit?: number;
+  }): Promise<AdvancedSearchResult> {
+    const qs = new URLSearchParams();
+    qs.set('q', params.q);
+    if (params.types?.length) params.types.forEach(t => qs.append('types', t));
+    if (params.namespace) qs.set('namespace', params.namespace);
+    if (params.tags?.length) params.tags.forEach(t => qs.append('tags', t));
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    return request<AdvancedSearchResult>(`/v1/search/advanced?${qs.toString()}`);
   },
 };
 

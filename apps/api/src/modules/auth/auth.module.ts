@@ -16,6 +16,8 @@ import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { GithubStrategy } from "./strategies/github.strategy";
 import { GoogleStrategy } from "./strategies/google.strategy";
+import { LdapAuthStrategy } from "./strategies/ldap.strategy";
+import { LdapAuthGuard } from "./guards/ldap-auth.guard";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
 import { Team } from "../teams/entities/team.entity";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
@@ -27,6 +29,7 @@ const isTest = process.env.NODE_ENV === "test";
  */
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([User, IntegrationCredential, Team]),
     PassportModule,
     HttpModule,
@@ -55,6 +58,8 @@ const isTest = process.env.NODE_ENV === "test";
     JwtStrategy,
     GithubStrategy,
     GoogleStrategy,
+    LdapAuthStrategy,
+    LdapAuthGuard,
     KeycloakOidcService,
     KeycloakSyncService,
     ...(isTest ? [] : [KeycloakSyncProcessor]),

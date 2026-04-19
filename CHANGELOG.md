@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **FARM-E72** (Auth Provider Expansion): `LdapAuthStrategy` (`passport-ldapauth`) binds as service account, searches user DN, maps LDAP attributes (`displayName`, `givenName`, `sn`, `mail`, `memberOf`) to `User` entity, upserts user via `findOrCreateOAuthUser`; configurable via `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_SEARCH_BASE`, `LDAP_SEARCH_FILTER`, `LDAP_ADMIN_GROUP` env vars.
+- **FARM-E72**: `POST /api/v1/auth/login/ldap` endpoint (rate-limited to 5 req/min); returns 503 when LDAP is not configured.
+- **FARM-E72**: `GET /api/v1/auth/providers` endpoint returns the list of enabled auth providers at runtime (`local`, `github`, `google`, `ldap`, `keycloak`).
+- **FARM-E72**: Frontend login page fetches providers dynamically on mount; GitHub and Google buttons are shown only when those providers are enabled; LDAP username/password form is shown when LDAP is enabled.
+
 ## [0.19.0] - 2026-04-17
 
 ### Added

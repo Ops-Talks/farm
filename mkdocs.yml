@@ -96,6 +96,8 @@ nav:
     - Linkerd Service Mesh: user-guide/linkerd-integration.md
     - OPA Policy Engine: user-guide/opa-integration.md
     - Container Registry: user-guide/container-registry.md
+    - IaC Visibility: user-guide/iac.md
+    - IaC Integration: iac-integration.md
     - FinOps and Cost Management: user-guide/finops.md
     - SLO Management: user-guide/slos.md
     - Incident Management: user-guide/incidents.md
@@ -162,6 +164,8 @@ nav:
     - Dashboard API: api-reference/dashboards.md
     - Service Templates API: api-reference/service-templates.md
     - Environment Requests API: api-reference/environment-requests.md
+    - IaC API: api-reference/iac.md
+    - IaC Modules API: api-reference/iac-modules.md
 
 extra_css:
   - stylesheets/extra.css

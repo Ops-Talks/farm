@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getQueueToken } from "@nestjs/bullmq";
+import { ConfigService } from "@nestjs/config";
 import { AuthController } from "../auth.controller";
 import { AuthService } from "../auth.service";
 import { KeycloakOidcService } from "../keycloak-oidc.service";
@@ -404,6 +405,110 @@ describe("AuthController", () => {
       const ctrl = module.get<AuthController>(AuthController);
       const result = await ctrl.triggerKeycloakSync("org-no-queue");
       expect(result).toEqual({ queued: true });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FARM-S313 / FARM-S314 — LDAP login and providers endpoint
+// These tests run in an isolated module that provides ConfigService.
+// ---------------------------------------------------------------------------
+
+describe("AuthController — LDAP and providers (with ConfigService)", () => {
+  let controller: AuthController;
+  let mockConfig: { get: jest.Mock };
+  let localMockAuthService: typeof mockAuthService & {
+    generateTokensForUser: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    mockConfig = { get: jest.fn().mockReturnValue("") };
+
+    localMockAuthService = {
+      register: jest.fn(),
+      login: jest.fn(),
+      refresh: jest.fn(),
+      findAll: jest.fn(),
+      findOrCreateOAuthUser: jest.fn(),
+      getProfile: jest.fn(),
+      updateProfile: jest.fn(),
+      changePassword: jest.fn(),
+      generateTokensForUser: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [
+        { provide: AuthService, useValue: localMockAuthService },
+        { provide: KeycloakOidcService, useValue: mockKeycloakOidcService },
+        { provide: ConfigService, useValue: mockConfig },
+        {
+          provide: getQueueToken(QUEUE_NAMES.KEYCLOAK_SYNC),
+          useValue: mockKeycloakSyncQueue,
+        },
+      ],
+    }).compile();
+
+    controller = module.get<AuthController>(AuthController);
+    jest.clearAllMocks();
+  });
+
+  describe("getProviders", () => {
+    it('should return ["local", "keycloak"] when no OAuth env vars are set', () => {
+      mockConfig.get.mockReturnValue("");
+      const result = controller.getProviders();
+      expect(result.providers).toEqual(["local", "keycloak"]);
+    });
+
+    it('should include "github" when GITHUB client ID is configured', () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === "oauth.github.clientId") return "gh-client-id";
+        return "";
+      });
+      const result = controller.getProviders();
+      expect(result.providers).toContain("github");
+      expect(result.providers).not.toContain("google");
+      expect(result.providers).not.toContain("ldap");
+    });
+
+    it('should include "google" and "ldap" when those are configured', () => {
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === "oauth.google.clientId") return "goog-client-id";
+        if (key === "ldap.url") return "ldap://localhost:389";
+        return "";
+      });
+      const result = controller.getProviders();
+      expect(result.providers).toContain("google");
+      expect(result.providers).toContain("ldap");
+      expect(result.providers).not.toContain("github");
+    });
+  });
+
+  describe("ldapLogin", () => {
+    it("should return generateTokensForUser result when LDAP is configured", async () => {
+      const mockUser = {
+        id: "u1",
+        username: "jdoe",
+        email: "jdoe@ldap.local",
+      };
+      const tokenResult = {
+        user: mockUser,
+        token: "ldap-jwt",
+        refreshToken: "ldap-rt",
+      };
+      mockConfig.get.mockImplementation((key: string) => {
+        if (key === "ldap.url") return "ldap://localhost:389";
+        return "";
+      });
+      localMockAuthService.generateTokensForUser.mockResolvedValue(tokenResult);
+
+      const req = { user: mockUser } as never;
+      const result = await controller.ldapLogin(req);
+
+      expect(localMockAuthService.generateTokensForUser).toHaveBeenCalledWith(
+        mockUser,
+      );
+      expect(result).toEqual(tokenResult);
     });
   });
 });

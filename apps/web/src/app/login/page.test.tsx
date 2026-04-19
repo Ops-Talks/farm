@@ -46,6 +46,14 @@ vi.mock("@/lib/api-client", () => ({
       this.body = body;
     }
   },
+  // auth and setTokens are added here so that the component does not throw
+  // when it calls auth.getProviders() on mount (FARM-S314). Existing tests do
+  // not use these; the change is purely additive.
+  auth: {
+    getProviders: vi.fn().mockResolvedValue({ providers: ["local", "keycloak"] }),
+    loginLdap: vi.fn(),
+  },
+  setTokens: vi.fn(),
 }));
 
 // Mock OTel span helpers — tests should not depend on the OTel SDK.

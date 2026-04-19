@@ -8,14 +8,14 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, auth, setTokens } from "@/lib/api-client";
 import { Github, ShieldCheck } from "lucide-react";
 import { startSpan } from "@/lib/otel-spans";
 
@@ -40,6 +40,48 @@ export default function LoginClient() {
   // Local state for the org ID input shown when no query param is provided
   const [keycloakOrgId, setKeycloakOrgId] = useState(keycloakOrgIdParam);
   const [keycloakOrgIdError, setKeycloakOrgIdError] = useState("");
+
+  // Dynamic provider list — fetched from the API on mount (FARM-S314).
+  // Falls back to the always-present pair so the page remains usable if the
+  // API call fails (e.g. during network outage or in unit-test environments).
+  const [providers, setProviders] = useState<string[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(true);
+
+  useEffect(() => {
+    auth
+      .getProviders()
+      .then((res) => setProviders(res.providers ?? []))
+      .catch(() => setProviders(["local", "keycloak"]))
+      .finally(() => setProvidersLoading(false));
+  }, []);
+
+  // LDAP / Active Directory — independent loading & error state so it does
+  // not interfere with the local-login form above.
+  const [ldapUsername, setLdapUsername] = useState("");
+  const [ldapPassword, setLdapPassword] = useState("");
+  const [ldapError, setLdapError] = useState("");
+  const [ldapLoading, setLdapLoading] = useState(false);
+
+  const handleLdapLogin = async () => {
+    setLdapError("");
+    if (!ldapUsername.trim() || !ldapPassword) {
+      setLdapError("Username and password are required");
+      return;
+    }
+    setLdapLoading(true);
+    try {
+      const res = await auth.loginLdap({ username: ldapUsername, password: ldapPassword });
+      // Mirror the token-storage logic used by auth-context so the session is
+      // immediately valid without a full page reload.
+      setTokens(res.token, res.refreshToken, res.user.username);
+      sessionStorage.setItem("farm_user", JSON.stringify(res.user));
+      window.location.href = "/dashboard";
+    } catch {
+      setLdapError("LDAP authentication failed. Check your credentials.");
+    } finally {
+      setLdapLoading(false);
+    }
+  };
 
   const {
     register,
@@ -166,7 +208,9 @@ export default function LoginClient() {
               </Button>
             </form>
 
-            {/* OAuth social login — backend redirects to provider; no fetch needed */}
+            {/* OAuth / external-provider login ────────────────────────────── */}
+            {/* The separator is always rendered; provider buttons appear only  */}
+            {/* once the API response confirms they are enabled on the server.  */}
             <div className="mt-6">
               <div className="relative flex items-center gap-3">
                 <Separator className="flex-1" />
@@ -177,25 +221,77 @@ export default function LoginClient() {
               </div>
 
               <div className="mt-4 flex flex-col gap-2">
-                {/* Full-page navigation to backend OAuth redirect — must be an <a> tag */}
-                <a href="/api/v1/auth/github" className="w-full">
-                  <Button variant="outline" className="w-full gap-2" type="button">
-                    <Github className="h-4 w-4" />
-                    Continue with GitHub
-                  </Button>
-                </a>
+                {/* GitHub — full-page redirect; shown only when the server has  */}
+                {/* GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET configured.          */}
+                {!providersLoading && providers.includes("github") && (
+                  <a href="/api/v1/auth/github" className="w-full">
+                    <Button variant="outline" className="w-full gap-2" type="button">
+                      <Github className="h-4 w-4" />
+                      Continue with GitHub
+                    </Button>
+                  </a>
+                )}
 
-                <a href="/api/v1/auth/google" className="w-full">
-                  <Button variant="outline" className="w-full gap-2" type="button">
-                    {/* Simple "G" lettermark for Google — no external SVG dependency */}
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-red-500 to-yellow-400 text-[9px] font-black text-white leading-none">
-                      G
-                    </span>
-                    Continue with Google
-                  </Button>
-                </a>
+                {/* Google — full-page redirect; shown only when the server has  */}
+                {/* GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET configured.           */}
+                {!providersLoading && providers.includes("google") && (
+                  <a href="/api/v1/auth/google" className="w-full">
+                    <Button variant="outline" className="w-full gap-2" type="button">
+                      {/* Simple "G" lettermark for Google — no external SVG dependency */}
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-red-500 to-yellow-400 text-[9px] font-black text-white leading-none">
+                        G
+                      </span>
+                      Continue with Google
+                    </Button>
+                  </a>
+                )}
+
+                {/* ── LDAP / Active Directory (FARM-S314) ─────────────────── */}
+                {!providersLoading && providers.includes("ldap") && (
+                  <div className="flex flex-col gap-2">
+                    <div className="relative flex items-center gap-3 mb-2">
+                      <Separator className="flex-1" />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        LDAP / AD
+                      </span>
+                      <Separator className="flex-1" />
+                    </div>
+
+                    {ldapError && (
+                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                        {ldapError}
+                      </div>
+                    )}
+
+                    <Input
+                      type="text"
+                      placeholder="LDAP username"
+                      value={ldapUsername}
+                      onChange={(e) => setLdapUsername(e.target.value)}
+                      aria-label="LDAP username"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="LDAP password"
+                      value={ldapPassword}
+                      onChange={(e) => setLdapPassword(e.target.value)}
+                      aria-label="LDAP password"
+                    />
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      type="button"
+                      disabled={ldapLoading}
+                      onClick={handleLdapLogin}
+                    >
+                      {ldapLoading ? "Signing in..." : "Sign in with LDAP"}
+                    </Button>
+                  </div>
+                )}
 
                 {/* ── Keycloak Enterprise SSO (FARM-E41) ───────────────────── */}
+                {/* Keycloak is always present in the providers list; the section */}
+                {/* is therefore always rendered — no conditional guard needed.   */}
                 <div className="flex flex-col gap-2">
                   {/* Error banner when the backend reports keycloak_not_configured */}
                   {keycloakError === "keycloak_not_configured" && (

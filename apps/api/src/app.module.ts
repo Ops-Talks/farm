@@ -52,6 +52,7 @@ import { SearchModule } from "./modules/search/search.module";
 import { SetupModule } from "./modules/setup/setup.module";
 import { OpaModule } from "./modules/opa/opa.module";
 import { IacModule } from "./modules/iac/iac.module";
+import { ElasticsearchModule } from "./modules/elasticsearch/elasticsearch.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -408,6 +409,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "IaC stack management, run ingestion (Cultivator), and module drift tracking (Agronomist)",
         },
         module: IacModule,
+      },
+      {
+        metadata: {
+          name: "core-elasticsearch",
+          version: "1.0.0",
+          description:
+            "Elasticsearch search indexing and advanced search backend",
+        },
+        module: ElasticsearchModule,
       },
     ]),
   ],

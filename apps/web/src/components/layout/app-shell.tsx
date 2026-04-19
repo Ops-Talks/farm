@@ -61,7 +61,7 @@ import {
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 import { FeatureAvailabilityProvider } from "@/contexts/feature-availability-context";
-import { SearchModal } from "@/components/search/search-modal";
+import { AdvancedSearchModal } from "@/components/search/advanced-search-modal";
 
 const navSections = [
   {
@@ -540,8 +540,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </main>
         </div>
 
-        {/* Global quick search modal */}
-        <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+        {/* Global advanced search modal */}
+        <AdvancedSearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
     </FeatureAvailabilityProvider>
   );

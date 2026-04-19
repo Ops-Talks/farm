@@ -3,10 +3,14 @@ import { SearchController } from "./search.controller";
 import { SearchService } from "./search.service";
 import { QuickSearchResult } from "./search.service";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import type { AdvancedSearchQueryDto } from "./dto/advanced-search-query.dto";
+import type { AdvancedSearchResult } from "./interfaces/advanced-search-result.interface";
 
 describe("SearchController", () => {
   let controller: SearchController;
-  let searchService: jest.Mocked<Pick<SearchService, "quickSearch">>;
+  let searchService: jest.Mocked<
+    Pick<SearchService, "quickSearch" | "advancedSearch">
+  >;
 
   const mockResults: QuickSearchResult[] = [
     {
@@ -27,6 +31,7 @@ describe("SearchController", () => {
   beforeEach(async () => {
     searchService = {
       quickSearch: jest.fn().mockResolvedValue(mockResults),
+      advancedSearch: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -112,6 +117,62 @@ describe("SearchController", () => {
         1,
         undefined,
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // advancedSearch() — FARM-S316
+  // ---------------------------------------------------------------------------
+
+  describe("advancedSearch()", () => {
+    const mockAdvancedResult: AdvancedSearchResult = {
+      hits: [
+        {
+          id: "c-1",
+          type: "component",
+          title: "platform-service",
+          url: "/catalog/c-1",
+          score: 3.5,
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+      facets: {
+        types: [{ key: "component", count: 1 }],
+        tags: [],
+      },
+      source: "elasticsearch",
+    };
+
+    it("calls searchService.advancedSearch with the DTO and orgId", async () => {
+      searchService.advancedSearch.mockResolvedValue(mockAdvancedResult);
+      const req = { organizationId: "org-42" } as RequestWithOrg;
+      const dto: AdvancedSearchQueryDto = { q: "platform", page: 1, limit: 20 };
+
+      const result = await controller.advancedSearch(dto, req);
+
+      expect(searchService.advancedSearch).toHaveBeenCalledWith(dto, "org-42");
+      expect(result).toBe(mockAdvancedResult);
+    });
+
+    it("passes undefined orgId when no organizationId is present on request", async () => {
+      searchService.advancedSearch.mockResolvedValue(mockAdvancedResult);
+      const req = {} as RequestWithOrg;
+      const dto: AdvancedSearchQueryDto = { q: "test", page: 1, limit: 10 };
+
+      await controller.advancedSearch(dto, req);
+
+      expect(searchService.advancedSearch).toHaveBeenCalledWith(dto, undefined);
+    });
+
+    it("returns the result from the service unchanged", async () => {
+      searchService.advancedSearch.mockResolvedValue(mockAdvancedResult);
+      const dto: AdvancedSearchQueryDto = { q: "infra" };
+
+      const result = await controller.advancedSearch(dto);
+
+      expect(result).toBe(mockAdvancedResult);
     });
   });
 });

@@ -231,8 +231,8 @@ export class AuthService {
 
   /**
    * Finds an existing OAuth user or creates a new one.
-   * Used by OAuth2 social login strategies (GitHub, Google).
-   * @param provider - OAuth provider name (e.g. "github", "google")
+   * Used by OAuth2 social login strategies (GitHub, Google, LDAP, Keycloak).
+   * @param provider - OAuth provider name (e.g. "github", "google", "ldap")
    * @param providerId - Unique user ID from the OAuth provider
    * @param profile - Profile data from the OAuth provider
    * @returns The matched or newly created user along with JWT tokens
@@ -240,7 +240,14 @@ export class AuthService {
   async findOrCreateOAuthUser(
     provider: string,
     providerId: string,
-    profile: { email: string; displayName: string; username?: string },
+    profile: {
+      email: string;
+      displayName: string;
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      roles?: string[];
+    },
   ): Promise<{ user: User; token: string; refreshToken: string }> {
     let user = await this.userRepository.findOne({
       where: { oauthProvider: provider, oauthProviderId: providerId },
@@ -275,9 +282,11 @@ export class AuthService {
           email: profile.email || `${safeUsername}@${provider}.oauth`,
           displayName: profile.displayName || safeUsername,
           password: randomPassword,
-          roles: ["user"],
+          roles: profile.roles ?? ["user"],
           oauthProvider: provider,
           oauthProviderId: providerId,
+          ...(profile.firstName ? { firstName: profile.firstName } : {}),
+          ...(profile.lastName ? { lastName: profile.lastName } : {}),
         });
 
         user = await this.userRepository.save(newUser);
@@ -296,6 +305,33 @@ export class AuthService {
       refreshToken: hashedRefreshToken,
     });
 
+    return {
+      user,
+      token: this.jwtService.sign(payload),
+      refreshToken,
+    };
+  }
+
+  /**
+   * Generates a fresh JWT access token and a rotated refresh token for an
+   * already-authenticated user. Intended for use by non-OAuth login flows
+   * such as LDAP that resolve the user through a Passport strategy.
+   * @param user - The authenticated user entity
+   * @returns The user, a signed JWT, and a new refresh token
+   */
+  async generateTokensForUser(
+    user: User,
+  ): Promise<{ user: User; token: string; refreshToken: string }> {
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      roles: user.roles,
+    };
+    const refreshToken = randomBytes(40).toString("hex");
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.userRepository.update(user.id, {
+      refreshToken: hashedRefreshToken,
+    });
     return {
       user,
       token: this.jwtService.sign(payload),
