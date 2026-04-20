@@ -87,7 +87,7 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
       try {
         const pluginUrl = new URL(entryPoint);
         const messageOrigin = new URL(origin);
-        return pluginUrl.host === messageOrigin.host;
+        return pluginUrl.origin === messageOrigin.origin;
       } catch {
         return false;
       }
@@ -99,8 +99,13 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
     function handleMessage(event: MessageEvent) {
       if (!isOriginTrusted(event.origin)) {
         console.warn(
-          `[PluginRenderer] Rejected message from untrusted origin: ${event.origin} (expected host from ${entryPoint})`,
+          `[PluginRenderer] Rejected message from untrusted origin: ${event.origin} (expected origin from ${entryPoint})`,
         );
+        return;
+      }
+
+      if (event.source !== iframeRef.current?.contentWindow) {
+        console.warn("[PluginRenderer] Rejected message from unexpected source window");
         return;
       }
 
