@@ -212,11 +212,13 @@ describe("Plugin Manager (e2e)", () => {
           .send(validManifest)
           .expect(201);
 
-        expect(res.body.pluginId).toBe("e2e-test-plugin");
-        expect(res.body.latestVersion).toBe("1.0.0");
+        const body = res.body as { pluginId: string; latestVersion: string };
+        expect(body.pluginId).toBe("e2e-test-plugin");
+        expect(body.latestVersion).toBe("1.0.0");
       });
 
       it("should return 400 for an invalid manifest (missing entryPoint)", async () => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { entryPoint: _omitted, ...withoutEntryPoint } = validManifest;
         await request(app.getHttpServer())
           .post("/api/v1/plugins/registry")
@@ -227,7 +229,7 @@ describe("Plugin Manager (e2e)", () => {
       });
 
       it("should reject non-admin users", async () => {
-        const { token: viewerToken } = await registerAndLogin(app, {
+        await registerAndLogin(app, {
           username: "registry_viewer",
           email: "registry_viewer@test.com",
           password: "ViewerPass2",
@@ -270,7 +272,9 @@ describe("Plugin Manager (e2e)", () => {
           .set("X-Organization-Id", adminOrganizationId)
           .expect(200);
 
-        expect(res.body.pluginId).toBe("e2e-registry-lookup");
+        expect((res.body as { pluginId: string }).pluginId).toBe(
+          "e2e-registry-lookup",
+        );
       });
 
       it("should return 404 for an unknown plugin", async () => {
@@ -340,8 +344,9 @@ describe("Plugin Manager (e2e)", () => {
           .send({ orgId: adminOrganizationId })
           .expect(201);
 
-        expect(res.body.pluginId).toBe("e2e-lifecycle-plugin");
-        expect(res.body.status).toBe("active");
+        const installBody = res.body as { pluginId: string; status: string };
+        expect(installBody.pluginId).toBe("e2e-lifecycle-plugin");
+        expect(installBody.status).toBe("active");
       });
 
       it("should return 404 when the plugin is not in the registry", async () => {
@@ -378,7 +383,7 @@ describe("Plugin Manager (e2e)", () => {
           .set("X-Organization-Id", adminOrganizationId)
           .expect(200);
 
-        expect(disableRes.body.status).toBe("disabled");
+        expect((disableRes.body as { status: string }).status).toBe("disabled");
 
         const enableRes = await request(app.getHttpServer())
           .post(`/api/v1/plugins/${instanceId}/enable`)
@@ -386,7 +391,7 @@ describe("Plugin Manager (e2e)", () => {
           .set("X-Organization-Id", adminOrganizationId)
           .expect(200);
 
-        expect(enableRes.body.status).toBe("active");
+        expect((enableRes.body as { status: string }).status).toBe("active");
       });
     });
 
@@ -414,10 +419,9 @@ describe("Plugin Manager (e2e)", () => {
           .set("X-Organization-Id", adminOrganizationId)
           .expect(200);
 
-        expect(healthRes.body.status).toBeDefined();
-        expect(["healthy", "degraded", "unknown"]).toContain(
-          healthRes.body.status,
-        );
+        const healthBody = healthRes.body as { status: string };
+        expect(healthBody.status).toBeDefined();
+        expect(["healthy", "degraded", "unknown"]).toContain(healthBody.status);
       });
 
       it("should return 404 for an unknown instance id", async () => {

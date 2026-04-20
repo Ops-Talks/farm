@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import * as semver from "semver";
+import * as fs from "fs";
+import * as path from "path";
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 
 /**
@@ -30,8 +32,18 @@ export const KNOWN_PERMISSION_SCOPES: readonly string[] = [
  * Current Farm platform version used for farmMinVersion compatibility checks.
  * Loaded from the API package.json at startup.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
-const FARM_VERSION: string = require("../../../../package.json").version ?? "0.0.0";
+function readFarmVersion(): string {
+  try {
+    const pkgPath = path.resolve(__dirname, "../../../../package.json");
+    const raw = fs.readFileSync(pkgPath, "utf-8");
+    const pkg = JSON.parse(raw) as { version?: string };
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+const FARM_VERSION: string = readFarmVersion();
 
 /**
  * Validation result returned by PluginValidatorService.validate().
@@ -93,7 +105,10 @@ export class PluginValidatorService {
     return { valid: errors.length === 0, errors };
   }
 
-  private checkRequiredFields(manifest: PluginManifestV2, errors: string[]): void {
+  private checkRequiredFields(
+    manifest: PluginManifestV2,
+    errors: string[],
+  ): void {
     const required: Array<keyof PluginManifestV2> = [
       "id",
       "name",
@@ -120,7 +135,10 @@ export class PluginValidatorService {
     }
   }
 
-  private checkFarmMinVersion(manifest: PluginManifestV2, errors: string[]): void {
+  private checkFarmMinVersion(
+    manifest: PluginManifestV2,
+    errors: string[],
+  ): void {
     if (!manifest.farmMinVersion) return;
 
     if (!semver.valid(manifest.farmMinVersion)) {

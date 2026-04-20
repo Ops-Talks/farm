@@ -137,14 +137,24 @@ export class PluginManagerController {
    */
   @Get("registry")
   @ApiOperation({ summary: "Search the community plugin registry" })
-  @ApiQuery({ name: "q", required: false, description: "Full-text search query" })
-  @ApiQuery({ name: "category", required: false, description: "Category filter" })
+  @ApiQuery({
+    name: "q",
+    required: false,
+    description: "Full-text search query",
+  })
+  @ApiQuery({
+    name: "category",
+    required: false,
+    description: "Category filter",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Returns matching registry entries.",
     type: [PluginRegistryEntry],
   })
-  searchRegistry(@Query() query: RegistrySearchDto): Promise<PluginRegistryEntry[]> {
+  searchRegistry(
+    @Query() query: RegistrySearchDto,
+  ): Promise<PluginRegistryEntry[]> {
     return this.pluginRegistryService.search(query.q, query.category);
   }
 
@@ -196,9 +206,7 @@ export class PluginManagerController {
     description: "Returns an array of version strings.",
     type: [String],
   })
-  getRegistryVersions(
-    @Param("pluginId") pluginId: string,
-  ): Promise<string[]> {
+  getRegistryVersions(@Param("pluginId") pluginId: string): Promise<string[]> {
     return this.pluginRegistryService.getVersions(pluginId);
   }
 
@@ -211,7 +219,11 @@ export class PluginManagerController {
    */
   @Get("instances")
   @ApiOperation({ summary: "List all plugin instances" })
-  @ApiQuery({ name: "orgId", required: false, description: "Filter by organization ID" })
+  @ApiQuery({
+    name: "orgId",
+    required: false,
+    description: "Filter by organization ID",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Returns an array of plugin instances.",
@@ -344,10 +356,7 @@ export class PluginManagerController {
     description: "Plugin instance not found.",
     type: ErrorResponseDto,
   })
-  getPluginHealth(
-    @Param("id") id: string,
-  ): Promise<{ status: string }> {
+  getPluginHealth(@Param("id") id: string): Promise<{ status: string }> {
     return this.pluginInstanceService.getHealth(id);
   }
 }
-

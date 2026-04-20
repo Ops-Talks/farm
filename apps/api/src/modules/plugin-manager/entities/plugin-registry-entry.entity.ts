@@ -18,7 +18,9 @@ export class PluginRegistryEntry {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ApiProperty({ description: "Unique plugin identifier, e.g. farm-plugin-slack" })
+  @ApiProperty({
+    description: "Unique plugin identifier, e.g. farm-plugin-slack",
+  })
   @Index({ unique: true })
   @Column({ unique: true })
   pluginId: string;
@@ -36,18 +38,22 @@ export class PluginRegistryEntry {
   description: string;
 
   @ApiPropertyOptional({ description: "Author name" })
-  @Column({ nullable: true })
-  author: string;
+  @Column({ nullable: true, type: "varchar" })
+  author: string | null;
 
   @ApiPropertyOptional({ description: "Plugin category for search filtering" })
-  @Column({ nullable: true })
-  category: string;
+  @Column({ nullable: true, type: "varchar" })
+  category: string | null;
 
-  @ApiProperty({ description: "Full manifest snapshot at latest published version" })
+  @ApiProperty({
+    description: "Full manifest snapshot at latest published version",
+  })
   @Column("simple-json")
   manifest: Record<string, unknown>;
 
-  @ApiProperty({ description: "Total number of times this plugin has been installed" })
+  @ApiProperty({
+    description: "Total number of times this plugin has been installed",
+  })
   @Column({ default: 0 })
   installCount: number;
 

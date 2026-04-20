@@ -11,7 +11,10 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
  * Request body for publishing a plugin manifest to the community registry.
  */
 export class PublishPluginDto {
-  @ApiProperty({ description: "Unique plugin identifier", example: "farm-plugin-slack" })
+  @ApiProperty({
+    description: "Unique plugin identifier",
+    example: "farm-plugin-slack",
+  })
   @IsString()
   @IsNotEmpty()
   id: string;
@@ -36,7 +39,10 @@ export class PublishPluginDto {
   @IsOptional()
   author?: string;
 
-  @ApiPropertyOptional({ description: "SPDX license identifier", example: "MIT" })
+  @ApiPropertyOptional({
+    description: "SPDX license identifier",
+    example: "MIT",
+  })
   @IsString()
   @IsOptional()
   license?: string;
@@ -81,7 +87,9 @@ export class PublishPluginDto {
   @IsOptional()
   category?: string;
 
-  @ApiPropertyOptional({ description: "JSON Schema for plugin-specific configuration" })
+  @ApiPropertyOptional({
+    description: "JSON Schema for plugin-specific configuration",
+  })
   @IsObject()
   @IsOptional()
   settingsSchema?: Record<string, unknown>;

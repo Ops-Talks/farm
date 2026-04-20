@@ -139,12 +139,7 @@ describe("QueuesService", () => {
     it("should use custom start and limit for pagination", async () => {
       mockCatalogQueue.getJobs.mockResolvedValueOnce([]);
 
-      await service.listJobs(
-        QUEUE_NAMES.CATALOG_DISCOVERY,
-        undefined,
-        10,
-        50,
-      );
+      await service.listJobs(QUEUE_NAMES.CATALOG_DISCOVERY, undefined, 10, 50);
 
       expect(mockCatalogQueue.getJobs).toHaveBeenCalledWith(
         ["active", "completed", "failed", "delayed", "waiting"],

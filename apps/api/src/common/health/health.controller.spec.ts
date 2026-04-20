@@ -290,9 +290,6 @@ describe("HealthController", () => {
       "memory_heap",
       512 * 1024 * 1024,
     );
-    expect(mem.checkRSS).toHaveBeenCalledWith(
-      "memory_rss",
-      1024 * 1024 * 1024,
-    );
+    expect(mem.checkRSS).toHaveBeenCalledWith("memory_rss", 1024 * 1024 * 1024);
   });
 });

@@ -44,8 +44,8 @@ export class PluginInstance {
 
   @ApiPropertyOptional({ description: "Organization this instance belongs to" })
   @Index()
-  @Column({ nullable: true })
-  orgId: string;
+  @Column({ nullable: true, type: "varchar" })
+  orgId: string | null;
 
   @ApiProperty({ description: "Installed plugin version" })
   @Column()
@@ -75,13 +75,17 @@ export class PluginInstance {
   })
   healthStatus: PluginHealthStatus;
 
-  @ApiPropertyOptional({ description: "Plugin-specific configuration settings" })
+  @ApiPropertyOptional({
+    description: "Plugin-specific configuration settings",
+  })
   @Column("simple-json", { nullable: true })
-  config: Record<string, unknown>;
+  config: Record<string, unknown> | null;
 
-  @ApiPropertyOptional({ description: "Snapshot of the manifest at install time" })
+  @ApiPropertyOptional({
+    description: "Snapshot of the manifest at install time",
+  })
   @Column("simple-json", { nullable: true })
-  manifest: Record<string, unknown>;
+  manifest: Record<string, unknown> | null;
 
   @ApiProperty({ description: "Timestamp when the plugin was installed" })
   @CreateDateColumn()

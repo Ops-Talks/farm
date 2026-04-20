@@ -5,9 +5,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  * Creates plugin_instances and plugin_registry tables for Phase 30
  * Plugin Ecosystem (FARM-T358, FARM-T356).
  */
-export class AddPluginInstanceAndRegistryEntities1776200000001
-  implements MigrationInterface
-{
+export class AddPluginInstanceAndRegistryEntities1776200000001 implements MigrationInterface {
   name = "AddPluginInstanceAndRegistryEntities1776200000001";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -72,9 +70,7 @@ export class AddPluginInstanceAndRegistryEntities1776200000001
     );
     await queryRunner.query(`DROP TABLE "plugin_registry"`);
 
-    await queryRunner.query(
-      `DROP INDEX "public"."IDX_plugin_instances_orgId"`,
-    );
+    await queryRunner.query(`DROP INDEX "public"."IDX_plugin_instances_orgId"`);
     await queryRunner.query(
       `DROP INDEX "public"."IDX_plugin_instances_pluginId"`,
     );

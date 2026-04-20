@@ -85,9 +85,9 @@ describe("PluginInstanceService", () => {
   describe("install", () => {
     it("should throw NotFoundException when plugin is not in registry", async () => {
       registryRepo.findOne.mockResolvedValue(null);
-      await expect(
-        service.install("nonexistent-plugin"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.install("nonexistent-plugin")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("should throw BadRequestException when manifest is invalid", async () => {
@@ -96,18 +96,27 @@ describe("PluginInstanceService", () => {
         valid: false,
         errors: ["Required field id is missing"],
       });
-      await expect(
-        service.install("farm-plugin-slack"),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.install("farm-plugin-slack")).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("should install and return an active instance when manifest is valid", async () => {
       registryRepo.findOne.mockResolvedValue(mockRegistryEntry);
       validator.validate.mockReturnValue({ valid: true, errors: [] });
-      instanceRepo.create.mockReturnValue({ ...mockInstance, status: PluginStatus.INSTALLING });
-      instanceRepo.save.mockResolvedValue({ ...mockInstance, status: PluginStatus.INSTALLING });
+      instanceRepo.create.mockReturnValue({
+        ...mockInstance,
+        status: PluginStatus.INSTALLING,
+      });
+      instanceRepo.save.mockResolvedValue({
+        ...mockInstance,
+        status: PluginStatus.INSTALLING,
+      });
       instanceRepo.update.mockResolvedValue({});
-      instanceRepo.findOne.mockResolvedValue({ ...mockInstance, status: PluginStatus.ACTIVE });
+      instanceRepo.findOne.mockResolvedValue({
+        ...mockInstance,
+        status: PluginStatus.ACTIVE,
+      });
       registryRepo.increment.mockResolvedValue({});
 
       const result = await service.install("farm-plugin-slack", "org-uuid");
@@ -132,7 +141,11 @@ describe("PluginInstanceService", () => {
       instanceRepo.create.mockReturnValue({ ...mockInstance, orgId: null });
       instanceRepo.save.mockResolvedValue({ ...mockInstance, orgId: null });
       instanceRepo.update.mockResolvedValue({});
-      instanceRepo.findOne.mockResolvedValue({ ...mockInstance, orgId: null, status: PluginStatus.ACTIVE });
+      instanceRepo.findOne.mockResolvedValue({
+        ...mockInstance,
+        orgId: null,
+        status: PluginStatus.ACTIVE,
+      });
       registryRepo.increment.mockResolvedValue({});
 
       const result = await service.install("farm-plugin-slack");
@@ -157,7 +170,10 @@ describe("PluginInstanceService", () => {
     });
 
     it("should enable a disabled instance", async () => {
-      const disabledInstance = { ...mockInstance, status: PluginStatus.DISABLED };
+      const disabledInstance = {
+        ...mockInstance,
+        status: PluginStatus.DISABLED,
+      };
       const activeInstance = { ...mockInstance, status: PluginStatus.ACTIVE };
 
       instanceRepo.findOne
@@ -176,7 +192,9 @@ describe("PluginInstanceService", () => {
   describe("disable", () => {
     it("should throw NotFoundException when instance does not exist", async () => {
       instanceRepo.findOne.mockResolvedValue(null);
-      await expect(service.disable("bad-id")).rejects.toThrow(NotFoundException);
+      await expect(service.disable("bad-id")).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it("should throw BadRequestException when instance is not active", async () => {
@@ -191,7 +209,10 @@ describe("PluginInstanceService", () => {
 
     it("should disable an active instance", async () => {
       const activeInstance = { ...mockInstance, status: PluginStatus.ACTIVE };
-      const disabledInstance = { ...mockInstance, status: PluginStatus.DISABLED };
+      const disabledInstance = {
+        ...mockInstance,
+        status: PluginStatus.DISABLED,
+      };
 
       instanceRepo.findOne
         .mockResolvedValueOnce(activeInstance)
@@ -269,7 +290,9 @@ describe("PluginInstanceService", () => {
 
     it("should throw NotFoundException when not found", async () => {
       instanceRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOne("bad-id")).rejects.toThrow(NotFoundException);
+      await expect(service.findOne("bad-id")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

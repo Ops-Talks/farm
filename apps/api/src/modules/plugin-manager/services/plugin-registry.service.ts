@@ -35,10 +35,9 @@ export class PluginRegistryService {
     const qb = this.registryRepo.createQueryBuilder("entry");
 
     if (query) {
-      qb.andWhere(
-        "(entry.name ILIKE :q OR entry.description ILIKE :q)",
-        { q: `%${query}%` },
-      );
+      qb.andWhere("(entry.name ILIKE :q OR entry.description ILIKE :q)", {
+        q: `%${query}%`,
+      });
     }
 
     if (category) {
@@ -57,10 +56,10 @@ export class PluginRegistryService {
    * @returns The created or updated PluginRegistryEntry
    */
   async publish(manifest: PluginManifestV2): Promise<PluginRegistryEntry> {
-    const result = this.validator.validate(manifest);
-    if (!result.valid) {
+    const validation = this.validator.validate(manifest);
+    if (!validation.valid) {
       throw new BadRequestException(
-        `Invalid manifest: ${result.errors.join("; ")}`,
+        `Invalid manifest: ${validation.errors.join("; ")}`,
       );
     }
 
@@ -69,20 +68,20 @@ export class PluginRegistryService {
     });
 
     if (existing) {
-      await this.registryRepo.update(existing.id, {
-        name: manifest.name,
-        latestVersion: manifest.version,
-        description: manifest.description,
-        author: manifest.author ?? null,
-        category: (manifest as PublishManifestWithCategory).category ?? null,
-        manifest: manifest as unknown as Record<string, unknown>,
-      });
+      existing.name = manifest.name;
+      existing.latestVersion = manifest.version;
+      existing.description = manifest.description;
+      existing.author = manifest.author ?? null;
+      existing.category =
+        (manifest as PublishManifestWithCategory).category ?? null;
+      existing.manifest = manifest as unknown as Record<string, unknown>;
+
+      const updated: PluginRegistryEntry =
+        await this.registryRepo.save(existing);
       this.logger.log(
         `Plugin "${manifest.id}" updated to v${manifest.version}`,
       );
-      return this.registryRepo.findOne({
-        where: { id: existing.id },
-      }) as Promise<PluginRegistryEntry>;
+      return updated;
     }
 
     const entry = this.registryRepo.create({
@@ -94,10 +93,12 @@ export class PluginRegistryService {
       category: (manifest as PublishManifestWithCategory).category ?? null,
       manifest: manifest as unknown as Record<string, unknown>,
       installCount: 0,
-    });
+    } as Partial<PluginRegistryEntry>);
 
-    const saved = await this.registryRepo.save(entry);
-    this.logger.log(`Plugin "${manifest.id}" published at v${manifest.version}`);
+    const saved: PluginRegistryEntry = await this.registryRepo.save(entry);
+    this.logger.log(
+      `Plugin "${manifest.id}" published at v${manifest.version}`,
+    );
     return saved;
   }
 

@@ -1,4 +1,7 @@
-import { PluginValidatorService, KNOWN_PERMISSION_SCOPES } from "../services/plugin-validator.service";
+import {
+  PluginValidatorService,
+  KNOWN_PERMISSION_SCOPES,
+} from "../services/plugin-validator.service";
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 
 describe("PluginValidatorService", () => {
@@ -50,6 +53,7 @@ describe("PluginValidatorService", () => {
     });
 
     it("should fail when name is missing", () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { name: _n, ...rest } = validManifest;
       const result = service.validate(rest as PluginManifestV2);
       expect(result.valid).toBe(false);
@@ -81,9 +85,9 @@ describe("PluginValidatorService", () => {
       const manifest = { ...validManifest, version: "not-semver" };
       const result = service.validate(manifest);
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.includes("semantic version")),
-      ).toBe(true);
+      expect(result.errors.some((e) => e.includes("semantic version"))).toBe(
+        true,
+      );
     });
 
     it("should pass with a pre-release semver version", () => {
@@ -96,18 +100,16 @@ describe("PluginValidatorService", () => {
       const manifest = { ...validManifest, farmMinVersion: "not-valid" };
       const result = service.validate(manifest);
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.includes('"farmMinVersion"')),
-      ).toBe(true);
+      expect(result.errors.some((e) => e.includes('"farmMinVersion"'))).toBe(
+        true,
+      );
     });
 
     it("should fail when farmMinVersion is higher than the current Farm version", () => {
       const manifest = { ...validManifest, farmMinVersion: "99.0.0" };
       const result = service.validate(manifest);
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.includes("Farm >=")),
-      ).toBe(true);
+      expect(result.errors.some((e) => e.includes("Farm >="))).toBe(true);
     });
 
     it("should pass when farmMinVersion is lower than the current Farm version", () => {
@@ -120,9 +122,9 @@ describe("PluginValidatorService", () => {
       const manifest = { ...validManifest, permissions: ["unknown:scope"] };
       const result = service.validate(manifest);
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.includes('"unknown:scope"')),
-      ).toBe(true);
+      expect(result.errors.some((e) => e.includes('"unknown:scope"'))).toBe(
+        true,
+      );
     });
 
     it("should pass when all permission scopes are known", () => {
@@ -151,7 +153,10 @@ describe("PluginValidatorService", () => {
   describe("validateDependencies", () => {
     it("should return valid when dependsOn is empty", () => {
       const manifest = { ...validManifest, dependsOn: [] };
-      const result = service.validateDependencies(manifest, new Set(["other-plugin"]));
+      const result = service.validateDependencies(
+        manifest,
+        new Set(["other-plugin"]),
+      );
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
@@ -161,7 +166,10 @@ describe("PluginValidatorService", () => {
         ...validManifest,
         dependsOn: ["farm-plugin-auth", "farm-plugin-catalog"],
       };
-      const registeredIds = new Set(["farm-plugin-auth", "farm-plugin-catalog"]);
+      const registeredIds = new Set([
+        "farm-plugin-auth",
+        "farm-plugin-catalog",
+      ]);
       const result = service.validateDependencies(manifest, registeredIds);
       expect(result.valid).toBe(true);
     });
@@ -173,9 +181,9 @@ describe("PluginValidatorService", () => {
       };
       const result = service.validateDependencies(manifest, new Set(["other"]));
       expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e) => e.includes("farm-plugin-missing")),
-      ).toBe(true);
+      expect(result.errors.some((e) => e.includes("farm-plugin-missing"))).toBe(
+        true,
+      );
     });
 
     it("should return valid when dependsOn is not defined", () => {

@@ -374,14 +374,7 @@ describe("EmailService", () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn(
-                (key: string) =>
-                  localConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
-              ),
+              get: jest.fn((key: string) => localConfigValues[key]),
             },
           },
         ],

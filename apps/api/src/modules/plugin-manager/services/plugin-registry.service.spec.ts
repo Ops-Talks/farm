@@ -49,10 +49,7 @@ describe("PluginRegistryService", () => {
     };
     validator = { validate: jest.fn() };
 
-    service = new PluginRegistryService(
-      registryRepo as any,
-      validator as any,
-    );
+    service = new PluginRegistryService(registryRepo as any, validator as any);
   });
 
   afterEach(() => {
@@ -114,14 +111,14 @@ describe("PluginRegistryService", () => {
 
     it("should update an existing entry when the plugin is already registered", async () => {
       validator.validate.mockReturnValue({ valid: true, errors: [] });
-      registryRepo.findOne
-        .mockResolvedValueOnce(mockEntry)
-        .mockResolvedValueOnce({ ...mockEntry, latestVersion: "1.0.0" });
-      registryRepo.update.mockResolvedValue({});
+      registryRepo.findOne.mockResolvedValueOnce({ ...mockEntry });
+      registryRepo.save.mockResolvedValue({
+        ...mockEntry,
+        latestVersion: "1.0.0",
+      });
 
       const result = await service.publish(validManifest);
-      expect(registryRepo.update).toHaveBeenCalledWith(
-        mockEntry.id,
+      expect(registryRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ latestVersion: "1.0.0" }),
       );
       expect(result).toBeDefined();
@@ -173,9 +170,9 @@ describe("PluginRegistryService", () => {
 
     it("should throw NotFoundException when the plugin does not exist", async () => {
       registryRepo.findOne.mockResolvedValue(null);
-      await expect(
-        service.incrementInstallCount("missing"),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.incrementInstallCount("missing")).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

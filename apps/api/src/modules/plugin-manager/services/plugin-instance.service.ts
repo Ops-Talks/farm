@@ -74,15 +74,21 @@ export class PluginInstanceService {
       manifest: entry.manifest,
     });
 
-    const saved = await this.instanceRepo.save(instance);
+    const saved: PluginInstance = await this.instanceRepo.save(instance);
     this.logger.log(`Plugin "${pluginId}" installed (id=${saved.id})`);
 
-    await this.instanceRepo.update(saved.id, { status: PluginStatus.ACTIVE });
-    this.logger.log(`Plugin "${pluginId}" transitioned to active (id=${saved.id})`);
+    await this.instanceRepo.update(saved.id, {
+      status: PluginStatus.ACTIVE,
+    });
+    this.logger.log(
+      `Plugin "${pluginId}" transitioned to active (id=${saved.id})`,
+    );
 
     await this.registryRepo.increment({ pluginId }, "installCount", 1);
 
-    return this.instanceRepo.findOne({ where: { id: saved.id } }) as Promise<PluginInstance>;
+    return this.instanceRepo.findOne({
+      where: { id: saved.id },
+    }) as Promise<PluginInstance>;
   }
 
   /**
