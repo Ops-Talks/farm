@@ -248,4 +248,51 @@ describe("HealthController", () => {
 
     expect(result.version.version).toBe("0.2.4");
   });
+
+  it("uses default heap threshold of 512 when config returns undefined", async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [
+        { provide: HealthCheckService, useValue: { check: jest.fn() } },
+        { provide: TypeOrmHealthIndicator, useValue: { pingCheck: jest.fn() } },
+        {
+          provide: MemoryHealthIndicator,
+          useValue: { checkHeap: jest.fn(), checkRSS: jest.fn() },
+        },
+        { provide: DiskHealthIndicator, useValue: { checkStorage: jest.fn() } },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((key: string) => {
+              if (key === "version") return "1.0.0";
+              return undefined; // both heap and rss thresholds undefined
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    const ctrl = module.get<HealthController>(HealthController);
+    const hs = module.get<HealthCheckService>(HealthCheckService);
+    const mem = module.get<MemoryHealthIndicator>(MemoryHealthIndicator);
+
+    (hs.check as jest.Mock).mockImplementation(
+      async (indicators: Array<() => Promise<unknown>>) => {
+        await indicators[1](); // heap check
+        await indicators[2](); // rss check
+        return { status: "ok", info: {}, error: {}, details: {} };
+      },
+    );
+
+    await ctrl.check();
+
+    expect(mem.checkHeap).toHaveBeenCalledWith(
+      "memory_heap",
+      512 * 1024 * 1024,
+    );
+    expect(mem.checkRSS).toHaveBeenCalledWith(
+      "memory_rss",
+      1024 * 1024 * 1024,
+    );
+  });
 });
