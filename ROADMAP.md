@@ -347,7 +347,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ## Phase 29: TechDocs 2.0 `DONE`
 
-### FARM-E75: Multi-Builder Documentation Platform `TODO`
+### FARM-E75: Multi-Builder Documentation Platform `DONE`
 
 > Farm's current documentation module fetches Markdown files from URLs and renders them server-side. This Epic evolves it into a multi-builder documentation platform using a strategy pattern: Farm auto-detects the documentation tool used by each component repository and dispatches to the appropriate builder. MkDocs is the recommended standard (most common in DevOps/SRE teams), but teams without any build tool receive a working Markdown fallback with zero friction. The CI pipeline (webhook + BullMQ), versioning by Git tag, and optional full-text search via Elasticsearch are shared across all builders. Future builders -- Docusaurus, Hugo, Sphinx -- can be added by implementing the `DocBuilder` interface without touching the core pipeline.
 
@@ -362,50 +362,50 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T346 | Task | `DocBuilder` interface: `supports(repoPath: string): Promise<boolean>` and `build(componentId, repoUrl, ref): Promise<BuildResult>`; `DocBuilderFactory.resolve(repoUrl, ref)`: shallow-clone repo, iterate ordered builder list calling `supports()`, return first match (MkDocs priority over Markdown fallback); unit tests | `TODO` |
-| FARM-T347 | Task | `MarkdownBuilder` implementation: shallow clone repo, collect all `.md` files under `docs/` and repo root, store file paths in `DocumentationBuild` with `sourceType: "markdown"`; no external build tool required; unit tests | `TODO` |
+| FARM-T346 | Task | `DocBuilder` interface: `supports(repoPath: string): Promise<boolean>` and `build(componentId, repoUrl, ref): Promise<BuildResult>`; `DocBuilderFactory.resolve(repoUrl, ref)`: shallow-clone repo, iterate ordered builder list calling `supports()`, return first match (MkDocs priority over Markdown fallback); unit tests | `DONE` |
+| FARM-T347 | Task | `MarkdownBuilder` implementation: shallow clone repo, collect all `.md` files under `docs/` and repo root, store file paths in `DocumentationBuild` with `sourceType: "markdown"`; no external build tool required; unit tests | `DONE` |
 
 ##### FARM-T346 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST370 | Sub-task | Unit test: `DocBuilderFactory.resolve()` returns `MkDocsBuilder` instance when `mkdocs.yml` is present in the cloned repo | `TODO` |
-| FARM-ST371 | Sub-task | Unit test: `DocBuilderFactory.resolve()` returns `MarkdownBuilder` instance when no recognized build config is found (fallback path) | `TODO` |
+| FARM-ST370 | Sub-task | Unit test: `DocBuilderFactory.resolve()` returns `MkDocsBuilder` instance when `mkdocs.yml` is present in the cloned repo | `DONE` |
+| FARM-ST371 | Sub-task | Unit test: `DocBuilderFactory.resolve()` returns `MarkdownBuilder` instance when no recognized build config is found (fallback path) | `DONE` |
 
 #### FARM-S324 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T348 | Task | `MkDocsBuilder` implementation: shallow clone repo, verify `mkdocs.yml` exists, run `mkdocs build --site-dir dist/` via `child_process.spawn`; store artifacts path in `DocumentationBuild`; env `MKDOCS_ENABLED=true` gates the MkDocs binary check at startup; unit tests | `TODO` |
-| FARM-T349 | Task | `DocumentationBuild` entity (componentId, version, sourceType: `mkdocs \| markdown`, status: `building \| ready \| failed`, buildLog text, artifactsPath, triggeredAt, completedAt); migration; `GET /api/docs/builds/:componentId` returns build history; unit tests | `TODO` |
+| FARM-T348 | Task | `MkDocsBuilder` implementation: shallow clone repo, verify `mkdocs.yml` exists, run `mkdocs build --site-dir dist/` via `child_process.spawn`; store artifacts path in `DocumentationBuild`; env `MKDOCS_ENABLED=true` gates the MkDocs binary check at startup; unit tests | `DONE` |
+| FARM-T349 | Task | `DocumentationBuild` entity (componentId, version, sourceType: `mkdocs \| markdown`, status: `building \| ready \| failed`, buildLog text, artifactsPath, triggeredAt, completedAt); migration; `GET /api/docs/builds/:componentId` returns build history; unit tests | `DONE` |
 
 ##### FARM-T348 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST372 | Sub-task | Unit test: `MkDocsBuilder.build()` resolves with `{ status: "ready", artifactsPath }` when `mkdocs build` exits with code 0 | `TODO` |
-| FARM-ST373 | Sub-task | Unit test: missing `mkdocs.yml` → `MkDocsBuilder.supports()` returns false; `DocBuilderFactory` falls back to `MarkdownBuilder` | `TODO` |
+| FARM-ST372 | Sub-task | Unit test: `MkDocsBuilder.build()` resolves with `{ status: "ready", artifactsPath }` when `mkdocs build` exits with code 0 | `DONE` |
+| FARM-ST373 | Sub-task | Unit test: missing `mkdocs.yml` → `MkDocsBuilder.supports()` returns false; `DocBuilderFactory` falls back to `MarkdownBuilder` | `DONE` |
 
 #### FARM-S325 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T350 | Task | `POST /api/docs/webhook` accepting GitHub/GitLab push payloads; verify `X-Hub-Signature-256` HMAC; enqueue `DocsBuildJob` only when `mkdocs.yml`, `docs/` or `*.md` paths appear in changed files; unit tests with mock payloads | `TODO` |
-| FARM-T351 | Task | `DocsBuildJob` BullMQ processor: call `DocBuilderFactory.resolve()` to select the correct builder, execute `builder.build()`, update `DocumentationBuild.status`, emit `docs:build-complete` WebSocket event; unit tests | `TODO` |
+| FARM-T350 | Task | `POST /api/docs/webhook` accepting GitHub/GitLab push payloads; verify `X-Hub-Signature-256` HMAC; enqueue `DocsBuildJob` only when `mkdocs.yml`, `docs/` or `*.md` paths appear in changed files; unit tests with mock payloads | `DONE` |
+| FARM-T351 | Task | `DocsBuildJob` BullMQ processor: call `DocBuilderFactory.resolve()` to select the correct builder, execute `builder.build()`, update `DocumentationBuild.status`, emit `docs:build-complete` WebSocket event; unit tests | `DONE` |
 
 ##### FARM-T350 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST374 | Sub-task | Unit test: invalid `X-Hub-Signature-256` HMAC returns 401 Unauthorized | `TODO` |
-| FARM-ST375 | Sub-task | Unit test: push event with no `docs/`, `*.md` or build config changes is acknowledged (200) but no BullMQ job is enqueued | `TODO` |
+| FARM-ST374 | Sub-task | Unit test: invalid `X-Hub-Signature-256` HMAC returns 401 Unauthorized | `DONE` |
+| FARM-ST375 | Sub-task | Unit test: push event with no `docs/`, `*.md` or build config changes is acknowledged (200) but no BullMQ job is enqueued | `DONE` |
 
 #### FARM-S326 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T352 | Task | Tag each `DocumentationBuild` with semver or branch name from webhook ref (`refs/tags/v1.2.0` → `v1.2.0`); `GET /api/docs/:componentId/versions` returns builds sorted by version desc; unit tests | `TODO` |
-| FARM-T353 | Task | Frontend `VersionSelector` dropdown in the documentation viewer header; switching version re-fetches that build's rendered content; defaults to latest `ready` build; unit tests | `TODO` |
+| FARM-T352 | Task | Tag each `DocumentationBuild` with semver or branch name from webhook ref (`refs/tags/v1.2.0` → `v1.2.0`); `GET /api/docs/:componentId/versions` returns builds sorted by version desc; unit tests | `DONE` |
+| FARM-T353 | Task | Frontend `VersionSelector` dropdown in the documentation viewer header; switching version re-fetches that build's rendered content; defaults to latest `ready` build; unit tests | `DONE` |
 
 > **Note:** Full-text search indexing (strip HTML, index into Elasticsearch with `type = "docs"`, `componentId`, `heading`, `body`, `url`) is implemented after `DocsBuildJob` completes. This feature requires the `ElasticsearchModule` introduced in Phase 27 and degrades gracefully -- skips indexing with a warn log when Elasticsearch is unavailable, falling back to the existing DB title search.
 
