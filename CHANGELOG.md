@@ -9,9 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **phase-29**: Update Coverage.
-- **phase-29**: Update Coverage.
-- **phase-29**: Update Coverage.
-- **phase-29**: TechDocs 2.0.
 - **phase-29**: TechDocs 2.0.
 
 ### Fixed
@@ -20,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.0] - 2026-04-19
 
 ### Added
-- **phase-27**: Elasticsearch.
-- **phase-27**: Elasticsearch.
 - **phase-27**: Elasticsearch.
 
 ### Changed
@@ -39,13 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Grafana**: Widget Dashboards enhacement.
 - fix(CVES).
-- fix(CVES).
-- fix(CVES).
-- fix(CVES).
 - revert CHANGELOG.md to pre-PR state — feature docs do not belong in a CVE fix PR.
 - Update package.json.
-- fix(CVES).
-- fix(CVES).
 
 ### Fixed
 - regenerate lockfile for follow-redirects 1.16.0 and fix ROADMAP API versioned endpoints.
@@ -76,24 +66,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - apply all remaining PR review corrections across api-reference and user-guide docs.
 - Update docs/user-guide/container-registry.md.
 - Update docs/user-guide/opa-integration.md.
-- Update docs/user-guide/opa-integration.md.
 - **linkerd**: fix API reference response examples to match actual backend shapes.
 - Update docs/developer-guide/backend/architecture.md.
 - Update docs/developer-guide/setup.md.
 - Update docs/index.md.
-- Update docs/developer-guide/backend/architecture.md.
 - Update docs/api-reference/linkerd.md.
 - patch(mkdocs) Revision and overall docs update.
 - fix(CVES) Picomath.
-- Update ROADMAP.
 - Update ROADMAP.
 
 ## [0.17.3] - 2026-04-12
 
 ### Changed
 - Update apps/api/Dockerfile.
-- Update apps/api/Dockerfile.
-- Update apps/web/Dockerfile.
 - Update apps/web/Dockerfile.
 
 ### Fixed
@@ -105,8 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - feat(phase-21) New Features (#59).
 - feat(phase-28) New Features.
-- feat(phase-20) New Features.
-- feat(phase-20) New Features.
 - feat(phase-20) New Features.
 
 ### Fixed
@@ -122,10 +105,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - feat(phase-19) New Features.
-- feat(phase-19) New Features.
-- feat(phase-19) New Features.
-- feat(phase-19) New Features.
-- feat(phase-19) New Features.
 - fix(phase-18) Bugs and Coverage.
 - **kubernetes**: add missing branch coverage for listFluxBindingsByComponent and listKedaBindingsByComponent.
 - feat(phase-18) New Features.
@@ -140,7 +119,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **container-resgistries**: Add Container Registries support.
-- **container-resgistries**: Add Container Registries support.
 
 ### Fixed
 - **lint**: resolve all 16 ESLint errors in SAST pipeline.
@@ -151,7 +129,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.15.0] - 2026-04-07
 
 ### Changed
-- **user**: New feature profile.
 - **user**: New feature profile.
 
 ### Fixed
@@ -174,10 +151,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **sast**: Vulnerabilites.
 - **webci**: E2E pipeline.
-- **webci**: E2E pipeline.
-- **webci**: E2E pipeline.
-- **webci**: E2E pipeline.
-- **webci**: E2E pipeline.
 - **e2e**: use getAttribute() to avoid WebKit prefetch race before page.goto().
 - **e2e**: use page.goto() for WebKit-reliable catalog detail navigation.
 - **e2e**: fix WebKit Playwright failures in catalog and organizations tests.
@@ -191,7 +164,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update apps/api/Dockerfile.
 
 ### Fixed
-- **sast**: Vulnerabilites.
 - **sast**: Vulnerabilites.
 - **trivy**: use include-only matrix to ensure dockerfile is always defined.
 - **trivy**: Improvements.
@@ -286,18 +258,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix:(security) - Fix CVE's (#18).
 - fix:(security) - Fix CVE's.
 - patch(eslint) - Improvements.
-- patch(eslint) - Improvements.
-- **web**: add comprehensive api-client test coverage (S176).
-- **api**: improve branch coverage for critical modules (S173).
-- add Phase 10 test coverage hardening to ROADMAP (FARM-E45).
-
-### Fixed
-- **security**: add runtime engine allowlist validation in build-stage executor.
 
 ## [0.11.4] - 2026-03-24
 
 ### Changed
-- patch(eslint) - Improvements.
 - patch(eslint) - Improvements.
 - chore(ci.yaml) - Comparison.
 - **web**: add comprehensive api-client test coverage (S176).
@@ -331,7 +295,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update README with new make commands.
 - Updates.
 - fix:(dast) - Include fix.
-- fix:(dast) - Include fix.
 - feat:(dast) - New CI.
 - fix:(ci) - Fix NPM Audit.
 - fix:(ci) - Fix CI test errors.
@@ -340,12 +303,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **web**: add branded Farm design system and visual redesign (FARM-E43).
-- **web**: add branded Farm design system and visual redesign (FARM-E43).
 
 ### Changed
 - fix:(ci) - Fix CI test errors.
 - patch:(ui) - Little improvements.
-- fix:(ui) Copillot sugestions.
 - fix:(ui) Copillot sugestions.
 - Update background.
 - feat:(css) - Update colors.
@@ -367,14 +328,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **api**: add Kyverno PolicyReport reader and ClusterPolicy export (FARM-E40).
 - **web**: add compliance dashboard and tag governance UI (FARM-E39).
 - **api**: add resource tag governance module (FARM-E39).
-- **web**: add cloud provider integrations UI (FARM-E38).
-- **api**: add cloud provider integrations module (FARM-E38).
 
 ### Changed
 - **observability**: update observability guides for Loki, Promtail, and Node Exporter.
 - add Keycloak SSO documentation (FARM-E41).
 - add tag governance and Kyverno integration documentation (FARM-E39/E40).
-- add cloud provider integrations documentation (FARM-E38).
 
 ### Fixed
 - **api**: read app version from package.json instead of hardcoded fallback.
@@ -425,8 +383,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
-- feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
-- feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
 - Update README.
 
 ## [0.10.4] - 2026-03-18
@@ -447,8 +403,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.1] - 2026-03-18
 
 ### Changed
-- feat:(web) FARM-E29 done.
-- feat:(web) FARM-E29 done.
 - feat:(web) FARM-E29 done.
 
 ## [0.10.0] - 2026-03-17
@@ -732,7 +686,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Documentation Sync**: Updated 9 documentation files to reflect current implementation (rate limiting, JWT auth, refresh tokens, password validation, memory thresholds, env vars).
 
-
 ## [0.4.3] - 2026-03-08
 
 ### Added
@@ -789,7 +742,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.5] - 2026-03-05
 
-
 ### Added
 - **Infrastructure Orchestration**: Created `docker-compose.yml` to manage API and PostgreSQL database.
 - **Advanced Health Monitoring**: Integrated `@nestjs/terminus` for detailed system health checks.
@@ -817,8 +769,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Adjusted Jest mocks in src/documentation/documentation.service.spec.ts for ESLint compliance.
-
-## [0.2.4] - 2026-03-05
 
 ### Added
 - **Gitignore Configuration**: Added agent configuration and project planning files to `.gitignore`:
