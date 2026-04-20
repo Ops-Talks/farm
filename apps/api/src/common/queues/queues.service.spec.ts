@@ -136,6 +136,47 @@ describe("QueuesService", () => {
       expect(mockCatalogQueue.getJobs).toHaveBeenCalledWith(["failed"], 0, 19);
     });
 
+    it("should use custom start and limit for pagination", async () => {
+      mockCatalogQueue.getJobs.mockResolvedValueOnce([]);
+
+      await service.listJobs(
+        QUEUE_NAMES.CATALOG_DISCOVERY,
+        undefined,
+        10,
+        50,
+      );
+
+      expect(mockCatalogQueue.getJobs).toHaveBeenCalledWith(
+        ["active", "completed", "failed", "delayed", "waiting"],
+        10,
+        59,
+      );
+    });
+
+    it("should return 'unknown' status when getState throws", async () => {
+      const mockJob = {
+        id: "2",
+        name: "__default__",
+        data: {},
+        returnvalue: null,
+        failedReason: undefined,
+        attemptsMade: 0,
+        progress: 0,
+        timestamp: 1709913600000,
+        processedOn: undefined,
+        finishedOn: undefined,
+        stacktrace: [],
+        getState: jest.fn().mockRejectedValue(new Error("Redis error")),
+      };
+
+      mockCatalogQueue.getJobs.mockResolvedValueOnce([mockJob]);
+
+      const result = await service.listJobs(QUEUE_NAMES.CATALOG_DISCOVERY);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.status).toBe("unknown");
+    });
+
     it("should throw NotFoundException for unknown queue", async () => {
       await expect(service.listJobs("unknown")).rejects.toThrow(
         NotFoundException,
@@ -175,6 +216,29 @@ describe("QueuesService", () => {
       await expect(
         service.getJob(QUEUE_NAMES.CATALOG_DISCOVERY, "999"),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it("should return 'unknown' status when getState throws in getJob", async () => {
+      const mockJob = {
+        id: "43",
+        name: "__default__",
+        data: {},
+        returnvalue: null,
+        failedReason: undefined,
+        attemptsMade: 0,
+        progress: 0,
+        timestamp: 1709913600000,
+        processedOn: undefined,
+        finishedOn: undefined,
+        stacktrace: [],
+        getState: jest.fn().mockRejectedValue(new Error("Redis error")),
+      };
+
+      mockCatalogQueue.getJob.mockResolvedValueOnce(mockJob);
+
+      const result = await service.getJob(QUEUE_NAMES.CATALOG_DISCOVERY, "43");
+
+      expect(result.status).toBe("unknown");
     });
   });
 

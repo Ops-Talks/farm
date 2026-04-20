@@ -197,5 +197,80 @@ describe("PluginManagerService", () => {
         expect.objectContaining({ name: "auto-plugin", version: "3.0.0" }),
       );
     });
+
+    it("should handle JSON parse errors gracefully", () => {
+      (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
+        if (p === "/plugins") return true;
+        if (p === path.join("/plugins", "bad-json", "plugin.json")) return true;
+        return false;
+      });
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        { name: "bad-json", isDirectory: () => true },
+      ]);
+      (fs.readFileSync as jest.Mock).mockReturnValue("{ invalid json }");
+
+      const manifests = service.scanDirectory("/plugins");
+      expect(manifests).toHaveLength(0);
+    });
+
+    it("should skip non-directory entries", () => {
+      (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
+        if (p === "/plugins") return true;
+        return false;
+      });
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        { name: "some-file.txt", isDirectory: () => false },
+      ]);
+
+      const manifests = service.scanDirectory("/plugins");
+      expect(manifests).toHaveLength(0);
+    });
+
+    it("should register author field from manifest when provided", () => {
+      (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
+        if (p === "/plugins") return true;
+        if (p === path.join("/plugins", "authored-plugin", "plugin.json"))
+          return true;
+        return false;
+      });
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        { name: "authored-plugin", isDirectory: () => true },
+      ]);
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        JSON.stringify({
+          name: "authored-plugin",
+          version: "1.0.0",
+          description: "Plugin with author",
+          author: "Test Author",
+        }),
+      );
+
+      const registerSpy = jest.spyOn(service, "register");
+      service.scanDirectory("/plugins");
+
+      expect(registerSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "authored-plugin",
+          author: "Test Author",
+        }),
+      );
+    });
+  });
+
+  describe("menu items — edge cases", () => {
+    it("should handle menu items without explicit order using default of 0", () => {
+      service.registerMenuItems([
+        { label: "Second", path: "/second", order: 10, pluginName: "p2" },
+        {
+          label: "First",
+          path: "/first",
+          pluginName: "p1",
+        } as unknown as import("./interfaces/plugin.interface").PluginMenuItem,
+      ]);
+
+      const items = service.getMenuItems();
+      expect(items[0].label).toBe("First");
+      expect(items[1].label).toBe("Second");
+    });
   });
 });

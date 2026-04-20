@@ -378,4 +378,45 @@ describe("EventsGateway", () => {
       );
     });
   });
+
+  describe("without jwtService (optional dependency)", () => {
+    let gatewayNoJwt: EventsGateway;
+
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [EventsGateway],
+      }).compile();
+
+      gatewayNoJwt = module.get<EventsGateway>(EventsGateway);
+    });
+
+    it("should handle connection when jwtService is undefined (verify returns undefined)", () => {
+      const client = {
+        id: "socket-nojwt",
+        handshake: { auth: { token: "some-token" }, query: {} },
+        data: {},
+        disconnect: jest.fn(),
+      } as unknown as Socket;
+
+      // When jwtService is undefined, jwtService?.verify returns undefined
+      // which means payload is undefined, and client.data.user is set to undefined
+      expect(() => gatewayNoJwt.handleConnection(client)).not.toThrow();
+    });
+  });
+
+  describe("event emission — server not assigned", () => {
+    it("should not throw when server is undefined", () => {
+      const gatewayNoServer = new EventsGateway();
+      // server is not assigned yet (undefined)
+      expect(() =>
+        gatewayNoServer.emitComponentCreated({
+          id: "comp-1",
+          name: "test",
+          kind: "service",
+          owner: "team",
+          timestamp: "2026-01-01T00:00:00.000Z",
+        }),
+      ).not.toThrow();
+    });
+  });
 });

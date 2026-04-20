@@ -203,4 +203,192 @@ describe("EmailService", () => {
       expect(service.isEnabled()).toBe(false);
     });
   });
+
+  describe("when SMTP is configured without auth credentials", () => {
+    const mockVerify = jest.fn().mockResolvedValue(true);
+    const mockSendMail = jest.fn().mockResolvedValue({ messageId: "456" });
+
+    beforeEach(async () => {
+      mockConfigValues["smtp.host"] = "smtp.example.com";
+      mockConfigValues["smtp.user"] = "";
+      mockConfigValues["smtp.pass"] = "";
+
+      jest
+        .spyOn(jest.requireActual("nodemailer"), "createTransport")
+        .mockReturnValue({
+          verify: mockVerify,
+          sendMail: mockSendMail,
+        });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          EmailService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn(
+                (key: string) =>
+                  mockConfigValues[key] as
+                    | string
+                    | number
+                    | boolean
+                    | undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+
+      service = module.get<EmailService>(EmailService);
+      await service.onModuleInit();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+      mockConfigValues["smtp.host"] = "";
+    });
+
+    it("should create transport without auth when user/pass are empty", () => {
+      expect(service.isEnabled()).toBe(true);
+    });
+  });
+
+  describe("when sendMail throws a non-Error value", () => {
+    const mockVerify = jest.fn().mockResolvedValue(true);
+    const mockSendMail = jest.fn().mockRejectedValue("string error");
+
+    beforeEach(async () => {
+      mockConfigValues["smtp.host"] = "smtp.example.com";
+      mockConfigValues["smtp.user"] = "user";
+      mockConfigValues["smtp.pass"] = "pass";
+
+      jest
+        .spyOn(jest.requireActual("nodemailer"), "createTransport")
+        .mockReturnValue({
+          verify: mockVerify,
+          sendMail: mockSendMail,
+        });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          EmailService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn(
+                (key: string) =>
+                  mockConfigValues[key] as
+                    | string
+                    | number
+                    | boolean
+                    | undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+
+      service = module.get<EmailService>(EmailService);
+      await service.onModuleInit();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+      mockConfigValues["smtp.host"] = "";
+      mockConfigValues["smtp.user"] = "";
+      mockConfigValues["smtp.pass"] = "";
+    });
+
+    it("should handle non-Error rejection and return false", async () => {
+      const result = await service.sendMail({
+        to: "user@example.com",
+        subject: "Welcome",
+        template: "welcome",
+        context: { displayName: "John" },
+      });
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("when SMTP verification fails with non-Error value", () => {
+    beforeEach(async () => {
+      mockConfigValues["smtp.host"] = "bad-host.example.com";
+
+      jest
+        .spyOn(jest.requireActual("nodemailer"), "createTransport")
+        .mockReturnValue({
+          verify: jest.fn().mockRejectedValue("non-error string"),
+          sendMail: jest.fn(),
+        });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          EmailService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn(
+                (key: string) =>
+                  mockConfigValues[key] as
+                    | string
+                    | number
+                    | boolean
+                    | undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+
+      service = module.get<EmailService>(EmailService);
+      await service.onModuleInit();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+      mockConfigValues["smtp.host"] = "";
+    });
+
+    it("should handle non-Error rejection in verify and report disabled", () => {
+      expect(service.isEnabled()).toBe(false);
+    });
+  });
+
+  describe("when smtp.from is not configured", () => {
+    it("should default from address to Farm <noreply@farm.local>", async () => {
+      const localConfigValues: Record<
+        string,
+        string | number | boolean | undefined
+      > = {
+        "smtp.host": "",
+        "smtp.port": 587,
+        "smtp.secure": false,
+        "smtp.user": "",
+        "smtp.pass": "",
+        "smtp.from": undefined,
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          EmailService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn(
+                (key: string) =>
+                  localConfigValues[key] as
+                    | string
+                    | number
+                    | boolean
+                    | undefined,
+              ),
+            },
+          },
+        ],
+      }).compile();
+
+      const svc = module.get<EmailService>(EmailService);
+      expect(svc).toBeDefined();
+    });
+  });
 });

@@ -150,5 +150,74 @@ describe("AuditLogService", () => {
         take: 100,
       });
     });
+
+    it("should apply organizationId filter when provided", async () => {
+      repo.find.mockResolvedValue([mockAuditLog]);
+
+      await service.findAll({ organizationId: "org-uuid-1" });
+
+      expect(repo.find).toHaveBeenCalledWith({
+        where: { organizationId: "org-uuid-1" },
+        order: { createdAt: "DESC" },
+        take: 100,
+      });
+    });
+
+    it("should apply all filters including organizationId", async () => {
+      repo.find.mockResolvedValue([mockAuditLog]);
+
+      await service.findAll({
+        resourceType: "Component",
+        resourceId: "comp-uuid-1",
+        actorId: "user-uuid-1",
+        limit: 50,
+        organizationId: "org-uuid-1",
+      });
+
+      expect(repo.find).toHaveBeenCalledWith({
+        where: {
+          resourceType: "Component",
+          resourceId: "comp-uuid-1",
+          actorId: "user-uuid-1",
+          organizationId: "org-uuid-1",
+        },
+        order: { createdAt: "DESC" },
+        take: 50,
+      });
+    });
+  });
+
+  describe("log — eventEmitter branch", () => {
+    it("should emit event via eventEmitter when provided", async () => {
+      const mockEventEmitter = { emit: jest.fn() };
+      repo.create.mockReturnValue(mockAuditLog);
+      repo.save.mockResolvedValue(mockAuditLog);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          AuditLogService,
+          { provide: getRepositoryToken(AuditLog), useValue: repo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: "EventEmitter2", useValue: mockEventEmitter },
+        ],
+      }).compile();
+
+      const svcWithEmitter = module.get<AuditLogService>(AuditLogService);
+
+      // Inject the eventEmitter manually since @Optional makes it tricky
+      (svcWithEmitter as unknown as Record<string, unknown>).eventEmitter =
+        mockEventEmitter;
+
+      await svcWithEmitter.log(mockEntry);
+
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        "audit.log.created",
+        expect.objectContaining({
+          actor: "jane_doe",
+          action: "CREATE",
+          resource: "Component/comp-uuid-1",
+        }),
+      );
+    });
   });
 });
