@@ -70,7 +70,7 @@ function LazyPlugin({ entryPoint, componentProps, loader }: LazyPluginProps) {
 type PluginMessage =
   | { type: "farm:navigate"; path: string }
   | { type: "farm:toast"; message: string; variant?: "success" | "error" | "info" }
-  | { type: "farm:api-request"; requestId: string; method: string; url: string; body?: unknown };
+  | { type: "farm:api-request"; requestId: string; method?: string; url: string; body?: unknown };
 
 // ── iframe mode ───────────────────────────────────────────────────────────────
 
