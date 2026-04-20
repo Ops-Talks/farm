@@ -47,7 +47,9 @@ import type {
   Pipeline,
   PipelineRun,
   PipelineStage,
+  PluginInstance,
   PluginMetadata,
+  PluginRegistryEntry,
   PrometheusRangeResponse,
   QueueInfo,
   RefreshTokenRequest,
@@ -1061,6 +1063,65 @@ export const plugins = {
 
   reload(): Promise<{ scanned: number }> {
     return request("/v1/plugins/reload", { method: "POST" });
+  },
+};
+
+// -- Plugin Registry API (FARM-S328) --
+
+export const pluginRegistry = {
+  search(q?: string, category?: string): Promise<PluginRegistryEntry[]> {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (category) params.set("category", category);
+    const qs = params.toString();
+    return request(`/v1/plugins/registry${qs ? `?${qs}` : ""}`);
+  },
+
+  getOne(pluginId: string): Promise<PluginRegistryEntry> {
+    return request(`/v1/plugins/registry/${pluginId}`);
+  },
+
+  getVersions(pluginId: string): Promise<string[]> {
+    return request(`/v1/plugins/registry/${pluginId}/versions`);
+  },
+
+  publish(manifest: Record<string, unknown>): Promise<PluginRegistryEntry> {
+    return request("/v1/plugins/registry", {
+      method: "POST",
+      body: JSON.stringify({ manifest }),
+    });
+  },
+};
+
+// -- Plugin Instance API (FARM-S329) --
+
+export const pluginInstances = {
+  list(orgId?: string): Promise<PluginInstance[]> {
+    const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
+    return request(`/v1/plugins/instances${qs}`);
+  },
+
+  install(pluginId: string, orgId?: string): Promise<PluginInstance> {
+    return request(`/v1/plugins/${encodeURIComponent(pluginId)}/install`, {
+      method: "POST",
+      body: JSON.stringify({ orgId }),
+    });
+  },
+
+  enable(id: string): Promise<PluginInstance> {
+    return request(`/v1/plugins/${id}/enable`, { method: "POST" });
+  },
+
+  disable(id: string): Promise<PluginInstance> {
+    return request(`/v1/plugins/${id}/disable`, { method: "POST" });
+  },
+
+  uninstall(id: string): Promise<void> {
+    return request(`/v1/plugins/${id}`, { method: "DELETE" });
+  },
+
+  getHealth(id: string): Promise<{ status: string }> {
+    return request(`/v1/plugins/${id}/health`);
   },
 };
 

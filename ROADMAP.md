@@ -411,76 +411,76 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 30: Plugin Ecosystem `TODO`
+## Phase 30: Plugin Ecosystem `DONE`
 
-### FARM-E76: Community Plugin Registry and SDK `TODO`
+### FARM-E76: Community Plugin Registry and SDK `DONE`
 
 > Farm's current plugin system uses a static in-memory registry populated at startup. This Epic evolves it into a full community plugin ecosystem: a versioned `plugin.json` manifest spec, a registry API for publishing and discovering plugins, lifecycle management (install, enable, disable, uninstall) per organization, and a frontend renderer that loads plugin UI via React lazy-loading or sandboxed iframes.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S327 | Story | Plugin SDK and `plugin.json` manifest spec v2 -- defines `id`, `version`, `entryPoint`, `permissions`, `menuContributions`, `routeContributions`, `settingsSchema` | `TODO` |
-| FARM-S328 | Story | Community plugin registry API -- search and publish endpoints backed by the Farm DB; install count tracking | `TODO` |
-| FARM-S329 | Story | Plugin lifecycle management -- install, enable, disable, uninstall per organization; `PluginInstance` entity with status state machine | `TODO` |
-| FARM-S330 | Story | Frontend dynamic plugin renderer -- React lazy-loading for route contributions; sandboxed iframe with postMessage bridge for sidebar/panel contributions | `TODO` |
+| FARM-S327 | Story | Plugin SDK and `plugin.json` manifest spec v2 -- defines `id`, `version`, `entryPoint`, `permissions`, `menuContributions`, `routeContributions`, `settingsSchema` | `DONE` |
+| FARM-S328 | Story | Community plugin registry API -- search and publish endpoints backed by the Farm DB; install count tracking | `DONE` |
+| FARM-S329 | Story | Plugin lifecycle management -- install, enable, disable, uninstall per organization; `PluginInstance` entity with status state machine | `DONE` |
+| FARM-S330 | Story | Frontend dynamic plugin renderer -- React lazy-loading for route contributions; sandboxed iframe with postMessage bridge for sidebar/panel contributions | `DONE` |
 
 #### FARM-S327 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T354 | Task | Define `plugin.json` manifest v2 schema: `id`, `name`, `version` (semver), `description`, `author`, `license`, `farmMinVersion`, `entryPoint` (URL or npm package), `permissions[]`, `menuContributions[]`, `routeContributions[]`, `settingsSchema` (JSON Schema); publish to `packages/plugin-sdk/schema/plugin.json` | `TODO` |
-| FARM-T355 | Task | `PluginValidator.validate(manifest)`: check required fields, semver format, `farmMinVersion` compatibility, `permissions` against known scopes; return `{ valid: boolean, errors: string[] }`; unit tests | `TODO` |
+| FARM-T354 | Task | Define `plugin.json` manifest v2 schema: `id`, `name`, `version` (semver), `description`, `author`, `license`, `farmMinVersion`, `entryPoint` (URL or npm package), `permissions[]`, `menuContributions[]`, `routeContributions[]`, `settingsSchema` (JSON Schema); publish to `packages/plugin-sdk/schema/plugin.json` | `DONE` |
+| FARM-T355 | Task | `PluginValidator.validate(manifest)`: check required fields, semver format, `farmMinVersion` compatibility, `permissions` against known scopes; return `{ valid: boolean, errors: string[] }`; unit tests | `DONE` |
 
 ##### FARM-T354 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST380 | Sub-task | Unit test: valid manifest with all required fields passes validation | `TODO` |
-| FARM-ST381 | Sub-task | Unit test: manifest with missing `id` fails; incompatible `farmMinVersion` (`"99.0.0"`) fails with descriptive error | `TODO` |
-| FARM-ST386 | Sub-task | `dependsOn` field in manifest v2 schema — optional array of plugin IDs; `PluginValidator` checks all declared dependencies exist in the registry before allowing install | `TODO` |
+| FARM-ST380 | Sub-task | Unit test: valid manifest with all required fields passes validation | `DONE` |
+| FARM-ST381 | Sub-task | Unit test: manifest with missing `id` fails; incompatible `farmMinVersion` (`"99.0.0"`) fails with descriptive error | `DONE` |
+| FARM-ST386 | Sub-task | `dependsOn` field in manifest v2 schema — optional array of plugin IDs; `PluginValidator` checks all declared dependencies exist in the registry before allowing install | `DONE` |
 
 #### FARM-S328 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T356 | Task | `PluginRegistryService.search(query, category?)`: queries `PluginManifest` DB table; `publish(manifest)`: validates and upserts; `GET /api/plugins/registry` with `?q=` and `?category=` filters; unit tests | `TODO` |
-| FARM-T357 | Task | `GET /api/plugins/registry/:id` returns full manifest + install count + latest version; `GET /api/plugins/registry/:id/versions` returns version history; unit + e2e tests | `TODO` |
+| FARM-T356 | Task | `PluginRegistryService.search(query, category?)`: queries `PluginManifest` DB table; `publish(manifest)`: validates and upserts; `GET /api/plugins/registry` with `?q=` and `?category=` filters; unit tests | `DONE` |
+| FARM-T357 | Task | `GET /api/plugins/registry/:id` returns full manifest + install count + latest version; `GET /api/plugins/registry/:id/versions` returns version history; unit + e2e tests | `DONE` |
 
 #### FARM-S329 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T358 | Task | `PluginInstance` entity (pluginId, orgId, version, status: `installing | active | disabled | error`, installedAt); `PluginInstanceService.install(pluginId, orgId)`: resolve entry point, validate manifest, create instance; migration; unit tests | `TODO` |
-| FARM-T359 | Task | `POST /api/plugins/:id/enable` and `/disable`: toggle `PluginInstance.status`; `DELETE /api/plugins/:id` uninstalls and clears menu contributions; emit `plugin:status-changed` WebSocket event; unit + e2e tests | `TODO` |
+| FARM-T358 | Task | `PluginInstance` entity (pluginId, orgId, version, status: `installing | active | disabled | error`, installedAt); `PluginInstanceService.install(pluginId, orgId)`: resolve entry point, validate manifest, create instance; migration; unit tests | `DONE` |
+| FARM-T359 | Task | `POST /api/plugins/:id/enable` and `/disable`: toggle `PluginInstance.status`; `DELETE /api/plugins/:id` uninstalls and clears menu contributions; emit `plugin:status-changed` WebSocket event; unit + e2e tests | `DONE` |
 
 ##### FARM-T358 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST387 | Sub-task | `PluginInstance.healthStatus` field (`healthy \| degraded \| unknown`) updated by periodic health check; `GET /api/plugins/:id/health` returns current status | `TODO` |
-| FARM-ST388 | Sub-task | Lifecycle hooks interface: `OnPluginInit` and `OnPluginDestroy` — `PluginInstanceService` calls `onPluginInit()` after status transitions to `active` and `onPluginDestroy()` before transitioning to `disabled`/uninstalled | `TODO` |
-| FARM-ST389 | Sub-task | Dependency-aware initialization order — `PluginInstanceService.installWithDependencies()` resolves the dependency graph from manifest `dependsOn` and initializes plugins in topological order; circular dependencies return 400 | `TODO` |
+| FARM-ST387 | Sub-task | `PluginInstance.healthStatus` field (`healthy \| degraded \| unknown`) updated by periodic health check; `GET /api/plugins/:id/health` returns current status | `DONE` |
+| FARM-ST388 | Sub-task | Lifecycle hooks interface: `OnPluginInit` and `OnPluginDestroy` — `PluginInstanceService` calls `onPluginInit()` after status transitions to `active` and `onPluginDestroy()` before transitioning to `disabled`/uninstalled | `DONE` |
+| FARM-ST389 | Sub-task | Dependency-aware initialization order — `PluginInstanceService.installWithDependencies()` resolves the dependency graph from manifest `dependsOn` and initializes plugins in topological order; circular dependencies return 400 | `DONE` |
 
 #### FARM-S330 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T360 | Task | `PluginRenderer` component: for route contributions, load via `React.lazy(() => import(entryPoint))` wrapped in `<Suspense>` with skeleton fallback; for sidebar/panel contributions, render a sandboxed `<iframe>` with `sandbox="allow-scripts allow-same-origin"`; unit tests | `TODO` |
-| FARM-T361 | Task | postMessage bridge: `PluginRenderer` listens for `farm:navigate`, `farm:toast`, and `farm:api-request` messages from iframe; injects auth token into API requests; enforces CSP `frame-src` policy; unit tests | `TODO` |
+| FARM-T360 | Task | `PluginRenderer` component: for route contributions, load via `React.lazy(() => import(entryPoint))` wrapped in `<Suspense>` with skeleton fallback; for sidebar/panel contributions, render a sandboxed `<iframe>` with `sandbox="allow-scripts allow-same-origin"`; unit tests | `DONE` |
+| FARM-T361 | Task | postMessage bridge: `PluginRenderer` listens for `farm:navigate`, `farm:toast`, and `farm:api-request` messages from iframe; injects auth token into API requests; enforces CSP `frame-src` policy; unit tests | `DONE` |
 
 ##### FARM-T360 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST382 | Sub-task | Unit test: `PluginRenderer` in iframe mode renders `<iframe sandbox="allow-scripts allow-same-origin">` with the plugin entry point URL as `src` | `TODO` |
-| FARM-ST383 | Sub-task | Unit test: `React.lazy` dynamic import resolves a mock module → component is rendered inside `<Suspense>`; loading skeleton is shown before resolution | `TODO` |
+| FARM-ST382 | Sub-task | Unit test: `PluginRenderer` in iframe mode renders `<iframe sandbox="allow-scripts allow-same-origin">` with the plugin entry point URL as `src` | `DONE` |
+| FARM-ST383 | Sub-task | Unit test: `React.lazy` dynamic import resolves a mock module → component is rendered inside `<Suspense>`; loading skeleton is shown before resolution | `DONE` |
 
 ##### FARM-T361 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST384 | Sub-task | Unit test: `farm:navigate` message from iframe calls `router.push` with the provided path | `TODO` |
-| FARM-ST385 | Sub-task | Unit test: `farm:api-request` message from untrusted origin (not matching plugin `entryPoint` host) is rejected and logged as a security warning | `TODO` |
+| FARM-ST384 | Sub-task | Unit test: `farm:navigate` message from iframe calls `router.push` with the provided path | `DONE` |
+| FARM-ST385 | Sub-task | Unit test: `farm:api-request` message from untrusted origin (not matching plugin `entryPoint` host) is rejected and logged as a security warning | `DONE` |
 
 ---
 
@@ -855,11 +855,11 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 23: IaC Visibility and Cataloging | 3 | 13 | `DONE` |
 | Phase 24: User Profile Management | 1 | 4 | `DONE` |
 | Phase 25: Feature Availability UX | 1 | 11 | `DONE` |
-| Phase 26: Auth Provider Expansion | 1 | 5 | `TODO` |
-| Phase 27: Advanced Search | 1 | 4 | `TODO` |
+| Phase 26: Auth Provider Expansion | 1 | 5 | `DONE` |
+| Phase 27: Advanced Search | 1 | 4 | `DONE` |
 | Phase 28: Software Templates 2.0 | 1 | 4 | `DONE` |
-| Phase 29: TechDocs 2.0 | 1 | 4 | `TODO` |
-| Phase 30: Plugin Ecosystem | 1 | 4 | `TODO` |
+| Phase 29: TechDocs 2.0 | 1 | 4 | `DONE` |
+| Phase 30: Plugin Ecosystem | 1 | 4 | `DONE` |
 | Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `TODO` |
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |

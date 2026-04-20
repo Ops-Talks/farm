@@ -597,6 +597,40 @@ export interface PluginMetadata {
   routes?: { path: string; module: string }[];
 }
 
+// -- Plugin Registry (FARM-S328) --
+
+export interface PluginRegistryEntry {
+  id: string;
+  pluginId: string;
+  name: string;
+  latestVersion: string;
+  description: string;
+  author: string | null;
+  category: string | null;
+  manifest: Record<string, unknown>;
+  installCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Plugin Instance (FARM-S329) --
+
+export type PluginStatus = "installing" | "active" | "disabled" | "error";
+export type PluginHealthStatus = "healthy" | "degraded" | "unknown";
+
+export interface PluginInstance {
+  id: string;
+  pluginId: string;
+  orgId: string | null;
+  version: string;
+  status: PluginStatus;
+  healthStatus: PluginHealthStatus;
+  config: Record<string, unknown> | null;
+  manifest: Record<string, unknown> | null;
+  installedAt: string;
+  updatedAt: string;
+}
+
 // -- Helm Releases (FARM-E36) --
 
 /** A deployed Helm release discovered from the cluster. */
