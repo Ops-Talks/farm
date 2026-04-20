@@ -3,6 +3,8 @@ import { CacheModule } from "@nestjs/cache-manager";
 import { ConfigService } from "@nestjs/config";
 import { PluginManagerController } from "./plugin-manager.controller";
 import { PluginManagerService } from "./plugin-manager.service";
+import { PluginInstanceService } from "./services/plugin-instance.service";
+import { PluginRegistryService } from "./services/plugin-registry.service";
 
 describe("PluginManagerController", () => {
   let controller: PluginManagerController;
@@ -35,6 +37,24 @@ describe("PluginManagerController", () => {
     { path: "/api/catalog", method: "GET", description: "List components" },
   ];
 
+  const mockPluginInstanceService = {
+    install: jest.fn(),
+    enable: jest.fn(),
+    disable: jest.fn(),
+    uninstall: jest.fn(),
+    getHealth: jest.fn(),
+    findAll: jest.fn().mockResolvedValue([]),
+    findOne: jest.fn(),
+  };
+
+  const mockPluginRegistryService = {
+    search: jest.fn().mockResolvedValue([]),
+    publish: jest.fn(),
+    findOne: jest.fn(),
+    getVersions: jest.fn().mockResolvedValue([]),
+    incrementInstallCount: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [CacheModule.register()],
@@ -52,6 +72,14 @@ describe("PluginManagerController", () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue("./plugins") },
+        },
+        {
+          provide: PluginInstanceService,
+          useValue: mockPluginInstanceService,
+        },
+        {
+          provide: PluginRegistryService,
+          useValue: mockPluginRegistryService,
         },
       ],
     }).compile();
@@ -107,6 +135,14 @@ describe("PluginManagerController", () => {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue(undefined) },
         },
+        {
+          provide: PluginInstanceService,
+          useValue: mockPluginInstanceService,
+        },
+        {
+          provide: PluginRegistryService,
+          useValue: mockPluginRegistryService,
+        },
       ],
     }).compile();
 
@@ -116,5 +152,22 @@ describe("PluginManagerController", () => {
     ctrl.reloadPlugins();
 
     expect(svc.scanDirectory).toHaveBeenCalledWith("./plugins");
+  });
+
+  describe("Registry endpoints", () => {
+    it("should search the registry", async () => {
+      const result = await controller.searchRegistry({ q: "slack" });
+      expect(mockPluginRegistryService.search).toHaveBeenCalledWith(
+        "slack",
+        undefined,
+      );
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should list all plugin instances", async () => {
+      const result = await controller.listInstances({});
+      expect(mockPluginInstanceService.findAll).toHaveBeenCalledWith(undefined);
+      expect(Array.isArray(result)).toBe(true);
+    });
   });
 });

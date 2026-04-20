@@ -1,15 +1,34 @@
 import { DynamicModule, Module, Global, Provider } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
 import { PluginManagerService } from "./plugin-manager.service";
 import { FarmPlugin } from "./interfaces/plugin.interface";
 import { PluginManagerController } from "./plugin-manager.controller";
+import { PluginInstance } from "./entities/plugin-instance.entity";
+import { PluginRegistryEntry } from "./entities/plugin-registry-entry.entity";
+import { PluginValidatorService } from "./services/plugin-validator.service";
+import { PluginInstanceService } from "./services/plugin-instance.service";
+import { PluginRegistryService } from "./services/plugin-registry.service";
 
 @Global()
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    ConfigModule,
+    TypeOrmModule.forFeature([PluginInstance, PluginRegistryEntry]),
+  ],
   controllers: [PluginManagerController],
-  providers: [PluginManagerService],
-  exports: [PluginManagerService],
+  providers: [
+    PluginManagerService,
+    PluginValidatorService,
+    PluginInstanceService,
+    PluginRegistryService,
+  ],
+  exports: [
+    PluginManagerService,
+    PluginValidatorService,
+    PluginInstanceService,
+    PluginRegistryService,
+  ],
 })
 export class PluginManagerModule {
   /**

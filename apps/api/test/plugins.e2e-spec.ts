@@ -175,4 +175,284 @@ describe("Plugin Manager (e2e)", () => {
       expect(Array.isArray(res.body)).toBe(true);
     });
   });
+
+  describe("Plugin Registry endpoints", () => {
+    const validManifest = {
+      id: "e2e-test-plugin",
+      name: "E2E Test Plugin",
+      version: "1.0.0",
+      description: "A plugin for e2e testing",
+      entryPoint: "https://cdn.example.com/e2e-test/1.0.0/index.js",
+    };
+
+    describe("GET /api/plugins/registry", () => {
+      it("should return an empty array when no plugins are published", async () => {
+        const res = await request(app.getHttpServer())
+          .get("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+      });
+
+      it("should reject unauthenticated requests", async () => {
+        await request(app.getHttpServer())
+          .get("/api/v1/plugins/registry")
+          .expect(401);
+      });
+    });
+
+    describe("POST /api/plugins/registry", () => {
+      it("should publish a valid manifest and return the registry entry", async () => {
+        const res = await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send(validManifest)
+          .expect(201);
+
+        expect(res.body.pluginId).toBe("e2e-test-plugin");
+        expect(res.body.latestVersion).toBe("1.0.0");
+      });
+
+      it("should return 400 for an invalid manifest (missing entryPoint)", async () => {
+        const { entryPoint: _ep, ...withoutEntryPoint } = validManifest;
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send(withoutEntryPoint)
+          .expect(400);
+      });
+
+      it("should reject non-admin users", async () => {
+        const { token: viewerToken } = await registerAndLogin(app, {
+          username: "registry_viewer",
+          email: "registry_viewer@test.com",
+          password: "ViewerPass2",
+          displayName: "Registry Viewer",
+        });
+
+        const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+        await userRepo.update(
+          { username: "registry_viewer" },
+          { roles: ["viewer"] },
+        );
+
+        const loginRes = await request(app.getHttpServer())
+          .post("/api/v1/auth/login")
+          .send({ username: "registry_viewer", password: "ViewerPass2" })
+          .expect(200);
+
+        const nonAdminToken = (loginRes.body as { token: string }).token;
+
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${nonAdminToken}`)
+          .send(validManifest)
+          .expect(403);
+      });
+    });
+
+    describe("GET /api/plugins/registry/:pluginId", () => {
+      it("should return the entry for a published plugin", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ ...validManifest, id: "e2e-registry-lookup" })
+          .expect(201);
+
+        const res = await request(app.getHttpServer())
+          .get("/api/v1/plugins/registry/e2e-registry-lookup")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(res.body.pluginId).toBe("e2e-registry-lookup");
+      });
+
+      it("should return 404 for an unknown plugin", async () => {
+        await request(app.getHttpServer())
+          .get("/api/v1/plugins/registry/does-not-exist")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(404);
+      });
+    });
+
+    describe("GET /api/plugins/registry/:pluginId/versions", () => {
+      it("should return the versions array for a published plugin", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ ...validManifest, id: "e2e-versions-plugin" })
+          .expect(201);
+
+        const res = await request(app.getHttpServer())
+          .get("/api/v1/plugins/registry/e2e-versions-plugin/versions")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toContain("1.0.0");
+      });
+    });
+  });
+
+  describe("Plugin Instance lifecycle endpoints", () => {
+    const instanceManifest = {
+      id: "e2e-lifecycle-plugin",
+      name: "E2E Lifecycle Plugin",
+      version: "1.0.0",
+      description: "Plugin for lifecycle e2e testing",
+      entryPoint: "https://cdn.example.com/lifecycle/1.0.0/index.js",
+    };
+
+    describe("GET /api/plugins/instances", () => {
+      it("should return an empty array when no instances are installed", async () => {
+        const res = await request(app.getHttpServer())
+          .get("/api/v1/plugins/instances")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(Array.isArray(res.body)).toBe(true);
+      });
+    });
+
+    describe("POST /api/plugins/:pluginId/install", () => {
+      it("should install a registry plugin and return an active instance", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send(instanceManifest)
+          .expect(201);
+
+        const res = await request(app.getHttpServer())
+          .post("/api/v1/plugins/e2e-lifecycle-plugin/install")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ orgId: adminOrganizationId })
+          .expect(201);
+
+        expect(res.body.pluginId).toBe("e2e-lifecycle-plugin");
+        expect(res.body.status).toBe("active");
+      });
+
+      it("should return 404 when the plugin is not in the registry", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/non-existent-plugin/install")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({})
+          .expect(404);
+      });
+    });
+
+    describe("POST /api/plugins/:id/disable and enable", () => {
+      it("should disable an active instance and then re-enable it", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ ...instanceManifest, id: "e2e-toggle-plugin" })
+          .expect(201);
+
+        const installRes = await request(app.getHttpServer())
+          .post("/api/v1/plugins/e2e-toggle-plugin/install")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({})
+          .expect(201);
+
+        const instanceId = (installRes.body as { id: string }).id;
+
+        const disableRes = await request(app.getHttpServer())
+          .post(`/api/v1/plugins/${instanceId}/disable`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(disableRes.body.status).toBe("disabled");
+
+        const enableRes = await request(app.getHttpServer())
+          .post(`/api/v1/plugins/${instanceId}/enable`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(enableRes.body.status).toBe("active");
+      });
+    });
+
+    describe("GET /api/plugins/:id/health", () => {
+      it("should return the health status of an installed plugin", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ ...instanceManifest, id: "e2e-health-plugin" })
+          .expect(201);
+
+        const installRes = await request(app.getHttpServer())
+          .post("/api/v1/plugins/e2e-health-plugin/install")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({})
+          .expect(201);
+
+        const instanceId = (installRes.body as { id: string }).id;
+
+        const healthRes = await request(app.getHttpServer())
+          .get(`/api/v1/plugins/${instanceId}/health`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(200);
+
+        expect(healthRes.body.status).toBeDefined();
+        expect(["healthy", "degraded", "unknown"]).toContain(
+          healthRes.body.status,
+        );
+      });
+
+      it("should return 404 for an unknown instance id", async () => {
+        await request(app.getHttpServer())
+          .get("/api/v1/plugins/00000000-0000-0000-0000-000000000000/health")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(404);
+      });
+    });
+
+    describe("DELETE /api/plugins/:id", () => {
+      it("should uninstall an instance and return 204", async () => {
+        await request(app.getHttpServer())
+          .post("/api/v1/plugins/registry")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({ ...instanceManifest, id: "e2e-uninstall-plugin" })
+          .expect(201);
+
+        const installRes = await request(app.getHttpServer())
+          .post("/api/v1/plugins/e2e-uninstall-plugin/install")
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .send({})
+          .expect(201);
+
+        const instanceId = (installRes.body as { id: string }).id;
+
+        await request(app.getHttpServer())
+          .delete(`/api/v1/plugins/${instanceId}`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", adminOrganizationId)
+          .expect(204);
+      });
+    });
+  });
 });

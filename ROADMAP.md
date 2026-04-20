@@ -437,6 +437,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 |----|------|-------|--------|
 | FARM-ST380 | Sub-task | Unit test: valid manifest with all required fields passes validation | `TODO` |
 | FARM-ST381 | Sub-task | Unit test: manifest with missing `id` fails; incompatible `farmMinVersion` (`"99.0.0"`) fails with descriptive error | `TODO` |
+| FARM-ST386 | Sub-task | `dependsOn` field in manifest v2 schema — optional array of plugin IDs; `PluginValidator` checks all declared dependencies exist in the registry before allowing install | `TODO` |
 
 #### FARM-S328 Tasks
 
@@ -451,6 +452,14 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 |----|------|-------|--------|
 | FARM-T358 | Task | `PluginInstance` entity (pluginId, orgId, version, status: `installing | active | disabled | error`, installedAt); `PluginInstanceService.install(pluginId, orgId)`: resolve entry point, validate manifest, create instance; migration; unit tests | `TODO` |
 | FARM-T359 | Task | `POST /api/plugins/:id/enable` and `/disable`: toggle `PluginInstance.status`; `DELETE /api/plugins/:id` uninstalls and clears menu contributions; emit `plugin:status-changed` WebSocket event; unit + e2e tests | `TODO` |
+
+##### FARM-T358 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST387 | Sub-task | `PluginInstance.healthStatus` field (`healthy \| degraded \| unknown`) updated by periodic health check; `GET /api/plugins/:id/health` returns current status | `TODO` |
+| FARM-ST388 | Sub-task | Lifecycle hooks interface: `OnPluginInit` and `OnPluginDestroy` — `PluginInstanceService` calls `onPluginInit()` after status transitions to `active` and `onPluginDestroy()` before transitioning to `disabled`/uninstalled | `TODO` |
+| FARM-ST389 | Sub-task | Dependency-aware initialization order — `PluginInstanceService.installWithDependencies()` resolves the dependency graph from manifest `dependsOn` and initializes plugins in topological order; circular dependencies return 400 | `TODO` |
 
 #### FARM-S330 Tasks
 
