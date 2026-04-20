@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, ILike } from "typeorm";
+import { Repository } from "typeorm";
 import { PluginRegistryEntry } from "../entities/plugin-registry-entry.entity";
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 import { PluginValidatorService } from "./plugin-validator.service";

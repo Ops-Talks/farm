@@ -217,7 +217,7 @@ describe("Plugin Manager (e2e)", () => {
       });
 
       it("should return 400 for an invalid manifest (missing entryPoint)", async () => {
-        const { entryPoint: _ep, ...withoutEntryPoint } = validManifest;
+        const { entryPoint: _omitted, ...withoutEntryPoint } = validManifest;
         await request(app.getHttpServer())
           .post("/api/v1/plugins/registry")
           .set("Authorization", `Bearer ${adminToken}`)

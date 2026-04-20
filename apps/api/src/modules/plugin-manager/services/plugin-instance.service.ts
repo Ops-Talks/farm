@@ -186,7 +186,9 @@ export class PluginInstanceService {
   /**
    * Resolves the dependency graph for a plugin's dependsOn list and verifies
    * that all declared dependencies are already installed and active for the
-   * given organization. Circular dependency detection uses a DFS visited set.
+   * given organization. Circular dependency detection uses a proper DFS with
+   * a "currently visiting" path set to correctly identify cycles vs. shared
+   * dependencies in a DAG (diamond pattern).
    *
    * @param dependsOn Array of plugin IDs required by the manifest
    * @param orgId Organization context for instance lookup
@@ -195,45 +197,72 @@ export class PluginInstanceService {
     dependsOn: string[],
     orgId?: string,
   ): Promise<void> {
-    const visited = new Set<string>();
-    const stack = [...dependsOn];
+    const fullyVisited = new Set<string>();
 
-    while (stack.length > 0) {
-      const depId = stack.pop()!;
+    for (const depId of dependsOn) {
+      await this.dfsCheckDependency(depId, orgId, [], fullyVisited);
+    }
+  }
 
-      if (visited.has(depId)) {
-        throw new BadRequestException(
-          `Circular dependency detected involving plugin "${depId}"`,
-        );
-      }
-      visited.add(depId);
+  /**
+   * Performs a depth-first traversal of the dependency graph rooted at depId.
+   * Uses `currentPath` (the current DFS stack of plugin IDs) to detect cycles:
+   * if depId is already in currentPath, a circular dependency exists.
+   * Uses `fullyVisited` to skip nodes that have already been fully processed
+   * in a previous branch (handles diamond / shared-dependency patterns).
+   *
+   * @param depId Plugin ID to check
+   * @param orgId Organization context for active-instance lookup
+   * @param currentPath The current DFS path (used to detect cycles)
+   * @param fullyVisited Set of plugin IDs already fully processed
+   */
+  private async dfsCheckDependency(
+    depId: string,
+    orgId: string | undefined,
+    currentPath: string[],
+    fullyVisited: Set<string>,
+  ): Promise<void> {
+    if (currentPath.includes(depId)) {
+      throw new BadRequestException(
+        `Circular dependency detected: ${[...currentPath, depId].join(" -> ")}`,
+      );
+    }
 
-      const where = orgId ? { pluginId: depId, orgId } : { pluginId: depId };
-      const depInstance = await this.instanceRepo.findOne({ where });
-      if (!depInstance) {
-        throw new BadRequestException(
-          `Required dependency plugin "${depId}" is not installed`,
-        );
-      }
-      if (depInstance.status !== PluginStatus.ACTIVE) {
-        throw new BadRequestException(
-          `Required dependency plugin "${depId}" is installed but not active (status: ${depInstance.status})`,
-        );
-      }
+    if (fullyVisited.has(depId)) {
+      return;
+    }
 
-      const depEntry = await this.registryRepo.findOne({
-        where: { pluginId: depId },
-      });
-      if (depEntry) {
-        const depManifest = depEntry.manifest as unknown as PluginManifestV2;
-        if (depManifest.dependsOn && depManifest.dependsOn.length > 0) {
-          for (const transitiveDep of depManifest.dependsOn) {
-            if (!visited.has(transitiveDep)) {
-              stack.push(transitiveDep);
-            }
-          }
+    const where = orgId ? { pluginId: depId, orgId } : { pluginId: depId };
+    const depInstance = await this.instanceRepo.findOne({ where });
+    if (!depInstance) {
+      throw new BadRequestException(
+        `Required dependency plugin "${depId}" is not installed`,
+      );
+    }
+    if (depInstance.status !== PluginStatus.ACTIVE) {
+      throw new BadRequestException(
+        `Required dependency plugin "${depId}" is installed but not active (status: ${depInstance.status})`,
+      );
+    }
+
+    const depEntry = await this.registryRepo.findOne({
+      where: { pluginId: depId },
+    });
+
+    if (depEntry) {
+      const depManifest = depEntry.manifest as unknown as PluginManifestV2;
+      if (depManifest.dependsOn && depManifest.dependsOn.length > 0) {
+        for (const transitiveDep of depManifest.dependsOn) {
+          await this.dfsCheckDependency(
+            transitiveDep,
+            orgId,
+            [...currentPath, depId],
+            fullyVisited,
+          );
         }
       }
     }
+
+    fullyVisited.add(depId);
   }
 }
