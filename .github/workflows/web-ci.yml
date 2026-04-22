@@ -2,44 +2,47 @@ name: Web CI
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-ci.yml'
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   web:
     name: Lint, Test & Build (apps/web)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       # ── 1. Source ────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      # ── 2. Node.js ───────────────────────────────────────────────────────────
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          cache: 'npm' # caches ~/.npm based on package-lock.json
+          persist-credentials: false
 
-      # ── 3. Install ───────────────────────────────────────────────────────────
-      - name: Install dependencies (all workspaces)
-        run: npm ci
-        # npm ci at the repo root installs every workspace in one shot:
-        #   apps/web  +  packages/types  (and any other packages/*)
+      # ── 2. Setup ─────────────────────────────────────────────────────────────
+      - name: Setup monorepo
+        uses: ./.github/actions/setup-monorepo
 
-      # ── 4. Compile shared types ──────────────────────────────────────────────
-      - name: Compile packages/types
-        # apps/web imports from this package; tsc must run first so the
-        # emitted .d.ts / .js files are present before next build resolves them.
-        run: cd packages/types && npx tsc
-
-      # ── 5. Lint ──────────────────────────────────────────────────────────────
+      # ── 3. Lint ──────────────────────────────────────────────────────────────
       - name: Lint (apps/web)
         run: npm run web:lint
 
@@ -78,51 +81,60 @@ jobs:
           # Opt out of Next.js anonymous telemetry data collection in CI.
           NEXT_TELEMETRY_DISABLED: 1
 
+      # ── 8. Persist build output for downstream jobs (e2e, lighthouse) ────────
+      - name: Upload .next build output
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-next-build
+          path: |
+            apps/web/.next
+            !apps/web/.next/cache
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: true
+
   e2e:
     name: E2E Tests — Playwright (apps/web)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Run after the build job so we know the app at least compiles cleanly
     needs: web
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
 
     steps:
       # ── 1. Source ────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      # ── 2. Node.js ───────────────────────────────────────────────────────────
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v5
         with:
-          node-version: '20'
-          cache: 'npm'
+          persist-credentials: false
 
-      # ── 3. Install workspace dependencies ───────────────────────────────────
-      - name: Install dependencies (all workspaces)
-        run: npm ci
+      # ── 2. Setup ─────────────────────────────────────────────────────────────
+      - name: Setup monorepo
+        uses: ./.github/actions/setup-monorepo
 
-      # ── 4. Compile shared types ──────────────────────────────────────────────
-      - name: Compile packages/types
-        run: cd packages/types && npx tsc
-
-      # ── 5. Install Playwright browser binaries ───────────────────────────────
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      # ── 3. Install Playwright browser binary for this shard only ─────────────
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
         working-directory: apps/web
 
-      # ── 6. Run E2E tests ─────────────────────────────────────────────────────
-      - name: Run E2E tests (apps/web)
-        run: npm run test:e2e
+      # ── 4. Run E2E tests for this browser only ───────────────────────────────
+      - name: Run E2E tests — ${{ matrix.browser }}
+        run: npx playwright test --project=${{ matrix.browser }}
         working-directory: apps/web
         env:
           CI: true
           NEXT_TELEMETRY_DISABLED: 1
 
-      # ── 7. Upload test artefacts on failure ──────────────────────────────────
+      # ── 5. Upload test artefacts on failure ──────────────────────────────────
       - name: Upload Playwright test results
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-test-results-all-browsers
+          name: playwright-test-results-${{ matrix.browser }}
           path: apps/web/test-results/
           retention-days: 7
 
@@ -130,7 +142,68 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-html-report-all-browsers
+          name: playwright-html-report-${{ matrix.browser }}
           path: apps/web/playwright-report/
           retention-days: 7
 
+  lighthouse:
+    name: Lighthouse CI (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: web
+    # Lighthouse results are informational; a score regression does not block
+    # the PR. Set continue-on-error so the roll-up job is not affected.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup monorepo
+        uses: ./.github/actions/setup-monorepo
+
+      # Reuse .next from the web job so we don't rebuild from scratch.
+      - name: Download .next build output
+        uses: actions/download-artifact@v5
+        with:
+          name: web-next-build
+          path: apps/web/.next
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
+        with:
+          configPath: apps/web/.lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: false
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+      - name: Upload Lighthouse reports
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: apps/web/.lighthouse-reports/
+          retention-days: 14
+          include-hidden-files: true
+
+
+  # Roll-up job: single required check for branch protection rules.
+  # lighthouse is intentionally excluded (continue-on-error: true; advisory).
+  all-checks-passed:
+    name: All checks passed (Web CI)
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs: [web, e2e]
+    if: always()
+    steps:
+      - name: Verify all required jobs succeeded
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" || \
+                "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "::error::One or more required jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed."
