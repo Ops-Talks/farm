@@ -9,13 +9,13 @@ inputs:
     description: JWT signing secret (must be at least 32 characters)
     required: true
   swagger-user:
-    description: Basic auth user for /api/docs (optional)
+    description: Basic auth user for /api/docs
     required: false
-    default: ''
+    default: 'farm'
   swagger-password:
-    description: Basic auth password for /api/docs (optional)
+    description: Basic auth password for /api/docs
     required: false
-    default: ''
+    default: 'farm'
   health-timeout:
     description: Maximum seconds to wait for /api/health to respond
     required: false

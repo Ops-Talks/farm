@@ -91,6 +91,7 @@ jobs:
             !apps/web/.next/cache
           retention-days: 1
           if-no-files-found: error
+          include-hidden-files: true
 
   e2e:
     name: E2E Tests — Playwright (apps/web)
@@ -186,6 +187,7 @@ jobs:
           name: lighthouse-reports
           path: apps/web/.lighthouse-reports/
           retention-days: 14
+          include-hidden-files: true
 
 
   # Roll-up job: single required check for branch protection rules.
