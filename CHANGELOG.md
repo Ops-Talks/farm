@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1] - 2026-04-22
+
+### Added
+- implement Phase 30 Plugin Ecosystem (FARM-S327, FARM-S328, FARM-S329).
+
+### Changed
+- Merge pull request #73 from Ops-Talks/copilot/fix-roadmap-summary-inconsistency.
+- Initial plan.
+- **changelog**: remove 50 duplicated lines from CHANGELOG.md.
+- Add comprehensive tests for API modules with low coverage.
+- Initial analysis of test coverage gaps.
+
+### Fixed
+- **pipelines**: Make a deep refactoring in the project workflows (#74).
+- resolve TypeScript build errors, ESLint errors, and pin codecov-action to v5.5.3.
+- correct DFS cycle detection in PluginInstanceService, remove unused import, improve e2e variable name.
+- **roadmap**: update Phase 29 TechDocs 2.0 — mark Epic, Tasks, and Sub-tasks as DONE (released in v0.21.0).
+
 ## [0.21.0] - 2026-04-19
 
 ### Added
