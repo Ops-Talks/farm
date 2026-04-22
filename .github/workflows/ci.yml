@@ -58,7 +58,7 @@ jobs:
         run: npm run build -w apps/api
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.5.3
+        uses: codecov/codecov-action@v6.0.0
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/lcov.info
@@ -70,7 +70,7 @@ jobs:
           verbose: true
 
       - name: Upload unit test results to Codecov
-        uses: codecov/codecov-action@v5.5.3
+        uses: codecov/codecov-action@v6.0.0
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/junit.xml
@@ -79,7 +79,7 @@ jobs:
           report_type: test_results
 
       - name: Upload E2E test results to Codecov
-        uses: codecov/codecov-action@v5.5.3
+        uses: codecov/codecov-action@v6.0.0
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/junit-e2e.xml
