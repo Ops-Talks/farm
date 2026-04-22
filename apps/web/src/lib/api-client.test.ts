@@ -48,6 +48,8 @@ import {
   gatekeeper,
   opa,
   iacModules,
+  pluginRegistry,
+  pluginInstances,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -3675,6 +3677,130 @@ describe("api-client", () => {
       await iacModules.getComponentModules("c1");
       const url = mockFetch.mock.calls[0][0] as string;
       expect(url).toContain("/api/v1/iac-modules/component/c1");
+    });
+  });
+
+  // ── pluginRegistry (FARM-S328) ────────────────────────────────────────────
+
+  describe("pluginRegistry", () => {
+    it("search without args sends GET to /v1/plugins/registry with no query string", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await pluginRegistry.search();
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/plugins/registry");
+    });
+
+    it("search with q and category appends both as query params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await pluginRegistry.search("auth", "security");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("q=auth");
+      expect(url).toContain("category=security");
+    });
+
+    it("search with only q omits category param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await pluginRegistry.search("monitor");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("q=monitor");
+      expect(url).not.toContain("category");
+    });
+
+    it("getOne sends GET to /v1/plugins/registry/:pluginId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ pluginId: "p1" }));
+      await pluginRegistry.getOne("p1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/plugins/registry/p1");
+    });
+
+    it("getVersions sends GET to /v1/plugins/registry/:pluginId/versions", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse(["1.0.0", "1.1.0"]));
+      const result = await pluginRegistry.getVersions("p1");
+      expect(result).toEqual(["1.0.0", "1.1.0"]);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/plugins/registry/p1/versions");
+    });
+
+    it("publish sends POST to /v1/plugins/registry with the manifest body", async () => {
+      const manifest = { name: "my-plugin", version: "1.0.0" };
+      mockFetch.mockReturnValueOnce(jsonResponse({ pluginId: "p1" }));
+      await pluginRegistry.publish(manifest);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/plugins/registry",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ manifest }),
+        }),
+      );
+    });
+  });
+
+  // ── pluginInstances (FARM-S329) ───────────────────────────────────────────
+
+  describe("pluginInstances", () => {
+    it("list without orgId sends GET to /v1/plugins/instances with no query string", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await pluginInstances.list();
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/plugins/instances");
+    });
+
+    it("list with orgId appends orgId as query param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await pluginInstances.list("org-1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("orgId=org-1");
+    });
+
+    it("install sends POST to /v1/plugins/:pluginId/install", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inst-1" }));
+      await pluginInstances.install("my-plugin");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/plugins/my-plugin/install",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("install URL-encodes the pluginId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inst-1" }));
+      await pluginInstances.install("org/plugin");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/plugins/org%2Fplugin/install");
+    });
+
+    it("enable sends POST to /v1/plugins/:id/enable", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inst-1" }));
+      await pluginInstances.enable("inst-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/plugins/inst-1/enable",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("disable sends POST to /v1/plugins/:id/disable", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "inst-1" }));
+      await pluginInstances.disable("inst-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/plugins/inst-1/disable",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("uninstall sends DELETE to /v1/plugins/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await pluginInstances.uninstall("inst-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/plugins/inst-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("getHealth sends GET to /v1/plugins/:id/health", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ status: "healthy" }));
+      const result = await pluginInstances.getHealth("inst-1");
+      expect(result).toEqual({ status: "healthy" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/plugins/inst-1/health");
     });
   });
 });
