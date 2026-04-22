@@ -72,6 +72,14 @@ type PluginMessage =
   | { type: "farm:toast"; message: string; variant?: "success" | "error" | "info" }
   | { type: "farm:api-request"; requestId: string; method?: string; url: string; body?: unknown };
 
+// Only relative paths scoped to /api/ may be proxied. This prevents the bridge
+// from being used to forward the auth token to external origins (CSRF / SSRF).
+const ALLOWED_API_PATH_PREFIX = "/api/";
+
+// Restrict to standard REST verbs. Exotic methods (CONNECT, TRACE, etc.) are
+// not needed and could be exploited or violate same-origin restrictions.
+const ALLOWED_REQUEST_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+
 // ── iframe mode ───────────────────────────────────────────────────────────────
 
 interface SandboxedIframeProps {
@@ -116,6 +124,11 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
       if (!data || typeof data.type !== "string") return;
 
       if (data.type === "farm:navigate") {
+        // Reject absolute URLs to prevent open-redirect attacks.
+        if (!data.path.startsWith("/")) {
+          console.warn(`[PluginRenderer] Rejected navigate to non-relative path: ${data.path}`);
+          return;
+        }
         router.push(data.path);
         return;
       }
@@ -129,9 +142,36 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
       }
 
       if (data.type === "farm:api-request") {
+        // Reject any URL that is not a relative path under /api/. This is the
+        // primary guard against CSRF / SSRF: the auth token is never forwarded
+        // to an origin other than the Farm API, regardless of what the plugin
+        // sends in the postMessage payload.
+        if (!data.url.startsWith(ALLOWED_API_PATH_PREFIX)) {
+          console.warn(
+            `[PluginRenderer] Rejected api-request to disallowed URL: ${data.url}`,
+          );
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "farm:api-response", requestId: data.requestId, error: "Disallowed URL" },
+            new URL(entryPoint).origin,
+          );
+          return;
+        }
+
+        const method = (data.method ?? "GET").toUpperCase();
+        if (!ALLOWED_REQUEST_METHODS.has(method)) {
+          console.warn(
+            `[PluginRenderer] Rejected api-request with disallowed HTTP method: ${method}`,
+          );
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: "farm:api-response", requestId: data.requestId, error: "Disallowed method" },
+            new URL(entryPoint).origin,
+          );
+          return;
+        }
+
         const token = getAccessToken();
         fetch(data.url, {
-          method: data.method ?? "GET",
+          method,
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),

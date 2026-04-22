@@ -194,5 +194,78 @@ describe("PluginRenderer", () => {
 
       expect(mockRouterPush).toHaveBeenCalledWith("/docs");
     });
+
+    it("rejects farm:navigate with an absolute URL to prevent open-redirect", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:navigate", path: "https://evil.attacker.com" },
+          "https://plugin.example.com",
+        );
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("non-relative path"),
+      );
+      expect(mockRouterPush).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+    });
+
+    it("rejects farm:api-request whose URL does not start with /api/", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:api-request", requestId: "x1", method: "GET", url: "https://evil.attacker.com/steal" },
+          "https://plugin.example.com",
+        );
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Rejected api-request to disallowed URL"),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("rejects farm:api-request with a disallowed HTTP method", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:api-request", requestId: "x2", method: "TRACE", url: "/api/v1/catalog" },
+          "https://plugin.example.com",
+        );
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("disallowed HTTP method"),
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 });
