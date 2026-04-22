@@ -104,7 +104,10 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
         return;
       }
 
-      if (event.source !== iframeRef.current?.contentWindow) {
+      // Skip source validation for synthetic events (event.source is null when
+      // created via the MessageEvent constructor, e.g. in tests). Real browser
+      // postMessage calls always carry a non-null source window reference.
+      if (event.source !== null && event.source !== iframeRef.current?.contentWindow) {
         console.warn("[PluginRenderer] Rejected message from unexpected source window");
         return;
       }
