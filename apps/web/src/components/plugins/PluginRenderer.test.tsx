@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
 
@@ -220,7 +220,7 @@ describe("PluginRenderer", () => {
       consoleSpy.mockRestore();
     });
 
-    it("rejects farm:api-request whose URL does not start with /api/", async () => {
+    it("rejects farm:api-request whose URL does not start with /api/v1/", async () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       render(
@@ -233,6 +233,30 @@ describe("PluginRenderer", () => {
       await act(async () => {
         fireMessageEvent(
           { type: "farm:api-request", requestId: "x1", method: "GET", url: "https://evil.attacker.com/steal" },
+          "https://plugin.example.com",
+        );
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Rejected api-request to disallowed URL"),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it("rejects farm:api-request whose path is within /api/ but outside /api/v1/", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:api-request", requestId: "x4", method: "GET", url: "/api/health" },
           "https://plugin.example.com",
         );
       });
@@ -290,6 +314,50 @@ describe("PluginRenderer", () => {
       );
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe("farm:api-request proxy (FARM-ST386)", () => {
+    let originalFetch: typeof globalThis.fetch;
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch;
+    });
+
+    it("forwards a valid farm:api-request to /api/plugin-proxy with correct body", async () => {
+      const responsePayload = { items: [{ id: "1" }] };
+      globalThis.fetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValueOnce(responsePayload),
+      } as unknown as Response);
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:api-request", requestId: "r1", method: "GET", url: "/api/v1/catalog" },
+          "https://plugin.example.com",
+        );
+      });
+
+      await waitFor(() => {
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+          "/api/plugin-proxy",
+          expect.objectContaining({
+            method: "POST",
+            body: expect.stringContaining("/api/v1/catalog"),
+          }),
+        );
+      });
     });
   });
 });

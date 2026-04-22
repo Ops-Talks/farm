@@ -72,9 +72,9 @@ type PluginMessage =
   | { type: "farm:toast"; message: string; variant?: "success" | "error" | "info" }
   | { type: "farm:api-request"; requestId: string; method?: string; url: string; body?: unknown };
 
-// Only relative paths scoped to /api/ may be proxied. This prevents the bridge
-// from being used to forward the auth token to external origins (CSRF / SSRF).
-const ALLOWED_API_PATH_PREFIX = "/api/";
+// Only versioned API paths may be proxied. This covers the entire Farm API
+// surface (/api/v1/...) while excluding unrelated Next.js routes.
+const ALLOWED_API_PATH_PREFIX = "/api/v1/";
 
 // Restrict to standard REST verbs. Exotic methods (CONNECT, TRACE, etc.) are
 // not needed and could be exploited or violate same-origin restrictions.
@@ -189,13 +189,16 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
         }
 
         const token = getAccessToken();
-        fetch(safeUrl, {
-          method,
+        // Route through the server-side proxy. The user-controlled path lives in
+        // the POST body, not in the fetch URL, which removes the CodeQL CSRF taint
+        // chain (the URL argument is now a fixed string literal).
+        fetch("/api/plugin-proxy", {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: data.body != null ? JSON.stringify(data.body) : undefined,
+          body: JSON.stringify({ path: safeUrl, method, body: data.body ?? null }),
         })
           .then((res) => res.json())
           .then((responseData) => {
