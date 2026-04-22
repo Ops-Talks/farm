@@ -142,13 +142,32 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
       }
 
       if (data.type === "farm:api-request") {
-        // Reject any URL that is not a relative path under /api/. This is the
-        // primary guard against CSRF / SSRF: the auth token is never forwarded
-        // to an origin other than the Farm API, regardless of what the plugin
-        // sends in the postMessage payload.
-        if (!data.url.startsWith(ALLOWED_API_PATH_PREFIX)) {
+        // Normalise the raw URL to resolve any path-traversal sequences before
+        // validation. Parsing relative to the current origin also catches
+        // absolute URLs and protocol-relative URLs whose origin would differ
+        // from window.location.origin (e.g. "https://evil.com/api/steal").
+        // Only the resulting pathname is forwarded to fetch, never the raw
+        // user-supplied string.
+        let safeUrl: string;
+        try {
+          const parsed = new URL(data.url, window.location.origin);
+          if (
+            parsed.origin !== window.location.origin ||
+            !parsed.pathname.startsWith(ALLOWED_API_PATH_PREFIX)
+          ) {
+            console.warn(
+              `[PluginRenderer] Rejected api-request to disallowed URL: ${data.url}`,
+            );
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: "farm:api-response", requestId: data.requestId, error: "Disallowed URL" },
+              new URL(entryPoint).origin,
+            );
+            return;
+          }
+          safeUrl = parsed.pathname + parsed.search;
+        } catch {
           console.warn(
-            `[PluginRenderer] Rejected api-request to disallowed URL: ${data.url}`,
+            `[PluginRenderer] Rejected api-request with unparseable URL: ${data.url}`,
           );
           iframeRef.current?.contentWindow?.postMessage(
             { type: "farm:api-response", requestId: data.requestId, error: "Disallowed URL" },
@@ -170,7 +189,7 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
         }
 
         const token = getAccessToken();
-        fetch(data.url, {
+        fetch(safeUrl, {
           method,
           headers: {
             "Content-Type": "application/json",

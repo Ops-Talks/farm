@@ -244,6 +244,30 @@ describe("PluginRenderer", () => {
       consoleSpy.mockRestore();
     });
 
+    it("rejects farm:api-request with a path-traversal URL that escapes /api/", async () => {
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      render(
+        <PluginRenderer
+          mode="iframe"
+          entryPoint="https://plugin.example.com/widget.html"
+        />,
+      );
+
+      await act(async () => {
+        fireMessageEvent(
+          { type: "farm:api-request", requestId: "x3", method: "GET", url: "/api/../internal/secret" },
+          "https://plugin.example.com",
+        );
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Rejected api-request to disallowed URL"),
+      );
+
+      consoleSpy.mockRestore();
+    });
+
     it("rejects farm:api-request with a disallowed HTTP method", async () => {
       const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
