@@ -142,9 +142,10 @@ describe("CostEstimateCard", () => {
     expect(screen.queryByText(/1 days ago/)).not.toBeInTheDocument();
   });
 
-  it("renders a plain number when currency is missing (null/undefined)", () => {
-    // Simulates incomplete API data where currency is not returned.
-    const estimate = makeEstimate({ currency: null as unknown as string });
+  it("renders a plain number when currency is an empty string", () => {
+    // Simulates blank currency data while keeping the test aligned with the
+    // current CostEstimate contract, which requires currency to be a string.
+    const estimate = makeEstimate({ currency: "" });
     render(<CostEstimateCard estimate={estimate} />);
     // Should not throw and should display the formatted amount.
     expect(screen.getByText(/42\.50\/mo/)).toBeInTheDocument();
