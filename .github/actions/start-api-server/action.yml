@@ -1,0 +1,53 @@
+name: Start API server
+description: Build the API and start it in the background, waiting for /api/health to respond
+inputs:
+  port:
+    description: Port to expose the API on
+    required: false
+    default: '3000'
+  jwt-secret:
+    description: JWT signing secret (must be at least 32 characters)
+    required: true
+  swagger-user:
+    description: Basic auth user for /api/docs (optional)
+    required: false
+    default: ''
+  swagger-password:
+    description: Basic auth password for /api/docs (optional)
+    required: false
+    default: ''
+  health-timeout:
+    description: Maximum seconds to wait for /api/health to respond
+    required: false
+    default: '60'
+
+runs:
+  using: composite
+  steps:
+    - name: Build API
+      shell: bash
+      run: npm run build -w apps/api
+
+    - name: Start API and wait for /api/health
+      shell: bash
+      env:
+        PORT: ${{ inputs.port }}
+        DATABASE_TYPE: postgres
+        DATABASE_HOST: localhost
+        DATABASE_PORT: '5432'
+        DATABASE_USER: postgres
+        DATABASE_PASSWORD: password
+        DATABASE_NAME: farm
+        DATABASE_SYNC: 'true'
+        JWT_SECRET: ${{ inputs.jwt-secret }}
+        JWT_EXPIRATION: 3600s
+        REDIS_HOST: localhost
+        REDIS_PORT: '6379'
+        NODE_ENV: test
+        SWAGGER_USER: ${{ inputs.swagger-user }}
+        SWAGGER_PASSWORD: ${{ inputs.swagger-password }}
+        HEALTH_TIMEOUT: ${{ inputs.health-timeout }}
+      run: |
+        npm run start:prod -w apps/api &
+        timeout "${HEALTH_TIMEOUT}" bash -c 'until curl -sf "http://localhost:${PORT}/api/health"; do sleep 2; done'
+        echo "API is up on port ${PORT}"

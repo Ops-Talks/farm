@@ -31,11 +31,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          pip install mkdocs-material mkdocs mkdocs-minify-plugin
+        run: pip install -r docs/requirements.txt
 
       - name: Configure Git
         run: |
@@ -43,4 +43,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy to GitHub Pages
+        # --force is intentional: the gh-pages branch contains only generated
+        # content produced by mkdocs. No manual commits are ever made to it, so
+        # force-pushing is safe and prevents "non-fast-forward" errors when a
+        # previous deploy was cancelled mid-run.
         run: mkdocs gh-deploy --force

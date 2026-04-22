@@ -141,4 +141,12 @@ describe("CostEstimateCard", () => {
     expect(screen.getByText(/1 day ago/)).toBeInTheDocument();
     expect(screen.queryByText(/1 days ago/)).not.toBeInTheDocument();
   });
+
+  it("renders a plain number when currency is missing (null/undefined)", () => {
+    // Simulates incomplete API data where currency is not returned.
+    const estimate = makeEstimate({ currency: null as unknown as string });
+    render(<CostEstimateCard estimate={estimate} />);
+    // Should not throw and should display the formatted amount.
+    expect(screen.getByText(/42\.50\/mo/)).toBeInTheDocument();
+  });
 });

@@ -16,6 +16,13 @@ coverage:
         target: 70%
         flags:
           - web
+    # Patch coverage gates individual PRs: each changed line must reach 80%
+    # coverage with at most 2% tolerance. This is stricter than the project
+    # target (70%) to prevent gradual erosion of coverage over time.
+    patch:
+      default:
+        target: 80%
+        threshold: 2%
 
 flags:
   api:

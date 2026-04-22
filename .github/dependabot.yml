@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # Root monorepo — covers all npm workspaces (apps/api, apps/web, packages/*)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # Security advisories are opened immediately as individual PRs (no group)
+      # so they can be reviewed and merged in isolation.
+      security-patches:
+        applies-to: security-updates
+        patterns: ["*"]
+      # Non-security minor/patch updates are batched into a single weekly PR
+      # to reduce review noise.
+      non-critical-updates:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+        patterns: ["*"]
+
+  # GitHub Actions — keep action versions and SHA pins up to date
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: tuesday
+    open-pull-requests-limit: 5
+
+  # Docker base images — scanned separately per app to limit blast radius
+  - package-ecosystem: docker
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: wednesday
+
+  - package-ecosystem: docker
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: wednesday
+
+  # Python — mkdocs build toolchain (docs/requirements.txt)
+  - package-ecosystem: pip
+    directory: /docs
+    schedule:
+      interval: weekly
+      day: thursday
+    open-pull-requests-limit: 3
