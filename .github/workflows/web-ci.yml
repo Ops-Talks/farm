@@ -166,7 +166,7 @@ jobs:
 
       # Reuse .next from the web job so we don't rebuild from scratch.
       - name: Download .next build output
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: web-next-build
           path: apps/web/.next
