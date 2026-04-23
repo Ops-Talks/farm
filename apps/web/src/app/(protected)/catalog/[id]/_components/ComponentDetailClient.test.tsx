@@ -715,5 +715,89 @@ describe("ComponentDetailClient", () => {
         expect(screen.queryByText("auth-service")).toBeInTheDocument();
       });
     });
+
+    it("shows tags when the component has tags defined", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({ tags: ["backend", "critical"] }),
+      );
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: "" });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("backend")).toBeInTheDocument();
+        expect(screen.getByText("critical")).toBeInTheDocument();
+      });
+    });
+
+    it("shows external links when the component has links defined", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({
+          links: [{ url: "https://docs.example.com", title: "API Docs" }],
+        }),
+      );
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: "" });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("API Docs")).toBeInTheDocument();
+      });
+    });
+
+    it("shows dependency links when the component has dependencies", async () => {
+      mockGetComponent.mockResolvedValue(
+        makeComponent({
+          dependencies: [{ id: "dep-1", name: "dep-service", kind: "service" }],
+        }),
+      );
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: "" });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("dep-service")).toBeInTheDocument();
+      });
+    });
+
+    it("navigates back to catalog when the Back button is clicked in the loaded state", async () => {
+      const user = userEvent.setup();
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: "" });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("auth-service")).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: /back/i }));
+      expect(mockPush).toHaveBeenCalledWith("/catalog");
+    });
+
+    it("renders without crash when getActualCost resolves with a non-null value", async () => {
+      mockGetComponent.mockResolvedValue(makeComponent());
+      mockListDeployments.mockResolvedValue({ data: [], total: 0 });
+      mockGetActualCost.mockResolvedValue({
+        componentId: "comp-1",
+        thirtyDay: { totalCost: 42.5, currency: "USD" },
+      });
+      mockGatekeeperIsEnabled.mockResolvedValue({ enabled: false });
+      mockOpaGetStatus.mockResolvedValue({ reachable: false, url: "" });
+
+      render(<ComponentDetailClient />);
+
+      await waitFor(() => {
+        expect(screen.getByText("auth-service")).toBeInTheDocument();
+      });
+    });
   });
 });

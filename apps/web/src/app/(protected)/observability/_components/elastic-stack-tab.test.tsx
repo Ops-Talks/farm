@@ -321,7 +321,7 @@ describe("ElasticStackTab", () => {
   });
 
   // -------------------------------------------------------------------------
-  // 8. External section heading visible
+  // 8. External Elasticsearch heading
   // -------------------------------------------------------------------------
 
   it("shows the External Elasticsearch heading when the tab has non-empty data", () => {
@@ -332,5 +332,324 @@ describe("ElasticStackTab", () => {
 
     render(<ElasticStackTab data={data} />);
     expect(screen.getByText("External Elasticsearch")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 9. EckKibanaSection — available
+  // -------------------------------------------------------------------------
+
+  it("shows Available badge when ECK Kibana item is available", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [{ name: "my-kb", namespace: "elastic", available: true, source: "eck" }],
+        logstash: [],
+        beats: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("my-kb")).toBeInTheDocument();
+    expect(screen.getByText("Available")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 10. EckKibanaSection — unavailable
+  // -------------------------------------------------------------------------
+
+  it("shows Unavailable badge when ECK Kibana item is not available", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [{ name: "kb-down", namespace: "elastic", available: false, source: "eck" }],
+        logstash: [],
+        beats: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("Unavailable")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 11. EckKibanaSection — version conditional
+  // -------------------------------------------------------------------------
+
+  it("shows version text for ECK Kibana when version is set", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [
+          { name: "kb-versioned", namespace: "elastic", available: true, version: "8.12.0", source: "eck" },
+        ],
+        logstash: [],
+        beats: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("v8.12.0")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 12. EckLogstashSection — populated
+  // -------------------------------------------------------------------------
+
+  it("shows replicas text for ECK Logstash items", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [],
+        logstash: [
+          {
+            name: "ls-eck",
+            namespace: "elastic",
+            readyReplicas: 2,
+            desiredReplicas: 3,
+            source: "eck",
+          },
+        ],
+        beats: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("ls-eck")).toBeInTheDocument();
+    expect(screen.getByText("2/3 replicas")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 13. EckBeatsSection — populated with available: true
+  // -------------------------------------------------------------------------
+
+  it("shows Available badge for an ECK Beat item that is available", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [],
+        logstash: [],
+        beats: [
+          { name: "filebeat", namespace: "elastic", available: true, source: "eck" },
+        ],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("filebeat")).toBeInTheDocument();
+    expect(screen.getByText("Available")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 14. EckBeatsSection — version conditional
+  // -------------------------------------------------------------------------
+
+  it("shows version text for ECK Beat when version is set", () => {
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [],
+        kibana: [],
+        logstash: [],
+        beats: [
+          {
+            name: "metricbeat",
+            namespace: "elastic",
+            available: true,
+            version: "8.12.1",
+            source: "eck",
+          },
+        ],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("v8.12.1")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 15. FluentBitRow — configMapRef conditional
+  // -------------------------------------------------------------------------
+
+  it("shows configMapRef text in FluentBitRow when configMapRef is set", () => {
+    const data = makeElasticStackResponse({
+      inCluster: {
+        fluentBit: [
+          {
+            name: "fluent-bit",
+            namespace: "logging",
+            desiredNodes: 3,
+            readyNodes: 3,
+            notReadyNodes: 0,
+            configMapRef: "fluent-bit-config",
+            source: "helm",
+          },
+        ],
+        fluentd: [],
+        logstash: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("fluent-bit-config")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 16. FluentdRow — rendering
+  // -------------------------------------------------------------------------
+
+  it("renders FluentdRow with name and Fluentd badge", () => {
+    const data = makeElasticStackResponse({
+      inCluster: {
+        fluentBit: [],
+        fluentd: [
+          {
+            name: "fluentd-ds",
+            namespace: "logging",
+            desiredNodes: 2,
+            readyNodes: 2,
+            notReadyNodes: 0,
+            source: "helm",
+          },
+        ],
+        logstash: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("fluentd-ds")).toBeInTheDocument();
+    expect(screen.getByText("Fluentd")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 17. FluentdRow — configMapRef conditional
+  // -------------------------------------------------------------------------
+
+  it("shows configMapRef text in FluentdRow when configMapRef is set", () => {
+    const data = makeElasticStackResponse({
+      inCluster: {
+        fluentBit: [],
+        fluentd: [
+          {
+            name: "fluentd-ds",
+            namespace: "logging",
+            desiredNodes: 2,
+            readyNodes: 2,
+            notReadyNodes: 0,
+            configMapRef: "fluentd-config",
+            source: "helm",
+          },
+        ],
+        logstash: [],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("fluentd-config")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 18. LogstashDeploymentRow — rendering
+  // -------------------------------------------------------------------------
+
+  it("renders LogstashDeploymentRow with name and Logstash badge", () => {
+    const data = makeElasticStackResponse({
+      inCluster: {
+        fluentBit: [],
+        fluentd: [],
+        logstash: [
+          {
+            name: "logstash-helm",
+            namespace: "logging",
+            desiredReplicas: 3,
+            readyReplicas: 3,
+            source: "helm",
+          },
+        ],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("logstash-helm")).toBeInTheDocument();
+    expect(screen.getAllByText("Logstash").length).toBeGreaterThan(0);
+  });
+  // -------------------------------------------------------------------------
+
+  it("shows configMapRef text in LogstashDeploymentRow when configMapRef is set", () => {
+    const data = makeElasticStackResponse({
+      inCluster: {
+        fluentBit: [],
+        fluentd: [],
+        logstash: [
+          {
+            name: "logstash-helm",
+            namespace: "logging",
+            desiredReplicas: 2,
+            readyReplicas: 2,
+            configMapRef: "logstash-pipeline-config",
+            source: "helm",
+          },
+        ],
+      },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("logstash-pipeline-config")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 20. externalHealthBadge — yellow
+  // -------------------------------------------------------------------------
+
+  it("shows yellow cluster health badge when external Elasticsearch is reachable with yellow health", () => {
+    const data = makeElasticStackResponse({
+      external: { reachable: true, clusterHealth: "yellow" },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("yellow")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 21. externalHealthBadge — red
+  // -------------------------------------------------------------------------
+
+  it("shows red cluster health badge when external Elasticsearch has red health", () => {
+    const data = makeElasticStackResponse({
+      external: { reachable: true, clusterHealth: "red" },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(screen.getByText("red")).toBeInTheDocument();
+  });
+
+  // -------------------------------------------------------------------------
+  // 22. InClusterCollectorsCard — empty (no collectors detected)
+  // -------------------------------------------------------------------------
+
+  it("shows 'No in-cluster log collectors detected.' when ECK has resources but inCluster is empty", () => {
+    // ECK has resources → isEmpty = false → all cards render
+    // inCluster is all empty → InClusterCollectorsCard renders the empty message
+    const data = makeElasticStackResponse({
+      eck: {
+        elasticsearch: [
+          {
+            name: "my-es",
+            namespace: "elastic",
+            health: "green",
+            version: "8.12.0",
+            nodeCount: 1,
+            source: "eck",
+          },
+        ],
+        kibana: [],
+        logstash: [],
+        beats: [],
+      },
+      inCluster: { fluentBit: [], fluentd: [], logstash: [] },
+    });
+
+    render(<ElasticStackTab data={data} />);
+    expect(
+      screen.getByText("No in-cluster log collectors detected."),
+    ).toBeInTheDocument();
   });
 });

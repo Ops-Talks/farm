@@ -295,6 +295,19 @@ describe("ElasticStackService", () => {
 
       expect(result[0].namespace).toBe("");
     });
+
+    it("returns empty array and logs debug when CRD returns 404 via response.statusCode", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+
+      const result = await service.getEckElasticsearch();
+
+      expect(result).toEqual([]);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -425,6 +438,19 @@ describe("ElasticStackService", () => {
       const result = await service.getEckKibana();
 
       expect(result[0].namespace).toBe("");
+    });
+
+    it("returns empty array and logs debug when CRD returns 404 via response.statusCode", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+
+      const result = await service.getEckKibana();
+
+      expect(result).toEqual([]);
     });
   });
 
@@ -560,6 +586,19 @@ describe("ElasticStackService", () => {
 
       expect(result[0].namespace).toBe("");
     });
+
+    it("returns empty array and logs debug when CRD returns 404 via response.statusCode", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+
+      const result = await service.getEckBeats();
+
+      expect(result).toEqual([]);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -676,6 +715,19 @@ describe("ElasticStackService", () => {
       const result = await service.getEckLogstash();
 
       expect(result[0].namespace).toBe("");
+    });
+
+    it("returns empty array and logs debug when CRD returns 404 via response.statusCode", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockCustomObjectsApi.listClusterCustomObject.mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+
+      const result = await service.getEckLogstash();
+
+      expect(result).toEqual([]);
     });
   });
 
