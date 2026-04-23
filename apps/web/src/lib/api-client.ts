@@ -159,6 +159,8 @@ import type {
   IacModulesResponse,
   IacResourceMap,
   AdvancedSearchResult,
+  // Elastic Stack (FARM-S334 / FARM-S335 / Phase 31)
+  ElasticStackResponse,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -1425,6 +1427,18 @@ export const kubernetes = {
       `/v1/kubernetes/keda/binding/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
+  },
+
+  // -- Elastic Stack (FARM-S334 / FARM-S335 / Phase 31) --
+
+  /**
+   * Get Elastic Stack resource status from the cluster.
+   * Covers ECK-managed resources, in-cluster collectors, and external Elasticsearch.
+   * Optionally filtered by Kubernetes namespace.
+   */
+  getElasticStack(namespace?: string): Promise<ElasticStackResponse> {
+    const query = namespace ? `?namespace=${encodeURIComponent(namespace)}` : "";
+    return request<ElasticStackResponse>(`/v1/kubernetes/elastic-stack${query}`);
   },
 };
 

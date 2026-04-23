@@ -484,75 +484,75 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 31: Elastic Stack and Log Pipeline Visibility `TODO`
+## Phase 31: Elastic Stack and Log Pipeline Visibility `DONE`
 
-### FARM-E77: Elastic Stack and Log Collector Discovery `TODO`
+### FARM-E77: Elastic Stack and Log Collector Discovery `DONE`
 
 > Farm already discovers Kubernetes workloads, Helm releases, Flux GitOps bindings, and KEDA scaled objects. This Epic extends that pattern to the observability data layer. Discovery operates across three tiers: ECK-managed resources (CRD-based, robust), in-cluster collectors deployed via Helm or plain YAML (label-based fallback), and external or SaaS Elasticsearch instances (URL health check). All tiers are independent and degrade gracefully — if ECK CRDs are absent, Farm falls back to label detection; if no in-cluster Elasticsearch is found, it checks `ELASTICSEARCH_URL`. The frontend surfaces a unified view on the Observability page and a focused card on the component detail page.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S331 | Story | Backend: ECK-managed resource discovery -- Elasticsearch clusters, Kibana instances, Logstash pipelines, and Beats via ECK CRDs | `TODO` |
-| FARM-S332 | Story | Backend: In-cluster non-ECK discovery -- Fluent Bit and Fluentd DaemonSets and Logstash Deployments via label conventions (Helm / plain YAML installs) | `TODO` |
-| FARM-S333 | Story | Backend: External and SaaS Elasticsearch health check -- ping `ELASTICSEARCH_URL`, report reachability, cluster health, and version | `TODO` |
-| FARM-S334 | Story | Frontend: Elastic Stack tab on the Observability page -- unified view of ECK resources, in-cluster collectors, and external ES with per-tier sections and health badges | `TODO` |
-| FARM-S335 | Story | Frontend: Log Pipeline card on the component detail page -- shows the collector(s) active in the component namespace (ECK preferred, label-based fallback) | `TODO` |
+| FARM-S331 | Story | Backend: ECK-managed resource discovery -- Elasticsearch clusters, Kibana instances, Logstash pipelines, and Beats via ECK CRDs | `DONE` |
+| FARM-S332 | Story | Backend: In-cluster non-ECK discovery -- Fluent Bit and Fluentd DaemonSets and Logstash Deployments via label conventions (Helm / plain YAML installs) | `DONE` |
+| FARM-S333 | Story | Backend: External and SaaS Elasticsearch health check -- ping `ELASTICSEARCH_URL`, report reachability, cluster health, and version | `DONE` |
+| FARM-S334 | Story | Frontend: Elastic Stack tab on the Observability page -- unified view of ECK resources, in-cluster collectors, and external ES with per-tier sections and health badges | `DONE` |
+| FARM-S335 | Story | Frontend: Log Pipeline card on the component detail page -- shows the collector(s) active in the component namespace (ECK preferred, label-based fallback) | `DONE` |
 
 #### FARM-S331 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T362 | Task | `ElasticStackService.getEckElasticsearch(kubeconfig)`: list `Elasticsearch` CRs from `elasticsearch.k8s.elastic.co/v1`; map to `{ name, namespace, health: "green"\|"yellow"\|"red", version, nodeCount, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `TODO` |
-| FARM-T363 | Task | `ElasticStackService.getEckKibana(kubeconfig)` and `getEckBeats(kubeconfig)`: list `Kibana` and `Beat` CRs; map to `{ name, namespace, available: bool, version?, source: "eck" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `TODO` |
-| FARM-T364 | Task | `ElasticStackService.getEckLogstash(kubeconfig)`: list `Logstash` CRs from `logstash.k8s.elastic.co/v1alpha1`; map to `{ name, namespace, readyReplicas, desiredReplicas, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `TODO` |
+| FARM-T362 | Task | `ElasticStackService.getEckElasticsearch(kubeconfig)`: list `Elasticsearch` CRs from `elasticsearch.k8s.elastic.co/v1`; map to `{ name, namespace, health: "green"\|"yellow"\|"red", version, nodeCount, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `DONE` |
+| FARM-T363 | Task | `ElasticStackService.getEckKibana(kubeconfig)` and `getEckBeats(kubeconfig)`: list `Kibana` and `Beat` CRs; map to `{ name, namespace, available: bool, version?, source: "eck" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `DONE` |
+| FARM-T364 | Task | `ElasticStackService.getEckLogstash(kubeconfig)`: list `Logstash` CRs from `logstash.k8s.elastic.co/v1alpha1`; map to `{ name, namespace, readyReplicas, desiredReplicas, source: "eck" }`; degrade gracefully to `[]` when CRD is absent; unit tests | `DONE` |
 
 ##### FARM-T362 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST386 | Sub-task | Unit test: ECK Elasticsearch CR with `health: "green"` → returned with `source: "eck"` and correct `nodeCount` | `TODO` |
-| FARM-ST387 | Sub-task | Unit test: ECK CRD not installed (404 from CustomObjectsApi) → `getEckElasticsearch()` returns `[]` without throwing | `TODO` |
+| FARM-ST386 | Sub-task | Unit test: ECK Elasticsearch CR with `health: "green"` → returned with `source: "eck"` and correct `nodeCount` | `DONE` |
+| FARM-ST387 | Sub-task | Unit test: ECK CRD not installed (404 from CustomObjectsApi) → `getEckElasticsearch()` returns `[]` without throwing | `DONE` |
 
 #### FARM-S332 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T365 | Task | `ElasticStackService.getFluentBit(kubeconfig)` and `getFluentd(kubeconfig)`: list DaemonSets matching labels `app.kubernetes.io/name=fluent-bit` / `k8s-app=fluent-bit` and `app.kubernetes.io/name=fluentd`; map to `{ name, namespace, desiredNodes, readyNodes, notReadyNodes, configMapRef?, source: "helm" }`; degrade gracefully to `[]` when Kubernetes is unavailable; unit tests | `TODO` |
-| FARM-T366 | Task | `ElasticStackService.getLogstashDeployment(kubeconfig)`: list Deployments matching label `app.kubernetes.io/name=logstash`; map to `{ name, namespace, desiredReplicas, readyReplicas, configMapRef?, source: "helm" }`; degrade gracefully to `[]`; unit tests | `TODO` |
-| FARM-T367 | Task | `GET /api/v1/kubernetes/elastic-stack` endpoint: returns `{ eck: { elasticsearch, kibana, logstash, beats }, inCluster: { fluentBit, fluentd, logstash }, external: { ... } }`; optional `namespace` query param; unit + e2e tests | `TODO` |
+| FARM-T365 | Task | `ElasticStackService.getFluentBit(kubeconfig)` and `getFluentd(kubeconfig)`: list DaemonSets matching labels `app.kubernetes.io/name=fluent-bit` / `k8s-app=fluent-bit` and `app.kubernetes.io/name=fluentd`; map to `{ name, namespace, desiredNodes, readyNodes, notReadyNodes, configMapRef?, source: "helm" }`; degrade gracefully to `[]` when Kubernetes is unavailable; unit tests | `DONE` |
+| FARM-T366 | Task | `ElasticStackService.getLogstashDeployment(kubeconfig)`: list Deployments matching label `app.kubernetes.io/name=logstash`; map to `{ name, namespace, desiredReplicas, readyReplicas, configMapRef?, source: "helm" }`; degrade gracefully to `[]`; unit tests | `DONE` |
+| FARM-T367 | Task | `GET /api/v1/kubernetes/elastic-stack` endpoint: returns `{ eck: { elasticsearch, kibana, logstash, beats }, inCluster: { fluentBit, fluentd, logstash }, external: { ... } }`; optional `namespace` query param; unit + e2e tests | `DONE` |
 
 ##### FARM-T365 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST388 | Sub-task | Unit test: Fluent Bit DaemonSet with 1 pod not ready → `notReadyNodes === 1`; no exception thrown | `TODO` |
-| FARM-ST389 | Sub-task | Unit test: no Fluent Bit DaemonSet found → returns empty array without throwing | `TODO` |
+| FARM-ST388 | Sub-task | Unit test: Fluent Bit DaemonSet with 1 pod not ready → `notReadyNodes === 1`; no exception thrown | `DONE` |
+| FARM-ST389 | Sub-task | Unit test: no Fluent Bit DaemonSet found → returns empty array without throwing | `DONE` |
 
 #### FARM-S333 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T368 | Task | `ElasticStackService.getExternalElasticsearch()`: ping `ELASTICSEARCH_URL/_cluster/health` (from env var); return `{ url, reachable: bool, clusterHealth?: "green"\|"yellow"\|"red", version? }`; return `{ reachable: false }` when env var is not set; no Kubernetes client required; unit tests | `TODO` |
+| FARM-T368 | Task | `ElasticStackService.getExternalElasticsearch()`: ping `ELASTICSEARCH_URL/_cluster/health` (from env var); return `{ url, reachable: bool, clusterHealth?: "green"\|"yellow"\|"red", version? }`; return `{ reachable: false }` when env var is not set; no Kubernetes client required; unit tests | `DONE` |
 
 ##### FARM-T368 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST390 | Sub-task | Unit test: `ELASTICSEARCH_URL` not set → returns `{ reachable: false }` without throwing | `TODO` |
-| FARM-ST391 | Sub-task | Unit test: cluster health endpoint returns `{ status: "yellow" }` → `clusterHealth: "yellow"`, `reachable: true` | `TODO` |
+| FARM-ST390 | Sub-task | Unit test: `ELASTICSEARCH_URL` not set → returns `{ reachable: false }` without throwing | `DONE` |
+| FARM-ST391 | Sub-task | Unit test: cluster health endpoint returns `{ status: "yellow" }` → `clusterHealth: "yellow"`, `reachable: true` | `DONE` |
 
 #### FARM-S334 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T369 | Task | `ElasticStackTab` on the Observability page: three sections (ECK-managed, In-cluster, External); ECK Elasticsearch health rendered with green/yellow/red color badge; DaemonSet/Deployment health as `Healthy`/`Degraded`/`Unhealthy`; external ES as `Reachable`/`Unreachable`; empty state per section; unit tests | `TODO` |
-| FARM-T370 | Task | `useElasticStack` hook: fetches `GET /api/v1/kubernetes/elastic-stack`, returns `{ eck, inCluster, external, loading, error }`; unit tests with mock API responses | `TODO` |
+| FARM-T369 | Task | `ElasticStackTab` on the Observability page: three sections (ECK-managed, In-cluster, External); ECK Elasticsearch health rendered with green/yellow/red color badge; DaemonSet/Deployment health as `Healthy`/`Degraded`/`Unhealthy`; external ES as `Reachable`/`Unreachable`; empty state per section; unit tests | `DONE` |
+| FARM-T370 | Task | `useElasticStack` hook: fetches `GET /api/v1/kubernetes/elastic-stack`, returns `{ eck, inCluster, external, loading, error }`; unit tests with mock API responses | `DONE` |
 
 #### FARM-S335 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T371 | Task | `LogPipelineCard` on the component detail sidebar: shows collectors for the component namespace — ECK-managed resources shown first, label-based results as fallback; renders "No log pipeline detected" when all tiers return empty; unit tests | `TODO` |
+| FARM-T371 | Task | `LogPipelineCard` on the component detail sidebar: shows collectors for the component namespace — ECK-managed resources shown first, label-based results as fallback; renders "No log pipeline detected" when all tiers return empty; unit tests | `DONE` |
 
 ---
 
@@ -860,7 +860,7 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 28: Software Templates 2.0 | 1 | 4 | `DONE` |
 | Phase 29: TechDocs 2.0 | 1 | 4 | `DONE` |
 | Phase 30: Plugin Ecosystem | 1 | 4 | `DONE` |
-| Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `TODO` |
+| Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `DONE` |
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
 | Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
