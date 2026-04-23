@@ -203,9 +203,10 @@ interface RawEckList {
  *    Fluentd, plain Logstash Deployments managed via Helm)
  * 3. External Elasticsearch reachability probe via the _cluster/health API
  *
- * Every public method degrades gracefully: errors are logged at WARN level
- * and safe empty defaults are returned so that a partial cluster configuration
- * never causes a 500 response upstream.
+ * Every public method degrades gracefully: HTTP 404 responses (CRD absent)
+ * are logged at DEBUG level and an empty default is returned; all other errors
+ * are logged at WARN.  Safe empty defaults ensure a partial cluster
+ * configuration never causes a 500 response upstream.
  */
 @Injectable()
 export class ElasticStackService {
@@ -232,6 +233,20 @@ export class ElasticStackService {
     private readonly kubernetesService: KubernetesService,
     private readonly configService: ConfigService,
   ) {}
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns true when an error represents a "not found" response from the
+   * Kubernetes API (HTTP 404), which means the CRD is not installed.
+   */
+  private isNotFound(error: unknown): boolean {
+    const status = (error as { response?: { statusCode?: number } })?.response
+      ?.statusCode;
+    return status === 404;
+  }
 
   // ---------------------------------------------------------------------------
   // ECK discovery
@@ -292,6 +307,12 @@ export class ElasticStackService {
         };
       });
     } catch (error) {
+      if (this.isNotFound(error)) {
+        this.logger.debug(
+          "ECK Elasticsearch CRD not found; returning empty Elasticsearch list",
+        );
+        return [];
+      }
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(
         `Failed to list ECK Elasticsearch resources: ${message}`,
@@ -345,6 +366,12 @@ export class ElasticStackService {
         };
       });
     } catch (error) {
+      if (this.isNotFound(error)) {
+        this.logger.debug(
+          "ECK Kibana CRD not found; returning empty Kibana list",
+        );
+        return [];
+      }
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to list ECK Kibana resources: ${message}`);
       return [];
@@ -396,6 +423,12 @@ export class ElasticStackService {
         };
       });
     } catch (error) {
+      if (this.isNotFound(error)) {
+        this.logger.debug(
+          "ECK Beat CRD not installed; returning empty ECK Beat list",
+        );
+        return [];
+      }
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to list ECK Beat resources: ${message}`);
       return [];
@@ -446,6 +479,12 @@ export class ElasticStackService {
         };
       });
     } catch (error) {
+      if (this.isNotFound(error)) {
+        this.logger.debug(
+          "ECK Logstash CRD not found; returning empty ECK Logstash list",
+        );
+        return [];
+      }
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Failed to list ECK Logstash resources: ${message}`);
       return [];

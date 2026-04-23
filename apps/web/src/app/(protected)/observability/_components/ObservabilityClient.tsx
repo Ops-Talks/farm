@@ -233,8 +233,9 @@ export function ObservabilityClient() {
       if (elasticStackResult.status === "fulfilled") {
         setElasticStack(elasticStackResult.value);
       } else {
+        // Preserve the last successful value so transient refresh failures do not
+        // push the Elastic Stack tab back into a loading-like null state.
         console.warn("Elastic Stack status unavailable:", elasticStackResult.reason);
-        setElasticStack(null);
       }
     }
 
