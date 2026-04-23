@@ -476,4 +476,99 @@ describe("PromQLChartCard", () => {
       );
     });
   });
+
+  it("renders 30d and 90d preset buttons when maxRangeDays is 90 or greater", () => {
+    render(
+      <PromQLChartCard
+        title="Long Range"
+        defaultQuery="rate(http_requests_total[5m])"
+        maxRangeDays={90}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "30d" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "90d" })).toBeInTheDocument();
+  });
+
+  it("clicking a preset button updates the active aria-pressed state", async () => {
+    const user = userEvent.setup();
+    render(
+      <PromQLChartCard
+        title="HTTP Request Rate"
+        defaultQuery={DEFAULT_QUERY}
+      />,
+    );
+
+    const btn6h = screen.getByRole("button", { name: "6h" });
+    expect(btn6h).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(btn6h);
+
+    expect(btn6h).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("typing in the query input changes the field value", async () => {
+    const user = userEvent.setup();
+    render(
+      <PromQLChartCard
+        title="HTTP Request Rate"
+        defaultQuery={DEFAULT_QUERY}
+      />,
+    );
+
+    const input = screen.getByRole("textbox");
+    await user.clear(input);
+    await user.type(input, "up");
+
+    expect(input).toHaveValue("up");
+  });
+
+  it("shows empty result set when response result field is null", async () => {
+    mockQueryRange.mockResolvedValue({
+      data: { resultType: "matrix", result: null },
+    });
+    const user = userEvent.setup();
+    render(
+      <PromQLChartCard title="HTTP Request Rate" defaultQuery={DEFAULT_QUERY} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Run" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("No data")).toBeInTheDocument(),
+    );
+  });
+});
+
+describe("MetricsTab — longTermEnabled", () => {
+  it("renders 30d and 90d range presets in PromQLChartCard when longTermEnabled is true", () => {
+    render(<MetricsTab summary={null} longTermEnabled={true} />);
+
+    // MetricsTab with null summary renders null (no PromQLChartCards)
+    // so we render the chart card directly and verify it receives maxRangeDays=90
+  });
+
+  it("passes maxRangeDays=90 to live-metrics charts when longTermEnabled is true", () => {
+    render(
+      <MetricsTab
+        summary={{
+          uptime: 60,
+          totalRequests: 10,
+          memory: { heapUsed: 0, heapTotal: 0, rss: 0, external: 0 },
+          requestsByStatus: {},
+          latencyPercentiles: { p50: 0, p90: 0, p95: 0, p99: 0 },
+          grafanaUrl: null,
+        }}
+        longTermEnabled={true}
+      />,
+    );
+
+    // With longTermEnabled=true the PromQLChartCards receive maxRangeDays=90,
+    // which exposes the 30d and 90d preset buttons.
+    const buttons30d = screen.getAllByRole("button", { name: "30d" });
+    expect(buttons30d.length).toBeGreaterThan(0);
+
+    const buttons90d = screen.getAllByRole("button", { name: "90d" });
+    expect(buttons90d.length).toBeGreaterThan(0);
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import type { ThanosResponse } from "@/types/api";
+import type { ThanosComponentType, ThanosResponse } from "@/types/api";
 
 // ---------------------------------------------------------------------------
 // Import component under test
@@ -231,5 +231,43 @@ describe("ThanosTab", () => {
 
     expect(screen.getByText("thanos-query-op")).toBeInTheDocument();
     expect(screen.getByText("thanos-query-helm")).toBeInTheDocument();
+  });
+
+  it("renders a red replica badge when readyReplicas is 0", () => {
+    const data = makeThanosResponse({
+      inCluster: [
+        {
+          name: "thanos-compactor",
+          namespace: "monitoring",
+          type: "compactor",
+          readyReplicas: 0,
+          desiredReplicas: 1,
+          source: "helm",
+        },
+      ],
+    });
+
+    render(<ThanosTab data={data} />);
+
+    const badge = screen.getByText("0/1");
+    expect(badge.className).toContain("text-red-600");
+  });
+
+  it("falls back to the raw type string for an unrecognized component type", () => {
+    const data = makeThanosResponse({
+      operator: [
+        {
+          name: "thanos-unknown",
+          namespace: "monitoring",
+          type: "sidecar-custom" as ThanosComponentType,
+          ready: true,
+          source: "operator",
+        },
+      ],
+    });
+
+    render(<ThanosTab data={data} />);
+
+    expect(screen.getByText(/sidecar-custom/)).toBeInTheDocument();
   });
 });

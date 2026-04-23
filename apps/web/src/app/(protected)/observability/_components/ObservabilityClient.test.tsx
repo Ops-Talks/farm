@@ -363,4 +363,43 @@ describe("ObservabilityClient", () => {
       expect(mockGetThanos).toHaveBeenCalledTimes(2);
     });
   });
+
+  it("renders without crash when Dragonfly APIs reject", async () => {
+    const user = userEvent.setup();
+    mockGetDragonflyStatus.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyMetrics.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyTasks.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyPeers.mockRejectedValue(new Error("Dragonfly unreachable"));
+
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Dragonfly"));
+
+    await waitFor(() => {
+      expect(mockGetDragonflyStatus).toHaveBeenCalled();
+    });
+
+    expect(screen.getByText("Observability")).toBeInTheDocument();
+  });
+
+  it("triggers a re-fetch after the 10-second polling interval fires", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<ObservabilityClient />);
+
+      await vi.runAllTimersAsync();
+
+      const countAfterMount = mockHealthCheck.mock.calls.length;
+
+      await vi.advanceTimersByTimeAsync(10001);
+
+      expect(mockHealthCheck.mock.calls.length).toBeGreaterThan(countAfterMount);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

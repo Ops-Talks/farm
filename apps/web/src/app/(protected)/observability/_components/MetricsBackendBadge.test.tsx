@@ -72,4 +72,11 @@ describe("MetricsBackendBadge", () => {
     const badge = container.firstChild as HTMLElement;
     expect(badge?.className).toContain("text-indigo-700");
   });
+
+  it("renders nothing when backendType is not in the known label map", () => {
+    const { container } = render(
+      <MetricsBackendBadge backendType={"future" as MetricsBackendType} />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
 });

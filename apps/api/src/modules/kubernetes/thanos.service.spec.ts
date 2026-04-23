@@ -317,6 +317,38 @@ describe("ThanosService", () => {
 
       await expect(service.getThanosOperatorComponents()).resolves.toEqual([]);
     });
+
+    it("logs debug and returns when pod scan rejects with 404 (no Prometheus pods found)", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockKubernetesService.getCoreV1Api.mockReturnValue(mockCoreV1Api);
+
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValue({
+        items: [],
+      });
+      mockCoreV1Api.listPodForAllNamespaces.mockRejectedValue({
+        response: { statusCode: 404 },
+      });
+
+      await expect(service.getThanosOperatorComponents()).resolves.toEqual([]);
+    });
+
+    it("logs warning and returns when pod scan rejects with a non-404 error", async () => {
+      mockKubernetesService.getCustomObjectsApi.mockReturnValue(
+        mockCustomObjectsApi,
+      );
+      mockKubernetesService.getCoreV1Api.mockReturnValue(mockCoreV1Api);
+
+      mockCustomObjectsApi.listClusterCustomObject.mockResolvedValue({
+        items: [],
+      });
+      mockCoreV1Api.listPodForAllNamespaces.mockRejectedValue(
+        new Error("connection refused"),
+      );
+
+      await expect(service.getThanosOperatorComponents()).resolves.toEqual([]);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -538,6 +570,45 @@ describe("ThanosService", () => {
           text: jest.fn().mockResolvedValue(""),
         })
         .mockRejectedValueOnce(new Error("timeout")) as typeof fetch;
+
+      await expect(service.detectMetricsBackend()).resolves.toMatchObject({
+        type: "unknown",
+      });
+    });
+
+    it("returns { type: 'unknown' } when /ready returns a non-ok response", async () => {
+      mockConfigService.get.mockReturnValue("http://prometheus:9090");
+
+      const emptyHeaders = new Headers();
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          headers: emptyHeaders,
+          text: jest.fn().mockResolvedValue(""),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          text: jest.fn().mockResolvedValue(""),
+        }) as typeof fetch;
+
+      await expect(service.detectMetricsBackend()).resolves.toMatchObject({
+        type: "unknown",
+      });
+    });
+
+    it("returns { type: 'unknown' } when /ready fetch throws after a clean labels response", async () => {
+      mockConfigService.get.mockReturnValue("http://prometheus:9090");
+
+      const emptyHeaders = new Headers();
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          headers: emptyHeaders,
+          text: jest.fn().mockResolvedValue(""),
+        })
+        .mockRejectedValueOnce(new Error("ECONNREFUSED")) as typeof fetch;
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "unknown",
