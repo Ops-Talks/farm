@@ -1098,5 +1098,59 @@ describe("KubernetesController (Gatekeeper)", () => {
         "ElasticStackService not available",
       );
     });
+
+    it("returns elastic stack data when ElasticStackService is provided", async () => {
+      const mockResult = {
+        kibana: [],
+        elasticsearch: [],
+        logstash: [],
+        filebeat: [],
+        fluentd: [],
+        externalElasticsearch: null,
+      };
+      const mockElasticStackService = {
+        getAll: jest.fn().mockResolvedValue(mockResult),
+      };
+      (
+        controller as unknown as {
+          elasticStackService: typeof mockElasticStackService;
+        }
+      ).elasticStackService = mockElasticStackService;
+
+      const result = await controller.getElasticStack("monitoring");
+
+      expect(mockElasticStackService.getAll).toHaveBeenCalledWith("monitoring");
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe("getThanos", () => {
+    it("throws ServiceUnavailableException when ThanosService is not provided", async () => {
+      await expect(controller.getThanos()).rejects.toThrow(
+        "ThanosService not available",
+      );
+    });
+
+    it("returns thanos data when ThanosService is provided", async () => {
+      const mockResult = {
+        operator: [],
+        inCluster: [],
+        backendType: "unknown",
+        longTermEnabled: false,
+      };
+      const mockThanosService = {
+        getAll: jest.fn().mockResolvedValue(mockResult),
+      };
+      (
+        controller as unknown as {
+          thanosService: typeof mockThanosService;
+        }
+      ).thanosService = mockThanosService;
+
+      const result = await controller.getThanos("monitoring");
+
+      expect(mockThanosService.getAll).toHaveBeenCalledWith("monitoring");
+      expect(result).toEqual(mockResult);
+    });
   });
 });

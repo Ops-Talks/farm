@@ -69,6 +69,7 @@ import {
   ElasticStackService,
   ElasticStackResult,
 } from "./elastic-stack.service";
+import { ThanosService, ThanosResult } from "./thanos.service";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
@@ -97,6 +98,8 @@ export class KubernetesController {
     private readonly kedaBindingService?: KedaBindingService,
     @Optional()
     private readonly elasticStackService?: ElasticStackService,
+    @Optional()
+    private readonly thanosService?: ThanosService,
   ) {}
 
   /**
@@ -931,5 +934,31 @@ export class KubernetesController {
       );
     }
     return this.elasticStackService.getAll(namespace);
+  }
+
+  /**
+   * @returns ThanosResult aggregating Thanos component discovery and backend detection
+   */
+  @Get("thanos")
+  @ApiOperation({
+    summary: "Discover Thanos components and detect metrics backend",
+  })
+  @ApiQuery({
+    name: "namespace",
+    required: false,
+    description: "Scope discovery queries to this Kubernetes namespace",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Returns operator-managed Thanos components, Helm/YAML-installed components, detected backend type, and long-term retention flag.",
+  })
+  async getThanos(
+    @Query("namespace") namespace?: string,
+  ): Promise<ThanosResult> {
+    if (!this.thanosService) {
+      throw new ServiceUnavailableException("ThanosService not available");
+    }
+    return this.thanosService.getAll(namespace);
   }
 }

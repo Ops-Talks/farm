@@ -19,6 +19,7 @@ const mockGetKedaStatus = vi.fn();
 const mockListKedaScaledObjects = vi.fn();
 const mockListKedaScaledJobs = vi.fn();
 const mockGetElasticStack = vi.fn();
+const mockGetThanos = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   health: { check: () => mockHealthCheck() },
@@ -39,6 +40,7 @@ vi.mock("@/lib/api-client", () => ({
     listKedaScaledObjects: () => mockListKedaScaledObjects(),
     listKedaScaledJobs: () => mockListKedaScaledJobs(),
     getElasticStack: (...args: unknown[]) => mockGetElasticStack(...args),
+    getThanos: (...args: unknown[]) => mockGetThanos(...args),
   },
 }));
 
@@ -99,6 +101,14 @@ describe("ObservabilityClient", () => {
 
     // Elastic Stack not called on mount (only when tab is active)
     mockGetElasticStack.mockResolvedValue(emptyElasticStack);
+
+    // Thanos not called on mount (only when tab is active)
+    mockGetThanos.mockResolvedValue({
+      operator: [],
+      inCluster: [],
+      backendType: "unknown",
+      longTermEnabled: false,
+    });
 
     // Dragonfly / KEDA (not called on initial health tab)
     mockGetDragonflyStatus.mockResolvedValue({ status: "healthy", version: "2.1.0", components: [] });
@@ -274,5 +284,123 @@ describe("ObservabilityClient", () => {
     await waitFor(() => {
       expect(mockGetDragonflyStatus).toHaveBeenCalled();
     });
+  });
+
+  it("renders the Thanos tab trigger in the tab bar", async () => {
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Thanos")).toBeInTheDocument();
+  });
+
+  it("does NOT call getThanos on initial render (health tab is active)", async () => {
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    expect(mockGetThanos).not.toHaveBeenCalled();
+  });
+
+  it("calls getThanos when the Thanos tab is clicked", async () => {
+    const user = userEvent.setup();
+
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Thanos"));
+
+    await waitFor(() => {
+      expect(mockGetThanos).toHaveBeenCalled();
+    });
+  });
+
+  it("renders without crash when getThanos rejects", async () => {
+    const user = userEvent.setup();
+    mockGetThanos.mockRejectedValue(new Error("Thanos unavailable"));
+
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Thanos"));
+
+    await waitFor(() => {
+      expect(mockGetThanos).toHaveBeenCalled();
+    });
+
+    // The component must not crash — heading must still be present
+    expect(screen.getByText("Observability")).toBeInTheDocument();
+  });
+
+  it("calls getThanos again when the Refresh button is clicked while on the Thanos tab", async () => {
+    const user = userEvent.setup();
+
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Thanos"));
+
+    await waitFor(() => {
+      expect(mockGetThanos).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByText("Refresh"));
+
+    await waitFor(() => {
+      expect(mockGetThanos).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("renders without crash when Dragonfly APIs reject", async () => {
+    const user = userEvent.setup();
+    mockGetDragonflyStatus.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyMetrics.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyTasks.mockRejectedValue(new Error("Dragonfly unreachable"));
+    mockGetDragonflyPeers.mockRejectedValue(new Error("Dragonfly unreachable"));
+
+    render(<ObservabilityClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Observability")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Dragonfly"));
+
+    await waitFor(() => {
+      expect(mockGetDragonflyStatus).toHaveBeenCalled();
+    });
+
+    expect(screen.getByText("Observability")).toBeInTheDocument();
+  });
+
+  it("triggers a re-fetch after the 10-second polling interval fires", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<ObservabilityClient />);
+
+      // Flush the initial async fetch without running future intervals.
+      await vi.advanceTimersByTimeAsync(0);
+
+      const countAfterMount = mockHealthCheck.mock.calls.length;
+
+      await vi.advanceTimersByTimeAsync(10001);
+
+      expect(mockHealthCheck.mock.calls.length).toBeGreaterThan(countAfterMount);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

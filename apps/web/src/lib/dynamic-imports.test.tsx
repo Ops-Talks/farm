@@ -98,6 +98,7 @@ vi.mock("@/lib/api-client", () => ({
     getDragonflyMetrics: vi.fn().mockResolvedValue({ totalTasks: 0, succeededTasks: 0, failedTasks: 0, activeTasks: 0, totalPeers: 0 }),
     getDragonflyTasks: vi.fn().mockResolvedValue([]),
     getDragonflyPeers: vi.fn().mockResolvedValue([]),
+    getThanos: vi.fn().mockResolvedValue({ operator: [], inCluster: [], backendType: "unknown", longTermEnabled: false }),
   },
   pipelines: {
     get: (...args: unknown[]) => mockPipelinesGet(...args),

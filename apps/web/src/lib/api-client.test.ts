@@ -1537,6 +1537,24 @@ describe("api-client", () => {
       expect(url).toContain("namespace=production");
       expect(url).toContain("componentId=comp-1");
     });
+
+    it("getThanos without namespace sends GET to /v1/kubernetes/thanos", async () => {
+      const payload = { operator: [], inCluster: [], backendType: "unknown", longTermEnabled: false };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const result = await kubernetes.getThanos();
+      expect(result).toEqual(payload);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/kubernetes/thanos",
+        expect.any(Object),
+      );
+    });
+
+    it("getThanos with namespace appends namespace as a query param", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ operator: [], inCluster: [], backendType: "thanos", longTermEnabled: true }));
+      await kubernetes.getThanos("monitoring");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("namespace=monitoring");
+    });
   });
 
   // ─── Integration Credentials ──────────────────────────────────────────────
