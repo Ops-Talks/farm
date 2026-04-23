@@ -277,9 +277,9 @@ export function ObservabilityClient() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", true);
+    void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", activeTab === "thanos");
     const interval = setInterval(
-      () => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", true),
+      () => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", activeTab === "thanos"),
       10000,
     );
     return () => clearInterval(interval);
