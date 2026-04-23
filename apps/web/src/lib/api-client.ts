@@ -161,6 +161,8 @@ import type {
   AdvancedSearchResult,
   // Elastic Stack (FARM-S334 / FARM-S335 / Phase 31)
   ElasticStackResponse,
+  // Thanos (Phase 32)
+  ThanosResponse,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -1439,6 +1441,17 @@ export const kubernetes = {
   getElasticStack(namespace?: string): Promise<ElasticStackResponse> {
     const query = namespace ? `?namespace=${encodeURIComponent(namespace)}` : "";
     return request<ElasticStackResponse>(`/v1/kubernetes/elastic-stack${query}`);
+  },
+
+  // -- Thanos (Phase 32) --
+
+  /**
+   * Discover Thanos components and detect the configured metrics backend type.
+   * Optionally filtered by Kubernetes namespace.
+   */
+  getThanos(namespace?: string): Promise<ThanosResponse> {
+    const query = namespace ? `?namespace=${encodeURIComponent(namespace)}` : "";
+    return request<ThanosResponse>(`/v1/kubernetes/thanos${query}`);
   },
 };
 

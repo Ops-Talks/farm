@@ -1738,6 +1738,47 @@ export interface ElasticStackResponse {
   external: ExternalElasticsearch;
 }
 
+// -- Thanos (Phase 32) --
+
+export type ThanosComponentType =
+  | "querier"
+  | "store-gateway"
+  | "compactor"
+  | "ruler"
+  | "receiver"
+  | "sidecar";
+
+export type MetricsBackendType =
+  | "prometheus"
+  | "thanos"
+  | "mimir"
+  | "cortex"
+  | "unknown";
+
+export interface ThanosOperatorComponent {
+  name: string;
+  namespace: string;
+  type: ThanosComponentType;
+  ready: boolean;
+  source: "operator";
+}
+
+export interface ThanosLabelComponent {
+  name: string;
+  namespace: string;
+  type: ThanosComponentType;
+  readyReplicas: number;
+  desiredReplicas: number;
+  source: "helm";
+}
+
+export interface ThanosResponse {
+  operator: ThanosOperatorComponent[];
+  inCluster: ThanosLabelComponent[];
+  backendType: MetricsBackendType;
+  longTermEnabled: boolean;
+}
+
 // -- Phase 25 --
 
 export interface FeatureAvailabilityRaw {

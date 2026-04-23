@@ -556,64 +556,64 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 32: Thanos and Long-Term Metrics Visibility `TODO`
+## Phase 32: Thanos and Long-Term Metrics Visibility `DONE`
 
-### FARM-E78: Thanos Discovery and Metrics Backend Awareness `TODO`
+### FARM-E78: Thanos Discovery and Metrics Backend Awareness `DONE`
 
 Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existing `queryPrometheus()` already works when `PROMETHEUS_URL` points to a Thanos Querier — no query-layer changes are needed. This phase focuses on three complementary capabilities: (1) discovering Thanos components running in the cluster so operators can see their health, (2) auto-detecting whether the configured metrics endpoint is plain Prometheus, Thanos, Grafana Mimir, or Cortex, and (3) surfacing that knowledge in the UI to unlock longer query time-ranges and richer observability context. The same three-tier discovery model used in Phase 31 applies here: operator/CRD → label-based (Helm/YAML) → external URL detection.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S336 | Story | Backend: Thanos operator and CRD-based component discovery — Querier, Store Gateway, Compactor, Ruler, and sidecar via `monitoring.thanos.io` CRDs or kube-prometheus-stack sidecar container labels | `TODO` |
-| FARM-S337 | Story | Backend: Label-based Thanos discovery for Helm and plain-YAML installs — bitnami/thanos and thanos-io/thanos chart label conventions across Deployments and StatefulSets | `TODO` |
-| FARM-S338 | Story | Backend: Metrics backend auto-detection — determine whether `PROMETHEUS_URL` points to plain Prometheus, Thanos Querier, Grafana Mimir, or Cortex via response headers and probe endpoints | `TODO` |
-| FARM-S339 | Story | Frontend: Thanos component health panel on the Observability page — unified view of operator-managed and label-based components with per-type sections and health badges | `TODO` |
-| FARM-S340 | Story | Frontend: Metrics backend badge and extended time-range awareness — show detected backend type on the Observability page header; extend max query window to 90 days when Thanos, Mimir, or Cortex is detected | `TODO` |
+| FARM-S336 | Story | Backend: Thanos operator and CRD-based component discovery — Querier, Store Gateway, Compactor, Ruler, and sidecar via `monitoring.thanos.io` CRDs or kube-prometheus-stack sidecar container labels | `DONE` |
+| FARM-S337 | Story | Backend: Label-based Thanos discovery for Helm and plain-YAML installs — bitnami/thanos and thanos-io/thanos chart label conventions across Deployments and StatefulSets | `DONE` |
+| FARM-S338 | Story | Backend: Metrics backend auto-detection — determine whether `PROMETHEUS_URL` points to plain Prometheus, Thanos Querier, Grafana Mimir, or Cortex via response headers and probe endpoints | `DONE` |
+| FARM-S339 | Story | Frontend: Thanos component health panel on the Observability page — unified view of operator-managed and label-based components with per-type sections and health badges | `DONE` |
+| FARM-S340 | Story | Frontend: Metrics backend badge and extended time-range awareness — show detected backend type on the Observability page header; extend max query window to 90 days when Thanos, Mimir, or Cortex is detected | `DONE` |
 
 #### FARM-S336 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T372 | Task | `ThanosService.getThanosOperatorComponents(kubeconfig)`: list Thanos CRs from `monitoring.thanos.io` (thanos-operator) and detect Thanos sidecar containers in kube-prometheus-stack Prometheus pods via label `app.kubernetes.io/component=thanos-sidecar`; map each component to `{ name, namespace, type: "querier"\|"store-gateway"\|"compactor"\|"ruler"\|"sidecar", ready: bool, source: "operator" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `TODO` |
+| FARM-T372 | Task | `ThanosService.getThanosOperatorComponents(kubeconfig)`: list Thanos CRs from `monitoring.thanos.io` (thanos-operator) and detect Thanos sidecar containers in kube-prometheus-stack Prometheus pods via label `app.kubernetes.io/component=thanos-sidecar`; map each component to `{ name, namespace, type: "querier"\|"store-gateway"\|"compactor"\|"ruler"\|"sidecar", ready: bool, source: "operator" }`; degrade gracefully to `[]` when CRDs are absent; unit tests | `DONE` |
 
 ##### FARM-T372 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST392 | Sub-task | Unit test: Thanos Querier CR present → returned with `type: "querier"`, `source: "operator"`, `ready: true` | `TODO` |
-| FARM-ST393 | Sub-task | Unit test: `monitoring.thanos.io` CRD absent (404 from CustomObjectsApi) → `getThanosOperatorComponents()` returns `[]` without throwing | `TODO` |
+| FARM-ST392 | Sub-task | Unit test: Thanos Querier CR present → returned with `type: "querier"`, `source: "operator"`, `ready: true` | `DONE` |
+| FARM-ST393 | Sub-task | Unit test: `monitoring.thanos.io` CRD absent (404 from CustomObjectsApi) → `getThanosOperatorComponents()` returns `[]` without throwing | `DONE` |
 
 #### FARM-S337 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T373 | Task | `ThanosService.getThanosLabelBased(kubeconfig)`: list Deployments and StatefulSets matching labels `app.kubernetes.io/name=thanos-query`, `app.kubernetes.io/name=thanos-storegateway`, `app.kubernetes.io/name=thanos-compactor`, `app.kubernetes.io/name=thanos-ruler` (bitnami/thanos and thanos-io/thanos chart conventions); map to `{ name, namespace, type, readyReplicas, desiredReplicas, source: "helm" }`; degrade gracefully to `[]`; unit tests | `TODO` |
-| FARM-T374 | Task | `GET /api/v1/kubernetes/thanos`: returns `{ operator: ThanosComponent[], inCluster: ThanosComponent[], backendType: string, longTermEnabled: bool }`; optional `namespace` query param filters in-cluster results by namespace; unit + e2e tests | `TODO` |
+| FARM-T373 | Task | `ThanosService.getThanosLabelBased(kubeconfig)`: list Deployments and StatefulSets matching labels `app.kubernetes.io/name=thanos-query`, `app.kubernetes.io/name=thanos-storegateway`, `app.kubernetes.io/name=thanos-compactor`, `app.kubernetes.io/name=thanos-ruler` (bitnami/thanos and thanos-io/thanos chart conventions); map to `{ name, namespace, type, readyReplicas, desiredReplicas, source: "helm" }`; degrade gracefully to `[]`; unit tests | `DONE` |
+| FARM-T374 | Task | `GET /api/v1/kubernetes/thanos`: returns `{ operator: ThanosComponent[], inCluster: ThanosComponent[], backendType: string, longTermEnabled: bool }`; optional `namespace` query param filters in-cluster results by namespace; unit + e2e tests | `DONE` |
 
 #### FARM-S338 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T375 | Task | `ThanosService.detectMetricsBackend()`: HEAD or GET `PROMETHEUS_URL/api/v1/query` and inspect response headers — `X-Thanos-*` headers indicate Thanos Querier; probe `/ready` response body for Cortex/Mimir markers; return `{ type: "prometheus"\|"thanos"\|"mimir"\|"cortex"\|"unknown", version?: string, multiCluster?: bool }`; returns `{ type: "unknown" }` when `PROMETHEUS_URL` is not set or unreachable; unit tests | `TODO` |
+| FARM-T375 | Task | `ThanosService.detectMetricsBackend()`: HEAD or GET `PROMETHEUS_URL/api/v1/query` and inspect response headers — `X-Thanos-*` headers indicate Thanos Querier; probe `/ready` response body for Cortex/Mimir markers; return `{ type: "prometheus"\|"thanos"\|"mimir"\|"cortex"\|"unknown", version?: string, multiCluster?: bool }`; returns `{ type: "unknown" }` when `PROMETHEUS_URL` is not set or unreachable; unit tests | `DONE` |
 
 ##### FARM-T375 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST394 | Sub-task | Unit test: response includes `X-Thanos-Querier-Store-Addresses` header → `detectMetricsBackend()` returns `{ type: "thanos" }` | `TODO` |
-| FARM-ST395 | Sub-task | Unit test: no Thanos headers, no Mimir/Cortex markers → `detectMetricsBackend()` returns `{ type: "prometheus" }` | `TODO` |
+| FARM-ST394 | Sub-task | Unit test: response includes `X-Thanos-Querier-Store-Addresses` header → `detectMetricsBackend()` returns `{ type: "thanos" }` | `DONE` |
+| FARM-ST395 | Sub-task | Unit test: no Thanos headers, no Mimir/Cortex markers → `detectMetricsBackend()` returns `{ type: "prometheus" }` | `DONE` |
 
 #### FARM-S339 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T376 | Task | `ThanosHealthPanel` on the Observability page: two sub-sections (Operator-managed, Helm/YAML); each component rendered with a health badge (`Ready`/`Degraded`); shows component type label (Querier, Store Gateway, Compactor, Ruler, Sidecar); empty state "No Thanos components detected" when both tiers return empty; unit tests | `TODO` |
+| FARM-T376 | Task | `ThanosHealthPanel` on the Observability page: two sub-sections (Operator-managed, Helm/YAML); each component rendered with a health badge (`Ready`/`Degraded`); shows component type label (Querier, Store Gateway, Compactor, Ruler, Sidecar); empty state "No Thanos components detected" when both tiers return empty; unit tests | `DONE` |
 
 #### FARM-S340 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T377 | Task | `MetricsBackendBadge` on the Observability page header: displays "Prometheus", "Thanos", "Mimir", or "Cortex" based on `detectMetricsBackend()` result; when a long-term backend (Thanos, Mimir, Cortex) is detected, extends the metrics time-range picker max from 7 days to 90 days; `useMetricsBackend` hook fetches `GET /api/v1/kubernetes/thanos` and returns `{ backendType, longTermEnabled, loading, error }`; unit tests | `TODO` |
+| FARM-T377 | Task | `MetricsBackendBadge` on the Observability page header: displays "Prometheus", "Thanos", "Mimir", or "Cortex" based on `detectMetricsBackend()` result; when a long-term backend (Thanos, Mimir, Cortex) is detected, extends the metrics time-range picker max from 7 days to 90 days; `useMetricsBackend` hook fetches `GET /api/v1/kubernetes/thanos` and returns `{ backendType, longTermEnabled, loading, error }`; unit tests | `DONE` |
 
 ---
 
@@ -861,7 +861,7 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 29: TechDocs 2.0 | 1 | 4 | `DONE` |
 | Phase 30: Plugin Ecosystem | 1 | 4 | `DONE` |
 | Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `DONE` |
-| Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `TODO` |
+| Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `DONE` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
 | Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
 | Phase 35: Elasticsearch Index Visibility | 1 | 4 | `TODO` |

@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
-import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer, KedaInstallStatus, KedaScaledObject, KedaScaledJob, ElasticStackResponse } from "@/types/api";
+import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer, KedaInstallStatus, KedaScaledObject, KedaScaledJob, ElasticStackResponse, ThanosResponse } from "@/types/api";
 // HealthTab is the default active tab — keep it statically imported to avoid
 // a loading flash on first render.
 import { HealthTab } from "./health-tab";
+import { MetricsBackendBadge } from "./MetricsBackendBadge";
 
 // --- Dynamically imported tabs ---
 // These tabs are only mounted when the user navigates to them, so we defer
@@ -84,7 +85,18 @@ const ElasticStackTab = dynamic(
   },
 );
 
-type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly" | "keda" | "elastic-stack";
+/** ThanosTab: Thanos component discovery and metrics backend detection */
+const ThanosTab = dynamic(
+  () => import("./thanos-tab").then((m) => ({ default: m.ThanosTab })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md" />
+    ),
+  },
+);
+
+type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly" | "keda" | "elastic-stack" | "thanos";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "health", label: "Health" },
@@ -94,6 +106,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "dragonfly", label: "Dragonfly" },
   { id: "keda", label: "KEDA" },
   { id: "elastic-stack", label: "Elastic Stack" },
+  { id: "thanos", label: "Thanos" },
 ];
 
 export function ObservabilityClient() {
@@ -117,7 +130,10 @@ export function ObservabilityClient() {
   // Elastic Stack state
   const [elasticStack, setElasticStack] = useState<ElasticStackResponse | null>(null);
 
-  const fetchData = useCallback(async (fetchDragonfly: boolean, fetchKeda: boolean, fetchElasticStack: boolean) => {
+  // Thanos state
+  const [thanosData, setThanosData] = useState<ThanosResponse | null>(null);
+
+  const fetchData = useCallback(async (fetchDragonfly: boolean, fetchKeda: boolean, fetchElasticStack: boolean, fetchThanos: boolean) => {
     // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
     // not prevent the health data from rendering.
     const corePromises = Promise.allSettled([
@@ -146,11 +162,16 @@ export function ObservabilityClient() {
       ? Promise.allSettled([kubernetes.getElasticStack()])
       : Promise.resolve(null);
 
-    const [coreResults, dragonflyResults, kedaResults, elasticStackResults] = await Promise.all([
+    const thanosPromises = fetchThanos
+      ? Promise.allSettled([kubernetes.getThanos()])
+      : Promise.resolve(null);
+
+    const [coreResults, dragonflyResults, kedaResults, elasticStackResults, thanosResults] = await Promise.all([
       corePromises,
       dragonflyPromises,
       kedaPromises,
       elasticStackPromises,
+      thanosPromises,
     ]);
 
     const [healthResult, summaryResult] = coreResults;
@@ -239,15 +260,26 @@ export function ObservabilityClient() {
       }
     }
 
+    if (thanosResults) {
+      const [thanosResult] = thanosResults;
+
+      if (thanosResult.status === "fulfilled") {
+        setThanosData(thanosResult.value);
+      } else {
+        // Preserve last successful value on transient failures.
+        console.warn("Thanos status unavailable:", thanosResult.reason);
+      }
+    }
+
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack");
+    void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", activeTab === "thanos");
     const interval = setInterval(
-      () => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack"),
+      () => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", activeTab === "thanos"),
       10000,
     );
     return () => clearInterval(interval);
@@ -276,10 +308,11 @@ export function ObservabilityClient() {
         description="System health, metrics, and distributed traces."
       >
         <div className="flex items-center gap-2">
+          <MetricsBackendBadge backendType={thanosData?.backendType} />
           <Badge variant="outline" className="text-xs">
             Updated: {lastUpdated.toLocaleTimeString()}
           </Badge>
-          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack")}>
+          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack", activeTab === "thanos")}>
             Refresh
           </Button>
         </div>
@@ -296,7 +329,7 @@ export function ObservabilityClient() {
         {activeTab === "health" && (
           <HealthTab healthData={healthData} summary={summary} />
         )}
-        {activeTab === "metrics" && <MetricsTab summary={summary} />}
+        {activeTab === "metrics" && <MetricsTab summary={summary} longTermEnabled={thanosData?.longTermEnabled} />}
         {activeTab === "traces" && <TracesTab />}
         {activeTab === "logs" && <LogsTab />}
         {activeTab === "dragonfly" && (
@@ -316,6 +349,9 @@ export function ObservabilityClient() {
         )}
         {activeTab === "elastic-stack" && (
           <ElasticStackTab data={elasticStack} />
+        )}
+        {activeTab === "thanos" && (
+          <ThanosTab data={thanosData} />
         )}
       </div>
     </div>

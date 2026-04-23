@@ -148,22 +148,46 @@ export const MiniLineChart = memo(function MiniLineChart({ data, height = 80, la
 interface PromQLChartCardProps {
   title: string;
   defaultQuery: string;
+  maxRangeDays?: number;
 }
 
-export const PromQLChartCard = memo(function PromQLChartCard({ title, defaultQuery }: PromQLChartCardProps) {
+export const PromQLChartCard = memo(function PromQLChartCard({
+  title,
+  defaultQuery,
+  maxRangeDays,
+}: PromQLChartCardProps) {
   const [query, setQuery] = useState(defaultQuery);
   const [inputQuery, setInputQuery] = useState(defaultQuery);
   const [results, setResults] = useState<PrometheusResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [ran, setRan] = useState(false);
+  const [rangeSeconds, setRangeSeconds] = useState(3600);
+
+  // Build preset list based on the maximum allowed range in days.
+  const presets = useMemo(() => {
+    const base = [
+      { label: "1h", seconds: 3600 },
+      { label: "6h", seconds: 21600 },
+      { label: "24h", seconds: 86400 },
+      { label: "7d", seconds: 604800 },
+    ];
+    if ((maxRangeDays ?? 7) >= 90) {
+      return [
+        ...base,
+        { label: "30d", seconds: 2592000 },
+        { label: "90d", seconds: 7776000 },
+      ];
+    }
+    return base;
+  }, [maxRangeDays]);
 
   const runQuery = useCallback(async () => {
     setLoading(true);
     setUnavailable(false);
     setQuery(inputQuery);
     const end = Math.floor(Date.now() / 1000);
-    const start = end - 3600; // last 1 hour
+    const start = end - rangeSeconds;
     const step = 60; // 60s step
     try {
       const res = await observability.queryRange(inputQuery, start, end, step);
@@ -180,7 +204,7 @@ export const PromQLChartCard = memo(function PromQLChartCard({ title, defaultQue
       setLoading(false);
       setRan(true);
     }
-  }, [inputQuery]);
+  }, [inputQuery, rangeSeconds]);
 
   return (
     <Card>
@@ -188,6 +212,24 @@ export const PromQLChartCard = memo(function PromQLChartCard({ title, defaultQue
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Time-range preset selector */}
+        <div className="mb-2 flex flex-wrap gap-1">
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => setRangeSeconds(p.seconds)}
+              className={`rounded px-2 py-0.5 text-xs font-medium ${
+                rangeSeconds === p.seconds
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-2">
           <Input
             value={inputQuery}
@@ -249,8 +291,10 @@ export const PromQLChartCard = memo(function PromQLChartCard({ title, defaultQue
 
 export function MetricsTab({
   summary,
+  longTermEnabled,
 }: {
   summary: ObservabilitySummary | null;
+  longTermEnabled?: boolean;
 }) {
   // Estimate requests per second (total / uptime).
   // Hooks must be called unconditionally, before any early return.
@@ -362,10 +406,12 @@ export function MetricsTab({
           <PromQLChartCard
             title="HTTP Request Rate"
             defaultQuery="rate(http_requests_total[5m])"
+            maxRangeDays={longTermEnabled ? 90 : 7}
           />
           <PromQLChartCard
             title="Memory Usage"
             defaultQuery="process_resident_memory_bytes"
+            maxRangeDays={longTermEnabled ? 90 : 7}
           />
         </div>
       </div>
