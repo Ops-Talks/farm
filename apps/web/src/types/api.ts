@@ -1653,6 +1653,91 @@ export interface CreateKedaBindingDto {
   organizationId?: string;
 }
 
+// -- Elastic Stack (FARM-S334 / FARM-S335 / Phase 31) --
+
+export interface EckElasticsearch {
+  name: string;
+  namespace: string;
+  health: "green" | "yellow" | "red" | "unknown";
+  version: string;
+  nodeCount: number;
+  source: "eck";
+}
+
+export interface EckKibana {
+  name: string;
+  namespace: string;
+  available: boolean;
+  version?: string;
+  source: "eck";
+}
+
+export interface EckBeat {
+  name: string;
+  namespace: string;
+  available: boolean;
+  version?: string;
+  source: "eck";
+}
+
+export interface EckLogstash {
+  name: string;
+  namespace: string;
+  readyReplicas: number;
+  desiredReplicas: number;
+  source: "eck";
+}
+
+export interface FluentBitDaemonSet {
+  name: string;
+  namespace: string;
+  desiredNodes: number;
+  readyNodes: number;
+  notReadyNodes: number;
+  configMapRef?: string;
+  source: "helm";
+}
+
+export interface FluentdDaemonSet {
+  name: string;
+  namespace: string;
+  desiredNodes: number;
+  readyNodes: number;
+  notReadyNodes: number;
+  configMapRef?: string;
+  source: "helm";
+}
+
+export interface LogstashDeployment {
+  name: string;
+  namespace: string;
+  desiredReplicas: number;
+  readyReplicas: number;
+  configMapRef?: string;
+  source: "helm";
+}
+
+export interface ExternalElasticsearch {
+  reachable: boolean;
+  clusterHealth?: "green" | "yellow" | "red";
+  version?: string;
+}
+
+export interface ElasticStackResponse {
+  eck: {
+    elasticsearch: EckElasticsearch[];
+    kibana: EckKibana[];
+    logstash: EckLogstash[];
+    beats: EckBeat[];
+  };
+  inCluster: {
+    fluentBit: FluentBitDaemonSet[];
+    fluentd: FluentdDaemonSet[];
+    logstash: LogstashDeployment[];
+  };
+  external: ExternalElasticsearch;
+}
+
 // -- Phase 25 --
 
 export interface FeatureAvailabilityRaw {

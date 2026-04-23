@@ -11,6 +11,7 @@ import { FluxBindingService } from "./flux-binding.service";
 import { FluxBinding } from "./entities/flux-binding.entity";
 import { KedaBindingService } from "./keda-binding.service";
 import { KedaBinding } from "./entities/keda-binding.entity";
+import { ElasticStackService } from "./elastic-stack.service";
 import { CatalogModule } from "../catalog/catalog.module";
 
 /**
@@ -34,6 +35,7 @@ import { CatalogModule } from "../catalog/catalog.module";
     OperatorBindingService,
     FluxBindingService,
     KedaBindingService,
+    ElasticStackService,
   ],
   exports: [
     KubernetesService,
@@ -42,6 +44,7 @@ import { CatalogModule } from "../catalog/catalog.module";
     OperatorBindingService,
     FluxBindingService,
     KedaBindingService,
+    ElasticStackService,
   ],
 })
 export class KubernetesModule {}

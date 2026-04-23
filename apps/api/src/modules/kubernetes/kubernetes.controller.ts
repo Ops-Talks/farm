@@ -65,6 +65,10 @@ import { CreateFluxBindingDto } from "./dto/create-flux-binding.dto";
 import { KedaBindingService } from "./keda-binding.service";
 import { KedaBinding } from "./entities/keda-binding.entity";
 import { CreateKedaBindingDto } from "./dto/create-keda-binding.dto";
+import {
+  ElasticStackService,
+  ElasticStackResult,
+} from "./elastic-stack.service";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
@@ -91,6 +95,8 @@ export class KubernetesController {
     private readonly fluxBindingService?: FluxBindingService,
     @Optional()
     private readonly kedaBindingService?: KedaBindingService,
+    @Optional()
+    private readonly elasticStackService?: ElasticStackService,
   ) {}
 
   /**
@@ -883,5 +889,47 @@ export class KubernetesController {
           available: false,
           reason: "KUBECONFIG not set or cluster unreachable",
         };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Elastic Stack (FARM-S331, FARM-S332, FARM-S333)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Returns a full Elastic Stack discovery report for the cluster.
+   *
+   * Aggregates ECK-managed resources (Elasticsearch, Kibana, Logstash, Beats),
+   * in-cluster log forwarders (Fluent Bit, Fluentd, Logstash Helm deployments),
+   * and an optional external Elasticsearch reachability probe.
+   *
+   * All sub-queries degrade gracefully: if any individual discovery call fails
+   * the remaining results are still returned with safe empty defaults.
+   *
+   * @param namespace - Optional Kubernetes namespace to scope all queries
+   * @returns ElasticStackResult aggregating all discovered components
+   */
+  @Get("elastic-stack")
+  @ApiOperation({
+    summary: "Discover Elastic Stack components in the cluster",
+  })
+  @ApiQuery({
+    name: "namespace",
+    required: false,
+    description: "Scope all discovery queries to this Kubernetes namespace",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      "Returns ECK resources, in-cluster log forwarders, and external Elasticsearch status.",
+  })
+  async getElasticStack(
+    @Query("namespace") namespace?: string,
+  ): Promise<ElasticStackResult> {
+    if (!this.elasticStackService) {
+      throw new ServiceUnavailableException(
+        "ElasticStackService not available",
+      );
+    }
+    return this.elasticStackService.getAll(namespace);
   }
 }

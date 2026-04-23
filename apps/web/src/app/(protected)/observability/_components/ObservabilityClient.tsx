@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
-import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer, KedaInstallStatus, KedaScaledObject, KedaScaledJob } from "@/types/api";
+import type { HealthStatus, ObservabilitySummary, DragonflyInstallStatus, DragonflyTaskMetrics, DragonflyTask, DragonflyPeer, KedaInstallStatus, KedaScaledObject, KedaScaledJob, ElasticStackResponse } from "@/types/api";
 // HealthTab is the default active tab — keep it statically imported to avoid
 // a loading flash on first render.
 import { HealthTab } from "./health-tab";
@@ -73,7 +73,18 @@ const KedaTab = dynamic(
   },
 );
 
-type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly" | "keda";
+/** ElasticStackTab: ECK-managed resources, in-cluster collectors, external Elasticsearch */
+const ElasticStackTab = dynamic(
+  () => import("./elastic-stack-tab").then((m) => ({ default: m.ElasticStackTab })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse h-32 bg-muted rounded-md" />
+    ),
+  },
+);
+
+type TabId = "health" | "metrics" | "traces" | "logs" | "dragonfly" | "keda" | "elastic-stack";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "health", label: "Health" },
@@ -82,6 +93,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "logs", label: "Logs" },
   { id: "dragonfly", label: "Dragonfly" },
   { id: "keda", label: "KEDA" },
+  { id: "elastic-stack", label: "Elastic Stack" },
 ];
 
 export function ObservabilityClient() {
@@ -102,7 +114,10 @@ export function ObservabilityClient() {
   const [kedaScaledObjects, setKedaScaledObjects] = useState<KedaScaledObject[]>([]);
   const [kedaScaledJobs, setKedaScaledJobs] = useState<KedaScaledJob[]>([]);
 
-  const fetchData = useCallback(async (fetchDragonfly: boolean, fetchKeda: boolean) => {
+  // Elastic Stack state
+  const [elasticStack, setElasticStack] = useState<ElasticStackResponse | null>(null);
+
+  const fetchData = useCallback(async (fetchDragonfly: boolean, fetchKeda: boolean, fetchElasticStack: boolean) => {
     // Use allSettled so a failing summary (Prometheus/Loki unavailable) does
     // not prevent the health data from rendering.
     const corePromises = Promise.allSettled([
@@ -127,10 +142,15 @@ export function ObservabilityClient() {
         ])
       : Promise.resolve(null);
 
-    const [coreResults, dragonflyResults, kedaResults] = await Promise.all([
+    const elasticStackPromises = fetchElasticStack
+      ? Promise.allSettled([kubernetes.getElasticStack()])
+      : Promise.resolve(null);
+
+    const [coreResults, dragonflyResults, kedaResults, elasticStackResults] = await Promise.all([
       corePromises,
       dragonflyPromises,
       kedaPromises,
+      elasticStackPromises,
     ]);
 
     const [healthResult, summaryResult] = coreResults;
@@ -207,15 +227,27 @@ export function ObservabilityClient() {
       }
     }
 
+    if (elasticStackResults) {
+      const [elasticStackResult] = elasticStackResults;
+
+      if (elasticStackResult.status === "fulfilled") {
+        setElasticStack(elasticStackResult.value);
+      } else {
+        // Preserve the last successful value so transient refresh failures do not
+        // push the Elastic Stack tab back into a loading-like null state.
+        console.warn("Elastic Stack status unavailable:", elasticStackResult.reason);
+      }
+    }
+
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchData(activeTab === "dragonfly", activeTab === "keda");
+    void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack");
     const interval = setInterval(
-      () => void fetchData(activeTab === "dragonfly", activeTab === "keda"),
+      () => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack"),
       10000,
     );
     return () => clearInterval(interval);
@@ -247,7 +279,7 @@ export function ObservabilityClient() {
           <Badge variant="outline" className="text-xs">
             Updated: {lastUpdated.toLocaleTimeString()}
           </Badge>
-          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly", activeTab === "keda")}>
+          <Button size="sm" variant="ghost" onClick={() => void fetchData(activeTab === "dragonfly", activeTab === "keda", activeTab === "elastic-stack")}>
             Refresh
           </Button>
         </div>
@@ -281,6 +313,9 @@ export function ObservabilityClient() {
             scaledObjects={kedaScaledObjects}
             scaledJobs={kedaScaledJobs}
           />
+        )}
+        {activeTab === "elastic-stack" && (
+          <ElasticStackTab data={elasticStack} />
         )}
       </div>
     </div>

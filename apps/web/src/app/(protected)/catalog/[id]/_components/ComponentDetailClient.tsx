@@ -40,6 +40,7 @@ import { IacStacksTab } from "./IacStacksTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
+import { LogPipelineCard } from "./LogPipelineCard";
 import { CostEstimateCard } from "@/components/finops/CostEstimateCard";
 import { CostBudgetExceededBanner } from "@/components/finops/CostBudgetExceededBanner";
 import { recordSpan } from "@/lib/otel-spans";
@@ -531,6 +532,11 @@ export function ComponentDetailClient() {
 
               {/* KEDA autoscaling bindings (FARM-S254 / T196) */}
               <KedaBindingCard componentId={component.id} />
+
+              {/* Elastic Stack log pipeline (FARM-S334 / FARM-S335 / Phase 31) */}
+              {component.namespace && (
+                <LogPipelineCard namespace={component.namespace} />
+              )}
 
               {/* Cost estimate card (Phase 19 — FinOps) */}
               {costEstimate && (

@@ -1087,4 +1087,16 @@ describe("KubernetesController (Gatekeeper)", () => {
       expect(result).toEqual([]);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // getElasticStack
+  // -------------------------------------------------------------------------
+
+  describe("getElasticStack", () => {
+    it("throws ServiceUnavailableException when ElasticStackService is not provided", async () => {
+      await expect(controller.getElasticStack()).rejects.toThrow(
+        "ElasticStackService not available",
+      );
+    });
+  });
 });
