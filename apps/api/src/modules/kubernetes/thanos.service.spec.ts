@@ -438,6 +438,7 @@ describe("ThanosService", () => {
 
       const mockHeaders = new Headers({ "x-thanos-trace-id": "abc123" });
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
         headers: mockHeaders,
         text: jest.fn().mockResolvedValue(""),
       }) as typeof fetch;
@@ -455,10 +456,12 @@ describe("ThanosService", () => {
       globalThis.fetch = jest
         .fn()
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue(""),
         })
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue("Prometheus Server is Ready."),
         }) as typeof fetch;
@@ -475,10 +478,12 @@ describe("ThanosService", () => {
       globalThis.fetch = jest
         .fn()
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue(""),
         })
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue("Grafana Mimir, have a great day."),
         }) as typeof fetch;
@@ -495,10 +500,12 @@ describe("ThanosService", () => {
       globalThis.fetch = jest
         .fn()
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue(""),
         })
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue("Cortex is ready."),
         }) as typeof fetch;
@@ -579,6 +586,7 @@ describe("ThanosService", () => {
 
       const mockHeaders = new Headers({ "x-thanos-trace-id": "xyz" });
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
         headers: mockHeaders,
         text: jest.fn().mockResolvedValue(""),
       }) as typeof fetch;
@@ -599,10 +607,12 @@ describe("ThanosService", () => {
       globalThis.fetch = jest
         .fn()
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue(""),
         })
         .mockResolvedValueOnce({
+          ok: true,
           headers: emptyHeaders,
           text: jest.fn().mockResolvedValue("Grafana Mimir"),
         }) as typeof fetch;

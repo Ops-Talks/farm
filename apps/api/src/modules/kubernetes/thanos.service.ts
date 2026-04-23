@@ -200,6 +200,9 @@ export class ThanosService {
   ): Promise<ThanosOperatorComponent[]> {
     const api = this.kubernetesService.getCustomObjectsApi();
     if (!api) {
+      this.logger.warn(
+        "Kubernetes client not available; returning empty Thanos operator components list",
+      );
       return [];
     }
 
@@ -322,6 +325,9 @@ export class ThanosService {
   ): Promise<ThanosLabelComponent[]> {
     const api = this.kubernetesService.getAppsV1Api();
     if (!api) {
+      this.logger.warn(
+        "Kubernetes client not available; returning empty Thanos label-based components list",
+      );
       return [];
     }
 
@@ -442,6 +448,10 @@ export class ThanosService {
         signal: AbortSignal.timeout(3000),
       });
 
+      if (!labelsResponse.ok) {
+        return { type: "unknown" };
+      }
+
       const hasThanosHeader = [...labelsResponse.headers.keys()].some((key) =>
         key.toLowerCase().startsWith("x-thanos-"),
       );
@@ -461,6 +471,11 @@ export class ThanosService {
         method: "GET",
         signal: AbortSignal.timeout(3000),
       });
+
+      if (!readyResponse.ok) {
+        return { type: "unknown" };
+      }
+
       const body = await readyResponse.text();
 
       if (body.includes("Grafana Mimir")) {

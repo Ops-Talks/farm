@@ -188,7 +188,8 @@ export const PromQLChartCard = memo(function PromQLChartCard({
     setQuery(inputQuery);
     const end = Math.floor(Date.now() / 1000);
     const start = end - rangeSeconds;
-    const step = 60; // 60s step
+    // Target ~1000 data points per series. Minimum step is 15s.
+    const step = Math.max(15, Math.ceil(rangeSeconds / 1000));
     try {
       const res = await observability.queryRange(inputQuery, start, end, step);
       if (!res.data) {
@@ -213,11 +214,16 @@ export const PromQLChartCard = memo(function PromQLChartCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Time-range preset selector */}
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div
+          role="group"
+          aria-label="Time range"
+          className="mb-2 flex flex-wrap gap-1"
+        >
           {presets.map((p) => (
             <button
               key={p.label}
               type="button"
+              aria-pressed={rangeSeconds === p.seconds}
               onClick={() => setRangeSeconds(p.seconds)}
               className={`rounded px-2 py-0.5 text-xs font-medium ${
                 rangeSeconds === p.seconds
