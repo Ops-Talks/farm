@@ -391,7 +391,8 @@ describe("ObservabilityClient", () => {
     try {
       render(<ObservabilityClient />);
 
-      await vi.runAllTimersAsync();
+      // Flush the initial async fetch without running future intervals.
+      await vi.advanceTimersByTimeAsync(0);
 
       const countAfterMount = mockHealthCheck.mock.calls.length;
 
