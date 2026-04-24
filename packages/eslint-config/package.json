@@ -9,7 +9,7 @@
     "./nest": "./nest.js"
   },
   "peerDependencies": {
-    "eslint": ">=8.0.0"
+    "eslint": "^9.39.4"
   },
   "files": [
     "index.js",
