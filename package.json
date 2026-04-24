@@ -40,7 +40,7 @@
     "router": {
       "path-to-regexp": "8.4.0"
     },
-    "axios": "1.15.0",
+    "axios": "1.15.2",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "release-it": {
@@ -51,6 +51,8 @@
     "protobufjs": "7.5.5",
     "uuid": "14.0.0",
     "fast-xml-parser": "5.7.1",
-    "brace-expansion@^1": "1.1.13"
+    "brace-expansion@^1": "1.1.13",
+    "react": "19.2.5",
+    "react-dom": "19.2.5"
   }
 }
