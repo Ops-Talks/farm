@@ -40,7 +40,7 @@
     "@azure/arm-resources": "^7.0.0",
     "@azure/identity": "^4.13.0",
     "@azure/keyvault-secrets": "^4.10.0",
-    "@bull-board/api": "^6.20.3",
+    "@bull-board/api": "^7.0.0",
     "@bull-board/express": "^6.20.3",
     "@bull-board/nestjs": "^6.20.3",
     "@elastic/elasticsearch": "^9.3.4",
