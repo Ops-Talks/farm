@@ -168,10 +168,7 @@ describe("CloudSecretsService", () => {
         port: 5432,
       };
 
-      const result = await service.resolveConfigSecrets(
-        config as Record<string, unknown>,
-        ORG_ID,
-      );
+      const result = await service.resolveConfigSecrets(config, ORG_ID);
 
       expect(result["image"]).toBe("my-image:latest");
       expect(result["dbPassword"]).toBe("resolved-secret");
@@ -196,10 +193,7 @@ describe("CloudSecretsService", () => {
       };
 
       // Should not throw; it swallows errors and logs them.
-      const result = await service.resolveConfigSecrets(
-        config as Record<string, unknown>,
-        ORG_ID,
-      );
+      const result = await service.resolveConfigSecrets(config, ORG_ID);
 
       expect(result["secret"]).toBe(
         "arn:aws:secretsmanager:us-east-1:123456789012:secret:bad",

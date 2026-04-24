@@ -39,7 +39,7 @@ describe("PluginInstanceService", () => {
     name: "Slack",
     latestVersion: "1.0.0",
     description: "Slack notifications",
-    manifest: mockManifest as unknown as Record<string, unknown>,
+    manifest: mockManifest,
     installCount: 5,
   };
 
@@ -50,7 +50,7 @@ describe("PluginInstanceService", () => {
     version: "1.0.0",
     status: PluginStatus.ACTIVE,
     healthStatus: PluginHealthStatus.UNKNOWN,
-    manifest: mockManifest as unknown as Record<string, unknown>,
+    manifest: mockManifest,
   };
 
   beforeEach(() => {

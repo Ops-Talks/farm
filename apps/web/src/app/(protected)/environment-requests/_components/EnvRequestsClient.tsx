@@ -188,6 +188,7 @@ export function EnvRequestsClient() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRequests(skip, statusFilter);
   }, [fetchRequests, skip, statusFilter]);
 

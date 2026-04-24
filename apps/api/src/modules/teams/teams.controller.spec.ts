@@ -74,7 +74,7 @@ describe("TeamsController", () => {
         displayName: "Platform Engineering",
         type: TeamType.PLATFORM,
       },
-      { organizationId: "org-uuid-1" } as never,
+      { organizationId: "org-uuid-1" },
     );
     expect(result).toEqual(mockTeam);
     expect(service.create).toHaveBeenCalledWith(
@@ -89,10 +89,7 @@ describe("TeamsController", () => {
 
   it("should return all teams with pagination", async () => {
     const mockReq = { organizationId: undefined };
-    const result = await controller.findAll(
-      { skip: 0, take: 20 },
-      mockReq as never,
-    );
+    const result = await controller.findAll({ skip: 0, take: 20 }, mockReq);
     expect(result).toBeInstanceOf(PaginatedResponseDto);
     expect(result.data).toHaveLength(1);
     expect(result.total).toBe(1);
@@ -160,7 +157,7 @@ describe("TeamsController", () => {
     const mockReq = { organizationId: undefined };
     const result = await controller.findAll(
       { skip: undefined, take: undefined },
-      mockReq as never,
+      mockReq,
     );
 
     expect(result).toBeInstanceOf(PaginatedResponseDto);

@@ -70,8 +70,8 @@ export class SpecDiffService {
       "channels" in newDoc || ("asyncapi" in newDoc && !("paths" in newDoc));
 
     const entries: SpecDiffEntry[] = isAsyncApi
-      ? this.diffAsyncApi(oldDoc as AsyncApiDoc, newDoc as AsyncApiDoc)
-      : this.diffOpenApi(oldDoc as OpenApiDoc, newDoc as OpenApiDoc);
+      ? this.diffAsyncApi(oldDoc, newDoc)
+      : this.diffOpenApi(oldDoc, newDoc);
 
     const breakingChanges = entries.filter((e) => e.breaking).length;
     return {

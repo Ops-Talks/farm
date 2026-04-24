@@ -18,7 +18,7 @@ describe("OpaController", () => {
     isReachable: jest.fn().mockResolvedValue(true),
     getOpaUrl: jest.fn().mockReturnValue("http://localhost:8181"),
     evaluate: jest.fn().mockResolvedValue({ allowed: true, violations: [] }),
-    saveResult: jest.fn().mockResolvedValue({} as OpaResult),
+    saveResult: jest.fn().mockResolvedValue({}),
     listResults: jest.fn().mockResolvedValue([]),
   };
 

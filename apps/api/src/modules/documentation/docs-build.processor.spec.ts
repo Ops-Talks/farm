@@ -10,20 +10,19 @@ import { DocumentationBuild } from "./entities/documentation-build.entity";
 
 const makeBuild = (
   overrides: Partial<DocumentationBuild> = {},
-): DocumentationBuild =>
-  ({
-    id: "build-uuid-1",
-    componentId: "https://github.com/acme/docs.git",
-    version: "main",
-    sourceType: "markdown",
-    status: "building",
-    buildLog: null,
-    artifactsPath: null,
-    repoUrl: "https://github.com/acme/docs.git",
-    triggeredAt: new Date("2024-01-01T00:00:00Z"),
-    completedAt: null,
-    ...overrides,
-  }) as DocumentationBuild;
+): DocumentationBuild => ({
+  id: "build-uuid-1",
+  componentId: "https://github.com/acme/docs.git",
+  version: "main",
+  sourceType: "markdown",
+  status: "building",
+  buildLog: null,
+  artifactsPath: null,
+  repoUrl: "https://github.com/acme/docs.git",
+  triggeredAt: new Date("2024-01-01T00:00:00Z"),
+  completedAt: null,
+  ...overrides,
+});
 
 const makeJob = (data: DocsBuildJobData): Job<DocsBuildJobData> =>
   ({ id: "job-1", data }) as unknown as Job<DocsBuildJobData>;
@@ -278,9 +277,7 @@ describe("DocsBuildProcessor", () => {
         buildLog: "",
       });
 
-    jest
-      .spyOn(DocBuilderFactory, "resolve")
-      .mockResolvedValue(mkdocsBuilder as unknown as DocBuilder);
+    jest.spyOn(DocBuilderFactory, "resolve").mockResolvedValue(mkdocsBuilder);
 
     const job = makeJob({
       repoUrl: "https://github.com/acme/docs.git",

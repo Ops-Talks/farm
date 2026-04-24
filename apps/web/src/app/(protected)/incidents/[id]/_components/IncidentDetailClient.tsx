@@ -158,6 +158,7 @@ export function IncidentDetailClient({ id }: IncidentDetailClientProps) {
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, [fetchData]);
 

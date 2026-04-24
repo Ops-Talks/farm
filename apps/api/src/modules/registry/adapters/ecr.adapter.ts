@@ -163,7 +163,7 @@ export class EcrAdapter implements IRegistryAdapter {
       const findings = response.imageScanFindings?.findings ?? [];
       const vulnerabilities: VulnerabilityDto[] = findings.map((f) => ({
         cveId: f.name ?? "",
-        severity: (f.severity ?? "UNDEFINED") as VulnerabilityDto["severity"],
+        severity: f.severity ?? "UNDEFINED",
         packageName:
           f.attributes?.find((a) => a.key === "package_name")?.value ?? "",
         installedVersion:

@@ -68,16 +68,13 @@ describe("IntegrationCredentialController", () => {
 
   describe("findAll", () => {
     it("should return credentials using request org when no orgId query param", async () => {
-      const result = await controller.findAll(undefined, mockRequest as never);
+      const result = await controller.findAll(undefined, mockRequest);
       expect(result).toEqual([mockCredential]);
       expect(credentialService.findAll).toHaveBeenCalledWith("org-uuid-1");
     });
 
     it("should use explicit orgId query param", async () => {
-      const result = await controller.findAll(
-        "org-explicit",
-        mockRequest as never,
-      );
+      const result = await controller.findAll("org-explicit", mockRequest);
       expect(result).toEqual([mockCredential]);
       expect(credentialService.findAll).toHaveBeenCalledWith("org-explicit");
     });
@@ -90,10 +87,7 @@ describe("IntegrationCredentialController", () => {
 
   describe("findOne", () => {
     it("should return a single credential by id", async () => {
-      const result = await controller.findOne(
-        "cred-uuid-1",
-        mockRequest as never,
-      );
+      const result = await controller.findOne("cred-uuid-1", mockRequest);
       expect(result).toEqual(mockCredential);
       expect(credentialService.findOne).toHaveBeenCalledWith(
         "cred-uuid-1",
@@ -105,11 +99,7 @@ describe("IntegrationCredentialController", () => {
   describe("update", () => {
     it("should update a credential and return the updated entity", async () => {
       const dto = { name: "updated-jenkins" };
-      const result = await controller.update(
-        "cred-uuid-1",
-        dto,
-        mockRequest as never,
-      );
+      const result = await controller.update("cred-uuid-1", dto, mockRequest);
       expect(result).toEqual(mockCredential);
       expect(credentialService.update).toHaveBeenCalledWith(
         "cred-uuid-1",
@@ -121,7 +111,7 @@ describe("IntegrationCredentialController", () => {
 
   describe("remove", () => {
     it("should delete a credential", async () => {
-      await controller.remove("cred-uuid-1", mockRequest as never);
+      await controller.remove("cred-uuid-1", mockRequest);
       expect(credentialService.remove).toHaveBeenCalledWith(
         "cred-uuid-1",
         "org-uuid-1",

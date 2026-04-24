@@ -79,7 +79,7 @@ describe("TracesIngestController", () => {
         status: 200,
         text: jest.fn().mockResolvedValue(""),
       });
-      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch;
 
       const req = makeReq({ resourceSpans: [] });
       const res = makeRes();
@@ -111,7 +111,7 @@ describe("TracesIngestController", () => {
         status: 200,
         text: jest.fn().mockResolvedValue(""),
       });
-      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch;
 
       const req = makeReq({ resourceSpans: [] });
       const res = makeRes();
@@ -132,7 +132,7 @@ describe("TracesIngestController", () => {
         status: 429,
         text: jest.fn().mockResolvedValue("rate limited"),
       });
-      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch;
 
       const req = makeReq({});
       const res = makeRes();
@@ -150,7 +150,7 @@ describe("TracesIngestController", () => {
       const mockFetch = jest
         .fn()
         .mockRejectedValue(new Error("connection refused"));
-      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      globalThis.fetch = mockFetch;
 
       const req = makeReq({});
       const res = makeRes();

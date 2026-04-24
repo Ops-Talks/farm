@@ -245,7 +245,7 @@ describe("PipelinesController", () => {
       };
       jest
         .spyOn(service, "getRunStats" as keyof PipelinesService)
-        .mockResolvedValue(mockStats as never);
+        .mockResolvedValue(mockStats);
 
       const result = await controller.getRunStats("pipeline-uuid-1");
 

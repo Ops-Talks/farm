@@ -101,6 +101,7 @@ export function TracesTab() {
   }, [selectedService, lookback]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTraces();
   }, [fetchTraces]);
 

@@ -41,7 +41,7 @@ describe("LdapAuthGuard", () => {
     // Spy on the parent AuthGuard's canActivate — stub it to return true.
     const superSpy = jest
       .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), "canActivate")
-      .mockReturnValue(true as unknown as ReturnType<typeof guard.canActivate>);
+      .mockReturnValue(true);
 
     const result = guard.canActivate(mockContext);
 

@@ -102,21 +102,18 @@ describe("IacController", () => {
     };
 
     it("should delegate to IacService with the extracted token", async () => {
-      const result = await controller.ingestRun(
-        "Bearer my-secret-token",
-        dto as never,
-      );
+      const result = await controller.ingestRun("Bearer my-secret-token", dto);
       expect(service.ingestRun).toHaveBeenCalledWith(dto, "my-secret-token");
       expect(result).toEqual(mockRun);
     });
 
     it("should pass an empty string when Authorization header is absent", async () => {
-      await controller.ingestRun(undefined, dto as never);
+      await controller.ingestRun(undefined, dto);
       expect(service.ingestRun).toHaveBeenCalledWith(dto, "");
     });
 
     it("should pass an empty string when Authorization header is malformed", async () => {
-      await controller.ingestRun("Token abc123", dto as never);
+      await controller.ingestRun("Token abc123", dto);
       expect(service.ingestRun).toHaveBeenCalledWith(dto, "");
     });
   });
@@ -132,14 +129,14 @@ describe("IacController", () => {
     it("should delegate to IacService with the extracted token", async () => {
       const result = await controller.importStacks(
         "Bearer my-secret-token",
-        dto as never,
+        dto,
       );
       expect(service.importStacks).toHaveBeenCalledWith(dto, "my-secret-token");
       expect(result).toEqual({ created: 1, updated: 0 });
     });
 
     it("should pass an empty string when Authorization header is absent", async () => {
-      await controller.importStacks(undefined, dto as never);
+      await controller.importStacks(undefined, dto);
       expect(service.importStacks).toHaveBeenCalledWith(dto, "");
     });
   });
@@ -161,10 +158,7 @@ describe("IacController", () => {
     };
 
     it("should delegate to IacService with the extracted token", async () => {
-      await controller.ingestModuleDrift(
-        "Bearer my-secret-token",
-        dto as never,
-      );
+      await controller.ingestModuleDrift("Bearer my-secret-token", dto);
       expect(service.ingestModuleDrift).toHaveBeenCalledWith(
         dto,
         "my-secret-token",
@@ -172,7 +166,7 @@ describe("IacController", () => {
     });
 
     it("should pass an empty string when Authorization header is absent", async () => {
-      await controller.ingestModuleDrift(undefined, dto as never);
+      await controller.ingestModuleDrift(undefined, dto);
       expect(service.ingestModuleDrift).toHaveBeenCalledWith(dto, "");
     });
   });
@@ -300,14 +294,14 @@ describe("IacController (stack endpoints)", () => {
   describe("listStacks", () => {
     it("should delegate to IacService.listStacks and return the result", async () => {
       const query = { environment: "production" };
-      const result = await controller.listStacks(query as never);
+      const result = await controller.listStacks(query);
 
       expect(service.listStacks).toHaveBeenCalledWith(query);
       expect(result).toEqual([mockStackDetail]);
     });
 
     it("should pass an empty query object when no filters are provided", async () => {
-      await controller.listStacks({} as never);
+      await controller.listStacks({});
       expect(service.listStacks).toHaveBeenCalledWith({});
     });
   });

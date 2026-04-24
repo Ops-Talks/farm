@@ -60,6 +60,7 @@ export function CostDashboardClient() {
 
   // Load platform cost summary on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setComponentLoading(true);
     finops
       .getPlatformCostSummary(50)

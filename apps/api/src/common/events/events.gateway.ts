@@ -43,7 +43,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket): void {
     const token =
-      (client.handshake.auth as Record<string, string>)?.token ||
+      (client.handshake.auth?.token as string | undefined) ||
       (client.handshake.query?.token as string | undefined);
 
     if (!token) {

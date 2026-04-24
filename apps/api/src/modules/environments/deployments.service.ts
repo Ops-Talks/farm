@@ -179,7 +179,7 @@ export class DeploymentsService {
 
     const updated = this.deploymentRepository.merge(
       deployment,
-      updateDeploymentDto as Partial<Deployment>,
+      updateDeploymentDto,
     );
     const saved = await this.deploymentRepository.save(updated);
 

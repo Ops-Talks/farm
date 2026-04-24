@@ -99,7 +99,7 @@ describe("GcrAdapter", () => {
               },
             ],
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listRepositories();
 
@@ -116,7 +116,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ repositories: [] }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listRepositories();
 
@@ -127,7 +127,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: false,
         status: 403,
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       await expect(adapter.listRepositories()).rejects.toThrow();
     });
@@ -137,7 +137,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({}),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listRepositories();
 
@@ -158,7 +158,7 @@ describe("GcrAdapter", () => {
               },
             ],
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listRepositories();
 
@@ -174,7 +174,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ repositories: [] }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listRepositories();
 
@@ -195,7 +195,7 @@ describe("GcrAdapter", () => {
               },
             ],
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -210,7 +210,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ tags: [] }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -224,7 +224,7 @@ describe("GcrAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({}),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -246,7 +246,7 @@ describe("GcrAdapter", () => {
               },
             ],
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -265,7 +265,7 @@ describe("GcrAdapter", () => {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: "2024-01-01T00:00:00Z",
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -287,7 +287,7 @@ describe("GcrAdapter", () => {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: null,
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -309,7 +309,7 @@ describe("GcrAdapter", () => {
               mediaType: "application/vnd.docker.distribution.manifest.v2+json",
             },
           }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",

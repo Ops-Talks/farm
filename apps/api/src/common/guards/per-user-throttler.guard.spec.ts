@@ -17,9 +17,7 @@ describe("PerUserThrottlerGuard", () => {
         ip: "192.168.1.1",
       };
 
-      const tracker = await guard["getTracker"](
-        req as unknown as Record<string, unknown>,
-      );
+      const tracker = await guard["getTracker"](req);
 
       expect(tracker).toBe("user-uuid-1");
     });
@@ -30,9 +28,7 @@ describe("PerUserThrottlerGuard", () => {
         ip: "192.168.1.1",
       };
 
-      const tracker = await guard["getTracker"](
-        req as unknown as Record<string, unknown>,
-      );
+      const tracker = await guard["getTracker"](req);
 
       expect(tracker).toBe("user-uuid-2");
     });
@@ -43,9 +39,7 @@ describe("PerUserThrottlerGuard", () => {
         ip: "192.168.1.1",
       };
 
-      const tracker = await guard["getTracker"](
-        req as unknown as Record<string, unknown>,
-      );
+      const tracker = await guard["getTracker"](req);
 
       expect(tracker).toBe("user-uuid-1");
     });
@@ -56,9 +50,7 @@ describe("PerUserThrottlerGuard", () => {
         ip: "10.0.0.42",
       };
 
-      const tracker = await guard["getTracker"](
-        req as unknown as Record<string, unknown>,
-      );
+      const tracker = await guard["getTracker"](req);
 
       expect(tracker).toBe("10.0.0.42");
     });
@@ -69,9 +61,7 @@ describe("PerUserThrottlerGuard", () => {
         ip: "10.0.0.99",
       };
 
-      const tracker = await guard["getTracker"](
-        req as unknown as Record<string, unknown>,
-      );
+      const tracker = await guard["getTracker"](req);
 
       expect(tracker).toBe("10.0.0.99");
     });

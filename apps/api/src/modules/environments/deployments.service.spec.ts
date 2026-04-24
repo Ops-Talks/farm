@@ -157,10 +157,10 @@ describe("DeploymentsService", () => {
 
   describe("create", () => {
     it("should create a deployment", async () => {
-      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
-      environmentRepo.findOne.mockResolvedValue(mockEnvironment as Environment);
-      deploymentRepo.create.mockReturnValue(mockDeployment as Deployment);
-      deploymentRepo.save.mockResolvedValue(mockDeployment as Deployment);
+      componentRepo.findOne.mockResolvedValue(mockComponent);
+      environmentRepo.findOne.mockResolvedValue(mockEnvironment);
+      deploymentRepo.create.mockReturnValue(mockDeployment);
+      deploymentRepo.save.mockResolvedValue(mockDeployment);
 
       const result = await service.create({
         componentId: "comp-uuid-1",
@@ -174,10 +174,10 @@ describe("DeploymentsService", () => {
 
     it("should increment deployment_operations_total with operation=create", async () => {
       mockDeploymentOperationsCounter.inc.mockClear();
-      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
-      environmentRepo.findOne.mockResolvedValue(mockEnvironment as Environment);
-      deploymentRepo.create.mockReturnValue(mockDeployment as Deployment);
-      deploymentRepo.save.mockResolvedValue(mockDeployment as Deployment);
+      componentRepo.findOne.mockResolvedValue(mockComponent);
+      environmentRepo.findOne.mockResolvedValue(mockEnvironment);
+      deploymentRepo.create.mockReturnValue(mockDeployment);
+      deploymentRepo.save.mockResolvedValue(mockDeployment);
 
       await service.create({
         componentId: "comp-uuid-1",
@@ -204,7 +204,7 @@ describe("DeploymentsService", () => {
     });
 
     it("should throw NotFoundException if environment not found", async () => {
-      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+      componentRepo.findOne.mockResolvedValue(mockComponent);
       environmentRepo.findOne.mockResolvedValue(null);
 
       await expect(
@@ -280,7 +280,7 @@ describe("DeploymentsService", () => {
 
   describe("findOne", () => {
     it("should return a deployment by ID", async () => {
-      deploymentRepo.findOne.mockResolvedValue(mockDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(mockDeployment);
 
       const result = await service.findOne("deploy-uuid-1");
 
@@ -307,9 +307,9 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.IN_PROGRESS,
       };
 
-      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
-      deploymentRepo.merge.mockReturnValue(updatedDeployment as Deployment);
-      deploymentRepo.save.mockResolvedValue(updatedDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment);
+      deploymentRepo.merge.mockReturnValue(updatedDeployment);
+      deploymentRepo.save.mockResolvedValue(updatedDeployment);
 
       const result = await service.update("deploy-uuid-1", {
         status: DeploymentStatus.IN_PROGRESS,
@@ -329,9 +329,9 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.IN_PROGRESS,
       };
 
-      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
-      deploymentRepo.merge.mockReturnValue(updatedDeployment as Deployment);
-      deploymentRepo.save.mockResolvedValue(updatedDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment);
+      deploymentRepo.merge.mockReturnValue(updatedDeployment);
+      deploymentRepo.save.mockResolvedValue(updatedDeployment);
 
       await service.update("deploy-uuid-1", {
         status: DeploymentStatus.IN_PROGRESS,
@@ -349,7 +349,7 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.PENDING,
       };
 
-      deploymentRepo.findOne.mockResolvedValue(pendingDeployment as Deployment);
+      deploymentRepo.findOne.mockResolvedValue(pendingDeployment);
 
       await expect(
         service.update("deploy-uuid-1", {
@@ -366,7 +366,7 @@ describe("DeploymentsService", () => {
         status: DeploymentStatus.SUCCEEDED,
       };
 
-      componentRepo.findOne.mockResolvedValue(mockComponent as Component);
+      componentRepo.findOne.mockResolvedValue(mockComponent);
 
       const qb = createMockQueryBuilder([succeededDeployment]);
       deploymentRepo.createQueryBuilder.mockReturnValue(qb);

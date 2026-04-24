@@ -6,8 +6,8 @@ const makeVersion = (
   const v = new IacModuleVersion();
   v.id = "ver-uuid-1";
   v.version = "v1.0.0";
-  v.variablesMeta = null as unknown as string;
-  v.outputsMeta = null as unknown as string;
+  v.variablesMeta = null;
+  v.outputsMeta = null;
   Object.assign(v, overrides);
   return v;
 };
@@ -48,7 +48,7 @@ describe("IacModuleVersion", () => {
           validation: null,
         },
       ];
-      const v = makeVersion({ variablesMeta: vars as never });
+      const v = makeVersion({ variablesMeta: vars });
       expect(v.getParsedVariables()).toEqual(vars);
     });
   });
@@ -74,7 +74,7 @@ describe("IacModuleVersion", () => {
       const outs = [
         { name: "bucket_arn", description: "The ARN", value: null },
       ];
-      const v = makeVersion({ outputsMeta: outs as never });
+      const v = makeVersion({ outputsMeta: outs });
       expect(v.getParsedOutputs()).toEqual(outs);
     });
   });

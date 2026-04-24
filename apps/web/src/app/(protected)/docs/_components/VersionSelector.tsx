@@ -20,6 +20,7 @@ export function VersionSelector({
 
   useEffect(() => {
     if (!componentId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     docs
       .getVersions(componentId)

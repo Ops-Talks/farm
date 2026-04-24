@@ -47,16 +47,13 @@ describe("JenkinsController", () => {
 
   describe("listJobs", () => {
     it("should return jobs using orgId from request when no query param is given", async () => {
-      const result = await controller.listJobs(undefined, mockRequest as never);
+      const result = await controller.listJobs(undefined, mockRequest);
       expect(result).toEqual([mockJob]);
       expect(jenkinsService.listJobs).toHaveBeenCalledWith("org-uuid-1");
     });
 
     it("should use explicit orgId query param over request org", async () => {
-      const result = await controller.listJobs(
-        "explicit-org",
-        mockRequest as never,
-      );
+      const result = await controller.listJobs("explicit-org", mockRequest);
       expect(result).toEqual([mockJob]);
       expect(jenkinsService.listJobs).toHaveBeenCalledWith("explicit-org");
     });
@@ -73,7 +70,7 @@ describe("JenkinsController", () => {
         "my-job",
         undefined,
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual([mockBuild]);
       expect(jenkinsService.getBuildHistory).toHaveBeenCalledWith(
@@ -84,12 +81,7 @@ describe("JenkinsController", () => {
     });
 
     it("should parse limit when provided as string", async () => {
-      await controller.getBuildHistory(
-        "my-job",
-        "5",
-        "org-2",
-        mockRequest as never,
-      );
+      await controller.getBuildHistory("my-job", "5", "org-2", mockRequest);
       expect(jenkinsService.getBuildHistory).toHaveBeenCalledWith(
         "org-2",
         "my-job",
@@ -114,7 +106,7 @@ describe("JenkinsController", () => {
 
   describe("triggerBuild", () => {
     it("should trigger a build using request org when no orgId is given", async () => {
-      await controller.triggerBuild("my-job", undefined, mockRequest as never);
+      await controller.triggerBuild("my-job", undefined, mockRequest);
       expect(jenkinsService.triggerBuild).toHaveBeenCalledWith(
         "org-uuid-1",
         "my-job",
@@ -122,11 +114,7 @@ describe("JenkinsController", () => {
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.triggerBuild(
-        "my-job",
-        "explicit-org",
-        mockRequest as never,
-      );
+      await controller.triggerBuild("my-job", "explicit-org", mockRequest);
       expect(jenkinsService.triggerBuild).toHaveBeenCalledWith(
         "explicit-org",
         "my-job",

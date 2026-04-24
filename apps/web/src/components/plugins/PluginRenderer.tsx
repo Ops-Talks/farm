@@ -4,6 +4,7 @@ import React, {
   Suspense,
   lazy,
   useEffect,
+  useMemo,
   useRef,
   useCallback,
 } from "react";
@@ -46,8 +47,9 @@ interface LazyPluginProps {
 }
 
 function LazyPlugin({ entryPoint, componentProps, loader }: LazyPluginProps) {
-  const LazyComponent = lazy(
-    loader ?? (() => import(/* webpackIgnore: true */ entryPoint)),
+  const LazyComponent = useMemo(
+    () => lazy(loader ?? (() => import(/* webpackIgnore: true */ entryPoint))),
+    [loader, entryPoint],
   );
 
   return (
@@ -60,6 +62,7 @@ function LazyPlugin({ entryPoint, componentProps, loader }: LazyPluginProps) {
         </div>
       }
     >
+      {/* eslint-disable-next-line react-hooks/static-components */}
       <LazyComponent {...(componentProps ?? {})} />
     </Suspense>
   );

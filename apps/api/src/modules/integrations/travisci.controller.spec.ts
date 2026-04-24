@@ -41,7 +41,7 @@ describe("TravisCIController", () => {
       const result = await controller.listBuilds(
         undefined,
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual([mockBuild]);
       expect(travisCIService.listBuilds).toHaveBeenCalledWith(
@@ -51,11 +51,7 @@ describe("TravisCIController", () => {
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.listBuilds(
-        "owner/repo",
-        "explicit-org",
-        mockRequest as never,
-      );
+      await controller.listBuilds("owner/repo", "explicit-org", mockRequest);
       expect(travisCIService.listBuilds).toHaveBeenCalledWith(
         "explicit-org",
         "owner/repo",
@@ -73,7 +69,7 @@ describe("TravisCIController", () => {
       const result = await controller.restartBuild(
         "123",
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual({ ok: true });
       expect(travisCIService.restartBuild).toHaveBeenCalledWith(
@@ -83,7 +79,7 @@ describe("TravisCIController", () => {
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.restartBuild("123", "org-2", mockRequest as never);
+      await controller.restartBuild("123", "org-2", mockRequest);
       expect(travisCIService.restartBuild).toHaveBeenCalledWith("org-2", "123");
     });
 

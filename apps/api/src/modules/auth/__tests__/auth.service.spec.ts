@@ -96,7 +96,7 @@ describe("AuthService", () => {
     };
     it("should return user, token, and refreshToken when credentials valid", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       const loginDto: LoginDto = { username: "u", password: "p" };
       const result = await service.login(loginDto);
       expect(result.user).toEqual(user);
@@ -117,7 +117,7 @@ describe("AuthService", () => {
 
     it("should throw unauthorized if password invalid", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       await expect(
         service.login({ username: "u", password: "p" }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
@@ -135,7 +135,7 @@ describe("AuthService", () => {
 
     it("should return new token and rotated refreshToken", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.refresh("u", "valid-refresh-token");
 
@@ -167,7 +167,7 @@ describe("AuthService", () => {
 
     it("should invalidate refresh token on reuse attempt", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
         service.refresh("u", "invalid-token"),
@@ -189,13 +189,13 @@ describe("AuthService", () => {
     };
     it("returns user when valid", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       expect(await service.validateUser("u", "p")).toEqual(user);
     });
 
     it("returns null when invalid", async () => {
       repo.findOne.mockResolvedValue(user);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       expect(await service.validateUser("u", "p")).toBeNull();
     });
   });
@@ -293,7 +293,7 @@ describe("AuthService", () => {
 
     it("should change the password and clear the refresh token", async () => {
       repo.findOne.mockResolvedValue({ ...user });
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       repo.save.mockResolvedValue({
         ...user,
         password: "NewPass1!",
@@ -340,7 +340,7 @@ describe("AuthService", () => {
 
     it("should throw UnauthorizedException when current password is wrong", async () => {
       repo.findOne.mockResolvedValue({ ...user });
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false as never);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const dto: ChangePasswordDto = {
         currentPassword: "WrongPass1!",

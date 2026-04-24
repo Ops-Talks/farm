@@ -169,7 +169,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: "not-valid-base64-gcm-data",
-      } as Partial<IntegrationCredential>);
+      });
 
       const strategy = await service.getStrategyForOrg("org-1");
 
@@ -188,7 +188,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       const strategy = await service.getStrategyForOrg("org-1");
 
@@ -202,7 +202,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       // Verify the Strategy mock was called (which internally uses app.url).
       await service.getStrategyForOrg("org-1");
@@ -245,7 +245,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-2",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       await svc.getStrategyForOrg("org-2");
 
@@ -284,7 +284,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-3",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       await svc.getStrategyForOrg("org-3");
 
@@ -310,7 +310,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       const mockUser = { id: "user-1", email: "alice@example.com" };
       mockAuthService.findOrCreateOAuthUser.mockResolvedValue({
@@ -349,7 +349,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       mockAuthService.findOrCreateOAuthUser.mockResolvedValue({
         user: { id: "user-2" },
@@ -391,7 +391,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       const thrownError = new Error("DB connection lost");
       mockAuthService.findOrCreateOAuthUser.mockRejectedValue(thrownError);
@@ -417,7 +417,7 @@ describe("KeycloakOidcService", () => {
         orgId: "org-1",
         type: IntegrationType.KEYCLOAK,
         encryptedValue: validEncryptedValue,
-      } as Partial<IntegrationCredential>);
+      });
 
       mockAuthService.findOrCreateOAuthUser.mockRejectedValue(
         "string error value",

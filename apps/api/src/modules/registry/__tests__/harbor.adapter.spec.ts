@@ -71,7 +71,7 @@ describe("HarborAdapter", () => {
             { name: "library/redis" },
           ]),
         );
-      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+      globalThis.fetch = fetchMock;
 
       const result = await adapter.listRepositories();
 
@@ -91,11 +91,7 @@ describe("HarborAdapter", () => {
     });
 
     it("should propagate fetch error from projects endpoint", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          errResponse(403),
-        ) as unknown as typeof globalThis.fetch;
+      globalThis.fetch = jest.fn().mockResolvedValueOnce(errResponse(403));
 
       await expect(adapter.listRepositories()).rejects.toThrow(
         "Harbor request failed: HTTP 403",
@@ -119,7 +115,7 @@ describe("HarborAdapter", () => {
             tags: [{ name: "latest" }, { name: "v1.0" }],
           },
         ]),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.listTags("library/nginx");
 
@@ -141,7 +137,7 @@ describe("HarborAdapter", () => {
             // no tags array
           },
         ]),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.listTags("library/nginx");
 
@@ -167,7 +163,7 @@ describe("HarborAdapter", () => {
           push_time: pushTime,
           tags: [{ name: "stable" }],
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getManifest("library/nginx", "stable");
 
@@ -186,7 +182,7 @@ describe("HarborAdapter", () => {
           digest: "sha256:00112233",
           tags: [],
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getManifest("library/nginx", "latest");
 
@@ -231,11 +227,7 @@ describe("HarborAdapter", () => {
           },
       };
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          okResponse(report),
-        ) as unknown as typeof globalThis.fetch;
+      globalThis.fetch = jest.fn().mockResolvedValueOnce(okResponse(report));
 
       const result = await adapter.getScanResults("library/nginx", "latest");
 
@@ -262,7 +254,7 @@ describe("HarborAdapter", () => {
               // no vulnerabilities key
             },
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getScanResults("library/nginx", "latest");
 
@@ -270,11 +262,7 @@ describe("HarborAdapter", () => {
     });
 
     it("should return FAILED on fetch error", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          errResponse(404),
-        ) as unknown as typeof globalThis.fetch;
+      globalThis.fetch = jest.fn().mockResolvedValueOnce(errResponse(404));
 
       const result = await adapter.getScanResults("library/nginx", "missing");
 
@@ -316,7 +304,7 @@ describe("HarborAdapter", () => {
         // executions for policy 1
         .mockResolvedValueOnce(okResponse([{ status: "succeed" }]));
 
-      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+      globalThis.fetch = fetchMock;
 
       const result = await adapter.listReplicationPolicies();
 
@@ -354,7 +342,7 @@ describe("HarborAdapter", () => {
         // executions endpoint fails
         .mockResolvedValueOnce(errResponse(500));
 
-      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+      globalThis.fetch = fetchMock;
 
       const result = await adapter.listReplicationPolicies();
 
@@ -386,7 +374,7 @@ describe("HarborAdapter", () => {
             ],
           },
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getScanResults("proj/repo", "tag");
 
@@ -402,7 +390,7 @@ describe("HarborAdapter", () => {
             ],
           },
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getScanResults("proj/repo", "tag");
 
@@ -418,7 +406,7 @@ describe("HarborAdapter", () => {
             ],
           },
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getScanResults("proj/repo", "tag");
 
@@ -432,7 +420,7 @@ describe("HarborAdapter", () => {
             vulnerabilities: [{ id: "CVE-L", severity: "low", package: "pkg" }],
           },
         }),
-      ) as unknown as typeof globalThis.fetch;
+      );
 
       const result = await adapter.getScanResults("proj/repo", "tag");
 

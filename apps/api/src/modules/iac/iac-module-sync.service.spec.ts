@@ -319,8 +319,8 @@ output "bucket_arn" {
       mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
       mockExistsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
       mockReadFileSync
-        .mockReturnValueOnce(variablesTf as never)
-        .mockReturnValueOnce(outputsTf as never);
+        .mockReturnValueOnce(variablesTf)
+        .mockReturnValueOnce(outputsTf);
 
       const result = service.cloneAndParse(
         "https://github.com/example/repo",

@@ -51,9 +51,7 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = "ecr";
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(true);
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockResolvedValue({ ok: true });
 
       const result = await service.getAvailability();
 
@@ -70,11 +68,7 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(
-          new Error("ECONNREFUSED"),
-        ) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue(new Error("ECONNREFUSED"));
 
       const result = await service.getAvailability();
 
@@ -91,9 +85,7 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("timeout")) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue(new Error("timeout"));
 
       const result = await service.getAvailability();
 
@@ -109,7 +101,7 @@ describe("FeaturesService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 503,
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.getAvailability();
 
@@ -121,9 +113,7 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("error")) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue(new Error("error"));
 
       const result = await service.getAvailability();
 
@@ -136,9 +126,7 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValue({ ok: true }) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockResolvedValue({ ok: true });
 
       const result = await service.getAvailability();
 

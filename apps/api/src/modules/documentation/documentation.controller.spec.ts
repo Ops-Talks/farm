@@ -105,7 +105,7 @@ describe("DocumentationController", () => {
           author: "john_doe",
           version: "1.0.0",
         },
-        { organizationId: "org-uuid-1" } as never,
+        { organizationId: "org-uuid-1" },
       );
       expect(result).toEqual(mockDoc);
       expect(service.create).toHaveBeenCalledWith(
@@ -150,7 +150,7 @@ describe("DocumentationController", () => {
         {
           skip: undefined,
           take: undefined,
-        } as never,
+        },
         {},
       );
       expect(result.skip).toBe(0);

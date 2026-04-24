@@ -131,6 +131,7 @@ export function IncidentsClient() {
   }, [statusFilter, severityFilter, page]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchIncidents();
   }, [fetchIncidents]);
