@@ -181,6 +181,7 @@ export function TemplatesClient() {
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTemplates(0);
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps

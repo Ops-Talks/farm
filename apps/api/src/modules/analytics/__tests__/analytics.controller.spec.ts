@@ -333,7 +333,7 @@ describe("AnalyticsController", () => {
       const res = buildMockRes();
       await controller.exportReport(
         "dora",
-        undefined as unknown as number,
+        undefined,
         res as unknown as Response,
       );
 

@@ -101,6 +101,7 @@ export function InvitationsPanel({ orgId, currentUserRole }: InvitationsPanelPro
   }, [orgId, canManage]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadInvitations();
   }, [loadInvitations]);
 

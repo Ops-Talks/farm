@@ -118,10 +118,7 @@ describe("AuthController", () => {
 
       const mockReq = { user: { userId: "u1" } };
       const dto = { email: "new@example.com", firstName: "Alice" };
-      const result = await controller.updateProfile(
-        mockReq as never,
-        dto as never,
-      );
+      const result = await controller.updateProfile(mockReq as never, dto);
 
       expect(result).toEqual(mockUser);
       expect(service.updateProfile).toHaveBeenCalledWith("u1", dto);
@@ -138,7 +135,7 @@ describe("AuthController", () => {
         newPassword: "new123456",
         confirmPassword: "new123456",
       };
-      await controller.changePassword(mockReq as never, dto as never);
+      await controller.changePassword(mockReq as never, dto);
 
       expect(service.changePassword).toHaveBeenCalledWith("u1", dto);
     });

@@ -64,7 +64,7 @@ describe("CatalogController", () => {
     };
     service.create.mockResolvedValue({ id: "1", ...dto });
     expect(
-      await controller.create(dto, { organizationId: "org-uuid-1" } as never),
+      await controller.create(dto, { organizationId: "org-uuid-1" }),
     ).toEqual({ id: "1", ...dto });
     expect(service.create).toHaveBeenCalledWith(dto, "org-uuid-1");
   });
@@ -76,7 +76,7 @@ describe("CatalogController", () => {
     const result = await controller.findAll(
       { skip: 0, take: 20 },
       undefined,
-      mockReq as never,
+      mockReq,
     );
     expect(result).toBeInstanceOf(PaginatedResponseDto);
     expect(result.data).toEqual(items);
@@ -130,7 +130,7 @@ describe("CatalogController", () => {
     const result = await controller.findAll(
       { skip: undefined, take: undefined },
       undefined,
-      mockReq as never,
+      mockReq,
     );
 
     expect(result).toBeInstanceOf(PaginatedResponseDto);
@@ -241,7 +241,7 @@ describe("CatalogController — without discovery queue", () => {
         {
           yaml: "apiVersion: farm.io/v1\nkind: Component\nmetadata:\n  name: yaml-svc\nspec:\n  type: service\n  owner: team-a",
         },
-        { organizationId: "org-uuid-1" } as never,
+        { organizationId: "org-uuid-1" },
       );
 
       expect(result).toEqual(mockComponent);

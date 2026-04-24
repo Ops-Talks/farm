@@ -338,7 +338,7 @@ describe("KeycloakSyncService — additional branches", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ access_token: "test-token-123" }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const token = await service.fetchAdminToken(
         "https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
@@ -354,7 +354,7 @@ describe("KeycloakSyncService — additional branches", () => {
         ok: false,
         status: 401,
         statusText: "Unauthorized",
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       await expect(
         service.fetchAdminToken(
@@ -382,7 +382,7 @@ describe("KeycloakSyncService — additional branches", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue(mockData),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await service.fetchJson<typeof mockData>(
         "https://keycloak.example.com/admin/realms/myrealm/groups",
@@ -397,7 +397,7 @@ describe("KeycloakSyncService — additional branches", () => {
         ok: false,
         status: 403,
         statusText: "Forbidden",
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       await expect(
         service.fetchJson(

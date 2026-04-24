@@ -82,7 +82,7 @@ describe("GitHubActionsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ workflow_runs: [mockRun] }),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listWorkflowRuns("org-1");
 
@@ -108,7 +108,7 @@ describe("GitHubActionsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 403,
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listWorkflowRuns("org-1");
 
@@ -124,7 +124,7 @@ describe("GitHubActionsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
-      }) as unknown as typeof fetch;
+      });
 
       await service.listWorkflowRuns("org-1");
 
@@ -144,7 +144,7 @@ describe("GitHubActionsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({}),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listWorkflowRuns("org-1");
       expect(result).toEqual([]);
@@ -173,7 +173,7 @@ describe("GitHubActionsService", () => {
         json: jest
           .fn()
           .mockResolvedValue({ workflow_runs: [runWithNullConclusion] }),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listWorkflowRuns("org-1");
 

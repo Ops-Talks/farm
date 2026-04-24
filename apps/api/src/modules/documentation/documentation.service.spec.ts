@@ -34,7 +34,7 @@ describe("DocumentationService", () => {
     save: jest
       .fn()
       .mockImplementation((doc: Documentation) =>
-        Promise.resolve({ ...doc, id: doc.id ?? "uuid" } as Documentation),
+        Promise.resolve({ ...doc, id: doc.id ?? "uuid" }),
       ),
     find: jest.fn().mockResolvedValue([mockDoc]),
     findAndCount: jest.fn().mockResolvedValue([[mockDoc], 1]),
@@ -315,8 +315,8 @@ describe("DocumentationService", () => {
     it("should merge and save the updated documentation", async () => {
       const updated = { ...mockDoc, title: "Updated Title" };
       mockRepository.findOneBy.mockResolvedValue(mockDoc);
-      mockRepository.merge.mockReturnValue(updated as Documentation);
-      mockRepository.save.mockResolvedValue(updated as Documentation);
+      mockRepository.merge.mockReturnValue(updated);
+      mockRepository.save.mockResolvedValue(updated);
 
       const result = await service.update("uuid", { title: "Updated Title" });
 

@@ -294,7 +294,7 @@ export class ElasticStackService {
 
         const health: EckElasticsearch["health"] =
           rawHealth === "green" || rawHealth === "yellow" || rawHealth === "red"
-            ? (rawHealth as EckElasticsearch["health"])
+            ? rawHealth
             : "unknown";
 
         return {

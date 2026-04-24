@@ -279,7 +279,7 @@ describe("CostController", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
-      }) as unknown as typeof fetch;
+      });
       const result = await controller.getAvailability();
       expect(result).toEqual({ available: true });
     });
@@ -288,18 +288,14 @@ describe("CostController", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 503,
-      }) as unknown as typeof fetch;
+      });
       const result = await controller.getAvailability();
       expect(result.available).toBe(false);
       expect(result.reason).toContain("503");
     });
 
     it("returns available: false with reason when OpenCost is unreachable", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(
-          new Error("ECONNREFUSED"),
-        ) as unknown as typeof fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue(new Error("ECONNREFUSED"));
       const result = await controller.getAvailability();
       expect(result.available).toBe(false);
       expect(result.reason).toContain("unreachable");

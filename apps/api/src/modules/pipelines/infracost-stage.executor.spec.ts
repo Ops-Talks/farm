@@ -48,7 +48,7 @@ function buildRun(overrides: Partial<PipelineRun> = {}): PipelineRun {
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
     ...overrides,
-  } as unknown as PipelineRun;
+  };
 }
 
 function buildStage(config: Record<string, unknown> = {}): PipelineStage {

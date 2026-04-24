@@ -288,7 +288,7 @@ describe("CloudResourceService — without optional providers", () => {
     });
 
     it("should return empty array for unknown provider (default case)", async () => {
-      const result = await service.discoverByProvider("org-1", "aws" as never);
+      const result = await service.discoverByProvider("org-1", "aws");
       expect(result).toEqual([]);
     });
   });

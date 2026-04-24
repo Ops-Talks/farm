@@ -49,17 +49,17 @@ describe("Catalog helmChart integration", () => {
     save: jest
       .fn()
       .mockImplementation((c: Component) =>
-        Promise.resolve({ ...c, id: c.id ?? "new-uuid" } as Component),
+        Promise.resolve({ ...c, id: c.id ?? "new-uuid" }),
       ),
     findAndCount: jest.fn().mockResolvedValue([[], 0]),
     findBy: jest.fn().mockResolvedValue([]),
     findOne: jest.fn(),
     merge: jest
       .fn()
-      .mockImplementation(
-        (entity: Component, dto: Partial<Component>) =>
-          ({ ...entity, ...dto }) as Component,
-      ),
+      .mockImplementation((entity: Component, dto: Partial<Component>) => ({
+        ...entity,
+        ...dto,
+      })),
     remove: jest.fn().mockResolvedValue(undefined),
   };
 

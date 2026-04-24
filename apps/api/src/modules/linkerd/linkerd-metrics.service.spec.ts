@@ -133,7 +133,7 @@ describe("LinkerdMetricsService", () => {
       const response = buildPrometheusResponse([
         {
           metric: { deployment: "svc", namespace: "default" },
-          values: undefined as unknown as [number, string][],
+          values: undefined,
         },
       ]);
       mockHttpService.get.mockReturnValue(of(response));

@@ -73,6 +73,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   // Fetch on mount — auth token should already be available since
   // OrganizationProvider is nested inside AuthProvider.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOrgs();
   }, [fetchOrgs]);
 

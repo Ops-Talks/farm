@@ -9,20 +9,19 @@ describe("DocumentationBuildService", () => {
 
   const makeBuild = (
     overrides: Partial<DocumentationBuild> = {},
-  ): DocumentationBuild =>
-    ({
-      id: "build-uuid-1",
-      componentId: "comp-uuid-1",
-      version: "1.0.0",
-      sourceType: "markdown",
-      status: "building",
-      buildLog: null,
-      artifactsPath: null,
-      repoUrl: null,
-      triggeredAt: new Date("2024-01-01T00:00:00Z"),
-      completedAt: null,
-      ...overrides,
-    }) as DocumentationBuild;
+  ): DocumentationBuild => ({
+    id: "build-uuid-1",
+    componentId: "comp-uuid-1",
+    version: "1.0.0",
+    sourceType: "markdown",
+    status: "building",
+    buildLog: null,
+    artifactsPath: null,
+    repoUrl: null,
+    triggeredAt: new Date("2024-01-01T00:00:00Z"),
+    completedAt: null,
+    ...overrides,
+  });
 
   const mockRepository = {
     create: jest.fn(),

@@ -50,7 +50,7 @@ describe("FinOpsService", () => {
       repository.save.mockResolvedValue({
         ...newEstimate,
         ...baseData,
-      } as CostEstimate);
+      });
 
       const result = await service.upsertCostEstimate(componentId, baseData);
 
@@ -72,7 +72,7 @@ describe("FinOpsService", () => {
       repository.save.mockResolvedValue({
         ...existing,
         ...baseData,
-      } as CostEstimate);
+      });
 
       await service.upsertCostEstimate(componentId, baseData);
 

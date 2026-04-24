@@ -98,7 +98,7 @@ describe("DeploymentsController", () => {
     const result = await controller.findAll({
       skip: undefined,
       take: undefined,
-    } as never);
+    });
     expect(result.skip).toBe(0);
     expect(result.take).toBe(20);
   });

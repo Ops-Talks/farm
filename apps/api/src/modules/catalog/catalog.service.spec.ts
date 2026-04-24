@@ -50,7 +50,7 @@ describe("CatalogService", () => {
         id: component.id || "550e8400-e29b-41d4-a716-446655440001",
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as Component),
+      }),
     ),
     find: jest.fn().mockResolvedValue([mockComponent]),
     findAndCount: jest.fn().mockResolvedValue([[mockComponent], 1]),

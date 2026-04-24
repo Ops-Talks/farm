@@ -18,7 +18,7 @@ describe("AuthService", () => {
     displayName: "John",
     password: "hashed_password",
     roles: ["user"],
-    refreshToken: null as unknown as string,
+    refreshToken: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     hashPassword: jest.fn(),

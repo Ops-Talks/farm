@@ -86,7 +86,7 @@ describe("AlertingController", () => {
       const result = await controller.findAll({
         skip: undefined,
         take: undefined,
-      } as unknown as ListAlertingRulesQueryDto);
+      });
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.skip).toBe(0);

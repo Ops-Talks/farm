@@ -44,7 +44,7 @@ describe("DockerHubAdapter", () => {
     for (const r of responses) {
       mocked.mockResolvedValueOnce(r);
     }
-    globalThis.fetch = mocked as unknown as typeof globalThis.fetch;
+    globalThis.fetch = mocked;
   }
 
   it("should have type DOCKER_HUB", () => {
@@ -137,7 +137,7 @@ describe("DockerHubAdapter", () => {
           json: () => Promise.resolve({ results: [] }),
         });
 
-      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+      globalThis.fetch = fetchMock;
 
       await adapter.listRepositories();
       await adapter.listRepositories();
@@ -170,7 +170,7 @@ describe("DockerHubAdapter", () => {
             }),
         });
 
-      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+      globalThis.fetch = fetchMock;
 
       const result = await adapter.listRepositories();
 
@@ -183,7 +183,7 @@ describe("DockerHubAdapter", () => {
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
         ok: false,
         status: 403,
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       await expect(adapter.listRepositories()).rejects.toThrow(
         "Docker Hub authentication failed: HTTP 403",
@@ -215,7 +215,7 @@ describe("DockerHubAdapter", () => {
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ results: [] }),
-        }) as unknown as typeof globalThis.fetch;
+        });
 
       const result = await adapter.listRepositories();
 

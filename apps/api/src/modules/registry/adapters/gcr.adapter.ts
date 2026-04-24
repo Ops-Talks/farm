@@ -84,7 +84,7 @@ export class GcrAdapter implements IRegistryAdapter {
     if (credentialsJson) {
       try {
         parsed = JSON.parse(credentialsJson) as GcpCredentials;
-        this.parsedCredentials = parsed as unknown as Record<string, unknown>;
+        this.parsedCredentials = parsed;
       } catch {
         this.logger.error("Failed to parse GCP credentials JSON");
       }

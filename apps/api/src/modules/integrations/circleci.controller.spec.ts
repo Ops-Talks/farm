@@ -41,7 +41,7 @@ describe("CircleCIController", () => {
       const result = await controller.listPipelines(
         undefined,
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual([mockPipeline]);
       expect(circleCIService.listPipelines).toHaveBeenCalledWith(
@@ -51,11 +51,7 @@ describe("CircleCIController", () => {
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.listPipelines(
-        "vcs-url",
-        "explicit-org",
-        mockRequest as never,
-      );
+      await controller.listPipelines("vcs-url", "explicit-org", mockRequest);
       expect(circleCIService.listPipelines).toHaveBeenCalledWith(
         "explicit-org",
         "vcs-url",
@@ -74,7 +70,7 @@ describe("CircleCIController", () => {
         "my-slug",
         undefined,
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual({ id: "pipe-new", state: "pending" });
       expect(circleCIService.triggerPipeline).toHaveBeenCalledWith(
@@ -89,7 +85,7 @@ describe("CircleCIController", () => {
         "my-slug",
         undefined,
         "org-2",
-        mockRequest as never,
+        mockRequest,
       );
       expect(circleCIService.triggerPipeline).toHaveBeenCalledWith(
         "org-2",

@@ -50,7 +50,7 @@ describe("EnvironmentsController", () => {
         name: "production",
         type: EnvironmentType.PRODUCTION,
       },
-      { organizationId: "org-uuid-1" } as never,
+      { organizationId: "org-uuid-1" },
     );
     expect(result).toEqual(mockEnvironment);
     expect(service.create).toHaveBeenCalledWith(
@@ -61,10 +61,7 @@ describe("EnvironmentsController", () => {
 
   it("should return all environments with pagination", async () => {
     const mockReq = { organizationId: undefined };
-    const result = await controller.findAll(
-      { skip: 0, take: 20 },
-      mockReq as never,
-    );
+    const result = await controller.findAll({ skip: 0, take: 20 }, mockReq);
     expect(result).toBeInstanceOf(PaginatedResponseDto);
     expect(result.data).toHaveLength(1);
     expect(result.total).toBe(1);
@@ -76,8 +73,8 @@ describe("EnvironmentsController", () => {
   it("should use skip=0 and take=20 defaults when query properties are undefined", async () => {
     const mockReq = { organizationId: "org-1" };
     const result = await controller.findAll(
-      { skip: undefined, take: undefined } as never,
-      mockReq as never,
+      { skip: undefined, take: undefined },
+      mockReq,
     );
     expect(result.skip).toBe(0);
     expect(result.take).toBe(20);

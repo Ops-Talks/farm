@@ -82,13 +82,7 @@ describe("MarkdownBuilder", () => {
     it("resolves with status ready and zero files when no md files found", async () => {
       mockExecFileSuccess();
 
-      mockedFs.readdir
-        .mockResolvedValueOnce(
-          [] as unknown as Awaited<ReturnType<typeof fs.readdir>>,
-        )
-        .mockResolvedValueOnce(
-          [] as unknown as Awaited<ReturnType<typeof fs.readdir>>,
-        );
+      mockedFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       mockedFs.rm.mockResolvedValue(undefined);
 
@@ -120,13 +114,7 @@ describe("MarkdownBuilder", () => {
     it("does not clean up tmpDir on success so artifacts remain accessible", async () => {
       mockExecFileSuccess();
 
-      mockedFs.readdir
-        .mockResolvedValueOnce(
-          [] as unknown as Awaited<ReturnType<typeof fs.readdir>>,
-        )
-        .mockResolvedValueOnce(
-          [] as unknown as Awaited<ReturnType<typeof fs.readdir>>,
-        );
+      mockedFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       mockedFs.rm.mockResolvedValue(undefined);
 
@@ -179,15 +167,11 @@ describe("MarkdownBuilder", () => {
       // on line 77 of markdown.builder.ts.
       mockExecFileSuccess();
 
-      mockedFs.readdir
-        .mockResolvedValueOnce(
-          [] as unknown as Awaited<ReturnType<typeof fs.readdir>>,
-        )
-        .mockResolvedValueOnce([
-          { isFile: () => false, name: "images" },
-          { isFile: () => true, name: "diagram.png" },
-          { isFile: () => true, name: "guide.md" },
-        ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+      mockedFs.readdir.mockResolvedValueOnce([]).mockResolvedValueOnce([
+        { isFile: () => false, name: "images" },
+        { isFile: () => true, name: "diagram.png" },
+        { isFile: () => true, name: "guide.md" },
+      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
 
       mockedFs.rm.mockResolvedValue(undefined);
 

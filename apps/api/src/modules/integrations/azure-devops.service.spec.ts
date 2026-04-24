@@ -86,7 +86,7 @@ describe("AzureDevOpsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ value: [mockRun] }),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listPipelines("org-1");
 
@@ -113,7 +113,7 @@ describe("AzureDevOpsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 401,
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listPipelines("org-1");
 
@@ -133,7 +133,7 @@ describe("AzureDevOpsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ value: [] }),
-      }) as unknown as typeof fetch;
+      });
 
       await service.listPipelines("org-1");
 
@@ -164,7 +164,7 @@ describe("AzureDevOpsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({}),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listPipelines("org-1");
       expect(result).toEqual([]);
@@ -186,7 +186,7 @@ describe("AzureDevOpsService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ value: [sparseRun] }),
-      }) as unknown as typeof fetch;
+      });
 
       const result = await service.listPipelines("org-1");
 

@@ -42,16 +42,13 @@ describe("ArgoCDController", () => {
 
   describe("listApplications", () => {
     it("should list applications using orgId from request", async () => {
-      const result = await controller.listApplications(
-        undefined,
-        mockRequest as never,
-      );
+      const result = await controller.listApplications(undefined, mockRequest);
       expect(result).toEqual([mockApp]);
       expect(argoCDService.listApplications).toHaveBeenCalledWith("org-uuid-1");
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.listApplications("explicit-org", mockRequest as never);
+      await controller.listApplications("explicit-org", mockRequest);
       expect(argoCDService.listApplications).toHaveBeenCalledWith(
         "explicit-org",
       );
@@ -68,7 +65,7 @@ describe("ArgoCDController", () => {
       const result = await controller.getApplication(
         "my-app",
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual(mockApp);
       expect(argoCDService.getApplication).toHaveBeenCalledWith(
@@ -78,7 +75,7 @@ describe("ArgoCDController", () => {
     });
 
     it("should use explicit orgId when provided", async () => {
-      await controller.getApplication("my-app", "org-2", mockRequest as never);
+      await controller.getApplication("my-app", "org-2", mockRequest);
       expect(argoCDService.getApplication).toHaveBeenCalledWith(
         "org-2",
         "my-app",
@@ -96,7 +93,7 @@ describe("ArgoCDController", () => {
       const result = await controller.syncApplication(
         "my-app",
         undefined,
-        mockRequest as never,
+        mockRequest,
       );
       expect(result).toEqual({ operation: {} });
       expect(argoCDService.syncApplication).toHaveBeenCalledWith(
@@ -106,11 +103,7 @@ describe("ArgoCDController", () => {
     });
 
     it("should use explicit orgId over request org", async () => {
-      await controller.syncApplication(
-        "my-app",
-        "explicit-org",
-        mockRequest as never,
-      );
+      await controller.syncApplication("my-app", "explicit-org", mockRequest);
       expect(argoCDService.syncApplication).toHaveBeenCalledWith(
         "explicit-org",
         "my-app",

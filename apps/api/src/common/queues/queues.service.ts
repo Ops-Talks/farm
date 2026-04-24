@@ -155,7 +155,7 @@ export class QueuesService {
         timestamp: job.timestamp,
         processedOn: job.processedOn,
         finishedOn: job.finishedOn,
-        stacktrace: job.stacktrace,
+        stacktrace: job.stacktrace ?? undefined,
       });
     }
 
@@ -187,7 +187,7 @@ export class QueuesService {
       timestamp: job.timestamp,
       processedOn: job.processedOn,
       finishedOn: job.finishedOn,
-      stacktrace: job.stacktrace,
+      stacktrace: job.stacktrace ?? undefined,
     };
   }
 

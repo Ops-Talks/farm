@@ -55,7 +55,7 @@ describe("OpenCostService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue(mockData),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await service.getAllocation("my-app", "30d");
 
@@ -73,7 +73,7 @@ describe("OpenCostService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 503,
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
@@ -83,7 +83,7 @@ describe("OpenCostService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({}),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
@@ -93,29 +93,21 @@ describe("OpenCostService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ data: {} }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
     });
 
     it("returns null when fetch throws a non-Error value", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(
-          "network timeout",
-        ) as unknown as typeof globalThis.fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue("network timeout");
 
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
     });
 
     it("returns null when fetch throws an Error", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(
-          new Error("ECONNREFUSED"),
-        ) as unknown as typeof globalThis.fetch;
+      globalThis.fetch = jest.fn().mockRejectedValue(new Error("ECONNREFUSED"));
 
       const result = await service.getAllocation("my-app", "30d");
       expect(result).toBeNull();
@@ -125,7 +117,7 @@ describe("OpenCostService", () => {
       globalThis.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({ data: {} }),
-      }) as unknown as typeof globalThis.fetch;
+      });
 
       await service.getAllocation("my app/special", "7d&extra=1");
 

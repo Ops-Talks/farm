@@ -286,10 +286,8 @@ describe("HelmService", () => {
       const fakeComponent = { id: "comp-uuid", name: "my-app" };
       const fakeEnvironment = { id: "env-uuid", name: "production" };
 
-      mockComponentRepo.findOne.mockResolvedValue(fakeComponent as Component);
-      mockEnvironmentRepo.findOne.mockResolvedValue(
-        fakeEnvironment as Environment,
-      );
+      mockComponentRepo.findOne.mockResolvedValue(fakeComponent);
+      mockEnvironmentRepo.findOne.mockResolvedValue(fakeEnvironment);
 
       const result = await service.syncReleases();
 
@@ -344,10 +342,8 @@ describe("HelmService", () => {
         metadata: { helmReleaseName: "my-app" },
       };
 
-      mockComponentRepo.findOne.mockResolvedValue(fakeComponent as Component);
-      mockEnvironmentRepo.findOne.mockResolvedValue(
-        fakeEnvironment as Environment,
-      );
+      mockComponentRepo.findOne.mockResolvedValue(fakeComponent);
+      mockEnvironmentRepo.findOne.mockResolvedValue(fakeEnvironment);
       mockDeploymentRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -498,7 +494,7 @@ describe("HelmService — additional branches", () => {
       });
 
       const fakeComponent = { id: "comp-uuid", name: "my-app" };
-      mockComponentRepo.findOne.mockResolvedValue(fakeComponent as Component);
+      mockComponentRepo.findOne.mockResolvedValue(fakeComponent);
       // Environment NOT found.
       mockEnvironmentRepo.findOne.mockResolvedValue(null);
 

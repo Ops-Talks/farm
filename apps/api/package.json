@@ -166,7 +166,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "transformIgnorePatterns": [
-      "node_modules/(?!marked|change-case)"
+      "node_modules/(?!marked|change-case|uuid)"
     ],
     "moduleNameMapper": {
       "^@kubernetes/client-node$": "<rootDir>/../test/__mocks__/kubernetes-client-node.ts"

@@ -260,10 +260,10 @@ export class PipelineProcessor extends WorkerHost {
           // Resolve any secret refs in the stage config before executing.
           const resolvedConfig = this.cloudSecretsService
             ? await this.cloudSecretsService.resolveConfigSecrets(
-                stage.config as unknown as Record<string, unknown>,
+                stage.config,
                 (stage.config as unknown as { orgId?: string }).orgId ?? "",
               )
-            : (stage.config as unknown as Record<string, unknown>);
+            : stage.config;
           const result = await this.awsEcsExecutor.execute(
             resolvedConfig as unknown as AwsEcsDeployConfig,
             (msg) => this.emitLog(runId, stage.name, msg),
@@ -277,10 +277,10 @@ export class PipelineProcessor extends WorkerHost {
         ) {
           const resolvedConfig = this.cloudSecretsService
             ? await this.cloudSecretsService.resolveConfigSecrets(
-                stage.config as unknown as Record<string, unknown>,
+                stage.config,
                 (stage.config as unknown as { orgId?: string }).orgId ?? "",
               )
-            : (stage.config as unknown as Record<string, unknown>);
+            : stage.config;
           const result = await this.awsLambdaExecutor.execute(
             resolvedConfig as unknown as AwsLambdaDeployConfig,
             (msg) => this.emitLog(runId, stage.name, msg),
@@ -294,10 +294,10 @@ export class PipelineProcessor extends WorkerHost {
         ) {
           const resolvedConfig = this.cloudSecretsService
             ? await this.cloudSecretsService.resolveConfigSecrets(
-                stage.config as unknown as Record<string, unknown>,
+                stage.config,
                 (stage.config as unknown as { orgId?: string }).orgId ?? "",
               )
-            : (stage.config as unknown as Record<string, unknown>);
+            : stage.config;
           const result = await this.gcpCloudRunExecutor.execute(
             resolvedConfig as unknown as GcpCloudRunDeployConfig,
             (msg) => this.emitLog(runId, stage.name, msg),
@@ -311,10 +311,10 @@ export class PipelineProcessor extends WorkerHost {
         ) {
           const resolvedConfig = this.cloudSecretsService
             ? await this.cloudSecretsService.resolveConfigSecrets(
-                stage.config as unknown as Record<string, unknown>,
+                stage.config,
                 (stage.config as unknown as { orgId?: string }).orgId ?? "",
               )
-            : (stage.config as unknown as Record<string, unknown>);
+            : stage.config;
           const result = await this.azureContainerAppsExecutor.execute(
             resolvedConfig as unknown as AzureContainerAppsDeployConfig,
             (msg) => this.emitLog(runId, stage.name, msg),

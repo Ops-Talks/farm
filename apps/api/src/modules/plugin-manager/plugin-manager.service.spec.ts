@@ -265,7 +265,7 @@ describe("PluginManagerService", () => {
           label: "First",
           path: "/first",
           pluginName: "p1",
-        } as unknown as import("./interfaces/plugin.interface").PluginMenuItem,
+        },
       ]);
 
       const items = service.getMenuItems();

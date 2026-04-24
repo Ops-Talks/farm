@@ -133,11 +133,13 @@ export function SlosClient() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSlos();
   }, [fetchSlos]);
 
   useEffect(() => {
     if (slosList.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchBudgets(slosList);
     }
   }, [slosList, fetchBudgets]);

@@ -214,9 +214,13 @@ const AddSpecDialog = memo(function AddSpecDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName("");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormat("openapi");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVersion("");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSpec("");
     }
   }, [open]);

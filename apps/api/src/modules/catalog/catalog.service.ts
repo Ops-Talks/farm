@@ -229,7 +229,7 @@ export class CatalogService {
         lifecycle:
           (parsed.spec?.lifecycle as ComponentLifecycle) ||
           ComponentLifecycle.EXPERIMENTAL,
-        metadata: (parsed.metadata as Record<string, unknown>) || {},
+        metadata: parsed.metadata || {},
         helmChart: parsed.spec?.helm
           ? {
               repo: parsed.spec.helm.repo,

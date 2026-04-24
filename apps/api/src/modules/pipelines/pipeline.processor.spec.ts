@@ -588,7 +588,7 @@ describe("PipelineProcessor", () => {
         releaseName: "my-app",
         chart: "bitnami/postgresql",
         namespace: "production",
-      } as unknown as Record<string, unknown>,
+      },
       order: 1,
     };
 
@@ -735,7 +735,7 @@ describe("PipelineProcessor", () => {
         cluster: "my-cluster",
         service: "my-service",
         image: "my-image:latest",
-      } as unknown as Record<string, unknown>,
+      },
       order: 1,
     };
 
@@ -833,7 +833,7 @@ describe("PipelineProcessor", () => {
         orgId: "org-uuid-1",
         functionName: "my-fn",
         imageUri: "123.dkr.ecr.us-east-1.amazonaws.com/my-image:latest",
-      } as unknown as Record<string, unknown>,
+      },
       order: 1,
     };
 
@@ -884,7 +884,7 @@ describe("PipelineProcessor", () => {
         service: "my-service",
         region: "us-central1",
         image: "gcr.io/my-project/my-image:latest",
-      } as unknown as Record<string, unknown>,
+      },
       order: 1,
     };
 
@@ -935,7 +935,7 @@ describe("PipelineProcessor", () => {
         resourceGroup: "my-rg",
         appName: "my-app",
         image: "my-registry.azurecr.io/my-image:latest",
-      } as unknown as Record<string, unknown>,
+      },
       order: 1,
     };
 
@@ -1040,7 +1040,7 @@ describe("PipelineProcessor", () => {
           orgId: "org-1",
           type: IntegrationType.KEYCLOAK,
           encryptedValue: encryptedCredential,
-        } as Partial<IntegrationCredential>),
+        }),
       };
 
       const proc = buildProcessorWithCredRepo(mockCredRepo);
@@ -1068,7 +1068,7 @@ describe("PipelineProcessor", () => {
           orgId: "org-1",
           type: IntegrationType.KEYCLOAK,
           encryptedValue: encryptedCredential,
-        } as Partial<IntegrationCredential>),
+        }),
       };
 
       const proc = buildProcessorWithCredRepo(mockCredRepo);
@@ -1132,7 +1132,7 @@ describe("PipelineProcessor", () => {
           orgId: "org-1",
           type: IntegrationType.KEYCLOAK,
           encryptedValue: encryptedCredential,
-        } as Partial<IntegrationCredential>),
+        }),
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -1197,13 +1197,13 @@ describe("PipelineProcessor", () => {
             orgId: "org-1",
             type: IntegrationType.KEYCLOAK,
             encryptedValue: encryptedCredential,
-          } as Partial<IntegrationCredential>)
+          })
           .mockResolvedValueOnce({
             id: "cred-2",
             orgId: "org-2",
             type: IntegrationType.KEYCLOAK,
             encryptedValue: encryptedCredential,
-          } as Partial<IntegrationCredential>),
+          }),
       };
 
       const proc = buildProcessorWithCredRepo(credRepo);
@@ -1345,7 +1345,7 @@ describe("PipelineProcessor — additional branches", () => {
         id: "helm-stage",
         name: "Deploy Helm",
         type: "deploy",
-        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        config: { engine: "helm" },
         order: 1,
       };
       const pipeline = buildPipeline([helmStage]);
@@ -1404,7 +1404,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "aws-ecs",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([ecsStage]);
@@ -1455,7 +1455,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "aws-lambda",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([lambdaStage]);
@@ -1506,7 +1506,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "gcp-cloud-run",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([gcpStage]);
@@ -1557,7 +1557,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "azure-container-apps",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([azureStage]);
@@ -2027,7 +2027,7 @@ describe("PipelineProcessor — additional branches", () => {
           engine: "aws-lambda",
           orgId: "org-1",
           functionName: "fn",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([stage]);
@@ -2074,7 +2074,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "gcp-cloud-run",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([stage]);
@@ -2121,7 +2121,7 @@ describe("PipelineProcessor — additional branches", () => {
         config: {
           engine: "azure-container-apps",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([stage]);
@@ -2155,7 +2155,7 @@ describe("PipelineProcessor — additional branches", () => {
         id: "fail-stage",
         name: "FailMe",
         type: "deploy",
-        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        config: { engine: "helm" },
         order: 5,
       };
 
@@ -2354,10 +2354,7 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         id: "ecs-stage",
         name: "ECS Deploy",
         type: "deploy",
-        config: { engine: "aws-ecs", orgId: "org-1" } as unknown as Record<
-          string,
-          unknown
-        >,
+        config: { engine: "aws-ecs", orgId: "org-1" },
         order: 1,
       };
       const pipeline = buildPipeline([ecsStage]);
@@ -2407,7 +2404,7 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           engine: "aws-lambda",
           orgId: "org-1",
           functionName: "fn",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([lambdaStage]);
@@ -2456,7 +2453,7 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         config: {
           engine: "gcp-cloud-run",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([gcpStage]);
@@ -2505,7 +2502,7 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         config: {
           engine: "azure-container-apps",
           orgId: "org-1",
-        } as unknown as Record<string, unknown>,
+        },
         order: 1,
       };
       const pipeline = buildPipeline([azureStage]);
@@ -2603,7 +2600,7 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         id: "helm-s",
         name: "Helm",
         type: "deploy",
-        config: { engine: "helm" } as unknown as Record<string, unknown>,
+        config: { engine: "helm" },
         order: 1,
       };
       const pipeline = buildPipeline([helmStage]);
