@@ -29,16 +29,13 @@ paths = [
   '''apps/api/src/modules/auth/strategies/github\.strategy\.spec\.ts''',
   '''apps/api/src/modules/integrations/integration-credential\.service\.spec\.ts''',
   '''apps/api/src/modules/cloud/gcp/gcp\.service\.spec\.ts''',
-  # Documentation example tokens (illustrative JWTs in API/auth docs)
-  '''docs/user-guide/authentication\.md''',
-  '''docs/api-reference/auth\.md''',
-  # Configuration default placeholder (must be overridden in production)
-  '''apps/api/src/config/configuration\.ts''',
 ]
 
 regexes = [
-  # Configuration default placeholder
+  # Configuration default placeholder (must be overridden in production)
   '''super-secret-key-change-me-in-production''',
   # ZAP DAST test user password — hardcoded test credential for CI scanning only
   '''Zap@12345!''',
+  # Illustrative example password used in authentication user-guide docs
+  '''SecurePass1''',
 ]
