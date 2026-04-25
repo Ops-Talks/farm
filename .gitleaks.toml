@@ -8,10 +8,18 @@ title = "farm-gitleaks"
 useDefault = true
 
 # ── Allowlist ─────────────────────────────────────────────────────────────────
-# These are intentional test fixtures and placeholder defaults — NOT real secrets.
-[[allowlists]]
-description = "Test fixture JWT secrets and placeholder default values"
+# These are intentional test fixtures, documentation examples, and placeholder
+# defaults — NOT real secrets.
+#
+# NOTE: gitleaks 8.21.x does not honor the [[allowlists]] (array-of-tables)
+# syntax when the config also sets extend.useDefault = true. We consolidate
+# everything into a single global [allowlist] block, which is the syntax that
+# is verified to work with the default ruleset extension.
+[allowlist]
+description = "Farm-wide allowlist for test fixtures, doc examples, and placeholder defaults"
+
 paths = [
+  # Test fixtures with hardcoded JWT secrets and placeholder credentials
   '''apps/api/test/helpers/e2e-setup\.ts''',
   '''apps/api/src/modules/auth/strategies/keycloak\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/keycloak-sync\.service\.spec\.ts''',
@@ -20,13 +28,17 @@ paths = [
   '''apps/api/src/modules/auth/strategies/google\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/strategies/github\.strategy\.spec\.ts''',
   '''apps/api/src/modules/integrations/integration-credential\.service\.spec\.ts''',
+  '''apps/api/src/modules/cloud/gcp/gcp\.service\.spec\.ts''',
+  # Documentation example tokens (illustrative JWTs in API/auth docs)
+  '''docs/user-guide/authentication\.md''',
+  '''docs/api-reference/auth\.md''',
+  # Configuration default placeholder (must be overridden in production)
+  '''apps/api/src/config/configuration\.ts''',
 ]
 
-[[allowlists]]
-description = "Configuration default placeholder — must be overridden in production"
-regexes = ['''super-secret-key-change-me-in-production''']
-paths = ['''apps/api/src/config/configuration\.ts''']
-
-[[allowlists]]
-description = "ZAP DAST test user password — hardcoded test credential for CI scanning only"
-regexes = ['''Zap@12345!''']
+regexes = [
+  # Configuration default placeholder
+  '''super-secret-key-change-me-in-production''',
+  # ZAP DAST test user password — hardcoded test credential for CI scanning only
+  '''Zap@12345!''',
+]

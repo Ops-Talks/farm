@@ -823,6 +823,70 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 
 ---
 
+## Phase 36: Documentation Toolchain Migration to Zensical `TODO`
+
+### FARM-E82: Migrate Farm Documentation from Material for MkDocs to Zensical `TODO`
+
+> Material for MkDocs entered maintenance mode in November 2025 and will receive only critical bug fixes and security updates until **November 2026**. Upstream MkDocs has had no releases since August 2024 and is now considered a supply-chain risk by the Material team itself. The Material for MkDocs maintainers have shifted focus to [Zensical](https://zensical.org/), an MIT-licensed next-gen static site generator that consolidates MkDocs and Material into a single coherent stack, reads `mkdocs.yml` natively, and ships with a faster differential build engine (ZRX) plus a new client-side search engine (Disco). Farm's current docs setup (`mkdocs.yml`, `docs/`, `docs/requirements.txt`, `.github/workflows/docs_publish.yml`) is in a favorable position for migration: every Markdown extension and theme feature we use is already supported by Zensical. The only known compatibility gap is `mkdocs-minify-plugin`, currently in Zensical's Tier 1 backlog ([zensical/backlog#15](https://github.com/zensical/backlog/issues/15)). This Epic plans the phased cutover so we are not caught off-guard when the EOL date arrives.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S355 | Story | Maintain Material for MkDocs 9.7.x via Dependabot bumps until Zensical reaches feature parity for our use case; merge PR #84 (`mkdocs-material >=9.7.6,<10.0`) and continue accepting patch bumps | `TODO` |
+| FARM-S356 | Story | Spike: install Zensical in an isolated venv, run `zensical build` against the current `mkdocs.yml`, capture visual diffs against the Material output, and document any incompatibilities in a spike report committed to `docs/internal/zensical-spike.md` | `TODO` |
+| FARM-S357 | Story | Dual-build CI: add `.github/workflows/docs_zensical.yml` that builds the docs with Zensical (no deploy) on every PR touching `docs/**` or `mkdocs.yml`; failures are advisory until Story FARM-S358 is complete | `TODO` |
+| FARM-S358 | Story | Cutover: replace `docs/requirements.txt` with a single `zensical` dependency, update `.github/workflows/docs_publish.yml` to use `zensical build` + `gh-pages` deploy, remove the dual-build workflow, and document the toolchain change in `CHANGELOG.md` with a minor or major version bump | `TODO` |
+
+#### FARM-S355 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T408 | Task | Merge Dependabot PR #84 bumping `mkdocs-material` to `>=9.7.6,<10.0`; verify `mkdocs build --strict` succeeds on `main` after merge | `TODO` |
+| FARM-T409 | Task | Confirm Dependabot's `pip` ecosystem entry in `.github/dependabot.yml` covers `docs/requirements.txt` and groups patch updates so 9.7.x bumps continue arriving automatically until the cutover | `TODO` |
+
+#### FARM-S356 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T410 | Task | Install Zensical in an isolated Python venv (`python -m venv .venv-zensical && pip install zensical`); run `zensical build --site-dir /tmp/zensical-build`; capture build logs and render a side-by-side comparison of the home page, a User Guide page, an API Reference page, and a page using mermaid diagrams against the Material output; commit the spike report to `docs/internal/zensical-spike.md` (gitignored or excluded from `nav`) | `TODO` |
+| FARM-T411 | Task | Verify each `mkdocs.yml` plugin and `markdown_extensions` entry against [zensical.org/compatibility](https://zensical.org/compatibility/); explicitly confirm support for `pymdownx.superfences` with mermaid `custom_fences`, `pymdownx.highlight`, `pymdownx.tabbed`, `pymdownx.tasklist`, `admonition`, `attr_list`, `md_in_html`, custom palette, and `extra_css`; document the status of `mkdocs-minify-plugin` ([zensical/backlog#15](https://github.com/zensical/backlog/issues/15)) and the new Disco search engine vs. our requirements | `TODO` |
+
+##### FARM-T410 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST416 | Sub-task | Validate that internal cross-page links (`api-reference/*.md` → `user-guide/*.md`, etc.) and absolute links to `/api/docs` (already left as-is by MkDocs) render identically in the Zensical output | `TODO` |
+| FARM-ST417 | Sub-task | Validate that the Farm logo (`docs/img/farm01.svg`), favicon, and the custom palette colors in `docs/stylesheets/extra.css` are applied correctly by Zensical | `TODO` |
+
+#### FARM-S357 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T412 | Task | Add `docs/requirements-zensical.txt` pinning Zensical and any required peer dependencies; add `.github/workflows/docs_zensical.yml` that runs on `pull_request` and `workflow_dispatch`, sets up Python 3.12, installs from `docs/requirements-zensical.txt`, and runs `zensical build --strict --site-dir /tmp/zensical-build`; the job uses `continue-on-error: true` so failures do not block PRs during the dual-build window | `TODO` |
+| FARM-T413 | Task | Decide on the `mkdocs-minify-plugin` gap during dual-build: either accept the temporary loss of HTML minification, or add a post-build step using `html-minifier-terser` (npm) on the Zensical output; document the decision in `docs/internal/zensical-spike.md` | `TODO` |
+
+##### FARM-T412 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST418 | Sub-task | After two consecutive weeks of green Zensical builds on `main`, remove `continue-on-error: true` so the workflow becomes a hard gate before the FARM-S358 cutover | `TODO` |
+
+#### FARM-S358 Tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-T414 | Task | Replace `docs/requirements.txt` contents with a single pinned `zensical` dependency (and optional minify replacement from FARM-T413); update `.github/workflows/docs_publish.yml` to install from the new `requirements.txt` and replace `mkdocs gh-deploy --force` with the Zensical equivalent (`zensical build` + push to `gh-pages` via `peaceiris/actions-gh-pages` or the `--force` git push pattern already used); preserve the `concurrency: pages` group and `permissions: contents: write` block | `TODO` |
+| FARM-T415 | Task | Delete `.github/workflows/docs_zensical.yml` (dual-build no longer needed); remove `mkdocs`, `mkdocs-material`, and `mkdocs-minify-plugin` references across the repo (search for them in `Makefile`, `CONTRIBUTING.md`, `README.md`, and developer docs); update `docs/developer-guide/setup.md` and any other docs that reference the MkDocs toolchain | `TODO` |
+| FARM-T416 | Task | Add a `[X.Y.0]` entry to `CHANGELOG.md` describing the toolchain migration (Material for MkDocs → Zensical); decide between a minor or major version bump based on whether end users notice visual changes; mark Phase 36 as `DONE` in the ROADMAP summary table | `TODO` |
+
+##### FARM-T414 Sub-tasks
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-ST419 | Sub-task | Run the new `docs_publish.yml` once via `workflow_dispatch` from a feature branch targeting a throwaway `gh-pages-test` branch to verify the deploy step works end-to-end before merging to `main` | `TODO` |
+| FARM-ST420 | Sub-task | After the first successful production deploy, verify the published site at `https://ops-talks.github.io/farm/` renders correctly across the Home, User Guide, Developer Guide, and API Reference top-level sections; smoke-test search via Disco | `TODO` |
+
+---
+
 ## Summary
 
 | Phase | Epics | Stories | Status |
@@ -865,4 +929,5 @@ Thanos Querier exposes the same PromQL HTTP API as Prometheus, so Farm's existin
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
 | Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
 | Phase 35: Elasticsearch Index Visibility | 1 | 4 | `TODO` |
-| **Total** | **83** | **334** | |
+| Phase 36: Documentation Toolchain Migration to Zensical | 1 | 4 | `TODO` |
+| **Total** | **84** | **338** | |
