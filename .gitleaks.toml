@@ -38,4 +38,13 @@ regexes = [
   '''Zap@12345!''',
   # Illustrative example password used in authentication user-guide docs
   '''SecurePass1''',
+  # Truncated JWT placeholder used in authentication docs (eyJhbGci... prefix is a
+  # well-known example header — no real payload follows)
+  '''eyJhbGciOiJIUzI1NiIs''',
+  # Truncated hex refresh-token placeholders used in authentication docs
+  '''a1b2c3d4e5f6''',
+  '''f6e5d4c3b2a1''',
+  # UUID token placeholder used in an early version of docs/api-reference/auth.md
+  # (commit f596bed) — a static example value, not a real credential
+  '''7c9e6679-7425-40de-944b-e07fc1f90ae7''',
 ]
