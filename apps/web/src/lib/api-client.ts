@@ -2807,3 +2807,123 @@ export const iacModules = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Component Elasticsearch indices (FARM-S353 / Phase 35)
+// ---------------------------------------------------------------------------
+
+/** Persisted mapping between a catalog component and an Elasticsearch index pattern. */
+export interface ComponentElasticsearchIndex {
+  id: string;
+  componentId: string;
+  indexPattern: string;
+  esUrl: string | null;
+  description: string | null;
+  organizationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Summary statistics returned by the live `/stats` endpoint. */
+export interface ComponentElasticsearchIndexStat {
+  pattern: string;
+  index: string;
+  health: "green" | "yellow" | "red" | "unknown";
+  status: string;
+  docsCount: number;
+  storeSize: string;
+}
+
+/** Per-row response shape for `GET /components/:id/elasticsearch-indices/stats`. */
+export interface ComponentElasticsearchIndexWithStats {
+  indexId: string;
+  indexPattern: string;
+  esUrl: string | null;
+  reachable: boolean;
+  stats?: ComponentElasticsearchIndexStat;
+}
+
+export interface CreateComponentElasticsearchIndexDto {
+  indexPattern: string;
+  esUrl?: string;
+  description?: string;
+}
+
+export const componentElasticsearchIndices = {
+  list(componentId: string): Promise<ComponentElasticsearchIndex[]> {
+    return request<ComponentElasticsearchIndex[]>(
+      `/v1/components/${encodeURIComponent(componentId)}/elasticsearch-indices`,
+    );
+  },
+
+  stats(componentId: string): Promise<ComponentElasticsearchIndexWithStats[]> {
+    return request<ComponentElasticsearchIndexWithStats[]>(
+      `/v1/components/${encodeURIComponent(componentId)}/elasticsearch-indices/stats`,
+    );
+  },
+
+  create(
+    componentId: string,
+    dto: CreateComponentElasticsearchIndexDto,
+  ): Promise<ComponentElasticsearchIndex> {
+    return request<ComponentElasticsearchIndex>(
+      `/v1/components/${encodeURIComponent(componentId)}/elasticsearch-indices`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dto),
+      },
+    );
+  },
+
+  remove(componentId: string, indexId: string): Promise<void> {
+    return request<void>(
+      `/v1/components/${encodeURIComponent(componentId)}/elasticsearch-indices/${encodeURIComponent(indexId)}`,
+      { method: 'DELETE' },
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Elasticsearch indices admin overview (FARM-S354 / Phase 35)
+// ---------------------------------------------------------------------------
+
+/** Health values surfaced for the cross-component overview. */
+export type ElasticsearchIndexHealth = "green" | "yellow" | "red" | "unknown";
+
+/** Per-row entry in the admin overview response. */
+export interface OverviewIndexEntry {
+  indexId: string;
+  indexPattern: string;
+  esUrl: string | null;
+  reachable: boolean;
+  stats?: {
+    pattern: string;
+    index: string;
+    health: ElasticsearchIndexHealth;
+    status: string;
+    docsCount: number;
+    storeSize: string;
+  };
+}
+
+/** Component grouping returned by the admin overview endpoint. */
+export interface OverviewComponentGroup {
+  componentId: string;
+  componentName: string;
+  indices: OverviewIndexEntry[];
+}
+
+export const elasticsearchIndicesOverview = {
+  /**
+   * Admin-only: returns every catalog component that has at least one
+   * Elasticsearch index linked, grouped by component, with live cluster
+   * health and document counts. Sorted server-side (components by name,
+   * indices by pattern).
+   */
+  list(): Promise<OverviewComponentGroup[]> {
+    return request<OverviewComponentGroup[]>(
+      `/v1/elasticsearch/indices`,
+    );
+  },
+};
+

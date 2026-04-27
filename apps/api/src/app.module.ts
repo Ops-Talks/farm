@@ -53,6 +53,7 @@ import { SetupModule } from "./modules/setup/setup.module";
 import { OpaModule } from "./modules/opa/opa.module";
 import { IacModule } from "./modules/iac/iac.module";
 import { ElasticsearchModule } from "./modules/elasticsearch/elasticsearch.module";
+import { ElasticsearchIndexModule } from "./modules/elasticsearch-index/elasticsearch-index.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -418,6 +419,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Elasticsearch search indexing and advanced search backend",
         },
         module: ElasticsearchModule,
+      },
+      {
+        metadata: {
+          name: "core-elasticsearch-index",
+          version: "1.0.0",
+          description:
+            "Link Elasticsearch index patterns to catalog components",
+        },
+        module: ElasticsearchIndexModule,
       },
     ]),
   ],
