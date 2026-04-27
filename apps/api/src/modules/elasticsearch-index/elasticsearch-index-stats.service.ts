@@ -69,6 +69,13 @@ export class ElasticsearchIndexStatsService {
     patterns: string[],
     esUrl?: string | null,
   ): Promise<IndexStatsResult> {
+    if (esUrl && !this.isOverrideUrlSafe(esUrl)) {
+      this.logger.warn(
+        `Rejecting Elasticsearch override URL "${esUrl}" (invalid scheme or private/loopback host). Configure ELASTICSEARCH_ALLOW_PRIVATE_HOSTS=true to opt in.`,
+      );
+      return { reachable: false };
+    }
+
     const baseUrl = this.resolveBaseUrl(esUrl);
     if (!baseUrl) {
       this.logger.debug(
@@ -77,33 +84,28 @@ export class ElasticsearchIndexStatsService {
       return { reachable: false };
     }
 
-    const headers = this.buildHeaders();
+    const headers = this.buildHeaders(baseUrl);
+
+    // Issue per-pattern requests in parallel so total latency is dominated by
+    // the slowest cluster response rather than the sum of all patterns.
+    const settled = await Promise.all(
+      patterns.map((pattern) => this.fetchPattern(baseUrl, pattern, headers)),
+    );
+
     const stats: IndexStats[] = [];
-
-    for (const pattern of patterns) {
-      try {
-        const entries = await this.fetchPattern(baseUrl, pattern, headers);
-        if (entries === null) {
-          // Network/timeout/non-2xx — degrade the entire call.
-          return { reachable: false };
-        }
-
-        if (entries.length === 0) {
-          stats.push(this.missingPlaceholder(pattern));
-          continue;
-        }
-
-        for (const entry of entries) {
-          stats.push(this.normalizeEntry(pattern, entry));
-        }
-      } catch (error) {
-        // Defensive: fetchPattern already swallows errors, but in case
-        // anything escapes we still degrade gracefully here.
-        this.logger.warn(
-          `Unexpected error querying Elasticsearch pattern "${pattern}"`,
-          error,
-        );
+    for (let i = 0; i < patterns.length; i++) {
+      const pattern = patterns[i];
+      const entries = settled[i];
+      if (entries === null) {
+        // Network/timeout/non-2xx — degrade the entire call.
         return { reachable: false };
+      }
+      if (entries.length === 0) {
+        stats.push(this.missingPlaceholder(pattern));
+        continue;
+      }
+      for (const entry of entries) {
+        stats.push(this.normalizeEntry(pattern, entry));
       }
     }
 
@@ -127,8 +129,12 @@ export class ElasticsearchIndexStatsService {
   /**
    * Builds the request headers, including Basic auth when credentials are
    * configured via the ELASTICSEARCH_USERNAME / ELASTICSEARCH_PASSWORD vars.
+   *
+   * To prevent leaking credentials to attacker-controlled hosts via per-record
+   * `esUrl` overrides, the Authorization header is only attached when the
+   * outbound request targets the same host as the configured cluster URL.
    */
-  private buildHeaders(): Record<string, string> {
+  private buildHeaders(targetBaseUrl: string): Record<string, string> {
     const headers: Record<string, string> = { Accept: "application/json" };
 
     const username =
@@ -140,12 +146,106 @@ export class ElasticsearchIndexStatsService {
       this.configService.get<string>("elasticsearch.password") ??
       "";
 
-    if (username && password) {
-      const token = Buffer.from(`${username}:${password}`).toString("base64");
-      headers.Authorization = `Basic ${token}`;
+    if (!username || !password) {
+      return headers;
     }
 
+    const configuredUrl =
+      this.configService.get<string>("ELASTICSEARCH_URL") ??
+      this.configService.get<string>("elasticsearch.url") ??
+      "";
+    if (!configuredUrl) {
+      // No configured cluster to compare against; refuse to attach auth.
+      this.logger.debug(
+        "Skipping Elasticsearch Basic auth: no configured ELASTICSEARCH_URL to verify host against",
+      );
+      return headers;
+    }
+
+    let configHost: string;
+    let targetHost: string;
+    try {
+      configHost = new URL(configuredUrl).host.toLowerCase();
+      targetHost = new URL(targetBaseUrl).host.toLowerCase();
+    } catch {
+      return headers;
+    }
+
+    if (configHost !== targetHost) {
+      this.logger.warn(
+        `Skipping Elasticsearch Basic auth: target host "${targetHost}" does not match configured cluster host "${configHost}"`,
+      );
+      return headers;
+    }
+
+    const token = Buffer.from(`${username}:${password}`).toString("base64");
+    headers.Authorization = `Basic ${token}`;
     return headers;
+  }
+
+  /**
+   * Hostname patterns considered private/loopback and therefore unsafe as
+   * targets for user-supplied per-record `esUrl` overrides. Blocked by
+   * default to mitigate SSRF and credential exfiltration; can be opted in
+   * via `ELASTICSEARCH_ALLOW_PRIVATE_HOSTS=true`.
+   *
+   * Octet sub-pattern is constrained to 0-255 so out-of-range values
+   * (e.g. `127.999.0.1`) are not falsely classified as loopback IPs.
+   */
+  private static readonly OCTET = "(?:25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)";
+  private static readonly PRIVATE_HOST_PATTERNS: RegExp[] = [
+    /^localhost$/i,
+    /\.localhost$/i,
+    new RegExp(
+      `^127\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}$`,
+    ),
+    new RegExp(
+      `^10\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}$`,
+    ),
+    new RegExp(
+      `^192\\.168\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}$`,
+    ),
+    new RegExp(
+      `^172\\.(?:1[6-9]|2\\d|3[01])\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}$`,
+    ),
+    new RegExp(
+      `^169\\.254\\.${ElasticsearchIndexStatsService.OCTET}\\.${ElasticsearchIndexStatsService.OCTET}$`,
+    ),
+    /^0\.0\.0\.0$/,
+    /^::1?$/,
+    /^fc[0-9a-f]{2}:/i,
+    /^fd[0-9a-f]{2}:/i,
+    /^fe[89ab][0-9a-f]:/i,
+  ];
+
+  /**
+   * Validates a per-record `esUrl` override before any outbound request is
+   * issued. Rejects non-http(s) schemes and (by default) private/loopback
+   * hosts to mitigate SSRF.
+   */
+  private isOverrideUrlSafe(url: string): boolean {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return false;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+    const allowFlag =
+      this.configService.get<string>("ELASTICSEARCH_ALLOW_PRIVATE_HOSTS") ??
+      this.configService.get<string>("elasticsearch.allowPrivateHosts");
+    if (allowFlag === "true" || allowFlag === true || allowFlag === "1") {
+      return true;
+    }
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+    for (const pattern of ElasticsearchIndexStatsService.PRIVATE_HOST_PATTERNS) {
+      if (pattern.test(hostname)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -175,15 +275,18 @@ export class ElasticsearchIndexStatsService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          // Index missing — analogous to a CRD-not-installed condition.
+          // A 404 for an index pattern commonly means the cluster is reachable
+          // but the pattern matched no indices. Return an empty array so the
+          // caller can surface a "missing" placeholder row instead of marking
+          // the whole cluster as unreachable.
           this.logger.debug(
             `Elasticsearch returned 404 for pattern "${pattern}"`,
           );
-        } else {
-          this.logger.warn(
-            `Elasticsearch responded with HTTP ${response.status} for pattern "${pattern}"`,
-          );
+          return [];
         }
+        this.logger.warn(
+          `Elasticsearch responded with HTTP ${response.status} for pattern "${pattern}"`,
+        );
         return null;
       }
 

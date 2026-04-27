@@ -221,6 +221,7 @@ describe("ElasticsearchIndexStatsService", () => {
   });
 
   it("includes Basic auth header when credentials are configured", async () => {
+    configValues.ELASTICSEARCH_URL = "http://es.test";
     configValues.ELASTICSEARCH_USERNAME = "elastic";
     configValues.ELASTICSEARCH_PASSWORD = "changeme";
     mockFetchOk([]);
@@ -232,5 +233,80 @@ describe("ElasticsearchIndexStatsService", () => {
     const headers = init.headers as Record<string, string>;
     const expected = `Basic ${Buffer.from("elastic:changeme").toString("base64")}`;
     expect(headers.Authorization).toBe(expected);
+  });
+
+  // Security: when esUrl override targets a different host than the
+  // configured cluster, the global Basic auth header must NOT be sent
+  // (would otherwise leak credentials to attacker-controlled hosts).
+  it("omits Basic auth when esUrl override targets a host other than the configured cluster", async () => {
+    configValues.ELASTICSEARCH_URL = "http://configured-es:9200";
+    configValues.ELASTICSEARCH_USERNAME = "elastic";
+    configValues.ELASTICSEARCH_PASSWORD = "changeme";
+    mockFetchOk([]);
+
+    await service.getIndexStats(["logs-*"], "http://other-host.test");
+
+    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
+    const init = calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  // Security: SSRF guard rejects private/loopback override hosts before
+  // any outbound request is issued.
+  it("returns { reachable: false } and never calls fetch when esUrl override points to a private host", async () => {
+    const fetchMock = jest.fn();
+    globalThis.fetch = fetchMock;
+
+    const result = await service.getIndexStats(
+      ["logs-*"],
+      "http://192.168.0.10:9200",
+    );
+
+    expect(result).toEqual({ reachable: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Security: SSRF guard rejects non-http(s) schemes.
+  it("returns { reachable: false } and never calls fetch when esUrl override uses a non-http(s) scheme", async () => {
+    const fetchMock = jest.fn();
+    globalThis.fetch = fetchMock;
+
+    const result = await service.getIndexStats(
+      ["logs-*"],
+      "file:///etc/passwd",
+    );
+
+    expect(result).toEqual({ reachable: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Behavior change: a 404 from ES means the pattern matched no indices on
+  // a reachable cluster, not that the cluster is unreachable.
+  it("treats HTTP 404 as 'reachable but missing' and synthesizes a placeholder row", async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({}),
+    });
+
+    const result = await service.getIndexStats(
+      ["logs-missing-*"],
+      "http://es.test",
+    );
+
+    expect(result).toEqual({
+      reachable: true,
+      stats: [
+        {
+          pattern: "logs-missing-*",
+          index: "logs-missing-*",
+          health: "unknown",
+          status: "missing",
+          docsCount: 0,
+          storeSize: "0b",
+        },
+      ],
+    });
   });
 });

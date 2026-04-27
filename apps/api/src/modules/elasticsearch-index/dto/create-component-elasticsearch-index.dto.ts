@@ -24,10 +24,14 @@ export class CreateComponentElasticsearchIndexDto {
   @ApiPropertyOptional({
     example: "https://es.example.com:9200",
     description:
-      "Optional Elasticsearch URL overriding the global ELASTICSEARCH_URL env var",
+      "Optional Elasticsearch URL overriding the global ELASTICSEARCH_URL env var. Must use http or https.",
   })
   @IsOptional()
-  @IsUrl({ require_tld: false })
+  @IsUrl({
+    require_tld: false,
+    protocols: ["http", "https"],
+    require_protocol: true,
+  })
   esUrl?: string;
 
   @ApiPropertyOptional({

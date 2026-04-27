@@ -10,6 +10,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ComponentElasticsearchIndexService } from "./component-elasticsearch-index.service";
 import { CreateComponentElasticsearchIndexDto } from "./dto/create-component-elasticsearch-index.dto";
 import { ComponentElasticsearchIndex } from "./entities/component-elasticsearch-index.entity";
@@ -84,8 +86,9 @@ export class ComponentElasticsearchIndexController {
   })
   findByComponent(
     @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() req: RequestWithOrg,
   ): Promise<ComponentElasticsearchIndex[]> {
-    return this.service.findByComponent(id);
+    return this.service.findByComponent(id, req.organizationId ?? null);
   }
 
   /**
@@ -112,6 +115,7 @@ export class ComponentElasticsearchIndexController {
   })
   async getStats(
     @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() req: RequestWithOrg,
   ): Promise<ComponentIndexStatsResponse[]> {
     if (!this.statsService || !this.catalogService) {
       throw new NotFoundException("Elasticsearch stats service not available");
@@ -120,7 +124,10 @@ export class ComponentElasticsearchIndexController {
     // Verifies the component exists; throws NotFoundException otherwise.
     await this.catalogService.findOne(id);
 
-    const records = await this.service.findByComponent(id);
+    const records = await this.service.findByComponent(
+      id,
+      req.organizationId ?? null,
+    );
     if (records.length === 0) {
       return [];
     }
@@ -177,8 +184,9 @@ export class ComponentElasticsearchIndexController {
   create(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: CreateComponentElasticsearchIndexDto,
+    @Req() req: RequestWithOrg,
   ): Promise<ComponentElasticsearchIndex> {
-    return this.service.create(id, dto);
+    return this.service.create(id, dto, req.organizationId ?? null);
   }
 
   /**
@@ -201,7 +209,8 @@ export class ComponentElasticsearchIndexController {
   remove(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Param("indexId", new ParseUUIDPipe()) indexId: string,
+    @Req() req: RequestWithOrg,
   ): Promise<void> {
-    return this.service.remove(id, indexId);
+    return this.service.remove(id, indexId, req.organizationId ?? null);
   }
 }

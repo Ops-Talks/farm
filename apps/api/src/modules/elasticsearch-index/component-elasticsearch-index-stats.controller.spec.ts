@@ -83,10 +83,10 @@ describe("ComponentElasticsearchIndexController (stats)", () => {
   afterEach(() => jest.clearAllMocks());
 
   it("aggregates per-record stats, preserving DB order", async () => {
-    const result = await controller.getStats(componentId);
+    const result = await controller.getStats(componentId, {});
 
     expect(catalogService.findOne).toHaveBeenCalledWith(componentId);
-    expect(service.findByComponent).toHaveBeenCalledWith(componentId);
+    expect(service.findByComponent).toHaveBeenCalledWith(componentId, null);
     expect(statsService.getIndexStats).toHaveBeenNthCalledWith(
       1,
       ["logs-a-*"],
@@ -124,7 +124,7 @@ describe("ComponentElasticsearchIndexController (stats)", () => {
 
   it("returns an empty array when no indices are linked", async () => {
     service.findByComponent.mockResolvedValueOnce([]);
-    const result = await controller.getStats(componentId);
+    const result = await controller.getStats(componentId, {});
     expect(result).toEqual([]);
     expect(statsService.getIndexStats).not.toHaveBeenCalled();
   });
@@ -133,7 +133,7 @@ describe("ComponentElasticsearchIndexController (stats)", () => {
     catalogService.findOne.mockRejectedValueOnce(
       new NotFoundException("missing"),
     );
-    await expect(controller.getStats(componentId)).rejects.toBeInstanceOf(
+    await expect(controller.getStats(componentId, {})).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

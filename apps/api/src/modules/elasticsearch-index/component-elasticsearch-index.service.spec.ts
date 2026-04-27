@@ -56,6 +56,16 @@ describe("ComponentElasticsearchIndexService", () => {
       });
       expect(result).toEqual([mockEntity]);
     });
+
+    // Org-scope: when an organizationId is provided the where clause includes it.
+    it("scopes the lookup to the active tenant when organizationId is provided", async () => {
+      const orgId = "33333333-3333-3333-3333-333333333333";
+      await service.findByComponent(componentId, orgId);
+      expect(repo.find).toHaveBeenCalledWith({
+        where: { componentId, organizationId: orgId },
+        order: { indexPattern: "ASC" },
+      });
+    });
   });
 
   describe("create", () => {
@@ -92,6 +102,23 @@ describe("ComponentElasticsearchIndexService", () => {
         service.create(componentId, { indexPattern: "logs-app-*" }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
+
+    // Org-scope: organizationId is persisted on the new entity and included
+    // in the duplicate pre-check.
+    it("persists organizationId and scopes the duplicate check when provided", async () => {
+      const orgId = "33333333-3333-3333-3333-333333333333";
+      await service.create(componentId, { indexPattern: "logs-app-*" }, orgId);
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: {
+          componentId,
+          indexPattern: "logs-app-*",
+          organizationId: orgId,
+        },
+      });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ organizationId: orgId }),
+      );
+    });
   });
 
   describe("remove", () => {
@@ -111,6 +138,16 @@ describe("ComponentElasticsearchIndexService", () => {
         NotFoundException,
       );
       expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    // Org-scope: lookup is restricted to the active tenant when provided.
+    it("scopes the lookup to organizationId when provided", async () => {
+      const orgId = "33333333-3333-3333-3333-333333333333";
+      repo.findOne.mockResolvedValueOnce(mockEntity);
+      await service.remove(componentId, indexId, orgId);
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: indexId, componentId, organizationId: orgId },
+      });
     });
   });
 });

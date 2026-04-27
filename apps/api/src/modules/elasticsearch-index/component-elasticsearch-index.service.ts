@@ -40,12 +40,22 @@ export class ComponentElasticsearchIndexService {
    * Returns all index patterns linked to a component, ordered by indexPattern.
    *
    * @param componentId - Catalog component UUID
+   * @param organizationId - When provided, restricts results to records whose
+   *                         `organizationId` matches the active tenant. When
+   *                         `null`/`undefined`, no org filter is applied.
    */
   async findByComponent(
     componentId: string,
+    organizationId?: string | null,
   ): Promise<ComponentElasticsearchIndex[]> {
+    const where: FindOptionsWhere<ComponentElasticsearchIndex> = {
+      componentId,
+    };
+    if (organizationId) {
+      where.organizationId = organizationId;
+    }
     return this.repository.find({
-      where: { componentId },
+      where,
       order: { indexPattern: "ASC" },
     });
   }
@@ -122,15 +132,24 @@ export class ComponentElasticsearchIndexService {
    *
    * @param componentId - Catalog component UUID
    * @param dto - Index link payload
+   * @param organizationId - Active tenant scope. Persisted on the new entity
+   *                         so org-filtered queries (per-component list,
+   *                         admin overview) can isolate records correctly.
    * @throws ConflictException when (componentId, indexPattern) already exists
    */
   async create(
     componentId: string,
     dto: CreateComponentElasticsearchIndexDto,
+    organizationId?: string | null,
   ): Promise<ComponentElasticsearchIndex> {
-    const existing = await this.repository.findOne({
-      where: { componentId, indexPattern: dto.indexPattern },
-    });
+    const duplicateWhere: FindOptionsWhere<ComponentElasticsearchIndex> = {
+      componentId,
+      indexPattern: dto.indexPattern,
+    };
+    if (organizationId) {
+      duplicateWhere.organizationId = organizationId;
+    }
+    const existing = await this.repository.findOne({ where: duplicateWhere });
     if (existing) {
       throw new ConflictException(
         `Index pattern "${dto.indexPattern}" is already linked to component "${componentId}".`,
@@ -142,6 +161,7 @@ export class ComponentElasticsearchIndexService {
       indexPattern: dto.indexPattern,
       esUrl: dto.esUrl ?? null,
       description: dto.description ?? null,
+      organizationId: organizationId ?? null,
     });
 
     try {
@@ -169,13 +189,25 @@ export class ComponentElasticsearchIndexService {
    *
    * @param componentId - Catalog component UUID
    * @param indexId - ComponentElasticsearchIndex UUID
+   * @param organizationId - When provided, the lookup is also scoped to this
+   *                         tenant so users from one org cannot delete
+   *                         records belonging to another.
    * @throws NotFoundException when the id does not exist or does not belong
-   *         to the given component
+   *         to the given component (within the active tenant)
    */
-  async remove(componentId: string, indexId: string): Promise<void> {
-    const entity = await this.repository.findOne({
-      where: { id: indexId, componentId },
-    });
+  async remove(
+    componentId: string,
+    indexId: string,
+    organizationId?: string | null,
+  ): Promise<void> {
+    const where: FindOptionsWhere<ComponentElasticsearchIndex> = {
+      id: indexId,
+      componentId,
+    };
+    if (organizationId) {
+      where.organizationId = organizationId;
+    }
+    const entity = await this.repository.findOne({ where });
     if (!entity) {
       throw new NotFoundException(
         `Elasticsearch index link "${indexId}" not found for component "${componentId}".`,
