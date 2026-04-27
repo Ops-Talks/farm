@@ -37,6 +37,7 @@ import { OperatorsTab } from "./OperatorsTab";
 import { ContainerSecurityTab } from "./ContainerSecurityTab";
 import { IacModulesTab } from "./IacModulesTab";
 import { IacStacksTab } from "./IacStacksTab";
+import { ElasticsearchIndicesTab } from "./ElasticsearchIndicesTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
@@ -364,6 +365,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="container-security">Container Security</TabsTrigger>
           <TabsTrigger value="iac-modules">IaC Modules</TabsTrigger>
           <TabsTrigger value="iac-stacks">IaC Stacks</TabsTrigger>
+          <TabsTrigger value="elasticsearch">Elasticsearch</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -753,6 +755,11 @@ export function ComponentDetailClient() {
         <TabsContent value="iac-stacks">
           <ErrorBoundary>
             <IacStacksTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+        <TabsContent value="elasticsearch">
+          <ErrorBoundary>
+            <ElasticsearchIndicesTab componentId={component.id} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

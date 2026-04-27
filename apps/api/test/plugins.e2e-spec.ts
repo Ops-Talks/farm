@@ -54,6 +54,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-opa",
     "core-iac",
     "core-elasticsearch",
+    "core-elasticsearch-index",
   ];
 
   describe("GET /api/plugins", () => {

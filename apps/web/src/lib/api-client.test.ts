@@ -3821,4 +3821,62 @@ describe("api-client", () => {
       expect(url).toContain("/api/v1/plugins/inst-1/health");
     });
   });
+
+  // Phase 35 / FARM-S353 + FARM-S354
+  describe("componentElasticsearchIndices", () => {
+    it("list sends GET to /v1/components/:id/elasticsearch-indices and URL-encodes the id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([{ id: "i1", indexPattern: "logs-*" }]));
+      const { componentElasticsearchIndices } = await import("@/lib/api-client");
+      const result = await componentElasticsearchIndices.list("svc/payments");
+      expect(result).toEqual([{ id: "i1", indexPattern: "logs-*" }]);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/components/svc%2Fpayments/elasticsearch-indices");
+    });
+
+    it("stats sends GET to .../elasticsearch-indices/stats", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const { componentElasticsearchIndices } = await import("@/lib/api-client");
+      await componentElasticsearchIndices.stats("comp-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/components/comp-1/elasticsearch-indices/stats",
+        expect.any(Object),
+      );
+    });
+
+    it("create sends POST with JSON body and Content-Type header", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "i1", indexPattern: "logs-*" }));
+      const { componentElasticsearchIndices } = await import("@/lib/api-client");
+      const dto = { indexPattern: "logs-*", esUrl: "http://es.test" };
+      const result = await componentElasticsearchIndices.create("comp-1", dto);
+      expect(result).toEqual({ id: "i1", indexPattern: "logs-*" });
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe("/api/v1/components/comp-1/elasticsearch-indices");
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(JSON.stringify(dto));
+      const headers = init.headers as Record<string, string>;
+      expect(headers["Content-Type"]).toBe("application/json");
+    });
+
+    it("remove sends DELETE to .../elasticsearch-indices/:indexId and URL-encodes both ids", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      const { componentElasticsearchIndices } = await import("@/lib/api-client");
+      await componentElasticsearchIndices.remove("svc/payments", "idx/1");
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        "/api/v1/components/svc%2Fpayments/elasticsearch-indices/idx%2F1",
+      );
+      expect(init.method).toBe("DELETE");
+    });
+  });
+
+  describe("elasticsearchIndicesOverview", () => {
+    it("list sends GET to /v1/elasticsearch/indices", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const { elasticsearchIndicesOverview } = await import("@/lib/api-client");
+      const result = await elasticsearchIndicesOverview.list();
+      expect(result).toEqual([]);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/elasticsearch/indices");
+    });
+  });
 });

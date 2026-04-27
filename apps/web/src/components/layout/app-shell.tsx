@@ -58,6 +58,7 @@ import {
   Server,
   ChevronDown,
   ChevronRight,
+  Database,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 import { FeatureAvailabilityProvider } from "@/contexts/feature-availability-context";
@@ -81,6 +82,8 @@ const navSections = [
       { href: "/incidents", label: "Incidents", icon: AlertTriangle },
       { href: "/observability", label: "Observability", icon: Activity },
       { href: "/analytics", label: "Analytics", icon: BarChart2 },
+      // FARM-S354 — admin-only cross-component Elasticsearch index overview.
+      { href: "/elasticsearch", label: "Elasticsearch", icon: Database, requiresAdmin: true },
     ],
   },
   {
@@ -122,10 +125,12 @@ const navSections = [
       { href: "/plugins", label: "Plugins", icon: Puzzle },
     ],
   },
-] as { label: string; items: { href: string; label: string; icon?: ElementType }[] }[];
+] as { label: string; items: { href: string; label: string; icon?: ElementType; requiresAdmin?: boolean }[] }[];
 
-// Derive flat list for activeHref longest-prefix-wins computation.
-const navItems = navSections.flatMap((s) => s.items);
+// Note: previously a flat `navItems` constant existed at module scope for
+// activeHref computation. After FARM-S354 introduced role-gated entries
+// (e.g. /elasticsearch), the active-href list is derived from the
+// per-render `visibleNavItems` instead.
 
 /**
  * Compute which sections should be collapsed on first render.
@@ -247,6 +252,23 @@ const NavItem = memo(function NavItem({
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const isAdmin = user?.roles?.includes("admin") ?? false;
+  // FARM-S354 — admin-only nav entries (e.g. /elasticsearch) are filtered out
+  // for non-admins so non-admins never see a link they cannot use.
+  const visibleSections = useMemo(
+    () =>
+      navSections
+        .map((s) => ({
+          ...s,
+          items: s.items.filter((i) => !i.requiresAdmin || isAdmin),
+        }))
+        .filter((s) => s.items.length > 0),
+    [isAdmin],
+  );
+  const visibleNavItems = useMemo(
+    () => visibleSections.flatMap((s) => s.items),
+    [visibleSections],
+  );
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -286,10 +308,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   // This prevents /compliance from staying active when /compliance/policies is open.
   const activeHref = useMemo(
     () =>
-      [...navItems]
+      [...visibleNavItems]
         .filter((i) => pathname === i.href || pathname.startsWith(i.href + "/"))
         .sort((a, b) => b.href.length - a.href.length)[0]?.href,
-    [pathname],
+    [pathname, visibleNavItems],
   );
 
   // Ensure the section containing the active route is always expanded
@@ -378,7 +400,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-label="Main navigation"
             className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
           >
-            {navSections.map((section, si) => (
+            {visibleSections.map((section, si) => (
               <div key={section.label}>
                 {si > 0 && <Separator className="my-1" />}
                 <button
@@ -434,7 +456,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                      aria-label="Mobile navigation"
                      className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
                    >
-                    {navSections.map((section, si) => (
+                    {visibleSections.map((section, si) => (
                       <div key={section.label}>
                         {si > 0 && <Separator className="my-1" />}
                         <button

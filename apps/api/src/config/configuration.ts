@@ -143,6 +143,8 @@ export const configuration = () => ({
   },
   elasticsearch: {
     url: process.env.ELASTICSEARCH_URL || "",
+    username: process.env.ELASTICSEARCH_USERNAME || "",
+    password: process.env.ELASTICSEARCH_PASSWORD || "",
   },
 });
 
@@ -246,4 +248,6 @@ export const validationSchema = Joi.object({
   HEALTH_RSS_THRESHOLD_MB: Joi.number().integer().min(64).default(1024),
   // Elasticsearch (optional — advanced search backend)
   ELASTICSEARCH_URL: Joi.string().uri().allow("").optional(),
+  ELASTICSEARCH_USERNAME: Joi.string().allow("").optional(),
+  ELASTICSEARCH_PASSWORD: Joi.string().allow("").optional(),
 });
