@@ -293,4 +293,24 @@ describe("ElasticsearchOverviewClient (FARM-S354 / FARM-T406)", () => {
 
     expect(screen.queryByText(/Failed to load/i)).toBeNull();
   });
+
+  it("renders an error state when list rejects with a generic Error", async () => {
+    mockList.mockRejectedValue(new Error("backend boom"));
+    render(<ElasticsearchOverviewClient />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/backend boom/i);
+    });
+  });
+
+  it("renders a default error message when list rejects with a non-Error", async () => {
+    mockList.mockRejectedValue("nope");
+    render(<ElasticsearchOverviewClient />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /failed to load elasticsearch indices/i,
+      );
+    });
+  });
 });

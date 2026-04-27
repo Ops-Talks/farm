@@ -317,4 +317,99 @@ describe("ElasticsearchIndicesTab", () => {
     render(<ElasticsearchIndicesTab componentId="c-1" />);
     expect(screen.getByTestId("es-loading")).toBeInTheDocument();
   });
+
+  it("surfaces a generic error message when create throws a non-ApiError", async () => {
+    setHook({ indices: [row()] });
+    mockCreate.mockRejectedValue(new Error("network down"));
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    await user.click(screen.getAllByRole("button", { name: /link index/i })[0]);
+    await user.type(await screen.findByLabelText(/index pattern/i), "logs-*");
+    await user.click(screen.getByRole("button", { name: /^link$/i }));
+
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument();
+    expect(refetch).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a default message when create throws a non-Error value", async () => {
+    setHook({ indices: [row()] });
+    mockCreate.mockRejectedValue("oops");
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    await user.click(screen.getAllByRole("button", { name: /link index/i })[0]);
+    await user.type(await screen.findByLabelText(/index pattern/i), "logs-*");
+    await user.click(screen.getByRole("button", { name: /^link$/i }));
+
+    expect(
+      await screen.findByText(/failed to link index/i),
+    ).toBeInTheDocument();
+  });
+
+  it("requires a non-empty index pattern", async () => {
+    setHook({ indices: [row()] });
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    await user.click(screen.getAllByRole("button", { name: /link index/i })[0]);
+    await user.type(await screen.findByLabelText(/index pattern/i), "   ");
+    await user.click(screen.getByRole("button", { name: /^link$/i }));
+
+    expect(
+      await screen.findByText(/index pattern is required/i),
+    ).toBeInTheDocument();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("forwards optional esUrl and description on submit", async () => {
+    setHook({ indices: [row()] });
+    mockCreate.mockResolvedValue({});
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    await user.click(screen.getAllByRole("button", { name: /link index/i })[0]);
+    await user.type(await screen.findByLabelText(/index pattern/i), "metrics-*");
+    await user.type(
+      screen.getByLabelText(/elasticsearch url/i),
+      "https://es.example.com:9200",
+    );
+    await user.type(screen.getByLabelText(/description/i), "App metrics");
+    await user.click(screen.getByRole("button", { name: /^link$/i }));
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith("c-1", {
+        indexPattern: "metrics-*",
+        esUrl: "https://es.example.com:9200",
+        description: "App metrics",
+      }),
+    );
+  });
+
+  it("closes the dialog and resets state when Cancel is clicked", async () => {
+    setHook({ indices: [row()] });
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    await user.click(screen.getAllByRole("button", { name: /link index/i })[0]);
+    await user.type(await screen.findByLabelText(/index pattern/i), "abc");
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText(/index pattern/i)).not.toBeInTheDocument(),
+    );
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("opens the dialog from the empty-state Link Index CTA", async () => {
+    setHook({ indices: [] });
+    const user = userEvent.setup();
+    render(<ElasticsearchIndicesTab componentId="c-1" />);
+
+    const ctas = screen.getAllByRole("button", { name: /link index/i });
+    // The empty-state CTA is the second button (header has the first).
+    await user.click(ctas[ctas.length - 1]);
+
+    expect(await screen.findByLabelText(/index pattern/i)).toBeInTheDocument();
+  });
 });

@@ -309,4 +309,74 @@ describe("ElasticsearchIndexStatsService", () => {
       ],
     });
   });
+
+  // Coverage: when credentials are configured but no ELASTICSEARCH_URL is
+  // set, the Authorization header must NOT be attached (no host to verify).
+  it("omits Basic auth when credentials are set but ELASTICSEARCH_URL is missing", async () => {
+    configValues.ELASTICSEARCH_USERNAME = "elastic";
+    configValues.ELASTICSEARCH_PASSWORD = "changeme";
+    mockFetchOk([]);
+
+    await service.getIndexStats(["logs-*"], "http://override.test");
+
+    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
+    const init = calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  // Coverage: a malformed configured cluster URL should silently disable
+  // Basic auth instead of throwing during request building.
+  it("omits Basic auth when ELASTICSEARCH_URL cannot be parsed as a URL", async () => {
+    configValues.ELASTICSEARCH_URL = "not a url";
+    configValues.ELASTICSEARCH_USERNAME = "elastic";
+    configValues.ELASTICSEARCH_PASSWORD = "changeme";
+    mockFetchOk([]);
+
+    await service.getIndexStats(["logs-*"], "http://override.test");
+
+    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
+    const init = calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
+  });
+
+  // Coverage: SSRF guard treats unparseable override URLs as unsafe and
+  // refuses to issue any outbound request.
+  it("returns { reachable: false } and never calls fetch when esUrl override is not a valid URL", async () => {
+    const fetchMock = jest.fn();
+    globalThis.fetch = fetchMock;
+
+    const result = await service.getIndexStats(["logs-*"], "::not a url::");
+
+    expect(result).toEqual({ reachable: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // Coverage: opt-in escape hatch ELASTICSEARCH_ALLOW_PRIVATE_HOSTS=true
+  // permits private/loopback hosts (e.g. local dev clusters).
+  it("allows private host override when ELASTICSEARCH_ALLOW_PRIVATE_HOSTS=true", async () => {
+    configValues.ELASTICSEARCH_ALLOW_PRIVATE_HOSTS = "true";
+    mockFetchOk([]);
+
+    const result = await service.getIndexStats(
+      ["logs-*"],
+      "http://192.168.0.10:9200",
+    );
+
+    expect(result.reachable).toBe(true);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  // Coverage: AbortError from a timed-out request should not throw and
+  // should mark the cluster as unreachable.
+  it("returns { reachable: false } when the fetch is aborted (timeout)", async () => {
+    const abortErr = new Error("aborted");
+    abortErr.name = "AbortError";
+    globalThis.fetch = jest.fn().mockRejectedValue(abortErr);
+
+    const result = await service.getIndexStats(["logs-*"], "http://es.test");
+
+    expect(result).toEqual({ reachable: false });
+  });
 });

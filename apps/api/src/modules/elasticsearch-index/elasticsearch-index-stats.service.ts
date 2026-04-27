@@ -233,9 +233,9 @@ export class ElasticsearchIndexStatsService {
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return false;
     }
-    const allowFlag =
-      this.configService.get<string>("ELASTICSEARCH_ALLOW_PRIVATE_HOSTS") ??
-      this.configService.get<string>("elasticsearch.allowPrivateHosts");
+    const allowFlag: unknown =
+      this.configService.get<unknown>("ELASTICSEARCH_ALLOW_PRIVATE_HOSTS") ??
+      this.configService.get<unknown>("elasticsearch.allowPrivateHosts");
     if (allowFlag === "true" || allowFlag === true || allowFlag === "1") {
       return true;
     }
