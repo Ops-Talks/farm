@@ -107,7 +107,7 @@ jobs:
           category: trivy-${{ matrix.app }}
 
       - name: Upload Trivy scan artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-results-${{ matrix.app }}-${{ github.sha }}
