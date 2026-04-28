@@ -1,10 +1,16 @@
+jest.mock("@aws-sdk/client-api-gateway", () => ({
+  APIGatewayClient: jest.fn().mockImplementation(() => ({ send: jest.fn() })),
+  GetRestApisCommand: jest.fn(),
+  GetResourcesCommand: jest.fn(),
+}));
+jest.mock("@aws-sdk/client-cloudwatch", () => ({
+  CloudWatchClient: jest.fn().mockImplementation(() => ({ send: jest.fn() })),
+  GetMetricStatisticsCommand: jest.fn(),
+}));
 import { ConfigService } from "@nestjs/config";
 import { gatewayAdaptersFactory } from "../gateway.module";
 import { KongAdapter } from "../adapters/kong.adapter";
 import { AwsApiGatewayAdapter } from "../adapters/aws-api-gateway.adapter";
-
-jest.mock("@aws-sdk/client-api-gateway");
-jest.mock("@aws-sdk/client-cloudwatch");
 
 function buildConfig(values: Record<string, boolean>): ConfigService {
   return {

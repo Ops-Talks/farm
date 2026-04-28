@@ -1,3 +1,13 @@
+jest.mock("fs/promises", () => ({
+  readFile: jest.fn(),
+  readdir: jest.fn(),
+  rm: jest.fn(),
+  access: jest.fn(),
+  mkdir: jest.fn(),
+  mkdtemp: jest.fn(),
+  writeFile: jest.fn(),
+}));
+jest.mock("child_process", () => ({ spawn: jest.fn() }));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { getToken } from "@willsoto/nestjs-prometheus";
@@ -12,9 +22,6 @@ import {
   ComponentKindGroup,
   ComponentLifecycle,
 } from "./entities/component.entity";
-
-jest.mock("fs/promises");
-jest.mock("child_process", () => ({ spawn: jest.fn() }));
 
 describe("CatalogService", () => {
   let service: CatalogService;

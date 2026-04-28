@@ -226,7 +226,8 @@ describe("CloudResourceService", () => {
 
     it("should return all providers when credentials exist for all types", async () => {
       mockCredentialService.findByType.mockImplementation(
-        async (_orgId: string, type: IntegrationType) => fakeCred(type),
+        (_orgId: string, type: IntegrationType) =>
+          Promise.resolve(fakeCred(type)),
       );
 
       const result = await service.listConnectedProviders(ORG_ID);
@@ -236,10 +237,12 @@ describe("CloudResourceService", () => {
 
     it("should omit providers that have no credential stored", async () => {
       mockCredentialService.findByType.mockImplementation(
-        async (_orgId: string, type: IntegrationType) =>
-          type === IntegrationType.GCP_SERVICE_ACCOUNT
-            ? null
-            : fakeCred(type),
+        (_orgId: string, type: IntegrationType) =>
+          Promise.resolve(
+            type === IntegrationType.GCP_SERVICE_ACCOUNT
+              ? null
+              : fakeCred(type),
+          ),
       );
 
       const result = await service.listConnectedProviders(ORG_ID);

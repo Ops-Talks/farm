@@ -51,6 +51,7 @@ import {
   TEST_USERS as TEST_USERS_MATRIX,
   seedUsers as seedUsersFn,
   seedOrganizations as seedOrganizationsFn,
+  runInitialSeed,
 } from "./initial-seed";
 import { Team } from "../../modules/teams/entities/team.entity";
 import * as bcryptLib from "bcrypt";
@@ -1326,5 +1327,59 @@ describe("TEST_USERS matrix (FARM-S355 / FARM-S356)", () => {
     expect(Object.keys(result).sort()).toEqual(["farm-demo", "org-b"]);
     expect(orgRepo.create).toHaveBeenCalledTimes(2);
     expect(orgRepo.save).toHaveBeenCalledTimes(2);
+  });
+
+  it("seedOrganizations patches description when org exists without one", async () => {
+    const existingOrg = {
+      id: "x",
+      slug: "farm-demo",
+      name: "Farm Demo",
+      description: null,
+    } as Organization;
+    const orgRepo = buildMockRepo<Organization>(existingOrg);
+    (orgRepo.save as jest.Mock).mockImplementation((o: Organization) =>
+      Promise.resolve(o),
+    );
+    const dataSource = buildRoutedDataSource({ org: orgRepo });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedOrganizationsFn(dataSource);
+    consoleSpy.mockRestore();
+
+    // save is called to patch description on both orgs (both have null description in the mock)
+    expect(orgRepo.save).toHaveBeenCalled();
+  });
+
+  it("seedOrganizations skips org that already has a description", async () => {
+    const existingOrg = {
+      id: "x",
+      slug: "farm-demo",
+      name: "Farm Demo",
+      description: "existing desc",
+    } as Organization;
+    const orgRepo = buildMockRepo<Organization>(existingOrg);
+    const dataSource = buildRoutedDataSource({ org: orgRepo });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedOrganizationsFn(dataSource);
+    consoleSpy.mockRestore();
+
+    // no save because org already has a description
+    expect(orgRepo.save).not.toHaveBeenCalled();
+  });
+
+  it("runInitialSeed completes without throwing on a fresh empty DB", async () => {
+    const repo = buildMockRepo<object>(null);
+    (repo.create as jest.Mock).mockImplementation(
+      (data: Record<string, unknown>) => ({ id: "seed-uuid", ...data }),
+    );
+    (repo.save as jest.Mock).mockImplementation((e: unknown) =>
+      Promise.resolve(e),
+    );
+    const dataSource = buildMockDataSource(repo);
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await expect(runInitialSeed(dataSource)).resolves.toBeUndefined();
+    consoleSpy.mockRestore();
   });
 });

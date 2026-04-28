@@ -1,13 +1,12 @@
-import { ConfigService } from "@nestjs/config";
-import { GoogleAuth } from "google-auth-library";
-import { GcrAdapter } from "../adapters/gcr.adapter";
-import { RegistryType } from "../enums/registry-type.enum";
-
 jest.mock("google-auth-library", () => ({
   GoogleAuth: jest.fn().mockImplementation(() => ({
     getAccessToken: jest.fn().mockResolvedValue("mock-gcp-token"),
   })),
 }));
+import { ConfigService } from "@nestjs/config";
+import { GoogleAuth } from "google-auth-library";
+import { GcrAdapter } from "../adapters/gcr.adapter";
+import { RegistryType } from "../enums/registry-type.enum";
 
 describe("GcrAdapter", () => {
   let adapter: GcrAdapter;

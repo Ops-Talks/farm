@@ -1,6 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { HelmDeployExecutor, HelmDeployConfig } from "./helm-deploy.executor";
-
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
 // exec  → used only by isHelmAvailable (hardcoded "helm version --short").
@@ -26,6 +23,8 @@ jest.mock("child_process", () => ({
     mockExecFileImpl(file, args, cb);
   },
 }));
+import { Test, TestingModule } from "@nestjs/testing";
+import { HelmDeployExecutor, HelmDeployConfig } from "./helm-deploy.executor";
 
 // ---------------------------------------------------------------------------
 // Test fixtures

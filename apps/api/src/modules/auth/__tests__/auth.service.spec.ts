@@ -1,3 +1,8 @@
+// jest.mock must appear before all imports so it registers before any require().
+jest.mock("bcrypt", () => ({
+  compare: jest.fn(),
+  hash: jest.fn().mockResolvedValue("hashed-token"),
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "../auth.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -14,12 +19,6 @@ import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
 import { UpdateProfileDto, GenderEnum } from "../dto/update-profile.dto";
 import { ChangePasswordDto } from "../dto/change-password.dto";
-
-// jest will hoist this mock above imports
-jest.mock("bcrypt", () => ({
-  compare: jest.fn(),
-  hash: jest.fn().mockResolvedValue("hashed-token"),
-}));
 
 const mockUserRepo = {
   findOne: jest.fn(),

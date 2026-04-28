@@ -201,10 +201,7 @@ export class CloudResourceService {
 
     const checks = await Promise.all(
       providerByType.map(async ({ name, type }) => {
-        const credential = await this.credentialService.findByType(
-          orgId,
-          type,
-        );
+        const credential = await this.credentialService.findByType(orgId, type);
         return credential ? name : null;
       }),
     );

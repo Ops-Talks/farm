@@ -1,9 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { BadRequestException } from "@nestjs/common";
-import { GcpService } from "./gcp.service";
-import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
-import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
-
 // ---------------------------------------------------------------------------
 // Mock google-auth-library — factory must not reference outer const variables
 // because jest.mock() is hoisted above const declarations.
@@ -26,6 +20,12 @@ jest.mock("axios", () => ({
     patch: jest.fn(),
   },
 }));
+
+import { Test, TestingModule } from "@nestjs/testing";
+import { BadRequestException } from "@nestjs/common";
+import { GcpService } from "./gcp.service";
+import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
+import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
 
 import { GoogleAuth } from "google-auth-library";
 import axios from "axios";

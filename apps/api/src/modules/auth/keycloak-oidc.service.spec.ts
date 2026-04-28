@@ -1,14 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { ConfigService } from "@nestjs/config";
-import * as crypto from "crypto";
-import { KeycloakOidcService } from "./keycloak-oidc.service";
-import {
-  IntegrationCredential,
-  IntegrationType,
-} from "../integrations/entities/integration-credential.entity";
-import { AuthService } from "./auth.service";
-
 // ---------------------------------------------------------------------------
 // Mock passport-openidconnect so the module loads in Jest (CJS mode).
 // We capture the verify callback to exercise it directly in tests.
@@ -27,6 +16,16 @@ jest.mock("passport-openidconnect", () => {
     );
   return MockStrategy;
 });
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
+import { KeycloakOidcService } from "./keycloak-oidc.service";
+import {
+  IntegrationCredential,
+  IntegrationType,
+} from "../integrations/entities/integration-credential.entity";
+import { AuthService } from "./auth.service";
 
 // ---------------------------------------------------------------------------
 // Helper: build an AES-256-GCM encrypted credential matching the service.
