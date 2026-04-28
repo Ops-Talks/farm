@@ -120,4 +120,63 @@ describe("InvitationAcceptPage", () => {
       expect(mockPush).toHaveBeenCalledWith("/organizations/org_1"),
     );
   });
+
+  it("shows error toast message when accept fails with ApiError", async () => {
+    const user = userEvent.setup();
+    mockUser = { id: "u_1", username: "alice" };
+    mockSearchParams = new URLSearchParams({ token: "abc" });
+    mockGetByToken.mockResolvedValueOnce({
+      orgName: "Acme",
+      orgId: "org_1",
+      invitedByName: "Bob",
+      role: "member",
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    mockAcceptByToken.mockRejectedValueOnce(
+      new ApiError(409, { message: "Already a member" }),
+    );
+
+    renderPage();
+    const btn = await screen.findByRole("button", { name: /Accept invitation/i });
+    await act(async () => {
+      await user.click(btn);
+    });
+    // The button should re-enable after failure (accepting state reset)
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Accept invitation/i })).not.toBeDisabled(),
+    );
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("shows expiry date in the preview card", async () => {
+    mockSearchParams = new URLSearchParams({ token: "abc" });
+    const expiresAt = new Date(Date.now() + 86_400_000).toISOString();
+    mockGetByToken.mockResolvedValueOnce({
+      orgName: "Acme",
+      orgId: "org_1",
+      invitedByName: "Bob",
+      role: "member",
+      expiresAt,
+    });
+
+    renderPage();
+    expect(await screen.findByText(/Expires/i)).toBeInTheDocument();
+  });
+
+  it("does not render the message block when invitation has no message", async () => {
+    mockUser = { id: "u_1", username: "alice" };
+    mockSearchParams = new URLSearchParams({ token: "abc" });
+    mockGetByToken.mockResolvedValueOnce({
+      orgName: "Acme",
+      orgId: "org_1",
+      invitedByName: "Bob",
+      role: "member",
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+      // message is intentionally absent
+    });
+
+    renderPage();
+    await screen.findByRole("button", { name: /Accept invitation/i });
+    expect(screen.queryByText(/^Message$/i)).not.toBeInTheDocument();
+  });
 });

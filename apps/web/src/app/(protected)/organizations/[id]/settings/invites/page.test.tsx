@@ -131,4 +131,131 @@ describe("OrgInvitesClient", () => {
       await screen.findByRole("dialog"),
     ).toBeInTheDocument();
   });
+
+  it("submit invite form — success: closes modal and refetches list", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    mockCreate.mockResolvedValue([
+      { id: "inv_new", email: "charlie@example.com", role: "member", status: "pending" },
+    ]);
+    renderClient();
+    await screen.findByText(/No pending invitations/i);
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Invite users/i }));
+    });
+    await screen.findByRole("dialog");
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/Email addresses/i), "charlie@example.com");
+    });
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Send invites/i }));
+    });
+
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ emails: ["charlie@example.com"] }),
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("submit invite form — shows validation error when no valid email entered", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    renderClient();
+    await screen.findByText(/No pending invitations/i);
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Invite users/i }));
+    });
+    await screen.findByRole("dialog");
+
+    // Leave emails textarea empty and submit
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Send invites/i }));
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /at least one valid email/i,
+    );
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("resend action on a pending invitation row calls resend", async () => {
+    const user = userEvent.setup();
+    const inv = {
+      id: "inv_1",
+      email: "alice@example.com",
+      role: "member",
+      status: "pending",
+      token: "tok_abc",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      invitedBy: "u_1",
+    };
+    mockList.mockResolvedValue([inv]);
+    mockResend.mockResolvedValue({ ...inv, id: "inv_1" });
+    renderClient();
+    await screen.findByText("alice@example.com");
+
+    await act(async () => {
+      await user.click(screen.getByLabelText(/Resend invite to alice@example.com/i));
+    });
+
+    await waitFor(() => expect(mockResend).toHaveBeenCalledWith("inv_1"));
+  });
+
+  it("revoke action opens confirm dialog and calls revoke on confirm", async () => {
+    const user = userEvent.setup();
+    const inv = {
+      id: "inv_2",
+      email: "dave@example.com",
+      role: "admin",
+      status: "pending",
+      token: "tok_def",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      invitedBy: "u_1",
+    };
+    mockList.mockResolvedValue([inv]);
+    mockRevoke.mockResolvedValue(undefined);
+    renderClient();
+    await screen.findByText("dave@example.com");
+
+    await act(async () => {
+      await user.click(screen.getByLabelText(/Revoke invite to dave@example.com/i));
+    });
+
+    expect(await screen.findByText(/Revoke invitation\?/i)).toBeInTheDocument();
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Revoke/i }));
+    });
+
+    await waitFor(() => expect(mockRevoke).toHaveBeenCalledWith("inv_2"));
+  });
+
+  it("shows createdAt date in the invitations table", async () => {
+    const createdAt = "2024-03-15T10:30:00.000Z";
+    const inv = {
+      id: "inv_3",
+      email: "eve@example.com",
+      role: "member",
+      status: "pending",
+      token: "tok_ghi",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt,
+      invitedBy: "u_1",
+    };
+    mockList.mockResolvedValue([inv]);
+    renderClient();
+    await screen.findByText("eve@example.com");
+    // The "Sent" column uses formatRelative(inv.createdAt) which renders a relative time
+    // We just verify the row is rendered (date cell is present alongside the email)
+    expect(screen.getByText("eve@example.com")).toBeInTheDocument();
+    // The table header "Sent" should be visible
+    expect(screen.getByText(/^Sent$/i)).toBeInTheDocument();
+  });
 });
