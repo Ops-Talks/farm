@@ -74,7 +74,7 @@ jobs:
       # Step 1: generate SARIF covering both CRITICAL and HIGH for the
       # GitHub Security tab (visibility only — never blocks the build).
       - name: Run Trivy — SARIF report (CRITICAL + HIGH)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: farm-${{ matrix.app }}:${{ github.sha }}
           format: sarif
@@ -87,7 +87,7 @@ jobs:
       # Step 2: gate the build — fails only when CRITICAL CVEs are present.
       # HIGH findings appear in the Security tab above but do not block PRs.
       - name: Run Trivy — gate (CRITICAL only)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: farm-${{ matrix.app }}:${{ github.sha }}
           format: table
