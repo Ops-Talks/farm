@@ -62,6 +62,8 @@ npm run test
 npm run test:e2e
 ```
 
+When testing flows that depend on roles, multi-tenancy, or team-scoped ownership, log in with one of the seeded personas instead of creating users by hand. See [Test Users](test-users.md) for the full matrix and recipes.
+
 ### 4. Commit Your Changes
 
 Use conventional commit messages:

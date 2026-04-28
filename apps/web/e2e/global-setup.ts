@@ -84,7 +84,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
   //    that Playwright's storageState loader can restore the right values via
   //    addInitScript before the page boots.
   const baseURL =
-    config.projects[0]?.use?.baseURL ?? "http://localhost:3001";
+    config.projects[0]?.use?.baseURL ?? "http://localhost:3010";
 
   const authState = {
     cookies: [],

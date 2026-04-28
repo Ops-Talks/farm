@@ -112,6 +112,9 @@ const navSections = [
     items: [
       { href: "/organizations", label: "Organizations", icon: Building2 },
       { href: "/teams", label: "Teams", icon: Users },
+      // Phase 37 — User Management dashboard. Visible to platform admins
+      // and org admins (the page itself enforces the real ACL).
+      { href: "/users", label: "Users", icon: UserCircle },
     ],
   },
   {

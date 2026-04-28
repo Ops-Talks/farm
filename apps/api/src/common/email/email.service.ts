@@ -34,7 +34,7 @@ export class EmailService implements OnModuleInit {
     this.loadTemplates();
 
     if (!this.enabled) {
-      this.logger.warn("SMTP_HOST not configured. Email sending is disabled.");
+      this.logger.log("SMTP_HOST not configured. Email sending is disabled.");
       return;
     }
 

@@ -8,10 +8,15 @@ import { HttpModule } from "@nestjs/axios";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { UserManagementService } from "./user-management.service";
+import { UserManagementController } from "./user-management.controller";
 import { KeycloakOidcService } from "./keycloak-oidc.service";
 import { KeycloakSyncService } from "./keycloak-sync.service";
 import { KeycloakSyncProcessor } from "./keycloak-sync.processor";
 import { User } from "./entities/user.entity";
+import { PasswordReset } from "./entities/password-reset.entity";
+import { Organization } from "../organization/entities/organization.entity";
+import { UserOrganization } from "../organization/entities/user-organization.entity";
 import { LocalStrategy } from "./strategies/local.strategy";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { GithubStrategy } from "./strategies/github.strategy";
@@ -20,6 +25,7 @@ import { LdapAuthStrategy } from "./strategies/ldap.strategy";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
 import { Team } from "../teams/entities/team.entity";
+import { AuditLogModule } from "../audit-log/audit-log.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 
 const isTest = process.env.NODE_ENV === "test";
@@ -30,10 +36,18 @@ const isTest = process.env.NODE_ENV === "test";
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, IntegrationCredential, Team]),
+    TypeOrmModule.forFeature([
+      User,
+      PasswordReset,
+      Organization,
+      UserOrganization,
+      IntegrationCredential,
+      Team,
+    ]),
     PassportModule,
     HttpModule,
     ScheduleModule.forRoot(),
+    AuditLogModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -49,11 +63,15 @@ const isTest = process.env.NODE_ENV === "test";
     }),
     ...(isTest
       ? []
-      : [BullModule.registerQueue({ name: QUEUE_NAMES.KEYCLOAK_SYNC })]),
+      : [
+          BullModule.registerQueue({ name: QUEUE_NAMES.KEYCLOAK_SYNC }),
+          BullModule.registerQueue({ name: QUEUE_NAMES.NOTIFICATIONS }),
+        ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UserManagementController],
   providers: [
     AuthService,
+    UserManagementService,
     LocalStrategy,
     JwtStrategy,
     GithubStrategy,
@@ -64,6 +82,6 @@ const isTest = process.env.NODE_ENV === "test";
     KeycloakSyncService,
     ...(isTest ? [] : [KeycloakSyncProcessor]),
   ],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, UserManagementService, JwtModule],
 })
 export class AuthModule {}

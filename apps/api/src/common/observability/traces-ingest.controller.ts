@@ -53,8 +53,15 @@ export class TracesIngestController {
   })
   @ApiOkResponse({ description: "Spans accepted by the collector." })
   async ingestTrace(@Req() req: Request, @Res() res: Response): Promise<void> {
-    const endpoint =
-      process.env.OTEL_EXPORTER_ENDPOINT ?? "http://localhost:4318/v1/traces";
+    const endpoint = process.env.OTEL_EXPORTER_ENDPOINT;
+
+    // Observability stack is optional. When no collector is configured,
+    // accept the spans and silently drop them so the browser SDK keeps
+    // working without flooding the API logs.
+    if (!endpoint) {
+      res.status(HttpStatus.NO_CONTENT).send();
+      return;
+    }
 
     try {
       const upstream = await fetch(endpoint, {
@@ -72,7 +79,15 @@ export class TracesIngestController {
       const text = await upstream.text();
       res.status(upstream.status).send(text);
     } catch (err) {
-      this.logger.error("Failed to forward traces to collector", err);
+      // Collector unreachable is expected when the observability stack is
+      // not running — log at debug to avoid noisy ERROR entries on every
+      // browser span flush. Operators that do run Tempo will see 5xx
+      // responses propagate to the SDK directly.
+      this.logger.debug(
+        `Failed to forward traces to collector at ${endpoint}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
       res.status(HttpStatus.BAD_GATEWAY).send("Collector unreachable");
     }
   }

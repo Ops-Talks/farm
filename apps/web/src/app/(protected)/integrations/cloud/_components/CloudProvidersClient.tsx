@@ -290,7 +290,7 @@ function buildCredentialPayload(provider: CloudProvider, data: Record<string, un
       return {
         type: 'aws-iam-role',
         name: `AWS — ${region}`,
-        encryptedValue: JSON.stringify({ accessKeyId, secretAccessKey, region }),
+        plainValue: JSON.stringify({ accessKeyId, secretAccessKey, region }),
         metadata: { region, ...(accountId ? { accountId } : {}) },
       };
     }
@@ -299,7 +299,7 @@ function buildCredentialPayload(provider: CloudProvider, data: Record<string, un
       return {
         type: 'gcp-service-account',
         name: `GCP — ${projectId}`,
-        encryptedValue: JSON.stringify({ serviceAccountJson, projectId }),
+        plainValue: JSON.stringify({ serviceAccountJson, projectId }),
         metadata: { projectId },
       };
     }
@@ -308,7 +308,7 @@ function buildCredentialPayload(provider: CloudProvider, data: Record<string, un
       return {
         type: 'azure-service-principal',
         name: `Azure — ${subscriptionId}`,
-        encryptedValue: JSON.stringify({ tenantId, clientId, clientSecret, subscriptionId }),
+        plainValue: JSON.stringify({ tenantId, clientId, clientSecret, subscriptionId }),
         metadata: { subscriptionId, tenantId },
       };
     }
@@ -480,8 +480,8 @@ export function CloudProvidersClient() {
     enabled: isAuthenticated && !!orgId,
   });
 
-  // Fetch existing credentials so we can resolve the ID for disconnect
-  const { data: credentials = [] } = useQuery({
+  // Fetch existing credentials to resolve disconnect IDs and as fallback for connected status
+  const { data: credentials = [], isLoading: isLoadingCredentials } = useQuery({
     queryKey: ['integration-credentials'],
     queryFn: () => integrationsApi.credentials.list(),
     enabled: isAuthenticated,
@@ -515,22 +515,33 @@ export function CloudProvidersClient() {
     },
   });
 
+  const CLOUD_TYPE_MAP: Record<CloudProvider, string> = useMemo(() => ({
+    aws: 'aws-iam-role',
+    gcp: 'gcp-service-account',
+    azure: 'azure-service-principal',
+  }), []);
+
+  // Prefer status from the cloud API; fall back to credential presence when the
+  // API query is disabled (e.g., no active org) or has not yet returned data.
   const getProviderStatus = useCallback(
-    (type: CloudProvider): ProviderStatus | undefined =>
-      providerStatuses.find((s) => s.provider === type),
-    [providerStatuses],
+    (type: CloudProvider): ProviderStatus => {
+      const fromApi = providerStatuses.find((s) => s.provider === type);
+      if (fromApi) return fromApi;
+      const credential = credentials.find((c) => c.type === CLOUD_TYPE_MAP[type]);
+      const meta = PROVIDERS.find((p) => p.type === type);
+      return {
+        provider: type,
+        connected: !!credential,
+        name: credential?.name ?? meta?.label ?? type,
+      };
+    },
+    [providerStatuses, credentials, CLOUD_TYPE_MAP],
   );
 
   const getCredentialId = useCallback(
-    (type: CloudProvider): string | undefined => {
-      const typeMap: Record<CloudProvider, string> = {
-        aws: 'aws-iam-role',
-        gcp: 'gcp-service-account',
-        azure: 'azure-service-principal',
-      };
-      return credentials.find((c) => c.type === typeMap[type])?.id;
-    },
-    [credentials],
+    (type: CloudProvider): string | undefined =>
+      credentials.find((c) => c.type === CLOUD_TYPE_MAP[type])?.id,
+    [credentials, CLOUD_TYPE_MAP],
   );
 
   const handleConnect = useCallback((provider: CloudProvider) => {
@@ -544,8 +555,10 @@ export function CloudProvidersClient() {
   const handleSave = useCallback((data: Record<string, unknown>) => {
     if (!modalProvider) return;
     const payload = buildCredentialPayload(modalProvider, data);
-    connectMutation.mutate(payload);
-  }, [modalProvider, connectMutation]);
+    // Scope the credential to the active organization so listConnectedProviders
+    // (which filters by orgId) sees it on subsequent reads.
+    connectMutation.mutate(orgId ? { ...payload, orgId } : payload);
+  }, [modalProvider, connectMutation, orgId]);
 
   const activeProviderMeta = useMemo(
     () => (modalProvider ? PROVIDERS.find((p) => p.type === modalProvider) : null),
@@ -563,7 +576,7 @@ export function CloudProvidersClient() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-        {isLoadingStatuses
+        {(isLoadingStatuses || isLoadingCredentials)
           ? PROVIDERS.map((p) => <ProviderCardSkeleton key={p.type} />)
           : PROVIDERS.map((provider) => (
               <ErrorBoundary key={provider.type}>

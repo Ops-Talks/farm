@@ -45,6 +45,16 @@ import {
 } from "../../modules/incident/entities/incident.entity";
 import { TagPolicy } from "../../modules/tag-policy/entities/tag-policy.entity";
 import { User } from "../../modules/auth/entities/user.entity";
+// FARM-S355 / FARM-S356 -- additional imports for TEST_USERS matrix tests.
+// These imports are appended (existing imports above are untouched).
+import {
+  TEST_USERS as TEST_USERS_MATRIX,
+  seedUsers as seedUsersFn,
+  seedOrganizations as seedOrganizationsFn,
+} from "./initial-seed";
+import { Team } from "../../modules/teams/entities/team.entity";
+import * as bcryptLib from "bcrypt";
+import { OrgRole } from "@farm/types";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
@@ -854,5 +864,467 @@ describe("seedComponents", () => {
 
     expect(repo.create).toHaveBeenCalled();
     expect(repo.save).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FARM-S355 / FARM-S356 -- TEST_USERS matrix and seedUsers reconciliation
+// ---------------------------------------------------------------------------
+
+describe("TEST_USERS matrix (FARM-S355 / FARM-S356)", () => {
+  const TEST_USERS = TEST_USERS_MATRIX as unknown as Record<
+    string,
+    {
+      username: string;
+      email: string;
+      password: string;
+      displayName: string;
+      roles: readonly string[];
+      memberships: ReadonlyArray<{ orgSlug: string; role: OrgRole }>;
+      teamSlugs: readonly string[];
+    }
+  >;
+  const bcrypt = bcryptLib;
+
+  function buildRoutedDataSource(repos: {
+    user?: jest.Mocked<Repository<User>>;
+    org?: jest.Mocked<Repository<Organization>>;
+    userOrg?: jest.Mocked<Repository<UserOrganization>>;
+    team?: jest.Mocked<Repository<unknown>>;
+  }): DataSource {
+    return {
+      getRepository: jest.fn().mockImplementation((entity: unknown) => {
+        if (entity === User) return repos.user ?? buildMockRepo(null);
+        if (entity === Organization) return repos.org ?? buildMockRepo(null);
+        if (entity === UserOrganization)
+          return repos.userOrg ?? buildMockRepo(null);
+        if (entity === Team) return repos.team ?? buildMockRepo(null);
+        return buildMockRepo(null);
+      }),
+    } as unknown as DataSource;
+  }
+
+  it("ST417: exposes the seven canonical personas with passwords >= 8 chars and non-empty memberships", () => {
+    const expectedKeys = [
+      "platformAdmin",
+      "orgOwner",
+      "orgAdmin",
+      "orgMember",
+      "crossOrgMember",
+      "teamLead",
+      "viewer",
+    ];
+    expect(Object.keys(TEST_USERS).sort()).toEqual([...expectedKeys].sort());
+    for (const key of expectedKeys) {
+      expect(TEST_USERS[key]).toBeDefined();
+      expect(typeof TEST_USERS[key].password).toBe("string");
+      expect(TEST_USERS[key].password.length).toBeGreaterThanOrEqual(8);
+      expect(Array.isArray(TEST_USERS[key].memberships)).toBe(true);
+      expect(TEST_USERS[key].memberships.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ST416: creates seven personas, OrgRole-correct memberships, and team rows from an empty DB", async () => {
+    const userRepo = buildMockRepo<User>(null);
+    (userRepo.create as jest.Mock).mockImplementation((data: Partial<User>) => {
+      return { id: `${data.username}-id`, ...data } as User;
+    });
+    (userRepo.save as jest.Mock).mockImplementation((u: User) =>
+      Promise.resolve(u),
+    );
+
+    const userOrgRepo = buildMockRepo<UserOrganization>(null);
+    const orgRepo = buildMockRepo<Organization>(null);
+
+    const platformTeam = {
+      id: "platform-team-id",
+      name: "platform-team",
+      members: [] as User[],
+    };
+    const backendTeam = {
+      id: "backend-team-id",
+      name: "backend-team",
+      members: [] as User[],
+    };
+    const teamRepo = {
+      findOne: jest
+        .fn()
+        .mockImplementation((opts: { where: { name: string } }) => {
+          if (opts.where.name === "platform-team") return platformTeam;
+          if (opts.where.name === "backend-team") return backendTeam;
+          return null;
+        }),
+      create: jest.fn(),
+      save: jest.fn().mockImplementation((t: unknown) => Promise.resolve(t)),
+    } as unknown as jest.Mocked<Repository<unknown>>;
+
+    const orgs: Record<string, Organization> = {
+      "farm-demo": { id: "farm-demo-id", slug: "farm-demo" } as Organization,
+      "org-b": { id: "org-b-id", slug: "org-b" } as Organization,
+    };
+
+    const dataSource = buildRoutedDataSource({
+      user: userRepo,
+      org: orgRepo,
+      userOrg: userOrgRepo,
+      team: teamRepo,
+    });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const result = await seedUsersFn(dataSource, orgs);
+    consoleSpy.mockRestore();
+
+    const personas = Object.values(TEST_USERS);
+    expect(Object.keys(result)).toHaveLength(personas.length);
+    for (const persona of personas) {
+      expect(userRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          username: persona.username,
+          roles: [...persona.roles],
+        }),
+      );
+    }
+
+    // Every declared persona membership must result in a userOrgRepo.create
+    // call with the persona's declared OrgRole (not a derived OWNER/MEMBER
+    // value computed by the seed).
+    for (const persona of personas) {
+      for (const membership of persona.memberships) {
+        expect(userOrgRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userId: `${persona.username}-id`,
+            organizationId: orgs[membership.orgSlug].id,
+            role: membership.role,
+          }),
+        );
+      }
+    }
+
+    // Spot-check the new OrgRoles that did not exist in the legacy matrix.
+    const userOrgCreateCalls = (userOrgRepo.create as jest.Mock).mock
+      .calls as Array<[{ userId: string; role: OrgRole }]>;
+    expect(userOrgCreateCalls.some((c) => c[0].role === OrgRole.ADMIN)).toBe(
+      true,
+    );
+    expect(
+      userOrgCreateCalls.some(
+        (c) => c[0].userId === "org-owner-id" && c[0].role === OrgRole.OWNER,
+      ),
+    ).toBe(true);
+    expect(userOrgRepo.save).toHaveBeenCalled();
+
+    const teamSaveCalls = (teamRepo.save as jest.Mock).mock.calls as Array<
+      [unknown]
+    >;
+    const savedTeamNames = teamSaveCalls.map(
+      (c) => (c[0] as { name: string }).name,
+    );
+    expect(savedTeamNames).toEqual(
+      expect.arrayContaining(["backend-team", "platform-team"]),
+    );
+
+    const backendSave = teamSaveCalls.find(
+      (c) => (c[0] as { name: string }).name === "backend-team",
+    ) as [{ members: User[] }];
+    expect(
+      backendSave[0].members.some((m) => m.username === "org-member"),
+    ).toBe(true);
+
+    const platformSave = teamSaveCalls.find(
+      (c) => (c[0] as { name: string }).name === "platform-team",
+    ) as [{ members: User[] }];
+    expect(
+      platformSave[0].members.some((m) => m.username === "team-lead"),
+    ).toBe(true);
+  });
+
+  it("ST416 (multi-tenant): crossOrgMember receives one UserOrganization per declared membership", async () => {
+    const userRepo = buildMockRepo<User>(null);
+    (userRepo.create as jest.Mock).mockImplementation((data: Partial<User>) => {
+      return { id: `${data.username}-id`, ...data } as User;
+    });
+    (userRepo.save as jest.Mock).mockImplementation((u: User) =>
+      Promise.resolve(u),
+    );
+    const userOrgRepo = buildMockRepo<UserOrganization>(null);
+    const orgRepo = buildMockRepo<Organization>(null);
+    const teamRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<Repository<unknown>>;
+
+    const orgs: Record<string, Organization> = {
+      "farm-demo": { id: "farm-demo-id", slug: "farm-demo" } as Organization,
+      "org-b": { id: "org-b-id", slug: "org-b" } as Organization,
+    };
+
+    const dataSource = buildRoutedDataSource({
+      user: userRepo,
+      org: orgRepo,
+      userOrg: userOrgRepo,
+      team: teamRepo,
+    });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedUsersFn(dataSource, orgs);
+    consoleSpy.mockRestore();
+
+    const userOrgCreateCalls = (userOrgRepo.create as jest.Mock).mock
+      .calls as Array<
+      [{ userId: string; organizationId: string; role: OrgRole }]
+    >;
+    const crossOrgRows = userOrgCreateCalls.filter(
+      (c) => c[0].userId === "cross-org-member-id",
+    );
+    expect(crossOrgRows).toHaveLength(2);
+    const targetOrgs = crossOrgRows.map((c) => c[0].organizationId).sort();
+    expect(targetOrgs).toEqual(["farm-demo-id", "org-b-id"].sort());
+    for (const row of crossOrgRows) {
+      expect(row[0].role).toBe(OrgRole.MEMBER);
+    }
+  });
+
+  it("ST418: adds missing org membership for an existing org-member", async () => {
+    const existingMember = {
+      id: "existing-org-member-id",
+      username: "org-member",
+      roles: ["user"],
+    } as User;
+
+    const userRepo = {
+      findOne: jest
+        .fn()
+        .mockImplementation((opts: { where: { username: string } }) =>
+          opts.where.username === "org-member" ? existingMember : null,
+        ),
+      create: jest
+        .fn()
+        .mockImplementation(
+          (data: Partial<User>) =>
+            ({ id: `${data.username}-id`, ...data }) as User,
+        ),
+      save: jest.fn().mockImplementation((u: User) => Promise.resolve(u)),
+    } as unknown as jest.Mocked<Repository<User>>;
+
+    const userOrgRepo = buildMockRepo<UserOrganization>(null);
+    const orgRepo = buildMockRepo<Organization>(null);
+    const teamRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<Repository<unknown>>;
+
+    const orgs: Record<string, Organization> = {
+      "farm-demo": { id: "farm-demo-id", slug: "farm-demo" } as Organization,
+      "org-b": { id: "org-b-id", slug: "org-b" } as Organization,
+    };
+
+    const dataSource = buildRoutedDataSource({
+      user: userRepo,
+      org: orgRepo,
+      userOrg: userOrgRepo,
+      team: teamRepo,
+    });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedUsersFn(dataSource, orgs);
+    consoleSpy.mockRestore();
+
+    const userOrgCreateCalls = (userOrgRepo.create as jest.Mock).mock
+      .calls as Array<[unknown]>;
+    const memberOrgCreate = userOrgCreateCalls.find(
+      (c) => (c[0] as { userId: string }).userId === "existing-org-member-id",
+    );
+    expect(memberOrgCreate).toBeDefined();
+    expect(memberOrgCreate![0]).toEqual(
+      expect.objectContaining({
+        userId: "existing-org-member-id",
+        organizationId: orgs["farm-demo"].id,
+        role: OrgRole.MEMBER,
+      }),
+    );
+    expect(userOrgRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "existing-org-member-id",
+        organizationId: orgs["farm-demo"].id,
+        role: OrgRole.MEMBER,
+      }),
+    );
+
+    for (const r of TEST_USERS.orgMember.roles) {
+      expect(existingMember.roles).toContain(r);
+    }
+  });
+
+  it("ST418: merges new persona roles into the existing user when roles diverge", async () => {
+    const existingAdmin = {
+      id: "existing-admin-id",
+      username: "admin",
+      roles: ["legacy-role"],
+    } as User;
+
+    const userRepo = {
+      findOne: jest
+        .fn()
+        .mockImplementation((opts: { where: { username: string } }) =>
+          opts.where.username === "admin" ? existingAdmin : null,
+        ),
+      create: jest
+        .fn()
+        .mockImplementation(
+          (data: Partial<User>) =>
+            ({ id: `${data.username}-id`, ...data }) as User,
+        ),
+      save: jest.fn().mockImplementation((u: User) => Promise.resolve(u)),
+    } as unknown as jest.Mocked<Repository<User>>;
+
+    const userOrgRepo = buildMockRepo<UserOrganization>(null);
+    const orgRepo = buildMockRepo<Organization>(null);
+    const teamRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<Repository<unknown>>;
+
+    const orgs: Record<string, Organization> = {
+      "farm-demo": { id: "farm-demo-id", slug: "farm-demo" } as Organization,
+      "org-b": { id: "org-b-id", slug: "org-b" } as Organization,
+    };
+
+    const dataSource = buildRoutedDataSource({
+      user: userRepo,
+      org: orgRepo,
+      userOrg: userOrgRepo,
+      team: teamRepo,
+    });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await seedUsersFn(dataSource, orgs);
+    consoleSpy.mockRestore();
+
+    expect(userRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: "admin",
+        roles: expect.arrayContaining([
+          "legacy-role",
+          "admin",
+        ]) as readonly string[],
+      }),
+    );
+  });
+
+  describe("ST419: password reset gated by SEED_RESET_PASSWORDS", () => {
+    const originalEnv = process.env.SEED_RESET_PASSWORDS;
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.SEED_RESET_PASSWORDS;
+      } else {
+        process.env.SEED_RESET_PASSWORDS = originalEnv;
+      }
+    });
+
+    it("preserves existing password when SEED_RESET_PASSWORDS is unset", async () => {
+      delete process.env.SEED_RESET_PASSWORDS;
+      const preservedHash = "$2b$10$preservedHashShouldNotChange.aaaaaaaaaaaa";
+      const existingMember = {
+        id: "existing-org-member-id",
+        username: "org-member",
+        roles: ["user"],
+        password: preservedHash,
+      } as User;
+
+      const userRepo = {
+        findOne: jest
+          .fn()
+          .mockImplementation((opts: { where: { username: string } }) =>
+            opts.where.username === "org-member" ? existingMember : null,
+          ),
+        create: jest
+          .fn()
+          .mockImplementation(
+            (data: Partial<User>) =>
+              ({ id: `${data.username}-id`, ...data }) as User,
+          ),
+        save: jest.fn().mockImplementation((u: User) => Promise.resolve(u)),
+      } as unknown as jest.Mocked<Repository<User>>;
+
+      const dataSource = buildRoutedDataSource({ user: userRepo });
+
+      const consoleSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      await seedUsersFn(dataSource);
+      consoleSpy.mockRestore();
+
+      const memberSaves = (
+        (userRepo.save as jest.Mock).mock.calls as Array<[unknown]>
+      ).filter((c) => (c[0] as User).username === "org-member");
+      for (const call of memberSaves) {
+        expect((call[0] as User).password).toBe(preservedHash);
+      }
+      expect(existingMember.password).toBe(preservedHash);
+    });
+
+    it("rewrites password with a fresh bcrypt hash when SEED_RESET_PASSWORDS=true", async () => {
+      process.env.SEED_RESET_PASSWORDS = "true";
+      const existingMember = {
+        id: "existing-org-member-id",
+        username: "org-member",
+        roles: ["user"],
+        password: "$2b$10$oldHash.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      } as User;
+
+      const userRepo = {
+        findOne: jest
+          .fn()
+          .mockImplementation((opts: { where: { username: string } }) =>
+            opts.where.username === "org-member" ? existingMember : null,
+          ),
+        create: jest
+          .fn()
+          .mockImplementation(
+            (data: Partial<User>) =>
+              ({ id: `${data.username}-id`, ...data }) as User,
+          ),
+        save: jest.fn().mockImplementation((u: User) => Promise.resolve(u)),
+      } as unknown as jest.Mocked<Repository<User>>;
+
+      const dataSource = buildRoutedDataSource({ user: userRepo });
+
+      const consoleSpy = jest
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      await seedUsersFn(dataSource);
+      consoleSpy.mockRestore();
+
+      const memberSaves = (
+        (userRepo.save as jest.Mock).mock.calls as Array<[unknown]>
+      ).filter((c) => (c[0] as User).username === "org-member");
+      expect(memberSaves.length).toBeGreaterThan(0);
+      const savedHash = (memberSaves[0][0] as User).password;
+      expect(savedHash).toMatch(/^\$2[aby]\$/);
+      expect(bcrypt.compareSync(TEST_USERS.orgMember.password, savedHash)).toBe(
+        true,
+      );
+    });
+  });
+
+  it("seedOrganizations creates farm-demo and org-b on an empty DB", async () => {
+    const orgRepo = buildMockRepo<Organization>(null);
+    (orgRepo.create as jest.Mock).mockImplementation(
+      (data: Partial<Organization>) =>
+        ({ id: `${data.slug}-id`, ...data }) as Organization,
+    );
+    const dataSource = buildRoutedDataSource({ org: orgRepo });
+
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const result = await seedOrganizationsFn(dataSource);
+    consoleSpy.mockRestore();
+
+    expect(Object.keys(result).sort()).toEqual(["farm-demo", "org-b"]);
+    expect(orgRepo.create).toHaveBeenCalledTimes(2);
+    expect(orgRepo.save).toHaveBeenCalledTimes(2);
   });
 });

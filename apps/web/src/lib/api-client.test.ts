@@ -1081,13 +1081,13 @@ describe("api-client", () => {
   });
 
   describe("invitations (standalone accept)", () => {
-    it("should POST to /v1/invitations/:token/accept and return member response", async () => {
+    it("should POST to /v1/invitations/by-token/:token/accept and return member response", async () => {
       const mockMember = { userId: "u1", username: "alice", role: "member" };
       mockFetch.mockReturnValueOnce(jsonResponse(mockMember));
       const result = await invitations.accept("my-plain-token");
       expect(result.username).toBe("alice");
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/v1/invitations/my-plain-token/accept",
+        "/api/v1/invitations/by-token/my-plain-token/accept",
         expect.objectContaining({ method: "POST" }),
       );
     });

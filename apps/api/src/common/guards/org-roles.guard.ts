@@ -73,7 +73,8 @@ export class OrgRolesGuard implements CanActivate {
     const organizationId =
       request.params?.["id"] ??
       request.params?.["organizationId"] ??
-      (request.body?.["organizationId"] as string | undefined);
+      (request.body?.["organizationId"] as string | undefined) ??
+      (request.body?.["orgId"] as string | undefined);
 
     if (!organizationId) {
       throw new ForbiddenException(

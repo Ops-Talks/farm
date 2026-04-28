@@ -37,6 +37,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(logMessage, stack);
+    } else if (status >= 400) {
+      // Client errors (4xx) are expected and not actionable signals — log at
+      // INFO/log level to avoid noisy WARN entries for routine cases like
+      // unauthenticated requests, missing tokens, or stale org context.
+      this.logger.log(logMessage);
     } else {
       this.logger.warn(logMessage);
     }

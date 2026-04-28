@@ -12,6 +12,7 @@ import {
   TeamType,
   FarmEvent,
   PipelineRunStatus,
+  OrgRole,
 } from "@farm/types";
 
 export {
@@ -23,7 +24,18 @@ export {
   TeamType,
   FarmEvent,
   PipelineRunStatus,
+  OrgRole,
 };
+
+// Phase 37 — re-export user/invitation type-only interfaces from @farm/types
+export type {
+  InvitationToken,
+  InvitationPreview,
+  ManagedUser,
+  ManagedUserOrgMembership,
+  UserListResponse,
+  AuditEvent,
+} from "@farm/types";
 
 // -- Entities --
 
@@ -659,7 +671,7 @@ export interface HelmSyncResult {
 export interface IntegrationCredential {
   id: string;
   orgId: string;
-  type: "argocd" | "circleci" | "jenkins" | "travisci";
+  type: "argocd" | "circleci" | "jenkins" | "travisci" | "aws-iam-role" | "gcp-service-account" | "azure-service-principal" | "keycloak";
   name: string;
   createdAt: string;
   updatedAt: string;

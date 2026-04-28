@@ -37,7 +37,7 @@ export function FluxBindingCard({ componentId }: FluxBindingCardProps) {
   }
 
   // Return null when there are no bindings — no empty-state card is shown.
-  if (!bindings || bindings.length === 0) {
+  if (!Array.isArray(bindings) || bindings.length === 0) {
     return null;
   }
 

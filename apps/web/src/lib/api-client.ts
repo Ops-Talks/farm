@@ -320,6 +320,19 @@ async function request<T>(
     return undefined as T;
   }
 
+  // Stale organization context recovery: if the backend returns 403 for a
+  // request that included X-Organization-Id, the cached org id is no longer
+  // valid for this user (e.g., after a seed reset, org deletion, or
+  // membership revocation). Clear the cached org so the user is sent back
+  // to the org selector instead of being stuck with broken requests.
+  if (
+    res.status === 403 &&
+    typeof window !== "undefined" &&
+    headers["X-Organization-Id"]
+  ) {
+    sessionStorage.removeItem("farm_current_org");
+  }
+
   const body = (await res.json()) as T;
 
   if (!res.ok) {
@@ -439,6 +452,23 @@ export const auth = {
   /** Fetch the list of enabled authentication providers from the API. */
   getProviders(): Promise<{ providers: string[] }> {
     return request<{ providers: string[] }>('/v1/auth/providers');
+  },
+
+  /**
+   * Self-serve user registration (Phase 37, FARM-S358).
+   * Creates a new local-account user with no org membership.
+   * Throws ApiError(409) on email/username conflict, ApiError(400) on validation.
+   */
+  register(data: {
+    username: string;
+    email: string;
+    password: string;
+    displayName?: string;
+  }): Promise<{ id: string; username: string; email: string }> {
+    return request('/v1/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   /**
@@ -801,11 +831,166 @@ export const organizations = {
   },
 };
 
-// -- Standalone invitation acceptance --
+// -- Phase 37 — Token-based invitations & user management ----------------------
+// These types are re-exported from `@farm/types` via `src/types/api.ts`.
+import type {
+  InvitationToken as P37InvitationToken,
+  InvitationPreview as P37InvitationPreview,
+  UserListResponse as P37UserListResponse,
+  ManagedUser as P37ManagedUser,
+} from "@/types/api";
+import { OrgRole as P37OrgRole } from "@/types/api";
 
+export interface CreateInvitationsDto {
+  organizationId: string;
+  emails: string[];
+  role: P37OrgRole;
+  message?: string;
+}
+
+export interface UserListParams {
+  orgId?: string;
+  search?: string;
+  role?: P37OrgRole | string;
+  status?: "active" | "suspended";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ResetPasswordResponse {
+  tempPassword?: string;
+  tempPasswordExpiresAt: string;
+  fallback?: boolean;
+}
+
+/**
+ * Audit log entry returned by `GET /api/v1/users/:id/audit-trail`.
+ * Backend returns the raw AuditLog row (NOT the simplified AuditEvent).
+ */
+export interface RawAuditLog {
+  id: string;
+  action: string;
+  actorUserId?: string | null;
+  actorUsername?: string | null;
+  performer?: { id: string; username: string } | null;
+  subjectId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  changes?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+/**
+ * Phase 37 — Token-based organization invitations.
+ *
+ * Replaces the legacy single-action `invitations.accept(token)` shim with the
+ * full Phase-37 admin + public surface area.  The backwards-compatible
+ * `accept(token)` alias is preserved for any caller that still references it
+ * (it now points at the Phase-37 `by-token` endpoint).
+ */
 export const invitations = {
+  /** Admin: create one or more invitations. Returns the created tokens. */
+  create(dto: CreateInvitationsDto): Promise<P37InvitationToken[]> {
+    return request<P37InvitationToken[]>("/v1/invitations", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
+  },
+
+  /** Admin/member: list invitations scoped to an organisation. */
+  list(
+    organizationId: string,
+    status?: "pending" | "accepted" | "revoked",
+  ): Promise<P37InvitationToken[]> {
+    return request<P37InvitationToken[]>(
+      `/v1/invitations${toQueryString({ organizationId, status })}`,
+    );
+  },
+
+  /** Public: preview an invitation by its plain token (no auth required). */
+  getByToken(token: string): Promise<P37InvitationPreview> {
+    return request<P37InvitationPreview>(
+      `/v1/invitations/by-token/${encodeURIComponent(token)}`,
+    );
+  },
+
+  /** Public: accept an invitation. Caller must be authenticated as the invited email. */
+  acceptByToken(token: string): Promise<MemberResponse> {
+    return request<MemberResponse>(
+      `/v1/invitations/by-token/${encodeURIComponent(token)}/accept`,
+      { method: "POST" },
+    );
+  },
+
+  /** Backwards-compatible alias for `acceptByToken`. */
   accept(token: string): Promise<MemberResponse> {
-    return request(`/v1/invitations/${token}/accept`, { method: "POST" });
+    return invitations.acceptByToken(token);
+  },
+
+  /** Admin: re-send the invite email for a pending invitation. */
+  resend(id: string): Promise<P37InvitationToken> {
+    return request<P37InvitationToken>(
+      `/v1/invitations/${encodeURIComponent(id)}/resend`,
+      { method: "PATCH" },
+    );
+  },
+
+  /** Admin: revoke a pending invitation. */
+  revoke(id: string): Promise<void> {
+    return request<void>(`/v1/invitations/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * Phase 37 — User Management Dashboard (FARM-S362).
+ * All endpoints live under `/api/v1/users` and are context-aware:
+ * platform admins see every user, org admins see only members of their orgs.
+ */
+export const userManagement = {
+  list(params: UserListParams = {}): Promise<P37UserListResponse> {
+    return request<P37UserListResponse>(`/v1/users${toQueryString(params)}`);
+  },
+
+  get(id: string): Promise<P37ManagedUser> {
+    return request<P37ManagedUser>(`/v1/users/${encodeURIComponent(id)}`);
+  },
+
+  updateRole(
+    id: string,
+    dto: { orgId: string; role: P37OrgRole },
+  ): Promise<MemberResponse> {
+    return request<MemberResponse>(
+      `/v1/users/${encodeURIComponent(id)}/role`,
+      { method: "PATCH", body: JSON.stringify(dto) },
+    );
+  },
+
+  suspend(id: string, suspended: boolean): Promise<{ id: string; suspended: boolean }> {
+    return request(`/v1/users/${encodeURIComponent(id)}/suspend`, {
+      method: "PATCH",
+      body: JSON.stringify({ suspended }),
+    });
+  },
+
+  resetPassword(id: string): Promise<ResetPasswordResponse> {
+    return request<ResetPasswordResponse>(
+      `/v1/users/${encodeURIComponent(id)}/reset-password`,
+      { method: "POST" },
+    );
+  },
+
+  remove(id: string, orgId?: string): Promise<void> {
+    return request<void>(
+      `/v1/users/${encodeURIComponent(id)}${toQueryString(orgId ? { orgId } : {})}`,
+      { method: "DELETE" },
+    );
+  },
+
+  auditTrail(id: string): Promise<RawAuditLog[]> {
+    return request<RawAuditLog[]>(
+      `/v1/users/${encodeURIComponent(id)}/audit-trail`,
+    );
   },
 };
 
@@ -1585,12 +1770,33 @@ export interface CloudCostEntry {
 
 // -- Cloud Provider API (FARM-E38) --
 
+const CLOUD_PROVIDER_LABELS: Record<string, string> = {
+  aws: 'Amazon Web Services',
+  gcp: 'Google Cloud Platform',
+  azure: 'Microsoft Azure',
+};
+
 export const cloud = {
-  /** List connected cloud providers and their connection status for an org. */
-  getProviders(orgId: string): Promise<{ provider: string; connected: boolean; name: string }[]> {
-    return request<{ provider: string; connected: boolean; name: string }[]>(
+  /**
+   * List connected cloud providers and their connection status for an org.
+   *
+   * The backend returns `{ providers: string[] }` — only providers with a
+   * stored credential appear in the list. We map every known provider to
+   * a `{ provider, connected, name }` row so the UI can render all cards
+   * (connected and disconnected) from a single source of truth.
+   */
+  async getProviders(
+    orgId: string,
+  ): Promise<{ provider: string; connected: boolean; name: string }[]> {
+    const { providers } = await request<{ providers: string[] }>(
       `/v1/cloud/providers/${encodeURIComponent(orgId)}`,
     );
+    const connected = new Set(providers);
+    return Object.keys(CLOUD_PROVIDER_LABELS).map((provider) => ({
+      provider,
+      connected: connected.has(provider),
+      name: CLOUD_PROVIDER_LABELS[provider] ?? provider,
+    }));
   },
 
   /** Discover cloud resources for an org, optionally filtered by provider. */
@@ -1903,8 +2109,8 @@ export const keycloakCredentials = {
 
   /**
    * Create a new Keycloak OIDC credential for an organisation.
-   * The `keycloakUrl`, `realm`, `clientId`, and `clientSecret` are stored
-   * encrypted via `encryptedValue` in the integrations module.
+   * The `keycloakUrl`, `realm`, `clientId`, and `clientSecret` are sent as
+   * `plainValue` (over TLS) and encrypted at rest by the integrations module.
    */
   create(data: {
     orgId: string;
@@ -1920,7 +2126,7 @@ export const keycloakCredentials = {
         orgId: data.orgId,
         type: 'keycloak',
         name: data.name,
-        encryptedValue: JSON.stringify({
+        plainValue: JSON.stringify({
           keycloakUrl: data.keycloakUrl,
           realm: data.realm,
           clientId: data.clientId,

@@ -10,6 +10,7 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcrypt";
+import { dateTransformer } from "../../../common/transformers/date.transformer";
 
 /**
  * Represents a user in the Farm system.
@@ -86,6 +87,22 @@ export class User {
   })
   @Column({ nullable: true, type: "varchar" })
   oauthProviderId: string | null;
+
+  @ApiProperty({
+    example: false,
+    description: "Whether the user account is suspended (cannot login)",
+  })
+  @Column({ default: false })
+  suspended: boolean;
+
+  @ApiProperty({
+    example: "2023-01-01T00:00:00Z",
+    description: "The last successful login timestamp",
+    required: false,
+    nullable: true,
+  })
+  @Column({ nullable: true, type: "timestamp", transformer: dateTransformer })
+  lastLogin: Date | null;
 
   @ApiProperty({
     example: "2023-01-01T00:00:00Z",
