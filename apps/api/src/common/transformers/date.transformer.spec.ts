@@ -32,15 +32,15 @@ describe("dateTransformer", () => {
 
     it("returns a Date instance as-is when the value is already a Date", () => {
       const d = new Date("2024-01-15T12:00:00Z");
-      const result = dateTransformer.from(d);
+      const result = dateTransformer.from(d) as Date | null;
       expect(result).toBe(d);
     });
 
     it("converts an ISO string to a Date instance", () => {
       const iso = "2024-06-01T08:30:00.000Z";
-      const result = dateTransformer.from(iso);
+      const result = dateTransformer.from(iso) as Date | null;
       expect(result).toBeInstanceOf(Date);
-      expect(result?.getTime()).toBe(new Date(iso).getTime());
+      expect(result!.getTime()).toBe(new Date(iso).getTime());
     });
   });
 });
