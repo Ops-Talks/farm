@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-04-28
+
+### Changed
+- Feat/phase 36 user roles (#120).
+- **deps-dev**: bump @types/supertest from 6.0.3 to 7.2.0 (#106).
+- **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
+- **deps-dev**: bump @types/node from 20.19.39 to 25.6.0.
+- **deps-dev**: bump jest-junit from 16.0.0 to 17.0.0.
+
 ## [0.23.0] - 2026-04-27
 
 ### Added
