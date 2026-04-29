@@ -1,3 +1,9 @@
+jest.mock("@aws-sdk/client-ecr", () => ({
+  ECRClient: jest.fn().mockImplementation(() => ({ send: jest.fn() })),
+  DescribeRepositoriesCommand: jest.fn(),
+  DescribeImagesCommand: jest.fn(),
+  DescribeImageScanFindingsCommand: jest.fn(),
+}));
 import { ConfigService } from "@nestjs/config";
 import {
   ECRClient,
@@ -7,8 +13,6 @@ import {
 } from "@aws-sdk/client-ecr";
 import { EcrAdapter } from "../adapters/ecr.adapter";
 import { RegistryType } from "../enums/registry-type.enum";
-
-jest.mock("@aws-sdk/client-ecr");
 
 const MockedECRClient = ECRClient as jest.MockedClass<typeof ECRClient>;
 

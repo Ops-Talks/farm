@@ -240,4 +240,31 @@ describe("validationSchema", () => {
       expect(error).toBeDefined();
     });
   });
+
+  it("accepts production config without SMTP_HOST (SMTP is optional)", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error } = validationSchema.validate({
+        NODE_ENV: "production",
+        JWT_SECRET: "a-sufficiently-long-secret-key-here",
+      });
+      expect(error).toBeUndefined();
+    });
+  });
+
+  it("accepts production config with SMTP_HOST configured", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error } = validationSchema.validate({
+        NODE_ENV: "production",
+        JWT_SECRET: "a-sufficiently-long-secret-key-here",
+        SMTP_HOST: "smtp.example.com",
+      });
+      expect(error).toBeUndefined();
+    });
+  });
 });

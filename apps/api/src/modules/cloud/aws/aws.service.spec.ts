@@ -1,8 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { AwsService } from "./aws.service";
-import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
-import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
-
 // ---------------------------------------------------------------------------
 // Mock all @aws-sdk/* modules using inline jest.fn() factories.
 // Variables declared with const cannot be referenced inside jest.mock()
@@ -45,7 +40,10 @@ jest.mock("@aws-sdk/client-lambda", () => ({
   UpdateFunctionCodeCommand: jest.fn(),
 }));
 
-// Now import the mocked modules so we can access and control the send fns.
+import { Test, TestingModule } from "@nestjs/testing";
+import { AwsService } from "./aws.service";
+import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
+import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
 import { ResourceGroupsTaggingAPIClient } from "@aws-sdk/client-resource-groups-tagging-api";
 import { CostExplorerClient } from "@aws-sdk/client-cost-explorer";
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";

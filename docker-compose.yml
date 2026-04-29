@@ -19,6 +19,7 @@ services:
     image: redis:7-alpine
     container_name: farm-redis
     restart: always
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
     ports:
       - "6379:6379"
     healthcheck:
@@ -49,6 +50,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       CACHE_TTL: ${CACHE_TTL:-30}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Farm <noreply@farm.local>}
     healthcheck:
       test: ["CMD", "node", "-e", "const http = require('http'); const req = http.request({hostname:'localhost',port:3000,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"]
       interval: 30s

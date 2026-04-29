@@ -89,7 +89,10 @@ export class PluginManagerService {
     const manifests: PluginManifest[] = [];
 
     if (!fs.existsSync(dir)) {
-      this.logger.warn(`Plugin directory does not exist: ${dir}`);
+      // Plugin directory is optional; a missing directory simply means no
+      // user-installed plugins are present. Log at DEBUG to avoid noise in
+      // local dev / containers that ship without a plugin folder.
+      this.logger.debug(`Plugin directory does not exist: ${dir}`);
       return manifests;
     }
 

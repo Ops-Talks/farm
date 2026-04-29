@@ -1,8 +1,11 @@
+jest.mock("fs", () => ({
+  existsSync: jest.fn(),
+  readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
 import { PluginManagerService } from "./plugin-manager.service";
 import * as fs from "fs";
 import * as path from "path";
-
-jest.mock("fs");
 
 describe("PluginManagerService", () => {
   let service: PluginManagerService;

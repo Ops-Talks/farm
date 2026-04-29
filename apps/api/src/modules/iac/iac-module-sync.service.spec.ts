@@ -1,3 +1,11 @@
+jest.mock("child_process", () => ({ spawnSync: jest.fn() }));
+jest.mock("fs", () => ({
+  ...jest.requireActual<typeof import("fs")>("fs"),
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  mkdtempSync: jest.fn().mockReturnValue("/tmp/farm-iac-sync-test"),
+  rmSync: jest.fn(),
+}));
 import {
   parseVariables,
   parseOutputs,
@@ -12,15 +20,6 @@ import {
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 import { spawnSync } from "child_process";
 import { existsSync, readFileSync } from "fs";
-
-jest.mock("child_process", () => ({ spawnSync: jest.fn() }));
-jest.mock("fs", () => ({
-  ...jest.requireActual<typeof import("fs")>("fs"),
-  existsSync: jest.fn(),
-  readFileSync: jest.fn(),
-  mkdtempSync: jest.fn().mockReturnValue("/tmp/farm-iac-sync-test"),
-  rmSync: jest.fn(),
-}));
 
 const mockSpawnSync = spawnSync as jest.MockedFunction<typeof spawnSync>;
 const mockExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;

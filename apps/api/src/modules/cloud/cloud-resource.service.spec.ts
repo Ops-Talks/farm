@@ -4,6 +4,8 @@ import { AwsService } from "./aws/aws.service";
 import { GcpService } from "./gcp/gcp.service";
 import { AzureService } from "./azure/azure.service";
 import { CloudResource } from "./interfaces/cloud-resource.interface";
+import { IntegrationCredentialService } from "../integrations/integration-credential.service";
+import { IntegrationType } from "../integrations/entities/integration-credential.entity";
 
 const ORG_ID = "org-uuid-resource";
 
@@ -35,6 +37,9 @@ const mockAzureService = {
   getMonthlyCost: jest.fn(),
   resolveSecret: jest.fn(),
 };
+const mockCredentialService = {
+  findByType: jest.fn(),
+};
 
 describe("CloudResourceService", () => {
   let service: CloudResourceService;
@@ -43,6 +48,10 @@ describe("CloudResourceService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CloudResourceService,
+        {
+          provide: IntegrationCredentialService,
+          useValue: mockCredentialService,
+        },
         { provide: AwsService, useValue: mockAwsService },
         { provide: GcpService, useValue: mockGcpService },
         { provide: AzureService, useValue: mockAzureService },
@@ -210,22 +219,31 @@ describe("CloudResourceService", () => {
   // listConnectedProviders
   // ---------------------------------------------------------------------------
   describe("listConnectedProviders", () => {
-    it("should return all providers when all calls succeed", async () => {
-      mockAwsService.discoverResources.mockResolvedValue([]);
-      mockGcpService.discoverResources.mockResolvedValue([]);
-      mockAzureService.discoverResources.mockResolvedValue([]);
+    const fakeCred = (type: IntegrationType) => ({
+      id: `cred-${type}`,
+      type,
+    });
+
+    it("should return all providers when credentials exist for all types", async () => {
+      mockCredentialService.findByType.mockImplementation(
+        (_orgId: string, type: IntegrationType) =>
+          Promise.resolve(fakeCred(type)),
+      );
 
       const result = await service.listConnectedProviders(ORG_ID);
 
       expect(result).toEqual(expect.arrayContaining(["aws", "gcp", "azure"]));
     });
 
-    it("should omit providers that throw during discovery check", async () => {
-      mockAwsService.discoverResources.mockResolvedValue([]);
-      mockGcpService.discoverResources.mockRejectedValue(
-        new Error("GCP error"),
+    it("should omit providers that have no credential stored", async () => {
+      mockCredentialService.findByType.mockImplementation(
+        (_orgId: string, type: IntegrationType) =>
+          Promise.resolve(
+            type === IntegrationType.GCP_SERVICE_ACCOUNT
+              ? null
+              : fakeCred(type),
+          ),
       );
-      mockAzureService.discoverResources.mockResolvedValue([]);
 
       const result = await service.listConnectedProviders(ORG_ID);
 
@@ -234,10 +252,8 @@ describe("CloudResourceService", () => {
       expect(result).not.toContain("gcp");
     });
 
-    it("should return empty array when all providers fail", async () => {
-      mockAwsService.discoverResources.mockRejectedValue(new Error("err"));
-      mockGcpService.discoverResources.mockRejectedValue(new Error("err"));
-      mockAzureService.discoverResources.mockRejectedValue(new Error("err"));
+    it("should return empty array when no credentials are stored", async () => {
+      mockCredentialService.findByType.mockResolvedValue(null);
 
       const result = await service.listConnectedProviders(ORG_ID);
 
@@ -257,6 +273,10 @@ describe("CloudResourceService — without optional providers", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CloudResourceService,
+        {
+          provide: IntegrationCredentialService,
+          useValue: { findByType: jest.fn().mockResolvedValue(null) },
+        },
         // No AWS, GCP, or Azure providers — all optional
       ],
     }).compile();
@@ -366,6 +386,10 @@ describe("CloudResourceService — cost with rejected providers", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CloudResourceService,
+        {
+          provide: IntegrationCredentialService,
+          useValue: { findByType: jest.fn().mockResolvedValue(null) },
+        },
         { provide: AwsService, useValue: mockAwsService },
         { provide: GcpService, useValue: mockGcpService },
         { provide: AzureService, useValue: mockAzureService },

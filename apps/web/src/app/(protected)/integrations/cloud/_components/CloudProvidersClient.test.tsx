@@ -214,15 +214,149 @@ describe('CloudProvidersClient', () => {
     });
   });
 
-  it('shows loading skeletons while fetching', () => {
-    // Never resolves — stays in loading state
-    mockGetProviders.mockReturnValue(new Promise(() => {}));
+  it('submits correct Azure credential payload on connect', async () => {
+    const user = userEvent.setup();
+    mockGetProviders.mockResolvedValue([
+      { provider: 'aws', connected: false, name: 'AWS' },
+      { provider: 'gcp', connected: false, name: 'GCP' },
+      { provider: 'azure', connected: false, name: 'Azure' },
+    ]);
+    mockCreateCredential.mockResolvedValue(
+      buildCredential({ name: 'Azure — sub-123', type: 'azure-service-principal' }),
+    );
 
     render(<CloudProvidersClient />, { wrapper: createWrapper() });
 
-    // Skeleton cards should be present
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+    });
+
+    const connectButtons = screen.getAllByRole('button', { name: 'Connect' });
+    await user.click(connectButtons[2]!); // Azure card
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: /connect microsoft azure/i })).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/tenant id/i), 'tenant-123');
+    await user.type(screen.getByLabelText(/client id/i), 'client-456');
+    await user.type(screen.getByLabelText(/client secret/i), 'secret-789');
+    await user.type(screen.getByLabelText(/subscription id/i), 'sub-123');
+
+    const dialog = screen.getByRole('dialog', { name: /connect microsoft azure/i });
+    const submitBtn = dialog.querySelector('button[type="submit"]') as HTMLElement;
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateCredential).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'azure-service-principal',
+          metadata: expect.objectContaining({
+            subscriptionId: 'sub-123',
+            tenantId: 'tenant-123',
+          }),
+        }),
+      );
+    });
+  });
+
+  it('clicking Cancel in the connect modal closes it without submitting', async () => {
+    const user = userEvent.setup();
+    mockGetProviders.mockResolvedValue([
+      { provider: 'aws', connected: false, name: 'AWS' },
+      { provider: 'gcp', connected: false, name: 'GCP' },
+      { provider: 'azure', connected: false, name: 'Azure' },
+    ]);
+
+    render(<CloudProvidersClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+    });
+
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('dialog', { name: /connect amazon web services/i }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    expect(mockCreateCredential).not.toHaveBeenCalled();
+  });
+
+  it('keeps modal open and does not crash when connect credential fails', async () => {
+    const user = userEvent.setup();
+    mockGetProviders.mockResolvedValue([
+      { provider: 'aws', connected: false, name: 'AWS' },
+      { provider: 'gcp', connected: false, name: 'GCP' },
+      { provider: 'azure', connected: false, name: 'Azure' },
+    ]);
+    mockCreateCredential.mockRejectedValue(new Error('Network error'));
+
+    render(<CloudProvidersClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(3);
+    });
+
+    await user.click(screen.getAllByRole('button', { name: 'Connect' })[0]!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('dialog', { name: /connect amazon web services/i }),
+      ).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByLabelText(/access key id/i), 'AKIAIOSFODNN7EXAMPLE');
+    await user.type(screen.getByLabelText(/secret access key/i), 'wJalrXUtnFEMI');
+    await user.type(screen.getByLabelText(/region/i), 'us-east-1');
+
+    const dialog = screen.getByRole('dialog', { name: /connect amazon web services/i });
+    const submitBtn = dialog.querySelector('button[type="submit"]') as HTMLElement;
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockCreateCredential).toHaveBeenCalled();
+    });
+
+    // onError does not close the modal — it remains for the user to retry or cancel
     expect(
-      document.querySelectorAll('[data-testid^="cloud-provider-card-"]').length,
-    ).toBe(0);
+      screen.getByRole('dialog', { name: /connect amazon web services/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('handles disconnect error gracefully without unmounting the card', async () => {
+    const user = userEvent.setup();
+    mockGetProviders.mockResolvedValue([
+      { provider: 'aws', connected: true, name: 'AWS — us-east-1' },
+      { provider: 'gcp', connected: false, name: 'GCP' },
+      { provider: 'azure', connected: false, name: 'Azure' },
+    ]);
+    mockListCredentials.mockResolvedValue([
+      buildCredential({ id: 'cred-aws', type: 'aws-iam-role', name: 'AWS — us-east-1' }),
+    ]);
+    mockRemoveCredential.mockRejectedValue(new Error('Network error'));
+
+    render(<CloudProvidersClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /disconnect/i }));
+
+    await waitFor(() => {
+      expect(mockRemoveCredential).toHaveBeenCalledWith('cred-aws');
+    });
+
+    // Component still renders correctly after error
+    expect(screen.getByRole('button', { name: /disconnect/i })).toBeInTheDocument();
   });
 });

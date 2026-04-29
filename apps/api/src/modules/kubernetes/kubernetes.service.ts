@@ -551,9 +551,17 @@ export class KubernetesService {
       try {
         new URL(serverUrl);
       } catch {
-        this.logger.warn(
-          `Kubernetes client initialization failed (service disabled): invalid server URL "${serverUrl}"`,
-        );
+        // When KUBERNETES_SERVICE_HOST/PORT are unset (typical for local dev
+        // outside a cluster), loadFromCluster() produces "https://undefined:undefined".
+        // Degrade silently at DEBUG level — this is an expected configuration,
+        // not a misconfiguration.
+        const isUndefinedHost = serverUrl.includes("undefined");
+        const message = `Kubernetes client initialization failed (service disabled): invalid server URL "${serverUrl}"`;
+        if (isUndefinedHost) {
+          this.logger.debug(message);
+        } else {
+          this.logger.warn(message);
+        }
         return false;
       }
 

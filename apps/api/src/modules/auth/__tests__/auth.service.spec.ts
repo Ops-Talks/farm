@@ -1,3 +1,8 @@
+// jest.mock must appear before all imports so it registers before any require().
+jest.mock("bcrypt", () => ({
+  compare: jest.fn(),
+  hash: jest.fn().mockResolvedValue("hashed-token"),
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "../auth.service";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -14,12 +19,6 @@ import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
 import { UpdateProfileDto, GenderEnum } from "../dto/update-profile.dto";
 import { ChangePasswordDto } from "../dto/change-password.dto";
-
-// jest will hoist this mock above imports
-jest.mock("bcrypt", () => ({
-  compare: jest.fn(),
-  hash: jest.fn().mockResolvedValue("hashed-token"),
-}));
 
 const mockUserRepo = {
   findOne: jest.fn(),
@@ -103,9 +102,10 @@ describe("AuthService", () => {
       expect(result.token).toBe("token");
       expect(result.refreshToken).toBeDefined();
       expect(typeof result.refreshToken).toBe("string");
-      expect(repo.update).toHaveBeenCalledWith("1", {
-        refreshToken: "hashed-token",
-      });
+      expect(repo.update).toHaveBeenCalledWith(
+        "1",
+        expect.objectContaining({ refreshToken: "hashed-token" }),
+      );
     });
 
     it("should throw unauthorized if user not found", async () => {
@@ -121,6 +121,23 @@ describe("AuthService", () => {
       await expect(
         service.login({ username: "u", password: "p" }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it("should throw unauthorized when the user is suspended", async () => {
+      repo.findOne.mockResolvedValue({ ...user, suspended: true });
+      await expect(
+        service.login({ username: "u", password: "p" }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it("should record lastLogin on successful login", async () => {
+      repo.findOne.mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      await service.login({ username: "u", password: "p" });
+      const updateArgs = repo.update.mock.calls[0] as unknown[];
+      const payload = updateArgs[1] as { lastLogin?: Date };
+      expect(payload).toHaveProperty("lastLogin");
+      expect(payload.lastLogin).toBeInstanceOf(Date);
     });
   });
 

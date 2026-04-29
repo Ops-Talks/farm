@@ -146,6 +146,9 @@ export const configuration = () => ({
     username: process.env.ELASTICSEARCH_USERNAME || "",
     password: process.env.ELASTICSEARCH_PASSWORD || "",
   },
+  app: {
+    url: process.env.APP_URL || "http://localhost:3001",
+  },
 });
 
 /**
@@ -250,4 +253,5 @@ export const validationSchema = Joi.object({
   ELASTICSEARCH_URL: Joi.string().uri().allow("").optional(),
   ELASTICSEARCH_USERNAME: Joi.string().allow("").optional(),
   ELASTICSEARCH_PASSWORD: Joi.string().allow("").optional(),
+  APP_URL: Joi.string().uri().default("http://localhost:3001"),
 });

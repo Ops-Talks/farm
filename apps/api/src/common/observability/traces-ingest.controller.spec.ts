@@ -73,8 +73,11 @@ describe("TracesIngestController", () => {
       globalThis.fetch = originalFetch;
     });
 
-    it("proxies the body to the default collector and returns its status", async () => {
-      // Arrange — stub global fetch to simulate a Tempo 200 response
+    it("proxies the body to the configured collector and returns its status", async () => {
+      // Arrange — observability stack is opt-in, so the controller only
+      // forwards spans when OTEL_EXPORTER_ENDPOINT is configured.
+      process.env.OTEL_EXPORTER_ENDPOINT = "http://localhost:4318/v1/traces";
+
       const mockFetch = jest.fn().mockResolvedValue({
         status: 200,
         text: jest.fn().mockResolvedValue(""),
@@ -90,7 +93,7 @@ describe("TracesIngestController", () => {
         res as unknown as import("express").Response,
       );
 
-      // Assert — forwarded to the default Tempo endpoint
+      // Assert — forwarded to the configured Tempo endpoint
       expect(mockFetch).toHaveBeenCalledWith(
         "http://localhost:4318/v1/traces",
         expect.objectContaining({
@@ -102,6 +105,25 @@ describe("TracesIngestController", () => {
         }),
       );
       expect(res._status).toBe(200);
+    });
+
+    it("returns 204 No Content and skips forwarding when no collector is configured", async () => {
+      // Ensure env is unset for this test (afterEach also clears it)
+      delete process.env.OTEL_EXPORTER_ENDPOINT;
+
+      const mockFetch = jest.fn();
+      globalThis.fetch = mockFetch;
+
+      const req = makeReq({ resourceSpans: [] });
+      const res = makeRes();
+
+      await controller.ingestTrace(
+        req as unknown as import("express").Request,
+        res as unknown as import("express").Response,
+      );
+
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(res._status).toBe(204);
     });
 
     it("respects OTEL_EXPORTER_ENDPOINT env override", async () => {
@@ -128,6 +150,8 @@ describe("TracesIngestController", () => {
     });
 
     it("returns collector response status (e.g. 429 rate-limited)", async () => {
+      process.env.OTEL_EXPORTER_ENDPOINT = "http://localhost:4318/v1/traces";
+
       const mockFetch = jest.fn().mockResolvedValue({
         status: 429,
         text: jest.fn().mockResolvedValue("rate limited"),
@@ -147,6 +171,8 @@ describe("TracesIngestController", () => {
     });
 
     it("returns 502 Bad Gateway when the collector is unreachable", async () => {
+      process.env.OTEL_EXPORTER_ENDPOINT = "http://localhost:4318/v1/traces";
+
       const mockFetch = jest
         .fn()
         .mockRejectedValue(new Error("connection refused"));

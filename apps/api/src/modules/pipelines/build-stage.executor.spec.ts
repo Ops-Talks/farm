@@ -1,10 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { BuildStageExecutor, BuildStageConfig } from "./build-stage.executor";
-import { PipelineRun } from "./entities/pipeline-run.entity";
-import { Pipeline } from "./entities/pipeline.entity";
-import { PipelineStage } from "./entities/pipeline.entity";
-import { PipelineRunStatus } from "./entities/pipeline-run.entity";
-
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
 // ---------------------------------------------------------------------------
@@ -26,6 +19,12 @@ jest.mock("child_process", () => ({
     mockExecFileImpl(file, args, cb);
   },
 }));
+import { Test, TestingModule } from "@nestjs/testing";
+import { BuildStageExecutor, BuildStageConfig } from "./build-stage.executor";
+import { PipelineRun } from "./entities/pipeline-run.entity";
+import { Pipeline } from "./entities/pipeline.entity";
+import { PipelineStage } from "./entities/pipeline.entity";
+import { PipelineRunStatus } from "./entities/pipeline-run.entity";
 
 // ---------------------------------------------------------------------------
 // Fixtures

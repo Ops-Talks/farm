@@ -1,13 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { ConfigService } from "@nestjs/config";
-import {
-  KubernetesService,
-  CrdResource,
-  ArgoRolloutStatus,
-} from "./kubernetes.service";
-import { CatalogService } from "../catalog/catalog.service";
-import { EventsGateway } from "../../common/events/events.gateway";
-
 // ---------------------------------------------------------------------------
 // Module-level mocks for the @kubernetes/client-node factory.
 // Each mock function is reassigned before every test so individual tests
@@ -50,6 +40,15 @@ jest.mock("@kubernetes/client-node", () => {
     CustomObjectsApi: class CustomObjectsApi {},
   };
 });
+import { Test, TestingModule } from "@nestjs/testing";
+import { ConfigService } from "@nestjs/config";
+import {
+  KubernetesService,
+  CrdResource,
+  ArgoRolloutStatus,
+} from "./kubernetes.service";
+import { CatalogService } from "../catalog/catalog.service";
+import { EventsGateway } from "../../common/events/events.gateway";
 
 // ---------------------------------------------------------------------------
 // Helper fixtures

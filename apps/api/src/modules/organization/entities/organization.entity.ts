@@ -49,11 +49,13 @@ export class Organization {
 
   @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440000",
-    description: "The UUID of the user who owns the organization",
+    description:
+      "The UUID of the user who owns the organization. May be null briefly during seeding before the owner persona is created.",
+    nullable: true,
   })
   @Index()
-  @Column({ type: "uuid" })
-  ownerId: string;
+  @Column({ type: "uuid", nullable: true })
+  ownerId: string | null;
 
   @OneToMany(() => UserOrganization, (uo) => uo.organization, {
     cascade: true,

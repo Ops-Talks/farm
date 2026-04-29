@@ -1,3 +1,6 @@
+jest.mock("bcrypt", () => ({
+  hash: jest.fn(),
+}));
 import * as bcrypt from "bcrypt";
 import { User } from "./user.entity";
 
@@ -6,9 +9,6 @@ import { User } from "./user.entity";
  * Covers the conditional branch: hash only when the password is plain-text
  * (i.e., it is truthy and does not already start with "$2b$").
  */
-jest.mock("bcrypt", () => ({
-  hash: jest.fn(),
-}));
 
 describe("User entity - hashPassword", () => {
   beforeEach(() => {

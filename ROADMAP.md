@@ -67,6 +67,47 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
+## Phase 37: User Signup & Org Invitation `TODO`
+
+### FARM-E83: User Onboarding Workflow `TODO`
+
+> Self-serve user signup without org access, followed by admin-sendable email invitations that auto-approve org membership. Solves the UX friction of manual-only registration and enables team collaboration workflows.
+
+| ID | Type | Title | Status |
+|----|------|-------|--------|
+| FARM-S358 | Story | Self-serve user signup page and form validation | `TODO` |
+| FARM-S359 | Story | Organization member invitation backend (token generation, accept endpoint, role assignment) | `TODO` |
+| FARM-S360 | Story | Organization invitation management UI (pending/accepted invites, resend, revoke, copy link) | `TODO` |
+| FARM-S361 | Story | Email notification service and invitation template | `TODO` |
+| FARM-S362 | Story | User management dashboard (context-aware by role; list, edit role, delete, reset password, suspend/activate) | `TODO` |
+
+| ID | Type | Title | Story | Status |
+|----|------|-------|-------|--------|
+| FARM-T408 | Task | Signup page React component, form validation, success/error UX | S358 | `TODO` |
+| FARM-T409 | Task | `POST /api/auth/register` validation (email/username uniqueness, password strength) | S358 | `TODO` |
+| FARM-T410 | Task | InvitationToken entity, migration, database indices | S359 | `TODO` |
+| FARM-T411 | Task | `POST /api/invitations` endpoint (OrgRolesGuard ADMIN+), token generation, rate limiting | S359 | `TODO` |
+| FARM-T412 | Task | `POST /api/invitations/:token/accept` endpoint (public, auto-creates UserOrganization) | S359 | `TODO` |
+| FARM-T413 | Task | Org invite management page (`/organizations/[id]/settings/invites`), list/resend/revoke UI | S360 | `TODO` |
+| FARM-T414 | Task | Email service wrapper (nodemailer/SendGrid), invitation.hbs template | S361 | `TODO` |
+| FARM-T417 | Task | User management page (`/users`), context-aware list (platform admin sees all, org admin sees org members) | S362 | `TODO` |
+| FARM-T418 | Task | User edit endpoints: `PATCH /api/users/:id/role`, `/suspend`, `/activate`, `/reset-password` (requires role checks) | S362 | `TODO` |
+| FARM-T419 | Task | User delete endpoint: `DELETE /api/users/:id` (platform admin only, org admin can remove from org) | S362 | `TODO` |
+| FARM-T420 | Task | Password reset email template and service integration | S362 | `TODO` |
+| FARM-T415 | Task | API reference docs for signup, invitation, and user management endpoints | — | `TODO` |
+| FARM-T416 | Task | User guide docs: user-guide/signup.md, user-guide/invitations.md, user-guide/user-management.md | — | `TODO` |
+
+| ID | Type | Title | Task | Status |
+|----|------|-------|------|--------|
+| FARM-ST421 | Sub-task | Unit tests: InvitationTokenService, token expiry, accept logic | T412 | `TODO` |
+| FARM-ST422 | Sub-task | Unit tests: AuthService register, password validation, email uniqueness | T409 | `TODO` |
+| FARM-ST423 | Sub-task | E2E tests: signup flow, org invite acceptance, token expiry | T412 | `TODO` |
+| FARM-ST424 | Sub-task | E2E tests: user management endpoints (edit role, suspend, reset password, delete) | T418 | `TODO` |
+| FARM-ST425 | Sub-task | Playwright tests: signup page, invite management page, invite link accept | T413 | `TODO` |
+| FARM-ST426 | Sub-task | Playwright tests: user management dashboard (list, edit, suspend, delete actions) | T417 | `TODO` |
+
+---
+
 ## Phase 33: UX/UI Quality and Accessibility `TODO`
 
 ### FARM-E79: UX/UI Quality and Accessibility `TODO`
@@ -210,52 +251,51 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 36: Permission Scope Test Fixtures `TODO`
+## Phase 36: Permission Scope Test Fixtures `DONE`
 
-### FARM-E82: Seed Users and Permission Scope Coverage `TODO`
+### FARM-E82: Seed Users and Permission Scope Coverage `DONE`
 
 > Today `apps/api/src/database/seeds/initial-seed.ts` only provisions two users (`admin` global and `developer` non-admin). This is insufficient to manually exercise the platform's actual permission matrix, which combines role-based access (`@Roles("admin")`), multi-tenancy via `OrgContextInterceptor` (`X-Organization-Id` header → `UserOrganization` membership), and team-scoped ownership (`Team` membership). This Epic extends the seed to provide a deterministic set of test users covering each axis, fixes the seed runner so it patches existing rows (roles, org membership, team membership) rather than skipping them, and documents the matrix so contributors and QA can log in as the right persona without manual SQL.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S355 | Story | Extend `initial-seed.ts` to provision the test-user matrix (`admin`, `developer`, `org-b-user`, `team-lead`, `viewer`) with deterministic credentials, role assignments, organization membership, and team membership | `TODO` |
-| FARM-S356 | Story | Idempotent re-seed: `seedUsers` and related helpers must patch roles, `UserOrganization`, and team membership on already-existing users instead of the current "already exists, skipping" no-op | `TODO` |
-| FARM-S357 | Story | Documentation: `docs/development/test-users.md` (linked from the contributing guide) describing each persona, its credentials, what scopes it covers, and how to use the `X-Organization-Id` header in the Web UI / API to switch tenancy | `TODO` |
+| FARM-S355 | Story | Extend `initial-seed.ts` to provision the test-user matrix (`platformAdmin`, `orgOwner`, `orgAdmin`, `orgMember`, `crossOrgMember`, `teamLead`, `viewer`) with deterministic credentials, role assignments, organization membership, and team membership. The matrix is keyed by **test purpose** (combination of global `roles` and per-tenant `OrgRole`) and covers all three `OrgRole` values (OWNER, ADMIN, MEMBER) plus the multi-tenant case via `crossOrgMember` (membership in both `farm-demo` and `org-b`) | `DONE` |
+| FARM-S356 | Story | Idempotent re-seed: `seedUsers` and related helpers must patch roles, `UserOrganization`, and team membership on already-existing users instead of the current "already exists, skipping" no-op | `DONE` |
+| FARM-S357 | Story | Documentation: `docs/development/test-users.md` (linked from the contributing guide) describing each persona, its credentials, what scopes it covers, and how to use the `X-Organization-Id` header in the Web UI / API to switch tenancy | `DONE` |
 
 #### FARM-S355 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T408 | Task | Add `org-a` and `org-b` `Organization` rows to `seedOrganizations` (idempotent) and define a single source-of-truth `TEST_USERS` constant in `initial-seed.ts` containing username, email, password, roles, organization slugs, and team slugs for each persona | `TODO` |
-| FARM-T409 | Task | Extend `seedUsers` to consume `TEST_USERS`, create users when missing, and persist `UserOrganization` link rows for each `(userId, organizationId)` pair declared in the constant; cover team membership via the `team_members` join table | `TODO` |
+| FARM-T408 | Task | Add `org-a` and `org-b` `Organization` rows to `seedOrganizations` (idempotent) and define a single source-of-truth `TEST_USERS` constant in `initial-seed.ts` containing username, email, password, roles, organization slugs, and team slugs for each persona | `DONE` |
+| FARM-T409 | Task | Extend `seedUsers` to consume `TEST_USERS`, create users when missing, and persist `UserOrganization` link rows for each `(userId, organizationId)` pair declared in the constant; cover team membership via the `team_members` join table | `DONE` |
 
 ##### FARM-T408 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST416 | Sub-task | Unit test: running `seedUsers` against an empty SQLite DB creates exactly the 5 personas with the expected `roles`, `organizationId` set, and `team_members` rows | `TODO` |
-| FARM-ST417 | Sub-task | Unit test: `TEST_USERS` constant is exported and contains the keys `admin`, `developer`, `orgBUser`, `teamLead`, `viewer` with non-empty `password` strings (length ≥ 8) — guards against accidental credential drift | `TODO` |
+| FARM-ST416 | Sub-task | Unit test: running `seedUsers` against an empty SQLite DB creates exactly the 5 personas with the expected `roles`, `organizationId` set, and `team_members` rows | `DONE` |
+| FARM-ST417 | Sub-task | Unit test: `TEST_USERS` constant is exported and contains the keys `admin`, `developer`, `orgBUser`, `teamLead`, `viewer` with non-empty `password` strings (length ≥ 8) — guards against accidental credential drift | `DONE` |
 
 #### FARM-S356 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T410 | Task | Replace the `console.log("... already exists, skipping.")` branch in `seedUsers` with a reconciliation path that patches `roles` (using set semantics), upserts `UserOrganization` rows, and ensures `team_members` membership matches `TEST_USERS`; the bcrypt password is **only** rewritten when an env flag `SEED_RESET_PASSWORDS=true` is set, so production runs do not silently rotate credentials | `TODO` |
-| FARM-T411 | Task | Apply the same idempotent reconciliation pattern to `seedOrganizations` and any team seeding helper so re-running `npm run seed` against a populated database leaves the test-user matrix in the documented state regardless of prior data | `TODO` |
+| FARM-T410 | Task | Replace the `console.log("... already exists, skipping.")` branch in `seedUsers` with a reconciliation path that patches `roles` (using set semantics), upserts `UserOrganization` rows, and ensures `team_members` membership matches `TEST_USERS`; the bcrypt password is **only** rewritten when an env flag `SEED_RESET_PASSWORDS=true` is set, so production runs do not silently rotate credentials | `DONE` |
+| FARM-T411 | Task | Apply the same idempotent reconciliation pattern to `seedOrganizations` and any team seeding helper so re-running `npm run seed` against a populated database leaves the test-user matrix in the documented state regardless of prior data | `DONE` |
 
 ##### FARM-T410 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST418 | Sub-task | Unit test: pre-insert a `developer` user with `roles: ["user"]` and no org membership, then run `seedUsers`; expect roles updated to match `TEST_USERS.developer` and `UserOrganization` row created for `org-a` | `TODO` |
-| FARM-ST419 | Sub-task | Unit test: `SEED_RESET_PASSWORDS` unset → existing `password_hash` is preserved on re-seed; `SEED_RESET_PASSWORDS=true` → `password_hash` is rewritten with a fresh bcrypt hash of the seed value | `TODO` |
+| FARM-ST418 | Sub-task | Unit test: pre-insert a `developer` user with `roles: ["user"]` and no org membership, then run `seedUsers`; expect roles updated to match `TEST_USERS.developer` and `UserOrganization` row created for `org-a` | `DONE` |
+| FARM-ST419 | Sub-task | Unit test: `SEED_RESET_PASSWORDS` unset → existing `password_hash` is preserved on re-seed; `SEED_RESET_PASSWORDS=true` → `password_hash` is rewritten with a fresh bcrypt hash of the seed value | `DONE` |
 
 #### FARM-S357 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T412 | Task | Author `docs/development/test-users.md` with a persona table (username, password, roles, organizations, teams, intended scope) and short "How to test" recipes (login as admin to reach `/elasticsearch`; login as `org-b-user` and set `X-Organization-Id: org-b` to verify catalog isolation; login as `team-lead` to verify ownership-scoped actions); link from `CONTRIBUTING.md` and `docs/index.md` | `TODO` |
-
+| FARM-T412 | Task | Author `docs/development/test-users.md` with a persona table (username, password, roles, organizations, teams, intended scope) and short "How to test" recipes (login as admin to reach `/elasticsearch`; login as `org-b-user` and set `X-Organization-Id: org-b` to verify catalog isolation; login as `team-lead` to verify ownership-scoped actions); link from `CONTRIBUTING.md` and `docs/index.md` | `DONE` |
 ---
 
 ## Summary
@@ -300,5 +340,6 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `TODO` |
 | Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
 | Phase 35: Elasticsearch Index Visibility | 1 | 4 | `DONE` |
-| Phase 36: Permission Scope Test Fixtures | 1 | 3 | `TODO` |
-| **Total** | **84** | **337** | |
+| Phase 36: Permission Scope Test Fixtures | 1 | 3 | `DONE` |
+| Phase 37: User Signup & Org Invitation | 1 | 5 | `TODO` |
+| **Total** | **85** | **344** | |

@@ -86,4 +86,80 @@ export declare enum OrgRole {
     ADMIN = "admin",
     MEMBER = "member"
 }
+/**
+ * Token-based organization invitation (Phase 37).
+ * The `token` field is only included in admin-facing responses immediately
+ * after creation; never exposed via the public preview endpoint.
+ */
+export interface InvitationToken {
+    id: string;
+    token: string;
+    type: "org-invite";
+    email: string;
+    orgId: string;
+    invitedBy: string;
+    role: OrgRole;
+    message?: string | null;
+    status: "pending" | "accepted" | "revoked";
+    createdAt: string;
+    expiresAt: string;
+    acceptedAt?: string | null;
+    acceptedBy?: string | null;
+}
+/**
+ * Public preview shown on the invitation accept page (no token leak).
+ */
+export interface InvitationPreview {
+    orgName: string;
+    role: OrgRole;
+    invitedByName: string;
+    expiresAt: string;
+    message?: string | null;
+}
+/**
+ * Org membership summary embedded in `ManagedUser`.
+ */
+export interface ManagedUserOrgMembership {
+    orgId: string;
+    orgSlug: string;
+    orgName: string;
+    role: OrgRole;
+}
+/**
+ * User view returned by the user management dashboard endpoints.
+ */
+export interface ManagedUser {
+    id: string;
+    username: string;
+    email: string;
+    displayName: string;
+    roles: string[];
+    suspended: boolean;
+    lastLogin: string | null;
+    createdAt: string;
+    orgMemberships: ManagedUserOrgMembership[];
+}
+/**
+ * Paginated response wrapper for the user management list endpoint.
+ */
+export interface UserListResponse {
+    users: ManagedUser[];
+    total: number;
+    page: number;
+    pageSize: number;
+}
+/**
+ * Audit event entry exposed via `GET /api/users/:id/audit-trail`.
+ */
+export interface AuditEvent {
+    id: string;
+    action: string;
+    performer: {
+        id: string;
+        username: string;
+    };
+    subjectId: string;
+    changes?: Record<string, unknown>;
+    createdAt: string;
+}
 //# sourceMappingURL=index.d.ts.map

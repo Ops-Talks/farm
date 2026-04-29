@@ -35,7 +35,7 @@ import { CloudResource } from "./interfaces/cloud-resource.interface";
 @ApiTags("Cloud")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller("api/v1/cloud")
+@Controller("cloud")
 export class CloudResourceController {
   private readonly logger = new Logger(CloudResourceController.name);
 

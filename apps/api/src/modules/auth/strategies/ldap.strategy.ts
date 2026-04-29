@@ -72,7 +72,7 @@ export class LdapAuthStrategy extends PassportStrategy(
     });
 
     if (!ldapUrl) {
-      this.logger.warn(
+      this.logger.log(
         "LDAP_URL is not configured — LDAP authentication strategy is registered but will not connect",
       );
     }

@@ -69,6 +69,10 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    if (user.suspended) {
+      throw new UnauthorizedException("Account suspended");
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -85,6 +89,7 @@ export class AuthService {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.update(user.id, {
       refreshToken: hashedRefreshToken,
+      lastLogin: new Date(),
     });
 
     return {

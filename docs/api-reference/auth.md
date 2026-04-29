@@ -16,10 +16,10 @@ Registers a new user account.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| username | string | Yes | Unique username (min 2 characters) |
+| username | string | Yes | Unique username, 3-50 chars, only `a-z`, `A-Z`, `0-9`, `_`, `-` |
 | email | string | Yes | Valid email address |
 | password | string | Yes | Password (min 8 chars, must contain uppercase, lowercase, and digit) |
-| displayName | string | Yes | Human-readable display name |
+| displayName | string | Yes | Human-readable display name (1-100 chars) |
 
 **Responses:**
 

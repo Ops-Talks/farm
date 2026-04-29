@@ -37,7 +37,7 @@ export function KedaBindingCard({ componentId }: KedaBindingCardProps) {
   }
 
   // Return null when there are no bindings — no empty-state card is rendered.
-  if (!bindings || bindings.length === 0) {
+  if (!Array.isArray(bindings) || bindings.length === 0) {
     return null;
   }
 

@@ -1,7 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { LinkerdService } from "./linkerd.service";
-import { KubernetesService } from "../kubernetes/kubernetes.service";
-
 // ---------------------------------------------------------------------------
 // Mock @kubernetes/client-node
 // ---------------------------------------------------------------------------
@@ -30,6 +26,9 @@ jest.mock("@kubernetes/client-node", () => {
     AppsV1Api: class AppsV1Api {},
   };
 });
+import { Test, TestingModule } from "@nestjs/testing";
+import { LinkerdService } from "./linkerd.service";
+import { KubernetesService } from "../kubernetes/kubernetes.service";
 
 // ---------------------------------------------------------------------------
 // Fixtures

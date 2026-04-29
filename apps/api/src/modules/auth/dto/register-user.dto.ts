@@ -21,6 +21,10 @@ export class RegisterUserDto {
   @IsString()
   @IsNotEmpty()
   @Length(2, 50)
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message:
+      "Username can only contain letters, numbers, underscores, and hyphens",
+  })
   username: string;
 
   @ApiProperty({

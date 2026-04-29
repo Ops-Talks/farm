@@ -1,3 +1,8 @@
+jest.mock("bcrypt", () => ({
+  hash: jest.fn(),
+  compare: jest.fn(),
+  genSalt: jest.fn(),
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtService } from "@nestjs/jwt";
@@ -5,8 +10,6 @@ import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { AuthService } from "./auth.service";
 import { User } from "./entities/user.entity";
-
-jest.mock("bcrypt");
 
 describe("AuthService", () => {
   let service: AuthService;
@@ -105,9 +108,10 @@ describe("AuthService", () => {
       expect(result.refreshToken).toBeDefined();
       expect(typeof result.refreshToken).toBe("string");
       expect(result.user.username).toBe(mockUser.username);
-      expect(mockRepository.update).toHaveBeenCalledWith("uuid", {
-        refreshToken: "hashed-token",
-      });
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        "uuid",
+        expect.objectContaining({ refreshToken: "hashed-token" }),
+      );
     });
 
     it("should throw UnauthorizedException for invalid password", async () => {

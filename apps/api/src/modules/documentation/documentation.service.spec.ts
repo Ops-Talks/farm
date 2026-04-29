@@ -1,3 +1,13 @@
+jest.mock("axios", () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+    patch: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException } from "@nestjs/common";
@@ -5,8 +15,6 @@ import axios from "axios";
 import { DocumentationService, sanitizeHtml } from "./documentation.service";
 import { Documentation } from "./entities/documentation.entity";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
-
-jest.mock("axios");
 
 describe("DocumentationService", () => {
   let service: DocumentationService;

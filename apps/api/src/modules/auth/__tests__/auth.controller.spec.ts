@@ -1,3 +1,9 @@
+// Mock the passport module so passport.use and passport.authenticate
+// can be configured per-test without spying on non-configurable properties.
+jest.mock("passport", () => ({
+  use: jest.fn(),
+  authenticate: jest.fn(),
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getQueueToken } from "@nestjs/bullmq";
 import { ConfigService } from "@nestjs/config";
@@ -7,13 +13,6 @@ import { KeycloakOidcService } from "../keycloak-oidc.service";
 import { QUEUE_NAMES } from "../../../common/queues/queue-names";
 import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
-
-// Mock the passport module so passport.use and passport.authenticate
-// can be configured per-test without spying on non-configurable properties.
-jest.mock("passport", () => ({
-  use: jest.fn(),
-  authenticate: jest.fn(),
-}));
 
 const mockAuthService = {
   register: jest.fn(),

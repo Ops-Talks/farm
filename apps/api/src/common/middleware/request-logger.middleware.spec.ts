@@ -100,15 +100,37 @@ describe("RequestLoggerMiddleware", () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 
-  it("uses the HTTP logger context", () => {
-    const req = buildReq();
+  it("logs the request with username when req.user has the JwtStrategy shape", () => {
+    const req = buildReq({
+      method: "GET",
+      originalUrl: "/api/v1/integrations/credentials",
+      user: { userId: "user-42", username: "alice", roles: ["admin"] },
+    });
     const res = buildRes();
+    res.statusCode = 200;
     const next: NextFunction = jest.fn();
 
     middleware.use(req, res, next);
     res.emit("finish");
 
-    // Logger.prototype.log is called on an instance created with context "HTTP"
     expect(logSpy).toHaveBeenCalledTimes(1);
+    const message = (logSpy.mock.calls[0] as unknown[])[0] as string;
+    expect(message).toContain("alice");
+    expect(message).not.toContain("undefined");
+  });
+
+  it("falls back to userId when username is absent on req.user", () => {
+    const req = buildReq({
+      user: { userId: "user-99", roles: ["user"] },
+    });
+    const res = buildRes();
+    res.statusCode = 200;
+    const next: NextFunction = jest.fn();
+
+    middleware.use(req, res, next);
+    res.emit("finish");
+
+    const message = (logSpy.mock.calls[0] as unknown[])[0] as string;
+    expect(message).toContain("user-99");
   });
 });

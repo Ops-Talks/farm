@@ -1,6 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ClientSecretCredential } from "@azure/identity";
-import { ResourceManagementClient } from "@azure/arm-resources";
+import {
+  ResourceManagementClient,
+  type GenericResourceExpanded,
+} from "@azure/arm-resources";
 import { SecretClient } from "@azure/keyvault-secrets";
 import { CostManagementClient } from "@azure/arm-costmanagement";
 import axios from "axios";
@@ -95,7 +98,7 @@ export class AzureService {
     try {
       const resourceList = client.resources.list({
         filter: "tagName eq 'farm:component' or tagName eq 'farm.io/component'",
-      });
+      }) as unknown as AsyncIterable<GenericResourceExpanded>;
 
       for await (const resource of resourceList) {
         if (!resource.id) continue;

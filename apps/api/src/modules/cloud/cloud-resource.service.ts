@@ -4,6 +4,8 @@ import { GcpService } from "./gcp/gcp.service";
 import { AzureService } from "./azure/azure.service";
 import { CloudResource } from "./interfaces/cloud-resource.interface";
 import { CloudCostEntry } from "./dto/cloud-cost.dto";
+import { IntegrationCredentialService } from "../integrations/integration-credential.service";
+import { IntegrationType } from "../integrations/entities/integration-credential.entity";
 
 /**
  * Aggregated cost result per provider.
@@ -25,6 +27,7 @@ export class CloudResourceService {
   private readonly logger = new Logger(CloudResourceService.name);
 
   constructor(
+    private readonly credentialService: IntegrationCredentialService,
     @Optional() private readonly awsService?: AwsService,
     @Optional() private readonly gcpService?: GcpService,
     @Optional() private readonly azureService?: AzureService,
@@ -179,35 +182,30 @@ export class CloudResourceService {
   }
 
   /**
-   * Lists which providers are connected (have credentials) for an org.
+   * Lists which providers are connected (have credentials configured) for
+   * an org. This intentionally only checks for credential existence — it
+   * does not call the cloud APIs, since the UI uses this for status badges
+   * and a network round-trip on every page render would be wasteful and
+   * unreliable.
    *
    * @param orgId - Organization UUID
-   * @returns Array of provider identifiers that have resources configured
+   * @returns Array of provider identifiers ("aws", "gcp", "azure") that
+   *   have a credential of the matching type stored for the org.
    */
   async listConnectedProviders(orgId: string): Promise<string[]> {
-    const providers: string[] = [];
+    const providerByType: Array<{ name: string; type: IntegrationType }> = [
+      { name: "aws", type: IntegrationType.AWS_IAM_ROLE },
+      { name: "gcp", type: IntegrationType.GCP_SERVICE_ACCOUNT },
+      { name: "azure", type: IntegrationType.AZURE_SERVICE_PRINCIPAL },
+    ];
 
-    const checks = await Promise.allSettled([
-      this.awsService
-        ? this.awsService.discoverResources(orgId)
-        : Promise.resolve(null),
-      this.gcpService
-        ? this.gcpService.discoverResources(orgId)
-        : Promise.resolve(null),
-      this.azureService
-        ? this.azureService.discoverResources(orgId)
-        : Promise.resolve(null),
-    ]);
+    const checks = await Promise.all(
+      providerByType.map(async ({ name, type }) => {
+        const credential = await this.credentialService.findByType(orgId, type);
+        return credential ? name : null;
+      }),
+    );
 
-    const names = ["aws", "gcp", "azure"] as const;
-    for (let i = 0; i < checks.length; i++) {
-      const result = checks[i];
-      // If the call succeeds (even returning empty array) the provider is connected.
-      if (result.status === "fulfilled" && result.value !== null) {
-        providers.push(names[i]);
-      }
-    }
-
-    return providers;
+    return checks.filter((p): p is string => p !== null);
   }
 }

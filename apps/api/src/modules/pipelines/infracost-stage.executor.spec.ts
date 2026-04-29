@@ -1,15 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { InfracostStageExecutor } from "./infracost-stage.executor";
-import { PipelineRun } from "./entities/pipeline-run.entity";
-import { Pipeline } from "./entities/pipeline.entity";
-import { PipelineStage } from "./entities/pipeline.entity";
-import { PipelineRunStatus } from "./entities/pipeline-run.entity";
-import { FinOpsService } from "../finops/finops.service";
-import { Component } from "../catalog/entities/component.entity";
-import { EventsGateway } from "../../common/events/events.gateway";
-
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
 // Node's util.promisify(execFile) uses a custom __promisify__ that resolves
@@ -28,6 +16,17 @@ jest.mock("child_process", () => ({
     mockExecFileImpl(file, args, cb);
   },
 }));
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { InfracostStageExecutor } from "./infracost-stage.executor";
+import { PipelineRun } from "./entities/pipeline-run.entity";
+import { Pipeline } from "./entities/pipeline.entity";
+import { PipelineStage } from "./entities/pipeline.entity";
+import { PipelineRunStatus } from "./entities/pipeline-run.entity";
+import { FinOpsService } from "../finops/finops.service";
+import { Component } from "../catalog/entities/component.entity";
+import { EventsGateway } from "../../common/events/events.gateway";
 
 // ---------------------------------------------------------------------------
 // Fixtures

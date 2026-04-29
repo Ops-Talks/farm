@@ -47,4 +47,7 @@ regexes = [
   # UUID token placeholder used in an early version of docs/api-reference/auth.md
   # (commit f596bed) — a static example value, not a real credential
   '''7c9e6679-7425-40de-944b-e07fc1f90ae7''',
+  # Illustrative temp-password returned by POST /api/v1/users/:id/reset-password
+  # when SMTP is not configured — a documentation example, not a real credential
+  '''abCD12efGH34''',
 ]

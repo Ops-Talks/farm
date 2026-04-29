@@ -39,6 +39,7 @@ The [Frontend Developer Guide](frontend/index.md) covers the Next.js web applica
 |-------|-------------|
 | [Development Setup](setup.md) | Prerequisites, installation, Docker, and environment variables |
 | [Contributing](contributing.md) | Contribution workflow, code style, and pull request guidelines |
+| [Test Users](test-users.md) | Seed personas, credentials, and recipes for testing roles, tenancy, and team scopes |
 | [System Design](system-design.md) | High-level system architecture, data models, and API design |
 | [Security Testing](security-testing.md) | SAST, DAST, secret scanning, container CVE scanning, and accessibility testing |
 

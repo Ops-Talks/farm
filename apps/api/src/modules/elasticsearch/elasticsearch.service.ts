@@ -43,7 +43,7 @@ export class ElasticsearchService {
       this.logger.log(`Elasticsearch client initialized with node: ${url}`);
     } else {
       this.client = null;
-      this.logger.warn(
+      this.logger.log(
         "ELASTICSEARCH_URL is not set — Elasticsearch indexing is disabled",
       );
     }

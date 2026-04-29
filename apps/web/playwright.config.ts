@@ -3,7 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Playwright configuration for apps/web E2E tests.
  *
- * Base URL  : http://localhost:3001  (Next.js dev server)
+ * Base URL  : http://localhost:3010  (Next.js dev server — non-default port
+ *                                    to avoid conflict with the optional
+ *                                    farm-web docker-compose container on 3001)
  * API URL   : http://localhost:3000  (NestJS backend)
  *
  * All tests mock backend API calls via page.route() so the suite runs
@@ -39,7 +41,7 @@ export default defineConfig({
 
   use: {
     // All relative page.goto() calls will use this as the prefix
-    baseURL: "http://localhost:3001",
+    baseURL: "http://localhost:3010",
 
     // Collect Playwright trace on first retry for debugging
     trace: "on-first-retry",
@@ -76,8 +78,8 @@ export default defineConfig({
   // Spin up the Next.js dev server before the test run starts.
   // reuseExistingServer lets local development skip the cold start.
   webServer: {
-    command: "next dev -p 3001",
-    url: "http://localhost:3001",
+    command: "next dev -p 3010",
+    url: "http://localhost:3010",
     reuseExistingServer: !isCI,
     timeout: 120_000,
   },

@@ -1,11 +1,20 @@
+jest.mock("child_process", () => ({
+  execFile: jest.fn(),
+}));
+jest.mock("fs/promises", () => ({
+  readFile: jest.fn(),
+  readdir: jest.fn(),
+  rm: jest.fn(),
+  access: jest.fn(),
+  mkdir: jest.fn(),
+  mkdtemp: jest.fn(),
+  writeFile: jest.fn(),
+}));
 import { execFile } from "child_process";
 import * as fs from "fs/promises";
 import { DocBuilderFactory } from "./doc-builder.factory";
 import { MarkdownBuilder } from "./markdown.builder";
 import { MkDocsBuilder } from "./mkdocs.builder";
-
-jest.mock("child_process");
-jest.mock("fs/promises");
 
 const mockedExecFile = execFile as jest.MockedFunction<typeof execFile>;
 const mockedFs = fs as jest.Mocked<typeof fs>;

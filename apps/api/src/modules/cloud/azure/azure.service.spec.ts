@@ -1,8 +1,3 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { AzureService } from "./azure.service";
-import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
-import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
-
 // ---------------------------------------------------------------------------
 // Mock @azure/* and axios — factories must not reference outer const variables
 // because jest.mock() is hoisted above const declarations.
@@ -46,6 +41,11 @@ jest.mock("axios", () => ({
     patch: jest.fn(),
   },
 }));
+
+import { Test, TestingModule } from "@nestjs/testing";
+import { AzureService } from "./azure.service";
+import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
+import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
 
 import { ClientSecretCredential } from "@azure/identity";
 import { ResourceManagementClient } from "@azure/arm-resources";

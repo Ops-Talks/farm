@@ -50,6 +50,7 @@ import {
   iacModules,
   pluginRegistry,
   pluginInstances,
+  userManagement,
 } from "@/lib/api-client";
 
 const mockFetch = vi.fn();
@@ -286,6 +287,22 @@ describe("api-client", () => {
       await auth.getUsers();
       const [, callOptions] = mockFetch.mock.calls[0] as [string, { headers: Record<string, string> }];
       expect(callOptions.headers).not.toHaveProperty("X-Organization-Id");
+    });
+
+    it("clears farm_current_org from sessionStorage when 403 is returned with X-Organization-Id header set", async () => {
+      sessionStorage.setItem("farm_current_org", "org-stale-789");
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 403, timestamp: "t", path: "/v1/auth/register", message: "Forbidden" },
+          403,
+        ),
+      );
+      try {
+        await auth.register({ username: "u", email: "u@t.com", password: "pass1234" });
+      } catch {
+        // expected to throw ApiError
+      }
+      expect(sessionStorage.getItem("farm_current_org")).toBeNull();
     });
 
     it("forwards the org header on the retry fetch after a successful token refresh", async () => {
@@ -1081,14 +1098,155 @@ describe("api-client", () => {
   });
 
   describe("invitations (standalone accept)", () => {
-    it("should POST to /v1/invitations/:token/accept and return member response", async () => {
+    it("should POST to /v1/invitations/by-token/:token/accept and return member response", async () => {
       const mockMember = { userId: "u1", username: "alice", role: "member" };
       mockFetch.mockReturnValueOnce(jsonResponse(mockMember));
       const result = await invitations.accept("my-plain-token");
       expect(result.username).toBe("alice");
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/v1/invitations/my-plain-token/accept",
+        "/api/v1/invitations/by-token/my-plain-token/accept",
         expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("create sends POST to /v1/invitations with body", async () => {
+      const dto = { organizationId: "org-1", emails: ["a@b.com"], role: "member" };
+      const created = [{ id: "inv-1", email: "a@b.com", role: "member", status: "pending" }];
+      mockFetch.mockReturnValueOnce(jsonResponse(created));
+      const result = await invitations.create(dto as Parameters<typeof invitations.create>[0]);
+      expect(result).toEqual(created);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/invitations",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("list sends GET to /v1/invitations with organizationId and status query params", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      await invitations.list("org-42", "pending");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/invitations");
+      expect(url).toContain("organizationId=org-42");
+      expect(url).toContain("status=pending");
+    });
+
+    it("getByToken sends GET to /v1/invitations/by-token/:token", async () => {
+      const preview = { orgName: "Acme", role: "member", expiresAt: "2099-01-01T00:00:00Z" };
+      mockFetch.mockReturnValueOnce(jsonResponse(preview));
+      const result = await invitations.getByToken("tok-xyz");
+      expect(result.orgName).toBe("Acme");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/invitations/by-token/tok-xyz",
+        expect.any(Object),
+      );
+    });
+
+    it("resend sends PATCH to /v1/invitations/:id/resend", async () => {
+      const updated = { id: "inv-1", status: "pending" };
+      mockFetch.mockReturnValueOnce(jsonResponse(updated));
+      await invitations.resend("inv-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/invitations/inv-1/resend",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+    });
+
+    it("revoke sends DELETE to /v1/invitations/:id", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await invitations.revoke("inv-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/invitations/inv-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+  });
+
+  describe("userManagement", () => {
+    beforeEach(() => {
+      setTokens("tok", "ref", "user");
+    });
+
+    it("list sends GET to /v1/users", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ users: [], total: 0, page: 1, pageSize: 20 }));
+      await userManagement.list({});
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/users");
+    });
+
+    it("get sends GET to /v1/users/:id", async () => {
+      const mockUser = { id: "u-1", username: "alice" };
+      mockFetch.mockReturnValueOnce(jsonResponse(mockUser));
+      const result = await userManagement.get("u-1");
+      expect(result.id).toBe("u-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1",
+        expect.any(Object),
+      );
+    });
+
+    it("updateRole sends PATCH to /v1/users/:id/role with body", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ orgId: "org-1", role: "admin" }));
+      await userManagement.updateRole("u-1", { orgId: "org-1", role: "admin" as Parameters<typeof userManagement.updateRole>[1]["role"] });
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1/role",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.orgId).toBe("org-1");
+      expect(body.role).toBe("admin");
+    });
+
+    it("suspend sends PATCH to /v1/users/:id/suspend with suspended=true", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "u-1", suspended: true }));
+      await userManagement.suspend("u-1", true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1/suspend",
+        expect.objectContaining({ method: "PATCH" }),
+      );
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.suspended).toBe(true);
+    });
+
+    it("resetPassword sends POST to /v1/users/:id/reset-password", async () => {
+      const res = { tempPasswordExpiresAt: "2099-01-01T00:00:00Z" };
+      mockFetch.mockReturnValueOnce(jsonResponse(res));
+      const result = await userManagement.resetPassword("u-1");
+      expect(result.tempPasswordExpiresAt).toBe(res.tempPasswordExpiresAt);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1/reset-password",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    it("remove sends DELETE to /v1/users/:id without orgId", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await userManagement.remove("u-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("remove sends DELETE to /v1/users/:id with orgId query param", async () => {
+      mockFetch.mockReturnValueOnce(noContentResponse());
+      await userManagement.remove("u-1", "org-1");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("/api/v1/users/u-1");
+      expect(url).toContain("orgId=org-1");
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+
+    it("auditTrail sends GET to /v1/users/:id/audit-trail", async () => {
+      const events = [{ id: "evt-1", action: "user.created", createdAt: "2024-01-01T00:00:00Z" }];
+      mockFetch.mockReturnValueOnce(jsonResponse(events));
+      const result = await userManagement.auditTrail("u-1");
+      expect(result).toEqual(events);
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/users/u-1/audit-trail",
+        expect.any(Object),
       );
     });
   });

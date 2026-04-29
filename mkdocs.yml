@@ -85,6 +85,9 @@ nav:
     - Pipelines: user-guide/pipelines.md
     - Observability: user-guide/observability.md
     - Authentication: user-guide/authentication.md
+    - Signing Up: user-guide/signup.md
+    - Inviting Users: user-guide/invitations.md
+    - Managing Users: user-guide/user-management.md
     - Organizations: user-guide/organizations.md
     - Helm Integration: user-guide/helm-integration.md
     - Kubernetes Operator: user-guide/kubernetes-operator.md
@@ -110,6 +113,7 @@ nav:
     - developer-guide/index.md
     - Development Setup: developer-guide/setup.md
     - Contributing: developer-guide/contributing.md
+    - Test Users: developer-guide/test-users.md
     - System Design: developer-guide/system-design.md
     - Backend:
       - developer-guide/backend/index.md
@@ -141,6 +145,8 @@ nav:
     - Teams API: api-reference/teams.md
     - Organizations API: api-reference/organizations.md
     - Authentication API: api-reference/auth.md
+    - Invitations API: api-reference/invitations.md
+    - User Management API: api-reference/user-management.md
     - Plugins API: api-reference/plugins.md
     - Pipelines API: api-reference/pipelines.md
     - Observability API: api-reference/observability.md
