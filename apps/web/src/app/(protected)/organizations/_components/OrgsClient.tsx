@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
 
 export function OrgsClient() {
@@ -71,16 +72,10 @@ export function OrgsClient() {
         </div>
       ) : allOrgs.length === 0 ? (
         /* Empty state */
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <Building2 className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-          <h3 className="text-base font-semibold">No organizations yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Create your first organization to get started.
-          </p>
-          <Link href="/organizations/new" className="mt-4 inline-block">
-            <Button>Create Organization</Button>
-          </Link>
-        </div>
+        <EmptyState
+          title="No organizations yet"
+          description="Create an organization to group teams and manage membership."
+        />
       ) : (
         /* Org card grid */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

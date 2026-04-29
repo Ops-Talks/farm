@@ -92,6 +92,8 @@ export function SlosClient() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSlo, setEditingSlo] = useState<Slo | null>(null);
   const [deletingSloId, setDeletingSloId] = useState<string | null>(null);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // -- Form state -----------------------------------------------------------
   const [formName, setFormName] = useState("");
@@ -232,6 +234,7 @@ export function SlosClient() {
   async function handleDelete() {
     if (!deletingSloId) return;
     const target = slosList.find((s) => s.id === deletingSloId);
+    setIsDeleting(true);
     try {
       await slos.remove(deletingSloId);
       setSlosList((prev) => prev.filter((s) => s.id !== deletingSloId));
@@ -240,6 +243,7 @@ export function SlosClient() {
     } catch {
       toast.error("Failed to delete SLO");
     } finally {
+      setIsDeleting(false);
       setDeletingSloId(null);
     }
   }
@@ -526,6 +530,7 @@ export function SlosClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

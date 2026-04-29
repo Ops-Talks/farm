@@ -475,6 +475,9 @@ export function ApiSpecsTab({ componentId }: ApiSpecsTabProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeprecateDialog, setShowDeprecateDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // isPending states for ConfirmDialogs
+  const [isDeprecating, setIsDeprecating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -550,18 +553,21 @@ export function ApiSpecsTab({ componentId }: ApiSpecsTabProps) {
 
   const handleConfirmDeprecate = useCallback(() => {
     if (!selectedSpec) return;
+    setIsDeprecating(true);
     apiSpecsClient
       .update(selectedSpec.id, { status: "deprecated" })
       .then((updated) => {
         setSelectedSpec(updated);
         setSpecs((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsDeprecating(false));
   }, [selectedSpec]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!selectedSpec) return;
     const deletedId = selectedSpec.id;
+    setIsDeleting(true);
     apiSpecsClient
       .remove(deletedId)
       .then(() => {
@@ -570,7 +576,8 @@ export function ApiSpecsTab({ componentId }: ApiSpecsTabProps) {
         setDiffTarget("");
         setDiffResult(null);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsDeleting(false));
   }, [selectedSpec]);
 
   // ---------------------------------------------------------------------------
@@ -664,6 +671,7 @@ export function ApiSpecsTab({ componentId }: ApiSpecsTabProps) {
         confirmLabel="Deprecate"
         variant="destructive"
         onConfirm={handleConfirmDeprecate}
+        isPending={isDeprecating}
       />
 
       <ConfirmDialog
@@ -674,6 +682,7 @@ export function ApiSpecsTab({ componentId }: ApiSpecsTabProps) {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleConfirmDelete}
+        isPending={isDeleting}
       />
     </div>
   );

@@ -252,7 +252,7 @@ describe("DocsClient", () => {
 
       await waitFor(() =>
         expect(
-          screen.getByText(/No documentation registered yet\./),
+          screen.getByText(/No documentation registered/),
         ).toBeInTheDocument(),
       );
       expect(
@@ -626,7 +626,7 @@ describe("DocsClient", () => {
 
       await waitFor(() =>
         expect(
-          screen.getByText(/No documentation registered yet\./),
+          screen.getByText(/No documentation registered/),
         ).toBeInTheDocument(),
       );
     });

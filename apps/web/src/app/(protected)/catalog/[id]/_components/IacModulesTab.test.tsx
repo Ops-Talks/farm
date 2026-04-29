@@ -107,7 +107,7 @@ describe("IacModulesTab", () => {
     render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
     await waitFor(() => {
       expect(
-        screen.getByText(/no iac modules are linked/i),
+        screen.getByText(/No IaC modules found/i),
       ).toBeInTheDocument();
     });
   });
@@ -214,7 +214,7 @@ describe("IacModulesTab", () => {
     mockListModules.mockResolvedValue([]);
     const user = userEvent.setup();
     render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
-    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await waitFor(() => screen.getByText(/No IaC modules found/i));
     await user.click(screen.getByRole("button", { name: /link a module/i }));
     await waitFor(() =>
       expect(screen.getByPlaceholderText(/search modules/i)).toBeInTheDocument(),
@@ -233,7 +233,7 @@ describe("IacModulesTab", () => {
       <IacModulesTab component={buildComponent()} />,
       { wrapper: createWrapper() },
     );
-    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await waitFor(() => screen.getByText(/No IaC modules found/i));
     await user.click(screen.getByRole("button", { name: /link a module/i }));
     // The dialog mounts in a portal (document.body), so query the full body for skeletons
     await waitFor(() => {
@@ -248,7 +248,7 @@ describe("IacModulesTab", () => {
     mockListModules.mockResolvedValue([]);
     const user = userEvent.setup();
     render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
-    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await waitFor(() => screen.getByText(/No IaC modules found/i));
     await user.click(screen.getByRole("button", { name: /link a module/i }));
     await waitFor(() =>
       expect(screen.getByText("No modules found.")).toBeInTheDocument(),
@@ -262,7 +262,7 @@ describe("IacModulesTab", () => {
     ]);
     const user = userEvent.setup();
     render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
-    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await waitFor(() => screen.getByText(/No IaC modules found/i));
     await user.click(screen.getByRole("button", { name: /link a module/i }));
     await waitFor(() => screen.getByText("terraform-aws-s3"));
     const linkBtn = screen.getByRole("button", { name: /^link$/i });
@@ -281,7 +281,7 @@ describe("IacModulesTab", () => {
     ]);
     const user = userEvent.setup();
     render(<IacModulesTab component={buildComponent()} />, { wrapper: createWrapper() });
-    await waitFor(() => screen.getByText(/no iac modules are linked/i));
+    await waitFor(() => screen.getByText(/No IaC modules found/i));
     await user.click(screen.getByRole("button", { name: /link a module/i }));
     await waitFor(() => screen.getByText("terraform-aws-s3"));
     expect(screen.getByText("terraform-aws-s3")).toBeInTheDocument();

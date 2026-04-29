@@ -86,7 +86,7 @@ const AwsEcsForm = memo(function AwsEcsForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AwsEcsValues>({ resolver: zodResolver(awsEcsSchema) });
+  } = useForm<AwsEcsValues>({ resolver: zodResolver(awsEcsSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
@@ -94,27 +94,27 @@ const AwsEcsForm = memo(function AwsEcsForm({
         <label htmlFor="ecs-cluster" className="text-sm font-medium">
           Cluster <span className="text-destructive">*</span>
         </label>
-        <Input id="ecs-cluster" placeholder="my-ecs-cluster" {...register('cluster')} />
+        <Input id="ecs-cluster" placeholder="my-ecs-cluster" {...register('cluster')} aria-invalid={!!errors.cluster} aria-describedby={errors.cluster ? "ecs-cluster-error" : undefined} />
         {errors.cluster?.message && (
-          <p className="text-xs text-destructive">{errors.cluster.message}</p>
+          <p id="ecs-cluster-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.cluster.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="ecs-service" className="text-sm font-medium">
           Service <span className="text-destructive">*</span>
         </label>
-        <Input id="ecs-service" placeholder="my-service" {...register('service')} />
+        <Input id="ecs-service" placeholder="my-service" {...register('service')} aria-invalid={!!errors.service} aria-describedby={errors.service ? "ecs-service-error" : undefined} />
         {errors.service?.message && (
-          <p className="text-xs text-destructive">{errors.service.message}</p>
+          <p id="ecs-service-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.service.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="ecs-image" className="text-sm font-medium">
           Image <span className="text-destructive">*</span>
         </label>
-        <Input id="ecs-image" placeholder="123456789012.dkr.ecr.us-east-1.amazonaws.com/my-app:latest" {...register('image')} />
+        <Input id="ecs-image" placeholder="123456789012.dkr.ecr.us-east-1.amazonaws.com/my-app:latest" {...register('image')} aria-invalid={!!errors.image} aria-describedby={errors.image ? "ecs-image-error" : undefined} />
         {errors.image?.message && (
-          <p className="text-xs text-destructive">{errors.image.message}</p>
+          <p id="ecs-image-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.image.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-1">
@@ -142,7 +142,7 @@ const AwsLambdaForm = memo(function AwsLambdaForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AwsLambdaValues>({ resolver: zodResolver(awsLambdaSchema) });
+  } = useForm<AwsLambdaValues>({ resolver: zodResolver(awsLambdaSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
@@ -150,9 +150,9 @@ const AwsLambdaForm = memo(function AwsLambdaForm({
         <label htmlFor="lambda-functionName" className="text-sm font-medium">
           Function Name <span className="text-destructive">*</span>
         </label>
-        <Input id="lambda-functionName" placeholder="my-lambda-function" {...register('functionName')} />
+        <Input id="lambda-functionName" placeholder="my-lambda-function" {...register('functionName')} aria-invalid={!!errors.functionName} aria-describedby={errors.functionName ? "lambda-functionName-error" : undefined} />
         {errors.functionName?.message && (
-          <p className="text-xs text-destructive">{errors.functionName.message}</p>
+          <p id="lambda-functionName-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.functionName.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -201,7 +201,7 @@ const GcpCloudRunForm = memo(function GcpCloudRunForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<GcpCloudRunValues>({ resolver: zodResolver(gcpCloudRunSchema) });
+  } = useForm<GcpCloudRunValues>({ resolver: zodResolver(gcpCloudRunSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
@@ -209,27 +209,27 @@ const GcpCloudRunForm = memo(function GcpCloudRunForm({
         <label htmlFor="cloudrun-service" className="text-sm font-medium">
           Service <span className="text-destructive">*</span>
         </label>
-        <Input id="cloudrun-service" placeholder="my-cloud-run-service" {...register('service')} />
+        <Input id="cloudrun-service" placeholder="my-cloud-run-service" {...register('service')} aria-invalid={!!errors.service} aria-describedby={errors.service ? "cloudrun-service-error" : undefined} />
         {errors.service?.message && (
-          <p className="text-xs text-destructive">{errors.service.message}</p>
+          <p id="cloudrun-service-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.service.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="cloudrun-region" className="text-sm font-medium">
           Region <span className="text-destructive">*</span>
         </label>
-        <Input id="cloudrun-region" placeholder="us-central1" {...register('region')} />
+        <Input id="cloudrun-region" placeholder="us-central1" {...register('region')} aria-invalid={!!errors.region} aria-describedby={errors.region ? "cloudrun-region-error" : undefined} />
         {errors.region?.message && (
-          <p className="text-xs text-destructive">{errors.region.message}</p>
+          <p id="cloudrun-region-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.region.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="cloudrun-image" className="text-sm font-medium">
           Image <span className="text-destructive">*</span>
         </label>
-        <Input id="cloudrun-image" placeholder="gcr.io/my-project/my-app:latest" {...register('image')} />
+        <Input id="cloudrun-image" placeholder="gcr.io/my-project/my-app:latest" {...register('image')} aria-invalid={!!errors.image} aria-describedby={errors.image ? "cloudrun-image-error" : undefined} />
         {errors.image?.message && (
-          <p className="text-xs text-destructive">{errors.image.message}</p>
+          <p id="cloudrun-image-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.image.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -265,6 +265,7 @@ const AzureContainerAppsForm = memo(function AzureContainerAppsForm({
     formState: { errors },
   } = useForm<AzureContainerAppsValues>({
     resolver: zodResolver(azureContainerAppsSchema),
+    mode: "onChange",
   });
 
   return (
@@ -273,27 +274,27 @@ const AzureContainerAppsForm = memo(function AzureContainerAppsForm({
         <label htmlFor="aca-resourceGroup" className="text-sm font-medium">
           Resource Group <span className="text-destructive">*</span>
         </label>
-        <Input id="aca-resourceGroup" placeholder="my-resource-group" {...register('resourceGroup')} />
+        <Input id="aca-resourceGroup" placeholder="my-resource-group" {...register('resourceGroup')} aria-invalid={!!errors.resourceGroup} aria-describedby={errors.resourceGroup ? "aca-resourceGroup-error" : undefined} />
         {errors.resourceGroup?.message && (
-          <p className="text-xs text-destructive">{errors.resourceGroup.message}</p>
+          <p id="aca-resourceGroup-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.resourceGroup.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="aca-appName" className="text-sm font-medium">
           App Name <span className="text-destructive">*</span>
         </label>
-        <Input id="aca-appName" placeholder="my-container-app" {...register('appName')} />
+        <Input id="aca-appName" placeholder="my-container-app" {...register('appName')} aria-invalid={!!errors.appName} aria-describedby={errors.appName ? "aca-appName-error" : undefined} />
         {errors.appName?.message && (
-          <p className="text-xs text-destructive">{errors.appName.message}</p>
+          <p id="aca-appName-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.appName.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="aca-image" className="text-sm font-medium">
           Image <span className="text-destructive">*</span>
         </label>
-        <Input id="aca-image" placeholder="myregistry.azurecr.io/my-app:latest" {...register('image')} />
+        <Input id="aca-image" placeholder="myregistry.azurecr.io/my-app:latest" {...register('image')} aria-invalid={!!errors.image} aria-describedby={errors.image ? "aca-image-error" : undefined} />
         {errors.image?.message && (
-          <p className="text-xs text-destructive">{errors.image.message}</p>
+          <p id="aca-image-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.image.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-1">

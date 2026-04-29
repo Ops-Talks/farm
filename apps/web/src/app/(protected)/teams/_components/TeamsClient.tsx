@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
+import { EmptyState } from "@/components/shared/empty-state";
 
 // Derive a 1-2 letter initial from a team displayName for the avatar.
 function teamInitials(displayName: string): string {
@@ -130,25 +131,46 @@ export function TeamsClient() {
       </div>
 
       {isLoading ? (
+        // 5-row skeleton mirrors real card: avatar circle + name/slug + type badge + description
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-32" />
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    {/* Avatar circle */}
+                    <Skeleton className="h-9 w-9 rounded-full shrink-0" />
+                    <div className="space-y-1">
+                      {/* displayName */}
+                      <Skeleton className="h-5 w-28" />
+                      {/* /slug */}
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  {/* type badge */}
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-24" />
+                {/* description */}
+                <Skeleton className="h-4 w-full" />
+                {/* contact / slack */}
+                <Skeleton className="h-3 w-32" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-          {search || activeTab !== "all"
-            ? "No teams match your filters."
-            : "No teams registered yet."}
-        </div>
+        search || activeTab !== "all" ? (
+          <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
+            No teams match your filters.
+          </div>
+        ) : (
+          <EmptyState
+            title="No teams registered"
+            description="Create your first team to start organizing members and components."
+          />
+        )
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((team) => (

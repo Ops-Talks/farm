@@ -158,6 +158,9 @@ export function EnvRequestsClient() {
   // -- Delete / Expire confirmation state -----------------------------------
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expiringId, setExpiringId] = useState<string | null>(null);
+  // isPending states for ConfirmDialogs
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExpiring, setIsExpiring] = useState(false);
 
   // -- Data fetching --------------------------------------------------------
 
@@ -341,6 +344,7 @@ export function EnvRequestsClient() {
   async function handleDelete() {
     if (!deletingId) return;
     const target = requests.find((r) => r.id === deletingId);
+    setIsDeleting(true);
     try {
       await environmentRequests.remove(deletingId);
       setRequests((prev) => prev.filter((r) => r.id !== deletingId));
@@ -351,6 +355,7 @@ export function EnvRequestsClient() {
         err instanceof Error ? err.message : "Failed to delete request";
       toast.error(message);
     } finally {
+      setIsDeleting(false);
       setDeletingId(null);
     }
   }
@@ -360,6 +365,7 @@ export function EnvRequestsClient() {
   async function handleExpire() {
     if (!expiringId) return;
     const target = requests.find((r) => r.id === expiringId);
+    setIsExpiring(true);
     try {
       const updated = await environmentRequests.expire(expiringId);
       setRequests((prev) =>
@@ -371,6 +377,7 @@ export function EnvRequestsClient() {
         err instanceof Error ? err.message : "Failed to expire request";
       toast.error(message);
     } finally {
+      setIsExpiring(false);
       setExpiringId(null);
     }
   }
@@ -854,6 +861,7 @@ export function EnvRequestsClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
 
       {/* ----------------------------------------------------------------- */}
@@ -869,6 +877,7 @@ export function EnvRequestsClient() {
         confirmLabel="Expire"
         variant="destructive"
         onConfirm={handleExpire}
+        isPending={isExpiring}
       />
     </div>
   );

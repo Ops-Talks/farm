@@ -108,6 +108,8 @@ export function IncidentsClient() {
 
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Incident | null>(null);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Data fetching
@@ -179,6 +181,7 @@ export function IncidentsClient() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
       await incidents.remove(deleteTarget.id);
       setIncidentList((prev) => prev.filter((i) => i.id !== deleteTarget.id));
@@ -187,6 +190,7 @@ export function IncidentsClient() {
     } catch {
       toast.error("Failed to delete incident");
     } finally {
+      setIsDeleting(false);
       setDeleteTarget(null);
     }
   }
@@ -476,6 +480,7 @@ export function IncidentsClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

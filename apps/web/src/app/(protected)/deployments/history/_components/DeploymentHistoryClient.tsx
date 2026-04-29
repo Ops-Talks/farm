@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { deployments } from "@/lib/api-client";
+import { EmptyState } from "@/components/shared/empty-state";
 import { DeploymentStatus } from "@/types/api";
 import type { Deployment } from "@/types/api";
 
@@ -135,11 +136,11 @@ export function DeploymentHistoryClient() {
               ))
             ) : items.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-12 text-center text-muted-foreground"
-                >
-                  No deployments found.
+                <TableCell colSpan={6}>
+                  <EmptyState
+                    title="No deployments found"
+                    description="Deployments will appear here once components are deployed to environments."
+                  />
                 </TableCell>
               </TableRow>
             ) : (

@@ -73,7 +73,7 @@ describe("DocsPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Documentation")).toBeInTheDocument();
     });
-    expect(screen.getByText(/No documentation registered yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No documentation registered/i)).toBeInTheDocument();
   });
 
   it("should list components in the selector", async () => {

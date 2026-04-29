@@ -28,10 +28,13 @@ export function DangerZone({ org, isOwner }: DangerZoneProps) {
   const { refreshOrgs, currentOrg, switchOrg, organizations } =
     useOrganization();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOwner) return null;
 
   const handleDelete = () => {
+    setIsDeleting(true);
     orgsApi
       .delete(org.id)
       .then(async () => {
@@ -56,7 +59,8 @@ export function DangerZone({ org, isOwner }: DangerZoneProps) {
         } else {
           toast.error("Failed to delete organization.");
         }
-      });
+      })
+      .finally(() => setIsDeleting(false));
   };
 
   return (
@@ -99,6 +103,7 @@ export function DangerZone({ org, isOwner }: DangerZoneProps) {
         description="This will permanently delete the organization and all its data. This action cannot be undone."
         confirmLabel="Delete Organization"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </>
   );

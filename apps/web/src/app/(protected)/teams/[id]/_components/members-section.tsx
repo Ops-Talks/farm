@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { User } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useUndoableDelete } from "@/hooks/use-undoable-delete";
 import { Users } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
 
 interface MembersSectionProps {
   members: User[];
@@ -35,6 +35,63 @@ interface MembersSectionProps {
   onRemoveMember: (userId: string, username: string) => void;
 }
 
+// ---------------------------------------------------------------------------
+// MemberRow — isolated sub-component so useUndoableDelete can be called at the
+// hook level (React rules prohibit hooks inside .map() callbacks). Each row
+// gets its own undo-toast: clicking "Undo" calls onAddMember to restore the
+// member immediately.
+// ---------------------------------------------------------------------------
+interface MemberRowProps {
+  m: User;
+  isAdmin: boolean;
+  onAddMember: (userId: string) => void;
+  onRemoveMember: (userId: string, username: string) => void;
+}
+
+function MemberRow({ m, isAdmin, onAddMember, onRemoveMember }: MemberRowProps) {
+  const { invoke: removeWithUndo } = useUndoableDelete(
+    () => onRemoveMember(m.id, m.username),
+    () => onAddMember(m.id),
+    { toastMessage: `${m.username} removed from team` },
+  );
+
+  return (
+    <TableRow className="group">
+      <TableCell>
+        <div className="flex flex-col">
+          <span className="font-medium">{m.displayName}</span>
+          <span className="text-xs text-muted-foreground">@{m.username}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          {m.roles.map((r) => (
+            <Badge
+              key={r}
+              variant="secondary"
+              className="text-[10px] uppercase h-5 px-1.5"
+            >
+              {r}
+            </Badge>
+          ))}
+        </div>
+      </TableCell>
+      {isAdmin && (
+        <TableCell>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
+            onClick={removeWithUndo}
+          >
+            Remove
+          </Button>
+        </TableCell>
+      )}
+    </TableRow>
+  );
+}
+
 export function MembersSection({
   members,
   allUsers,
@@ -46,11 +103,6 @@ export function MembersSection({
   onAddMember,
   onRemoveMember,
 }: MembersSectionProps) {
-  const [pendingRemove, setPendingRemove] = useState<{
-    id: string;
-    username: string;
-  } | null>(null);
-
   const memberIds = new Set(members.map((m) => m.id));
   const availableUsers = allUsers.filter((u) => {
     if (memberIds.has(u.id)) return false;
@@ -121,11 +173,10 @@ export function MembersSection({
           )}
 
           {members.length === 0 ? (
-            <div className="py-10">
-              <p className="text-sm text-muted-foreground text-center italic">
-                No members assigned to this team yet.
-              </p>
-            </div>
+            <EmptyState
+              title="No members assigned"
+              description="Add members to this team to get started."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -137,63 +188,19 @@ export function MembersSection({
               </TableHeader>
               <TableBody>
                 {members.map((m) => (
-                  <TableRow key={m.id} className="group">
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{m.displayName}</span>
-                        <span className="text-xs text-muted-foreground">@{m.username}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {m.roles.map((r) => (
-                          <Badge
-                            key={r}
-                            variant="secondary"
-                            className="text-[10px] uppercase h-5 px-1.5"
-                          >
-                            {r}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
-                          onClick={() =>
-                            setPendingRemove({ id: m.id, username: m.username })
-                          }
-                        >
-                          Remove
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
+                  <MemberRow
+                    key={m.id}
+                    m={m}
+                    isAdmin={isAdmin}
+                    onAddMember={onAddMember}
+                    onRemoveMember={onRemoveMember}
+                  />
                 ))}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
-
-      <ConfirmDialog
-        open={!!pendingRemove}
-        onOpenChange={(open) => {
-          if (!open) setPendingRemove(null);
-        }}
-        title="Remove member"
-        description={`Remove ${pendingRemove?.username} from the team?`}
-        confirmLabel="Remove"
-        onConfirm={() => {
-          if (pendingRemove) {
-            onRemoveMember(pendingRemove.id, pendingRemove.username);
-            setPendingRemove(null);
-          }
-        }}
-      />
     </>
   );
 }

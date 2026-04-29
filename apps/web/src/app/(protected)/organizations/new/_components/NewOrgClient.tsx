@@ -49,6 +49,7 @@ export function NewOrgClient() {
     formState: { errors, isSubmitting },
   } = useForm<NewOrgFormValues>({
     resolver: zodResolver(newOrgSchema),
+    mode: "onChange",
     defaultValues: { name: "", description: "" },
   });
 
@@ -122,9 +123,11 @@ export function NewOrgClient() {
                 placeholder="e.g. Acme Engineering"
                 autoFocus
                 {...register("name")}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "org-name-error" : undefined}
               />
               {errors.name?.message && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
+                <p id="org-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
               )}
             </div>
 

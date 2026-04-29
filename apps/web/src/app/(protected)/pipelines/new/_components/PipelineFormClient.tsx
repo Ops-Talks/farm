@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { StageBuilder } from "@/app/(protected)/pipelines/_components/stage-builder";
 import type { PipelineStage } from "@/types/api";
+import { useScrollToError } from "@/hooks/use-scroll-to-error";
 
 // ---------------------------------------------------------------------------
 // Schema — stages are managed via StageBuilder (not a form field)
@@ -43,8 +44,11 @@ export function PipelineFormClient() {
     formState: { errors, isSubmitting },
   } = useForm<PipelineFormValues>({
     resolver: zodResolver(pipelineFormSchema),
+    mode: "onChange",
     defaultValues: { name: "", description: "" },
   });
+
+  const { registerRef, scrollToFirstError } = useScrollToError();
 
   const onSubmit = async (values: PipelineFormValues) => {
     try {
@@ -81,7 +85,7 @@ export function PipelineFormClient() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit, (errs) => scrollToFirstError(errs))} className="flex flex-col gap-4">
         {errors.root?.message && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {errors.root.message}
@@ -104,9 +108,12 @@ export function PipelineFormClient() {
                 id="pipeline-name"
                 placeholder="e.g. deploy-production"
                 {...register("name")}
+                ref={(el) => { register("name").ref(el); registerRef("name", el); }}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "pipeline-name-error" : undefined}
               />
               {errors.name?.message && (
-                <p className="text-xs text-destructive">{errors.name.message}</p>
+                <p id="pipeline-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
               )}
             </div>
             <div className="space-y-1">

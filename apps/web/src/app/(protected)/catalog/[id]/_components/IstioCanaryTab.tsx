@@ -93,6 +93,7 @@ function AdjustWeightsDialog({ vs, open, onOpenChange, onSuccess }: AdjustWeight
     formState: { errors, isSubmitting },
   } = useForm<PatchWeightsFormValues>({
     resolver: zodResolver(patchWeightsSchema),
+    mode: "onChange",
     defaultValues: {
       weights: vs.routes.map((r) => ({ destination: r.destination, weight: r.weight })),
     },
@@ -145,7 +146,7 @@ function AdjustWeightsDialog({ vs, open, onOpenChange, onSuccess }: AdjustWeight
           ))}
 
           {errors.weights && (
-            <p className="text-sm text-destructive" data-testid="weights-sum-error">
+            <p id="weights-error" role="alert" aria-live="polite" className="text-sm text-destructive" data-testid="weights-sum-error">
               {(errors.weights as { message?: string })?.message ?? 'Invalid weights'}
             </p>
           )}

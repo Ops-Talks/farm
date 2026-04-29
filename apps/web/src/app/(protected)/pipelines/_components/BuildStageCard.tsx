@@ -59,6 +59,7 @@ export function BuildStageCard({
     formState: { errors },
   } = useForm<BuildStageFormValues>({
     resolver: zodResolver(buildStageSchema),
+    mode: "onChange",
     defaultValues: {
       engine: "docker",
       dockerfile: "Dockerfile",
@@ -107,13 +108,15 @@ export function BuildStageCard({
               id="build-engine"
               className="w-full rounded-md border px-3 py-2 text-sm bg-background"
               {...register("engine")}
+              aria-invalid={!!errors.engine}
+              aria-describedby={errors.engine ? "build-engine-error" : undefined}
             >
               <option value="docker">docker</option>
               <option value="buildah">buildah</option>
               <option value="podman">podman</option>
             </select>
             {errors.engine?.message && (
-              <p className="text-xs text-destructive">{errors.engine.message}</p>
+              <p id="build-engine-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.engine.message}</p>
             )}
           </div>
 
@@ -126,9 +129,11 @@ export function BuildStageCard({
               id="build-tag"
               placeholder="e.g. {{version}} or {{commitSha}}"
               {...register("tag")}
+              aria-invalid={!!errors.tag}
+              aria-describedby={errors.tag ? "build-tag-error" : undefined}
             />
             {errors.tag?.message && (
-              <p className="text-xs text-destructive">{errors.tag.message}</p>
+              <p id="build-tag-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.tag.message}</p>
             )}
             <p className="text-xs text-muted-foreground">
               Supports{" "}
@@ -149,9 +154,11 @@ export function BuildStageCard({
               id="build-dockerfile"
               placeholder="Dockerfile"
               {...register("dockerfile")}
+              aria-invalid={!!errors.dockerfile}
+              aria-describedby={errors.dockerfile ? "build-dockerfile-error" : undefined}
             />
             {errors.dockerfile?.message && (
-              <p className="text-xs text-destructive">{errors.dockerfile.message}</p>
+              <p id="build-dockerfile-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.dockerfile.message}</p>
             )}
           </div>
 
@@ -163,9 +170,11 @@ export function BuildStageCard({
               id="build-context"
               placeholder="."
               {...register("context")}
+              aria-invalid={!!errors.context}
+              aria-describedby={errors.context ? "build-context-error" : undefined}
             />
             {errors.context?.message && (
-              <p className="text-xs text-destructive">{errors.context.message}</p>
+              <p id="build-context-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.context.message}</p>
             )}
           </div>
         </div>
@@ -194,9 +203,11 @@ export function BuildStageCard({
               id="build-registry"
               placeholder="https://registry.example.com"
               {...register("registry")}
+              aria-invalid={!!errors.registry}
+              aria-describedby={errors.registry ? "build-registry-error" : undefined}
             />
             {errors.registry?.message && (
-              <p className="text-xs text-destructive">{errors.registry.message}</p>
+              <p id="build-registry-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.registry.message}</p>
             )}
           </div>
         )}

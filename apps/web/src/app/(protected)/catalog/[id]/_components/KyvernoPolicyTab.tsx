@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/shared/empty-state';
 import { useAuth } from '@/contexts/auth-context';
 import { kyverno as kyvernoApi } from '@/lib/api-client';
 import type { CatalogComponent, KyvernoPolicyReportResult } from '@/types/api';
@@ -219,17 +220,12 @@ export function KyvernoPolicyTab({ component }: KyvernoPolicyTabProps) {
 
   if (matched.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center py-16 text-center"
-        data-testid="kyverno-empty"
-      >
-        <ShieldCheck className="h-12 w-12 text-green-500 mb-4" />
-        <p className="text-base font-medium">
-          No Kyverno policy violations found for this component
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          All Kyverno policy checks passed or no reports are available.
-        </p>
+      <div data-testid="kyverno-empty">
+        <EmptyState
+          title="No policy violations found"
+          description="No Kyverno policy violations were detected for this component."
+          icon={<ShieldCheck className="h-6 w-6 text-green-500" />}
+        />
       </div>
     );
   }

@@ -129,7 +129,7 @@ describe("CatalogClient", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No components found. Register your first component."),
+        screen.getByText("No components found"),
       ).toBeInTheDocument();
     });
   });
@@ -215,7 +215,7 @@ describe("CatalogClient", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No components found. Register your first component."),
+        screen.getByText("No components found"),
       ).toBeInTheDocument();
     });
   });

@@ -81,7 +81,7 @@ describe("TeamsClient", () => {
     render(<TeamsClient />, { wrapper: createWrapper() });
 
     // The teams grid and empty-state text must NOT appear during loading
-    expect(screen.queryByText("No teams registered yet.")).not.toBeInTheDocument();
+    expect(screen.queryByText("No teams registered")).not.toBeInTheDocument();
     expect(screen.queryByText("No teams match your filters.")).not.toBeInTheDocument();
   });
 
@@ -93,7 +93,7 @@ describe("TeamsClient", () => {
     render(<TeamsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("No teams registered yet.")).toBeInTheDocument();
+      expect(screen.getByText("No teams registered")).toBeInTheDocument();
     });
   });
 
@@ -150,7 +150,7 @@ describe("TeamsClient", () => {
     render(<TeamsClient />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("No teams registered yet.")).toBeInTheDocument();
+      expect(screen.getByText("No teams registered")).toBeInTheDocument();
     });
 
     expect(screen.queryByText("Create Team")).not.toBeInTheDocument();

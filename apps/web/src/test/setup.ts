@@ -37,14 +37,15 @@ vi.mock("next-themes", () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock sonner
+// Mock sonner — toast is callable (returns a toast-id) and has sub-methods
 vi.mock("sonner", () => ({
-  toast: {
+  toast: Object.assign(vi.fn().mockReturnValue("toast-id"), {
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warning: vi.fn(),
-  },
+    dismiss: vi.fn(),
+  }),
   Toaster: () => null,
 }));
 

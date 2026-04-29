@@ -98,7 +98,7 @@ const AwsConnectForm = memo(function AwsConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AwsFormValues>({ resolver: zodResolver(awsSchema) });
+  } = useForm<AwsFormValues>({ resolver: zodResolver(awsSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -106,9 +106,9 @@ const AwsConnectForm = memo(function AwsConnectForm({
         <label htmlFor="aws-accessKeyId" className="text-sm font-medium">
           Access Key ID <span className="text-destructive">*</span>
         </label>
-        <Input id="aws-accessKeyId" placeholder="AKIAIOSFODNN7EXAMPLE" {...register('accessKeyId')} />
+        <Input id="aws-accessKeyId" placeholder="AKIAIOSFODNN7EXAMPLE" {...register('accessKeyId')} aria-invalid={!!errors.accessKeyId} aria-describedby={errors.accessKeyId ? "accessKeyId-error" : undefined} />
         {errors.accessKeyId?.message && (
-          <p className="text-xs text-destructive">{errors.accessKeyId.message}</p>
+          <p id="accessKeyId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.accessKeyId.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -120,18 +120,20 @@ const AwsConnectForm = memo(function AwsConnectForm({
           type="password"
           placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
           {...register('secretAccessKey')}
+          aria-invalid={!!errors.secretAccessKey}
+          aria-describedby={errors.secretAccessKey ? "secretAccessKey-error" : undefined}
         />
         {errors.secretAccessKey?.message && (
-          <p className="text-xs text-destructive">{errors.secretAccessKey.message}</p>
+          <p id="secretAccessKey-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.secretAccessKey.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="aws-region" className="text-sm font-medium">
           Region <span className="text-destructive">*</span>
         </label>
-        <Input id="aws-region" placeholder="us-east-1" {...register('region')} />
+        <Input id="aws-region" placeholder="us-east-1" {...register('region')} aria-invalid={!!errors.region} aria-describedby={errors.region ? "aws-region-error" : undefined} />
         {errors.region?.message && (
-          <p className="text-xs text-destructive">{errors.region.message}</p>
+          <p id="aws-region-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.region.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -141,7 +143,7 @@ const AwsConnectForm = memo(function AwsConnectForm({
         </label>
         <Input id="aws-accountId" placeholder="123456789012" {...register('accountId')} />
         {errors.accountId?.message && (
-          <p className="text-xs text-destructive">{errors.accountId.message}</p>
+          <p role="alert" aria-live="polite" className="text-xs text-destructive">{errors.accountId.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -169,7 +171,7 @@ const GcpConnectForm = memo(function GcpConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<GcpFormValues>({ resolver: zodResolver(gcpSchema) });
+  } = useForm<GcpFormValues>({ resolver: zodResolver(gcpSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -177,9 +179,9 @@ const GcpConnectForm = memo(function GcpConnectForm({
         <label htmlFor="gcp-projectId" className="text-sm font-medium">
           Project ID <span className="text-destructive">*</span>
         </label>
-        <Input id="gcp-projectId" placeholder="my-gcp-project" {...register('projectId')} />
+        <Input id="gcp-projectId" placeholder="my-gcp-project" {...register('projectId')} aria-invalid={!!errors.projectId} aria-describedby={errors.projectId ? "projectId-error" : undefined} />
         {errors.projectId?.message && (
-          <p className="text-xs text-destructive">{errors.projectId.message}</p>
+          <p id="projectId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.projectId.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -191,10 +193,12 @@ const GcpConnectForm = memo(function GcpConnectForm({
           rows={6}
           placeholder='{"type":"service_account","project_id":"..."}'
           className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+          aria-invalid={!!errors.serviceAccountJson}
+          aria-describedby={errors.serviceAccountJson ? "serviceAccountJson-error" : undefined}
           {...register('serviceAccountJson')}
         />
         {errors.serviceAccountJson?.message && (
-          <p className="text-xs text-destructive">{errors.serviceAccountJson.message}</p>
+          <p id="serviceAccountJson-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.serviceAccountJson.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -222,7 +226,7 @@ const AzureConnectForm = memo(function AzureConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AzureFormValues>({ resolver: zodResolver(azureSchema) });
+  } = useForm<AzureFormValues>({ resolver: zodResolver(azureSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -230,18 +234,18 @@ const AzureConnectForm = memo(function AzureConnectForm({
         <label htmlFor="azure-tenantId" className="text-sm font-medium">
           Tenant ID <span className="text-destructive">*</span>
         </label>
-        <Input id="azure-tenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('tenantId')} />
+        <Input id="azure-tenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('tenantId')} aria-invalid={!!errors.tenantId} aria-describedby={errors.tenantId ? "tenantId-error" : undefined} />
         {errors.tenantId?.message && (
-          <p className="text-xs text-destructive">{errors.tenantId.message}</p>
+          <p id="tenantId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.tenantId.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="azure-clientId" className="text-sm font-medium">
           Client ID <span className="text-destructive">*</span>
         </label>
-        <Input id="azure-clientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('clientId')} />
+        <Input id="azure-clientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('clientId')} aria-invalid={!!errors.clientId} aria-describedby={errors.clientId ? "azure-clientId-error" : undefined} />
         {errors.clientId?.message && (
-          <p className="text-xs text-destructive">{errors.clientId.message}</p>
+          <p id="azure-clientId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.clientId.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -253,18 +257,20 @@ const AzureConnectForm = memo(function AzureConnectForm({
           type="password"
           placeholder="your-client-secret"
           {...register('clientSecret')}
+          aria-invalid={!!errors.clientSecret}
+          aria-describedby={errors.clientSecret ? "azure-clientSecret-error" : undefined}
         />
         {errors.clientSecret?.message && (
-          <p className="text-xs text-destructive">{errors.clientSecret.message}</p>
+          <p id="azure-clientSecret-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.clientSecret.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="azure-subscriptionId" className="text-sm font-medium">
           Subscription ID <span className="text-destructive">*</span>
         </label>
-        <Input id="azure-subscriptionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('subscriptionId')} />
+        <Input id="azure-subscriptionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" {...register('subscriptionId')} aria-invalid={!!errors.subscriptionId} aria-describedby={errors.subscriptionId ? "subscriptionId-error" : undefined} />
         {errors.subscriptionId?.message && (
-          <p className="text-xs text-destructive">{errors.subscriptionId.message}</p>
+          <p id="subscriptionId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.subscriptionId.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">

@@ -112,7 +112,7 @@ describe("CatalogPage", () => {
     render(<CatalogPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("No components found. Register your first component.")).toBeInTheDocument();
+      expect(screen.getByText("No components found")).toBeInTheDocument();
     });
   });
 
@@ -178,7 +178,7 @@ describe("CatalogPage", () => {
     render(<CatalogPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("No components found. Register your first component.")).toBeInTheDocument();
+      expect(screen.getByText("No components found")).toBeInTheDocument();
     });
   });
 

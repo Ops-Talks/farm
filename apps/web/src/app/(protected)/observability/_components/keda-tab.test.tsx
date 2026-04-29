@@ -253,7 +253,7 @@ describe("KedaTab", () => {
       <KedaTab status={installedStatus} scaledObjects={[]} scaledJobs={[]} />,
     );
     expect(
-      screen.getByText("No ScaledObjects found in this cluster."),
+      screen.getByText("No ScaledObjects found"),
     ).toBeInTheDocument();
   });
 
@@ -267,7 +267,7 @@ describe("KedaTab", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No ScaledJobs found in this cluster."),
+        screen.getByText("No ScaledJobs found"),
       ).toBeInTheDocument();
     });
   });

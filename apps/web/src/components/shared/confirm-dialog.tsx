@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,12 @@ interface ConfirmDialogProps {
   variant?: "default" | "destructive";
   onConfirm: () => void;
   onCancel?: () => void;
+  /**
+   * When true the confirm button shows a spinner and is disabled,
+   * the cancel button is disabled, and the dialog cannot be dismissed
+   * via Escape or backdrop click until the operation completes.
+   */
+  isPending?: boolean;
 }
 
 export const ConfirmDialog = memo(function ConfirmDialog({
@@ -28,19 +35,31 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   variant = "destructive",
   onConfirm,
   onCancel,
+  isPending = false,
 }: ConfirmDialogProps) {
   const handleCancel = useCallback(() => {
+    if (isPending) return;
     onCancel?.();
     onOpenChange(false);
-  }, [onCancel, onOpenChange]);
+  }, [isPending, onCancel, onOpenChange]);
 
   const handleConfirm = useCallback(() => {
+    if (isPending) return;
     onConfirm();
     onOpenChange(false);
-  }, [onConfirm, onOpenChange]);
+  }, [isPending, onConfirm, onOpenChange]);
+
+  // Block Escape / backdrop-click from closing the dialog while pending
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (isPending && !next) return;
+      onOpenChange(next);
+    },
+    [isPending, onOpenChange],
+  );
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root open={open} onOpenChange={handleOpenChange}>
       <DialogPrimitive.Portal>
         {/* Backdrop overlay — mirrors SheetOverlay animation pattern */}
         <DialogPrimitive.Backdrop
@@ -74,7 +93,13 @@ export const ConfirmDialog = memo(function ConfirmDialog({
             <div className="mt-6 flex justify-end gap-2">
               {/* Close primitive wires the cancel button into the dialog close mechanism */}
               <DialogPrimitive.Close
-                render={<Button variant="outline" onClick={handleCancel} />}
+                render={
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isPending}
+                  />
+                }
               >
                 {cancelLabel}
               </DialogPrimitive.Close>
@@ -82,8 +107,16 @@ export const ConfirmDialog = memo(function ConfirmDialog({
               <Button
                 variant={variant === "destructive" ? "destructive" : "default"}
                 onClick={handleConfirm}
+                disabled={isPending}
               >
-                {confirmLabel}
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  confirmLabel
+                )}
               </Button>
             </div>
           </div>

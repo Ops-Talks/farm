@@ -18,6 +18,7 @@ import { iacModules } from "@/lib/api-client";
 import type { CatalogComponent, IacModule } from "@/types/api";
 import { providerBadgeClass } from "@/lib/iac-utils";
 import { ExternalLink, Link2, Unlink, Search } from "lucide-react";
+import { EmptyState } from "@/components/shared/empty-state";
 
 // ---------------------------------------------------------------------------
 // Skeletons
@@ -176,10 +177,10 @@ export function IacModulesTab({ component }: IacModulesTabProps) {
       </div>
 
       {modules.length === 0 ? (
-        <div className="py-8 text-center border rounded-xl bg-muted/20">
-          <p className="text-sm text-muted-foreground">
-            No IaC modules are linked to this component.
-          </p>
+        <EmptyState
+          title="No IaC modules found"
+          description="No Terraform or infrastructure modules are linked to this component."
+        >
           <Button
             size="sm"
             variant="outline"
@@ -189,7 +190,7 @@ export function IacModulesTab({ component }: IacModulesTabProps) {
             <Link2 className="mr-1.5 h-3.5 w-3.5" />
             Link a module
           </Button>
-        </div>
+        </EmptyState>
       ) : (
         <div className="space-y-2">
           {modules.map((mod: IacModule) => (

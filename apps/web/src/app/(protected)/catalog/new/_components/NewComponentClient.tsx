@@ -17,6 +17,7 @@ import {
 } from "@/types/api";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { useScrollToError } from "@/hooks/use-scroll-to-error";
 
 type FormTab = "form" | "yaml";
 
@@ -69,6 +70,7 @@ export function NewComponentClient() {
     formState: { errors: formErrors, isSubmitting: formSubmitting },
   } = useForm<ComponentFormValues>({
     resolver: zodResolver(componentFormSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       owner: "",
@@ -102,6 +104,7 @@ export function NewComponentClient() {
     formState: { errors: yamlErrors, isSubmitting: yamlSubmitting },
   } = useForm<YamlFormValues>({
     resolver: zodResolver(yamlFormSchema),
+    mode: "onChange",
     defaultValues: { yaml: "" },
   });
 
@@ -171,6 +174,8 @@ export function NewComponentClient() {
   const loading = tab === "form" ? formSubmitting : yamlSubmitting;
   const rootError = tab === "form" ? formErrors.root?.message : yamlErrors.root?.message;
 
+  const { registerRef, scrollToFirstError } = useScrollToError();
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500">
       <PageHeader
@@ -216,7 +221,7 @@ export function NewComponentClient() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleFormSubmit(onFormSubmit)} className="flex flex-col gap-6">
+            <form onSubmit={handleFormSubmit(onFormSubmit, (errors) => scrollToFirstError(errors))} className="flex flex-col gap-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <label htmlFor="comp-name" className="text-sm font-semibold">
@@ -225,10 +230,16 @@ export function NewComponentClient() {
                   <Input
                     id="comp-name"
                     placeholder="e.g. user-service"
+                    aria-invalid={!!formErrors.name}
+                    aria-describedby={formErrors.name ? "name-error" : undefined}
                     {...registerForm("name")}
+                    ref={(el) => {
+                      registerForm("name").ref(el);
+                      registerRef("name", el);
+                    }}
                   />
                   {formErrors.name?.message && (
-                    <p className="text-xs text-destructive">{formErrors.name.message}</p>
+                    <p id="name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{formErrors.name.message}</p>
                   )}
                 </div>
 
@@ -239,10 +250,16 @@ export function NewComponentClient() {
                   <Input
                     id="comp-owner"
                     placeholder="e.g. platform-team"
+                    aria-invalid={!!formErrors.owner}
+                    aria-describedby={formErrors.owner ? "owner-error" : undefined}
                     {...registerForm("owner")}
+                    ref={(el) => {
+                      registerForm("owner").ref(el);
+                      registerRef("owner", el);
+                    }}
                   />
                   {formErrors.owner?.message && (
-                    <p className="text-xs text-destructive">{formErrors.owner.message}</p>
+                    <p id="owner-error" role="alert" aria-live="polite" className="text-xs text-destructive">{formErrors.owner.message}</p>
                   )}
                 </div>
 
@@ -302,10 +319,16 @@ export function NewComponentClient() {
                   id="comp-repo-url"
                   type="text"
                   placeholder="e.g. https://github.com/org/repo"
+                  aria-invalid={!!formErrors.repositoryUrl}
+                  aria-describedby={formErrors.repositoryUrl ? "repositoryUrl-error" : undefined}
                   {...registerForm("repositoryUrl")}
+                  ref={(el) => {
+                    registerForm("repositoryUrl").ref(el);
+                    registerRef("repositoryUrl", el);
+                  }}
                 />
                 {formErrors.repositoryUrl?.message && (
-                  <p className="text-xs text-destructive">{formErrors.repositoryUrl.message}</p>
+                  <p id="repositoryUrl-error" role="alert" aria-live="polite" className="text-xs text-destructive">{formErrors.repositoryUrl.message}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   Optional. Must be a valid URL (GitHub, GitLab, etc.).
@@ -416,6 +439,8 @@ export function NewComponentClient() {
                   id="comp-yaml"
                   rows={14}
                   className="flex w-full rounded-md border border-input bg-muted/30 px-3 py-3 font-mono text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  aria-invalid={!!yamlErrors.yaml}
+                  aria-describedby={yamlErrors.yaml ? "yaml-error" : undefined}
                   placeholder={`apiVersion: farm.io/v1alpha1
 kind: Component
 metadata:
@@ -431,7 +456,7 @@ spec:
                   {...registerYaml("yaml")}
                 />
                 {yamlErrors.yaml?.message && (
-                  <p className="text-xs text-destructive">{yamlErrors.yaml.message}</p>
+                  <p id="yaml-error" role="alert" aria-live="polite" className="text-xs text-destructive">{yamlErrors.yaml.message}</p>
                 )}
               </div>
 

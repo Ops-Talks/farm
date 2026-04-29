@@ -937,6 +937,7 @@ export function UsersClient() {
           }
           setSuspendUser(null);
         }}
+        isPending={suspendMutation.isPending}
       />
       <ConfirmDialog
         open={!!removeFromOrg}
@@ -958,6 +959,7 @@ export function UsersClient() {
           }
           setRemoveFromOrg(null);
         }}
+        isPending={removeMutation.isPending}
       />
     </div>
   );

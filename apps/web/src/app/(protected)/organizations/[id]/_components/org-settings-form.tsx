@@ -16,6 +16,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -41,12 +42,15 @@ export function OrgSettingsForm({ org, onUpdated }: OrgSettingsFormProps) {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<OrgSettingsFormValues>({
     resolver: zodResolver(orgSettingsSchema),
+    mode: "onChange",
     // defaultValues drives RHF's isDirty tracking
     defaultValues: {
       name: org.name,
       description: org.description ?? "",
     },
   });
+
+  const { showBadge } = useUnsavedChanges(isDirty);
 
   const onSubmit = async (values: OrgSettingsFormValues) => {
     try {
@@ -86,9 +90,11 @@ export function OrgSettingsForm({ org, onUpdated }: OrgSettingsFormProps) {
             <Input
               id="settings-name"
               {...register("name")}
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "settings-name-error" : undefined}
             />
             {errors.name?.message && (
-              <p className="text-xs text-destructive">{errors.name.message}</p>
+              <p id="settings-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
             )}
           </div>
 
@@ -127,7 +133,10 @@ export function OrgSettingsForm({ org, onUpdated }: OrgSettingsFormProps) {
             />
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {showBadge && (
+              <span className="text-xs text-muted-foreground">Unsaved changes</span>
+            )}
             {/* isDirty from RHF replaces the manual isDirty calculation */}
             <Button type="submit" disabled={isSubmitting || !isDirty}>
               {isSubmitting ? "Saving…" : "Save Changes"}

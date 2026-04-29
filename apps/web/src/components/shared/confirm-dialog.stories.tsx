@@ -84,41 +84,60 @@ export const CustomTitleDescription: Story = {
 };
 
 // ---------------------------------------------------------------------------
-// Loading state — dialog open, confirm button simulates async operation
+// Pending state — isPending prop drives spinner + blocked close behaviour
 // ---------------------------------------------------------------------------
 
-export const LoadingState: Story = {
-  name: "Loading State",
+export const PendingState: Story = {
+  name: "Pending State (isPending)",
   render: () => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [open, setOpen] = useState(false);
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [loading, setLoading] = useState(false);
+    const [pending, setPending] = useState(false);
 
     function handleConfirm() {
-      setLoading(true);
-      // Simulate async operation that resolves after 2 seconds.
+      setPending(true);
       setTimeout(() => {
-        setLoading(false);
+        setPending(false);
         setOpen(false);
-      }, 2000);
+      }, 3000);
     }
 
     return (
       <>
-        <Button onClick={() => setOpen(true)}>Trigger Action</Button>
+        <Button onClick={() => setOpen(true)}>Trigger Async Action</Button>
         <ConfirmDialog
           open={open}
-          onOpenChange={(next) => {
-            if (!loading) setOpen(next);
-          }}
+          onOpenChange={setOpen}
           title="Apply Changes"
           description="Applying these changes will restart affected services. Confirm to proceed."
-          confirmLabel={loading ? "Applying..." : "Apply"}
+          isPending={pending}
           variant="default"
           onConfirm={handleConfirm}
         />
       </>
+    );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Blocked close — dialog cannot be dismissed while isPending=true
+// ---------------------------------------------------------------------------
+
+export const BlockedClose: Story = {
+  name: "Blocked Close (while pending)",
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [open, setOpen] = useState(true);
+    return (
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Processing…"
+        description="This dialog cannot be closed while the action is in progress."
+        isPending={true}
+        onConfirm={() => {}}
+      />
     );
   },
 };

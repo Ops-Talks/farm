@@ -68,7 +68,7 @@ function ConfigurationCard({
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<KeycloakFormValues>({ resolver: zodResolver(keycloakSchema) });
+  } = useForm<KeycloakFormValues>({ resolver: zodResolver(keycloakSchema), mode: "onChange" });
 
   const createMutation = useMutation({
     mutationFn: (values: KeycloakFormValues) =>
@@ -213,9 +213,11 @@ function ConfigurationCard({
                   id="kc-name"
                   placeholder="Production Keycloak"
                   {...register('name')}
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "kc-name-error" : undefined}
                 />
                 {errors.name?.message && (
-                  <p className="text-xs text-destructive">{errors.name.message}</p>
+                  <p id="kc-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
                 )}
               </div>
 
@@ -227,9 +229,11 @@ function ConfigurationCard({
                   id="kc-url"
                   placeholder="https://auth.example.com"
                   {...register('keycloakUrl')}
+                  aria-invalid={!!errors.keycloakUrl}
+                  aria-describedby={errors.keycloakUrl ? "kc-url-error" : undefined}
                 />
                 {errors.keycloakUrl?.message && (
-                  <p className="text-xs text-destructive">{errors.keycloakUrl.message}</p>
+                  <p id="kc-url-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.keycloakUrl.message}</p>
                 )}
               </div>
 
@@ -237,9 +241,9 @@ function ConfigurationCard({
                 <label htmlFor="kc-realm" className="text-sm font-medium">
                   Realm <span className="text-destructive">*</span>
                 </label>
-                <Input id="kc-realm" placeholder="master" {...register('realm')} />
+                <Input id="kc-realm" placeholder="master" {...register('realm')} aria-invalid={!!errors.realm} aria-describedby={errors.realm ? "kc-realm-error" : undefined} />
                 {errors.realm?.message && (
-                  <p className="text-xs text-destructive">{errors.realm.message}</p>
+                  <p id="kc-realm-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.realm.message}</p>
                 )}
               </div>
 
@@ -251,9 +255,11 @@ function ConfigurationCard({
                   id="kc-client-id"
                   placeholder="farm-app"
                   {...register('clientId')}
+                  aria-invalid={!!errors.clientId}
+                  aria-describedby={errors.clientId ? "kc-client-id-error" : undefined}
                 />
                 {errors.clientId?.message && (
-                  <p className="text-xs text-destructive">{errors.clientId.message}</p>
+                  <p id="kc-client-id-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.clientId.message}</p>
                 )}
               </div>
 
@@ -266,9 +272,11 @@ function ConfigurationCard({
                   type="password"
                   placeholder="••••••••••••••••"
                   {...register('clientSecret')}
+                  aria-invalid={!!errors.clientSecret}
+                  aria-describedby={errors.clientSecret ? "kc-client-secret-error" : undefined}
                 />
                 {errors.clientSecret?.message && (
-                  <p className="text-xs text-destructive">{errors.clientSecret.message}</p>
+                  <p id="kc-client-secret-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.clientSecret.message}</p>
                 )}
               </div>
 
@@ -306,6 +314,7 @@ function ConfigurationCard({
             deleteMutation.mutate(credential.id);
           }
         }}
+        isPending={deleteMutation.isPending}
       />
     </>
   );

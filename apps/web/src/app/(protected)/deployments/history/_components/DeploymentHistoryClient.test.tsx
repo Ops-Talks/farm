@@ -101,7 +101,7 @@ describe("DeploymentHistoryClient", () => {
     render(<DeploymentHistoryClient />);
 
     await waitFor(() => {
-      expect(screen.getByText("No deployments found.")).toBeInTheDocument();
+      expect(screen.getByText("No deployments found")).toBeInTheDocument();
     });
   });
 

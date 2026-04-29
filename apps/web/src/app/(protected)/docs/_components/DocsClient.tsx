@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 // Co-located sub-components — same _components/ directory
 import { DocTree } from "./doc-tree";
 import { DocForm } from "./doc-form";
@@ -309,10 +310,10 @@ export function DocsClient() {
       )}
 
       {allDocs.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-          No documentation registered yet.
-          {isAdmin && " Click 'New Document' to create one."}
-        </div>
+        <EmptyState
+          title="No documentation registered"
+          description="Add your first documentation page to get started."
+        />
       ) : (
         <div className="flex gap-6 min-h-[500px]">
           {/* Sidebar - tree navigation */}
