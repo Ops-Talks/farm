@@ -179,4 +179,12 @@ describe("InvitationAcceptPage", () => {
     await screen.findByRole("button", { name: /Accept invitation/i });
     expect(screen.queryByText(/^Message$/i)).not.toBeInTheDocument();
   });
+
+  it("shows 'Something went wrong' for non-ApiError thrown by getByToken", async () => {
+    mockSearchParams = new URLSearchParams({ token: "abc" });
+    mockGetByToken.mockRejectedValueOnce(new Error("Network failure"));
+    renderPage();
+    expect(await screen.findByText(/Something went wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/couldn't load this invitation/i)).toBeInTheDocument();
+  });
 });

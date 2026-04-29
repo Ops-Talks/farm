@@ -160,4 +160,20 @@ describe("SignupPage", () => {
       /username must be longer/i,
     );
   });
+
+  it("shows 'An unexpected error occurred' for non-ApiError thrown by register", async () => {
+    const user = userEvent.setup();
+    mockRegister.mockRejectedValueOnce(new Error("Network failure"));
+    render(<SignupPage />);
+    await user.type(screen.getByLabelText(/^Username$/), "alice");
+    await user.type(screen.getByLabelText(/^Email$/), "alice@example.com");
+    await user.type(screen.getByLabelText(/^Password$/), "Password123");
+    await user.type(screen.getByLabelText(/Confirm password/), "Password123");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: "Create account" }));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /An unexpected error occurred/i,
+    );
+  });
 });

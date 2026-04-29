@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -38,6 +38,7 @@ import {
   parseEmails,
   OrgInvitesClient,
 } from "@/app/(protected)/organizations/[id]/settings/invites/_components/OrgInvitesClient";
+import OrgInvitesPage from "@/app/(protected)/organizations/[id]/settings/invites/page";
 
 function renderClient() {
   const qc = new QueryClient({
@@ -257,5 +258,142 @@ describe("OrgInvitesClient", () => {
     expect(screen.getByText("eve@example.com")).toBeInTheDocument();
     // The table header "Sent" should be visible
     expect(screen.getByText(/^Sent$/i)).toBeInTheDocument();
+  });
+
+  it("renders the OrgInvitesPage wrapper without crashing", async () => {
+    mockList.mockResolvedValue([]);
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <OrgInvitesPage />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/No pending invitations/i)).toBeInTheDocument();
+  });
+
+  it("copies invite link to clipboard on success", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+      writable: true,
+    });
+
+    const inv = {
+      id: "inv_c",
+      email: "copy@example.com",
+      role: "member",
+      status: "pending",
+      token: "tok_copy",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      invitedBy: "u_1",
+    };
+    mockList.mockResolvedValue([inv]);
+    renderClient();
+    await screen.findByText("copy@example.com");
+
+    fireEvent.click(screen.getByLabelText(/Copy invite link for copy@example.com/i));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+
+    if (originalClipboard) {
+      Object.defineProperty(navigator, "clipboard", originalClipboard);
+    }
+  });
+
+  it("shows error path when clipboard write throws", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("Permission denied"));
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+      writable: true,
+    });
+
+    const inv = {
+      id: "inv_cf",
+      email: "clipfail@example.com",
+      role: "member",
+      status: "pending",
+      token: "tok_fail",
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      createdAt: new Date().toISOString(),
+      invitedBy: "u_1",
+    };
+    mockList.mockResolvedValue([inv]);
+    renderClient();
+    await screen.findByText("clipfail@example.com");
+
+    fireEvent.click(screen.getByLabelText(/Copy invite link for clipfail@example.com/i));
+
+    // The catch block should execute without crashing the component
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+
+    if (originalClipboard) {
+      Object.defineProperty(navigator, "clipboard", originalClipboard);
+    }
+  });
+
+  it("shows 'View user' link on accepted tab when acceptedBy is present", async () => {
+    const user = userEvent.setup();
+    const acceptedInv = {
+      id: "inv_acc",
+      email: "accepted@example.com",
+      role: "member",
+      status: "accepted",
+      token: "tok_acc",
+      expiresAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      acceptedAt: new Date().toISOString(),
+      acceptedBy: "u_999",
+      invitedBy: "u_1",
+    };
+
+    mockList.mockImplementation((_orgId: unknown, status: unknown) =>
+      Promise.resolve(status === "accepted" ? [acceptedInv] : []),
+    );
+
+    renderClient();
+    await waitFor(() => expect(mockList).toHaveBeenCalledWith("org_1", "pending"));
+
+    await act(async () => {
+      await user.click(screen.getByRole("tab", { name: /Accepted/i }));
+    });
+
+    await waitFor(() => expect(mockList).toHaveBeenCalledWith("org_1", "accepted"));
+
+    const viewLink = await screen.findByRole("link", { name: /View user/i });
+    expect(viewLink).toHaveAttribute("href", "/users/u_999");
+  });
+
+  it("shows 'No revoked invitations' when revoked tab is empty", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    renderClient();
+    await waitFor(() => expect(mockList).toHaveBeenCalledWith("org_1", "pending"));
+
+    await act(async () => {
+      await user.click(screen.getByRole("tab", { name: /Revoked/i }));
+    });
+
+    await waitFor(() => expect(mockList).toHaveBeenCalledWith("org_1", "revoked"));
+    expect(await screen.findByText(/No revoked invitations/i)).toBeInTheDocument();
+  });
+
+  it("'Send your first invite' CTA in empty pending state opens the modal", async () => {
+    const user = userEvent.setup();
+    mockList.mockResolvedValue([]);
+    renderClient();
+    await screen.findByText(/No pending invitations/i);
+
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Send your first invite/i }));
+    });
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 });

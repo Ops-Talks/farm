@@ -51,6 +51,7 @@ vi.mock("@/contexts/organization-context", () => ({
 }));
 
 import { UsersClient } from "@/app/(protected)/users/_components/UsersClient";
+import UsersPage from "@/app/(protected)/users/page";
 
 function renderClient() {
   const qc = new QueryClient({
@@ -350,9 +351,232 @@ describe("UsersClient", () => {
     );
   });
 
+  it("renders the UsersPage wrapper without crashing", async () => {
+    mockListUsers.mockResolvedValue({ users: [], total: 0, page: 1, pageSize: 20 });
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <UsersPage />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/No users found/i)).toBeInTheDocument();
+  });
+
+  it("renders '?' initials when display name produces no word characters", async () => {
+    mockListUsers.mockResolvedValue({
+      users: [{ ...managedUser, id: "u_sep", username: "sep", displayName: "---" }],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+    renderClient();
+    expect(await screen.findByText("?")).toBeInTheDocument();
+  });
+
+  it("renders 'Suspended' badge and 'Activate' menu item for suspended users", async () => {
+    const suspendedUser = {
+      ...managedUser,
+      id: "u_3",
+      username: "charlie",
+      displayName: "Charlie",
+      suspended: true,
+    };
+    mockListUsers.mockResolvedValue({ users: [suspendedUser], total: 1, page: 1, pageSize: 20 });
+    renderClient();
+    await screen.findByText("Charlie");
+    expect(screen.getAllByText("Suspended").length).toBeGreaterThan(0);
+    // at least one is the badge (not the filter option)
+    expect(screen.getAllByText("Suspended").some(
+      (el) => el.getAttribute("data-slot") === "badge"
+    )).toBe(true);
+
+    fireEvent.click(screen.getByLabelText(/Actions for charlie/i));
+    expect(screen.getByRole("menuitem", { name: /Activate/i })).toBeInTheDocument();
+  });
+
+  it("activates a suspended user via the confirm dialog", async () => {
+    const user = userEvent.setup();
+    const suspendedUser = {
+      ...managedUser,
+      id: "u_3",
+      username: "charlie",
+      displayName: "Charlie",
+      suspended: true,
+    };
+    mockListUsers.mockResolvedValue({ users: [suspendedUser], total: 1, page: 1, pageSize: 20 });
+    mockSuspend.mockResolvedValue({ ...suspendedUser, suspended: false });
+    renderClient();
+    await screen.findByText("Charlie");
+
+    fireEvent.click(screen.getByLabelText(/Actions for charlie/i));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Activate/i }));
+
+    expect(await screen.findByText(/Activate user\?/i)).toBeInTheDocument();
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Activate/i }));
+    });
+    await waitFor(() => expect(mockSuspend).toHaveBeenCalledWith("u_3", false));
+  });
+
+  it("renders 'none' for a user with no org memberships", async () => {
+    const orphanUser = {
+      ...managedUser,
+      id: "u_4",
+      username: "orphan",
+      displayName: "Orphan",
+      orgMemberships: [],
+    };
+    mockListUsers.mockResolvedValue({ users: [orphanUser], total: 1, page: 1, pageSize: 20 });
+    renderClient();
+    await screen.findByText("Orphan");
+    expect(screen.getByText("none")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/Actions for orphan/i));
+    expect(screen.queryByText(/Change role/i)).not.toBeInTheDocument();
+  });
+
+  it("closes UserDetailDialog via the Close button", async () => {
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    mockAudit.mockResolvedValue([]);
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByRole("menuitem", { name: /View details/i }));
+
+    const dialog = await screen.findByRole("dialog");
+    await act(async () => {
+      // Two "Close" buttons exist: the X icon (top-right) and the text button (bottom)
+      // Pick the first one with slot="button" (the explicit text Close button)
+      fireEvent.click(within(dialog).getAllByRole("button", { name: /Close/i })[0]);
+    });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("closes ResetPasswordDialog via the Cancel button", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByText(/Reset password/i));
+
+    const dialog = await screen.findByRole("dialog");
+    await act(async () => {
+      await user.click(within(dialog).getByRole("button", { name: /Cancel/i }));
+    });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("closes DeleteUserDialog via the Cancel button", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByText(/Delete user/i));
+
+    expect(await screen.findByText(/Delete user globally/i)).toBeInTheDocument();
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Cancel/i }));
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByText(/Delete user globally/i)).not.toBeInTheDocument(),
+    );
+  });
+
+  it("shows error alert when updateRole mutation fails", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    mockUpdateRole.mockRejectedValueOnce(new Error("Permission denied"));
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByText(/Change role/i));
+
+    await screen.findByRole("dialog");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Save/i }));
+    });
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+
+  it("shows error alert when resetPassword mutation fails", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    mockReset.mockRejectedValueOnce(new Error("Internal error"));
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByText(/Reset password/i));
+
+    await screen.findByRole("dialog");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Reset password/i }));
+    });
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+
+  it("shows 'email sent' message when reset password succeeds without fallback", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue({ users: [managedUser], total: 1, page: 1, pageSize: 20 });
+    mockReset.mockResolvedValue({
+      tempPasswordExpiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+      fallback: false,
+    });
+    renderClient();
+    await screen.findByText("Bob");
+
+    fireEvent.click(screen.getByLabelText(/Actions for bob/i));
+    fireEvent.click(screen.getByText(/Reset password/i));
+
+    await screen.findByRole("dialog");
+    await act(async () => {
+      await user.click(screen.getByRole("button", { name: /Reset password/i }));
+    });
+
+    expect(await screen.findByText(/emailed to the user/i)).toBeInTheDocument();
+  });
+
+  it("covers formatRelative branches: Just now, Xm ago, Xh ago, Xd ago, and locale date", async () => {
+    const nowMs = Date.now();
+    const users = [
+      // < 30s → min=0 → "Just now"
+      { ...managedUser, id: "u_jn", username: "justnow",  displayName: "Justnow",  lastLogin: new Date(nowMs - 5_000).toISOString() },
+      // ~5m → min=5 → "5m ago"
+      { ...managedUser, id: "u_m",  username: "minsago",  displayName: "Minsago",  lastLogin: new Date(nowMs - 5 * 60_000).toISOString() },
+      // ~3h → hr=3 → "3h ago"
+      { ...managedUser, id: "u_h",  username: "hoursago", displayName: "Hoursago", lastLogin: new Date(nowMs - 3 * 3_600_000).toISOString() },
+      // ~5d → day=5 → "5d ago"
+      { ...managedUser, id: "u_d",  username: "daysago",  displayName: "Daysago",  lastLogin: new Date(nowMs - 5 * 86_400_000).toISOString() },
+      // 60d → > 30d → toLocaleDateString()
+      { ...managedUser, id: "u_o",  username: "oldlogin", displayName: "Oldlogin", lastLogin: new Date(nowMs - 60 * 86_400_000).toISOString() },
+    ];
+    mockListUsers.mockResolvedValue({ users, total: 5, page: 1, pageSize: 20 });
+    renderClient();
+    await screen.findByText("Justnow");
+
+    expect(screen.getByText("Just now")).toBeInTheDocument();
+    expect(screen.getAllByText(/^\d+m ago$/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^\d+h ago$/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^\d+d ago$/).length).toBeGreaterThan(0);
+    const expectedLocaleDate = new Date(nowMs - 60 * 86_400_000).toLocaleDateString();
+    expect(screen.getByText(expectedLocaleDate)).toBeInTheDocument();
+  });
+
   it("shows pagination controls and navigates to next page when total > 20", async () => {
     const user = userEvent.setup();
-    // Generate 21 unique users to trigger pagination
     const users = Array.from({ length: 20 }, (_, i) => ({
       ...managedUser,
       id: `u_${i + 10}`,
