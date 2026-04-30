@@ -255,8 +255,8 @@ Full-text search integration using the `@elastic/elasticsearch` client. Maintain
 
 Per-component Elasticsearch index linking and live stats (Phase 35). Allows catalog components to be associated with one or more Elasticsearch index patterns (with optional per-component cluster URL). Exposes:
 
-- Component-scoped CRUD at `GET/POST/DELETE /api/v1/components/:id/elasticsearch-indices`
-- Live cluster stats per component at `GET /api/v1/components/:id/elasticsearch-indices/stats` (doc count, index size, health, Kibana deep-link)
+- Component-scoped CRUD at `GET/POST /api/v1/components/:id/elasticsearch-indices` and `DELETE /api/v1/components/:id/elasticsearch-indices/:indexId`
+- Live cluster stats per component at `GET /api/v1/components/:id/elasticsearch-indices/stats` (doc count, index size, health)
 - Admin cross-component overview at `GET /api/v1/elasticsearch/indices` (all components grouped, batched per unique cluster URL to avoid N+1 requests)
 
 ### Gateway Module

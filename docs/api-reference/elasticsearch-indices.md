@@ -40,6 +40,8 @@ Returns all Elasticsearch index links registered for the given catalog component
 ]
 ```
 
+> **Note:** `esUrl` and `description` are nullable — they will be `null` when not set on the linked index record.
+
 ---
 
 ### Live stats for all indices linked to a component
@@ -48,7 +50,7 @@ Returns all Elasticsearch index links registered for the given catalog component
 GET /components/:id/elasticsearch-indices/stats
 ```
 
-Returns live statistics fetched directly from the Elasticsearch cluster for each linked index. Clusters are queried in batches (one request per unique cluster URL). If a cluster is unreachable, affected entries return `reachable: false` and no `stats` field.
+Returns live statistics fetched directly from the Elasticsearch cluster for each linked index. The current implementation queries stats per linked record, one index pattern at a time, using the effective `esUrl` for that record. If a cluster is unreachable, the affected entry returns `reachable: false` and no `stats` field.
 
 **Path parameters**
 
@@ -67,10 +69,11 @@ Returns live statistics fetched directly from the Elasticsearch cluster for each
     "reachable": true,
     "stats": {
       "pattern": "logs-app-*",
+      "index": "logs-app-2025.01.01",
       "docsCount": 1500000,
-      "storeSizeBytes": 2147483648,
+      "storeSize": "2gb",
       "health": "green",
-      "kibanaUrl": "https://kibana.example.com/app/discover#/?_a=(index:'logs-app-*')"
+      "status": "open"
     }
   }
 ]
@@ -162,10 +165,11 @@ Admin-only. Returns every Elasticsearch index link across all components, groupe
         "reachable": true,
         "stats": {
           "pattern": "logs-app-*",
+          "index": "logs-app-2025.01.01",
           "docsCount": 1500000,
-          "storeSizeBytes": 2147483648,
+          "storeSize": "2gb",
           "health": "green",
-          "kibanaUrl": "https://kibana.example.com/app/discover#/?_a=(index:'logs-app-*')"
+          "status": "open"
         }
       }
     ]
