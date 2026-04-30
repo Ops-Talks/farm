@@ -77,6 +77,7 @@ jobs:
           flags: api
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
+          fail_ci_if_error: false
 
       - name: Upload E2E test results to Codecov
         uses: codecov/codecov-action@v5.5.3
@@ -86,6 +87,7 @@ jobs:
           flags: api
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
+          fail_ci_if_error: false
 
   migrations:
     name: Migration integrity (PostgreSQL 16)

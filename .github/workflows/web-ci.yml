@@ -73,6 +73,7 @@ jobs:
           flags: web
           token: ${{ secrets.CODECOV_TOKEN }}
           report_type: test_results
+          fail_ci_if_error: false
 
       # ── 7. Build ─────────────────────────────────────────────────────────────
       - name: Build (apps/web)
