@@ -63,7 +63,6 @@ export declare enum FarmEvent {
     PIPELINE_RUN_UPDATED = "pipeline.run.updated",
     PIPELINE_LOG = "pipeline.log",
     AUDIT_LOG_CREATED = "audit-log.created",
-    COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
     COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded"
 }
 /**
