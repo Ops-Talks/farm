@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 // @base-ui/react/dialog is mocked here to keep tests deterministic
@@ -9,8 +9,15 @@ vi.mock("@base-ui/react/dialog", async () => {
 
   return {
     Dialog: {
-      Root: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-        open ? <>{children}</> : null,
+      Root: ({
+        children,
+        open,
+        onOpenChange: _onOpenChange,
+      }: {
+        children: React.ReactNode;
+        open: boolean;
+        onOpenChange?: (open: boolean) => void;
+      }) => (open ? <>{children}</> : null),
       Portal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
       Backdrop: ({ className }: { className?: string }) => (
         <div data-testid="dialog-backdrop" className={className} />
@@ -155,5 +162,130 @@ describe("ConfirmDialog", () => {
     render(<ConfirmDialog {...defaultProps} />);
 
     expect(screen.getByTestId("dialog-backdrop")).toBeInTheDocument();
+  });
+
+  // ── isPending behaviour ──────────────────────────────────────────────────
+
+  it("isPending=true → confirm button is disabled", () => {
+    render(<ConfirmDialog {...defaultProps} isPending />);
+
+    expect(screen.getByRole("button", { name: /Processing/i })).toBeDisabled();
+  });
+
+  it("isPending=true → confirm button shows Processing... text", () => {
+    render(<ConfirmDialog {...defaultProps} isPending />);
+
+    expect(screen.getByRole("button", { name: /Processing/i })).toBeInTheDocument();
+  });
+
+  it("isPending=true → cancel button is disabled", () => {
+    render(<ConfirmDialog {...defaultProps} isPending />);
+
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  });
+
+  it("isPending=true → clicking confirm button does NOT call onConfirm (button is disabled)", () => {
+    const onConfirm = vi.fn();
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+        isPending
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Processing/i }));
+
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("isPending=true → clicking cancel button does NOT call onOpenChange(false)", () => {
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onOpenChange={onOpenChange}
+        isPending
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it("isPending=false (default) → existing behavior unchanged", () => {
+    const onConfirm = vi.fn();
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+        isPending={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole("button", { name: "Confirm" })).not.toBeDisabled();
+  });
+
+  // ── async onConfirm behaviour ────────────────────────────────────────────
+
+  it("async onConfirm: dialog stays open until the promise resolves", async () => {
+    let resolve!: () => void;
+    const onConfirm = vi.fn(
+      () => new Promise<void>((r) => {
+        resolve = r;
+      }),
+    );
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    // Not yet closed — the promise has not resolved.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+
+    await act(async () => {
+      resolve();
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("async onConfirm: dialog stays open when the promise rejects", async () => {
+    const onConfirm = vi.fn(() => Promise.reject(new Error("boom")));
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    });
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 });

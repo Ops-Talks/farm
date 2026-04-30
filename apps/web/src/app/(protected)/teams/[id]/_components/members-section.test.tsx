@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import type { User } from "@/types/api";
@@ -48,7 +48,7 @@ describe("MembersSection", () => {
   it("shows empty state message when there are no members", () => {
     render(<MembersSection {...BASE_PROPS} />);
     expect(
-      screen.getByText(/No members assigned to this team yet/),
+      screen.getByText(/No members assigned/),
     ).toBeInTheDocument();
   });
 
@@ -107,22 +107,23 @@ describe("MembersSection", () => {
     expect(screen.getByText("Bob Jones")).toBeInTheDocument();
   });
 
-  it("opens confirm dialog when admin clicks Remove on a member row", async () => {
+  it("calls onRemoveMember immediately when admin clicks Remove on a member row", async () => {
     const user = userEvent.setup();
+    const onRemoveMember = vi.fn();
     render(
       <MembersSection
         {...BASE_PROPS}
         isAdmin={true}
         members={[makeUser()]}
+        onRemoveMember={onRemoveMember}
       />,
     );
 
     const removeBtn = screen.getByRole("button", { name: "Remove" });
     await user.click(removeBtn);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Remove alice from the team/)).toBeInTheDocument();
-    });
+    // useUndoableDelete fires deleteFn immediately — no confirm dialog required
+    expect(onRemoveMember).toHaveBeenCalledWith("u1", "alice");
   });
 
   it("calls onAddMember when an available user is clicked", async () => {

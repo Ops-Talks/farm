@@ -74,6 +74,8 @@ export function PipelineDetailClient() {
   const [saving, setSaving] = useState(false);
   const [triggering, setTriggering] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
   // RunList uses this key to force a refetch (e.g. after triggering a new run)
@@ -163,6 +165,7 @@ export function PipelineDetailClient() {
 
   const handleDelete = useCallback(() => {
     if (!id) return;
+    setIsDeleting(true);
     pipelinesApi
       .remove(id)
       .then(() => {
@@ -176,7 +179,8 @@ export function PipelineDetailClient() {
         } else {
           toast.error("Failed to delete pipeline");
         }
-      });
+      })
+      .finally(() => setIsDeleting(false));
   }, [id, router]);
 
   const handleSelectRun = useCallback((runId: string) => {
@@ -440,6 +444,7 @@ export function PipelineDetailClient() {
         description={`Are you sure you want to delete "${pipeline.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

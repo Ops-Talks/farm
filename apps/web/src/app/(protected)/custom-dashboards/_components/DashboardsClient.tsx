@@ -118,6 +118,8 @@ export function DashboardsClient() {
 
   /* ---- delete dashboard ---- */
   const [deleteTarget, setDeleteTarget] = useState<Dashboard | null>(null);
+  // isPending state for delete dashboard ConfirmDialog
+  const [isDeletingDashboard, setIsDeletingDashboard] = useState(false);
 
   /* ---- builder (selected dashboard) ---- */
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
@@ -135,6 +137,8 @@ export function DashboardsClient() {
 
   /* ---- delete widget ---- */
   const [deleteWidgetTarget, setDeleteWidgetTarget] = useState<DashboardWidget | null>(null);
+  // isPending state for delete widget ConfirmDialog
+  const [isDeletingWidget, setIsDeletingWidget] = useState(false);
 
   /* ---------------------------------------------------------------- */
   /*  Fetch dashboards                                                 */
@@ -236,6 +240,7 @@ export function DashboardsClient() {
 
   async function handleDeleteDashboard() {
     if (!deleteTarget) return;
+    setIsDeletingDashboard(true);
     try {
       await dashboards.remove(deleteTarget.id);
       setDashboardsList((prev) => prev.filter((d) => d.id !== deleteTarget.id));
@@ -247,6 +252,7 @@ export function DashboardsClient() {
     } catch {
       toast.error("Failed to delete dashboard");
     } finally {
+      setIsDeletingDashboard(false);
       setDeleteTarget(null);
     }
   }
@@ -307,6 +313,7 @@ export function DashboardsClient() {
 
   async function handleDeleteWidget() {
     if (!selectedDashboard || !deleteWidgetTarget) return;
+    setIsDeletingWidget(true);
     try {
       await dashboards.removeWidget(selectedDashboard.id, deleteWidgetTarget.id);
       await refreshSelected(selectedDashboard.id);
@@ -314,6 +321,7 @@ export function DashboardsClient() {
     } catch {
       toast.error("Failed to delete widget");
     } finally {
+      setIsDeletingWidget(false);
       setDeleteWidgetTarget(null);
     }
   }
@@ -547,6 +555,7 @@ export function DashboardsClient() {
           confirmLabel="Delete"
           variant="destructive"
           onConfirm={handleDeleteWidget}
+          isPending={isDeletingWidget}
         />
 
         {/* ---- Edit dashboard dialog (reused in builder) ---- */}
@@ -820,6 +829,7 @@ export function DashboardsClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDeleteDashboard}
+        isPending={isDeletingDashboard}
       />
     </div>
   );

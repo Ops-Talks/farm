@@ -33,6 +33,8 @@ export function TeamDetailClient() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -110,6 +112,7 @@ export function TeamDetailClient() {
 
   const handleDelete = useCallback(() => {
     if (!id) return;
+    setIsDeleting(true);
     teams
       .delete(id)
       .then(() => {
@@ -124,7 +127,8 @@ export function TeamDetailClient() {
               : err.body.message,
           );
         }
-      });
+      })
+      .finally(() => setIsDeleting(false));
   }, [id, router]);
 
   const handleAddMember = useCallback((userId: string) => {
@@ -304,6 +308,7 @@ export function TeamDetailClient() {
         description="Are you sure you want to delete this team? This action cannot be undone."
         confirmLabel="Delete"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import type { AlertingRule } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 const DURATIONS = ["1m", "5m", "10m", "30m", "1h", "6h"] as const;
 const SEVERITIES: AlertingRule["severity"][] = ["critical", "warning", "info"];
@@ -33,6 +34,18 @@ export function AlertingRuleFormClient({ rule }: AlertingRuleFormClientProps) {
   );
   const [enabled, setEnabled] = useState(rule?.enabled ?? true);
   const [submitting, setSubmitting] = useState(false);
+
+  // isDirty: true when any field differs from the original rule values
+  const isDirty =
+    name !== (rule?.name ?? "") ||
+    description !== (rule?.description ?? "") ||
+    query !== (rule?.query ?? "") ||
+    duration !== (rule?.duration ?? "5m") ||
+    severity !== (rule?.severity ?? "warning") ||
+    componentId !== (rule?.componentId ?? "") ||
+    environmentId !== (rule?.environmentId ?? "");
+
+  const { showBadge } = useUnsavedChanges(isDirty && isEdit);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -196,6 +209,9 @@ export function AlertingRuleFormClient({ rule }: AlertingRuleFormClientProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2">
+            {showBadge && (
+              <span className="text-xs text-muted-foreground">Unsaved changes</span>
+            )}
             <Button type="submit" disabled={submitting}>
               {submitting
                 ? isEdit

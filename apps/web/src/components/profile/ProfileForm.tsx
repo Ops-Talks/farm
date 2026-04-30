@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { auth, ApiError } from "@/lib/api-client";
 import type { UpdateProfileData } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 // ---------------------------------------------------------------------------
 // Validation schema
@@ -49,6 +50,7 @@ export function ProfileForm() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
+    mode: "onChange",
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -56,6 +58,8 @@ export function ProfileForm() {
       gender: "",
     },
   });
+
+  const { showBadge } = useUnsavedChanges(form.formState.isDirty);
 
   // Fetch the current user's profile on mount and populate the form fields.
   useEffect(() => {
@@ -153,9 +157,11 @@ export function ProfileForm() {
                 id="profile-firstName"
                 placeholder="First name"
                 {...form.register("firstName")}
+                aria-invalid={!!form.formState.errors.firstName}
+                aria-describedby={form.formState.errors.firstName ? "profile-firstName-error" : undefined}
               />
               {form.formState.errors.firstName && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id="profile-firstName-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                   {form.formState.errors.firstName.message}
                 </p>
               )}
@@ -170,9 +176,11 @@ export function ProfileForm() {
                 id="profile-lastName"
                 placeholder="Last name"
                 {...form.register("lastName")}
+                aria-invalid={!!form.formState.errors.lastName}
+                aria-describedby={form.formState.errors.lastName ? "profile-lastName-error" : undefined}
               />
               {form.formState.errors.lastName && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id="profile-lastName-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                   {form.formState.errors.lastName.message}
                 </p>
               )}
@@ -189,10 +197,11 @@ export function ProfileForm() {
               type="email"
               placeholder="Email address"
               aria-invalid={!!form.formState.errors.email}
+              aria-describedby={form.formState.errors.email ? "profile-email-error" : undefined}
               {...form.register("email")}
             />
             {form.formState.errors.email && (
-              <p className="text-sm text-destructive" role="alert" id="profile-email-error">
+              <p id="profile-email-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                 {form.formState.errors.email.message}
               </p>
             )}
@@ -216,7 +225,10 @@ export function ProfileForm() {
           </div>
 
           {/* Submit */}
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {showBadge && (
+              <span className="text-xs text-muted-foreground">Unsaved changes</span>
+            )}
             <Button type="submit" disabled={submitting}>
               {submitting ? "Saving..." : "Save Changes"}
             </Button>

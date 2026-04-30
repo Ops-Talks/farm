@@ -137,7 +137,7 @@ describe("TeamsPage", () => {
     render(<TeamsPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText("No teams registered yet.")).toBeInTheDocument();
+      expect(screen.getByText("No teams registered")).toBeInTheDocument();
     });
   });
 

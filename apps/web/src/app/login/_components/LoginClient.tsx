@@ -95,6 +95,7 @@ export default function LoginClient() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    mode: "onChange",
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -194,10 +195,12 @@ export default function LoginClient() {
                   placeholder="Enter your username"
                   autoFocus
                   className="focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-invalid={!!errors.username}
+                  aria-describedby={errors.username ? "username-error" : undefined}
                   {...register("username")}
                 />
                 {errors.username?.message && (
-                  <p className="text-xs text-destructive">{errors.username.message}</p>
+                  <p id="username-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.username.message}</p>
                 )}
               </div>
               <div className="flex flex-col gap-2">
@@ -209,10 +212,12 @@ export default function LoginClient() {
                   type="password"
                   placeholder="Enter your password"
                   className="focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "password-error" : undefined}
                   {...register("password")}
                 />
                 {errors.password?.message && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                  <p id="password-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.password.message}</p>
                 )}
               </div>
               {/* isSubmitting drives both disabled state and button label */}

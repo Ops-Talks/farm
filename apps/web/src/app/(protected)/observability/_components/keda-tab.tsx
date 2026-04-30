@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterTabs } from "@/components/shared/filter-tabs";
+import { EmptyState } from "@/components/shared/empty-state";
 import {
   Sheet,
   SheetContent,
@@ -114,9 +115,10 @@ function ScaledObjectsTable({
 }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        No ScaledObjects found in this cluster.
-      </p>
+      <EmptyState
+        title="No ScaledObjects found"
+        description="No KEDA ScaledObjects were detected in this cluster."
+      />
     );
   }
 
@@ -162,9 +164,10 @@ function ScaledObjectsTable({
 function ScaledJobsTable({ items }: { items: KedaScaledJob[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-6 text-center">
-        No ScaledJobs found in this cluster.
-      </p>
+      <EmptyState
+        title="No ScaledJobs found"
+        description="No KEDA ScaledJobs were detected in this cluster."
+      />
     );
   }
 

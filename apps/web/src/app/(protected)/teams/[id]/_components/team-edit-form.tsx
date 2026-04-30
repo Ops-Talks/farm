@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { TeamType } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 const TEAM_TYPES = Object.values(TeamType);
 
@@ -34,6 +36,18 @@ export function TeamEditForm({
   onSave,
   onCancel,
 }: TeamEditFormProps) {
+  // Capture initial values once (lazy initializer runs only on first render)
+  const [initialValues] = useState<TeamEditFormProps["form"]>(() => form);
+
+  const isDirty =
+    form.displayName !== initialValues.displayName ||
+    form.description !== initialValues.description ||
+    form.type !== initialValues.type ||
+    form.contactEmail !== initialValues.contactEmail ||
+    form.slackChannel !== initialValues.slackChannel;
+
+  const { showBadge } = useUnsavedChanges(isDirty);
+
   return (
     <Card className="border-primary/20 bg-primary/5">
       <CardHeader>
@@ -87,7 +101,10 @@ export function TeamEditForm({
             onChange={(e) => onFormChange({ description: e.target.value })}
           />
         </div>
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-end gap-3">
+          {showBadge && (
+            <span className="text-xs text-muted-foreground">Unsaved changes</span>
+          )}
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>

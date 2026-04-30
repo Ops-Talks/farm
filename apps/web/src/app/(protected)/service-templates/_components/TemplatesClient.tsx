@@ -137,6 +137,8 @@ export function TemplatesClient() {
   const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(
     null,
   );
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // -- Scaffold dialog state ------------------------------------------------
   const [scaffoldOpen, setScaffoldOpen] = useState(false);
@@ -301,6 +303,7 @@ export function TemplatesClient() {
   async function handleDelete() {
     if (!deletingTemplateId) return;
     const target = templates.find((t) => t.id === deletingTemplateId);
+    setIsDeleting(true);
     try {
       await serviceTemplates.remove(deletingTemplateId);
       setTemplates((prev) =>
@@ -313,6 +316,7 @@ export function TemplatesClient() {
         err instanceof Error ? err.message : "Failed to delete template";
       toast.error(message);
     } finally {
+      setIsDeleting(false);
       setDeletingTemplateId(null);
     }
   }
@@ -750,6 +754,7 @@ export function TemplatesClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
 
       {/* ----------------------------------------------------------------- */}

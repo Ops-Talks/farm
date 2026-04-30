@@ -136,7 +136,7 @@ describe("RunList", () => {
       await waitFor(() => {
         expect(
           screen.getByText(
-            "No runs yet. Trigger the pipeline to see run history here.",
+            "This pipeline has not been run yet.",
           ),
         ).toBeInTheDocument();
       });
@@ -149,7 +149,7 @@ describe("RunList", () => {
       render(<RunList {...defaultProps} />, { wrapper: createWrapper() });
 
       await waitFor(() =>
-        expect(screen.getByText(/No runs yet/)).toBeInTheDocument(),
+        expect(screen.getByText(/This pipeline has not been run yet/)).toBeInTheDocument(),
       );
 
       const select = screen.getByLabelText("Filter runs by status");
@@ -157,7 +157,7 @@ describe("RunList", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(`No ${PipelineRunStatus.FAILED} runs found.`),
+          screen.getByText(`No ${PipelineRunStatus.FAILED} runs were found.`),
         ).toBeInTheDocument();
       });
     });
@@ -508,7 +508,7 @@ describe("RunList", () => {
       render(<RunList {...defaultProps} />, { wrapper: createWrapper() });
 
       await waitFor(() =>
-        expect(screen.getByText(/No runs yet/)).toBeInTheDocument(),
+        expect(screen.getByText(/This pipeline has not been run yet/)).toBeInTheDocument(),
       );
 
       expect(

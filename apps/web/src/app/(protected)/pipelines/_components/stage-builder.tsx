@@ -107,6 +107,7 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
     formState: { errors },
   } = useForm<AddStageFormValues>({
     resolver: zodResolver(addStageSchema),
+    mode: "onChange",
     defaultValues: { name: "", type: "script", configValue: "" },
   });
 
@@ -310,9 +311,11 @@ export function StageBuilder({ stages, onChange, readOnly = false }: StageBuilde
                     id="stage-name"
                     placeholder="e.g. Build"
                     {...register("name")}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "stage-name-error" : undefined}
                   />
                   {errors.name?.message && (
-                    <p className="text-xs text-destructive">{errors.name.message}</p>
+                    <p id="stage-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
                   )}
                 </div>
                 <div className="space-y-1">

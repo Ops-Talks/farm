@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { auth, ApiError } from "@/lib/api-client";
 import { toast } from "sonner";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 // ---------------------------------------------------------------------------
 // Validation schema
@@ -50,12 +51,15 @@ export function ChangePasswordForm() {
 
   const form = useForm<ChangePasswordFormValues>({
     resolver: zodResolver(changePasswordSchema),
+    mode: "onChange",
     defaultValues: {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
   });
+
+  const { showBadge } = useUnsavedChanges(form.formState.isDirty);
 
   async function onSubmit(values: ChangePasswordFormValues) {
     setSubmitting(true);
@@ -105,9 +109,11 @@ export function ChangePasswordForm() {
               placeholder="Current password"
               autoComplete="current-password"
               {...form.register("currentPassword")}
+              aria-invalid={!!form.formState.errors.currentPassword}
+              aria-describedby={form.formState.errors.currentPassword ? "cp-currentPassword-error" : undefined}
             />
             {form.formState.errors.currentPassword && (
-              <p className="text-sm text-destructive" role="alert">
+              <p id="cp-currentPassword-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                 {form.formState.errors.currentPassword.message}
               </p>
             )}
@@ -124,9 +130,11 @@ export function ChangePasswordForm() {
               placeholder="New password (min. 8 characters)"
               autoComplete="new-password"
               {...form.register("newPassword")}
+              aria-invalid={!!form.formState.errors.newPassword}
+              aria-describedby={form.formState.errors.newPassword ? "cp-newPassword-error" : undefined}
             />
             {form.formState.errors.newPassword && (
-              <p className="text-sm text-destructive" role="alert">
+              <p id="cp-newPassword-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                 {form.formState.errors.newPassword.message}
               </p>
             )}
@@ -146,16 +154,21 @@ export function ChangePasswordForm() {
               placeholder="Confirm new password"
               autoComplete="new-password"
               {...form.register("confirmPassword")}
+              aria-invalid={!!form.formState.errors.confirmPassword}
+              aria-describedby={form.formState.errors.confirmPassword ? "cp-confirmPassword-error" : undefined}
             />
             {form.formState.errors.confirmPassword && (
-              <p className="text-sm text-destructive" role="alert">
+              <p id="cp-confirmPassword-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                 {form.formState.errors.confirmPassword.message}
               </p>
             )}
           </div>
 
           {/* Submit */}
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {showBadge && (
+              <span className="text-xs text-muted-foreground">Unsaved changes</span>
+            )}
             <Button type="submit" disabled={submitting}>
               {submitting ? "Changing..." : "Change Password"}
             </Button>

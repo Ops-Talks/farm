@@ -31,6 +31,8 @@ export function AlertingRulesClient() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<AlertingRule | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  // isPending state for delete ConfirmDialog — keeps button disabled while async delete runs
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchRules = useCallback(async () => {
     try {
@@ -69,6 +71,7 @@ export function AlertingRulesClient() {
 
   async function handleDelete() {
     if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
       await alertingRules.remove(deleteTarget.id);
       setRules((prev) => prev.filter((r) => r.id !== deleteTarget.id));
@@ -76,6 +79,7 @@ export function AlertingRulesClient() {
     } catch {
       toast.error("Failed to delete rule");
     } finally {
+      setIsDeleting(false);
       setDeleteTarget(null);
     }
   }
@@ -92,20 +96,44 @@ export function AlertingRulesClient() {
       </PageHeader>
 
       {loading && (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full" />
-          ))}
+        // 5-row skeleton mirrors real table: Name / Severity / Query / Duration / Enabled / Component / Actions
+        <div className="rounded-md border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
+                <th className="px-4 py-3 text-left font-medium">Name</th>
+                <th className="px-4 py-3 text-left font-medium">Severity</th>
+                <th className="px-4 py-3 text-left font-medium">Query</th>
+                <th className="px-4 py-3 text-left font-medium">Duration</th>
+                <th className="px-4 py-3 text-left font-medium">Enabled</th>
+                <th className="px-4 py-3 text-left font-medium">Component</th>
+                <th className="px-4 py-3 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b last:border-0">
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-12" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-5 w-9 rounded-full" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-4 py-3 text-right"><Skeleton className="h-8 w-20 ml-auto" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {!loading && rules.length === 0 && (
         <EmptyState
           title="No alerting rules"
-          description="Create your first alerting rule to start monitoring your services."
+          description="Create your first alerting rule to receive notifications when metrics exceed thresholds."
         >
           <Link href="/alerting-rules/new">
-            <Button className="mt-4">Create Rule</Button>
+            <Button className="mt-4">Create Alerting Rule</Button>
           </Link>
         </EmptyState>
       )}
@@ -215,6 +243,7 @@ export function AlertingRulesClient() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

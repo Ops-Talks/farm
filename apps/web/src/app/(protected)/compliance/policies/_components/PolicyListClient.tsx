@@ -190,6 +190,7 @@ function PolicyFormModal({
     formState: { errors, isSubmitting },
   } = useForm<PolicyFormValues>({
     resolver: zodResolver(policySchema),
+    mode: "onChange",
     defaultValues,
   });
 
@@ -280,12 +281,13 @@ function PolicyFormModal({
                   placeholder="e.g. ecs-service, * (all)"
                   {...register('resourceType')}
                   aria-invalid={!!errors.resourceType}
+                  aria-describedby={errors.resourceType ? "resourceType-error" : undefined}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Use <code className="bg-muted px-1 rounded">*</code> to match all resource types
                 </p>
                 {errors.resourceType && (
-                  <p className="text-xs text-destructive" role="alert">
+                  <p id="resourceType-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.resourceType.message}
                   </p>
                 )}
@@ -301,12 +303,13 @@ function PolicyFormModal({
                   placeholder="farm:component, farm:team, farm:environment"
                   {...register('requiredKeys')}
                   aria-invalid={!!errors.requiredKeys}
+                  aria-describedby={errors.requiredKeys ? "requiredKeys-error" : undefined}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   Comma-separated list of required tag keys
                 </p>
                 {errors.requiredKeys && (
-                  <p className="text-xs text-destructive" role="alert">
+                  <p id="requiredKeys-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {String(errors.requiredKeys.message)}
                   </p>
                 )}
@@ -322,12 +325,13 @@ function PolicyFormModal({
                   {...register('severity')}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   aria-invalid={!!errors.severity}
+                  aria-describedby={errors.severity ? "severity-error" : undefined}
                 >
                   <option value="warning">Warning</option>
                   <option value="error">Error</option>
                 </select>
                 {errors.severity && (
-                  <p className="text-xs text-destructive" role="alert">
+                  <p id="severity-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.severity.message}
                   </p>
                 )}
@@ -513,6 +517,7 @@ export function PolicyListClient() {
             if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
           }}
           onCancel={() => setDeleteTarget(null)}
+          isPending={deleteMutation.isPending}
         />
       </div>
     </ErrorBoundary>

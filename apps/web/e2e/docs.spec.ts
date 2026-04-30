@@ -250,7 +250,7 @@ test.describe("docs page — authenticated", () => {
   /**
    * Test 3 — Empty state.
    * When the API returns an empty docs list the component renders the
-   * "No documentation registered yet." placeholder instead of the layout.
+   * "No documentation registered" placeholder instead of the layout.
    */
   test("docs page shows empty state when no docs are registered", async ({
     page,
@@ -260,7 +260,7 @@ test.describe("docs page — authenticated", () => {
     await page.goto("/docs");
 
     await expect(
-      page.getByText("No documentation registered yet."),
+      page.getByText("No documentation registered"),
     ).toBeVisible();
   });
 

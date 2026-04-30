@@ -50,6 +50,7 @@ export function DocForm({
     formState: { errors },
   } = useForm<DocFormValues>({
     resolver: zodResolver(docFormSchema),
+    mode: "onChange",
     defaultValues: {
       title: initial?.title ?? "",
       sourceUrl: initial?.sourceUrl ?? "",
@@ -106,10 +107,12 @@ export function DocForm({
               </label>
               <Input
                 id="doc-title"
+                aria-invalid={!!errors.title}
+                aria-describedby={errors.title ? "title-error" : undefined}
                 {...register("title")}
               />
               {errors.title?.message && (
-                <p className="text-xs text-destructive">{errors.title.message}</p>
+                <p id="title-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.title.message}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -121,10 +124,12 @@ export function DocForm({
                 id="doc-source-url"
                 type="text"
                 placeholder="https://raw.githubusercontent.com/.../README.md"
+                aria-invalid={!!errors.sourceUrl}
+                aria-describedby={errors.sourceUrl ? "sourceUrl-error" : undefined}
                 {...register("sourceUrl")}
               />
               {errors.sourceUrl?.message && (
-                <p className="text-xs text-destructive">{errors.sourceUrl.message}</p>
+                <p id="sourceUrl-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.sourceUrl.message}</p>
               )}
             </div>
           </div>
@@ -137,6 +142,8 @@ export function DocForm({
               <select
                 id="doc-component"
                 className="w-full rounded-md border px-3 py-2 text-sm bg-background"
+                aria-invalid={!!errors.componentId}
+                aria-describedby={errors.componentId ? "componentId-error" : undefined}
                 {...register("componentId")}
               >
                 <option value="">Select component...</option>
@@ -147,7 +154,7 @@ export function DocForm({
                 ))}
               </select>
               {errors.componentId?.message && (
-                <p className="text-xs text-destructive">{errors.componentId.message}</p>
+                <p id="componentId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.componentId.message}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -174,10 +181,12 @@ export function DocForm({
               </label>
               <Input
                 id="doc-author"
+                aria-invalid={!!errors.author}
+                aria-describedby={errors.author ? "author-error" : undefined}
                 {...register("author")}
               />
               {errors.author?.message && (
-                <p className="text-xs text-destructive">{errors.author.message}</p>
+                <p id="author-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.author.message}</p>
               )}
             </div>
             <div className="space-y-1">

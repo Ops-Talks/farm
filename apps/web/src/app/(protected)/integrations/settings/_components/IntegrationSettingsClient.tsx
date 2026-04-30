@@ -140,7 +140,7 @@ const ArgoCDConnectForm = memo(function ArgoCDConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ArgoCDFormValues>({ resolver: zodResolver(argoCDSchema) });
+  } = useForm<ArgoCDFormValues>({ resolver: zodResolver(argoCDSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -148,27 +148,27 @@ const ArgoCDConnectForm = memo(function ArgoCDConnectForm({
         <label htmlFor="argocd-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="argocd-name" placeholder="e.g. Production ArgoCD" {...register("name")} />
+        <Input id="argocd-name" placeholder="e.g. Production ArgoCD" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "argocd-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="argocd-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="argocd-url" className="text-sm font-medium">
           URL <span className="text-destructive">*</span>
         </label>
-        <Input id="argocd-url" placeholder="https://argocd.example.com" {...register("url")} />
+        <Input id="argocd-url" placeholder="https://argocd.example.com" {...register("url")} aria-invalid={!!errors.url} aria-describedby={errors.url ? "argocd-url-error" : undefined} />
         {errors.url?.message && (
-          <p className="text-xs text-destructive">{errors.url.message}</p>
+          <p id="argocd-url-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.url.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="argocd-token" className="text-sm font-medium">
           Token <span className="text-destructive">*</span>
         </label>
-        <Input id="argocd-token" type="password" placeholder="ArgoCD API token" {...register("token")} />
+        <Input id="argocd-token" type="password" placeholder="ArgoCD API token" {...register("token")} aria-invalid={!!errors.token} aria-describedby={errors.token ? "argocd-token-error" : undefined} />
         {errors.token?.message && (
-          <p className="text-xs text-destructive">{errors.token.message}</p>
+          <p id="argocd-token-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.token.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -196,7 +196,7 @@ const CircleCIConnectForm = memo(function CircleCIConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<CircleCIFormValues>({ resolver: zodResolver(circleCISchema) });
+  } = useForm<CircleCIFormValues>({ resolver: zodResolver(circleCISchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -204,18 +204,18 @@ const CircleCIConnectForm = memo(function CircleCIConnectForm({
         <label htmlFor="circleci-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="circleci-name" placeholder="e.g. My CircleCI" {...register("name")} />
+        <Input id="circleci-name" placeholder="e.g. My CircleCI" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "circleci-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="circleci-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="circleci-token" className="text-sm font-medium">
           Token <span className="text-destructive">*</span>
         </label>
-        <Input id="circleci-token" type="password" placeholder="CircleCI API token" {...register("token")} />
+        <Input id="circleci-token" type="password" placeholder="CircleCI API token" {...register("token")} aria-invalid={!!errors.token} aria-describedby={errors.token ? "circleci-token-error" : undefined} />
         {errors.token?.message && (
-          <p className="text-xs text-destructive">{errors.token.message}</p>
+          <p id="circleci-token-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.token.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -243,7 +243,7 @@ const JenkinsConnectForm = memo(function JenkinsConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<JenkinsFormValues>({ resolver: zodResolver(jenkinsSchema) });
+  } = useForm<JenkinsFormValues>({ resolver: zodResolver(jenkinsSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -251,36 +251,36 @@ const JenkinsConnectForm = memo(function JenkinsConnectForm({
         <label htmlFor="jenkins-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="jenkins-name" placeholder="e.g. Main Jenkins" {...register("name")} />
+        <Input id="jenkins-name" placeholder="e.g. Main Jenkins" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "jenkins-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="jenkins-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="jenkins-url" className="text-sm font-medium">
           URL <span className="text-destructive">*</span>
         </label>
-        <Input id="jenkins-url" placeholder="https://jenkins.example.com" {...register("url")} />
+        <Input id="jenkins-url" placeholder="https://jenkins.example.com" {...register("url")} aria-invalid={!!errors.url} aria-describedby={errors.url ? "jenkins-url-error" : undefined} />
         {errors.url?.message && (
-          <p className="text-xs text-destructive">{errors.url.message}</p>
+          <p id="jenkins-url-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.url.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="jenkins-username" className="text-sm font-medium">
           Username <span className="text-destructive">*</span>
         </label>
-        <Input id="jenkins-username" placeholder="admin" {...register("username")} />
+        <Input id="jenkins-username" placeholder="admin" {...register("username")} aria-invalid={!!errors.username} aria-describedby={errors.username ? "jenkins-username-error" : undefined} />
         {errors.username?.message && (
-          <p className="text-xs text-destructive">{errors.username.message}</p>
+          <p id="jenkins-username-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.username.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="jenkins-apiToken" className="text-sm font-medium">
           API Token <span className="text-destructive">*</span>
         </label>
-        <Input id="jenkins-apiToken" type="password" placeholder="Jenkins API token" {...register("apiToken")} />
+        <Input id="jenkins-apiToken" type="password" placeholder="Jenkins API token" {...register("apiToken")} aria-invalid={!!errors.apiToken} aria-describedby={errors.apiToken ? "jenkins-apiToken-error" : undefined} />
         {errors.apiToken?.message && (
-          <p className="text-xs text-destructive">{errors.apiToken.message}</p>
+          <p id="jenkins-apiToken-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.apiToken.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -308,7 +308,7 @@ const TravisCIConnectForm = memo(function TravisCIConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<TravisCIFormValues>({ resolver: zodResolver(travisCISchema) });
+  } = useForm<TravisCIFormValues>({ resolver: zodResolver(travisCISchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -316,18 +316,18 @@ const TravisCIConnectForm = memo(function TravisCIConnectForm({
         <label htmlFor="travis-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="travis-name" placeholder="e.g. Travis CI OSS" {...register("name")} />
+        <Input id="travis-name" placeholder="e.g. Travis CI OSS" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "travis-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="travis-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="travis-token" className="text-sm font-medium">
           Token <span className="text-destructive">*</span>
         </label>
-        <Input id="travis-token" type="password" placeholder="Travis CI API token" {...register("token")} />
+        <Input id="travis-token" type="password" placeholder="Travis CI API token" {...register("token")} aria-invalid={!!errors.token} aria-describedby={errors.token ? "travis-token-error" : undefined} />
         {errors.token?.message && (
-          <p className="text-xs text-destructive">{errors.token.message}</p>
+          <p id="travis-token-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.token.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -339,9 +339,11 @@ const TravisCIConnectForm = memo(function TravisCIConnectForm({
           id="travis-url"
           placeholder="https://travis.example.com"
           {...register("url")}
+          aria-invalid={!!errors.url}
+          aria-describedby={errors.url ? "travis-url-error" : undefined}
         />
         {errors.url?.message && (
-          <p className="text-xs text-destructive">{errors.url.message}</p>
+          <p id="travis-url-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.url.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
@@ -369,7 +371,7 @@ const GitHubActionsConnectForm = memo(function GitHubActionsConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<GitHubActionsFormValues>({ resolver: zodResolver(githubActionsSchema) });
+  } = useForm<GitHubActionsFormValues>({ resolver: zodResolver(githubActionsSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -377,18 +379,18 @@ const GitHubActionsConnectForm = memo(function GitHubActionsConnectForm({
         <label htmlFor="ghactions-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="ghactions-name" placeholder="e.g. My GitHub Actions" {...register("name")} />
+        <Input id="ghactions-name" placeholder="e.g. My GitHub Actions" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "ghactions-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="ghactions-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="ghactions-token" className="text-sm font-medium">
           Token <span className="text-destructive">*</span>
         </label>
-        <Input id="ghactions-token" type="password" placeholder="GitHub personal access token" {...register("token")} />
+        <Input id="ghactions-token" type="password" placeholder="GitHub personal access token" {...register("token")} aria-invalid={!!errors.token} aria-describedby={errors.token ? "ghactions-token-error" : undefined} />
         {errors.token?.message && (
-          <p className="text-xs text-destructive">{errors.token.message}</p>
+          <p id="ghactions-token-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.token.message}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -423,7 +425,7 @@ const AzureDevOpsConnectForm = memo(function AzureDevOpsConnectForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<AzureDevOpsFormValues>({ resolver: zodResolver(azureDevOpsSchema) });
+  } = useForm<AzureDevOpsFormValues>({ resolver: zodResolver(azureDevOpsSchema), mode: "onChange" });
 
   return (
     <form onSubmit={handleSubmit((v) => onSave(v))} className="space-y-4">
@@ -431,27 +433,27 @@ const AzureDevOpsConnectForm = memo(function AzureDevOpsConnectForm({
         <label htmlFor="azdevops-name" className="text-sm font-medium">
           Name <span className="text-destructive">*</span>
         </label>
-        <Input id="azdevops-name" placeholder="e.g. My Azure DevOps" {...register("name")} />
+        <Input id="azdevops-name" placeholder="e.g. My Azure DevOps" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "azdevops-name-error" : undefined} />
         {errors.name?.message && (
-          <p className="text-xs text-destructive">{errors.name.message}</p>
+          <p id="azdevops-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="azdevops-token" className="text-sm font-medium">
           Token <span className="text-destructive">*</span>
         </label>
-        <Input id="azdevops-token" type="password" placeholder="Azure DevOps personal access token" {...register("token")} />
+        <Input id="azdevops-token" type="password" placeholder="Azure DevOps personal access token" {...register("token")} aria-invalid={!!errors.token} aria-describedby={errors.token ? "azdevops-token-error" : undefined} />
         {errors.token?.message && (
-          <p className="text-xs text-destructive">{errors.token.message}</p>
+          <p id="azdevops-token-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.token.message}</p>
         )}
       </div>
       <div className="space-y-1">
         <label htmlFor="azdevops-org" className="text-sm font-medium">
           Organization <span className="text-destructive">*</span>
         </label>
-        <Input id="azdevops-org" placeholder="my-azure-org" {...register("organization")} />
+        <Input id="azdevops-org" placeholder="my-azure-org" {...register("organization")} aria-invalid={!!errors.organization} aria-describedby={errors.organization ? "azdevops-org-error" : undefined} />
         {errors.organization?.message && (
-          <p className="text-xs text-destructive">{errors.organization.message}</p>
+          <p id="azdevops-org-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.organization.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">

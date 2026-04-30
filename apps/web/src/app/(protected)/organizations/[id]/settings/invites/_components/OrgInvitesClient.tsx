@@ -390,7 +390,9 @@ export function OrgInvitesClient() {
                   description={
                     activeTab === "pending"
                       ? "Get started by inviting your first teammate."
-                      : undefined
+                      : activeTab === "accepted"
+                        ? "Pending invitations will appear in the tab above."
+                        : undefined
                   }
                 >
                   {activeTab === "pending" && (
@@ -515,6 +517,7 @@ export function OrgInvitesClient() {
           if (revokeTarget) revokeMutation.mutate(revokeTarget.id);
           setRevokeTarget(null);
         }}
+        isPending={revokeMutation.isPending}
       />
     </div>
   );

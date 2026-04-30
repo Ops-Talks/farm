@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { EmptyState } from "@/components/shared/empty-state";
 import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
@@ -161,6 +162,8 @@ export function MembersSection({
     userId: string;
     username: string;
   } | null>(null);
+  // isPending state for removal ConfirmDialog
+  const [isRemoving, setIsRemoving] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Add-member form (React Hook Form + Zod)
@@ -173,6 +176,7 @@ export function MembersSection({
     formState: { errors: addErrors, isSubmitting: addPending },
   } = useForm<AddMemberFormValues>({
     resolver: zodResolver(addMemberSchema),
+    mode: "onChange",
     defaultValues: { username: "", role: "member" },
   });
 
@@ -253,6 +257,7 @@ export function MembersSection({
     if (!pendingRemove) return;
     const { userId, username } = pendingRemove;
     setPendingRemove(null);
+    setIsRemoving(true);
 
     orgsApi.members
       .remove(orgId, userId)
@@ -260,7 +265,8 @@ export function MembersSection({
         toast.success(`${username} removed from organization.`);
         loadMembers();
       })
-      .catch(() => toast.error("Failed to remove member."));
+      .catch(() => toast.error("Failed to remove member."))
+      .finally(() => setIsRemoving(false));
   }, [pendingRemove, orgId, loadMembers]);
 
   // ---------------------------------------------------------------------------
@@ -407,6 +413,8 @@ export function MembersSection({
                   className="flex-1"
                   autoComplete="off"
                   {...register("username")}
+                  aria-invalid={!!addErrors.username}
+                  aria-describedby={addErrors.username ? "add-member-username-error" : undefined}
                 />
 
                 {/* Native <select> — shadcn Select is not yet in the ui/ bundle. */}
@@ -430,12 +438,12 @@ export function MembersSection({
               </div>
 
               {addErrors.root?.message && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id="add-member-root-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                   {addErrors.root.message}
                 </p>
               )}
               {addErrors.username?.message && (
-                <p className="text-sm text-destructive" role="alert">
+                <p id="add-member-username-error" role="alert" aria-live="polite" className="text-sm text-destructive">
                   {addErrors.username.message}
                 </p>
               )}
@@ -444,13 +452,10 @@ export function MembersSection({
 
           {/* Member table — skeleton while loading, empty state if no members */}
           {!loading && members.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-              <Users className="mx-auto mb-3 h-8 w-8 opacity-40" />
-              <p className="text-sm font-medium">No members yet</p>
-              <p className="mt-1 text-xs">
-                Add members to grant them access to this organization.
-              </p>
-            </div>
+            <EmptyState
+              title="No members yet"
+              description="Invite users to join this organization."
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -477,6 +482,7 @@ export function MembersSection({
         description={`Are you sure you want to remove ${pendingRemove?.username ?? "this member"}?`}
         confirmLabel="Remove"
         onConfirm={handleRemoveConfirm}
+        isPending={isRemoving}
       />
     </>
   );

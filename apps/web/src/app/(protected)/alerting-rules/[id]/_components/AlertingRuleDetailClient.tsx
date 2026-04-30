@@ -20,6 +20,8 @@ export function AlertingRuleDetailClient({ id }: AlertingRuleDetailClientProps) 
   const [rule, setRule] = useState<AlertingRule | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // isPending state for delete ConfirmDialog
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     alertingRules
@@ -31,12 +33,15 @@ export function AlertingRuleDetailClient({ id }: AlertingRuleDetailClientProps) 
 
   async function handleDelete() {
     if (!rule) return;
+    setIsDeleting(true);
     try {
       await alertingRules.remove(rule.id);
       toast.success(`Rule "${rule.name}" deleted`);
       router.push("/alerting-rules");
     } catch {
       toast.error("Failed to delete rule");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -79,6 +84,7 @@ export function AlertingRuleDetailClient({ id }: AlertingRuleDetailClientProps) 
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={handleDelete}
+        isPending={isDeleting}
       />
     </div>
   );

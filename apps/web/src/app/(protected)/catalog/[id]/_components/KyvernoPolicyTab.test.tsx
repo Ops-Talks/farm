@@ -88,7 +88,7 @@ describe('KyvernoPolicyTab', () => {
     await waitFor(() => {
       expect(screen.getByTestId('kyverno-empty')).toBeInTheDocument();
     });
-    expect(screen.getByText(/No Kyverno policy violations found for this component/)).toBeInTheDocument();
+    expect(screen.getByText(/No policy violations found/)).toBeInTheDocument();
   });
 
   it('renders violation cards for failing results matched by linkedComponentId', async () => {

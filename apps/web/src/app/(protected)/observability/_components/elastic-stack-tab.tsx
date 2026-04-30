@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/empty-state";
 import type {
   EckElasticsearch,
   EckKibana,
@@ -73,9 +74,10 @@ function externalHealthBadge(clusterHealth: "green" | "yellow" | "red") {
 function EckElasticsearchSection({ items }: { items: EckElasticsearch[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">
-        No ECK Elasticsearch found.
-      </p>
+      <EmptyState
+        title="No ECK Elasticsearch found"
+        description="No Elastic Cloud on Kubernetes Elasticsearch instances detected."
+      />
     );
   }
   return (
@@ -109,7 +111,10 @@ function EckElasticsearchSection({ items }: { items: EckElasticsearch[] }) {
 function EckKibanaSection({ items }: { items: EckKibana[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">No ECK Kibana found.</p>
+      <EmptyState
+        title="No ECK Kibana found"
+        description="No ECK Kibana instances detected in this cluster."
+      />
     );
   }
   return (
@@ -142,9 +147,10 @@ function EckKibanaSection({ items }: { items: EckKibana[] }) {
 function EckLogstashSection({ items }: { items: EckLogstash[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">
-        No ECK Logstash found.
-      </p>
+      <EmptyState
+        title="No ECK Logstash found"
+        description="No ECK Logstash instances detected in this cluster."
+      />
     );
   }
   return (
@@ -174,7 +180,10 @@ function EckLogstashSection({ items }: { items: EckLogstash[] }) {
 function EckBeatsSection({ items }: { items: EckBeat[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground py-2">No ECK Beats found.</p>
+      <EmptyState
+        title="No ECK Beats found"
+        description="No ECK Beats agents detected in this cluster."
+      />
     );
   }
   return (

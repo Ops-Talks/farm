@@ -16,6 +16,7 @@ import {
 import { pipelines as pipelinesApi } from "@/lib/api-client";
 import type { PipelineRun } from "@/types/api";
 import { PipelineRunStatus } from "@/types/api";
+import { EmptyState } from "@/components/shared/empty-state";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -207,11 +208,10 @@ export function RunList({
           ))}
         </div>
       ) : runs.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          {statusFilter
-            ? `No ${statusFilter} runs found.`
-            : "No runs yet. Trigger the pipeline to see run history here."}
-        </div>
+        <EmptyState
+          title="No runs found"
+          description={statusFilter ? `No ${statusFilter} runs were found.` : "This pipeline has not been run yet."}
+        />
       ) : (
         <div className="rounded-md border">
           <Table>

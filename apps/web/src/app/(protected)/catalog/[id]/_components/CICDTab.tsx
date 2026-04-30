@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { argocd, circleci, jenkins, travisci } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
+import { EmptyState } from "@/components/shared/empty-state";
 import type {
   ArgoCDApplication,
   CatalogComponent,
@@ -154,18 +155,6 @@ const SectionSkeleton = memo(function SectionSkeleton() {
 });
 
 // ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
-const EmptySection = memo(function EmptySection({ message }: { message: string }) {
-  return (
-    <div className="py-8 text-center border rounded-xl bg-muted/20">
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
-});
-
-// ---------------------------------------------------------------------------
 // Section header
 // ---------------------------------------------------------------------------
 
@@ -216,7 +205,7 @@ const ArgoCDSection = memo(function ArgoCDSection({
       {isPending ? (
         <SectionSkeleton />
       ) : filtered.length === 0 ? (
-        <EmptySection message="No ArgoCD applications found for this component." />
+        <EmptyState title="No ArgoCD applications found for this component." />
       ) : (
         <Table>
           <TableHeader>
@@ -274,7 +263,7 @@ const CircleCISection = memo(function CircleCISection({ vcsUrl }: { vcsUrl?: str
       {isPending ? (
         <SectionSkeleton />
       ) : pipelines.length === 0 ? (
-        <EmptySection message="No CircleCI pipelines found for this component." />
+        <EmptyState title="No CircleCI pipelines found for this component." />
       ) : (
         <Table>
           <TableHeader>
@@ -321,7 +310,7 @@ const JenkinsSection = memo(function JenkinsSection() {
       {isPending ? (
         <SectionSkeleton />
       ) : jobs.length === 0 ? (
-        <EmptySection message="No Jenkins jobs found." />
+        <EmptyState title="No Jenkins jobs found." />
       ) : (
         <Table>
           <TableHeader>
@@ -370,7 +359,7 @@ const TravisCISection = memo(function TravisCISection({ vcsUrl }: { vcsUrl?: str
       {isPending ? (
         <SectionSkeleton />
       ) : builds.length === 0 ? (
-        <EmptySection message="No Travis CI builds found for this component." />
+        <EmptyState title="No Travis CI builds found for this component." />
       ) : (
         <Table>
           <TableHeader>

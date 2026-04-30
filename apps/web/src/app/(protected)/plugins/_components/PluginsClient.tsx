@@ -247,6 +247,7 @@ export function PluginsClient() {
         cancelLabel="Cancel"
         variant="default"
         onConfirm={handleReload}
+        isPending={reloadMutation.isPending}
       />
     </div>
   );

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
+import { EmptyState } from "@/components/shared/empty-state";
 import { catalog } from "@/lib/api-client";
 import { subscribe } from "@/lib/ws-client";
 import {
@@ -176,13 +177,17 @@ export function CatalogClient() {
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-12 text-center text-muted-foreground"
-                >
-                  {search
-                    ? "No components match the search filter."
-                    : "No components found. Register your first component."}
+                <TableCell colSpan={6}>
+                  {search ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      No components match the search filter.
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No components found"
+                      description="Register your first component to start cataloging your services."
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

@@ -49,6 +49,7 @@ export function NewTeamClient() {
     formState: { errors, isSubmitting },
   } = useForm<NewTeamFormValues>({
     resolver: zodResolver(newTeamSchema),
+    mode: "onChange",
     defaultValues: {
       name: "",
       displayName: "",
@@ -120,12 +121,14 @@ export function NewTeamClient() {
                   id="team-name"
                   placeholder="e.g. platform-core"
                   {...register("name")}
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "team-name-error" : undefined}
                 />
                 <p className="text-xs text-muted-foreground">
                   Unique identifier, lowercase with hyphens
                 </p>
                 {errors.name?.message && (
-                  <p className="text-xs text-destructive">{errors.name.message}</p>
+                  <p id="team-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
                 )}
               </div>
               <div className="space-y-1">
@@ -136,9 +139,11 @@ export function NewTeamClient() {
                   id="team-display-name"
                   placeholder="e.g. Platform Core Team"
                   {...register("displayName")}
+                  aria-invalid={!!errors.displayName}
+                  aria-describedby={errors.displayName ? "team-display-name-error" : undefined}
                 />
                 {errors.displayName?.message && (
-                  <p className="text-xs text-destructive">{errors.displayName.message}</p>
+                  <p id="team-display-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.displayName.message}</p>
                 )}
               </div>
             </div>
@@ -178,9 +183,11 @@ export function NewTeamClient() {
                   type="text"
                   placeholder="team@company.com"
                   {...register("contactEmail")}
+                  aria-invalid={!!errors.contactEmail}
+                  aria-describedby={errors.contactEmail ? "team-contact-email-error" : undefined}
                 />
                 {errors.contactEmail?.message && (
-                  <p className="text-xs text-destructive">{errors.contactEmail.message}</p>
+                  <p id="team-contact-email-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.contactEmail.message}</p>
                 )}
               </div>
               <div className="space-y-1">

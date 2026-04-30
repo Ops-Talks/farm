@@ -68,6 +68,7 @@ export default function SignupClient() {
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
+    mode: "onChange",
   });
 
   const onSubmit = async (values: SignupFormValues) => {
@@ -160,9 +161,11 @@ export default function SignupClient() {
                   autoComplete="username"
                   autoFocus
                   {...register("username")}
+                  aria-invalid={!!errors.username}
+                  aria-describedby={errors.username ? "signup-username-error" : undefined}
                 />
                 {errors.username?.message && (
-                  <p className="text-xs text-destructive">
+                  <p id="signup-username-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.username.message}
                   </p>
                 )}
@@ -178,9 +181,11 @@ export default function SignupClient() {
                   placeholder="alice@company.com"
                   autoComplete="email"
                   {...register("email")}
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "signup-email-error" : undefined}
                 />
                 {errors.email?.message && (
-                  <p className="text-xs text-destructive">
+                  <p id="signup-email-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.email.message}
                   </p>
                 )}
@@ -212,9 +217,11 @@ export default function SignupClient() {
                   placeholder="At least 8 characters"
                   autoComplete="new-password"
                   {...register("password")}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "signup-password-error" : undefined}
                 />
                 {errors.password?.message && (
-                  <p className="text-xs text-destructive">
+                  <p id="signup-password-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.password.message}
                   </p>
                 )}
@@ -233,9 +240,11 @@ export default function SignupClient() {
                   placeholder="Re-enter your password"
                   autoComplete="new-password"
                   {...register("confirmPassword")}
+                  aria-invalid={!!errors.confirmPassword}
+                  aria-describedby={errors.confirmPassword ? "signup-confirmPassword-error" : undefined}
                 />
                 {errors.confirmPassword?.message && (
-                  <p className="text-xs text-destructive">
+                  <p id="signup-confirmPassword-error" role="alert" aria-live="polite" className="text-xs text-destructive">
                     {errors.confirmPassword.message}
                   </p>
                 )}
