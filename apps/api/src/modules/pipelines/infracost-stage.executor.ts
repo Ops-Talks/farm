@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
  * Configuration options for an infracost pipeline stage.
  * Matches stage.config when stage.type === 'infracost'.
  */
-export interface InfracostStageConfig {
+interface InfracostStageConfig {
   /** Path to the Terraform directory to analyse; defaults to '.' */
   terraformDir?: string;
   /** Optional cost threshold matching the component's costBudgetUsd */
@@ -27,7 +27,7 @@ export interface InfracostStageConfig {
 /**
  * Cost breakdown for a single Terraform project as returned by infracost.
  */
-export interface InfracostProject {
+interface InfracostProject {
   name: string;
   pastBreakdown: { totalMonthlyCost: string };
   breakdown: { totalMonthlyCost: string };
@@ -37,7 +37,7 @@ export interface InfracostProject {
 /**
  * Top-level infracost JSON output structure (diff format).
  */
-export interface InfracostResult {
+interface InfracostResult {
   totalMonthlyCost: string;
   diffMonthlyCost: string;
   currency: string;
@@ -47,7 +47,7 @@ export interface InfracostResult {
 /**
  * Result returned by InfracostStageExecutor.execute().
  */
-export interface InfracostStageResult {
+interface InfracostStageResult {
   success: boolean;
   output: string;
 }

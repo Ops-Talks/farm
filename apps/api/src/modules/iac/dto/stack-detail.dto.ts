@@ -5,7 +5,7 @@ import { IacRunStatus, IacRunType } from "../entities/iac-run.entity";
  * Minimal last-run summary embedded inside StackDetailDto.
  * Only the fields needed for UI display are included.
  */
-export class LastRunSummaryDto {
+class LastRunSummaryDto {
   @ApiProperty({ example: "run-uuid-1" })
   id: string;
 

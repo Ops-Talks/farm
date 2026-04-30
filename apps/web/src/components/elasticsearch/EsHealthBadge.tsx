@@ -17,7 +17,7 @@ export type EsHealthKind =
   | "unknown"
   | "unreachable";
 
-export interface EsHealthBadgeInput {
+interface EsHealthBadgeInput {
   reachable: boolean;
   stats?: { health: "green" | "yellow" | "red" | "unknown" } | undefined;
 }

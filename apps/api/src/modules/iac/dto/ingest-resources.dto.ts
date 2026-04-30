@@ -2,7 +2,7 @@ import { IsArray, IsNotEmpty, IsString, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty } from "@nestjs/swagger";
 
-export class ResourceItemDto {
+class ResourceItemDto {
   @ApiProperty({ example: "aws_instance.web" })
   @IsString()
   @IsNotEmpty()
@@ -24,7 +24,7 @@ export class ResourceItemDto {
   provider: string;
 }
 
-export class DependencyItemDto {
+class DependencyItemDto {
   @ApiProperty({ example: "aws_instance.web" })
   @IsString()
   @IsNotEmpty()

@@ -63,7 +63,6 @@ export declare enum FarmEvent {
     PIPELINE_RUN_UPDATED = "pipeline.run.updated",
     PIPELINE_LOG = "pipeline.log",
     AUDIT_LOG_CREATED = "audit-log.created",
-    COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
     COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded"
 }
 /**
@@ -119,7 +118,7 @@ export interface InvitationPreview {
 /**
  * Org membership summary embedded in `ManagedUser`.
  */
-export interface ManagedUserOrgMembership {
+interface ManagedUserOrgMembership {
     orgId: string;
     orgSlug: string;
     orgName: string;
@@ -148,18 +147,5 @@ export interface UserListResponse {
     page: number;
     pageSize: number;
 }
-/**
- * Audit event entry exposed via `GET /api/users/:id/audit-trail`.
- */
-export interface AuditEvent {
-    id: string;
-    action: string;
-    performer: {
-        id: string;
-        username: string;
-    };
-    subjectId: string;
-    changes?: Record<string, unknown>;
-    createdAt: string;
-}
+export {};
 //# sourceMappingURL=index.d.ts.map

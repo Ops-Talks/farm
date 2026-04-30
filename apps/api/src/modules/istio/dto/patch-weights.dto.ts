@@ -13,7 +13,7 @@ import {
  * A single weighted destination entry inside a VirtualService route patch
  * request.
  */
-export class WeightEntryDto {
+class WeightEntryDto {
   /** Kubernetes service host name (destination). */
   @IsString()
   @IsNotEmpty()

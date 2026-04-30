@@ -1,0 +1,56 @@
+name: Dead Code (Knip)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'knip.config.ts'
+      - '.github/workflows/knip.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'knip.config.ts'
+      - '.github/workflows/knip.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  knip:
+    name: Dead code check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup monorepo
+        uses: ./.github/actions/setup-monorepo
+        with:
+          compile-types: 'true'
+
+      - name: Run Knip
+        run: npm run knip:ci
+
+      - name: Upload Knip report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: knip-report
+          path: knip-report.json
+          retention-days: 7

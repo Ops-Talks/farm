@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { search as searchApi } from "@/lib/api-client";
 import type { AdvancedSearchResult } from "@/types/api";
 
-export interface FacetFilters {
+interface FacetFilters {
   types: string[];
   namespace: string;
   tags: string[];

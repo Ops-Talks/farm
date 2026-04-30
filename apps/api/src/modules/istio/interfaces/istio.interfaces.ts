@@ -12,7 +12,7 @@
  * A single weighted route destination inside an Istio VirtualService HTTP
  * route rule.
  */
-export interface IstioRouteDestination {
+interface IstioRouteDestination {
   /** Target service host name (Kubernetes service name or FQDN). */
   destination: string;
   /** Traffic weight (0-100). */
@@ -27,7 +27,7 @@ export interface IstioRouteDestination {
  * An HTTP route rule inside a VirtualService; may carry multiple weighted
  * destinations (canary split).
  */
-export interface IstioHttpRoute {
+interface IstioHttpRoute {
   /** Optional name for the route rule. */
   name?: string;
   /** Weighted destinations for this route rule. */
@@ -145,7 +145,7 @@ export interface IstioTopologyEdge {
 /**
  * A single data point in a Prometheus range query result: [unixTimestamp, value].
  */
-export type PrometheusDataPoint = [number, string];
+type PrometheusDataPoint = [number, string];
 
 /**
  * A single timeseries in a Prometheus range query response.

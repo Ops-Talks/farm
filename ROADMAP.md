@@ -67,6 +67,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 36: Permission Scope Test Fixtures | 1 | 3 | v0.24.0 | `DONE` |
 | Phase 37: User Signup & Org Invitation | 1 | 5 | unreleased | `DONE` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | unreleased | `DONE` |
+| Phase 34: Dead Code Elimination | 1 | 4 | unreleased | `DONE` |
 
 ---
 
@@ -156,60 +157,60 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 ---
 
-## Phase 34: Dead Code Elimination `TODO`
+## Phase 34: Dead Code Elimination `DONE`
 
-### FARM-E80: Knip Dead Code and Dependency Hygiene `TODO`
+### FARM-E80: Knip Dead Code and Dependency Hygiene `DONE`
 
 > Farm is a monorepo with 665+ source files across two workspaces (`apps/api` and `apps/web`). As each phase ships, unreferenced exports, orphaned components, and stale `package.json` entries accumulate. This Epic introduces [Knip](https://knip.dev) — a static analysis tool that finds unused files, unused exports, and unused dependencies at the workspace level, complementing ESLint which only sees within-file scope. The cleanup is split by workspace because NestJS (DI-based, decorator-heavy) requires a different ignore-rule strategy than Next.js. After cleanup, a CI step prevents regressions by failing on any new dead code introduced in a PR.
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-S347 | Story | Knip baseline setup — install Knip as a root devDependency, create a monorepo-aware `knip.config.ts` with workspace entries, Next.js plugin for `apps/web`, and NestJS-aware ignore rules for `apps/api`; capture initial dead-code report | `TODO` |
-| FARM-S348 | Story | Web workspace cleanup — resolve all Knip findings in `apps/web`: unused React components, hooks, utility functions, and unused `package.json` dependencies; full Vitest and Playwright suites must pass after each removal batch | `TODO` |
-| FARM-S349 | Story | API workspace cleanup — resolve all Knip findings in `apps/api` after NestJS ignore rules are applied: unused DTOs, enums, and utility exports; unused `package.json` dependencies; all unit and e2e tests must pass | `TODO` |
-| FARM-S350 | Story | CI enforcement — add a Knip step to the GitHub Actions workflows in report-only mode first; escalate to hard-fail after the initial cleanup lands; add `knip` to `make check` for local developer feedback | `TODO` |
+| FARM-S347 | Story | Knip baseline setup — install Knip as a root devDependency, create a monorepo-aware `knip.config.ts` with workspace entries, Next.js plugin for `apps/web`, and NestJS-aware ignore rules for `apps/api`; capture initial dead-code report | `DONE` |
+| FARM-S348 | Story | Web workspace cleanup — resolve all Knip findings in `apps/web`: unused React components, hooks, utility functions, and unused `package.json` dependencies; full Vitest and Playwright suites must pass after each removal batch | `DONE` |
+| FARM-S349 | Story | API workspace cleanup — resolve all Knip findings in `apps/api` after NestJS ignore rules are applied: unused DTOs, enums, and utility exports; unused `package.json` dependencies; all unit and e2e tests must pass | `DONE` |
+| FARM-S350 | Story | CI enforcement — add a Knip step to the GitHub Actions workflows in report-only mode first; escalate to hard-fail after the initial cleanup lands; add `knip` to `make check` for local developer feedback | `DONE` |
 
 #### FARM-S347 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T393 | Task | Install `knip` as a root devDependency; create `knip.config.ts` with workspace entries for `apps/api` and `apps/web`; enable the Knip `next` plugin for the web workspace; run `knip --reporter json` to capture the initial dead-code baseline and commit it as `knip-baseline.json` | `TODO` |
-| FARM-T394 | Task | Configure NestJS-aware ignore rules for `apps/api`: exclude DI-registered classes (modules, providers, guards, interceptors, pipes declared in `@Module()` arrays), TypeORM entities and migration files loaded dynamically, decorator factories, and the `main.ts` entry point from unused-export checks; document each rule with an inline comment explaining why it is needed | `TODO` |
+| FARM-T393 | Task | Install `knip` as a root devDependency; create `knip.config.ts` with workspace entries for `apps/api` and `apps/web`; enable the Knip `next` plugin for the web workspace; run `knip --reporter json` to capture the initial dead-code baseline and commit it as `knip-baseline.json` | `DONE` |
+| FARM-T394 | Task | Configure NestJS-aware ignore rules for `apps/api`: exclude DI-registered classes (modules, providers, guards, interceptors, pipes declared in `@Module()` arrays), TypeORM entities and migration files loaded dynamically, decorator factories, and the `main.ts` entry point from unused-export checks; document each rule with an inline comment explaining why it is needed | `DONE` |
 
 ##### FARM-T393 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST406 | Sub-task | Verify `knip --reporter compact` exits with a known, documented count on the baseline run after all structural ignores are applied; this count becomes the acceptance threshold for FARM-S348 and FARM-S349 | `TODO` |
-| FARM-ST407 | Sub-task | Add a `"knip"` script to the root `package.json` (`knip --reporter compact`) and a `"knip:ci"` variant that writes findings to `knip-report.json` for CI artifact upload | `TODO` |
+| FARM-ST406 | Sub-task | Verify `knip --reporter compact` exits with a known, documented count on the baseline run after all structural ignores are applied; this count becomes the acceptance threshold for FARM-S348 and FARM-S349 | `DONE` |
+| FARM-ST407 | Sub-task | Add a `"knip"` script to the root `package.json` (`knip --reporter compact`) and a `"knip:ci"` variant that writes findings to `knip-report.json` for CI artifact upload | `DONE` |
 
 #### FARM-S348 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T395 | Task | Remove unused React components, hooks, and utility functions found in `apps/web` by Knip; run `npx vitest run` after each removal batch to confirm no regressions; update barrel exports and re-exports as needed | `TODO` |
-| FARM-T396 | Task | Remove unused `package.json` dependencies and devDependencies in `apps/web` identified by Knip; run `npm install` and `npm run build` after removal; full Vitest suite and Playwright e2e suite must pass | `TODO` |
+| FARM-T395 | Task | Remove unused React components, hooks, and utility functions found in `apps/web` by Knip; run `npx vitest run` after each removal batch to confirm no regressions; update barrel exports and re-exports as needed | `DONE` |
+| FARM-T396 | Task | Remove unused `package.json` dependencies and devDependencies in `apps/web` identified by Knip; run `npm install` and `npm run build` after removal; full Vitest suite and Playwright e2e suite must pass | `DONE` |
 
 #### FARM-S349 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T397 | Task | Remove unused TypeScript exports in `apps/api` (DTOs, enums, utility functions) after NestJS ignore rules are applied; run `npm run test` and `npm run test:e2e` to confirm no regressions | `TODO` |
-| FARM-T398 | Task | Remove unused `package.json` dependencies in `apps/api` identified by Knip; run `npm run build` to confirm a clean compilation; all unit and e2e tests must pass | `TODO` |
+| FARM-T397 | Task | Remove unused TypeScript exports in `apps/api` (DTOs, enums, utility functions) after NestJS ignore rules are applied; run `npm run test` and `npm run test:e2e` to confirm no regressions | `DONE` |
+| FARM-T398 | Task | Remove unused `package.json` dependencies in `apps/api` identified by Knip; run `npm run build` to confirm a clean compilation; all unit and e2e tests must pass | `DONE` |
 
 #### FARM-S350 Tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-T399 | Task | Add `knip --reporter compact --no-exit-code` step to both `ci.yml` and `web-ci.yml`; upload the JSON report as a workflow artifact; step never blocks the build in this first iteration | `TODO` |
-| FARM-T400 | Task | After FARM-S348 and FARM-S349 are merged and the CI baseline is clean, remove `--no-exit-code` from both workflow steps so any new dead code introduced in a PR causes the workflow to fail; update `CONTRIBUTING.md` with Knip usage guidance (how to add an ignore rule, how to verify locally before opening a PR) | `TODO` |
+| FARM-T399 | Task | Add `knip --reporter compact --no-exit-code` step to both `ci.yml` and `web-ci.yml`; upload the JSON report as a workflow artifact; step never blocks the build in this first iteration | `DONE` |
+| FARM-T400 | Task | After FARM-S348 and FARM-S349 are merged and the CI baseline is clean, remove `--no-exit-code` from both workflow steps so any new dead code introduced in a PR causes the workflow to fail; update `CONTRIBUTING.md` with Knip usage guidance (how to add an ignore rule, how to verify locally before opening a PR) | `DONE` |
 
 ##### FARM-T400 Sub-tasks
 
 | ID | Type | Title | Status |
 |----|------|-------|--------|
-| FARM-ST408 | Sub-task | Verify the hard-fail gate works: introduce a deliberately unused export in a test branch, confirm Knip exits with code 1 and the CI workflow is blocked before enabling the gate on main | `TODO` |
-| FARM-ST409 | Sub-task | Add `knip` to the `check` target in the root `Makefile` so developers receive Knip feedback alongside lint, format, and tests in a single `make check` run | `TODO` |
+| FARM-ST408 | Sub-task | Verify the hard-fail gate works: introduce a deliberately unused export in a test branch, confirm Knip exits with code 1 and the CI workflow is blocked before enabling the gate on main | `DONE` |
+| FARM-ST409 | Sub-task | Add `knip` to the `check` target in the root `Makefile` so developers receive Knip feedback alongside lint, format, and tests in a single `make check` run | `DONE` |
 
 ---
 
@@ -253,7 +254,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 31: Elastic Stack and Log Pipeline Visibility | 1 | 5 | `DONE` |
 | Phase 32: Thanos and Long-Term Metrics Visibility | 1 | 5 | `DONE` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | `DONE` |
-| Phase 34: Dead Code Elimination | 1 | 4 | `TODO` |
+| Phase 34: Dead Code Elimination | 1 | 4 | `DONE` |
 | Phase 35: Elasticsearch Index Visibility | 1 | 4 | `DONE` |
 | Phase 36: Permission Scope Test Fixtures | 1 | 3 | `DONE` |
 | Phase 37: User Signup & Org Invitation | 1 | 5 | `DONE` |

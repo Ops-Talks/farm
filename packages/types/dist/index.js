@@ -74,7 +74,6 @@ var FarmEvent;
     FarmEvent["PIPELINE_LOG"] = "pipeline.log";
     FarmEvent["AUDIT_LOG_CREATED"] = "audit-log.created";
     // FinOps (Phase 19)
-    FarmEvent["COST_BUDGET_EXCEEDED"] = "cost:budget-exceeded";
     FarmEvent["COST_ACTUAL_BUDGET_EXCEEDED"] = "cost:actual-budget-exceeded";
 })(FarmEvent || (exports.FarmEvent = FarmEvent = {}));
 /**

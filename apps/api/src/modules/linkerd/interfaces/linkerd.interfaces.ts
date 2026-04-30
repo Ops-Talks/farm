@@ -88,7 +88,7 @@ export interface LinkerdServiceProfileRoute {
  * Retry budget for a ServiceProfile — controls the maximum fraction of
  * additional retries allowed above the original request rate.
  */
-export interface LinkerdRetryBudget {
+interface LinkerdRetryBudget {
   /** Maximum ratio of retries to original requests (e.g. 0.2 = 20 %). */
   retryRatio: number;
   /** Minimum number of retries per second regardless of ratio. */
@@ -135,7 +135,7 @@ export interface LinkerdTopologyEdge {
 // ---------------------------------------------------------------------------
 
 /** A single Prometheus data point: [unixTimestamp, value]. */
-export type PrometheusDataPoint = [number, string];
+type PrometheusDataPoint = [number, string];
 
 /** A single Prometheus timeseries. */
 export interface PrometheusTimeseries {

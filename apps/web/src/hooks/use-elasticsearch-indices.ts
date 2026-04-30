@@ -18,7 +18,7 @@ import {
 
 const POLL_INTERVAL_MS = 30_000;
 
-export interface UseElasticsearchIndicesResult {
+interface UseElasticsearchIndicesResult {
   indices: ComponentElasticsearchIndexWithStats[];
   loading: boolean;
   error: Error | null;
