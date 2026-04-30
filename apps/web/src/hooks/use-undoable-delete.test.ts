@@ -7,6 +7,7 @@ import { useUndoableDelete } from "./use-undoable-delete";
 // Cast to access the mock API
 const mockToast = toast as unknown as ReturnType<typeof vi.fn> & {
   success: ReturnType<typeof vi.fn>;
+  dismiss: ReturnType<typeof vi.fn>;
 };
 
 describe("useUndoableDelete", () => {
@@ -113,5 +114,45 @@ describe("useUndoableDelete", () => {
     });
 
     expect(deleteFn).toHaveBeenCalledTimes(2);
+  });
+
+  it("only calls restoreFn once even if Undo is clicked multiple times", () => {
+    const deleteFn = vi.fn();
+    const restoreFn = vi.fn();
+
+    const { result } = renderHook(() => useUndoableDelete(deleteFn, restoreFn));
+
+    act(() => {
+      result.current.invoke();
+    });
+
+    const toastCallArgs = mockToast.mock.calls[0];
+    const options = toastCallArgs[1] as { action: { onClick: () => void } };
+    act(() => {
+      options.action.onClick();
+      options.action.onClick();
+      options.action.onClick();
+    });
+
+    expect(restoreFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismisses the toast when Undo is clicked", () => {
+    const deleteFn = vi.fn();
+    const restoreFn = vi.fn();
+
+    const { result } = renderHook(() => useUndoableDelete(deleteFn, restoreFn));
+
+    act(() => {
+      result.current.invoke();
+    });
+
+    const toastCallArgs = mockToast.mock.calls[0];
+    const options = toastCallArgs[1] as { action: { onClick: () => void } };
+    act(() => {
+      options.action.onClick();
+    });
+
+    expect(mockToast.dismiss).toHaveBeenCalledWith("toast-id");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 // @base-ui/react/dialog is mocked here to keep tests deterministic
@@ -236,5 +236,56 @@ describe("ConfirmDialog", () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(screen.getByRole("button", { name: "Confirm" })).not.toBeDisabled();
+  });
+
+  // ── async onConfirm behaviour ────────────────────────────────────────────
+
+  it("async onConfirm: dialog stays open until the promise resolves", async () => {
+    let resolve!: () => void;
+    const onConfirm = vi.fn(
+      () => new Promise<void>((r) => {
+        resolve = r;
+      }),
+    );
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    // Not yet closed — the promise has not resolved.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+
+    await act(async () => {
+      resolve();
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("async onConfirm: dialog stays open when the promise rejects", async () => {
+    const onConfirm = vi.fn(() => Promise.reject(new Error("boom")));
+    const onOpenChange = vi.fn();
+
+    render(
+      <ConfirmDialog
+        {...defaultProps}
+        onConfirm={onConfirm}
+        onOpenChange={onOpenChange}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    });
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 });

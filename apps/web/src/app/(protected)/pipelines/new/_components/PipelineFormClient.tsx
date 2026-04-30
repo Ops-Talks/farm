@@ -104,14 +104,24 @@ export function PipelineFormClient() {
               <label htmlFor="pipeline-name" className="text-sm font-medium">
                 Name <span className="text-destructive">*</span>
               </label>
-              <Input
-                id="pipeline-name"
-                placeholder="e.g. deploy-production"
-                {...register("name")}
-                ref={(el) => { register("name").ref(el); registerRef("name", el); }}
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "pipeline-name-error" : undefined}
-              />
+              {(() => {
+                const nameField = register("name");
+                return (
+                  <Input
+                    id="pipeline-name"
+                    placeholder="e.g. deploy-production"
+                    name={nameField.name}
+                    onBlur={nameField.onBlur}
+                    onChange={nameField.onChange}
+                    ref={(el) => {
+                      nameField.ref(el);
+                      registerRef("name", el);
+                    }}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "pipeline-name-error" : undefined}
+                  />
+                );
+              })()}
               {errors.name?.message && (
                 <p id="pipeline-name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.name.message}</p>
               )}

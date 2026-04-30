@@ -4,6 +4,10 @@ import { useEffect } from "react";
  * Registers a browser `beforeunload` guard whenever `isDirty` is true,
  * prompting the user before they navigate away with unsaved changes.
  *
+ * Uses `addEventListener`/`removeEventListener` so it composes safely with
+ * other handlers and other instances of this hook (does not trample
+ * `window.onbeforeunload`).
+ *
  * Returns `{ showBadge }` so callers can surface a visual indicator.
  */
 export function useUnsavedChanges(isDirty: boolean): { showBadge: boolean } {
@@ -17,19 +21,12 @@ export function useUnsavedChanges(isDirty: boolean): { showBadge: boolean } {
       return e.returnValue;
     };
 
-    window.onbeforeunload = handler;
+    window.addEventListener("beforeunload", handler);
 
     return () => {
-      window.onbeforeunload = null;
+      window.removeEventListener("beforeunload", handler);
     };
   }, [isDirty]);
-
-  // Always clear on unmount (covers the isDirty=false path too)
-  useEffect(() => {
-    return () => {
-      window.onbeforeunload = null;
-    };
-  }, []);
 
   return { showBadge: isDirty };
 }

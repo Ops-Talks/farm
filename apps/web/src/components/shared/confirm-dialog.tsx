@@ -15,7 +15,13 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";
-  onConfirm: () => void;
+  /**
+   * Called when the user clicks the confirm button. May be synchronous or
+   * return a `Promise`. When a promise is returned the dialog stays open
+   * until it resolves; if it rejects the dialog stays open so the user can
+   * retry. Pair with `isPending` to surface a spinner during async work.
+   */
+  onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
   /**
    * When true the confirm button shows a spinner and is disabled,
@@ -45,7 +51,25 @@ export const ConfirmDialog = memo(function ConfirmDialog({
 
   const handleConfirm = useCallback(() => {
     if (isPending) return;
-    onConfirm();
+    // Run onConfirm and only close once any returned promise resolves so
+    // callers driving async work via `isPending` get to see the pending
+    // state, and so a rejection leaves the dialog open for retry.
+    let result: void | Promise<void>;
+    try {
+      result = onConfirm();
+    } catch {
+      // Synchronous throw — leave the dialog open.
+      return;
+    }
+    if (result && typeof (result as Promise<void>).then === "function") {
+      (result as Promise<void>).then(
+        () => onOpenChange(false),
+        () => {
+          // Async rejection — leave the dialog open so the user can retry.
+        },
+      );
+      return;
+    }
     onOpenChange(false);
   }, [isPending, onConfirm, onOpenChange]);
 

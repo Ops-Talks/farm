@@ -19,7 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useUndoableDelete } from "@/hooks/use-undoable-delete";
 import { Users } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 
@@ -36,25 +35,16 @@ interface MembersSectionProps {
 }
 
 // ---------------------------------------------------------------------------
-// MemberRow — isolated sub-component so useUndoableDelete can be called at the
-// hook level (React rules prohibit hooks inside .map() callbacks). Each row
-// gets its own undo-toast: clicking "Undo" calls onAddMember to restore the
-// member immediately.
+// MemberRow — small isolated component so future per-row state (loading, etc.)
+// can live here without adding hooks inside .map() callbacks.
 // ---------------------------------------------------------------------------
 interface MemberRowProps {
   m: User;
   isAdmin: boolean;
-  onAddMember: (userId: string) => void;
   onRemoveMember: (userId: string, username: string) => void;
 }
 
-function MemberRow({ m, isAdmin, onAddMember, onRemoveMember }: MemberRowProps) {
-  const { invoke: removeWithUndo } = useUndoableDelete(
-    () => onRemoveMember(m.id, m.username),
-    () => onAddMember(m.id),
-    { toastMessage: `${m.username} removed from team` },
-  );
-
+function MemberRow({ m, isAdmin, onRemoveMember }: MemberRowProps) {
   return (
     <TableRow className="group">
       <TableCell>
@@ -82,7 +72,7 @@ function MemberRow({ m, isAdmin, onAddMember, onRemoveMember }: MemberRowProps) 
             variant="ghost"
             size="sm"
             className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all"
-            onClick={removeWithUndo}
+            onClick={() => onRemoveMember(m.id, m.username)}
           >
             Remove
           </Button>
@@ -192,7 +182,6 @@ export function MembersSection({
                     key={m.id}
                     m={m}
                     isAdmin={isAdmin}
-                    onAddMember={onAddMember}
                     onRemoveMember={onRemoveMember}
                   />
                 ))}

@@ -227,17 +227,24 @@ export function NewComponentClient() {
                   <label htmlFor="comp-name" className="text-sm font-semibold">
                     Name <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="comp-name"
-                    placeholder="e.g. user-service"
-                    aria-invalid={!!formErrors.name}
-                    aria-describedby={formErrors.name ? "name-error" : undefined}
-                    {...registerForm("name")}
-                    ref={(el) => {
-                      registerForm("name").ref(el);
-                      registerRef("name", el);
-                    }}
-                  />
+                  {(() => {
+                    const nameField = registerForm("name");
+                    return (
+                      <Input
+                        id="comp-name"
+                        placeholder="e.g. user-service"
+                        aria-invalid={!!formErrors.name}
+                        aria-describedby={formErrors.name ? "name-error" : undefined}
+                        name={nameField.name}
+                        onBlur={nameField.onBlur}
+                        onChange={nameField.onChange}
+                        ref={(el) => {
+                          nameField.ref(el);
+                          registerRef("name", el);
+                        }}
+                      />
+                    );
+                  })()}
                   {formErrors.name?.message && (
                     <p id="name-error" role="alert" aria-live="polite" className="text-xs text-destructive">{formErrors.name.message}</p>
                   )}
@@ -247,17 +254,24 @@ export function NewComponentClient() {
                   <label htmlFor="comp-owner" className="text-sm font-semibold">
                     Owner <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="comp-owner"
-                    placeholder="e.g. platform-team"
-                    aria-invalid={!!formErrors.owner}
-                    aria-describedby={formErrors.owner ? "owner-error" : undefined}
-                    {...registerForm("owner")}
-                    ref={(el) => {
-                      registerForm("owner").ref(el);
-                      registerRef("owner", el);
-                    }}
-                  />
+                  {(() => {
+                    const ownerField = registerForm("owner");
+                    return (
+                      <Input
+                        id="comp-owner"
+                        placeholder="e.g. platform-team"
+                        aria-invalid={!!formErrors.owner}
+                        aria-describedby={formErrors.owner ? "owner-error" : undefined}
+                        name={ownerField.name}
+                        onBlur={ownerField.onBlur}
+                        onChange={ownerField.onChange}
+                        ref={(el) => {
+                          ownerField.ref(el);
+                          registerRef("owner", el);
+                        }}
+                      />
+                    );
+                  })()}
                   {formErrors.owner?.message && (
                     <p id="owner-error" role="alert" aria-live="polite" className="text-xs text-destructive">{formErrors.owner.message}</p>
                   )}

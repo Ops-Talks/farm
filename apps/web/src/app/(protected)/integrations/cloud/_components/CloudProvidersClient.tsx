@@ -141,9 +141,9 @@ const AwsConnectForm = memo(function AwsConnectForm({
           Account ID{' '}
           <span className="font-normal text-muted-foreground">(optional)</span>
         </label>
-        <Input id="aws-accountId" placeholder="123456789012" {...register('accountId')} />
+        <Input id="aws-accountId" placeholder="123456789012" {...register('accountId')} aria-invalid={!!errors.accountId} aria-describedby={errors.accountId ? "aws-accountId-error" : undefined} />
         {errors.accountId?.message && (
-          <p role="alert" aria-live="polite" className="text-xs text-destructive">{errors.accountId.message}</p>
+          <p id="aws-accountId-error" role="alert" aria-live="polite" className="text-xs text-destructive">{errors.accountId.message}</p>
         )}
       </div>
       <div className="flex justify-end gap-2 pt-2">

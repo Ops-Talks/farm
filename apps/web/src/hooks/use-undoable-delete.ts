@@ -9,7 +9,8 @@ interface UseUndoableDeleteOptions {
 
 /**
  * Implements the "undo-on-toast" pattern: immediately calls `deleteFn`,
- * then shows a Sonner toast with an Undo action that invokes `restoreFn`.
+ * then shows a Sonner toast with an Undo action that invokes `restoreFn`
+ * at most once and dismisses the toast.
  */
 export function useUndoableDelete(
   deleteFn: () => void,
@@ -22,18 +23,22 @@ export function useUndoableDelete(
     durationMs = 5000,
   } = options;
 
-  const undone = useRef(false);
+  const undoneRef = useRef(false);
 
   const invoke = useCallback(() => {
-    undone.current = false;
+    undoneRef.current = false;
     deleteFn();
-    toast(toastMessage, {
+    const toastId = toast(toastMessage, {
       duration: durationMs,
       action: {
         label: undoLabel,
         onClick: () => {
-          undone.current = true;
+          // Guard against double-clicks and prevent restoreFn from running
+          // more than once for a single delete.
+          if (undoneRef.current) return;
+          undoneRef.current = true;
           restoreFn();
+          toast.dismiss(toastId);
         },
       },
     });
