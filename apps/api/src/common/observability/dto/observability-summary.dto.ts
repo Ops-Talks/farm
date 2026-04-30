@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class MemoryUsageDto {
+class MemoryUsageDto {
   @ApiProperty({ example: 52428800, description: "Heap memory used in bytes" })
   heapUsed: number;
 
@@ -17,7 +17,7 @@ export class MemoryUsageDto {
   external: number;
 }
 
-export class RequestsByStatusDto {
+class RequestsByStatusDto {
   @ApiProperty({ example: 1400, description: "Successful responses (2xx)" })
   "2xx": number;
 
@@ -31,7 +31,7 @@ export class RequestsByStatusDto {
   other: number;
 }
 
-export class LatencyPercentilesDto {
+class LatencyPercentilesDto {
   @ApiProperty({ example: 0.005, description: "50th percentile in seconds" })
   p50: number;
 

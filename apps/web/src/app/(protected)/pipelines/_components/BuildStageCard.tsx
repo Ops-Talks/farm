@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 // Schema
 // ---------------------------------------------------------------------------
 
-export const buildStageSchema = z.object({
+const buildStageSchema = z.object({
   engine: z.enum(["docker", "buildah", "podman"]),
   dockerfile: z.string().min(1),
   context: z.string().min(1),

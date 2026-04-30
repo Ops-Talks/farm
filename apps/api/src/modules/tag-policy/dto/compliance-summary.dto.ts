@@ -3,7 +3,7 @@ import { ApiProperty } from "@nestjs/swagger";
 /**
  * Per-provider or per-resource-type aggregated compliance statistics.
  */
-export class ComplianceBucketDto {
+class ComplianceBucketDto {
   @ApiProperty({ example: 42, description: "Total resources in this group" })
   total: number;
 

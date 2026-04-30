@@ -28,7 +28,7 @@ export interface HelmDeployConfig {
 /**
  * Result returned by HelmDeployExecutor.execute().
  */
-export interface HelmDeployResult {
+interface HelmDeployResult {
   success: boolean;
   output: string;
 }

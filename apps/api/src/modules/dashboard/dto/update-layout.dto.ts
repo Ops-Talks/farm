@@ -12,7 +12,7 @@ import { Type } from "class-transformer";
 /**
  * Position and size of a single widget within the dashboard grid.
  */
-export class WidgetPositionDto {
+class WidgetPositionDto {
   @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440000",
     description: "UUID of the widget to reposition",

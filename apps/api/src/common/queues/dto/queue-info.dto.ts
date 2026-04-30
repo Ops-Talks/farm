@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class JobCountsDto {
+class JobCountsDto {
   @ApiProperty({ example: 0, description: "Number of active jobs" })
   active: number;
 

@@ -10,7 +10,7 @@ import type { TemplateVariable, DryRunResultDto } from "@/types/api";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface TemplatePreviewPanelProps {
+interface TemplatePreviewPanelProps {
   templateId: string;
   variables: TemplateVariable[];
   initialValues?: Record<string, string>;

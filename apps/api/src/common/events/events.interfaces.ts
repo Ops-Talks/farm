@@ -12,7 +12,6 @@ export enum FarmEvent {
   AUDIT_LOG_CREATED = "audit-log.created",
   ROLLOUT_UPDATED = "rollout.updated",
   CI_BUILD_UPDATED = "ci.build.updated",
-  ARGOCD_SYNC_UPDATED = "argocd.sync.updated",
   COMPLIANCE_AUDIT_COMPLETED = "compliance.audit.completed",
   API_SPEC_DEPRECATED = "api-spec:deprecated",
   GATEWAY_ROUTE_SYNCED = "gateway.route.synced",
@@ -133,17 +132,6 @@ export interface ContainerVulnerabilityFoundPayload {
   criticalCount: number;
   image: string;
   tag: string;
-  timestamp: string;
-}
-
-/**
- * Payload structure for Flux reconciliation failure events.
- */
-export interface FluxReconciliationFailedPayload {
-  resourceKind: "Kustomization" | "HelmRelease";
-  name: string;
-  namespace: string;
-  reason: string;
   timestamp: string;
 }
 

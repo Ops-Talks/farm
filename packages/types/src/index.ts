@@ -70,7 +70,6 @@ export enum FarmEvent {
   PIPELINE_LOG = "pipeline.log",
   AUDIT_LOG_CREATED = "audit-log.created",
   // FinOps (Phase 19)
-  COST_BUDGET_EXCEEDED = "cost:budget-exceeded",
   COST_ACTUAL_BUDGET_EXCEEDED = "cost:actual-budget-exceeded",
 }
 
@@ -135,7 +134,7 @@ export interface InvitationPreview {
 /**
  * Org membership summary embedded in `ManagedUser`.
  */
-export interface ManagedUserOrgMembership {
+interface ManagedUserOrgMembership {
   orgId: string;
   orgSlug: string;
   orgName: string;
@@ -170,7 +169,7 @@ export interface UserListResponse {
 /**
  * Audit event entry exposed via `GET /api/users/:id/audit-trail`.
  */
-export interface AuditEvent {
+interface AuditEvent {
   id: string;
   action: string;
   performer: { id: string; username: string };

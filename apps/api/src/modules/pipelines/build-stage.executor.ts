@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 /**
  * Supported OCI build engines.
  */
-export type BuildEngine = "docker" | "buildah" | "podman";
+type BuildEngine = "docker" | "buildah" | "podman";
 
 const ALLOWED_ENGINES: BuildEngine[] = ["docker", "buildah", "podman"];
 
@@ -36,7 +36,7 @@ export interface BuildStageConfig {
 /**
  * Result returned by BuildStageExecutor.execute().
  */
-export interface BuildStageResult {
+interface BuildStageResult {
   success: boolean;
   output: string;
 }

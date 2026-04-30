@@ -150,7 +150,7 @@ function resolveRouteHealth(
 // Props
 // ---------------------------------------------------------------------------
 
-export interface GatewayRoutesTabProps {
+interface GatewayRoutesTabProps {
   componentId: string;
   isAdmin: boolean;
 }

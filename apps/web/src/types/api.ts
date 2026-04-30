@@ -20,7 +20,6 @@ export {
   ComponentLifecycle,
   ComponentKindGroup,
   DeploymentStatus,
-  EnvironmentType,
   TeamType,
   FarmEvent,
   PipelineRunStatus,
@@ -32,14 +31,12 @@ export type {
   InvitationToken,
   InvitationPreview,
   ManagedUser,
-  ManagedUserOrgMembership,
   UserListResponse,
-  AuditEvent,
 } from "@farm/types";
 
 // -- Entities --
 
-export interface ComponentLink {
+interface ComponentLink {
   title: string;
   url: string;
   icon?: string;
@@ -266,7 +263,7 @@ export interface HealthStatus {
 
 // -- Deployment Matrix --
 
-export interface DeploymentMatrixEnvironment {
+interface DeploymentMatrixEnvironment {
   environmentId: string;
   environmentName: string;
   version: string | null;
@@ -283,7 +280,7 @@ export interface DeploymentMatrixRow {
 
 // -- Queues and Jobs --
 
-export interface JobCounts {
+interface JobCounts {
   active: number;
   completed: number;
   failed: number;
@@ -317,21 +314,21 @@ export interface JobInfo {
 
 // -- Observability --
 
-export interface MemoryUsage {
+interface MemoryUsage {
   heapUsed: number;
   heapTotal: number;
   rss: number;
   external: number;
 }
 
-export interface RequestsByStatus {
+interface RequestsByStatus {
   "2xx": number;
   "4xx": number;
   "5xx": number;
   other: number;
 }
 
-export interface LatencyPercentiles {
+interface LatencyPercentiles {
   p50: number;
   p90: number;
   p95: number;
@@ -543,7 +540,7 @@ export interface JaegerSpan {
   warnings: string[] | null;
 }
 
-export interface JaegerProcess {
+interface JaegerProcess {
   serviceName: string;
   tags: { key: string; type: string; value: unknown }[];
 }
@@ -627,8 +624,8 @@ export interface PluginRegistryEntry {
 
 // -- Plugin Instance (FARM-S329) --
 
-export type PluginStatus = "installing" | "active" | "disabled" | "error";
-export type PluginHealthStatus = "healthy" | "degraded" | "unknown";
+type PluginStatus = "installing" | "active" | "disabled" | "error";
+type PluginHealthStatus = "healthy" | "degraded" | "unknown";
 
 export interface PluginInstance {
   id: string;
@@ -977,7 +974,7 @@ export interface IstioLatency {
 
 // -- Linkerd 2.x Service Mesh (Phase 20) --
 
-export interface LinkerdControlPlaneComponent {
+interface LinkerdControlPlaneComponent {
   name: string;
   ready: boolean;
   version?: string;
@@ -1002,14 +999,14 @@ export interface LinkerdAuthorizationPolicy {
   requiredAuthenticationRefs: Array<{ name: string; kind: string }>;
 }
 
-export interface LinkerdServiceProfileRoute {
+interface LinkerdServiceProfileRoute {
   name: string;
   condition?: { pathRegex?: string; method?: string };
   isRetryable: boolean;
   timeout?: string;
 }
 
-export interface LinkerdRetryBudget {
+interface LinkerdRetryBudget {
   retryRatio: number;
   minRetriesPerSecond: number;
   ttl: string;
@@ -1099,7 +1096,7 @@ export interface AddConsumerDto {
 
 // -- Gateway Routes (FARM-E48) --
 
-export type GatewayType = "kong" | "aws";
+type GatewayType = "kong" | "aws";
 
 /**
  * Health status for a gateway route endpoint.
@@ -1236,7 +1233,7 @@ export interface IncidentUpdateEntry {
   createdAt: string;
 }
 
-export interface PostMortemActionItem {
+interface PostMortemActionItem {
   title: string;
   assignee?: string;
   done: boolean;
@@ -1368,7 +1365,7 @@ export interface UpdateWidgetDto {
   config?: Record<string, unknown>;
 }
 
-export interface UpdateLayoutItem {
+interface UpdateLayoutItem {
   widgetId: string;
   x: number;
   y: number;
@@ -1396,14 +1393,14 @@ export interface TemplateVariable {
   dependsOn?: TemplateVariableDependsOn;
 }
 
-export type TemplateVariableType =
+type TemplateVariableType =
   | "string"
   | "number"
   | "boolean"
   | "enum"
   | "multiselect";
 
-export interface TemplateVariableDependsOn {
+interface TemplateVariableDependsOn {
   /** Key of another variable that controls visibility. */
   field: string;
   /** Value of that field that triggers the action. */
@@ -1437,7 +1434,7 @@ export interface ServiceTemplate {
   updatedAt: string;
 }
 
-export type ScaffoldRequestStatus = "pending" | "in_progress" | "completed" | "failed";
+type ScaffoldRequestStatus = "pending" | "in_progress" | "completed" | "failed";
 
 export interface ScaffoldRequest {
   id: string;
@@ -1492,7 +1489,7 @@ export type EnvironmentRequestStatus =
   | "active"
   | "expired";
 
-export type EnvironmentRequestType = "ephemeral" | "persistent";
+type EnvironmentRequestType = "ephemeral" | "persistent";
 export type EnvironmentTier = "small" | "medium" | "large";
 
 export interface EnvironmentRequest {
@@ -1550,7 +1547,7 @@ export interface HarborReplicationPolicy {
 
 // -- Flux GitOps (FARM-E61 / Phase 18) --
 
-export interface FluxControllerInfo {
+interface FluxControllerInfo {
   name: string;
   version: string;
   ready: boolean;
@@ -1729,7 +1726,7 @@ export interface LogstashDeployment {
   source: "helm";
 }
 
-export interface ExternalElasticsearch {
+interface ExternalElasticsearch {
   reachable: boolean;
   clusterHealth?: "green" | "yellow" | "red";
   version?: string;
@@ -1879,10 +1876,10 @@ export interface OpaStoredResult {
 
 // -- IaC types (FARM-E70) --
 
-export type IacRunType = "plan" | "apply";
-export type IacRunStatus = "succeeded" | "failed" | "cancelled";
+type IacRunType = "plan" | "apply";
+type IacRunStatus = "succeeded" | "failed" | "cancelled";
 
-export interface IacResourceChanges {
+interface IacResourceChanges {
   add: number;
   change: number;
   destroy: number;
@@ -1946,7 +1943,7 @@ export interface IacStackRunsResponse {
 // IaC Stack read endpoints (FARM-S277)
 // ---------------------------------------------------------------------------
 
-export interface IacLastRunSummary {
+interface IacLastRunSummary {
   id: string;
   status: IacRunStatus;
   type: IacRunType;
@@ -1984,7 +1981,7 @@ export type IacProvider =
   | "cloudflare"
   | "generic";
 
-export type IacEngine = "terraform" | "opentofu" | "pulumi";
+type IacEngine = "terraform" | "opentofu" | "pulumi";
 
 export interface IacModuleVariable {
   name: string;
@@ -2045,7 +2042,7 @@ export interface IacResourceMap {
 
 // -- Advanced Search (FARM-S318) --
 
-export interface AdvancedSearchHit {
+interface AdvancedSearchHit {
   id: string;
   type: string;
   name: string;
@@ -2061,7 +2058,7 @@ export interface AdvancedSearchHit {
   };
 }
 
-export interface FacetBucket {
+interface FacetBucket {
   key: string;
   count: number;
 }

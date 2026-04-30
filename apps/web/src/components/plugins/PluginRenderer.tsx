@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export interface PluginRendererProps {
+interface PluginRendererProps {
   /**
    * The entry point for the plugin.
    * - For route contributions: a dynamic module URL/path used with React.lazy.

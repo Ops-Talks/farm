@@ -6,6 +6,8 @@
     "packages/*"
   ],
   "scripts": {
+    "knip": "knip --reporter compact",
+    "knip:ci": "knip --reporter json --no-exit-code",
     "api:dev": "npm run start:dev -w apps/api",
     "api:build": "npm run build -w apps/api",
     "api:test": "npm run test -w apps/api",
@@ -20,7 +22,8 @@
   },
   "devDependencies": {
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1"
+    "class-validator": "^0.15.1",
+    "knip": "^6.9.0"
   },
   "optionalDependencies": {
     "@next/swc-linux-x64-musl": "16.2.4",

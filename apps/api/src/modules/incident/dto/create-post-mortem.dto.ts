@@ -13,7 +13,7 @@ import { Type } from "class-transformer";
 /**
  * Nested DTO representing a single post-mortem action item.
  */
-export class ActionItemDto {
+class ActionItemDto {
   @ApiProperty({
     example: "Add connection pool alerts",
     description: "Title of the action item",

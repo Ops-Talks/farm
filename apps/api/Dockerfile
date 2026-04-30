@@ -12,7 +12,6 @@ COPY package.json package-lock.json ./
 
 # Copy every workspace package.json so npm understands the workspace graph.
 COPY packages/types/package.json         ./packages/types/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
 COPY apps/web/package.json               ./apps/web/
 
@@ -51,7 +50,6 @@ RUN apk add --no-cache --upgrade "zlib>=1.3.2-r0" "libssl3>=3.5.6-r0" "libcrypto
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./
 COPY packages/types/package.json         ./packages/types/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/api/package.json               ./apps/api/
 COPY apps/web/package.json               ./apps/web/
 

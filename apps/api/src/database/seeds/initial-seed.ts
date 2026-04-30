@@ -54,7 +54,7 @@ import * as bcrypt from "bcrypt";
  * to model multi-tenant users (for example, SSO accounts that belong to two
  * organizations at once).
  */
-export type PersonaMembership = {
+type PersonaMembership = {
   orgSlug: string;
   role: OrgRole;
 };

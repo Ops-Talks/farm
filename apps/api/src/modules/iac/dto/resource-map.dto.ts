@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class ResourceNodeDto {
+class ResourceNodeDto {
   @ApiProperty({ example: "aws_instance.web" })
   address: string;
 
@@ -14,7 +14,7 @@ export class ResourceNodeDto {
   provider: string;
 }
 
-export class ResourceEdgeDto {
+class ResourceEdgeDto {
   @ApiProperty({ example: "aws_instance.web" })
   source: string;
 

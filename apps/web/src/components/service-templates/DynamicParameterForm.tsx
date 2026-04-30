@@ -42,7 +42,7 @@ function isVisible(
 // Types
 // ---------------------------------------------------------------------------
 
-export interface DynamicParameterFormProps {
+interface DynamicParameterFormProps {
   variables: TemplateVariable[];
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;

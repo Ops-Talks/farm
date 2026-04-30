@@ -11,7 +11,6 @@ COPY package.json package-lock.json ./
 
 # Copy every workspace package.json so npm understands the workspace graph.
 COPY packages/types/package.json        ./packages/types/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY apps/web/package.json              ./apps/web/
 COPY apps/api/package.json              ./apps/api/
 
