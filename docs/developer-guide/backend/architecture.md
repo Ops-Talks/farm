@@ -46,7 +46,7 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
 
 ## Module Structure
 
-Farm consists of 31 feature modules and a shared common layer. All feature modules live under `apps/api/src/modules/`.
+Farm consists of 34 feature modules and a shared common layer. All feature modules live under `apps/api/src/modules/`.
 
 ### Common Layer
 
@@ -246,6 +246,18 @@ AWS, GCP, and Azure cloud resource discovery, monthly cost aggregation, and secr
 ### Tag Policy Module
 
 Tag governance rules (required tags, allowed values) with compliance audit and ClusterPolicy YAML export for Kyverno.
+
+### Elasticsearch Module
+
+Full-text search integration using the `@elastic/elasticsearch` client. Maintains a shared `farm-search` index with configurable boost weights per field (title, tags, description). All methods degrade gracefully when `ELASTICSEARCH_URL` is not set. Provides a reindex endpoint to rebuild the search index on demand.
+
+### Elasticsearch Index Module
+
+Per-component Elasticsearch index linking and live stats (Phase 35). Allows catalog components to be associated with one or more Elasticsearch index patterns (with optional per-component cluster URL). Exposes:
+
+- Component-scoped CRUD at `GET/POST/DELETE /api/v1/components/:id/elasticsearch-indices`
+- Live cluster stats per component at `GET /api/v1/components/:id/elasticsearch-indices/stats` (doc count, index size, health, Kibana deep-link)
+- Admin cross-component overview at `GET /api/v1/elasticsearch/indices` (all components grouped, batched per unique cluster URL to avoid N+1 requests)
 
 ### Gateway Module
 
