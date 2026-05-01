@@ -426,4 +426,5 @@ Farm includes integrated observability with Prometheus metrics and OpenTelemetry
 
 ## Future Architecture Considerations
 
-- **Event Bus**: Add event-driven communication between modules.
+- **API key support**: Service-to-service communication without user JWTs.
+- **Horizontal scaling**: Load balancer + session-agnostic Redis state for multi-instance deployments.

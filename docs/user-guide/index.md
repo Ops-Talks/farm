@@ -61,6 +61,22 @@ Farm tracks deployment environments and component deployments, enabling:
 - Deployment recording with status tracking
 - Deployment matrix showing latest versions across environments
 
+### Pipelines
+
+Farm lets you define and execute [multi-stage pipelines](pipelines.md) directly from the portal. Features include:
+
+- Stage-by-stage pipeline definition with configurable commands and environments
+- Real-time log streaming via WebSocket as each stage runs
+- Run history with per-stage status and exit codes
+
+### IaC Visibility
+
+The [IaC module](iac.md) ingests infrastructure-as-code state from Terraform, Pulumi, and similar tools. It provides:
+
+- Stack inventory with per-run history and drift detection
+- Module catalog with semantic versioning and component linking
+- A compliance dashboard summarizing drift and failed runs across all stacks
+
 ### Teams and Ownership
 
 Organize your organization with team management:
@@ -88,6 +104,20 @@ Farm provides a [discovery mechanism](system-discovery.md) to see which features
 - Identify active plugins and their versions
 - Access a centralized list of system capabilities
 - Stay informed about platform updates
+
+### Observability
+
+Farm provides a built-in [observability hub](observability.md) that aggregates metrics, traces, and logs from your infrastructure. Features include:
+
+- Native PromQL chart rendering against your Prometheus instance
+- Distributed trace waterfall viewer (Jaeger / Grafana Tempo)
+- LogQL log queries against Loki with automatic level detection
+- PromQL-based alerting rules linked to catalog components or environments
+- Real-time WebSocket notifications for pipeline runs and audit events
+
+### Elasticsearch Index Visibility
+
+The [Elasticsearch Index](observability.md#elasticsearch-index-visibility) section on each catalog component lets you link one or more Elasticsearch index patterns and monitor their health — document count, store size, and cluster health — without leaving Farm. A Kibana deep-link is generated automatically when `NEXT_PUBLIC_KIBANA_URL` is configured.
 
 ### Cloud Providers
 
@@ -152,6 +182,9 @@ Request deployment environments through a [self-service workflow](environment-re
 | [Getting Started](getting-started.md) | Set up and begin using Farm |
 | [Catalog](catalog.md) | Manage software components |
 | [Documentation](documentation.md) | Create and manage documentation |
+| [Pipelines](pipelines.md) | Define and execute multi-stage pipelines with live log streaming |
+| [IaC Visibility](iac.md) | IaC stack inventory, drift detection, and module catalog |
+| [Observability](observability.md) | Metrics, traces, logs, alerting rules, and Elasticsearch index stats |
 | [Authentication](authentication.md) | User management and access |
 | [Organizations](organizations.md) | Multi-tenant isolation and member management |
 | [CI/CD Integrations](../api-reference/cicd.md) | ArgoCD, CircleCI, Jenkins, Travis CI |

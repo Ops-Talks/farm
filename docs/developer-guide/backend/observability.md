@@ -365,6 +365,38 @@ async queryNewTool(@Query() query: Record<string, string>) {
 
 `apps/api/src/modules/alerting/` — CRUD for PromQL-based alerting rules linked to components or environments. Registered as plugin `core-alerting`. Migration: `1773684432000-add-alerting-rules.ts`.
 
+### Thanos and long-term metrics backend detection
+
+`apps/api/src/modules/kubernetes/thanos.service.ts` — discovers Thanos components in the connected Kubernetes cluster and probes the active metrics backend type. Exposed via `GET /api/v1/kubernetes/thanos`.
+
+#### Response shape (`ThanosResult`)
+
+```typescript
+interface ThanosResult {
+  /** Components discovered through the Thanos operator CRDs (monitoring.thanos.io). */
+  operator: ThanosOperatorComponent[];
+  /** Components discovered via Helm/YAML label selectors on Deployments and StatefulSets. */
+  inCluster: ThanosLabelComponent[];
+  /** Detected metrics backend type. */
+  backendType: MetricsBackendType; // "prometheus" | "thanos" | "mimir" | "cortex" | "unknown"
+  /** True when backendType is "thanos", "mimir", or "cortex". */
+  longTermEnabled: boolean;
+}
+```
+
+#### Discovery strategies
+
+1. **Operator-managed** — lists `ThanosQuerier`, `ThanosStoreGateway`, `ThanosCompactor`, `ThanosRuler`, and `ThanosReceiver` custom resources from the `monitoring.thanos.io` API group. Requires the Thanos operator to be installed.
+2. **Label-based (Helm/YAML)** — scans Deployments and StatefulSets for `app.kubernetes.io/name` labels containing well-known Thanos component names (`thanos-querier`, `thanos-store`, `thanos-compact`, etc.). Works without the operator.
+
+#### Backend detection
+
+`ThanosService.detectMetricsBackend()` sends a `GET /ready` probe to the configured `PROMETHEUS_URL`. It inspects the response body for the strings `"Grafana Mimir"` and `"Cortex"` to distinguish backend types. A Thanos Querier frontend responds with HTTP 200 but no identifying string, so a successful `prometheus`-like probe to a Thanos endpoint returns `{ type: "thanos" }` only when Thanos components are also found in the cluster. The probe degrades gracefully — any error results in `{ type: "unknown" }`.
+
+#### Usage note
+
+All three discovery sub-calls are run concurrently with `Promise.allSettled`. Individual failures do not propagate — they contribute empty arrays or safe defaults, ensuring the endpoint always returns a `200 OK` response when the Kubernetes client is available.
+
 ### WebSocket event broadcasting
 
 Inject `EventsGateway` with `@Optional()` and call `this.eventsGateway?.server?.emit(FarmEvent.EVENT_NAME, payload)`.

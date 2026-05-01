@@ -172,6 +172,7 @@ nav:
     - Environment Requests API: api-reference/environment-requests.md
     - IaC API: api-reference/iac.md
     - IaC Modules API: api-reference/iac-modules.md
+    - Elasticsearch Indices API: api-reference/elasticsearch-indices.md
 
 extra_css:
   - stylesheets/extra.css

@@ -55,16 +55,17 @@ Farm is an open-source full stack portal providing a centralized hub for managin
 
 ## Module Design
 
-Farm is organized into 24 modules grouped by concern. The API feature modules follow the NestJS standard structure: controller, service, entities, and DTOs. In the monorepo, 23 feature plugins are registered through `PluginManagerModule.forRoot()` in `apps/api/src/app.module.ts`; the `Plugin Manager` module itself is part of the supporting infrastructure and is included in the architecture overview below rather than counted as a registered plugin.
+Farm is organized into 34 modules grouped by concern. The API feature modules follow the NestJS standard structure: controller, service, entities, and DTOs. In the monorepo, 33 feature plugins are registered through `PluginManagerModule.forRoot()` in `apps/api/src/app.module.ts`; the `Plugin Manager` module itself is part of the supporting infrastructure and is included in the architecture overview below rather than counted as a registered plugin.
 
 | Group | Modules |
 |-------|---------|
-| Core | Auth, Catalog, Documentation, Environments, Teams, Organization, Audit Log |
+| Core | Auth, Catalog, Documentation, Environments, Teams, Organization, Audit Log, Search |
 | Observability / Analytics | Analytics, Alerting, Dashboard, SLO, Incident |
-| Operations | Pipelines, Service Template, Environment Request, Helm |
-| Platform | Kubernetes (+ Kyverno), Istio, Integrations (ArgoCD / CircleCI / Jenkins / TravisCI / Webhooks), Cloud, Gateway |
-| Governance | Tag Policy, API Specs |
-| Infrastructure | Plugin Manager |
+| Operations | Pipelines, Service Template, Environment Request, Helm, FinOps, IaC |
+| Platform | Kubernetes (+ Kyverno + Thanos), Istio, Linkerd, Integrations (ArgoCD / CircleCI / Jenkins / TravisCI / Webhooks), Cloud, Gateway, Registry |
+| Governance | Tag Policy, API Specs, OPA |
+| Data / Search | Elasticsearch, Elasticsearch Index |
+| Infrastructure | Plugin Manager, Features, Setup |
 
 For the full module-by-module reference including responsibilities, see [Backend Architecture](./backend/architecture.md).
 
@@ -414,4 +415,4 @@ Developer Machine
 
 ## Conclusion
 
-Farm is designed as a modular, pluggable internal developer portal built on NestJS and Next.js. The platform's 28 feature modules cover the full lifecycle of software components — from catalog and documentation through observability, operations, platform integrations, and governance — with a clear path for continued expansion.
+Farm is designed as a modular, pluggable internal developer portal built on NestJS and Next.js. The platform's 33 feature modules cover the full lifecycle of software components — from catalog and documentation through observability, operations, platform integrations, and governance — with a clear path for continued expansion.
