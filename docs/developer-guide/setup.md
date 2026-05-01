@@ -366,6 +366,7 @@ npm run start:debug
 | `NEXT_PUBLIC_API_URL` | *(none)* | Public API URL (fallback for rewrites) |
 | `API_INTERNAL_URL` | `http://api:3000/api` | Internal Docker API URL (build-time) |
 | `NEXT_PUBLIC_WS_URL` | `http://localhost:3000` | WebSocket server URL |
+| `NEXT_PUBLIC_KIBANA_URL` | *(empty)* | Kibana base URL for Elasticsearch deep-link generation. When set, component Elasticsearch index entries render a "Open in Kibana" link pointing to the Discover view. Leave empty to disable Kibana links. |
 | `NEXT_TELEMETRY_DISABLED` | `1` | Disable Next.js anonymous telemetry (set in `apps/web/.env.local`) |
 
 ## OAuth Social Login

@@ -68,6 +68,11 @@ Mutation endpoints (POST, PATCH, DELETE) require the `admin` role.
 | [Dashboards](dashboards.md) | `/api/v1/dashboards` | Custom dashboard builder with widgets |
 | [Service Templates](service-templates.md) | `/api/v1/service-templates` | Golden path templates and service scaffolding |
 | [Environment Requests](environment-requests.md) | `/api/v1/environment-requests` | Self-service environment provisioning with approval workflow |
+| [IaC](iac.md) | `/api/v1/iac` | IaC stack ingestion, run tracking, drift detection, and dashboard |
+| [IaC Modules](iac-modules.md) | `/api/v1/iac-modules` | IaC module catalog with versioning and component linking |
+| [Elasticsearch Indices](elasticsearch-indices.md) | `/api/v1/components/:id/elasticsearch-indices`, `/api/v1/elasticsearch/indices` | Component-scoped index linking, live stats, and admin overview |
+| [User Management](user-management.md) | `/api/v1/users` | User listing, role assignment, and profile management |
+| [Invitations](invitations.md) | `/api/v1/invitations` | Organization invitation tokens and acceptance flow |
 
 ## Response Format
 
