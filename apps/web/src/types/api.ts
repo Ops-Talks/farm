@@ -2076,3 +2076,63 @@ export interface AdvancedSearchResult {
   };
   source: 'elasticsearch' | 'database';
 }
+
+// -- Maturity Scorecard (FARM-S393) --
+
+interface ScorecardCategoryScores {
+  ownershipDocs: number;
+  reliability: number;
+  security: number;
+  infrastructure: number;
+  cost: number;
+}
+
+export interface ScorecardCriterionResult {
+  id: string;
+  name: string;
+  category: string;
+  passed: boolean;
+  weight: number;
+  description: string;
+  notApplicable?: boolean;
+}
+
+export type ScorecardLevel = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface ScorecardResult {
+  id: string;
+  componentId: string;
+  overallScore: number;
+  level: ScorecardLevel;
+  categoryScores: ScorecardCategoryScores;
+  criteria: ScorecardCriterionResult[];
+  evaluatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// -- Scorecards Overview (FARM-S394) --
+// Extends ScorecardResult with component-level details returned by
+// GET /api/scorecards (the aggregated list endpoint).
+
+export interface ScorecardResultDto extends ScorecardResult {
+  componentName: string;
+  componentKind: string;
+  componentLifecycle: string;
+  teamId?: string;
+}
+
+interface ScorecardOverviewByTeam {
+  teamId: string;
+  teamName: string;
+  averageScore: number;
+  componentCount: number;
+}
+
+export interface ScorecardOverviewDto {
+  totalComponents: number;
+  averageScore: number;
+  /** e.g. { none: 5, bronze: 10, silver: 3, gold: 2, platinum: 1 } */
+  levelDistribution: Record<string, number>;
+  byTeam: ScorecardOverviewByTeam[];
+}

@@ -54,6 +54,7 @@ import { OpaModule } from "./modules/opa/opa.module";
 import { IacModule } from "./modules/iac/iac.module";
 import { ElasticsearchModule } from "./modules/elasticsearch/elasticsearch.module";
 import { ElasticsearchIndexModule } from "./modules/elasticsearch-index/elasticsearch-index.module";
+import { ScorecardsModule } from "./modules/scorecards/scorecards.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -428,6 +429,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
             "Link Elasticsearch index patterns to catalog components",
         },
         module: ElasticsearchIndexModule,
+      },
+      {
+        metadata: {
+          name: "core-scorecards",
+          version: "1.0.0",
+          description:
+            "Component scorecard evaluation, maturity levels, and criterion tracking",
+        },
+        module: ScorecardsModule,
       },
     ]),
   ],
