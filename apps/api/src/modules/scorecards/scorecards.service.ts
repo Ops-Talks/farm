@@ -83,7 +83,13 @@ export class ScorecardsService {
       where: { componentId },
     });
 
-    return saved!;
+    if (!saved) {
+      throw new Error(
+        `Scorecard upsert for component ${componentId} succeeded but the persisted row could not be retrieved.`,
+      );
+    }
+
+    return saved;
   }
 
   /**

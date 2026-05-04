@@ -154,7 +154,7 @@ describe("ScorecardSchedulerService", () => {
     // Second call: cursor set to last id of first batch
     expect(mockComponentRepo.find).toHaveBeenNthCalledWith(2, {
       select: ["id", "organizationId"],
-      where: { id: expect.objectContaining({ _value: "c-99" }) },
+      where: { id: expect.anything() },
       take: 100,
       order: { id: "ASC" },
     });

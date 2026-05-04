@@ -14,25 +14,15 @@ export class UniqueScorecardComponentId1776400000002
   name = "UniqueScorecardComponentId1776400000002";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const isPostgres = queryRunner.connection.options.type === "postgres";
-
     // Drop the old non-unique index first; it will be replaced by the unique one.
     await queryRunner.query(
       `DROP INDEX IF EXISTS "IDX_scorecard_results_component_id"`,
     );
 
-    if (isPostgres) {
-      await queryRunner.query(`
-        CREATE UNIQUE INDEX "UQ_scorecard_results_component_id"
-          ON "scorecard_results" ("component_id")
-      `);
-    } else {
-      // SQLite — DROP INDEX syntax does not require the table name qualifier.
-      await queryRunner.query(`
-        CREATE UNIQUE INDEX "UQ_scorecard_results_component_id"
-          ON "scorecard_results" ("component_id")
-      `);
-    }
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX "UQ_scorecard_results_component_id"
+        ON "scorecard_results" ("component_id")
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

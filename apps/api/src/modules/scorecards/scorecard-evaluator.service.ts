@@ -567,13 +567,17 @@ export class ScorecardEvaluatorService {
       // Fetch all OPA results for the component ordered newest-first, then
       // keep only the latest result per policyPath (in memory — avoids a
       // correlated subquery that differs between SQLite and PostgreSQL).
-      const allOpaResults = await this.opaResultRepository.find({
+      type OpaResultRecord = Pick<
+        Awaited<ReturnType<typeof this.opaResultRepository.find>>[number],
+        "id" | "policyPath" | "allowed" | "evaluatedAt"
+      >;
+      const allOpaResults: OpaResultRecord[] = await this.opaResultRepository.find({
         where: { componentId: component.id },
         order: { evaluatedAt: "DESC" },
         select: ["id", "policyPath", "allowed", "evaluatedAt"],
       });
 
-      const latestOpaByPath = new Map<string, (typeof allOpaResults)[0]>();
+      const latestOpaByPath = new Map<string, OpaResultRecord>();
       for (const result of allOpaResults) {
         if (!latestOpaByPath.has(result.policyPath)) {
           latestOpaByPath.set(result.policyPath, result);
