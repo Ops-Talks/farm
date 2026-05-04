@@ -19,15 +19,12 @@ import { Team } from "../../teams/entities/team.entity";
 
 const mockScorecardResultRepo = {
   findOne: jest.fn(),
-  save: jest.fn(),
-  create: jest.fn(),
-  merge: jest.fn(),
+  upsert: jest.fn(),
   createQueryBuilder: jest.fn(),
-  findByIds: jest.fn(),
 };
 
 const mockTeamRepo = {
-  findByIds: jest.fn(),
+  findBy: jest.fn(),
 };
 
 const mockEvaluatorService = {
@@ -154,12 +151,11 @@ describe("ScorecardsService", () => {
       level: ScorecardLevel.GOLD,
     });
 
-    it("calls evaluator, creates a new record, and saves when no existing scorecard is found", async () => {
+    it("calls evaluator, upserts the result, then returns the persisted record", async () => {
       mockEvaluatorService.evaluate.mockResolvedValue(evaluated);
-      mockScorecardResultRepo.findOne.mockResolvedValue(null);
-      const created = makeScorecardResult({ id: "new-id" });
-      mockScorecardResultRepo.create.mockReturnValue(created);
-      mockScorecardResultRepo.save.mockResolvedValue(created);
+      mockScorecardResultRepo.upsert.mockResolvedValue(undefined);
+      const saved = makeScorecardResult({ id: "persisted-id" });
+      mockScorecardResultRepo.findOne.mockResolvedValue(saved);
 
       const result = await service.evaluateAndSave(componentId, organizationId);
 
@@ -167,40 +163,14 @@ describe("ScorecardsService", () => {
         componentId,
         organizationId,
       );
+      expect(mockScorecardResultRepo.upsert).toHaveBeenCalledWith(
+        { ...evaluated, componentId },
+        { conflictPaths: ["componentId"], skipUpdateIfNoValuesChanged: false },
+      );
       expect(mockScorecardResultRepo.findOne).toHaveBeenCalledWith({
         where: { componentId },
       });
-      expect(mockScorecardResultRepo.create).toHaveBeenCalledWith(evaluated);
-      expect(mockScorecardResultRepo.save).toHaveBeenCalledWith(created);
-      expect(result).toEqual(created);
-    });
-
-    it("calls evaluator, merges with the existing record, and saves when a scorecard already exists", async () => {
-      const existing = makeScorecardResult({
-        id: "existing-id",
-        overallScore: 50,
-        level: ScorecardLevel.BRONZE,
-      });
-      const merged = makeScorecardResult({
-        id: "existing-id",
-        overallScore: 80,
-        level: ScorecardLevel.GOLD,
-      });
-
-      mockEvaluatorService.evaluate.mockResolvedValue(evaluated);
-      mockScorecardResultRepo.findOne.mockResolvedValue(existing);
-      mockScorecardResultRepo.merge.mockReturnValue(merged);
-      mockScorecardResultRepo.save.mockResolvedValue(merged);
-
-      const result = await service.evaluateAndSave(componentId, organizationId);
-
-      expect(mockScorecardResultRepo.create).not.toHaveBeenCalled();
-      expect(mockScorecardResultRepo.merge).toHaveBeenCalledWith(
-        existing,
-        evaluated,
-      );
-      expect(mockScorecardResultRepo.save).toHaveBeenCalledWith(merged);
-      expect(result).toEqual(merged);
+      expect(result).toEqual(saved);
     });
 
     it("propagates a NotFoundException thrown by the evaluatorService", async () => {
@@ -221,7 +191,7 @@ describe("ScorecardsService", () => {
   describe("findByComponent", () => {
     const componentId = "comp-uuid-1";
 
-    it("returns the scorecard when found", async () => {
+    it("returns the scorecard when found (no org scope)", async () => {
       const scorecard = makeScorecardResult({ componentId });
       mockScorecardResultRepo.findOne.mockResolvedValue(scorecard);
 
@@ -230,6 +200,18 @@ describe("ScorecardsService", () => {
       expect(result).toEqual(scorecard);
       expect(mockScorecardResultRepo.findOne).toHaveBeenCalledWith({
         where: { componentId },
+      });
+    });
+
+    it("includes organizationId in the where clause when supplied", async () => {
+      const scorecard = makeScorecardResult({ componentId });
+      mockScorecardResultRepo.findOne.mockResolvedValue(scorecard);
+
+      const result = await service.findByComponent(componentId, "org-uuid-1");
+
+      expect(result).toEqual(scorecard);
+      expect(mockScorecardResultRepo.findOne).toHaveBeenCalledWith({
+        where: { componentId, organizationId: "org-uuid-1" },
       });
     });
 
@@ -352,7 +334,7 @@ describe("ScorecardsService", () => {
 
     it("returns totalComponents = 0 and averageScore = 0 when there are no components", async () => {
       jest.spyOn(service, "findAll").mockResolvedValue([]);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -362,7 +344,7 @@ describe("ScorecardsService", () => {
 
     it("initialises all ScorecardLevel keys to 0 in levelDistribution when there are no components", async () => {
       jest.spyOn(service, "findAll").mockResolvedValue([]);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -390,7 +372,7 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -416,7 +398,7 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -448,7 +430,7 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -481,7 +463,7 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([
+      mockTeamRepo.findBy.mockResolvedValue([
         { id: "team-1", displayName: "Team Alpha" },
         { id: "team-2", displayName: "Team Beta" },
       ]);
@@ -519,7 +501,7 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([
+      mockTeamRepo.findBy.mockResolvedValue([
         { id: "team-1", displayName: "Team Alpha" },
       ]);
 
@@ -539,13 +521,13 @@ describe("ScorecardsService", () => {
         }),
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
-      mockTeamRepo.findByIds.mockResolvedValue([
+      mockTeamRepo.findBy.mockResolvedValue([
         { id: "team-1", displayName: "Engineering" },
       ]);
 
       const overview = await service.getOverview();
 
-      expect(mockTeamRepo.findByIds).toHaveBeenCalledWith(["team-1"]);
+      expect(mockTeamRepo.findBy).toHaveBeenCalledWith({ id: expect.anything() });
       expect(overview.byTeam[0].teamName).toBe("Engineering");
     });
 
@@ -560,7 +542,7 @@ describe("ScorecardsService", () => {
       ];
       jest.spyOn(service, "findAll").mockResolvedValue(results);
       // Repository returns an empty list — the team name is unknown.
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       const overview = await service.getOverview();
 
@@ -569,7 +551,7 @@ describe("ScorecardsService", () => {
 
     it("passes organizationId to findAll", async () => {
       const findAllSpy = jest.spyOn(service, "findAll").mockResolvedValue([]);
-      mockTeamRepo.findByIds.mockResolvedValue([]);
+      mockTeamRepo.findBy.mockResolvedValue([]);
 
       await service.getOverview("org-uuid-1");
 

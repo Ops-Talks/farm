@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import {
   ScorecardResult,
   ScorecardLevel,
@@ -432,7 +432,25 @@ export class ScorecardEvaluatorService {
   // ---------------------------------------------------------------------------
 
   /**
+   * Returns the most recently scanned image tag for the component, or null
+   * when no vulnerability records exist. Used by both vulnerability criteria
+   * so they evaluate only the current image and not stale historical scans.
+   */
+  private async latestVulnerabilityTag(
+    componentId: string,
+  ): Promise<string | null> {
+    const latest = await this.containerVulnerabilityRepository.findOne({
+      where: { componentId },
+      order: { scannedAt: "DESC" },
+      select: ["tag"],
+    });
+    return latest?.tag ?? null;
+  }
+
+  /**
    * Rule 9 — zero critical-severity container vulnerabilities.
+   * Counts only findings for the most recently scanned image tag so that
+   * stale CVEs from a superseded tag do not keep this criterion failing.
    * notApplicable when no vulnerability records exist at all for the component.
    */
   private async evaluateNoCriticalVulnerabilities(
@@ -448,17 +466,16 @@ export class ScorecardEvaluatorService {
     };
 
     try {
-      const totalCount = await this.containerVulnerabilityRepository.count({
-        where: { componentId: component.id },
-      });
+      const latestTag = await this.latestVulnerabilityTag(component.id);
 
-      if (totalCount === 0) {
+      if (latestTag === null) {
         return { ...base, passed: false, notApplicable: true };
       }
 
       const criticalCount = await this.containerVulnerabilityRepository.count({
         where: {
           componentId: component.id,
+          tag: latestTag,
           severity: VulnerabilitySeverity.CRITICAL,
         },
       });
@@ -474,6 +491,8 @@ export class ScorecardEvaluatorService {
 
   /**
    * Rule 10 — zero high-severity container vulnerabilities.
+   * Counts only findings for the most recently scanned image tag so that
+   * stale CVEs from a superseded tag do not keep this criterion failing.
    * notApplicable when no vulnerability records exist at all for the component.
    */
   private async evaluateNoHighVulnerabilities(
@@ -489,17 +508,16 @@ export class ScorecardEvaluatorService {
     };
 
     try {
-      const totalCount = await this.containerVulnerabilityRepository.count({
-        where: { componentId: component.id },
-      });
+      const latestTag = await this.latestVulnerabilityTag(component.id);
 
-      if (totalCount === 0) {
+      if (latestTag === null) {
         return { ...base, passed: false, notApplicable: true };
       }
 
       const highCount = await this.containerVulnerabilityRepository.count({
         where: {
           componentId: component.id,
+          tag: latestTag,
           severity: VulnerabilitySeverity.HIGH,
         },
       });
@@ -515,7 +533,13 @@ export class ScorecardEvaluatorService {
 
   /**
    * Rule 11 — zero resource violations and zero failing OPA policy results.
-   * notApplicable when neither entity has any records for this component.
+   *
+   * Only active (unresolved) resource tag violations are counted — rows with
+   * a non-null `resolvedAt` are excluded. For OPA, only the most recent
+   * evaluation per `policyPath` is considered so that a stale denied result
+   * does not keep the criterion failing after the component becomes compliant.
+   *
+   * notApplicable when neither data source has any records for this component.
    */
   private async evaluateNoPolicyViolations(
     component: Component,
@@ -530,23 +554,45 @@ export class ScorecardEvaluatorService {
     };
 
     try {
-      const [violationCount, opaCount, opaFailingCount] = await Promise.all([
-        this.resourceViolationRepository.count({
-          where: { linkedComponentId: component.id },
-        }),
-        this.opaResultRepository.count({
-          where: { componentId: component.id },
-        }),
-        this.opaResultRepository.count({
-          where: { componentId: component.id, allowed: false },
-        }),
-      ]);
+      // Count only active (unresolved) tag-policy violations.
+      const activeViolationCount = await this.resourceViolationRepository.count(
+        {
+          where: {
+            linkedComponentId: component.id,
+            resolvedAt: IsNull(),
+          },
+        },
+      );
 
-      if (violationCount === 0 && opaCount === 0) {
+      // Fetch all OPA results for the component ordered newest-first, then
+      // keep only the latest result per policyPath (in memory — avoids a
+      // correlated subquery that differs between SQLite and PostgreSQL).
+      const allOpaResults = await this.opaResultRepository.find({
+        where: { componentId: component.id },
+        order: { evaluatedAt: "DESC" },
+        select: ["id", "policyPath", "allowed", "evaluatedAt"],
+      });
+
+      const latestOpaByPath = new Map<string, (typeof allOpaResults)[0]>();
+      for (const result of allOpaResults) {
+        if (!latestOpaByPath.has(result.policyPath)) {
+          latestOpaByPath.set(result.policyPath, result);
+        }
+      }
+
+      const opaCount = latestOpaByPath.size;
+      const opaFailingCount = Array.from(latestOpaByPath.values()).filter(
+        (r) => !r.allowed,
+      ).length;
+
+      if (activeViolationCount === 0 && opaCount === 0) {
         return { ...base, passed: false, notApplicable: true };
       }
 
-      return { ...base, passed: violationCount === 0 && opaFailingCount === 0 };
+      return {
+        ...base,
+        passed: activeViolationCount === 0 && opaFailingCount === 0,
+      };
     } catch (err) {
       this.logger.warn(
         `no-policy-violations query failed for component ${component.id}: ${String(err)}`,
@@ -591,7 +637,13 @@ export class ScorecardEvaluatorService {
     }
   }
 
-  /** Rule 13 — at least one FluxBinding exists for the component. */
+  /**
+   * Rule 13 — component is managed via GitOps (Flux binding or ArgoCD app).
+   *
+   * Passes when at least one FluxBinding row exists for the component, or when
+   * the component has a non-null `argocdApp` linkage. Both are first-class
+   * GitOps paths modelled in FARM.
+   */
   private async evaluateHasGitops(
     component: Component,
   ): Promise<ScorecardCriterionResult> {
@@ -600,10 +652,16 @@ export class ScorecardEvaluatorService {
       name: "Has GitOps",
       category: "infrastructure",
       weight: 0.7,
-      description: "Component must have at least one Flux GitOps binding.",
+      description:
+        "Component must have at least one Flux GitOps binding or an ArgoCD application linkage.",
     };
 
     try {
+      // Short-circuit on ArgoCD linkage — no DB query needed.
+      if (component.argocdApp) {
+        return { ...base, passed: true };
+      }
+
       const count = await this.fluxBindingRepository.count({
         where: { componentId: component.id },
       });

@@ -198,22 +198,26 @@ describe("ScorecardEvaluatorService", () => {
     deploymentRepo.find.mockResolvedValue(makeDeployments(10, 10));
 
     // security — vulnerabilities present but none critical/high; OPA applicable
+    containerVulnRepo.findOne.mockResolvedValue({ tag: "v1.0.0" });
     containerVulnRepo.count.mockImplementation(
       ({ where }: { where: Record<string, unknown> }) => {
         if (where.severity === VulnerabilitySeverity.CRITICAL)
           return Promise.resolve(0);
         if (where.severity === VulnerabilitySeverity.HIGH)
           return Promise.resolve(0);
-        return Promise.resolve(3); // total > 0 makes criteria applicable
+        return Promise.resolve(3);
       },
     );
     resourceViolationRepo.count.mockResolvedValue(0);
-    opaResultRepo.count.mockImplementation(
-      ({ where }: { where: Record<string, unknown> }) => {
-        if (where.allowed === false) return Promise.resolve(0);
-        return Promise.resolve(1); // total > 0 makes criteria applicable
+    // OPA: one applicable + passing policy result (latest-per-policyPath logic)
+    opaResultRepo.find.mockResolvedValue([
+      {
+        id: "opa-1",
+        policyPath: "app/security/allow",
+        allowed: true,
+        evaluatedAt: new Date(),
       },
-    );
+    ]);
 
     // infrastructure
     iacModuleRepo.count.mockResolvedValue(1);
@@ -259,14 +263,15 @@ describe("ScorecardEvaluatorService", () => {
     resourceViolationRepo.count.mockResolvedValue(0);
     opaResultRepo.count.mockResolvedValue(0);
 
-    // Security — total=3, critical=2, high=1
+    // Security — critical=2, high=1 for the latest tag
+    containerVulnRepo.findOne.mockResolvedValue({ tag: "v1.0.0" });
     containerVulnRepo.count.mockImplementation(
       ({ where }: { where: Record<string, unknown> }) => {
         if (where.severity === VulnerabilitySeverity.CRITICAL)
           return Promise.resolve(2);
         if (where.severity === VulnerabilitySeverity.HIGH)
           return Promise.resolve(1);
-        return Promise.resolve(3); // total
+        return Promise.resolve(3);
       },
     );
 
@@ -378,9 +383,10 @@ describe("ScorecardEvaluatorService", () => {
     apiSpecRepo.find.mockResolvedValue([]);
     sloRepo.count.mockResolvedValue(0);
     deploymentRepo.find.mockResolvedValue([]);
+    containerVulnRepo.findOne.mockResolvedValue(null);
     containerVulnRepo.count.mockResolvedValue(0);
     resourceViolationRepo.count.mockResolvedValue(0);
-    opaResultRepo.count.mockResolvedValue(0);
+    opaResultRepo.find.mockResolvedValue([]);
     iacModuleRepo.count.mockResolvedValue(0);
     iacStackRepo.count.mockResolvedValue(0);
     fluxBindingRepo.count.mockResolvedValue(0);
@@ -418,9 +424,12 @@ describe("ScorecardEvaluatorService", () => {
       apiSpecRepo.find.mockResolvedValue([]);
       sloRepo.count.mockResolvedValue(0);
       deploymentRepo.find.mockResolvedValue([]);
+      // No latest scan tag → vulnerability criteria are notApplicable
+      containerVulnRepo.findOne.mockResolvedValue(null);
       containerVulnRepo.count.mockResolvedValue(0);
       resourceViolationRepo.count.mockResolvedValue(0);
-      opaResultRepo.count.mockResolvedValue(0);
+      // Empty OPA results → policy-violations criterion is notApplicable
+      opaResultRepo.find.mockResolvedValue([]);
       iacModuleRepo.count.mockResolvedValue(0);
       iacStackRepo.count.mockResolvedValue(0);
       fluxBindingRepo.count.mockResolvedValue(0);
@@ -591,24 +600,27 @@ describe("ScorecardEvaluatorService", () => {
       sloRepo.count.mockResolvedValue(1);
       deploymentRepo.find.mockResolvedValue(makeDeployments(10, 10));
 
-      // Vuln: total > 0 so criteria are applicable, critical=0 and high=0 → pass
+      // Vuln: latest tag returns a value so criteria are applicable; zero critical/high → pass
+      containerVulnRepo.findOne.mockResolvedValue({ tag: "v2.0.0" });
       containerVulnRepo.count.mockImplementation(
         ({ where }: { where: Record<string, unknown> }) => {
           if (where.severity === VulnerabilitySeverity.CRITICAL)
             return Promise.resolve(0);
           if (where.severity === VulnerabilitySeverity.HIGH)
             return Promise.resolve(0);
-          return Promise.resolve(5); // total > 0
+          return Promise.resolve(5);
         },
       );
       resourceViolationRepo.count.mockResolvedValue(0);
-      // OPA: total=1 so criteria is applicable, failing=0 → pass
-      opaResultRepo.count.mockImplementation(
-        ({ where }: { where: Record<string, unknown> }) => {
-          if (where.allowed === false) return Promise.resolve(0);
-          return Promise.resolve(1);
+      // OPA: one passing policy result (latest-per-policyPath, allowed=true) → pass
+      opaResultRepo.find.mockResolvedValue([
+        {
+          id: "opa-1",
+          policyPath: "app/security/allow",
+          allowed: true,
+          evaluatedAt: new Date(),
         },
-      );
+      ]);
 
       iacModuleRepo.count.mockResolvedValue(1);
       iacStackRepo.count.mockResolvedValue(0);

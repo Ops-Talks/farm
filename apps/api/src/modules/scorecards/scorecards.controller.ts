@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -18,6 +19,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ScorecardLevel } from "./entities/scorecard-result.entity";
 import { ScorecardsService } from "./scorecards.service";
 import {
@@ -46,11 +48,6 @@ export class ScorecardsController {
   @Get()
   @ApiOperation({ summary: "List all scorecard results" })
   @ApiQuery({
-    name: "organizationId",
-    required: false,
-    description: "Filter results by organization UUID",
-  })
-  @ApiQuery({
     name: "level",
     required: false,
     enum: ScorecardLevel,
@@ -76,13 +73,13 @@ export class ScorecardsController {
     description: "Authentication token is missing or invalid.",
   })
   async findAll(
-    @Query("organizationId") organizationId?: string,
+    @Req() req: RequestWithOrg,
     @Query("level") level?: ScorecardLevel,
     @Query("kind") kind?: string,
     @Query("teamId") teamId?: string,
   ): Promise<ScorecardResultDto[]> {
     const results = await this.scorecardsService.findAll({
-      organizationId,
+      organizationId: req.organizationId,
       level,
       kind,
       teamId,
@@ -111,11 +108,6 @@ export class ScorecardsController {
    */
   @Get("overview")
   @ApiOperation({ summary: "Get aggregated scorecard overview" })
-  @ApiQuery({
-    name: "organizationId",
-    required: false,
-    description: "Scope the overview to a specific organization UUID",
-  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Aggregated scorecard overview.",
@@ -125,10 +117,8 @@ export class ScorecardsController {
     status: HttpStatus.UNAUTHORIZED,
     description: "Authentication token is missing or invalid.",
   })
-  async getOverview(
-    @Query("organizationId") organizationId?: string,
-  ): Promise<ScorecardOverviewDto> {
-    const data = await this.scorecardsService.getOverview(organizationId);
+  async getOverview(@Req() req: RequestWithOrg): Promise<ScorecardOverviewDto> {
+    const data = await this.scorecardsService.getOverview(req.organizationId);
 
     return {
       totalComponents: data.totalComponents,
@@ -164,9 +154,13 @@ export class ScorecardsController {
     description: "Authentication token is missing or invalid.",
   })
   async findByComponent(
+    @Req() req: RequestWithOrg,
     @Param("componentId") componentId: string,
   ): Promise<ScorecardResultDto> {
-    const result = await this.scorecardsService.findByComponent(componentId);
+    const result = await this.scorecardsService.findByComponent(
+      componentId,
+      req.organizationId,
+    );
 
     if (!result) {
       throw new NotFoundException(
@@ -216,12 +210,13 @@ export class ScorecardsController {
     description: "Authentication token is missing or invalid.",
   })
   async refresh(
+    @Req() req: RequestWithOrg,
     @Param("componentId") componentId: string,
-    @Body() dto: RefreshScorecardDto,
+    @Body() _dto: RefreshScorecardDto,
   ): Promise<ScorecardResultDto> {
     const result = await this.scorecardsService.evaluateAndSave(
       componentId,
-      dto.organizationId,
+      req.organizationId,
     );
 
     return {

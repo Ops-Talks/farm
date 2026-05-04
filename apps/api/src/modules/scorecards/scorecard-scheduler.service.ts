@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { MoreThan, Repository } from "typeorm";
 import { Component } from "../catalog/entities/component.entity";
 import { ScorecardsService } from "./scorecards.service";
 
@@ -26,26 +26,29 @@ export class ScorecardSchedulerService {
   /**
    * Recomputes scorecard results for every component in the catalog.
    *
-   * Components are fetched in batches of 100. Each component is evaluated
-   * individually so that a failure on one component does not prevent the
-   * remaining components from being processed. A summary is logged at the end
-   * of each run.
+   * Components are fetched in batches of 100 using cursor-based pagination
+   * keyed on the primary `id` column. This avoids the skip/offset problem
+   * where concurrent inserts or deletes shift rows and cause pages to be
+   * skipped or reprocessed. Each component is evaluated individually so that
+   * a failure on one component does not prevent the remaining components from
+   * being processed. A summary is logged at the end of each run.
    */
   @Cron(CronExpression.EVERY_HOUR)
   async recomputeAll(): Promise<void> {
     this.logger.log("Starting hourly scorecard recomputation");
 
     const batchSize = 100;
-    let skip = 0;
+    let lastId = "";
     let successCount = 0;
     let errorCount = 0;
 
     while (true) {
+      const where = lastId ? { id: MoreThan(lastId) } : {};
       const batch = await this.componentRepo.find({
         select: ["id", "organizationId"],
-        skip,
+        where,
         take: batchSize,
-        order: { createdAt: "ASC" },
+        order: { id: "ASC" },
       });
 
       if (batch.length === 0) {
@@ -68,7 +71,7 @@ export class ScorecardSchedulerService {
         }
       }
 
-      skip += batchSize;
+      lastId = batch[batch.length - 1].id;
 
       // Stop when the last batch was smaller than the batch size — no more rows.
       if (batch.length < batchSize) {

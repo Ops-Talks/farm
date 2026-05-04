@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import {
   ScorecardResult,
   ScorecardLevel,
@@ -57,8 +57,9 @@ export class ScorecardsService {
 
   /**
    * Runs the full evaluation for the given component and upserts the result.
-   * If a scorecard result already exists for the component it is updated in
-   * place; otherwise a new record is inserted.
+   * Uses a database-level upsert (INSERT … ON CONFLICT DO UPDATE) so that
+   * concurrent calls — e.g. a manual refresh racing with the hourly cron —
+   * cannot produce duplicate rows.
    *
    * @param componentId - UUID of the component to evaluate.
    * @param organizationId - Optional organization UUID for scoping.
@@ -73,28 +74,37 @@ export class ScorecardsService {
       organizationId,
     );
 
-    const existing = await this.scorecardResultRepository.findOne({
+    await this.scorecardResultRepository.upsert(
+      { ...evaluated, componentId },
+      { conflictPaths: ["componentId"], skipUpdateIfNoValuesChanged: false },
+    );
+
+    const saved = await this.scorecardResultRepository.findOne({
       where: { componentId },
     });
 
-    if (existing) {
-      const updated = this.scorecardResultRepository.merge(existing, evaluated);
-      return this.scorecardResultRepository.save(updated);
-    }
-
-    const created = this.scorecardResultRepository.create(evaluated);
-    return this.scorecardResultRepository.save(created);
+    return saved!;
   }
 
   /**
    * Returns the most recent scorecard result for a component, or null when
    * no result has been recorded yet.
    *
+   * When `organizationId` is supplied the result is only returned when the
+   * scorecard belongs to that organization, preventing cross-tenant leakage.
+   *
    * @param componentId - UUID of the component to look up.
+   * @param organizationId - Optional organization UUID for scoping.
    */
-  async findByComponent(componentId: string): Promise<ScorecardResult | null> {
+  async findByComponent(
+    componentId: string,
+    organizationId?: string,
+  ): Promise<ScorecardResult | null> {
     return this.scorecardResultRepository.findOne({
-      where: { componentId },
+      where: {
+        componentId,
+        ...(organizationId !== undefined ? { organizationId } : {}),
+      },
     });
   }
 
@@ -202,7 +212,9 @@ export class ScorecardsService {
     // Fetch team display names for all collected team IDs.
     const teamIds = Array.from(teamMap.keys());
     const teams =
-      teamIds.length > 0 ? await this.teamRepository.findByIds(teamIds) : [];
+      teamIds.length > 0
+        ? await this.teamRepository.findBy({ id: In(teamIds) })
+        : [];
 
     const teamNameMap = new Map<string, string>(
       teams.map((t) => [t.id, t.displayName]),

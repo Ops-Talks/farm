@@ -191,10 +191,17 @@ export function ScorecardsClient() {
   const [sortField, setSortField] = useState<SortField>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = [], isLoading: isListLoading } = useQuery({
     queryKey: ["scorecards-list"],
     queryFn: () => scorecardsApi.listAll(),
   });
+
+  const { data: overview, isLoading: isOverviewLoading } = useQuery({
+    queryKey: ["scorecards-overview"],
+    queryFn: () => scorecardsApi.getOverview(),
+  });
+
+  const isLoading = isListLoading || isOverviewLoading;
 
   // Derive unique component kind values from the response for the dropdown.
   const kindOptions = useMemo(() => {
@@ -207,27 +214,35 @@ export function ScorecardsClient() {
     ];
   }, [rows]);
 
-  // Summary card values
-  const totalComponents = rows.length;
+  // Summary card values — use the overview endpoint for aggregates to avoid
+  // computing them from the full list (which includes every criterion array).
+  const totalComponents = overview?.totalComponents ?? rows.length;
   const averageScore =
-    rows.length > 0
-      ? Math.round(
-          rows.reduce((acc, r) => acc + r.overallScore, 0) / rows.length,
-        )
-      : 0;
-  const goldPlus = rows.filter(
-    (r) => r.level === "gold" || r.level === "platinum",
-  ).length;
+    overview !== undefined
+      ? Math.round(overview.averageScore)
+      : rows.length > 0
+        ? Math.round(
+            rows.reduce((acc, r) => acc + r.overallScore, 0) / rows.length,
+          )
+        : 0;
+  const goldPlus =
+    overview !== undefined
+      ? (overview.levelDistribution?.gold ?? 0) +
+        (overview.levelDistribution?.platinum ?? 0)
+      : rows.filter((r) => r.level === "gold" || r.level === "platinum").length;
   const failingSecurity = rows.filter((r) =>
     r.criteria.some(
       (c) => c.category === "security" && !c.passed && !c.notApplicable,
     ),
   ).length;
 
-  // Level distribution counts (for the distribution row below summary cards)
+  // Level distribution counts — prefer the overview payload.
   const levelCounts = LEVEL_ORDER.map((lvl) => ({
     level: lvl,
-    count: rows.filter((r) => r.level === lvl).length,
+    count:
+      overview !== undefined
+        ? (overview.levelDistribution?.[lvl] ?? 0)
+        : rows.filter((r) => r.level === lvl).length,
   }));
 
   // Client-side filtering

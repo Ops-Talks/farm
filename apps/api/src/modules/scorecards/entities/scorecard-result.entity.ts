@@ -82,7 +82,7 @@ export class ScorecardResult {
     description: "UUID of the evaluated component",
   })
   @Column({ name: "component_id" })
-  @Index()
+  @Index({ unique: true })
   componentId: string;
 
   /**

@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsString } from "class-validator";
 import {
   ScorecardLevel,
   ScorecardCategoryScores,
@@ -165,14 +164,8 @@ export class ScorecardOverviewDto {
 
 /**
  * Request body for the POST /scorecards/components/:componentId/refresh endpoint.
- * All fields are optional.
+ * The body is accepted for forward-compatibility but the organization scope is
+ * always taken from the validated RequestWithOrg context (X-Organization-Id
+ * header), never from client-supplied input.
  */
-export class RefreshScorecardDto {
-  @ApiPropertyOptional({
-    example: "550e8400-e29b-41d4-a716-446655440100",
-    description: "Optional organization UUID used to scope the evaluation",
-  })
-  @IsOptional()
-  @IsString()
-  organizationId?: string;
-}
+export class RefreshScorecardDto {}

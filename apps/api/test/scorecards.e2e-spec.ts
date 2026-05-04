@@ -68,10 +68,12 @@ describe("Scorecards API (e2e)", () => {
   // ---------------------------------------------------------------------------
 
   it("GET /api/v1/scorecards/components/:id should return 404 when no scorecard has been computed for the component", async () => {
-    // Use a well-formed but non-existent UUID — the controller returns 404 when
-    // the scorecard result row does not exist yet.
+    // Use the real component created in beforeAll. No scorecard has been
+    // computed yet at this point, so the controller must return 404 for the
+    // correct reason (scorecard result row does not exist) rather than because
+    // the component UUID itself is unknown.
     await request(app.getHttpServer())
-      .get("/api/v1/scorecards/components/00000000-0000-0000-0000-000000000000")
+      .get(`/api/v1/scorecards/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });

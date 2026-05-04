@@ -9,10 +9,12 @@ import type { ScorecardResultDto } from "@/types/api";
 // ---------------------------------------------------------------------------
 
 const mockListAll = vi.fn();
+const mockGetOverview = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   scorecards: {
     listAll: (...args: unknown[]) => mockListAll(...args),
+    getOverview: (...args: unknown[]) => mockGetOverview(...args),
   },
 }));
 
@@ -77,6 +79,16 @@ function makeRow(overrides: Partial<ScorecardResultDto> = {}): ScorecardResultDt
   };
 }
 
+function makeOverview(overrides: Partial<{ totalComponents: number; averageScore: number; levelDistribution: Record<string, number>; byTeam: unknown[] }> = {}) {
+  return {
+    totalComponents: 0,
+    averageScore: 0,
+    levelDistribution: { none: 0, bronze: 0, silver: 0, gold: 0, platinum: 0 },
+    byTeam: [],
+    ...overrides,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -84,11 +96,15 @@ function makeRow(overrides: Partial<ScorecardResultDto> = {}): ScorecardResultDt
 describe("ScorecardsClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Provide a default empty overview so tests that don't care about summary
+    // cards don't need to mock it explicitly.
+    mockGetOverview.mockResolvedValue(makeOverview());
   });
 
   // 1. Loading skeleton is shown initially while query is in-flight
   it("renders loading skeleton rows while query is loading", () => {
     mockListAll.mockReturnValue(new Promise(() => {}));
+    mockGetOverview.mockReturnValue(new Promise(() => {}));
 
     render(<ScorecardsClient />, { wrapper: createWrapper() });
 
@@ -106,6 +122,9 @@ describe("ScorecardsClient", () => {
       makeRow({ id: "sc-2", componentId: "comp-2", componentName: "auth-service", overallScore: 60, level: "bronze" }),
     ];
     mockListAll.mockResolvedValueOnce(rows);
+    mockGetOverview.mockResolvedValueOnce(
+      makeOverview({ totalComponents: 2, averageScore: 70, levelDistribution: { none: 0, bronze: 1, silver: 0, gold: 1, platinum: 0 } }),
+    );
 
     render(<ScorecardsClient />, { wrapper: createWrapper() });
 
@@ -117,7 +136,7 @@ describe("ScorecardsClient", () => {
     expect(screen.getByText("Total Components")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
 
-    // Average Score card — (80 + 60) / 2 = 70%
+    // Average Score card — 70% from overview
     expect(screen.getByText("Average Score")).toBeInTheDocument();
     // 70% appears in the average score card but also in category columns;
     // verify at least one element shows it
@@ -263,6 +282,9 @@ describe("ScorecardsClient", () => {
       makeRow({ id: "sc-2", componentId: "comp-2", componentName: "svc-b", level: "bronze" }),
     ];
     mockListAll.mockResolvedValueOnce(rows);
+    mockGetOverview.mockResolvedValueOnce(
+      makeOverview({ totalComponents: 2, levelDistribution: { none: 0, bronze: 1, silver: 0, gold: 1, platinum: 0 } }),
+    );
 
     render(<ScorecardsClient />, { wrapper: createWrapper() });
 

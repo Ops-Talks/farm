@@ -73,6 +73,14 @@ function makeServiceSingleResult(
 }
 
 // ---------------------------------------------------------------------------
+// Helpers — build a minimal RequestWithOrg stub
+// ---------------------------------------------------------------------------
+
+function makeReq(organizationId?: string): { organizationId?: string } {
+  return { organizationId };
+}
+
+// ---------------------------------------------------------------------------
 // Test suite
 // ---------------------------------------------------------------------------
 
@@ -111,7 +119,7 @@ describe("ScorecardsController", () => {
     it("returns a mapped ScorecardResultDto array from the service", async () => {
       service.findAll.mockResolvedValue([makeServiceListResult()]);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(makeReq());
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe("result-uuid-1");
@@ -124,11 +132,11 @@ describe("ScorecardsController", () => {
       expect(result[0].teamId).toBe("team-uuid-1");
     });
 
-    it("passes all query params (organizationId, level, kind, teamId) to the service", async () => {
+    it("passes organizationId from the request context and other query params to the service", async () => {
       service.findAll.mockResolvedValue([]);
 
       await controller.findAll(
-        "org-uuid-1",
+        makeReq("org-uuid-1"),
         ScorecardLevel.GOLD,
         "service",
         "team-uuid-1",
@@ -145,7 +153,7 @@ describe("ScorecardsController", () => {
     it("returns an empty array when the service returns no results", async () => {
       service.findAll.mockResolvedValue([]);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(makeReq());
 
       expect(result).toEqual([]);
     });
@@ -156,7 +164,7 @@ describe("ScorecardsController", () => {
         makeServiceListResult({ overallScore: "82.50" as unknown as number }),
       ]);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(makeReq());
 
       expect(result[0].overallScore).toBe(82.5);
       expect(typeof result[0].overallScore).toBe("number");
@@ -167,7 +175,7 @@ describe("ScorecardsController", () => {
         makeServiceListResult({ teamId: null }),
       ]);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(makeReq());
 
       expect(result[0].teamId).toBeNull();
     });
@@ -201,7 +209,7 @@ describe("ScorecardsController", () => {
     it("returns ScorecardOverviewDto from the service", async () => {
       service.getOverview.mockResolvedValue(overviewData);
 
-      const result = await controller.getOverview();
+      const result = await controller.getOverview(makeReq());
 
       expect(result.totalComponents).toBe(5);
       expect(result.averageScore).toBe(70);
@@ -209,7 +217,7 @@ describe("ScorecardsController", () => {
       expect(result.byTeam).toEqual(overviewData.byTeam);
     });
 
-    it("passes organizationId to the service", async () => {
+    it("passes organizationId from the request context to the service", async () => {
       service.getOverview.mockResolvedValue({
         totalComponents: 0,
         averageScore: 0,
@@ -217,7 +225,7 @@ describe("ScorecardsController", () => {
         byTeam: [],
       });
 
-      await controller.getOverview("org-uuid-1");
+      await controller.getOverview(makeReq("org-uuid-1"));
 
       expect(service.getOverview).toHaveBeenCalledWith("org-uuid-1");
     });
@@ -233,7 +241,7 @@ describe("ScorecardsController", () => {
     it("returns a ScorecardResultDto when the scorecard exists", async () => {
       service.findByComponent.mockResolvedValue(makeServiceSingleResult());
 
-      const result = await controller.findByComponent(componentId);
+      const result = await controller.findByComponent(makeReq(), componentId);
 
       expect(result.id).toBe("result-uuid-1");
       expect(result.componentId).toBe("comp-uuid-1");
@@ -246,9 +254,9 @@ describe("ScorecardsController", () => {
     it("throws NotFoundException when the service returns null", async () => {
       service.findByComponent.mockResolvedValue(null);
 
-      await expect(controller.findByComponent(componentId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.findByComponent(makeReq(), componentId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -267,8 +275,8 @@ describe("ScorecardsController", () => {
       });
       service.evaluateAndSave.mockResolvedValue(saved);
 
-      const dto: RefreshScorecardDto = { organizationId: "org-uuid-1" };
-      const result = await controller.refresh(componentId, dto);
+      const dto: RefreshScorecardDto = {};
+      const result = await controller.refresh(makeReq("org-uuid-1"), componentId, dto);
 
       expect(result.id).toBe("result-uuid-1");
       expect(result.overallScore).toBe(90);
@@ -276,11 +284,11 @@ describe("ScorecardsController", () => {
       expect(result.evaluatedAt).toEqual(NOW);
     });
 
-    it("passes componentId and dto.organizationId to the service", async () => {
+    it("passes componentId and organizationId from the request context to the service", async () => {
       service.evaluateAndSave.mockResolvedValue(makeServiceSingleResult());
 
-      const dto: RefreshScorecardDto = { organizationId: "org-uuid-1" };
-      await controller.refresh(componentId, dto);
+      const dto: RefreshScorecardDto = {};
+      await controller.refresh(makeReq("org-uuid-1"), componentId, dto);
 
       expect(service.evaluateAndSave).toHaveBeenCalledWith(
         componentId,
@@ -288,11 +296,11 @@ describe("ScorecardsController", () => {
       );
     });
 
-    it("passes undefined organizationId when dto carries no organizationId", async () => {
+    it("passes undefined organizationId when the request context carries no org", async () => {
       service.evaluateAndSave.mockResolvedValue(makeServiceSingleResult());
 
       const dto: RefreshScorecardDto = {};
-      await controller.refresh(componentId, dto);
+      await controller.refresh(makeReq(), componentId, dto);
 
       expect(service.evaluateAndSave).toHaveBeenCalledWith(
         componentId,

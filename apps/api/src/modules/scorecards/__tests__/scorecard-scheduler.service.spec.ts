@@ -70,16 +70,16 @@ describe("ScorecardSchedulerService", () => {
     expect(mockScorecardsService.evaluateAndSave).not.toHaveBeenCalled();
   });
 
-  it("calls componentRepo.find with correct skip/take/order on first batch", async () => {
+  it("calls componentRepo.find with cursor-based pagination (where:{}, order:{ id: ASC }) on first batch", async () => {
     mockComponentRepo.find.mockResolvedValueOnce([]);
 
     await service.recomputeAll();
 
     expect(mockComponentRepo.find).toHaveBeenCalledWith({
       select: ["id", "organizationId"],
-      skip: 0,
+      where: {},
       take: 100,
-      order: { createdAt: "ASC" },
+      order: { id: "ASC" },
     });
   });
 
@@ -129,7 +129,7 @@ describe("ScorecardSchedulerService", () => {
 
   // ── Multiple batches ───────────────────────────────────────────────────────
 
-  it("processes multiple full batches and increments skip correctly", async () => {
+  it("processes multiple full batches with cursor-based pagination", async () => {
     const batch1 = Array.from({ length: 100 }, (_, i) =>
       makeComponent(`c-${i}`, "org-1"),
     );
@@ -144,17 +144,19 @@ describe("ScorecardSchedulerService", () => {
     await service.recomputeAll();
 
     expect(mockComponentRepo.find).toHaveBeenCalledTimes(2);
+    // First call: no cursor (empty where clause)
     expect(mockComponentRepo.find).toHaveBeenNthCalledWith(1, {
       select: ["id", "organizationId"],
-      skip: 0,
+      where: {},
       take: 100,
-      order: { createdAt: "ASC" },
+      order: { id: "ASC" },
     });
+    // Second call: cursor set to last id of first batch
     expect(mockComponentRepo.find).toHaveBeenNthCalledWith(2, {
       select: ["id", "organizationId"],
-      skip: 100,
+      where: { id: expect.objectContaining({ _value: "c-99" }) },
       take: 100,
-      order: { createdAt: "ASC" },
+      order: { id: "ASC" },
     });
     expect(mockScorecardsService.evaluateAndSave).toHaveBeenCalledTimes(130);
   });
