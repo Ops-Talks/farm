@@ -358,6 +358,12 @@ npm run start:debug
 | `GATEWAY_AWS_REGION` | *(empty)* | AWS region for the API Gateway adapter |
 | `GATEWAY_AWS_ACCESS_KEY_ID` | *(empty)* | AWS access key ID for the API Gateway adapter |
 | `GATEWAY_AWS_SECRET_ACCESS_KEY` | *(empty)* | AWS secret access key for the API Gateway adapter |
+| `LDAP_URL` | *(empty)* | LDAP server URL (e.g. `ldap://ldap.example.com:389`). Leave empty to disable LDAP authentication. |
+| `LDAP_BIND_DN` | *(empty)* | Distinguished name used for the service-account bind (e.g. `cn=service,dc=example,dc=com`) |
+| `LDAP_BIND_PASSWORD` | *(empty)* | Password for the service-account bind DN |
+| `LDAP_SEARCH_BASE` | *(empty)* | Base DN for user search (e.g. `ou=users,dc=example,dc=com`) |
+| `LDAP_SEARCH_FILTER` | `(uid={{username}})` | LDAP search filter. `{{username}}` is replaced with the login value at runtime. |
+| `LDAP_ADMIN_GROUP` | *(empty)* | Partial DN string that identifies the admin group (e.g. `cn=farm-admins`). Users whose `memberOf` attribute contains this string receive the `admin` role. Leave empty to assign `user` role to all LDAP logins. |
 
 ### Frontend
 
@@ -420,6 +426,44 @@ When running via Docker Compose, add the variables to the `api` service environm
 3. After the user authorizes, the provider redirects back to the callback URL.
 4. The API finds or creates the user account, then returns a JWT access token and refresh token.
 5. The browser is redirected to the Farm dashboard with the session established.
+
+## LDAP / Active Directory
+
+Farm supports authentication against an LDAP directory or Active Directory server. LDAP login is optional — leave `LDAP_URL` empty to disable it entirely.
+
+### How it works
+
+1. The client sends `POST /api/v1/auth/login/ldap` with `username` and `password`.
+2. The API performs a service-account bind using `LDAP_BIND_DN` / `LDAP_BIND_PASSWORD`, then searches for the user entry matching `LDAP_SEARCH_FILTER` within `LDAP_SEARCH_BASE`.
+3. The API binds again using the found user's DN and the supplied password to verify the credentials.
+4. On a successful user bind, the API resolves or creates a Farm user account mapped to the LDAP entry.
+4. If `LDAP_ADMIN_GROUP` is set and the user's `memberOf` attribute contains that string, the user receives the `admin` role; otherwise the `user` role is assigned.
+5. The endpoint returns the same `{ user, token, refreshToken }` payload as the standard login.
+
+### Configuration
+
+Set the following variables in `apps/api/.env`:
+
+```env
+LDAP_URL=ldap://ldap.example.com:389
+LDAP_BIND_DN=cn=service,dc=example,dc=com
+LDAP_BIND_PASSWORD=service_password
+LDAP_SEARCH_BASE=ou=users,dc=example,dc=com
+LDAP_SEARCH_FILTER=(uid={{username}})
+LDAP_ADMIN_GROUP=cn=farm-admins
+```
+
+For Active Directory, the search filter is typically `(sAMAccountName={{username}})` and the bind DN uses the UPN format: `serviceaccount@example.com`.
+
+### Attribute mapping
+
+| LDAP attribute | Farm field | Fallback |
+|---|---|---|
+| `mail` | `email` | `uid@ldap.local` or `<first-rdn-value>@ldap.local` |
+| `displayName` / `cn` | `displayName` | email value |
+| `givenName` | `firstName` | *(none)* |
+| `sn` | `lastName` | *(none)* |
+| `memberOf` | `roles` | `["user"]` |
 
 ## Troubleshooting
 

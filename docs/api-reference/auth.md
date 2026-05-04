@@ -72,6 +72,28 @@ Refreshes an access token using a valid refresh token. The refresh token is rota
 
 ---
 
+### POST /api/v1/auth/login/ldap
+
+Authenticates a user via LDAP / Active Directory. Only available when `LDAP_URL` is configured. Returns the same token payload as the standard login endpoint.
+
+**Rate limit:** 5 requests per minute.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| username | string | Yes | The user's LDAP username (mapped to the `uid` attribute by default) |
+| password | string | Yes | The user's LDAP password |
+
+**Responses:**
+
+- `200 OK` — Returns `{ user, token, refreshToken }`.
+- `401 Unauthorized` — Invalid credentials or user not found in the directory.
+- `503 Service Unavailable` — LDAP is not configured (`LDAP_URL` is empty).
+- `429 Too Many Requests` — Rate limit exceeded.
+
+---
+
 ### GET /api/v1/auth/users
 
 Returns all registered users. Requires the `admin` role.
