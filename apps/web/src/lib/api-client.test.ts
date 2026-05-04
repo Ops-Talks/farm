@@ -4037,4 +4037,110 @@ describe("api-client", () => {
       expect(url).toBe("/api/v1/elasticsearch/indices");
     });
   });
+
+  describe("scorecards", () => {
+    it("getByComponent sends GET to the component scorecard endpoint", async () => {
+      const payload = { id: "sc-1", overallScore: 75 };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const { scorecards } = await import("@/lib/api-client");
+      const result = await scorecards.getByComponent("comp-1");
+      expect(result).toEqual(payload);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/scorecards/components/comp-1");
+    });
+
+    it("getByComponent URL-encodes the componentId", async () => {
+      const payload = { id: "sc-1", overallScore: 75 };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const { scorecards } = await import("@/lib/api-client");
+      await scorecards.getByComponent("svc/payments");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/scorecards/components/svc%2Fpayments");
+    });
+
+    it("getByComponent returns null when the server responds with 404", async () => {
+      mockFetch.mockReturnValueOnce(
+        Promise.resolve({
+          ok: false,
+          status: 404,
+          json: () => Promise.resolve({ message: "Not Found" }),
+        }),
+      );
+      const { scorecards } = await import("@/lib/api-client");
+      const result = await scorecards.getByComponent("missing-comp");
+      expect(result).toBeNull();
+    });
+
+    it("getByComponent re-throws non-404 errors", async () => {
+      mockFetch.mockReturnValueOnce(
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ message: "Internal Server Error" }),
+        }),
+      );
+      const { scorecards } = await import("@/lib/api-client");
+      await expect(scorecards.getByComponent("comp-1")).rejects.toThrow();
+    });
+
+    it("refresh sends POST to the refresh endpoint", async () => {
+      const payload = { id: "sc-1", overallScore: 90 };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const { scorecards } = await import("@/lib/api-client");
+      const result = await scorecards.refresh("comp-1");
+      expect(result).toEqual(payload);
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe("/api/v1/scorecards/components/comp-1/refresh");
+      expect(init.method).toBe("POST");
+    });
+
+    it("refresh URL-encodes the componentId", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ id: "sc-1" }));
+      const { scorecards } = await import("@/lib/api-client");
+      await scorecards.refresh("svc/payments");
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/scorecards/components/svc%2Fpayments/refresh");
+    });
+
+    it("listAll sends GET to /v1/scorecards with no query string when no filters given", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const { scorecards } = await import("@/lib/api-client");
+      const result = await scorecards.listAll();
+      expect(result).toEqual([]);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/scorecards");
+    });
+
+    it("listAll appends level filter as query param when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const { scorecards } = await import("@/lib/api-client");
+      await scorecards.listAll({ level: "gold" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("level=gold");
+    });
+
+    it("listAll appends kind and teamId filters when provided", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse([]));
+      const { scorecards } = await import("@/lib/api-client");
+      await scorecards.listAll({ kind: "service", teamId: "team-1" });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain("kind=service");
+      expect(url).toContain("teamId=team-1");
+    });
+
+    it("getOverview sends GET to /v1/scorecards/overview", async () => {
+      const payload = {
+        totalComponents: 10,
+        averageScore: 72,
+        levelDistribution: { none: 2, bronze: 3, silver: 3, gold: 1, platinum: 1 },
+        byTeam: [],
+      };
+      mockFetch.mockReturnValueOnce(jsonResponse(payload));
+      const { scorecards } = await import("@/lib/api-client");
+      const result = await scorecards.getOverview();
+      expect(result).toEqual(payload);
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toBe("/api/v1/scorecards/overview");
+    });
+  });
 });
