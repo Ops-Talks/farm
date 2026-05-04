@@ -9,6 +9,8 @@ The authentication system in Farm supports:
 - User registration with password strength validation
 - User login with JWT access tokens
 - Refresh token rotation for session continuity
+- Social login via GitHub and Google (OAuth 2.0)
+- LDAP / Active Directory login
 - User listing for administration
 
 ## User Properties
@@ -55,6 +57,21 @@ Response:
   "updatedAt": "2024-01-15T10:30:00.000Z"
 }
 ```
+
+### Logging In via LDAP
+
+If your organization uses an LDAP directory or Active Directory, log in with your directory credentials:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/auth/login/ldap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "password": "your_ldap_password"
+  }'
+```
+
+The response is identical to the standard login response. The endpoint returns `503 Service Unavailable` when the server is not configured for LDAP.
 
 ### Logging In
 
