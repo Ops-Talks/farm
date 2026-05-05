@@ -40,7 +40,7 @@ export async function initTracing(): Promise<void> {
 
   sdk = new NodeSDK({
     resource: resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: 'farm-web',
+      [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'farm-web',
       [ATTR_SERVICE_VERSION]: process.env.npm_package_version ?? 'unknown',
     }),
     traceExporter: new OTLPTraceExporter({
