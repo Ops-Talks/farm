@@ -245,6 +245,108 @@
       }
     },
     {
+      "id": 9,
+      "title": "Web Error Count (last 1h)",
+      "type": "stat",
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 0,
+        "y": 12
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project=\"farm\", container=\"farm-web\", level=\"error\"}[1h]))",
+          "legendFormat": "Web Errors",
+          "refId": "A",
+          "queryType": "instant"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
+      "id": 10,
+      "title": "Web Warn Count (last 1h)",
+      "type": "stat",
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 6,
+        "y": 9
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project=\"farm\", container=\"farm-web\", level=\"warn\"}[1h]))",
+          "legendFormat": "Web Warnings",
+          "refId": "A",
+          "queryType": "instant"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background"
+      }
+    },
+    {
       "id": 6,
       "title": "API Logs \u2014 farm-api",
       "type": "logs",
@@ -252,7 +354,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 18
       },
       "datasource": {
         "type": "loki",
@@ -285,7 +387,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 46
       },
       "datasource": {
         "type": "loki",
@@ -318,7 +420,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 32
       },
       "datasource": {
         "type": "loki",
