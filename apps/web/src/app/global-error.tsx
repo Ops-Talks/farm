@@ -33,7 +33,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
           <h2>Something went wrong</h2>
