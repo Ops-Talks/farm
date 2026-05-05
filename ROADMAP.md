@@ -70,7 +70,6 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 34: Dead Code Elimination | 1 | 4 | v0.24.3 | `DONE` |
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | - | `DONE` |
-| Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | - | `IN PROGRESS` |
 
 ---
 
