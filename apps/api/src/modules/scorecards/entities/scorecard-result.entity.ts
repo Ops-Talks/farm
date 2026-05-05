@@ -97,7 +97,13 @@ export class ScorecardResult {
     example: 82.5,
     description: "Weighted overall score in the 0-100 range",
   })
-  @Column({ type: "decimal", precision: 5, scale: 2, default: 0 })
+  @Column({
+    name: "overall_score",
+    type: "decimal",
+    precision: 5,
+    scale: 2,
+    default: 0,
+  })
   overallScore: number;
 
   @ApiProperty({
@@ -116,7 +122,7 @@ export class ScorecardResult {
     description: "Breakdown of scores per scorecard category",
     nullable: true,
   })
-  @Column({ type: "simple-json", nullable: true })
+  @Column({ name: "category_scores", type: "simple-json", nullable: true })
   categoryScores: ScorecardCategoryScores;
 
   @ApiPropertyOptional({
