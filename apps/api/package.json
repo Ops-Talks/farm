@@ -157,7 +157,16 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s",
       "!**/app.module.ts",
-      "!**/migrations/**"
+      "!**/main.ts",
+      "!**/migrations/**",
+      "!**/*.module.ts",
+      "!**/*.entity.ts",
+      "!**/*.dto.ts",
+      "!**/*.enum.ts",
+      "!**/*.constant.ts",
+      "!**/*.interface.ts",
+      "!**/*.config.ts",
+      "!**/index.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

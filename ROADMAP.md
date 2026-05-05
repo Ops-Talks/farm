@@ -68,7 +68,8 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 37: User Signup & Org Invitation | 1 | 5 | v0.24.3 | `DONE` |
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | v0.24.3 | `DONE` |
 | Phase 34: Dead Code Elimination | 1 | 4 | v0.24.3 | `DONE` |
-| Phase 38: LDAP Client Modernization | 1 | 3 | - | `DONE` |
+| Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
+| Phase 39: Service Maturity Scorecards | 1 | 6 | - | `DONE` |
 
 ---
 
@@ -117,4 +118,5 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 36: Permission Scope Test Fixtures | 1 | 3 | `DONE` |
 | Phase 37: User Signup & Org Invitation | 1 | 5 | `DONE` |
 | Phase 38: LDAP Client Modernization | 1 | 3 | `DONE` |
-| **Total** | **88** | **355** | |
+| Phase 39: Service Maturity Scorecards | 1 | 6 | `DONE` |
+| **Total** | **89** | **361** | |

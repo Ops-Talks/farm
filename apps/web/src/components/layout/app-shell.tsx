@@ -59,6 +59,7 @@ import {
   ChevronDown,
   ChevronRight,
   Database,
+  Award,
 } from "lucide-react";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 import { FeatureAvailabilityProvider } from "@/contexts/feature-availability-context";
@@ -70,6 +71,8 @@ const navSections = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/catalog", label: "Catalog", icon: BookOpen },
+      // FARM-S394 — Scorecards Overview: maturity scores across all components.
+      { href: "/catalog/scorecards", label: "Scorecards", icon: Award },
       { href: "/deployments", label: "Deployments", icon: Rocket },
       { href: "/pipelines", label: "Pipelines", icon: GitPullRequest },
     ],

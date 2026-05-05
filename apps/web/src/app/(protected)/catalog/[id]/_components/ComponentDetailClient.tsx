@@ -38,6 +38,7 @@ import { ContainerSecurityTab } from "./ContainerSecurityTab";
 import { IacModulesTab } from "./IacModulesTab";
 import { IacStacksTab } from "./IacStacksTab";
 import { ElasticsearchIndicesTab } from "./ElasticsearchIndicesTab";
+import { ScorecardTab } from "./ScorecardTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
@@ -366,6 +367,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="iac-modules">IaC Modules</TabsTrigger>
           <TabsTrigger value="iac-stacks">IaC Stacks</TabsTrigger>
           <TabsTrigger value="elasticsearch">Elasticsearch</TabsTrigger>
+          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -760,6 +762,13 @@ export function ComponentDetailClient() {
         <TabsContent value="elasticsearch">
           <ErrorBoundary>
             <ElasticsearchIndicesTab componentId={component.id} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Scorecard tab (FARM-S393) ─────────────────────────────────── */}
+        <TabsContent value="scorecard">
+          <ErrorBoundary>
+            <ScorecardTab componentId={component.id} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

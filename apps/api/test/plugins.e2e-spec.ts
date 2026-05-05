@@ -55,6 +55,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-iac",
     "core-elasticsearch",
     "core-elasticsearch-index",
+    "core-scorecards",
   ];
 
   describe("GET /api/plugins", () => {

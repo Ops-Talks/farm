@@ -163,6 +163,10 @@ import type {
   ElasticStackResponse,
   // Thanos (Phase 32)
   ThanosResponse,
+  // Maturity Scorecard (FARM-S393 / FARM-S394)
+  ScorecardResult,
+  ScorecardResultDto,
+  ScorecardOverviewDto,
 } from "@/types/api";
 const API_BASE = "/api";
 
@@ -3130,6 +3134,60 @@ export const elasticsearchIndicesOverview = {
     return request<OverviewComponentGroup[]>(
       `/v1/elasticsearch/indices`,
     );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Maturity Scorecard (FARM-S393)
+// ---------------------------------------------------------------------------
+
+export const scorecards = {
+  /**
+   * Fetch the latest scorecard result for a component.
+   * Returns null when no scorecard has been computed yet (404 is normalised
+   * to null so callers don't have to handle ApiError for the empty state).
+   */
+  getByComponent(componentId: string): Promise<ScorecardResult | null> {
+    return request<ScorecardResult>(
+      `/v1/scorecards/components/${encodeURIComponent(componentId)}`,
+    ).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    });
+  },
+
+  /**
+   * Trigger re-computation of the scorecard for a component and return the
+   * updated result.
+   */
+  refresh(componentId: string): Promise<ScorecardResult> {
+    return request<ScorecardResult>(
+      `/v1/scorecards/components/${encodeURIComponent(componentId)}/refresh`,
+      { method: 'POST' },
+    );
+  },
+
+  /**
+   * Fetch all scorecard results across components (FARM-S394).
+   * Supports optional server-side filtering by level, kind, or teamId.
+   */
+  listAll(filters?: {
+    level?: string;
+    kind?: string;
+    teamId?: string;
+  }): Promise<ScorecardResultDto[]> {
+    return request<ScorecardResultDto[]>(
+      `/v1/scorecards${toQueryString(filters ?? {})}`,
+    );
+  },
+
+  /**
+   * Fetch aggregated overview stats for the Scorecards Overview page
+   * (FARM-S394): total components, average score, level distribution, per-team
+   * breakdown.
+   */
+  getOverview(): Promise<ScorecardOverviewDto> {
+    return request<ScorecardOverviewDto>('/v1/scorecards/overview');
   },
 };
 
