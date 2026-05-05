@@ -98,6 +98,34 @@ describe('POST /api/log-error', () => {
     });
   });
 
+  it('truncates message, digest and stack to their maximum allowed lengths', async () => {
+    const longMessage = 'x'.repeat(20_000);
+    const longDigest = 'y'.repeat(2_000);
+    const longStack = 'z'.repeat(100_000);
+
+    const req = new NextRequest('http://localhost/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: longMessage,
+        digest: longDigest,
+        stack: longStack,
+        timestamp: '2024-01-01T00:00:00.000Z',
+      }),
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(204);
+    const [loggedMessage, loggedMeta] = mockLoggerError.mock.calls[0] as [
+      string,
+      { digest: string; stack: string },
+    ];
+    expect(loggedMessage.length).toBe(10_000);
+    expect(loggedMeta.digest.length).toBe(1_000);
+    expect(loggedMeta.stack.length).toBe(50_000);
+  });
+
   it('uses a server-generated timestamp when none is provided', async () => {
     const req = new NextRequest('http://localhost/api/log-error', {
       method: 'POST',

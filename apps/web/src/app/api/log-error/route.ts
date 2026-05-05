@@ -3,6 +3,11 @@ import { createLogger } from '@/lib/logger.server';
 
 const logger = createLogger('GlobalError');
 
+// Maximum allowed byte lengths to prevent log storage exhaustion.
+const MAX_MESSAGE_LENGTH = 10_000;
+const MAX_DIGEST_LENGTH = 1_000;
+const MAX_STACK_LENGTH = 50_000;
+
 /**
  * POST /api/log-error
  *
@@ -24,12 +29,18 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   const message =
     typeof body.message === 'string' && body.message.length > 0
-      ? body.message
+      ? body.message.slice(0, MAX_MESSAGE_LENGTH)
       : 'Client-side render error';
 
   logger.error(message, {
-    digest: typeof body.digest === 'string' ? body.digest : undefined,
-    stack: typeof body.stack === 'string' ? body.stack : undefined,
+    digest:
+      typeof body.digest === 'string'
+        ? body.digest.slice(0, MAX_DIGEST_LENGTH)
+        : undefined,
+    stack:
+      typeof body.stack === 'string'
+        ? body.stack.slice(0, MAX_STACK_LENGTH)
+        : undefined,
     timestamp:
       typeof body.timestamp === 'string'
         ? body.timestamp
