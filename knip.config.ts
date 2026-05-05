@@ -180,9 +180,10 @@ const config: KnipConfig = {
         // in globals.css. Neither usage is visible to static TS analysis.
         'shadcn',
 
-        // OTel Node SDK packages loaded via require() inside function bodies in
-        // tracing.server.ts to prevent webpack bundling. Knip cannot trace
-        // dynamic require() calls, so they are excluded from dead-code analysis.
+        // OTel Node SDK packages loaded via dynamic import() inside function
+        // bodies in tracing.server.ts to prevent webpack bundling. Knip
+        // cannot trace those runtime import() calls, so they are excluded
+        // from dead-code analysis.
         '@opentelemetry/sdk-node',
         '@opentelemetry/auto-instrumentations-node',
 
