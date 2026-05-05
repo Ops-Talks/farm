@@ -303,4 +303,139 @@ describe("ScorecardsClient", () => {
       expect(screen.getByText("Scorecards")).toBeInTheDocument();
     });
   });
+
+  // 11. Rows without a teamId show "—" in the team column
+  it("renders — for team column when teamId is null", async () => {
+    mockListAll.mockResolvedValueOnce([makeRow({ teamId: null as unknown as string })]);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("my-service")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  // 12. Platinum level badge
+  it("renders platinum level badge for a platinum-level row", async () => {
+    mockListAll.mockResolvedValueOnce([
+      makeRow({ level: "platinum", overallScore: 95 }),
+    ]);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("platinum")).toBeInTheDocument();
+    });
+  });
+
+  // 13. None level badge
+  it("renders none level badge for a none-level row", async () => {
+    mockListAll.mockResolvedValueOnce([
+      makeRow({ level: "none", overallScore: 5 }),
+    ]);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("none")).toBeInTheDocument();
+    });
+  });
+
+  // 14. When getOverview fails, summary cards fall back to row-based calculations
+  it("falls back to row-based summary calculations when getOverview query fails", async () => {
+    const rows = [
+      makeRow({ id: "sc-1", componentId: "comp-1", overallScore: 80, level: "gold" }),
+      makeRow({ id: "sc-2", componentId: "comp-2", componentName: "svc-b", overallScore: 60, level: "silver" }),
+    ];
+    mockListAll.mockResolvedValueOnce(rows);
+    mockGetOverview.mockRejectedValueOnce(new Error("network error"));
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("my-service")).toBeInTheDocument();
+    });
+
+    // With overview failed, totalComponents = rows.length = 2
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  // 15. Sorting by Component column changes ordering
+  it("sorts rows by component name when Component column header is clicked", async () => {
+    const rows = [
+      makeRow({ id: "sc-1", componentId: "comp-1", componentName: "z-service", overallScore: 90 }),
+      makeRow({ id: "sc-2", componentId: "comp-2", componentName: "a-service", overallScore: 50 }),
+    ];
+    mockListAll.mockResolvedValueOnce(rows);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("z-service")).toBeInTheDocument();
+    });
+
+    const componentButton = screen.getByRole("button", { name: /Component/i });
+
+    // First click: switch to component sort desc → "z-service" before "a-service"
+    fireEvent.click(componentButton);
+
+    await waitFor(() => {
+      const allCells = screen.getAllByRole("cell");
+      const first = allCells.find(
+        (c) => c.textContent?.includes("z-service") || c.textContent?.includes("a-service"),
+      );
+      expect(first?.textContent).toContain("z-service");
+    });
+
+    // Second click: same field, toggle to asc → "a-service" before "z-service"
+    fireEvent.click(componentButton);
+
+    await waitFor(() => {
+      const allCells = screen.getAllByRole("cell");
+      const first = allCells.find(
+        (c) => c.textContent?.includes("z-service") || c.textContent?.includes("a-service"),
+      );
+      expect(first?.textContent).toContain("a-service");
+    });
+  });
+
+  // 16. Filtering by component kind hides rows of a different kind
+  it("filters rows by component kind", async () => {
+    const rows = [
+      makeRow({ id: "sc-1", componentId: "comp-1", componentName: "svc-one", componentKind: "service" }),
+      makeRow({ id: "sc-2", componentId: "comp-2", componentName: "lib-one", componentKind: "library" }),
+    ];
+    mockListAll.mockResolvedValueOnce(rows);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("svc-one")).toBeInTheDocument();
+    });
+
+    const kindSelect = screen.getByRole("combobox", { name: /Filter by kind/i });
+    fireEvent.change(kindSelect, { target: { value: "service" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("svc-one")).toBeInTheDocument();
+      expect(screen.queryByText("lib-one")).toBeNull();
+    });
+  });
+
+  // 17. evaluatedAt null renders "—" in the last-evaluated column
+  it("renders — for last evaluated when evaluatedAt is null", async () => {
+    mockListAll.mockResolvedValueOnce([
+      makeRow({ evaluatedAt: null as unknown as string }),
+    ]);
+
+    render(<ScorecardsClient />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("my-service")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
 });

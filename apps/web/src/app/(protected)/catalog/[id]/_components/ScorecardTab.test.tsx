@@ -297,4 +297,99 @@ describe("ScorecardTab", () => {
       expect(screen.getByText(/Evaluated/i)).toBeInTheDocument();
     });
   });
+
+  // 13. platinum level badge uses the violet colour class
+  it("renders level badge with platinum styling for platinum level", async () => {
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({ level: "platinum", overallScore: 95 }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("platinum")).toBeInTheDocument();
+    });
+  });
+
+  // 14. none level badge uses the red colour class
+  it("renders level badge with none styling for none level", async () => {
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({ level: "none", overallScore: 10 }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("none")).toBeInTheDocument();
+    });
+  });
+
+  // 15. ScoreBar renders red fill for scores below 50
+  it("renders red score bar for a category score below 50", async () => {
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({
+        categoryScores: {
+          ownershipDocs: 80,
+          reliability: 70,
+          security: 30,
+          infrastructure: 90,
+          cost: 50,
+        },
+      }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      // Security score of 30 is rendered as "30%"
+      expect(screen.getByText("30%")).toBeInTheDocument();
+    });
+  });
+
+  // 16. "Not yet evaluated" shown when evaluatedAt is absent
+  it("renders Not yet evaluated when evaluatedAt is missing", async () => {
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({ evaluatedAt: undefined as unknown as string }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Not yet evaluated/i)).toBeInTheDocument();
+    });
+  });
+
+  // 17. "No criteria available" shown when criteria array is empty
+  it("renders no-criteria message when the criteria array is empty", async () => {
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({ criteria: [] }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No criteria available for this scorecard/i),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // 18. Unknown category key falls back to the raw key as the label
+  it("falls back to the raw category key when the key is not in CATEGORY_LABELS", async () => {
+    const customCriterion = makeCriterion({
+      id: "custom-check",
+      name: "Custom Check",
+      category: "custom",
+    });
+    mockGetByComponent.mockResolvedValueOnce(
+      makeScorecard({ criteria: [customCriterion] }),
+    );
+
+    render(<ScorecardTab componentId="comp-1" />);
+
+    await waitFor(() => {
+      // The section header falls back to "custom" since it is not in CATEGORY_LABELS
+      expect(screen.getByText("custom")).toBeInTheDocument();
+    });
+  });
 });

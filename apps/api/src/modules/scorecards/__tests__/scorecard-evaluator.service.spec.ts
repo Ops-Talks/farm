@@ -633,4 +633,154 @@ describe("ScorecardEvaluatorService", () => {
       expect(result.overallScore).toBeGreaterThanOrEqual(90);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Catch block coverage — one test per criterion that wraps its DB query in a
+  // try/catch and returns notApplicable: true on failure.
+  // ---------------------------------------------------------------------------
+
+  /** Sets up safe resolved-value defaults so each catch test only needs to
+   *  override the one repository that should throw. */
+  function setupCatchDefaults(component: Component) {
+    componentRepo.findOne.mockResolvedValue(component);
+    documentationRepo.count.mockResolvedValue(0);
+    apiSpecRepo.count.mockResolvedValue(0);
+    apiSpecRepo.find.mockResolvedValue([]);
+    sloRepo.count.mockResolvedValue(0);
+    deploymentRepo.find.mockResolvedValue([]);
+    containerVulnRepo.findOne.mockResolvedValue(null);
+    containerVulnRepo.count.mockResolvedValue(0);
+    resourceViolationRepo.count.mockResolvedValue(0);
+    opaResultRepo.find.mockResolvedValue([]);
+    iacModuleRepo.count.mockResolvedValue(0);
+    iacStackRepo.count.mockResolvedValue(0);
+    fluxBindingRepo.count.mockResolvedValue(0);
+    actualCostRepo.findOne.mockResolvedValue(null);
+  }
+
+  it("should mark has-api-spec as notApplicable when apiSpec repository throws", async () => {
+    const component = makeComponent({ kind: ComponentKind.SERVICE });
+    setupCatchDefaults(component);
+    apiSpecRepo.count.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-api-spec");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should mark has-slo as notApplicable when slo repository throws", async () => {
+    const component = makeComponent();
+    setupCatchDefaults(component);
+    sloRepo.count.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-slo");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should mark deployment-success-rate as notApplicable when deployment repository throws", async () => {
+    const component = makeComponent();
+    setupCatchDefaults(component);
+    deploymentRepo.find.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "deployment-success-rate");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should mark has-health-check as notApplicable when apiHealthCheck repository throws", async () => {
+    const component = makeComponent({ kind: ComponentKind.SERVICE });
+    setupCatchDefaults(component);
+    // has-api-spec succeeds (count works); has-health-check fails when find throws
+    apiSpecRepo.count.mockResolvedValue(1);
+    apiSpecRepo.find.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-health-check");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should mark no-critical-vulnerabilities and no-high-vulnerabilities as notApplicable when containerVulnerability repository throws", async () => {
+    const component = makeComponent();
+    setupCatchDefaults(component);
+    // Both criteria call latestVulnerabilityTag which calls findOne — making it
+    // throw causes both catch blocks to fire inside the same evaluate() call.
+    containerVulnRepo.findOne.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+
+    const noCritical = criteria.find((c) => c.id === "no-critical-vulnerabilities");
+    const noHigh = criteria.find((c) => c.id === "no-high-vulnerabilities");
+
+    expect(noCritical).toBeDefined();
+    expect(noCritical!.notApplicable).toBe(true);
+    expect(noHigh).toBeDefined();
+    expect(noHigh!.notApplicable).toBe(true);
+  });
+
+  it("should mark has-iac as notApplicable when iac repositories throw", async () => {
+    const component = makeComponent();
+    setupCatchDefaults(component);
+    iacModuleRepo.count.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-iac");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should pass has-gitops without a DB query when component has argocdApp linkage", async () => {
+    const component = makeComponent({ argocdApp: "my-argo-app" });
+    setupCatchDefaults(component);
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-gitops");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.passed).toBe(true);
+    expect(criterion!.notApplicable).toBeFalsy();
+    expect(fluxBindingRepo.count).not.toHaveBeenCalled();
+  });
+
+  it("should mark has-gitops as notApplicable when fluxBinding repository throws", async () => {
+    const component = makeComponent();
+    setupCatchDefaults(component);
+    fluxBindingRepo.count.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "has-gitops");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
+
+  it("should mark within-cost-budget as notApplicable when actualCost repository throws", async () => {
+    const component = makeComponent({ costBudgetUsd: 100 });
+    setupCatchDefaults(component);
+    actualCostRepo.findOne.mockRejectedValue(new Error("db error"));
+
+    const result = await service.evaluate(component.id);
+    const criteria = result.criteria as ScorecardCriterionResult[];
+    const criterion = criteria.find((c) => c.id === "within-cost-budget");
+
+    expect(criterion).toBeDefined();
+    expect(criterion!.notApplicable).toBe(true);
+  });
 });
