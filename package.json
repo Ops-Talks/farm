@@ -23,11 +23,11 @@
   "devDependencies": {
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "knip": "^6.9.0"
+    "knip": "^6.11.0"
   },
   "optionalDependencies": {
     "@next/swc-linux-x64-musl": "16.2.4",
-    "@rollup/rollup-linux-x64-musl": "4.60.2",
+    "@rollup/rollup-linux-x64-musl": "4.60.3",
     "@tailwindcss/oxide-linux-x64-musl": "4.2.4",
     "@unrs/resolver-binding-linux-x64-musl": "1.11.1",
     "lightningcss-linux-x64-musl": "1.32.0"
