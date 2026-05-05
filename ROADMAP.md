@@ -70,6 +70,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 34: Dead Code Elimination | 1 | 4 | v0.24.3 | `DONE` |
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | - | `DONE` |
+| Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | - | `IN PROGRESS` |
 
 ---
 
@@ -119,4 +120,69 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 37: User Signup & Org Invitation | 1 | 5 | `DONE` |
 | Phase 38: LDAP Client Modernization | 1 | 3 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | `DONE` |
-| **Total** | **89** | **361** | |
+| Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | `IN PROGRESS` |
+| **Total** | **96** | **384** | |
+
+---
+
+## Phase 40: Observability 3.0 — Full-Stack Hardening
+
+Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reach full open-source market standard across all three pillars of observability (logs, metrics, traces), plus alerting, SLO tracking, RUM, and continuous profiling.
+
+### FARM-E90: Web App Server-Side Observability `IN PROGRESS`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S400 | Structured JSON logging for Next.js server using Winston, matching the Promtail pipeline format (`level`, `message`, `context`, `trace_id`, `span_id`) so Loki label extraction works for the web container | `IN PROGRESS` |
+| FARM-S401 | Server-side OTEL Node SDK wired in `instrumentation.ts` (`register()` → `initTracing()` in the `nodejs` runtime), sending spans via OTLP to Tempo | `IN PROGRESS` |
+| FARM-S402 | `onRequestError` hook in `instrumentation.ts` and `global-error.tsx` boundary to capture and log unhandled server errors in structured format | `IN PROGRESS` |
+| FARM-S403 | Web-specific Grafana panels in `farm-logs.json`: Web Error Rate and Web Warn Count per time window using `{container="farm-web", level="error"}` queries | `IN PROGRESS` |
+
+### FARM-E91: Alerting Infrastructure `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S404 | Deploy Alertmanager in `docker-compose.observability.yml` with routing tree, grouping, and inhibition rules | `TODO` |
+| FARM-S405 | Prometheus alert rules: API error rate > 5%, latency P99 > 2 s, Node.js heap > 80% | `TODO` |
+| FARM-S406 | Loki alert rules: error log rate spike per container (sustained > 10 errors/min for 5 m) | `TODO` |
+| FARM-S407 | Notification channels: Slack webhook and SMTP email configured as Alertmanager receivers | `TODO` |
+
+### FARM-E92: OTel Collector Pipeline `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S408 | Replace direct OTLP-to-Tempo with Grafana Alloy as OTel Collector to enable fan-out, buffering, and retry | `TODO` |
+| FARM-S409 | Tail-based sampling via Alloy: retain all error and slow (> 1 s) traces, probabilistic 10 % sampling for healthy traces | `TODO` |
+| FARM-S410 | Exemplars: enable in Prometheus and prom-client, wire Grafana Tempo datasource for metric-to-trace drill-down from latency spikes | `TODO` |
+| FARM-S411 | Remove dead Jaeger proxy methods (`queryJaeger*`) from `ObservabilityService`; replace with Tempo HTTP API calls | `TODO` |
+
+### FARM-E93: Tempo Service Graph and Span Metrics `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S412 | Enable Tempo `metrics_generator` (service graph and span metrics pipelines) in `tempo.yml` | `TODO` |
+| FARM-S413 | Service dependency map dashboard in Grafana auto-generated from Tempo span data | `TODO` |
+| FARM-S414 | RED metrics dashboard (Rate / Errors / Duration per service) sourced from Tempo-generated span metrics | `TODO` |
+
+### FARM-E94: SLO and Error Budget Tracking `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S415 | Add Prometheus Sloth recording rules for API availability (99.5 %) and latency (P99 < 500 ms) SLOs. Distinct from the existing in-app SLO CRUD module (`core-slo`), which stores SLO definitions in Postgres; this story adds infrastructure-level multi-window burn-rate recording rules evaluated natively by Prometheus | `TODO` |
+| FARM-S416 | Grafana dashboard for SLO compliance and error budget burn rate, sourced from the Sloth recording rules added in FARM-S415. Distinct from the in-app `/slos` page (Next.js UI), which reads from the API; this story provides an operator-facing Grafana view with 1 h / 6 h burn-rate panels and remaining budget gauges | `TODO` |
+| FARM-S417 | Prometheus recording rules for high-frequency dashboard aggregations (request rate, error rate per route) | `TODO` |
+
+### FARM-E95: Real User Monitoring — Grafana Faro `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S418 | Deploy Grafana Faro Collector in `docker-compose.observability.yml` | `TODO` |
+| FARM-S419 | Integrate Grafana Faro SDK in Next.js for full RUM: session correlation, user journey replay, and error grouping with source maps. Core Web Vitals (LCP, INP, CLS) are already tracked as OTel spans via `web-vitals.ts`; Faro adds session-level aggregation, frontend error deduplication, and the Grafana Frontend Observability dashboard that the OTel span approach alone does not provide | `TODO` |
+| FARM-S420 | Frontend error aggregation: unhandled exceptions and promise rejections forwarded to Faro with user session correlation | `TODO` |
+
+### FARM-E96: Continuous Profiling — Grafana Pyroscope `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S421 | Deploy Grafana Pyroscope in `docker-compose.observability.yml` | `TODO` |
+| FARM-S422 | Node.js profiling agent (`@pyroscope/nodejs`) in NestJS API pushing CPU and heap profiles to Pyroscope | `TODO` |
