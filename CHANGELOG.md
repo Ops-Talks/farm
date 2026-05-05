@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.7] - 2026-05-05
+
+### Changed
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- feat(scorecards) Introducing the feature for Score Cards (#136).
+
+### Fixed
+- **observability**: add whitespace trim to message validation and structured catch logging.
+- **observability**: add fetch error fallback and input length limits to log-error route.
+- **observability**: address PR review comments - fix test isolation, add instrumentation tests, and forward client errors to server logger.
+- **observability**: Fix the broken thinks regarding the monitoring Farm.
+- **observability**: Fix the broken thinks regarding the monitoring Farm.
+- **scorecards**: add explicit column names to fix PostgreSQL upsert.
+
 ## [0.24.6] - 2026-05-04
 
 ### Changed
