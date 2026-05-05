@@ -30,9 +30,13 @@ export default function GlobalError({
         timestamp: new Date().toISOString(),
       }),
     }).catch(() => {
-      // Fallback: log to the browser console so there is at least some
-      // visibility when the logging endpoint is unreachable.
-      console.error('[GlobalError] Failed to forward error to /api/log-error', error);
+      // Fallback: log structured details to the browser console so there is at
+      // least some visibility when the logging endpoint is unreachable.
+      console.error('[GlobalError] Failed to forward error to /api/log-error', {
+        message: error.message,
+        digest: error.digest,
+        stack: error.stack,
+      });
     });
   }, [error]);
 

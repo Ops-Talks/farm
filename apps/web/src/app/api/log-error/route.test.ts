@@ -81,6 +81,22 @@ describe('POST /api/log-error', () => {
     );
   });
 
+  it('uses a fallback message when the message field is whitespace-only', async () => {
+    const req = new NextRequest('http://localhost/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: '   ' }),
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(204);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      'Client-side render error',
+      expect.any(Object),
+    );
+  });
+
   it('omits digest and stack when they are not strings', async () => {
     const req = new NextRequest('http://localhost/api/log-error', {
       method: 'POST',

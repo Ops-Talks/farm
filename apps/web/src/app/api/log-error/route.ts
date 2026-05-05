@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const message =
-    typeof body.message === 'string' && body.message.length > 0
+    typeof body.message === 'string' && body.message.trim().length > 0
       ? body.message.slice(0, MAX_MESSAGE_LENGTH)
       : 'Client-side render error';
 
