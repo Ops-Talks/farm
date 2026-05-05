@@ -9,8 +9,8 @@ import { useEffect } from 'react';
  * boundaries and replaces the entire root layout. Because it is a client
  * component, it cannot import server-only modules such as logger.server.ts.
  *
- * Structured JSON is written to console.error so Promtail/Loki can parse
- * the `level`, `message`, and `context` labels from the log line.
+ * The error is forwarded to /api/log-error so the server-side Winston logger
+ * can write a structured JSON entry that Promtail picks up and ships to Loki.
  */
 export default function GlobalError({
   error,
@@ -20,16 +20,16 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(
-      JSON.stringify({
-        level: 'error',
+    void fetch('/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         message: error.message,
-        context: 'GlobalError',
         digest: error.digest,
         stack: error.stack,
         timestamp: new Date().toISOString(),
       }),
-    );
+    });
   }, [error]);
 
   return (

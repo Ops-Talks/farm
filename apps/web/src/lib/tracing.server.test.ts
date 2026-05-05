@@ -52,6 +52,7 @@ describe('tracing.server', () => {
     vi.clearAllMocks();
     delete process.env.OTEL_ENABLED;
     delete process.env.OTEL_EXPORTER_ENDPOINT;
+    delete process.env.OTEL_SERVICE_NAME;
   });
 
   it('does nothing when OTEL_ENABLED is not set', async () => {
@@ -110,13 +111,24 @@ describe('tracing.server', () => {
     );
   });
 
-  it('uses "farm-web" as the service name', async () => {
+  it('uses "farm-web" as the default service name when OTEL_SERVICE_NAME is not set', async () => {
     process.env.OTEL_ENABLED = 'true';
     const { resourceFromAttributes } = await import('@opentelemetry/resources');
     const { initTracing } = await import('./tracing.server');
     await initTracing();
     expect(resourceFromAttributes).toHaveBeenCalledWith(
       expect.objectContaining({ 'service.name': 'farm-web' }),
+    );
+  });
+
+  it('honors OTEL_SERVICE_NAME when set', async () => {
+    process.env.OTEL_ENABLED = 'true';
+    process.env.OTEL_SERVICE_NAME = 'my-custom-service';
+    const { resourceFromAttributes } = await import('@opentelemetry/resources');
+    const { initTracing } = await import('./tracing.server');
+    await initTracing();
+    expect(resourceFromAttributes).toHaveBeenCalledWith(
+      expect.objectContaining({ 'service.name': 'my-custom-service' }),
     );
   });
 

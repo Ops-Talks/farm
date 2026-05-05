@@ -92,10 +92,12 @@ describe('logger.server (production)', () => {
   let logger: Awaited<typeof import('./logger.server')>['logger'];
   let createLogger: Awaited<typeof import('./logger.server')>['createLogger'];
   let capture: ReturnType<typeof buildCaptureStream>;
+  let originalNodeEnv: string | undefined;
 
   beforeEach(async () => {
     vi.resetModules();
     mockGetActiveSpan.mockReturnValue(null);
+    originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
     ({ logger, createLogger } = await import('./logger.server'));
@@ -109,7 +111,11 @@ describe('logger.server (production)', () => {
   });
 
   afterEach(() => {
-    delete process.env.NODE_ENV;
+    if (originalNodeEnv !== undefined) {
+      process.env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete process.env.NODE_ENV;
+    }
     vi.clearAllMocks();
   });
 

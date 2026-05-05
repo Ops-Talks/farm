@@ -21,11 +21,6 @@ export default defineConfig({
         "src/components/ui/**",
         "src/app/layout.tsx",
         "src/app/global-error.tsx",
-        // Next.js server instrumentation hook — framework lifecycle only.
-        // register() delegates entirely to logger.server.ts and
-        // tracing.server.ts (both fully covered). onRequestError() is a
-        // one-line logger.error call with no branch logic of its own.
-        "src/instrumentation.ts",
         "src/types/**",
         // page.tsx files in the App Router are thin shell components that
         // delegate all logic to co-located _components/. The glob covers all
