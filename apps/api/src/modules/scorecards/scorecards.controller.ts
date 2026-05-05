@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpStatus,
@@ -23,7 +22,6 @@ import { RequestWithOrg } from "../../common/interfaces/request-with-org.interfa
 import { ScorecardLevel } from "./entities/scorecard-result.entity";
 import { ScorecardsService } from "./scorecards.service";
 import {
-  RefreshScorecardDto,
   ScorecardOverviewDto,
   ScorecardResultDto,
 } from "./dto/scorecard-result.dto";
@@ -212,7 +210,6 @@ export class ScorecardsController {
   async refresh(
     @Req() req: RequestWithOrg,
     @Param("componentId") componentId: string,
-    @Body() _dto: RefreshScorecardDto,
   ): Promise<ScorecardResultDto> {
     const result = await this.scorecardsService.evaluateAndSave(
       componentId,

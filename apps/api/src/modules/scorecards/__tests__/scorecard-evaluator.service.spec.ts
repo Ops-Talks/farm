@@ -722,7 +722,9 @@ describe("ScorecardEvaluatorService", () => {
     const result = await service.evaluate(component.id);
     const criteria = result.criteria as ScorecardCriterionResult[];
 
-    const noCritical = criteria.find((c) => c.id === "no-critical-vulnerabilities");
+    const noCritical = criteria.find(
+      (c) => c.id === "no-critical-vulnerabilities",
+    );
     const noHigh = criteria.find((c) => c.id === "no-high-vulnerabilities");
 
     expect(noCritical).toBeDefined();

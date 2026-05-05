@@ -276,7 +276,11 @@ describe("ScorecardsController", () => {
       service.evaluateAndSave.mockResolvedValue(saved);
 
       const dto: RefreshScorecardDto = {};
-      const result = await controller.refresh(makeReq("org-uuid-1"), componentId, dto);
+      const result = await controller.refresh(
+        makeReq("org-uuid-1"),
+        componentId,
+        dto,
+      );
 
       expect(result.id).toBe("result-uuid-1");
       expect(result.overallScore).toBe(90);

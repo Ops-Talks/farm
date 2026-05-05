@@ -74,8 +74,12 @@ export class ScorecardsService {
       organizationId,
     );
 
+    // Exclude the `component` relation — upsert only accepts scalar columns.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { component: _component, ...evaluatedFields } = evaluated;
+
     await this.scorecardResultRepository.upsert(
-      { ...evaluated, componentId },
+      { ...evaluatedFields, componentId },
       { conflictPaths: ["componentId"], skipUpdateIfNoValuesChanged: false },
     );
 

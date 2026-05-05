@@ -571,11 +571,12 @@ export class ScorecardEvaluatorService {
         Awaited<ReturnType<typeof this.opaResultRepository.find>>[number],
         "id" | "policyPath" | "allowed" | "evaluatedAt"
       >;
-      const allOpaResults: OpaResultRecord[] = await this.opaResultRepository.find({
-        where: { componentId: component.id },
-        order: { evaluatedAt: "DESC" },
-        select: ["id", "policyPath", "allowed", "evaluatedAt"],
-      });
+      const allOpaResults: OpaResultRecord[] =
+        await this.opaResultRepository.find({
+          where: { componentId: component.id },
+          order: { evaluatedAt: "DESC" },
+          select: ["id", "policyPath", "allowed", "evaluatedAt"],
+        });
 
       const latestOpaByPath = new Map<string, OpaResultRecord>();
       for (const result of allOpaResults) {

@@ -8,9 +8,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  * the read-then-insert race condition that could previously produce duplicate
  * rows when a manual refresh raced against the hourly cron job.
  */
-export class UniqueScorecardComponentId1776400000002
-  implements MigrationInterface
-{
+export class UniqueScorecardComponentId1776400000002 implements MigrationInterface {
   name = "UniqueScorecardComponentId1776400000002";
 
   public async up(queryRunner: QueryRunner): Promise<void> {

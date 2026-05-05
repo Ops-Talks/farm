@@ -163,8 +163,10 @@ describe("ScorecardsService", () => {
         componentId,
         organizationId,
       );
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { component: _c, ...expectedFields } = evaluated;
       expect(mockScorecardResultRepo.upsert).toHaveBeenCalledWith(
-        { ...evaluated, componentId },
+        { ...expectedFields, componentId },
         { conflictPaths: ["componentId"], skipUpdateIfNoValuesChanged: false },
       );
       expect(mockScorecardResultRepo.findOne).toHaveBeenCalledWith({
@@ -527,7 +529,9 @@ describe("ScorecardsService", () => {
 
       const overview = await service.getOverview();
 
-      expect(mockTeamRepo.findBy).toHaveBeenCalledWith({ id: expect.anything() });
+      expect(mockTeamRepo.findBy).toHaveBeenCalledWith({
+        id: expect.anything() as unknown,
+      });
       expect(overview.byTeam[0].teamName).toBe("Engineering");
     });
 
