@@ -1,10 +1,7 @@
+# ALERTMANAGER_SLACK_WEBHOOK_URL is required. Set it in your environment before
+# starting the observability stack (docker-compose.observability.yml enforces this).
 global:
   resolve_timeout: 5m
-  smtp_require_tls: true
-  smtp_smarthost: '${ALERTMANAGER_SMTP_SMARTHOST}'
-  smtp_from: '${ALERTMANAGER_SMTP_FROM}'
-  smtp_auth_username: '${ALERTMANAGER_SMTP_AUTH_USERNAME}'
-  smtp_auth_password: '${ALERTMANAGER_SMTP_AUTH_PASSWORD}'
 
 route:
   group_by: ['alertname', 'service']
