@@ -26,8 +26,8 @@
     "knip": "^6.9.0"
   },
   "optionalDependencies": {
-    "@next/swc-linux-x64-musl": "16.2.4",
-    "@rollup/rollup-linux-x64-musl": "4.60.2",
+    "@next/swc-linux-x64-musl": "16.2.5",
+    "@rollup/rollup-linux-x64-musl": "4.60.3",
     "@tailwindcss/oxide-linux-x64-musl": "4.2.4",
     "@unrs/resolver-binding-linux-x64-musl": "1.11.1",
     "lightningcss-linux-x64-musl": "1.32.0"
@@ -46,7 +46,7 @@
     "router": {
       "path-to-regexp": "8.4.0"
     },
-    "axios": "1.15.2",
+    "axios": "1.16.0",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "release-it": {
@@ -58,7 +58,7 @@
     "uuid": "14.0.0",
     "fast-xml-parser": "5.7.1",
     "brace-expansion@^1": "1.1.13",
-    "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
   }
 }
