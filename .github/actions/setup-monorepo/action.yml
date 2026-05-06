@@ -17,7 +17,9 @@ runs:
 
     - name: Pin npm to v11
       shell: bash
-      run: npm install -g npm@11
+      run: |
+        corepack enable
+        corepack install -g npm@^11
 
     - name: Install dependencies (all workspaces)
       shell: bash
