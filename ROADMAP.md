@@ -137,14 +137,14 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 | FARM-S402 | `onRequestError` hook in `instrumentation.ts` and `global-error.tsx` boundary to capture and log unhandled server errors in structured format | `DONE` |
 | FARM-S403 | Web-specific Grafana panels in `farm-logs.json`: Web Error Rate and Web Warn Count per time window using `{container="farm-web", level="error"}` queries | `DONE` |
 
-### FARM-E91: Alerting Infrastructure `TODO`
+### FARM-E91: Alerting Infrastructure `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S404 | Deploy Alertmanager in `docker-compose.observability.yml` with routing tree, grouping, and inhibition rules | `TODO` |
-| FARM-S405 | Prometheus alert rules: API error rate > 5%, latency P99 > 2 s, Node.js heap > 80% | `TODO` |
-| FARM-S406 | Loki alert rules: error log rate spike per container (sustained > 10 errors/min for 5 m) | `TODO` |
-| FARM-S407 | Notification channels: Slack webhook and SMTP email configured as Alertmanager receivers | `TODO` |
+| FARM-S404 | Deploy Alertmanager in `docker-compose.observability.yml` with routing tree, grouping, and inhibition rules | `DONE` |
+| FARM-S405 | Prometheus alert rules: API error rate > 5%, latency P99 > 2 s, Node.js heap > 80% | `DONE` |
+| FARM-S406 | Loki alert rules: error log rate spike per container (sustained > 10 errors/min for 5 m) | `DONE` |
+| FARM-S407 | Notification channels: Slack webhook and SMTP email configured as Alertmanager receivers | `DONE` |
 
 ### FARM-E92: OTel Collector Pipeline `TODO`
 
