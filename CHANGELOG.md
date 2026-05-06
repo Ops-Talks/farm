@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.8] - 2026-05-06
+
+### Added
+- **observability**: Include new feature.
+- **observability**: Include new feature.
+- **observability**: Include new feature.
+
+### Fixed
+- **ci**: fix Playwright e2e in CI and local make check.
+- **observability**: address PR review feedback.
+
 ## [0.24.7] - 2026-05-05
 
 ### Changed
