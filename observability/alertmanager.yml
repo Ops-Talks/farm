@@ -53,17 +53,6 @@ receivers:
           *Service:* {{ .Labels.service }}
           *Description:* {{ .Annotations.description }}
           {{ end }}
-    email_configs:
-      - to: '${ALERTMANAGER_SMTP_TO}'
-        send_resolved: true
-        html: |-
-          <h2>{{ .CommonAnnotations.summary }}</h2>
-          {{ range .Alerts -}}
-          <p><strong>Service:</strong> {{ .Labels.service }}</p>
-          <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
-          <p><strong>Status:</strong> {{ .Status }}</p>
-          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
-          {{ end }}
 
 inhibit_rules:
   - source_matchers:
