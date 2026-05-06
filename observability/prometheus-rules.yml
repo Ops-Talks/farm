@@ -1,0 +1,76 @@
+groups:
+  - name: farm_api_alerts
+    interval: 30s
+    rules:
+      - alert: FarmApiHighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{status_code=~"5..",job="farm-api"}[5m]))
+          /
+          sum(rate(http_request_duration_seconds_count{job="farm-api"}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: farm-api
+        annotations:
+          summary: "Farm API high error rate"
+          description: "API 5xx error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: FarmApiHighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{job="farm-api"}[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: farm-api
+        annotations:
+          summary: "Farm API high P99 latency"
+          description: "P99 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+
+      - alert: FarmApiNodeHeapHigh
+        expr: |
+          nodejs_heap_size_used_bytes{job="farm-api"}
+          /
+          nodejs_heap_size_total_bytes{job="farm-api"} > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          service: farm-api
+        annotations:
+          summary: "Farm API Node.js heap usage high"
+          description: "Heap usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      - alert: FarmApiDown
+        expr: up{job="farm-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: farm-api
+        annotations:
+          summary: "Farm API is down"
+          description: "The Farm API has been unreachable for more than 1 minute"
+
+  - name: farm_api_recording
+    interval: 30s
+    rules:
+      - record: job:http_requests_total:rate5m
+        expr: sum by (job, status_code) (rate(http_request_duration_seconds_count[5m]))
+
+      - record: job:http_request_duration_seconds:p99_5m
+        expr: |
+          histogram_quantile(0.99,
+            sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: job:http_request_duration_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+
+      - record: job:http_error_rate:ratio_rate5m
+        expr: |
+          sum by (job) (rate(http_request_duration_seconds_count{status_code=~"5.."}[5m]))
+          /
+          sum by (job) (rate(http_request_duration_seconds_count[5m]))

@@ -75,10 +75,14 @@ export default defineConfig({
     },
   ],
 
-  // Spin up the Next.js dev server before the test run starts.
-  // reuseExistingServer lets local development skip the cold start.
+  // Use the standalone production server so it starts in <1 s.
+  // The `check-front` Makefile target always runs `web-build` before `web-e2e`,
+  // so the standalone artifact is guaranteed to exist in CI and `make check`.
+  // For isolated runs (`make web-e2e`), build first or have a dev server on
+  // port 3010 already running (reuseExistingServer skips the cold start).
   webServer: {
-    command: "next dev -p 3010",
+    command:
+      "PORT=3010 HOSTNAME=localhost node .next/standalone/apps/web/server.js",
     url: "http://localhost:3010",
     reuseExistingServer: !isCI,
     timeout: 120_000,

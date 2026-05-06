@@ -117,7 +117,14 @@ jobs:
       - name: Setup monorepo
         uses: ./.github/actions/setup-monorepo
 
-      # ── 3. Install Playwright browser binary for this shard only ─────────────
+      # ── 3. Download pre-built .next output from the web job ──────────────────
+      - name: Download .next build output
+        uses: actions/download-artifact@v5
+        with:
+          name: web-next-build
+          path: apps/web/.next
+
+      # ── 4. Install Playwright browser binary for this shard only ─────────────
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
         working-directory: apps/web

@@ -1,0 +1,7 @@
+# Per-tenant overrides for Tempo 2.7.x (LegacyOverrides format).
+# In single-tenant mode (multitenancy_enabled: false), Tempo uses "anonymous" as the internal tenant ID.
+overrides:
+  "anonymous":
+    metrics_generator_processors:
+      - service-graphs
+      - span-metrics

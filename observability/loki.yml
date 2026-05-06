@@ -43,7 +43,17 @@ limits_config:
   per_stream_rate_limit_burst: 15MB
 
 ruler:
-  alertmanager_url: http://localhost:9093
+  storage:
+    type: local
+    local:
+      directory: /etc/loki/rules
+  rule_path: /tmp/loki-rules
+  alertmanager_url: http://alertmanager:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+  enable_alertmanager_v2: true
 
 analytics:
   reporting_enabled: false

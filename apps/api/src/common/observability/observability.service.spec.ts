@@ -99,7 +99,6 @@ describe("ObservabilityService", () => {
     get: jest.fn((key: string) => {
       if (key === "grafana.url") return "http://localhost:3002";
       if (key === "prometheus.url") return "http://localhost:9090";
-      if (key === "tracing.jaegerUrl") return "http://localhost:16686";
       if (key === "loki.url") return "http://localhost:3100";
       return undefined;
     }),
@@ -341,82 +340,6 @@ describe("ObservabilityService", () => {
       const result = await service.queryPrometheus({}, "query");
 
       expect(result).toEqual({ error: "Prometheus not available", data: null });
-    });
-  });
-
-  describe("queryJaegerTraces", () => {
-    it("should return Jaeger traces data", async () => {
-      const mockData = { data: [], total: 0 };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerTraces({
-        service: "api",
-        limit: "10",
-      });
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/traces",
-        { params: { service: "api", limit: "10" } },
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerTraces({});
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
-    });
-  });
-
-  describe("queryJaegerServices", () => {
-    it("should return Jaeger services list", async () => {
-      const mockData = { data: ["api", "frontend"] };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerServices();
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/services",
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerServices();
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
-    });
-  });
-
-  describe("queryJaegerTrace", () => {
-    it("should return a single trace detail", async () => {
-      const mockData = { data: [{ traceID: "abc123", spans: [] }] };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerTrace("abc123");
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/traces/abc123",
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerTrace("abc123");
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
     });
   });
 
