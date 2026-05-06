@@ -6,7 +6,7 @@ services:
       OTEL_SERVICE_NAME: "farm-api"
       LOKI_URL: "http://loki:3100"
       PROMETHEUS_URL: "http://prometheus:9090"
-      PYROSCOPE_ENABLED: "false"
+      PYROSCOPE_ENABLED: "true"
       PYROSCOPE_URL: "http://pyroscope:4040"
     depends_on:
       alloy:
