@@ -20,6 +20,21 @@ import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
 // can patch HTTP, Express, and TypeORM modules at import time.
 initTracing();
 
+// Initialize Pyroscope continuous profiling when enabled via environment variable.
+if (process.env.PYROSCOPE_ENABLED === "true") {
+  // Dynamic import so that the package is only loaded when profiling is active.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
+  const Pyroscope = require("@pyroscope/nodejs");
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  Pyroscope.init({
+    serverAddress: process.env.PYROSCOPE_URL ?? "http://pyroscope:4040",
+    appName: "farm-api",
+    tags: { environment: process.env.NODE_ENV ?? "development" },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  Pyroscope.start();
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,

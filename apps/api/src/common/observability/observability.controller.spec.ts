@@ -24,9 +24,6 @@ describe("ObservabilityController", () => {
     queryPrometheus: jest
       .fn()
       .mockResolvedValue({ status: "success", data: {} }),
-    queryJaegerTraces: jest.fn().mockResolvedValue({ data: [] }),
-    queryJaegerServices: jest.fn().mockResolvedValue({ data: [] }),
-    queryJaegerTrace: jest.fn().mockResolvedValue({ data: [] }),
     queryLoki: jest.fn().mockResolvedValue({ status: "success", data: {} }),
   };
 
@@ -90,39 +87,6 @@ describe("ObservabilityController", () => {
     });
   });
 
-  describe("jaegerTraces", () => {
-    it("should call queryJaegerTraces with default limit and lookback", async () => {
-      await controller.jaegerTraces({ service: "api" });
-      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
-        service: "api",
-        limit: "20",
-        lookback: "1h",
-      });
-    });
-
-    it("should allow overriding default limit and lookback", async () => {
-      await controller.jaegerTraces({ limit: "50", lookback: "6h" });
-      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
-        limit: "50",
-        lookback: "6h",
-      });
-    });
-  });
-
-  describe("jaegerServices", () => {
-    it("should call queryJaegerServices", async () => {
-      await controller.jaegerServices();
-      expect(mockService.queryJaegerServices).toHaveBeenCalled();
-    });
-  });
-
-  describe("jaegerTrace", () => {
-    it("should call queryJaegerTrace with the correct traceId", async () => {
-      await controller.jaegerTrace("abc123");
-      expect(mockService.queryJaegerTrace).toHaveBeenCalledWith("abc123");
-    });
-  });
-
   describe("lokiLogs", () => {
     it("should call queryLoki with default limit and query_range path", async () => {
       await controller.lokiLogs({ query: '{app="api"}' });
@@ -163,9 +127,6 @@ describe("ObservabilityController — additional branches", () => {
   const mockService = {
     getSummary: jest.fn().mockResolvedValue({}),
     queryPrometheus: jest.fn().mockResolvedValue({}),
-    queryJaegerTraces: jest.fn().mockResolvedValue({ data: [] }),
-    queryJaegerServices: jest.fn().mockResolvedValue({ data: [] }),
-    queryJaegerTrace: jest.fn().mockResolvedValue({ data: {} }),
     queryLoki: jest.fn().mockResolvedValue({ streams: [] }),
   };
 
@@ -177,30 +138,6 @@ describe("ObservabilityController — additional branches", () => {
 
     controller = module.get<ObservabilityController>(ObservabilityController);
     jest.clearAllMocks();
-  });
-
-  describe("jaegerTraces — with overridden limit and lookback", () => {
-    it("should use provided limit and lookback values", async () => {
-      await controller.jaegerTraces({
-        service: "my-svc",
-        limit: "50",
-        lookback: "2h",
-      });
-      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
-        limit: "50",
-        lookback: "2h",
-        service: "my-svc",
-      });
-    });
-
-    it("should use default limit=20 and lookback=1h when not provided", async () => {
-      await controller.jaegerTraces({ service: "my-svc" });
-      expect(mockService.queryJaegerTraces).toHaveBeenCalledWith({
-        limit: "20",
-        lookback: "1h",
-        service: "my-svc",
-      });
-    });
   });
 
   describe("lokiLogs — with overridden limit", () => {

@@ -2,9 +2,22 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - /etc/prometheus/rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   - job_name: "farm-api"
     metrics_path: "/api/v1/metrics"
+    scrape_interval: 15s
+    scrape_protocols:
+      - OpenMetricsText1.0.0
+      - OpenMetricsText0.0.1
+      - PrometheusText0.0.4
     static_configs:
       - targets: ["farm-api:3000"]
         labels:

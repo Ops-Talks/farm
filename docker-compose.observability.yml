@@ -2,12 +2,14 @@ services:
   api:
     environment:
       OTEL_ENABLED: "true"
-      OTEL_EXPORTER_ENDPOINT: "http://tempo:4318/v1/traces"
+      OTEL_EXPORTER_ENDPOINT: "http://alloy:4318/v1/traces"
       OTEL_SERVICE_NAME: "farm-api"
       LOKI_URL: "http://loki:3100"
       PROMETHEUS_URL: "http://prometheus:9090"
+      PYROSCOPE_ENABLED: "true"
+      PYROSCOPE_URL: "http://pyroscope:4040"
     depends_on:
-      tempo:
+      alloy:
         condition: service_started
       loki:
         condition: service_healthy
@@ -15,8 +17,9 @@ services:
   web:
     environment:
       OTEL_ENABLED: "true"
-      OTEL_EXPORTER_ENDPOINT: "http://tempo:4318/v1/traces"
+      OTEL_EXPORTER_ENDPOINT: "http://alloy:4318/v1/traces"
       OTEL_SERVICE_NAME: "farm-web"
+      NEXT_PUBLIC_FARO_URL: "http://localhost:12347/collect"
 
   loki:
     image: grafana/loki:3.4.2
@@ -26,6 +29,7 @@ services:
       - "3100:3100"
     volumes:
       - ./observability/loki.yml:/etc/loki/config.yaml:ro
+      - ./observability/loki-rules.yml:/etc/loki/rules/fake/rules.yml:ro
       - loki-data:/var/loki
     command: -config.file=/etc/loki/config.yaml
     user: "0"
@@ -73,11 +77,36 @@ services:
       - "9090:9090"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus-rules.yml:/etc/prometheus/rules.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--alertmanager.notification-queue-capacity=10000"
+      - "--web.enable-remote-write-receiver"
     depends_on:
       api:
         condition: service_healthy
       node-exporter:
         condition: service_started
+      alertmanager:
+        condition: service_started
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: farm-alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   tempo:
     image: grafana/tempo:2.7.2
@@ -85,10 +114,37 @@ services:
     restart: always
     ports:
       - "3200:3200"
-      - "4318:4318"
     volumes:
       - ./observability/tempo.yml:/etc/tempo/config.yaml:ro
+      - ./observability/tempo-overrides.yaml:/etc/tempo/overrides.yaml:ro
     command: ["-config.file=/etc/tempo/config.yaml"]
+
+  alloy:
+    image: grafana/alloy:v1.8.3
+    container_name: farm-alloy
+    restart: always
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "12347:12347"
+    volumes:
+      - ./observability/alloy.river:/etc/alloy/config.river:ro
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.river"]
+    depends_on:
+      tempo:
+        condition: service_started
+      loki:
+        condition: service_healthy
+
+  pyroscope:
+    image: grafana/pyroscope:1.13.1
+    container_name: farm-pyroscope
+    restart: always
+    ports:
+      - "4040:4040"
+    volumes:
+      - pyroscope-data:/data
+    command: ["server"]
 
   grafana:
     image: grafana/grafana:11.6.14
@@ -101,6 +157,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-farm}
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      GF_INSTALL_PLUGINS: "grafana-pyroscope-app"
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
@@ -113,3 +170,5 @@ services:
 
 volumes:
   loki-data:
+  alertmanager-data:
+  pyroscope-data:

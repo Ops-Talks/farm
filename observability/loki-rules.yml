@@ -1,0 +1,24 @@
+groups:
+  - name: farm_log_alerts
+    rules:
+      - alert: FarmApiErrorBurst
+        expr: |
+          sum(rate({container="farm-api", level="error"}[5m])) > 0.167
+        for: 5m
+        labels:
+          severity: warning
+          service: farm-api
+        annotations:
+          summary: "Farm API error log burst"
+          description: "API error log rate exceeds 10/min sustained for 5 minutes"
+
+      - alert: FarmWebErrorBurst
+        expr: |
+          sum(rate({container="farm-web", level="error"}[5m])) > 0.167
+        for: 5m
+        labels:
+          severity: warning
+          service: farm-web
+        annotations:
+          summary: "Farm Web error log burst"
+          description: "Web app error log rate exceeds 10/min sustained for 5 minutes"

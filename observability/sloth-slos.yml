@@ -1,0 +1,48 @@
+version: "prometheus/v1"
+service: "farm-api"
+labels:
+  team: farm
+  env: production
+slos:
+  - name: "requests-availability"
+    objective: 99.5
+    description: "Farm API HTTP request availability"
+    sli:
+      events:
+        error_query: sum(rate(http_request_duration_seconds_count{job="farm-api",status_code=~"5.."}[{{.window}}]))
+        total_query: sum(rate(http_request_duration_seconds_count{job="farm-api"}[{{.window}}]))
+    alerting:
+      name: FarmApiAvailabilitySLO
+      labels:
+        category: availability
+      annotations:
+        summary: "Farm API availability SLO burn rate"
+      page_alert:
+        labels:
+          severity: critical
+      ticket_alert:
+        labels:
+          severity: warning
+
+  - name: "requests-latency"
+    objective: 99.5
+    description: "Farm API P99 latency < 500ms"
+    sli:
+      events:
+        error_query: |
+          sum(rate(http_request_duration_seconds_bucket{job="farm-api",le="0.5"}[{{.window}}]))
+          /
+          sum(rate(http_request_duration_seconds_count{job="farm-api"}[{{.window}}]))
+        total_query: sum(rate(http_request_duration_seconds_count{job="farm-api"}[{{.window}}]))
+    alerting:
+      name: FarmApiLatencySLO
+      labels:
+        category: latency
+      annotations:
+        summary: "Farm API latency SLO burn rate"
+      page_alert:
+        labels:
+          severity: critical
+      ticket_alert:
+        labels:
+          severity: warning

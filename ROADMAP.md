@@ -69,7 +69,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 33: UX/UI Quality and Accessibility | 1 | 6 | v0.24.3 | `DONE` |
 | Phase 34: Dead Code Elimination | 1 | 4 | v0.24.3 | `DONE` |
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
-| Phase 39: Service Maturity Scorecards | 1 | 6 | - | `DONE` |
+| Phase 39: Service Maturity Scorecards | 1 | 6 | v0.24.7 | `DONE` |
 
 ---
 
@@ -128,14 +128,14 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 
 Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reach full open-source market standard across all three pillars of observability (logs, metrics, traces), plus alerting, SLO tracking, RUM, and continuous profiling.
 
-### FARM-E90: Web App Server-Side Observability `IN PROGRESS`
+### FARM-E90: Web App Server-Side Observability `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S400 | Structured JSON logging for Next.js server using Winston, matching the Promtail pipeline format (`level`, `message`, `context`, `trace_id`, `span_id`) so Loki label extraction works for the web container | `IN PROGRESS` |
-| FARM-S401 | Server-side OTEL Node SDK wired in `instrumentation.ts` (`register()` → `initTracing()` in the `nodejs` runtime), sending spans via OTLP to Tempo | `IN PROGRESS` |
-| FARM-S402 | `onRequestError` hook in `instrumentation.ts` and `global-error.tsx` boundary to capture and log unhandled server errors in structured format | `IN PROGRESS` |
-| FARM-S403 | Web-specific Grafana panels in `farm-logs.json`: Web Error Rate and Web Warn Count per time window using `{container="farm-web", level="error"}` queries | `IN PROGRESS` |
+| FARM-S400 | Structured JSON logging for Next.js server using Winston, matching the Promtail pipeline format (`level`, `message`, `context`, `trace_id`, `span_id`) so Loki label extraction works for the web container | `DONE` |
+| FARM-S401 | Server-side OTEL Node SDK wired in `instrumentation.ts` (`register()` → `initTracing()` in the `nodejs` runtime), sending spans via OTLP to Tempo | `DONE` |
+| FARM-S402 | `onRequestError` hook in `instrumentation.ts` and `global-error.tsx` boundary to capture and log unhandled server errors in structured format | `DONE` |
+| FARM-S403 | Web-specific Grafana panels in `farm-logs.json`: Web Error Rate and Web Warn Count per time window using `{container="farm-web", level="error"}` queries | `DONE` |
 
 ### FARM-E91: Alerting Infrastructure `TODO`
 
@@ -167,7 +167,7 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S415 | Add Prometheus Sloth recording rules for API availability (99.5 %) and latency (P99 < 500 ms) SLOs. Distinct from the existing in-app SLO CRUD module (`core-slo`), which stores SLO definitions in Postgres; this story adds infrastructure-level multi-window burn-rate recording rules evaluated natively by Prometheus | `TODO` |
+| FARM-S415 | Add Prometheus SLO recording rules using `slok/sloth` (https://github.com/slok/sloth, Apache 2.0) for API availability (99.5 %) and latency (P99 < 500 ms). Distinct from the existing in-app SLO CRUD module (`core-slo`), which stores SLO definitions in Postgres; this story adds infrastructure-level multi-window burn-rate recording rules evaluated natively by Prometheus | `TODO` |
 | FARM-S416 | Grafana dashboard for SLO compliance and error budget burn rate, sourced from the Sloth recording rules added in FARM-S415. Distinct from the in-app `/slos` page (Next.js UI), which reads from the API; this story provides an operator-facing Grafana view with 1 h / 6 h burn-rate panels and remaining budget gauges | `TODO` |
 | FARM-S417 | Prometheus recording rules for high-frequency dashboard aggregations (request rate, error rate per route) | `TODO` |
 
@@ -175,13 +175,13 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S418 | Deploy Grafana Faro Collector in `docker-compose.observability.yml` | `TODO` |
-| FARM-S419 | Integrate Grafana Faro SDK in Next.js for full RUM: session correlation, user journey replay, and error grouping with source maps. Core Web Vitals (LCP, INP, CLS) are already tracked as OTel spans via `web-vitals.ts`; Faro adds session-level aggregation, frontend error deduplication, and the Grafana Frontend Observability dashboard that the OTel span approach alone does not provide | `TODO` |
-| FARM-S420 | Frontend error aggregation: unhandled exceptions and promise rejections forwarded to Faro with user session correlation | `TODO` |
+| FARM-S418 | Enable the `faro.receiver` component in Grafana Alloy (`docker-compose.observability.yml`) to receive browser telemetry from the Faro Web SDK and fan it out to Loki (logs) and Tempo (traces). No separate "Faro Collector" binary — `faro.receiver` is a GA-stable built-in component of Alloy (Apache 2.0) | `TODO` |
+| FARM-S419 | Integrate `@grafana/faro-web-sdk` (Apache 2.0) in Next.js: session correlation, user journey tracking, and unhandled error capture. Core Web Vitals are already tracked as OTel spans via `web-vitals.ts`; Faro adds session-level error aggregation and navigation timing. The "Grafana Frontend Observability" app is Grafana Cloud-only and not available in self-hosted Grafana OSS — custom Loki/Tempo dashboards will be built to visualize Faro data instead | `TODO` |
+| FARM-S420 | Custom Grafana dashboards for Faro RUM data: unhandled JS exceptions and promise rejections (from Loki), frontend trace waterfall (from Tempo), and Web Vitals trends per session — replacing the Cloud-only Frontend Observability app | `TODO` |
 
 ### FARM-E96: Continuous Profiling — Grafana Pyroscope `TODO`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S421 | Deploy Grafana Pyroscope in `docker-compose.observability.yml` | `TODO` |
-| FARM-S422 | Node.js profiling agent (`@pyroscope/nodejs`) in NestJS API pushing CPU and heap profiles to Pyroscope | `TODO` |
+| FARM-S421 | Deploy Grafana Pyroscope (AGPL-3.0, free for self-hosted internal use of unmodified binary) in `docker-compose.observability.yml`; install the `grafana-pyroscope-app` OSS plugin in Grafana for the Explore Profiles UI | `TODO` |
+| FARM-S422 | Node.js profiling agent (`@pyroscope/nodejs`, Apache 2.0) in NestJS API pushing CPU and heap profiles to the self-hosted Pyroscope server | `TODO` |

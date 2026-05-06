@@ -17,6 +17,8 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "^1.13.0",
+    "@grafana/faro-web-tracing": "^1.13.0",
     "@base-ui/react": "^1.2.0",
     "@dagrejs/dagre": "^3.0.0",
     "@farm/types": "^0.1.0",
