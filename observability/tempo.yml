@@ -30,7 +30,8 @@ storage:
     wal:
       path: /var/tempo/wal
 
-# Global defaults applied to all tenants (legacyConfig flat format for Tempo 2.7.x).
+# Global defaults applied to all tenants. In single-tenant mode, Tempo injects
+# FakeTenantID = "single-tenant"; the per-tenant file also has an explicit entry for it.
 overrides:
   per_tenant_override_config: /etc/tempo/overrides.yaml
 
