@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.9] - 2026-05-06
+
+### Changed
+- Potential fix for pull request finding.
+- **deps**: apply safe Dependabot bumps (non-critical group + jsdom 29).
+- **deps**: bump marked from 17.0.6 to 18.0.3.
+- **deps-dev**: bump globals from 16.5.0 to 17.6.0.
+
+### Fixed
+- add express as explicit dep and fix CI npm install via corepack.
+- **observability**: fix Tempo metrics_generator processor activation.
+
 ## [0.24.8] - 2026-05-06
 
 ### Added
