@@ -25,7 +25,7 @@ import { ObservabilitySummaryDto } from "./dto/observability-summary.dto";
 /**
  * Controller for application observability data.
  * Provides metrics summary, health, tooling links, and proxy endpoints for
- * Prometheus and Loki.
+ * Prometheus, Jaeger, and Loki.
  */
 @ApiTags("Observability")
 @ApiBearerAuth()
@@ -136,6 +136,82 @@ export class ObservabilityController {
     @Query() query: Record<string, string>,
   ): Promise<unknown> {
     return this.observabilityService.queryPrometheus(query, "labels");
+  }
+
+  // ---------------------------------------------------------------------------
+  // S94: Jaeger/Tempo trace proxy endpoints
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Proxies a trace list request to the configured Jaeger instance.
+   * Returns a graceful error object if Jaeger is not reachable.
+   */
+  @Get("traces")
+  @Roles("admin")
+  @ApiOperation({
+    summary: "List traces",
+    description: "Proxies a trace list request to Jaeger /api/traces.",
+  })
+  @ApiQuery({
+    name: "service",
+    required: false,
+    description: "Service name to filter traces",
+  })
+  @ApiQuery({
+    name: "operation",
+    required: false,
+    description: "Operation name to filter traces",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    description: "Maximum number of traces to return (default 20)",
+  })
+  @ApiQuery({
+    name: "lookback",
+    required: false,
+    description: "Time window for traces (default 1h)",
+  })
+  @ApiOkResponse({ description: "Jaeger traces list." })
+  async jaegerTraces(@Query() query: Record<string, string>): Promise<unknown> {
+    const params: Record<string, string> = {
+      limit: "20",
+      lookback: "1h",
+      ...query,
+    };
+    return this.observabilityService.queryJaegerTraces(params);
+  }
+
+  /**
+   * Proxies a services list request to the configured Jaeger instance.
+   * Returns a graceful error object if Jaeger is not reachable.
+   */
+  @Get("traces/services")
+  @Roles("admin")
+  @ApiOperation({
+    summary: "List Jaeger services",
+    description: "Proxies a services list request to Jaeger /api/services.",
+  })
+  @ApiOkResponse({ description: "Jaeger services list." })
+  async jaegerServices(): Promise<unknown> {
+    return this.observabilityService.queryJaegerServices();
+  }
+
+  /**
+   * Proxies a trace detail request to the configured Jaeger instance.
+   * Returns a graceful error object if Jaeger is not reachable.
+   */
+  @Get("traces/:traceId")
+  @Roles("admin")
+  @ApiOperation({
+    summary: "Get trace by ID",
+    description:
+      "Proxies a trace detail request to Jaeger /api/traces/:traceId.",
+  })
+  @ApiParam({ name: "traceId", description: "The trace identifier" })
+  @ApiOkResponse({ description: "Jaeger trace detail." })
+  async jaegerTrace(@Param("traceId") traceId: string): Promise<unknown> {
+    return this.observabilityService.queryJaegerTrace(traceId);
   }
 
   // ---------------------------------------------------------------------------

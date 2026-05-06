@@ -6,7 +6,7 @@ services:
       OTEL_SERVICE_NAME: "farm-api"
       LOKI_URL: "http://loki:3100"
       PROMETHEUS_URL: "http://prometheus:9090"
-      PYROSCOPE_ENABLED: "true"
+      PYROSCOPE_ENABLED: "false"
       PYROSCOPE_URL: "http://pyroscope:4040"
     depends_on:
       alloy:
@@ -127,6 +127,8 @@ services:
       - "4317:4317"
       - "4318:4318"
       - "12347:12347"
+    environment:
+      FARO_CORS_ALLOWED_ORIGINS: "${FARO_CORS_ALLOWED_ORIGINS:-http://localhost:3001}"
     volumes:
       - ./observability/alloy.river:/etc/alloy/config.river:ro
     command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.river"]

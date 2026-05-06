@@ -37,17 +37,22 @@ describe('initFaro', () => {
   });
 
   it('does nothing when window is undefined (SSR)', () => {
-    const savedWindow = globalThis.window;
-    // @ts-expect-error intentionally removing window to simulate SSR
-    delete globalThis.window;
+    Object.defineProperty(globalThis, 'window', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
     process.env.NEXT_PUBLIC_FARO_URL = 'http://localhost:12347/collect';
 
     try {
       initFaro();
       expect(initializeFaro).not.toHaveBeenCalled();
     } finally {
-      // @ts-expect-error restoring window
-      globalThis.window = savedWindow;
+      Object.defineProperty(globalThis, 'window', {
+        value: globalThis,
+        writable: true,
+        configurable: true,
+      });
     }
   });
 

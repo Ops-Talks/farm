@@ -17,9 +17,6 @@ route:
 
 receivers:
   - name: 'default'
-    webhook_configs:
-      - url: 'http://localhost:5001/alerts'
-        send_resolved: true
 
   - name: 'slack'
     slack_configs:

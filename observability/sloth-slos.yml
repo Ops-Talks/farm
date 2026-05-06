@@ -31,8 +31,6 @@ slos:
       events:
         error_query: |
           sum(rate(http_request_duration_seconds_bucket{job="farm-api",le="0.5"}[{{.window}}]))
-          /
-          sum(rate(http_request_duration_seconds_count{job="farm-api"}[{{.window}}]))
         total_query: sum(rate(http_request_duration_seconds_count{job="farm-api"}[{{.window}}]))
     alerting:
       name: FarmApiLatencySLO
