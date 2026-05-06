@@ -113,6 +113,12 @@ const config: KnipConfig = {
         // peer dependency but is not directly imported by application code.
         '@nestjs/mapped-types',
 
+        // express is a peer dependency of @nestjs/platform-express and is used
+        // directly in filter/guard/middleware files for type-safe Request and
+        // Response references, and in main.ts for body-parser configuration.
+        // It is provided transitively and does not need to be listed separately.
+        'express',
+
         // supertest and its types are used exclusively inside test/ which is
         // excluded from Knip's project files. They are legitimate test-only deps.
         'supertest',

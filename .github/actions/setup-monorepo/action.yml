@@ -1,5 +1,5 @@
 name: Setup monorepo
-description: Set up Node 20, run npm ci, optionally compile shared types. Caller must checkout the repo first.
+description: Set up Node 22, run npm ci, optionally compile shared types. Caller must checkout the repo first.
 inputs:
   compile-types:
     description: Whether to compile packages/types via tsc
@@ -9,11 +9,15 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Set up Node.js 20
+    - name: Set up Node.js 22
       uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
+
+    - name: Pin npm to v11
+      shell: bash
+      run: npm install -g npm@11
 
     - name: Install dependencies (all workspaces)
       shell: bash
