@@ -151,8 +151,8 @@ export function TracesTab() {
       {/* Body */}
       {unavailable && (
         <EmptyState
-          title="Jaeger not available"
-          description="The tracing backend is currently unreachable. Check your Jaeger configuration."
+          title="Tracing backend not available"
+          description="The tracing backend is currently unreachable. Check your Tempo configuration."
         />
       )}
 

@@ -5,14 +5,6 @@ import {
   OnApplicationBootstrap,
 } from "@nestjs/common";
 import { register as promRegister, openMetricsContentType } from "prom-client";
-
-// Must run before module compilation so all histograms (including those created
-// by makeHistogramProvider) see the OpenMetrics registry and allow exemplars.
-// This is module-level code so it runs whenever AppModule is imported — both
-// in production (main.ts) and in e2e tests that import AppModule directly.
-(
-  promRegister as unknown as { setContentType: (ct: string) => void }
-).setContentType(openMetricsContentType);
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -74,6 +66,16 @@ import { RequestLoggerMiddleware } from "./common/middleware/request-logger.midd
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
+
+// Switch the default Prometheus registry to OpenMetrics content type so that
+// histograms with enableExemplars=true can attach OpenTelemetry exemplars.
+// Guarded against prom-client versions that may not expose setContentType.
+const _promSetContentType = (
+  promRegister as unknown as { setContentType?: (ct: string) => void }
+).setContentType;
+if (typeof _promSetContentType === "function") {
+  _promSetContentType.call(promRegister, openMetricsContentType);
+}
 
 @Module({
   imports: [

@@ -172,7 +172,15 @@ export class ObservabilityController {
     required: false,
     description: "End timestamp (Unix seconds)",
   })
-  @ApiOkResponse({ description: "Tempo trace search result." })
+  @ApiQuery({
+    name: "lookback",
+    required: false,
+    description:
+      "Lookback duration in seconds (e.g. 3600 or 3600s). Used as an alternative to explicit start/end.",
+  })
+  @ApiOkResponse({
+    description: "Tempo trace search result (Jaeger-compatible).",
+  })
   async tempoTraces(@Query() query: Record<string, string>): Promise<unknown> {
     return this.observabilityService.queryTempoTraces(query);
   }
@@ -188,7 +196,9 @@ export class ObservabilityController {
     description:
       "Returns service names from Tempo /api/search/tag/service.name/values.",
   })
-  @ApiOkResponse({ description: "Tempo service names." })
+  @ApiOkResponse({
+    description: "Tempo service names (Jaeger-compatible { data: string[] }).",
+  })
   async tempoServices(): Promise<unknown> {
     return this.observabilityService.queryTempoServices();
   }
@@ -205,7 +215,10 @@ export class ObservabilityController {
       "Proxies a trace detail request to Tempo /api/traces/:traceId.",
   })
   @ApiParam({ name: "traceId", description: "The trace identifier" })
-  @ApiOkResponse({ description: "Tempo trace detail." })
+  @ApiOkResponse({
+    description:
+      "Tempo trace detail (Jaeger-compatible { data: JaegerTrace[] }).",
+  })
   async tempoTrace(@Param("traceId") traceId: string): Promise<unknown> {
     return this.observabilityService.queryTempoTrace(traceId);
   }
