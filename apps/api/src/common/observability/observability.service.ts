@@ -229,7 +229,10 @@ export class ObservabilityService {
       spans: [
         {
           traceID,
-          spanID: traceID.slice(0, 16) || "0000000000000000",
+          // Synthetic sentinel spanID — the Tempo search summary does not
+          // include a root spanID. The list view only uses traceID for display;
+          // the waterfall fetches the full trace separately.
+          spanID: "0000000000000000",
           operationName: rootTraceName,
           references: [],
           startTime: startUs,
