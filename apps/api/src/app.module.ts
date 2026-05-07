@@ -4,6 +4,15 @@ import {
   MiddlewareConsumer,
   OnApplicationBootstrap,
 } from "@nestjs/common";
+import { register as promRegister, openMetricsContentType } from "prom-client";
+
+// Must run before module compilation so all histograms (including those created
+// by makeHistogramProvider) see the OpenMetrics registry and allow exemplars.
+// This is module-level code so it runs whenever AppModule is imported — both
+// in production (main.ts) and in e2e tests that import AppModule directly.
+(
+  promRegister as unknown as { setContentType: (ct: string) => void }
+).setContentType(openMetricsContentType);
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -458,6 +467,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
       help: "HTTP request duration in seconds",
       labelNames: ["method", "route", "status_code"],
       buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+      enableExemplars: true,
     }),
     {
       provide: APP_INTERCEPTOR,

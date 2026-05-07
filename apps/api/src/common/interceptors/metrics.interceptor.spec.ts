@@ -61,9 +61,11 @@ describe("MetricsInterceptor", () => {
           route: "/users",
           status_code: "200",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "GET", route: "/users", status_code: "200" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "GET", route: "/users", status_code: "200" },
+          }),
         );
         done();
       },
@@ -84,9 +86,11 @@ describe("MetricsInterceptor", () => {
           route: "/api/items",
           status_code: "201",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "POST", route: "/api/items", status_code: "201" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "POST", route: "/api/items", status_code: "201" },
+          }),
         );
         done();
       },
@@ -131,9 +135,11 @@ describe("MetricsInterceptor", () => {
           route: "/error",
           status_code: "500",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "GET", route: "/error", status_code: "500" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "GET", route: "/error", status_code: "500" },
+          }),
         );
         done();
       },
@@ -148,11 +154,10 @@ describe("MetricsInterceptor", () => {
 
     interceptor.intercept(context, next).subscribe({
       next: () => {
-        const [, duration] = mockHistogram.observe.mock.calls[0] as [
-          unknown,
-          number,
+        const call = mockHistogram.observe.mock.calls[0] as [
+          { labels: unknown; value: number },
         ];
-        expect(duration).toBeGreaterThanOrEqual(0);
+        expect(call[0].value).toBeGreaterThanOrEqual(0);
         done();
       },
       error: done,

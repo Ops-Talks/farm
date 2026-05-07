@@ -100,6 +100,7 @@ describe("ObservabilityService", () => {
       if (key === "grafana.url") return "http://localhost:3002";
       if (key === "prometheus.url") return "http://localhost:9090";
       if (key === "loki.url") return "http://localhost:3100";
+      if (key === "tempo.url") return "http://localhost:3200";
       return undefined;
     }),
   };
@@ -371,6 +372,94 @@ describe("ObservabilityService", () => {
       const result = await service.queryLoki({}, "/loki/api/v1/query_range");
 
       expect(result).toEqual({ error: "Loki not available", data: null });
+    });
+  });
+
+  describe("queryTempoTraces", () => {
+    it("should search traces and map service param to Tempo tags", async () => {
+      const mockData = { traces: [] };
+      mockHttpService.get.mockReturnValue(of({ data: mockData }));
+
+      const result = await service.queryTempoTraces({
+        service: "farm-api",
+        limit: "10",
+      });
+
+      expect(result).toEqual(mockData);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search",
+        { params: { tags: "service.name=farm-api", limit: "10" } },
+      );
+    });
+
+    it("should forward params without service mapping when service is absent", async () => {
+      const mockData = { traces: [] };
+      mockHttpService.get.mockReturnValue(of({ data: mockData }));
+
+      await service.queryTempoTraces({ limit: "5" });
+
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search",
+        { params: { limit: "5" } },
+      );
+    });
+
+    it("should return structured error when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = await service.queryTempoTraces({});
+
+      expect(result).toEqual({ error: "Tempo not available", data: null });
+    });
+  });
+
+  describe("queryTempoServices", () => {
+    it("should return service names from Tempo tag values endpoint", async () => {
+      const mockData = { tagValues: [{ type: "string", value: "farm-api" }] };
+      mockHttpService.get.mockReturnValue(of({ data: mockData }));
+
+      const result = await service.queryTempoServices();
+
+      expect(result).toEqual(mockData);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search/tag/service.name/values",
+      );
+    });
+
+    it("should return structured error when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = await service.queryTempoServices();
+
+      expect(result).toEqual({ error: "Tempo not available", data: null });
+    });
+  });
+
+  describe("queryTempoTrace", () => {
+    it("should fetch a trace by ID from Tempo", async () => {
+      const mockData = { resourceSpans: [] };
+      mockHttpService.get.mockReturnValue(of({ data: mockData }));
+
+      const result = await service.queryTempoTrace("abc123");
+
+      expect(result).toEqual(mockData);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/traces/abc123",
+      );
+    });
+
+    it("should return structured error when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = await service.queryTempoTrace("abc123");
+
+      expect(result).toEqual({ error: "Tempo not available", data: null });
     });
   });
 });

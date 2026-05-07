@@ -141,62 +141,66 @@ export class ObservabilityService {
   }
 
   /**
-   * Proxies a traces request to the configured Jaeger instance.
-   * Returns a structured error if Jaeger is not reachable.
-   * @param params - Query parameters to forward
-   * @returns The Jaeger response data or an error object
+   * Searches traces in the configured Tempo instance.
+   * Accepts optional `service`, `limit`, `start`, and `end` query params.
+   * Returns a structured error if Tempo is not reachable.
+   * @param params - Query parameters: service (filter), limit (max results), start/end (Unix timestamps)
+   * @returns The Tempo search response or an error object
    */
-  async queryJaegerTraces(params: Record<string, string>): Promise<unknown> {
+  async queryTempoTraces(params: Record<string, string>): Promise<unknown> {
     const baseUrl =
-      this.configService?.get<string>("tracing.jaegerUrl") ??
-      "http://localhost:16686";
-    const url = `${baseUrl}/api/traces`;
+      this.configService?.get<string>("tempo.url") ?? "http://localhost:3200";
+    const url = `${baseUrl}/api/search`;
+
+    const tempoParams: Record<string, string> = { limit: "20", ...params };
+    if (params.service) {
+      tempoParams.tags = `service.name=${params.service}`;
+      delete tempoParams.service;
+    }
 
     try {
       const response = await firstValueFrom(
-        this.httpService!.get(url, { params }),
+        this.httpService!.get(url, { params: tempoParams }),
       );
       return response.data;
     } catch (error) {
       this.logger.warn(
-        `Jaeger not available at ${url}: ${(error as Error).message}`,
+        `Tempo not available at ${url}: ${(error as Error).message}`,
       );
-      return { error: "Jaeger not available", data: null };
+      return { error: "Tempo not available", data: null };
     }
   }
 
   /**
-   * Proxies a services list request to the configured Jaeger instance.
-   * Returns a structured error if Jaeger is not reachable.
-   * @returns The Jaeger services response or an error object
+   * Lists service names discovered by Tempo from trace data.
+   * Returns a structured error if Tempo is not reachable.
+   * @returns The Tempo tag values response or an error object
    */
-  async queryJaegerServices(): Promise<unknown> {
+  async queryTempoServices(): Promise<unknown> {
     const baseUrl =
-      this.configService?.get<string>("tracing.jaegerUrl") ??
-      "http://localhost:16686";
-    const url = `${baseUrl}/api/services`;
+      this.configService?.get<string>("tempo.url") ?? "http://localhost:3200";
+    const url = `${baseUrl}/api/search/tag/service.name/values`;
 
     try {
       const response = await firstValueFrom(this.httpService!.get(url));
       return response.data;
     } catch (error) {
       this.logger.warn(
-        `Jaeger not available at ${url}: ${(error as Error).message}`,
+        `Tempo not available at ${url}: ${(error as Error).message}`,
       );
-      return { error: "Jaeger not available", data: null };
+      return { error: "Tempo not available", data: null };
     }
   }
 
   /**
-   * Proxies a trace detail request to the configured Jaeger instance.
-   * Returns a structured error if Jaeger is not reachable.
+   * Fetches a single trace by ID from the configured Tempo instance.
+   * Returns a structured error if Tempo is not reachable.
    * @param traceId - The trace identifier to retrieve
-   * @returns The Jaeger trace response or an error object
+   * @returns The Tempo trace response or an error object
    */
-  async queryJaegerTrace(traceId: string): Promise<unknown> {
+  async queryTempoTrace(traceId: string): Promise<unknown> {
     const baseUrl =
-      this.configService?.get<string>("tracing.jaegerUrl") ??
-      "http://localhost:16686";
+      this.configService?.get<string>("tempo.url") ?? "http://localhost:3200";
     const url = `${baseUrl}/api/traces/${traceId}`;
 
     try {
@@ -204,9 +208,9 @@ export class ObservabilityService {
       return response.data;
     } catch (error) {
       this.logger.warn(
-        `Jaeger not available at ${url}: ${(error as Error).message}`,
+        `Tempo not available at ${url}: ${(error as Error).message}`,
       );
-      return { error: "Jaeger not available", data: null };
+      return { error: "Tempo not available", data: null };
     }
   }
 

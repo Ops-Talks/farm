@@ -1,5 +1,5 @@
-# ALERTMANAGER_SLACK_WEBHOOK_URL is required. Set it in your environment before
-# starting the observability stack (docker-compose.observability.yml enforces this).
+# ALERTMANAGER_SLACK_WEBHOOK_URL is optional. If not set, notifications will be silently dropped.
+# Set it in your environment or .env before starting the observability stack.
 global:
   resolve_timeout: 5m
 
