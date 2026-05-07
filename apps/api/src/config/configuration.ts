@@ -62,7 +62,7 @@ export const configuration = () => ({
     url: process.env.PROMETHEUS_URL,
   },
   tempo: {
-    url: process.env.TEMPO_URL,
+    url: process.env.TEMPO_URL || process.env.JAEGER_URL,
   },
   loki: {
     url: process.env.LOKI_URL,
