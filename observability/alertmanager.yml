@@ -1,5 +1,6 @@
-# ALERTMANAGER_SLACK_WEBHOOK_URL is optional. If not set, notifications will be silently dropped.
-# Set it in your environment or .env before starting the observability stack.
+# ALERTMANAGER_SLACK_WEBHOOK_URL is required for the 'warning' and 'critical' Slack receivers.
+# Set it in your environment or .env before starting the observability stack. If it is unset or invalid,
+# Alertmanager will still attempt to send notifications and will log delivery errors instead of silently dropping them.
 global:
   resolve_timeout: 5m
 
