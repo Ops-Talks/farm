@@ -58,15 +58,15 @@ describe("TraceWaterfall", () => {
     mockGetTrace.mockReturnValue(new Promise(() => {}));
     render(<TraceWaterfall traceId="trace-abc123" />);
     // Loading shows 6 skeleton rows — check that no error/data is shown
-    expect(screen.queryByText("Jaeger not available")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tracing backend not available")).not.toBeInTheDocument();
   });
 
-  it("shows 'Jaeger not available' on API error", async () => {
+  it("shows 'Tracing backend not available' on API error", async () => {
     mockGetTrace.mockRejectedValue(new globalThis.Error("Service unavailable"));
     render(<TraceWaterfall traceId="trace-abc123" />);
 
     await waitFor(() => {
-      expect(screen.getByText("Jaeger not available")).toBeInTheDocument();
+      expect(screen.getByText("Tracing backend not available")).toBeInTheDocument();
     });
   });
 
