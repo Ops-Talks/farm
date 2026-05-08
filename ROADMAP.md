@@ -146,14 +146,14 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 | FARM-S406 | Loki alert rules: error log rate spike per container (sustained > 10 errors/min for 5 m) | `DONE` |
 | FARM-S407 | Notification channels: Slack webhook and SMTP email configured as Alertmanager receivers | `DONE` |
 
-### FARM-E92: OTel Collector Pipeline `TODO`
+### FARM-E92: OTel Collector Pipeline `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S408 | Replace direct OTLP-to-Tempo with Grafana Alloy as OTel Collector to enable fan-out, buffering, and retry | `TODO` |
-| FARM-S409 | Tail-based sampling via Alloy: retain all error and slow (> 1 s) traces, probabilistic 10 % sampling for healthy traces | `TODO` |
-| FARM-S410 | Exemplars: enable in Prometheus and prom-client, wire Grafana Tempo datasource for metric-to-trace drill-down from latency spikes | `TODO` |
-| FARM-S411 | Remove dead Jaeger proxy methods (`queryJaeger*`) from `ObservabilityService`; replace with Tempo HTTP API calls | `TODO` |
+| FARM-S408 | Replace direct OTLP-to-Tempo with Grafana Alloy as OTel Collector to enable fan-out, buffering, and retry | `DONE` |
+| FARM-S409 | Tail-based sampling via Alloy: retain all error and slow (> 1 s) traces, probabilistic 10 % sampling for healthy traces | `DONE` |
+| FARM-S410 | Exemplars: enable in Prometheus and prom-client, wire Grafana Tempo datasource for metric-to-trace drill-down from latency spikes | `DONE` |
+| FARM-S411 | Remove dead Jaeger proxy methods (`queryJaeger*`) from `ObservabilityService`; replace with Tempo HTTP API calls | `DONE` |
 
 ### FARM-E93: Tempo Service Graph and Span Metrics `TODO`
 

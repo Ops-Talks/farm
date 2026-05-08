@@ -25,6 +25,11 @@ describe("ObservabilityController", () => {
       .fn()
       .mockResolvedValue({ status: "success", data: {} }),
     queryLoki: jest.fn().mockResolvedValue({ status: "success", data: {} }),
+    queryTempoTraces: jest.fn().mockResolvedValue({ traces: [] }),
+    queryTempoServices: jest
+      .fn()
+      .mockResolvedValue({ tagValues: [{ value: "farm-api" }] }),
+    queryTempoTrace: jest.fn().mockResolvedValue({ resourceSpans: [] }),
   };
 
   beforeEach(async () => {
@@ -116,6 +121,30 @@ describe("ObservabilityController", () => {
       );
     });
   });
+
+  describe("tempoTraces", () => {
+    it("should call queryTempoTraces with the query params", async () => {
+      await controller.tempoTraces({ service: "farm-api", limit: "10" });
+      expect(mockService.queryTempoTraces).toHaveBeenCalledWith({
+        service: "farm-api",
+        limit: "10",
+      });
+    });
+  });
+
+  describe("tempoServices", () => {
+    it("should call queryTempoServices", async () => {
+      await controller.tempoServices();
+      expect(mockService.queryTempoServices).toHaveBeenCalled();
+    });
+  });
+
+  describe("tempoTrace", () => {
+    it("should call queryTempoTrace with the trace ID", async () => {
+      await controller.tempoTrace("abc123");
+      expect(mockService.queryTempoTrace).toHaveBeenCalledWith("abc123");
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -128,6 +157,9 @@ describe("ObservabilityController — additional branches", () => {
     getSummary: jest.fn().mockResolvedValue({}),
     queryPrometheus: jest.fn().mockResolvedValue({}),
     queryLoki: jest.fn().mockResolvedValue({ streams: [] }),
+    queryTempoTraces: jest.fn().mockResolvedValue({ traces: [] }),
+    queryTempoServices: jest.fn().mockResolvedValue({ tagValues: [] }),
+    queryTempoTrace: jest.fn().mockResolvedValue({ resourceSpans: [] }),
   };
 
   beforeEach(async () => {
