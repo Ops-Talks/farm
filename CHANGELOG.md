@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.10] - 2026-05-08
+
+### Added
+- **observabilit**: Improvements.
+- **observabilit**: Improvements.
+- **alertmanager**: Setting Allertmanager.
+
+### Changed
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- Potential fix for pull request finding.
+- **deps-dev**: bump storybook from 9.1.20 to 10.3.6.
+- **deps**: bump the non-critical-updates group across 1 directory with 5 updates.
+- **deps-dev**: bump @storybook/react from 9.1.20 to 10.3.6.
+
+### Fixed
+- use sentinel spanID for synthetic Tempo summary spans.
+- **observability**: address PR review feedback on metrics, traces, and app module.
+- **alertmanager**: remove unused global SMTP config, fix duplicate env vars in .env.example.
+
 ## [0.24.9] - 2026-05-06
 
 ### Changed

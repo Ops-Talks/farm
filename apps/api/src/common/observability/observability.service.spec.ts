@@ -396,7 +396,7 @@ describe("ObservabilityService", () => {
       })) as Record<string, unknown>;
 
       expect(result.data).toHaveLength(1);
-      const trace = (result.data as Record<string, unknown>[])[0]!;
+      const trace = (result.data as Record<string, unknown>[])[0];
       expect(trace["traceID"]).toBe("abc123");
       expect(
         (trace["processes"] as Record<string, { serviceName: string }>)["p1"]
@@ -535,12 +535,12 @@ describe("ObservabilityService", () => {
       >;
 
       expect(result.data).toHaveLength(1);
-      const trace = (result.data as Record<string, unknown>[])[0]!;
+      const trace = (result.data as Record<string, unknown>[])[0];
       expect(trace["traceID"]).toBe("abc123");
       const spans = trace["spans"] as Record<string, unknown>[];
       expect(spans).toHaveLength(1);
-      expect(spans[0]!["operationName"]).toBe("GET /api/health");
-      expect(spans[0]!["duration"]).toBe(42000); // 42ms in microseconds
+      expect(spans[0]["operationName"]).toBe("GET /api/health");
+      expect(spans[0]["duration"]).toBe(42000); // 42ms in microseconds
       expect(
         (trace["processes"] as Record<string, { serviceName: string }>)["p1"]
           ?.serviceName,
