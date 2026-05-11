@@ -1,0 +1,135 @@
+# values-production.yaml
+# Production profile: external managed PostgreSQL and Redis, 2 replicas,
+# TLS ingress, GitOps-friendly existingSecret pattern.
+#
+# Before deploying:
+#   1. Create a secret with JWT_SECRET, DATABASE_PASSWORD, etc.:
+#        kubectl create secret generic farm-api \
+#          --from-literal=JWT_SECRET=<value> \
+#          --from-literal=DATABASE_PASSWORD=<value>
+#   2. Set existingSecret to the secret name below.
+#   3. Replace all <PLACEHOLDER> values.
+
+api:
+  replicaCount: 2
+
+  image:
+    registry: ghcr.io
+    repository: ops-talks/farm-api
+    # tag: defaults to Chart.AppVersion
+
+  existingSecret: farm-api   # K8s secret with JWT_SECRET, DATABASE_PASSWORD, etc.
+
+  env:
+    NODE_ENV: production
+    DATABASE_SYNC: "false"
+    ALLOWED_ORIGINS: "https://<api.example.com>"
+
+  observability:
+    otelEnabled: true
+    otelExporterEndpoint: "http://alloy.monitoring.svc.cluster.local:4318/v1/traces"
+    otelServiceName: "farm-api"
+    pyroscopeEnabled: true
+    pyroscopeServerAddress: "http://pyroscope.monitoring.svc.cluster.local:4040"
+    grafanaUrl: "http://grafana.monitoring.svc.cluster.local:3000"
+    prometheusUrl: "http://prometheus.monitoring.svc.cluster.local:9090"
+    tempoUrl: "http://tempo.monitoring.svc.cluster.local:3100"
+    lokiUrl: "http://loki.monitoring.svc.cluster.local:3100"
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+web:
+  replicaCount: 2
+
+  image:
+    registry: ghcr.io
+    repository: ops-talks/farm-web
+    # tag: defaults to Chart.AppVersion
+
+  env:
+    NODE_ENV: production
+    NEXT_PUBLIC_API_URL: "https://<api.example.com>/api"
+    NEXT_PUBLIC_WS_URL: "wss://<api.example.com>/events"
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  api:
+    hostname: api.example.com
+    path: /
+    pathType: Prefix
+  web:
+    hostname: app.example.com
+    path: /
+    pathType: Prefix
+  tls:
+    - secretName: farm-api-tls
+      hosts:
+        - api.example.com
+    - secretName: farm-web-tls
+      hosts:
+        - app.example.com
+
+migration:
+  enabled: true
+
+externalDatabase:
+  host: "<postgres-host>"
+  port: 5432
+  user: farm
+  name: farm
+  existingSecret: farm-api
+
+externalRedis:
+  host: "<redis-host>"
+  port: 6379
+  existingSecret: farm-api
+
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
+
+prometheusRule:
+  enabled: true
+  additionalLabels:
+    release: kube-prometheus-stack
+
+grafanaDashboards:
+  enabled: true

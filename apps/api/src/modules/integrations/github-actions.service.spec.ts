@@ -1,8 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import {
-  NotFoundException,
-  ServiceUnavailableException,
-} from "@nestjs/common";
+import { NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { GitHubActionsService } from "./github-actions.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";

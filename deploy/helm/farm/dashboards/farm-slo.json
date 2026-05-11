@@ -1,0 +1,153 @@
+{
+  "title": "Farm SLO — Error Budget Dashboard",
+  "uid": "farm-slo",
+  "tags": ["farm", "slo", "error-budget"],
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Availability SLO Compliance (target: 99.5%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.99 },
+              { "color": "green", "value": 0.995 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "1 - job:http_error_rate:ratio_rate5m{job=\"farm-api\"}",
+          "legendFormat": "Availability",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Budget Remaining (30d, 99.5% SLO)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.25 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "1 - (sum(increase(http_request_duration_seconds_count{job=\"farm-api\",status_code=~\"5..\"}[30d])) / sum(increase(http_request_duration_seconds_count{job=\"farm-api\"}[30d]))) / 0.005",
+          "legendFormat": "Budget Remaining",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Burn Rate — 1h vs 6h vs 24h",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"farm-api\",status_code=~\"5..\"}[1h])) / sum(rate(http_request_duration_seconds_count{job=\"farm-api\"}[1h])) / 0.005",
+          "legendFormat": "1h burn rate",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"farm-api\",status_code=~\"5..\"}[6h])) / sum(rate(http_request_duration_seconds_count{job=\"farm-api\"}[6h])) / 0.005",
+          "legendFormat": "6h burn rate",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"farm-api\",status_code=~\"5..\"}[24h])) / sum(rate(http_request_duration_seconds_count{job=\"farm-api\"}[24h])) / 0.005",
+          "legendFormat": "24h burn rate",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(http_request_duration_seconds_count{job=\"farm-api\",status_code=~\"5..\"}[72h])) / sum(rate(http_request_duration_seconds_count{job=\"farm-api\"}[72h])) / 0.005",
+          "legendFormat": "3d burn rate",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "5xx Error Rate Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 15 },
+          "unit": "percentunit",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "job:http_error_rate:ratio_rate5m{job=\"farm-api\"}",
+          "legendFormat": "Error Rate (5m)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "P99 Latency vs 500ms SLO",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "job:http_request_duration_seconds:p99_5m{job=\"farm-api\"}",
+          "legendFormat": "P99 (5m)",
+          "refId": "A"
+        },
+        {
+          "expr": "job:http_request_duration_seconds:p95_5m{job=\"farm-api\"}",
+          "legendFormat": "P95 (5m)",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}

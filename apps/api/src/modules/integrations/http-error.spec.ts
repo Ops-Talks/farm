@@ -47,25 +47,23 @@ describe("translateHttpError()", () => {
     it("throws ServiceUnavailableException for TypeError", () => {
       const err = new TypeError("Failed to fetch");
 
-      expect(() =>
-        translateHttpError(err, "TestService.op", logger),
-      ).toThrow(ServiceUnavailableException);
+      expect(() => translateHttpError(err, "TestService.op", logger)).toThrow(
+        ServiceUnavailableException,
+      );
     });
 
     it("includes the operation name in the exception message", () => {
       const err = new TypeError("connection refused");
 
-      expect(() =>
-        translateHttpError(err, "MyService.call", logger),
-      ).toThrow("MyService.call");
+      expect(() => translateHttpError(err, "MyService.call", logger)).toThrow(
+        "MyService.call",
+      );
     });
 
     it("logs an error before throwing for TypeError", () => {
       const err = new TypeError("connection refused");
 
-      expect(() =>
-        translateHttpError(err, "TestService.op", logger),
-      ).toThrow();
+      expect(() => translateHttpError(err, "TestService.op", logger)).toThrow();
       expect(logger.error).toHaveBeenCalledWith(
         "TestService.op: service unreachable",
         expect.objectContaining({ message: "connection refused" }),
@@ -77,9 +75,9 @@ describe("translateHttpError()", () => {
     it("throws ServiceUnavailableException when there is no response", () => {
       const err = makeAxiosError(undefined, { code: "ECONNREFUSED" });
 
-      expect(() =>
-        translateHttpError(err, "TestService.op", logger),
-      ).toThrow(ServiceUnavailableException);
+      expect(() => translateHttpError(err, "TestService.op", logger)).toThrow(
+        ServiceUnavailableException,
+      );
     });
   });
 
@@ -125,9 +123,9 @@ describe("translateHttpError()", () => {
     it("throws InternalServerErrorException for a plain Error", () => {
       const err = new Error("something went wrong");
 
-      expect(() =>
-        translateHttpError(err, "TestService.op", logger),
-      ).toThrow(InternalServerErrorException);
+      expect(() => translateHttpError(err, "TestService.op", logger)).toThrow(
+        InternalServerErrorException,
+      );
     });
 
     it("throws InternalServerErrorException for a string error", () => {
@@ -139,9 +137,7 @@ describe("translateHttpError()", () => {
     it("logs details before throwing for an unexpected error", () => {
       const err = new Error("unknown failure");
 
-      expect(() =>
-        translateHttpError(err, "TestService.op", logger),
-      ).toThrow();
+      expect(() => translateHttpError(err, "TestService.op", logger)).toThrow();
       expect(logger.error).toHaveBeenCalledWith(
         "TestService.op: unexpected error",
         expect.objectContaining({ error: "unknown failure" }),

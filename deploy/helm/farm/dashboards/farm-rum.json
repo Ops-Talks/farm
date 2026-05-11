@@ -1,0 +1,123 @@
+{
+  "title": "Farm RUM — Grafana Faro",
+  "uid": "farm-rum",
+  "tags": ["farm", "rum", "faro", "web-vitals"],
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "JS Error Rate (errors/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 15 },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate({container=\"farm-web\", level=\"error\"}[1m]))",
+          "legendFormat": "SSR Error Rate",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate({app=\"farm-web\", kind=\"exception\"}[1m]))",
+          "legendFormat": "Faro JS Exceptions",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Web Vitals — LCP (Largest Contentful Paint)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ span.web_vital.name = \"LCP\" } | select(span.web_vital.value)",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Web Vitals — INP (Interaction to Next Paint)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ span.web_vital.name = \"INP\" } | select(span.web_vital.value)",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Web Vitals — CLS (Cumulative Layout Shift)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "short",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{ span.web_vital.name = \"CLS\" } | select(span.web_vital.value)",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Page Navigation Timing",
+      "type": "histogram",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (page) (rate({app=\"farm-web\", kind=\"measure\", measureName=\"pageLoad\"}[5m]))",
+          "legendFormat": "{{page}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

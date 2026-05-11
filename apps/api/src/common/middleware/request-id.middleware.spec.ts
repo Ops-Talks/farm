@@ -59,7 +59,7 @@ describe("RequestIdMiddleware", () => {
 
     middleware.use(req, res, next);
 
-    expect((res.setHeader as jest.Mock)).toHaveBeenCalledWith(
+    expect(res.setHeader as jest.Mock).toHaveBeenCalledWith(
       "X-Request-Id",
       clientId,
     );
