@@ -34,21 +34,9 @@ spec:
                 name: {{ include "farm.fullname" . }}-api
             - secretRef:
                 name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
-          {{- if or (and (not .Values.api.existingSecret) .Values.externalDatabase.existingSecret) (and (not .Values.api.existingSecret) .Values.externalRedis.existingSecret) }}
+          {{- $externalSecretEnv := include "farm.api.externalSecretEnv" . | trim }}
+          {{- if $externalSecretEnv }}
           env:
-            {{- if and (not .Values.api.existingSecret) .Values.externalDatabase.existingSecret }}
-            - name: DATABASE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.externalDatabase.existingSecret }}
-                  key: {{ .Values.externalDatabase.existingSecretKey }}
-            {{- end }}
-            {{- if and (not .Values.api.existingSecret) .Values.externalRedis.existingSecret }}
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.externalRedis.existingSecret }}
-                  key: {{ .Values.externalRedis.existingSecretKey }}
-            {{- end }}
+            {{- $externalSecretEnv | nindent 12 }}
           {{- end }}
 {{- end }}

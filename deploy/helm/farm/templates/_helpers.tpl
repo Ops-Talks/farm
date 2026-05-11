@@ -245,3 +245,26 @@ imagePullSecrets:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Inject env entries for DATABASE_PASSWORD and REDIS_PASSWORD sourced from external
+Kubernetes Secrets. Used when externalDatabase.existingSecret or externalRedis.existingSecret
+is set and api.existingSecret is not (i.e., the chart manages the api Secret itself but the
+DB/Redis password lives in a separate user-managed Secret).
+*/}}
+{{- define "farm.api.externalSecretEnv" -}}
+{{- if and (not .Values.api.existingSecret) .Values.externalDatabase.existingSecret }}
+- name: DATABASE_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.externalDatabase.existingSecret }}
+      key: {{ .Values.externalDatabase.existingSecretKey }}
+{{- end }}
+{{- if and (not .Values.api.existingSecret) .Values.externalRedis.existingSecret }}
+- name: REDIS_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.externalRedis.existingSecret }}
+      key: {{ .Values.externalRedis.existingSecretKey }}
+{{- end }}
+{{- end }}
