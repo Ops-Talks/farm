@@ -36,7 +36,10 @@ async function retryLogError(payload: string): Promise<void> {
   }
   // All fetch attempts failed — use sendBeacon as last-resort delivery
   if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    navigator.sendBeacon(LOG_URL, payload);
+    const beaconPayload = new Blob([payload], {
+      type: 'application/json',
+    });
+    navigator.sendBeacon(LOG_URL, beaconPayload);
   }
 }
 
