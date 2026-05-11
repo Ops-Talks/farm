@@ -73,6 +73,16 @@ export class AzureDevOpsService {
         },
       });
     } catch (err) {
+      if (err instanceof TypeError) {
+        this.logger.error(
+          `Azure DevOps API is unreachable: ${err.message}`,
+          err.stack,
+          "AzureDevOpsService.listPipelines",
+        );
+        throw new ServiceUnavailableException(
+          "Azure DevOps service is unavailable",
+        );
+      }
       this.translateHttpError(err, "AzureDevOpsService.listPipelines");
     }
     if (!res.ok) {
