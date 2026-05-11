@@ -100,9 +100,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const pgCode = (exception.driverError as { code?: string } | undefined)
       ?.code;
-    this.logger.warn(
-      `Database query failed [pg_code=${pgCode ?? "unknown"}] ${exception.message}`,
-    );
 
     switch (pgCode) {
       case PG_UNIQUE_VIOLATION:
