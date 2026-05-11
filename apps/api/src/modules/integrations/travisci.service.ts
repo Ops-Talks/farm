@@ -1,6 +1,15 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadGatewayException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { isAxiosError } from "axios";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 
@@ -94,13 +103,17 @@ export class TravisCIService {
 
     this.logger.debug(`Travis CI listBuilds: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
-        headers: this.headers(token),
-      }),
-    );
-
-    return response.data.builds ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
+          headers: this.headers(token),
+          timeout: 5000,
+        }),
+      );
+      return response.data.builds ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "TravisCIService.listBuilds");
+    }
   }
 
   /**
@@ -118,12 +131,57 @@ export class TravisCIService {
     const url = `${TRAVIS_BASE}/build/${buildId}/restart`;
     this.logger.log(`Travis CI restartBuild: POST ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.post<Record<string, unknown>>(url, null, {
-        headers: this.headers(token),
-      }),
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Record<string, unknown>>(url, null, {
+          headers: this.headers(token),
+          timeout: 5000,
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "TravisCIService.restartBuild");
+    }
+  }
 
-    return response.data;
+  /**
+   * Translates an unknown error from an HTTP call into an appropriate
+   * NestJS HttpException. Always throws — never returns.
+   *
+   * @param err - The caught error
+   * @param operation - Identifier used in log messages (e.g. "TravisCIService.listBuilds")
+   */
+  private translateHttpError(err: unknown, operation: string): never {
+    if (isAxiosError(err)) {
+      if (!err.response) {
+        this.logger.error(`${operation}: service unreachable`, {
+          code: err.code,
+          url: err.config?.url,
+        });
+        throw new ServiceUnavailableException(
+          `${operation}: integration service is currently unreachable`,
+        );
+      }
+      const status = err.response.status;
+      this.logger.error(`${operation}: upstream error`, {
+        status,
+        url: err.config?.url,
+      });
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException(
+          `${operation}: integration credentials are invalid or expired`,
+        );
+      }
+      if (status === 404) {
+        throw new NotFoundException(`${operation}: resource not found`);
+      }
+      throw new BadGatewayException(
+        `${operation}: integration service returned status ${status}`,
+      );
+    }
+    this.logger.error(`${operation}: unexpected error`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw new InternalServerErrorException(`${operation}: unexpected error`);
   }
 }

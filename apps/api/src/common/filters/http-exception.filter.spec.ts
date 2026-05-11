@@ -1,4 +1,5 @@
 import { ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
+import { QueryFailedError } from "typeorm";
 import { AllExceptionsFilter } from "./http-exception.filter";
 
 interface ErrorResponseBody {
@@ -6,6 +7,14 @@ interface ErrorResponseBody {
   timestamp: string;
   path: string;
   message: string;
+}
+
+function makeQueryFailedError(pgCode: string): QueryFailedError {
+  const err = new QueryFailedError("SELECT 1", [], new Error("db error"));
+  (err as unknown as { driverError: { code: string } }).driverError = {
+    code: pgCode,
+  };
+  return err;
 }
 
 describe("AllExceptionsFilter", () => {
@@ -104,5 +113,49 @@ describe("AllExceptionsFilter", () => {
     const jsonArg = mockResponse.json.mock.calls[0][0] as ErrorResponseBody;
     expect(jsonArg.timestamp).toBeDefined();
     expect(new Date(jsonArg.timestamp).getTime()).not.toBeNaN();
+  });
+
+  it("should translate PostgreSQL unique violation (23505) to 409 Conflict", () => {
+    filter.catch(makeQueryFailedError("23505"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.CONFLICT,
+        message: "A record with this value already exists.",
+      }),
+    );
+  });
+
+  it("should translate PostgreSQL foreign key violation (23503) to 400 Bad Request", () => {
+    filter.catch(makeQueryFailedError("23503"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "Referenced record does not exist.",
+      }),
+    );
+  });
+
+  it("should translate PostgreSQL not-null violation (23502) to 400 Bad Request", () => {
+    filter.catch(makeQueryFailedError("23502"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "A required field is missing.",
+      }),
+    );
+  });
+
+  it("should keep unknown PostgreSQL error codes as 500", () => {
+    filter.catch(makeQueryFailedError("99999"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   });
 });

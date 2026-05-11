@@ -63,6 +63,7 @@ import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
+import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
@@ -506,7 +507,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestLoggerMiddleware)
+      .apply(RequestIdMiddleware, RequestLoggerMiddleware)
       .exclude("api/health{*path}")
       .forRoutes("{*path}");
   }

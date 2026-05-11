@@ -1,7 +1,16 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadGatewayException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { isAxiosError } from "axios";
 
 /**
  * Service responsible for sending HTTP POST payloads to configured webhook URLs.
@@ -50,12 +59,15 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(this.slackUrl, { text: message }),
+        this.httpService.post(
+          this.slackUrl,
+          { text: message },
+          { timeout: 5000 },
+        ),
       );
       this.logger.log(`Slack notification sent: ${message}`);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send Slack notification: ${msg}`);
+    } catch (err) {
+      this.translateHttpError(err, "WebhookService.sendSlack");
     }
   }
 
@@ -68,16 +80,19 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(this.teamsUrl, {
-          "@type": "MessageCard",
-          "@context": "https://schema.org/extensions",
-          text: message,
-        }),
+        this.httpService.post(
+          this.teamsUrl,
+          {
+            "@type": "MessageCard",
+            "@context": "https://schema.org/extensions",
+            text: message,
+          },
+          { timeout: 5000 },
+        ),
       );
       this.logger.log(`Teams notification sent: ${message}`);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send Teams notification: ${msg}`);
+    } catch (err) {
+      this.translateHttpError(err, "WebhookService.sendTeams");
     }
   }
 
@@ -101,5 +116,46 @@ export class WebhookService {
       default:
         return `Event: ${event} - ${JSON.stringify(payload)}`;
     }
+  }
+
+  /**
+   * Translates an unknown error from an HTTP call into an appropriate
+   * NestJS HttpException. Always throws — never returns.
+   *
+   * @param err - The caught error
+   * @param operation - Identifier used in log messages (e.g. "WebhookService.sendSlack")
+   */
+  private translateHttpError(err: unknown, operation: string): never {
+    if (isAxiosError(err)) {
+      if (!err.response) {
+        this.logger.error(`${operation}: service unreachable`, {
+          code: err.code,
+          url: err.config?.url,
+        });
+        throw new ServiceUnavailableException(
+          `${operation}: integration service is currently unreachable`,
+        );
+      }
+      const status = err.response.status;
+      this.logger.error(`${operation}: upstream error`, {
+        status,
+        url: err.config?.url,
+      });
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException(
+          `${operation}: integration credentials are invalid or expired`,
+        );
+      }
+      if (status === 404) {
+        throw new NotFoundException(`${operation}: resource not found`);
+      }
+      throw new BadGatewayException(
+        `${operation}: integration service returned status ${status}`,
+      );
+    }
+    this.logger.error(`${operation}: unexpected error`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw new InternalServerErrorException(`${operation}: unexpected error`);
   }
 }

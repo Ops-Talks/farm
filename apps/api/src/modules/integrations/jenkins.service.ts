@@ -1,6 +1,15 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadGatewayException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { isAxiosError } from "axios";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 
@@ -95,12 +104,20 @@ export class JenkinsService {
     cred: JenkinsCredentialPayload,
   ): Promise<{ crumbRequestField: string; crumb: string }> {
     const url = `${cred.url}/crumbIssuer/api/json`;
-    const response = await firstValueFrom(
-      this.httpService.get<{ crumbRequestField: string; crumb: string }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ crumbRequestField: string; crumb: string }>(
+          url,
+          {
+            headers: { Authorization: this.basicAuth(cred) },
+            timeout: 5000,
+          },
+        ),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.fetchCrumb");
+    }
   }
 
   /**
@@ -114,13 +131,17 @@ export class JenkinsService {
     const url = `${cred.url}/api/json?tree=jobs[name,url,color,lastBuild[number,result,timestamp,duration]]`;
     this.logger.debug(`Jenkins listJobs: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ jobs: JenkinsJob[] }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-
-    return response.data.jobs ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ jobs: JenkinsJob[] }>(url, {
+          headers: { Authorization: this.basicAuth(cred) },
+          timeout: 5000,
+        }),
+      );
+      return response.data.jobs ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.listJobs");
+    }
   }
 
   /**
@@ -141,13 +162,17 @@ export class JenkinsService {
     const url = `${cred.url}/job/${encodeURIComponent(jobName)}/api/json?tree=${tree}`;
     this.logger.debug(`Jenkins getBuildHistory: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ builds: JenkinsBuild[] }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-
-    return response.data.builds ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ builds: JenkinsBuild[] }>(url, {
+          headers: { Authorization: this.basicAuth(cred) },
+          timeout: 5000,
+        }),
+      );
+      return response.data.builds ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.getBuildHistory");
+    }
   }
 
   /**
@@ -165,13 +190,59 @@ export class JenkinsService {
     const url = `${cred.url}/job/${encodeURIComponent(jobName)}/build`;
     this.logger.log(`Jenkins triggerBuild: POST ${url}`);
 
-    await firstValueFrom(
-      this.httpService.post(url, null, {
-        headers: {
-          Authorization: this.basicAuth(cred),
-          [crumb.crumbRequestField]: crumb.crumb,
-        },
-      }),
-    );
+    try {
+      await firstValueFrom(
+        this.httpService.post(url, null, {
+          headers: {
+            Authorization: this.basicAuth(cred),
+            [crumb.crumbRequestField]: crumb.crumb,
+          },
+          timeout: 5000,
+        }),
+      );
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.triggerBuild");
+    }
+  }
+
+  /**
+   * Translates an unknown error from an HTTP call into an appropriate
+   * NestJS HttpException. Always throws — never returns.
+   *
+   * @param err - The caught error
+   * @param operation - Identifier used in log messages (e.g. "JenkinsService.listJobs")
+   */
+  private translateHttpError(err: unknown, operation: string): never {
+    if (isAxiosError(err)) {
+      if (!err.response) {
+        this.logger.error(`${operation}: service unreachable`, {
+          code: err.code,
+          url: err.config?.url,
+        });
+        throw new ServiceUnavailableException(
+          `${operation}: integration service is currently unreachable`,
+        );
+      }
+      const status = err.response.status;
+      this.logger.error(`${operation}: upstream error`, {
+        status,
+        url: err.config?.url,
+      });
+      if (status === 401 || status === 403) {
+        throw new UnauthorizedException(
+          `${operation}: integration credentials are invalid or expired`,
+        );
+      }
+      if (status === 404) {
+        throw new NotFoundException(`${operation}: resource not found`);
+      }
+      throw new BadGatewayException(
+        `${operation}: integration service returned status ${status}`,
+      );
+    }
+    this.logger.error(`${operation}: unexpected error`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw new InternalServerErrorException(`${operation}: unexpected error`);
   }
 }
