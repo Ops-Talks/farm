@@ -123,17 +123,21 @@ api:
     lokiUrl: ""                 # e.g. http://loki.monitoring.svc:3100
 
   # -- Sensitive environment variables injected via a Kubernetes Secret.
-  # Plain text here is only for development. In production, use existingSecret.
+  # In production always use existingSecret — never set real values here.
+  # DATABASE_PASSWORD is sourced from postgresql.auth.password or
+  # externalDatabase.password depending on which backend is active.
   secrets:
+    # Required. Minimum 32 characters in production.
     JWT_SECRET: "change-me-this-must-be-at-least-32-characters-long"
-    DATABASE_PASSWORD: "postgres"
-    SMTP_PASS: ""
-    GITHUB_CLIENT_SECRET: ""
-    GOOGLE_CLIENT_SECRET: ""
-    KEYCLOAK_CLIENT_SECRET: ""
-    LDAP_BIND_PASSWORD: ""
-    IAC_INGEST_TOKEN: ""
-    SWAGGER_PASSWORD: "farm"
+    # Optional integrations — set to a non-null value only when the
+    # integration is enabled. Null fields are omitted from the Secret.
+    SMTP_PASS: ~
+    GITHUB_CLIENT_SECRET: ~
+    GOOGLE_CLIENT_SECRET: ~
+    KEYCLOAK_CLIENT_SECRET: ~
+    LDAP_BIND_PASSWORD: ~
+    IAC_INGEST_TOKEN: ~
+    SWAGGER_PASSWORD: ~
 
   # -- When set, skip creating the Secret and reference this existing Secret
   # by name for all sensitive env vars. Recommended for GitOps (External
@@ -316,8 +320,9 @@ externalDatabase:
   host: "localhost"
   port: 5432
   user: "postgres"
-  # -- Plain-text password. Prefer existingSecret in production.
-  password: "postgres"
+  # -- Do NOT set this in values files. Provide via existingSecret or --set at
+  # install time. Null means the field is omitted from the rendered Secret.
+  password: ~
   name: "farm"
   # -- Reference an existing Kubernetes Secret for the DB password.
   # The Secret must contain a key named "database-password".
@@ -330,8 +335,9 @@ externalDatabase:
 externalRedis:
   host: "localhost"
   port: 6379
-  # -- Leave empty if the Redis instance does not require a password.
-  password: ""
+  # -- Do NOT set this in values files. Provide via existingSecret or --set.
+  # Null means Redis auth is not configured (unauthenticated Redis).
+  password: ~
   existingSecret: ""
   existingSecretKey: "redis-password"
 
@@ -343,7 +349,9 @@ postgresql:
   enabled: false
   auth:
     username: postgres
-    password: postgres
+    # -- Set this value only in overlay files (values-dev.yaml, --set flag).
+    # Never commit a real password here.
+    password: ~
     database: farm
   primary:
     persistence:

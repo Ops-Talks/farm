@@ -114,13 +114,11 @@ externalDatabase:
   port: 5432
   user: farm
   name: farm
-  password: ""          # Use existingSecret instead — leave empty.
   existingSecret: farm-api
 
 externalRedis:
   host: "<redis-host>"
   port: 6379
-  password: ""          # Use existingSecret instead — leave empty.
   existingSecret: farm-api
 
 serviceMonitor:
