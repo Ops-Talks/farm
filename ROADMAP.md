@@ -71,11 +71,8 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | v0.24.7 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | v0.24.10 | `DONE` |
-<<<<<<< Updated upstream
-=======
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | - | `TODO` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | - | `TODO` |
->>>>>>> Stashed changes
 
 ---
 
@@ -126,13 +123,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | `DONE` |
-<<<<<<< Updated upstream
-| **Total** | **96** | **384** | |
-=======
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `TODO` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `TODO` |
 | **Total** | **106** | **422** | |
->>>>>>> Stashed changes
 
 ---
 
@@ -197,8 +190,6 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 |----|-------|--------|
 | FARM-S421 | Deploy Grafana Pyroscope (AGPL-3.0, free for self-hosted internal use of unmodified binary) in `docker-compose.observability.yml`; install the `grafana-pyroscope-app` OSS plugin in Grafana for the Explore Profiles UI | `DONE` |
 | FARM-S422 | Node.js profiling agent (`@pyroscope/nodejs`, Apache 2.0) in NestJS API pushing CPU and heap profiles to the self-hosted Pyroscope server | `DONE` |
-<<<<<<< Updated upstream
-=======
 
 ---
 
@@ -309,4 +300,3 @@ Ships the observability assets that plug into the user's existing monitoring sta
 | FARM-S458 | `templates/servicemonitor.yaml` — Prometheus Operator `ServiceMonitor` resource that configures scraping of the API `/metrics` endpoint; conditional on `serviceMonitor.enabled`; includes configurable `interval`, `scrapeTimeout`, `namespace`, and label selectors to match any `kube-prometheus-stack` installation | `TODO` |
 | FARM-S459 | `templates/prometheusrule.yaml` — Prometheus Operator `PrometheusRule` resource shipping the alert rules from `observability/prometheus-rules.yml` as a Kubernetes-native resource; conditional on `prometheusRule.enabled`; rules are embedded verbatim so they stay in sync with the docker-compose observability stack | `TODO` |
 | FARM-S460 | `templates/grafana-dashboards.yaml` — all 6 Grafana dashboard JSON files (`farm-api`, `farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`, `farm-infra`) packaged as individual Kubernetes `ConfigMap` resources with label `grafana_dashboard: "1"` for automatic discovery and import by the Grafana sidecar in `kube-prometheus-stack`; conditional on `grafanaDashboards.enabled`; dashboards are embedded from `observability/grafana/provisioning/dashboards/` at chart render time | `TODO` |
->>>>>>> Stashed changes

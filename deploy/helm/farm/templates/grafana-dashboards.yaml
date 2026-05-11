@@ -1,8 +1,10 @@
 {{- if .Values.grafanaDashboards.enabled }}
 {{- $fullName := include "farm.fullname" . }}
 {{- $labels := include "farm.labels" . }}
-{{- $namespace := .Release.Namespace }}
-{{- $folderLabel := .Values.grafanaDashboards.folderLabel | default "farm" }}
+{{- $namespace := default .Release.Namespace .Values.grafanaDashboards.namespace }}
+{{- $labelKey := .Values.grafanaDashboards.labelKey }}
+{{- $labelValue := .Values.grafanaDashboards.labelValue }}
+{{- $folder := .Values.grafanaDashboards.folder }}
 {{- $dashboards := list "farm-api" "farm-infra" "farm-logs" "farm-rum" "farm-slo" "farm-traces" }}
 {{- range $dashboards }}
 ---
@@ -13,8 +15,8 @@ metadata:
   namespace: {{ $namespace }}
   labels:
     {{- $labels | nindent 4 }}
-    grafana_dashboard: "1"
-    grafana_folder: {{ $folderLabel | quote }}
+    {{ $labelKey }}: {{ $labelValue | quote }}
+    grafana_folder: {{ $folder | quote }}
 data:
   {{ printf "%s.json" . }}: |
     {{- ($.Files.Get (printf "dashboards/%s.json" .)) | nindent 4 }}

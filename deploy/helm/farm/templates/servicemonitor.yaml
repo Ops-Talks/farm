@@ -21,6 +21,7 @@ spec:
       path: {{ .Values.serviceMonitor.path | default "/api/metrics" }}
       interval: {{ .Values.serviceMonitor.interval | default "30s" }}
       scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
+      scheme: {{ .Values.serviceMonitor.scheme | default "http" }}
       {{- with .Values.serviceMonitor.relabelings }}
       relabelings:
         {{- toYaml . | nindent 8 }}

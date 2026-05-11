@@ -274,18 +274,16 @@ ingress:
   #   nginx.ingress.kubernetes.io/proxy-body-size: "10m"
   #   cert-manager.io/cluster-issuer: "letsencrypt-prod"
   annotations: {}
-  # -- Hostnames and paths for the api and web services.
-  hosts:
-    api:
-      host: farm-api.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-    web:
-      host: farm.example.com
-      paths:
-        - path: /
-          pathType: Prefix
+  # -- Hostname and path for the api service.
+  api:
+    hostname: farm-api.example.com
+    path: /
+    pathType: Prefix
+  # -- Hostname and path for the web service.
+  web:
+    hostname: farm.example.com
+    path: /
+    pathType: Prefix
   # -- TLS configuration.
   tls: []
   # - secretName: farm-tls
@@ -302,6 +300,8 @@ migration:
   restartPolicy: OnFailure
   # -- Backoff limit before the Job is considered failed.
   backoffLimit: 3
+  # -- Maximum duration in seconds before the Job is terminated (optional).
+  activeDeadlineSeconds: ~
   # -- Resources for the migration Job pod.
   resources:
     requests:

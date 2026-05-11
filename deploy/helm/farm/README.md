@@ -141,7 +141,7 @@ automatic sidecar import:
 ```yaml
 grafanaDashboards:
   enabled: true
-  folderLabel: farm   # Grafana folder name
+  folder: Farm   # Grafana folder name
 ```
 
 Dashboards: `farm-api`, `farm-infra`, `farm-logs`, `farm-rum`, `farm-slo`,
@@ -155,7 +155,7 @@ Configure OTEL tracing and Pyroscope profiling via the `api.observability` block
 api:
   observability:
     otelEnabled: true
-    otelExporterEndpoint: http://alloy.monitoring.svc.cluster.local:4318
+    otelExporterEndpoint: http://alloy.monitoring.svc.cluster.local:4318/v1/traces
     pyroscopeEnabled: true
     pyroscopeServerAddress: http://pyroscope.monitoring.svc.cluster.local:4040
 ```
@@ -176,7 +176,7 @@ api:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `api.replicaCount` | Desired pod replicas | `1` |
-| `api.image.repository` | Image repository | `farm-api` |
+| `api.image.repository` | Image repository | `ops-talks/farm-api` |
 | `api.image.tag` | Image tag (defaults to Chart.AppVersion) | `""` |
 | `api.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `api.existingSecret` | External secret name (skips Secret creation) | `""` |
@@ -192,9 +192,9 @@ api:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `web.replicaCount` | Desired pod replicas | `1` |
-| `web.image.repository` | Image repository | `farm-web` |
-| `web.env.NEXT_PUBLIC_API_URL` | Public API base URL | `http://localhost:3000/api` |
-| `web.env.NEXT_PUBLIC_APP_URL` | Public app base URL | `http://localhost:3001` |
+| `web.image.repository` | Image repository | `ops-talks/farm-web` |
+| `web.env.NEXT_PUBLIC_API_URL` | Public API base URL | `""` |
+| `web.env.NEXT_PUBLIC_WS_URL` | WebSocket URL for the browser | `""` |
 | `web.env.API_INTERNAL_URL` | Internal API URL (auto-resolved if empty) | `""` |
 
 ### Ingress

@@ -7,8 +7,8 @@ Thank you for installing {{ .Chart.Name }} v{{ .Chart.AppVersion }}.
 {{- if .Values.ingress.enabled }}
 Access the application at:
 
-  Web:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.hosts.web.host }}
-  API:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.hosts.api.host }}/api/docs
+  Web:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.web.hostname }}
+  API:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.api.hostname }}/api/docs
 {{- else }}
 No Ingress is enabled. To access the services locally, run:
 

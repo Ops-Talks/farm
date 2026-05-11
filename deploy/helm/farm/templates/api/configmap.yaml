@@ -34,7 +34,7 @@ data:
   # Observability — Pyroscope
   PYROSCOPE_ENABLED: {{ .Values.api.observability.pyroscopeEnabled | toString | quote }}
   {{- if .Values.api.observability.pyroscopeServerAddress }}
-  PYROSCOPE_SERVER_ADDRESS: {{ .Values.api.observability.pyroscopeServerAddress | quote }}
+  PYROSCOPE_URL: {{ .Values.api.observability.pyroscopeServerAddress | quote }}
   {{- end }}
 
   # Observability — Backend URLs (used by the API to proxy queries)

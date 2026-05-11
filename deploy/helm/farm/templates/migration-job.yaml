@@ -13,14 +13,16 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: {{ .Values.migration.backoffLimit }}
+  {{- if .Values.migration.activeDeadlineSeconds }}
   activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  {{- end }}
   template:
     metadata:
       labels:
         {{- include "farm.labels" . | nindent 8 }}
         app.kubernetes.io/component: migration
     spec:
-      restartPolicy: Never
+      restartPolicy: {{ .Values.migration.restartPolicy }}
       {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: migration
@@ -32,4 +34,21 @@ spec:
                 name: {{ include "farm.fullname" . }}-api
             - secretRef:
                 name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
+          {{- if or (and (not .Values.api.existingSecret) .Values.externalDatabase.existingSecret) (and (not .Values.api.existingSecret) .Values.externalRedis.existingSecret) }}
+          env:
+            {{- if and (not .Values.api.existingSecret) .Values.externalDatabase.existingSecret }}
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalDatabase.existingSecret }}
+                  key: {{ .Values.externalDatabase.existingSecretKey }}
+            {{- end }}
+            {{- if and (not .Values.api.existingSecret) .Values.externalRedis.existingSecret }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalRedis.existingSecret }}
+                  key: {{ .Values.externalRedis.existingSecretKey }}
+            {{- end }}
+          {{- end }}
 {{- end }}

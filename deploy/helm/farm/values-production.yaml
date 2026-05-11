@@ -27,7 +27,7 @@ api:
 
   observability:
     otelEnabled: true
-    otelExporterEndpoint: "http://alloy.monitoring.svc.cluster.local:4318"
+    otelExporterEndpoint: "http://alloy.monitoring.svc.cluster.local:4318/v1/traces"
     otelServiceName: "farm-api"
     pyroscopeEnabled: true
     pyroscopeServerAddress: "http://pyroscope.monitoring.svc.cluster.local:4040"
@@ -65,7 +65,7 @@ web:
   env:
     NODE_ENV: production
     NEXT_PUBLIC_API_URL: "https://<api.example.com>/api"
-    NEXT_PUBLIC_APP_URL: "https://<app.example.com>"
+    NEXT_PUBLIC_WS_URL: "wss://<api.example.com>/events"
 
   autoscaling:
     enabled: true

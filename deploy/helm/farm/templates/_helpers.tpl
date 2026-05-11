@@ -213,7 +213,7 @@ Resolve the Redis port.
 
 {{/*
 Resolve the API internal URL for the Web service.
-Auto-constructs the in-cluster URL when api.observability.apiInternalUrl is not set.
+Auto-constructs the in-cluster URL when web.env.API_INTERNAL_URL is not set.
 */}}
 {{- define "farm.apiInternalUrl" -}}
 {{- if .Values.web.env.API_INTERNAL_URL -}}
