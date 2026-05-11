@@ -71,6 +71,11 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | v0.24.7 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | v0.24.10 | `DONE` |
+<<<<<<< Updated upstream
+=======
+| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | - | `TODO` |
+| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | - | `TODO` |
+>>>>>>> Stashed changes
 
 ---
 
@@ -121,7 +126,13 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | `DONE` |
+<<<<<<< Updated upstream
 | **Total** | **96** | **384** | |
+=======
+| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `TODO` |
+| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `TODO` |
+| **Total** | **106** | **422** | |
+>>>>>>> Stashed changes
 
 ---
 
@@ -186,3 +197,116 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 |----|-------|--------|
 | FARM-S421 | Deploy Grafana Pyroscope (AGPL-3.0, free for self-hosted internal use of unmodified binary) in `docker-compose.observability.yml`; install the `grafana-pyroscope-app` OSS plugin in Grafana for the Explore Profiles UI | `DONE` |
 | FARM-S422 | Node.js profiling agent (`@pyroscope/nodejs`, Apache 2.0) in NestJS API pushing CPU and heap profiles to the self-hosted Pyroscope server | `DONE` |
+<<<<<<< Updated upstream
+=======
+
+---
+
+## Phase 41: Swagger/OpenAPI Hardening
+
+Closes the gaps identified by the full Swagger audit (May 2026) across all 51 controllers and 118 DTO/entity files. The audit found near-universal absence of `@ApiResponse(401/403)`, 7 entities with zero `@ApiProperty`, 9 DTOs with undocumented enum fields, missing `@ApiParam` on 10 controllers, and critical issues in `app.controller.ts` and `auth.controller.ts` that break Swagger UI functionality. This phase brings the OpenAPI spec to a state suitable for public API release.
+
+### FARM-E97: Critical Swagger Fixes `TODO`
+
+Fixes that break Swagger UI functionality or produce actively misleading documentation. Must be resolved before any public API release.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S423 | Add `@ApiTags`, `@ApiOperation`, and `@ApiResponse(200)` to `app.controller.ts` — the root endpoint currently appears ungrouped and undocumented in Swagger UI, which is the first thing API consumers see | `TODO` |
+| FARM-S424 | Add `@ApiBearerAuth()` to all JWT-protected handlers in `auth/auth.controller.ts` (`GET /auth/users`, `GET /auth/profile`, `PATCH /auth/profile`, `PATCH /auth/profile/password`, `POST /auth/keycloak/sync/:orgId`) — without this the Swagger UI `Authorize` button does not attach the JWT token when testing these endpoints | `TODO` |
+| FARM-S425 | Replace `Record<string, unknown>` body types in `webhook-receiver.controller.ts` with typed DTOs and add `@ApiBody()` on the 3 POST webhook receivers — Swagger currently shows an empty body schema for all three | `TODO` |
+| FARM-S426 | Register an M2M auth scheme in `main.ts` `DocumentBuilder` (`.addApiKey` or second `.addBearerAuth`) for IAC ingest and documentation webhook endpoints that use a static `IAC_INGEST_TOKEN` rather than a JWT; annotate those endpoints with `@ApiSecurity('iac-token')` so consumers can distinguish M2M from JWT-protected routes | `TODO` |
+
+### FARM-E98: Auth Error Response Coverage `TODO`
+
+The most pervasive gap in the codebase: 46 of 49 JWT-protected controllers have no `@ApiResponse(401)`, and 30 of 32 controllers using `@Roles` have no `@ApiResponse(403)`. The fix is a class-level decorator pattern already established in `auth.controller.ts` and `iac.controller.ts`.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S427 | Add class-level `@ApiResponse({ status: 401, description: 'Unauthorized.', type: ErrorResponseDto })` to all 46 JWT-protected controllers missing it — covers every controller that has `@UseGuards(JwtAuthGuard)` but no 401 documentation | `TODO` |
+| FARM-S428 | Add class-level `@ApiResponse({ status: 403, description: 'Forbidden.', type: ErrorResponseDto })` to all ~30 controllers that apply `@Roles()` but have no 403 documentation | `TODO` |
+
+### FARM-E99: DTO, Entity, and Parameter Annotation Completeness `TODO`
+
+Addresses structural gaps in DTO and entity annotations that cause incomplete or incorrect schema generation: missing enum values, invisible response type fields, undocumented path and query parameters.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S429 | Fix enum `@ApiProperty` gaps in 9 DTOs: add `{ enum: XxxEnum, enumName: 'XxxEnum' }` to `update-deployment.dto.ts`, `update-api-spec.dto.ts`, `update-incident-status.dto.ts`, `invite-member.dto.ts`, `update-member-role.dto.ts`, `list-runs-query.dto.ts`, `slo-budget-response.dto.ts`; add the missing `enum:` key to existing `@ApiProperty` in `create-invitation.dto.ts` and `list-deployments-query.dto.ts`. Also fix 5 entities where enum fields have `@ApiProperty` without `enum:` key (`component.entity.ts`, `deployment.entity.ts`, `team.entity.ts`, `user-organization.entity.ts`, `pipeline-run.entity.ts`) | `TODO` |
+| FARM-S430 | Add `@ApiParam` to 10 controllers with un-annotated path parameters: `user-management.controller.ts` (6 params), `invitation.controller.ts` (4), `istio.controller.ts` (4), `integration-credential.controller.ts` (3), `argocd.controller.ts` (2), `jenkins.controller.ts` (2), `kubernetes.controller.ts` (5 remaining), `auth.controller.ts` (1), `circleci.controller.ts` (1), `travisci.controller.ts` (1) | `TODO` |
+| FARM-S431 | Add `@ApiQuery` decorators to `user-management.controller.ts` `GET /users` for `page`, `pageSize`, `search`, `role`, and `orgId` pagination and filter parameters | `TODO` |
+| FARM-S432 | Add `@ApiProperty` to the 7 entities with zero annotations that are used as response types in controllers: `org-invitation.entity.ts` (14 fields), `tag-policy.entity.ts` (7), `resource-violation.entity.ts` (9), `search-config.entity.ts` (8), `opa-result.entity.ts` (8), `invitation-token.entity.ts` (19), and `password-reset.entity.ts` (6, internal but referenced) | `TODO` |
+
+### FARM-E100: Swagger Config and Polish `TODO`
+
+Low-severity completeness and consistency improvements to the Swagger setup that improve developer experience and API discoverability.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S433 | Enable `introspectComments: true` in the `@nestjs/swagger` plugin config in `nest-cli.json` — this converts existing JSDoc property comments into Swagger `description` values automatically, reducing the manual annotation burden across the ~240 unannotated fields in the top-10 most-gapped DTOs | `TODO` |
+| FARM-S434 | Normalize the 12 lowercase `@ApiTags` values to Title Case: `Analytics`, `Cost`, `Features`, `Integrations`, `OPA`, `Registry`, `Scorecards`, `Search`, `Setup` — mixed casing causes incorrect alphabetical sort order in the Swagger UI sidebar | `TODO` |
+| FARM-S435 | Add `DocumentBuilder.addTag()` entries with human-readable descriptions in `main.ts` for the major feature groups (Catalog, Authentication, Environments, Teams, Observability, IaC, Kubernetes, Integrations, FinOps, Scorecards, Search) so the Swagger UI sidebar shows tooltips for each group | `TODO` |
+| FARM-S436 | Fix `traces-ingest.controller.ts`: add missing `@ApiResponse(502)` (collector unreachable) and `@ApiResponse(204)` (no endpoint configured); remove the misleading `@ApiOperation.description` claim that a JWT is required when no `@UseGuards` is applied | `TODO` |
+
+---
+
+## Phase 42: Kubernetes Deployment — Helm Chart
+
+Delivers a production-grade Helm chart (`deploy/helm/farm/`) covering both application services (api, web), the database migration lifecycle as a pre-upgrade Job hook, optional bundled PostgreSQL and Redis via Bitnami subcharts (disabled by default for production), and example values files for development and production profiles. CI/CD image publishing is out of scope for this phase.
+
+### FARM-E101: Chart Foundation `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S437 | Create `deploy/helm/farm/Chart.yaml` with `apiVersion: v2`, chart name, versioning aligned to the Farm release version, and Bitnami `postgresql` (15.x) and `redis` (19.x) as optional dependencies. Run `helm dependency update` to generate `Chart.lock` | `TODO` |
+| FARM-S438 | Create `values.yaml` with the complete configurable schema: `image` (registry, repository, tag, pullPolicy), `replicaCount`, `resources`, `env`, `api.existingSecret`, `ingress` (className, annotations, TLS), `autoscaling`, `pdb`, `externalDatabase.*`, `externalRedis.*`, `postgresql` (enabled + Bitnami passthrough), `redis` (enabled + Bitnami passthrough), `migration` | `TODO` |
+| FARM-S439 | Create `templates/_helpers.tpl` with named template helpers: `farm.fullname`, `farm.name`, `farm.chart`, `farm.labels`, `farm.selectorLabels`, `farm.api.image`, `farm.web.image`, `farm.serviceAccountName.api`, `farm.serviceAccountName.web` | `TODO` |
+| FARM-S440 | Create `templates/NOTES.txt` with post-install access instructions (port-forward commands for api and web), migration Job status check command, and link to `deploy/helm/farm/README.md` | `TODO` |
+
+### FARM-E102: API Workload `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S441 | `templates/api/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, `envFrom` referencing ConfigMap and Secret, resource requests/limits from values, rolling update strategy (`maxUnavailable: 0`), and optional `topologySpreadConstraints` | `TODO` |
+| FARM-S442 | `templates/api/service.yaml` — ClusterIP Service for the API on port 3000 | `TODO` |
+| FARM-S443 | `templates/api/serviceaccount.yaml` — optional dedicated ServiceAccount controlled by `api.serviceAccount.create`, with optional annotations for IRSA/Workload Identity | `TODO` |
+| FARM-S444 | `templates/api/configmap.yaml` + `templates/api/secret.yaml` — non-sensitive environment variables in ConfigMap; sensitive variables (JWT_SECRET, database credentials, SMTP, OAuth) in a Kubernetes Secret; Secret creation is skipped when `api.existingSecret` is set (existingSecret pattern for GitOps with External Secrets Operator or Sealed Secrets) | `TODO` |
+| FARM-S445 | `templates/api/hpa.yaml` + `templates/api/pdb.yaml` — optional HorizontalPodAutoscaler (CPU threshold 70%, configurable `minReplicas`/`maxReplicas`) and optional PodDisruptionBudget (`minAvailable: 1`; skipped when `replicaCount` is 1 to avoid blocking single-replica upgrades) | `TODO` |
+
+### FARM-E103: Web Workload `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S446 | `templates/web/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, env for `API_INTERNAL_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, rolling update strategy | `TODO` |
+| FARM-S447 | `templates/web/service.yaml` + `templates/web/serviceaccount.yaml` — ClusterIP Service on port 3001 and optional ServiceAccount following the same pattern as the API | `TODO` |
+| FARM-S448 | `templates/web/hpa.yaml` + `templates/web/pdb.yaml` — optional HPA and PodDisruptionBudget for the web workload, using the same values schema pattern as the API | `TODO` |
+
+### FARM-E104: Infrastructure Templates `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S449 | `templates/ingress.yaml` — generic Ingress resource with optional TLS termination; `ingressClassName` and all annotations are fully configurable via values so the chart is neutral across nginx-ingress, Traefik, AWS Load Balancer Controller, and others; supports separate hostnames for api and web services in a single Ingress object | `TODO` |
+| FARM-S450 | `templates/migration-job.yaml` — Kubernetes Job annotated with `helm.sh/hook: pre-upgrade,pre-install`, `helm.sh/hook-weight: "-1"`, and `helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded`; uses the api image to run `npm run migration:run`; shares the same Secret/ConfigMap env references as the API Deployment so it always runs against the correct database | `TODO` |
+| FARM-S451 | Wire the Bitnami `postgresql` subchart: pass through all `postgresql.*` values; when `postgresql.enabled: false`, populate the API's database env vars from `externalDatabase.host/port/user/password/name` values instead | `TODO` |
+| FARM-S452 | Wire the Bitnami `redis` subchart: pass through all `redis.*` values; when `redis.enabled: false`, populate the API's Redis env vars from `externalRedis.host/port` values instead | `TODO` |
+
+### FARM-E105: DX and Documentation `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S453 | `values-dev.yaml` — example override file enabling embedded `postgresql` and `redis` subcharts, 1 replica, no TLS, debug log level; ready to use with `helm install farm deploy/helm/farm -f deploy/helm/farm/values-dev.yaml` | `TODO` |
+| FARM-S454 | `values-production.yaml` — example override file for production: external DB and Redis, 2 replicas, TLS ingress with cert-manager annotations, `existingSecret` references for all sensitive values; every field annotated with an inline comment | `TODO` |
+| FARM-S455 | `deploy/helm/farm/README.md` — prerequisites (Helm 3.x, kubectl), quick-start for dev and production profiles, migration lifecycle explanation, upgrade and rollback instructions, complete parameter reference table | `TODO` |
+| FARM-S456 | Add Makefile targets: `helm-lint` (`helm lint` + `helm template --debug`), `helm-template`, `helm-install`, `helm-upgrade`, `helm-diff` (requires helm-diff plugin), `helm-uninstall`; update ROADMAP.md Phase 42 status and Summary totals at completion | `TODO` |
+
+### FARM-E106: Observability Integration Assets `TODO`
+
+Ships the observability assets that plug into the user's existing monitoring stack (e.g., kube-prometheus-stack + Grafana Loki). The chart does not deploy Grafana, Prometheus, Loki, Tempo, or Pyroscope — it integrates with whichever stack the user already has. All resources are opt-in via feature flags in values.yaml.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S457 | Extend `values.yaml` with an `api.observability` block covering OTEL (`otelEnabled`, `otelExporterEndpoint`, `otelServiceName`), Pyroscope (`pyroscopeEnabled`, `pyroscopeServerAddress`), and backend URLs (`grafanaUrl`, `prometheusUrl`, `tempoUrl`, `lokiUrl`); wire all fields into `templates/api/configmap.yaml` | `TODO` |
+| FARM-S458 | `templates/servicemonitor.yaml` — Prometheus Operator `ServiceMonitor` resource that configures scraping of the API `/metrics` endpoint; conditional on `serviceMonitor.enabled`; includes configurable `interval`, `scrapeTimeout`, `namespace`, and label selectors to match any `kube-prometheus-stack` installation | `TODO` |
+| FARM-S459 | `templates/prometheusrule.yaml` — Prometheus Operator `PrometheusRule` resource shipping the alert rules from `observability/prometheus-rules.yml` as a Kubernetes-native resource; conditional on `prometheusRule.enabled`; rules are embedded verbatim so they stay in sync with the docker-compose observability stack | `TODO` |
+| FARM-S460 | `templates/grafana-dashboards.yaml` — all 6 Grafana dashboard JSON files (`farm-api`, `farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`, `farm-infra`) packaged as individual Kubernetes `ConfigMap` resources with label `grafana_dashboard: "1"` for automatic discovery and import by the Grafana sidecar in `kube-prometheus-stack`; conditional on `grafanaDashboards.enabled`; dashboards are embedded from `observability/grafana/provisioning/dashboards/` at chart render time | `TODO` |
+>>>>>>> Stashed changes

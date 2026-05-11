@@ -1,0 +1,45 @@
+# values-dev.yaml
+# Local/dev profile: bundled PostgreSQL + Redis, single replica, no TLS.
+# Usage: helm install farm . -f values-dev.yaml
+
+api:
+  replicaCount: 1
+  image:
+    repository: farm-api
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  env:
+    NODE_ENV: development
+    DATABASE_SYNC: "true"
+    ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001"
+  secrets:
+    JWT_SECRET: "dev-jwt-secret-change-me-at-least-32-chars"
+
+web:
+  replicaCount: 1
+  image:
+    repository: farm-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  env:
+    NODE_ENV: development
+    NEXT_PUBLIC_API_URL: "http://localhost:3000/api"
+    NEXT_PUBLIC_APP_URL: "http://localhost:3001"
+
+ingress:
+  enabled: false
+
+migration:
+  enabled: true
+
+postgresql:
+  enabled: true
+  auth:
+    username: farm
+    password: farm
+    database: farm
+
+redis:
+  enabled: true
+  auth:
+    enabled: false

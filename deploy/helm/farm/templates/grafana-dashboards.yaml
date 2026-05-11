@@ -1,0 +1,22 @@
+{{- if .Values.grafanaDashboards.enabled }}
+{{- $fullName := include "farm.fullname" . }}
+{{- $labels := include "farm.labels" . }}
+{{- $namespace := .Release.Namespace }}
+{{- $folderLabel := .Values.grafanaDashboards.folderLabel | default "farm" }}
+{{- $dashboards := list "farm-api" "farm-infra" "farm-logs" "farm-rum" "farm-slo" "farm-traces" }}
+{{- range $dashboards }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-dashboard-{{ . }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
+    grafana_dashboard: "1"
+    grafana_folder: {{ $folderLabel | quote }}
+data:
+  {{ printf "%s.json" . }}: |
+    {{- ($.Files.Get (printf "dashboards/%s.json" .)) | nindent 4 }}
+{{- end }}
+{{- end }}

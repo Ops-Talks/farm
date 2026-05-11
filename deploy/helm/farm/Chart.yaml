@@ -1,0 +1,22 @@
+apiVersion: v2
+name: farm
+description: Farm — open-source platform portal for managing software components, documentation, and team infrastructure.
+type: application
+version: 0.1.0
+appVersion: "0.24.10"
+home: https://github.com/Ops-Talks/farm
+sources:
+  - https://github.com/Ops-Talks/farm
+maintainers:
+  - name: Ops-Talks
+    url: https://github.com/Ops-Talks
+
+dependencies:
+  - name: postgresql
+    version: "15.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "19.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
