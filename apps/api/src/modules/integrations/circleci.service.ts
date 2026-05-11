@@ -1,18 +1,14 @@
 import {
-  BadGatewayException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
-  UnauthorizedException,
 } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { isAxiosError } from "axios";
 import * as crypto from "crypto";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 /**
  * Minimal shape of a CircleCI pipeline object.
@@ -172,44 +168,7 @@ export class CircleCIService {
     }
   }
 
-  /**
-   * Translates an unknown error from an HTTP call into an appropriate
-   * NestJS HttpException. Always throws — never returns.
-   *
-   * @param err - The caught error
-   * @param operation - Identifier used in log messages (e.g. "CircleCIService.listPipelines")
-   */
   private translateHttpError(err: unknown, operation: string): never {
-    if (isAxiosError(err)) {
-      if (!err.response) {
-        this.logger.error(`${operation}: service unreachable`, {
-          code: err.code,
-          url: err.config?.url,
-        });
-        throw new ServiceUnavailableException(
-          `${operation}: integration service is currently unreachable`,
-        );
-      }
-      const status = err.response.status;
-      this.logger.error(`${operation}: upstream error`, {
-        status,
-        url: err.config?.url,
-      });
-      if (status === 401 || status === 403) {
-        throw new UnauthorizedException(
-          `${operation}: integration credentials are invalid or expired`,
-        );
-      }
-      if (status === 404) {
-        throw new NotFoundException(`${operation}: resource not found`);
-      }
-      throw new BadGatewayException(
-        `${operation}: integration service returned status ${status}`,
-      );
-    }
-    this.logger.error(`${operation}: unexpected error`, {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    throw new InternalServerErrorException(`${operation}: unexpected error`);
+    return translateHttpError(err, operation, this.logger);
   }
 }

@@ -82,14 +82,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const spanContext = trace.getSpan(otelContext.active())?.spanContext();
     const requestId = (request as Request & { requestId?: string }).requestId;
 
+    // Correlation fields (requestId, traceId, spanId) are omitted in production
+    // unless EXPOSE_CORRELATION_IDS=true is explicitly set, to limit information
+    // disclosure to unauthenticated callers on public-facing deployments.
+    const exposeCorrelation =
+      process.env.NODE_ENV !== "production" ||
+      process.env.EXPOSE_CORRELATION_IDS === "true";
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       message,
-      ...(requestId && { requestId }),
-      ...(spanContext?.traceId && { traceId: spanContext.traceId }),
-      ...(spanContext?.spanId && { spanId: spanContext.spanId }),
+      ...(exposeCorrelation && requestId && { requestId }),
+      ...(exposeCorrelation &&
+        spanContext?.traceId && { traceId: spanContext.traceId }),
+      ...(exposeCorrelation &&
+        spanContext?.spanId && { spanId: spanContext.spanId }),
     });
   }
 

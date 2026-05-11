@@ -1,5 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { NotFoundException } from "@nestjs/common";
+import {
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { GitHubActionsService } from "./github-actions.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
@@ -179,6 +182,21 @@ describe("GitHubActionsService", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].conclusion).toBeNull();
+    });
+
+    it("throws ServiceUnavailableException when fetch() raises a network TypeError", async () => {
+      mockCredentialService.findByType.mockResolvedValue(encryptedCredential);
+      mockCredentialService.decrypt.mockReturnValue(
+        JSON.stringify({ token: "gh-token", owner: "acme", repo: "my-app" }),
+      );
+
+      globalThis.fetch = jest
+        .fn()
+        .mockRejectedValue(new TypeError("Failed to fetch"));
+
+      await expect(service.listWorkflowRuns("org-1")).rejects.toThrow(
+        ServiceUnavailableException,
+      );
     });
   });
 });

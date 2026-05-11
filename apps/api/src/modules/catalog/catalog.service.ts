@@ -180,7 +180,7 @@ export class CatalogService {
     this.validateGitUrl(normalizedUrl);
 
     return new Promise((resolve, reject) => {
-      const process = spawn("git", [
+      const child = spawn("git", [
         "clone",
         "--depth",
         "1",
@@ -188,7 +188,7 @@ export class CatalogService {
         normalizedUrl,
         targetDir,
       ]);
-      process.on("close", (code) => {
+      child.on("close", (code) => {
         if (code === 0) {
           resolve();
         } else {
@@ -199,7 +199,7 @@ export class CatalogService {
           );
         }
       });
-      process.on("error", (err) => {
+      child.on("error", (err) => {
         const code = (err as NodeJS.ErrnoException).code;
         if (code === "ENOENT") {
           reject(

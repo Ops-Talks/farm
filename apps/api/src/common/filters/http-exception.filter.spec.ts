@@ -158,4 +158,63 @@ describe("AllExceptionsFilter", () => {
       HttpStatus.INTERNAL_SERVER_ERROR,
     );
   });
+
+  describe("correlation ID exposure", () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalExpose = process.env.EXPOSE_CORRELATION_IDS;
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+      if (originalExpose === undefined) {
+        delete process.env.EXPOSE_CORRELATION_IDS;
+      } else {
+        process.env.EXPOSE_CORRELATION_IDS = originalExpose;
+      }
+    });
+
+    it("omits requestId in production by default", () => {
+      process.env.NODE_ENV = "production";
+      delete process.env.EXPOSE_CORRELATION_IDS;
+
+      mockRequest["requestId"] = "req-123";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBeUndefined();
+    });
+
+    it("includes requestId in non-production by default", () => {
+      process.env.NODE_ENV = "development";
+      delete process.env.EXPOSE_CORRELATION_IDS;
+
+      mockRequest["requestId"] = "req-abc";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBe("req-abc");
+    });
+
+    it("includes requestId in production when EXPOSE_CORRELATION_IDS=true", () => {
+      process.env.NODE_ENV = "production";
+      process.env.EXPOSE_CORRELATION_IDS = "true";
+
+      mockRequest["requestId"] = "req-xyz";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBe("req-xyz");
+    });
+  });
 });
