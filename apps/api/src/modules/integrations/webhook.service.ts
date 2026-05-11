@@ -1,7 +1,6 @@
 import {
   Injectable,
   Logger,
-  NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
