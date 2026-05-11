@@ -1,7 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { translateHttpError } from "./http-error";
 
 /**
  * Service responsible for sending HTTP POST payloads to configured webhook URLs.
@@ -50,12 +54,15 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(this.slackUrl, { text: message }),
+        this.httpService.post(
+          this.slackUrl,
+          { text: message },
+          { timeout: 5000 },
+        ),
       );
       this.logger.log(`Slack notification sent: ${message}`);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send Slack notification: ${msg}`);
+    } catch (err) {
+      this.translateHttpError(err, "WebhookService.sendSlack");
     }
   }
 
@@ -68,16 +75,19 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(this.teamsUrl, {
-          "@type": "MessageCard",
-          "@context": "https://schema.org/extensions",
-          text: message,
-        }),
+        this.httpService.post(
+          this.teamsUrl,
+          {
+            "@type": "MessageCard",
+            "@context": "https://schema.org/extensions",
+            text: message,
+          },
+          { timeout: 5000 },
+        ),
       );
       this.logger.log(`Teams notification sent: ${message}`);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send Teams notification: ${msg}`);
+    } catch (err) {
+      this.translateHttpError(err, "WebhookService.sendTeams");
     }
   }
 
@@ -101,5 +111,9 @@ export class WebhookService {
       default:
         return `Event: ${event} - ${JSON.stringify(payload)}`;
     }
+  }
+
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

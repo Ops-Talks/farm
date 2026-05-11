@@ -1,4 +1,5 @@
 import { ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
+import { QueryFailedError } from "typeorm";
 import { AllExceptionsFilter } from "./http-exception.filter";
 
 interface ErrorResponseBody {
@@ -6,6 +7,14 @@ interface ErrorResponseBody {
   timestamp: string;
   path: string;
   message: string;
+}
+
+function makeQueryFailedError(pgCode: string): QueryFailedError {
+  const err = new QueryFailedError("SELECT 1", [], new Error("db error"));
+  (err as unknown as { driverError: { code: string } }).driverError = {
+    code: pgCode,
+  };
+  return err;
 }
 
 describe("AllExceptionsFilter", () => {
@@ -104,5 +113,108 @@ describe("AllExceptionsFilter", () => {
     const jsonArg = mockResponse.json.mock.calls[0][0] as ErrorResponseBody;
     expect(jsonArg.timestamp).toBeDefined();
     expect(new Date(jsonArg.timestamp).getTime()).not.toBeNaN();
+  });
+
+  it("should translate PostgreSQL unique violation (23505) to 409 Conflict", () => {
+    filter.catch(makeQueryFailedError("23505"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.CONFLICT,
+        message: "A record with this value already exists.",
+      }),
+    );
+  });
+
+  it("should translate PostgreSQL foreign key violation (23503) to 400 Bad Request", () => {
+    filter.catch(makeQueryFailedError("23503"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "Referenced record does not exist.",
+      }),
+    );
+  });
+
+  it("should translate PostgreSQL not-null violation (23502) to 400 Bad Request", () => {
+    filter.catch(makeQueryFailedError("23502"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: HttpStatus.BAD_REQUEST,
+        message: "A required field is missing.",
+      }),
+    );
+  });
+
+  it("should keep unknown PostgreSQL error codes as 500", () => {
+    filter.catch(makeQueryFailedError("99999"), mockHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  });
+
+  describe("correlation ID exposure", () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalExpose = process.env.EXPOSE_CORRELATION_IDS;
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+      if (originalExpose === undefined) {
+        delete process.env.EXPOSE_CORRELATION_IDS;
+      } else {
+        process.env.EXPOSE_CORRELATION_IDS = originalExpose;
+      }
+    });
+
+    it("omits requestId in production by default", () => {
+      process.env.NODE_ENV = "production";
+      delete process.env.EXPOSE_CORRELATION_IDS;
+
+      mockRequest["requestId"] = "req-123";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBeUndefined();
+    });
+
+    it("includes requestId in non-production by default", () => {
+      process.env.NODE_ENV = "development";
+      delete process.env.EXPOSE_CORRELATION_IDS;
+
+      mockRequest["requestId"] = "req-abc";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBe("req-abc");
+    });
+
+    it("includes requestId in production when EXPOSE_CORRELATION_IDS=true", () => {
+      process.env.NODE_ENV = "production";
+      process.env.EXPOSE_CORRELATION_IDS = "true";
+
+      mockRequest["requestId"] = "req-xyz";
+      filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const body = mockResponse.json.mock.calls[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(body["requestId"]).toBe("req-xyz");
+    });
   });
 });

@@ -1,8 +1,13 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 /**
  * Minimal shape of a Travis CI build object.
@@ -94,13 +99,17 @@ export class TravisCIService {
 
     this.logger.debug(`Travis CI listBuilds: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
-        headers: this.headers(token),
-      }),
-    );
-
-    return response.data.builds ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
+          headers: this.headers(token),
+          timeout: 5000,
+        }),
+      );
+      return response.data.builds ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "TravisCIService.listBuilds");
+    }
   }
 
   /**
@@ -118,12 +127,20 @@ export class TravisCIService {
     const url = `${TRAVIS_BASE}/build/${buildId}/restart`;
     this.logger.log(`Travis CI restartBuild: POST ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.post<Record<string, unknown>>(url, null, {
-        headers: this.headers(token),
-      }),
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Record<string, unknown>>(url, null, {
+          headers: this.headers(token),
+          timeout: 5000,
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "TravisCIService.restartBuild");
+    }
+  }
 
-    return response.data;
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

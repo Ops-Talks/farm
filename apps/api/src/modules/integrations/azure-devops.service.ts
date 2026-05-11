@@ -1,6 +1,11 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 export interface AzureDevOpsPipelineRun {
   id: number;
@@ -55,12 +60,17 @@ export class AzureDevOpsService {
       await this.resolveCredential(orgId);
     const basicAuth = Buffer.from(`:${token}`).toString("base64");
     const url = `https://dev.azure.com/${organization}/${project}/_apis/build/builds?api-version=7.1`;
-    const res = await globalThis.fetch(url, {
-      headers: {
-        Authorization: `Basic ${basicAuth}`,
-        "Content-Type": "application/json",
-      },
-    });
+    let res: Response;
+    try {
+      res = await globalThis.fetch(url, {
+        headers: {
+          Authorization: `Basic ${basicAuth}`,
+          "Content-Type": "application/json",
+        },
+      });
+    } catch (err) {
+      this.translateHttpError(err, "AzureDevOpsService.listPipelines");
+    }
     if (!res.ok) {
       this.logger.warn(`Azure DevOps API returned ${res.status}`);
       return [];
@@ -84,5 +94,9 @@ export class AzureDevOpsService {
         },
       };
     });
+  }
+
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

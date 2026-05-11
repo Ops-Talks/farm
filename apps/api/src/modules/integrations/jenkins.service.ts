@@ -1,8 +1,13 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 /**
  * Minimal shape of a Jenkins job object.
@@ -95,12 +100,20 @@ export class JenkinsService {
     cred: JenkinsCredentialPayload,
   ): Promise<{ crumbRequestField: string; crumb: string }> {
     const url = `${cred.url}/crumbIssuer/api/json`;
-    const response = await firstValueFrom(
-      this.httpService.get<{ crumbRequestField: string; crumb: string }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ crumbRequestField: string; crumb: string }>(
+          url,
+          {
+            headers: { Authorization: this.basicAuth(cred) },
+            timeout: 5000,
+          },
+        ),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.fetchCrumb");
+    }
   }
 
   /**
@@ -114,13 +127,17 @@ export class JenkinsService {
     const url = `${cred.url}/api/json?tree=jobs[name,url,color,lastBuild[number,result,timestamp,duration]]`;
     this.logger.debug(`Jenkins listJobs: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ jobs: JenkinsJob[] }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-
-    return response.data.jobs ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ jobs: JenkinsJob[] }>(url, {
+          headers: { Authorization: this.basicAuth(cred) },
+          timeout: 5000,
+        }),
+      );
+      return response.data.jobs ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.listJobs");
+    }
   }
 
   /**
@@ -141,13 +158,17 @@ export class JenkinsService {
     const url = `${cred.url}/job/${encodeURIComponent(jobName)}/api/json?tree=${tree}`;
     this.logger.debug(`Jenkins getBuildHistory: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ builds: JenkinsBuild[] }>(url, {
-        headers: { Authorization: this.basicAuth(cred) },
-      }),
-    );
-
-    return response.data.builds ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ builds: JenkinsBuild[] }>(url, {
+          headers: { Authorization: this.basicAuth(cred) },
+          timeout: 5000,
+        }),
+      );
+      return response.data.builds ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.getBuildHistory");
+    }
   }
 
   /**
@@ -165,13 +186,22 @@ export class JenkinsService {
     const url = `${cred.url}/job/${encodeURIComponent(jobName)}/build`;
     this.logger.log(`Jenkins triggerBuild: POST ${url}`);
 
-    await firstValueFrom(
-      this.httpService.post(url, null, {
-        headers: {
-          Authorization: this.basicAuth(cred),
-          [crumb.crumbRequestField]: crumb.crumb,
-        },
-      }),
-    );
+    try {
+      await firstValueFrom(
+        this.httpService.post(url, null, {
+          headers: {
+            Authorization: this.basicAuth(cred),
+            [crumb.crumbRequestField]: crumb.crumb,
+          },
+          timeout: 5000,
+        }),
+      );
+    } catch (err) {
+      this.translateHttpError(err, "JenkinsService.triggerBuild");
+    }
+  }
+
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

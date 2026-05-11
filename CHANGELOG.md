@@ -8,19 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.10] - 2026-05-08
 
 ### Added
-- **observabilit**: Improvements.
-- **observabilit**: Improvements.
-- **alertmanager**: Setting Allertmanager.
+- **observability**: Alloy OTel collector with tail sampling for distributed tracing (FARM-E92).
+- **observability**: Alertmanager integration for metric-based alerting (FARM-E91).
+- **observability**: Grafana Faro RUM instrumentation for web frontend (FARM-E95).
+- **observability**: Pyroscope continuous profiling integration (FARM-E96).
 
 ### Changed
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
 - **deps-dev**: bump storybook from 9.1.20 to 10.3.6.
-- **deps**: bump the non-critical-updates group across 1 directory with 5 updates.
 - **deps-dev**: bump @storybook/react from 9.1.20 to 10.3.6.
+- **deps**: bump the non-critical-updates group across 1 directory with 5 updates.
 
 ### Fixed
 - use sentinel spanID for synthetic Tempo summary spans.
@@ -30,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.9] - 2026-05-06
 
 ### Changed
-- Potential fix for pull request finding.
 - **deps**: apply safe Dependabot bumps (non-critical group + jsdom 29).
 - **deps**: bump marked from 17.0.6 to 18.0.3.
 - **deps-dev**: bump globals from 16.5.0 to 17.6.0.
@@ -42,9 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.8] - 2026-05-06
 
 ### Added
-- **observability**: Include new feature.
-- **observability**: Include new feature.
-- **observability**: Include new feature.
+- **observability**: upgrade @pyroscope/nodejs to 0.4.11, removing axios CVE dependencies.
 
 ### Fixed
 - **ci**: fix Playwright e2e in CI and local make check.
@@ -52,20 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.24.7] - 2026-05-05
 
-### Changed
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- Potential fix for pull request finding.
-- feat(scorecards) Introducing the feature for Score Cards (#136).
+### Added
+- **scorecards**: introduce Service Maturity Scorecards — 16-criterion evaluator, API endpoints, component detail tab, and overview page (Phase 39, #136).
 
 ### Fixed
 - **observability**: add whitespace trim to message validation and structured catch logging.
 - **observability**: add fetch error fallback and input length limits to log-error route.
 - **observability**: address PR review comments - fix test isolation, add instrumentation tests, and forward client errors to server logger.
-- **observability**: Fix the broken thinks regarding the monitoring Farm.
-- **observability**: Fix the broken thinks regarding the monitoring Farm.
+- **observability**: fix broken observability monitoring for Farm app.
 - **scorecards**: add explicit column names to fix PostgreSQL upsert.
 
 ## [0.24.6] - 2026-05-04
