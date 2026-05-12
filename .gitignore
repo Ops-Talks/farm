@@ -35,3 +35,4 @@ playwright-report/
 e2e/.auth/
 apps/web/e2e/.auth/
 GIT_COMMIT.md
+storybook-static/
