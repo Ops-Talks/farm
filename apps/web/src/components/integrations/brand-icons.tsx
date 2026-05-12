@@ -48,7 +48,7 @@ export function GitHubActionsIcon(props: SVGProps<SVGSVGElement>) {
   return <SimpleIcon icon={siGithubactions} {...props} />;
 }
 
-export function GithubIcon(props: SVGProps<SVGSVGElement>) {
+export function GitHubIcon(props: SVGProps<SVGSVGElement>) {
   return <SimpleIcon icon={siGithub} {...props} />;
 }
 

@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError, auth, setTokens } from "@/lib/api-client";
 import { ShieldCheck } from "lucide-react";
-import { GithubIcon } from "@/components/integrations/brand-icons";
+import { GitHubIcon } from "@/components/integrations/brand-icons";
 import { startSpan } from "@/lib/otel-spans";
 
 // ---------------------------------------------------------------------------
@@ -245,7 +245,7 @@ export default function LoginClient() {
                 {!providersLoading && providers.includes("github") && (
                   <a href="/api/v1/auth/github" className="w-full">
                     <Button variant="outline" className="w-full gap-2" type="button">
-                      <GithubIcon className="h-4 w-4" />
+                      <GitHubIcon className="h-4 w-4" />
                       Continue with GitHub
                     </Button>
                   </a>
