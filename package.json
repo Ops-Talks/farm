@@ -21,6 +21,7 @@
     "lint": "npm run lint -w apps/api && npm run web:lint"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.6",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "knip": "^6.12.2"
@@ -54,7 +55,7 @@
     },
     "picomatch": "4.0.4",
     "follow-redirects": "1.16.0",
-    "protobufjs": "7.5.5",
+    "protobufjs": "7.5.8",
     "uuid": "14.0.0",
     "fast-xml-parser": "5.7.1",
     "brace-expansion@^1": "1.1.13",
