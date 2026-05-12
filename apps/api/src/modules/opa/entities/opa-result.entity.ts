@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Persisted result of a single OPA policy evaluation.
@@ -33,7 +34,7 @@ export class OpaResult {
   violations: string[];
 
   /** Timestamp when the policy evaluation was performed */
-  @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: dateColumnType(), default: () => "CURRENT_TIMESTAMP" })
   evaluatedAt: Date;
 
   /** Row creation timestamp managed by TypeORM */

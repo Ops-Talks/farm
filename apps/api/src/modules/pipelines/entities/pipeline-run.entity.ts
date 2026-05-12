@@ -11,6 +11,7 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { PipelineRunStatus } from "@farm/types";
 import { Pipeline } from "./pipeline.entity";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents the result of a single stage execution within a pipeline run.
@@ -74,7 +75,7 @@ export class PipelineRun {
     description: "Timestamp when execution started",
     nullable: true,
   })
-  @Column({ type: "datetime", nullable: true })
+  @Column({ type: dateColumnType(), nullable: true })
   startedAt: Date | null;
 
   @ApiProperty({
@@ -82,7 +83,7 @@ export class PipelineRun {
     description: "Timestamp when execution finished",
     nullable: true,
   })
-  @Column({ type: "datetime", nullable: true })
+  @Column({ type: dateColumnType(), nullable: true })
   finishedAt: Date | null;
 
   @ApiProperty({

@@ -7,6 +7,7 @@ import {
 } from "typeorm";
 import { OrgRole } from "@farm/types";
 import { dateTransformer } from "../../../common/transformers/date.transformer";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Status of an invitation token.
@@ -62,10 +63,14 @@ export class InvitationToken {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: "datetime", transformer: dateTransformer })
+  @Column({ type: dateColumnType(), transformer: dateTransformer })
   expiresAt: Date;
 
-  @Column({ type: "datetime", nullable: true, transformer: dateTransformer })
+  @Column({
+    type: dateColumnType(),
+    nullable: true,
+    transformer: dateTransformer,
+  })
   acceptedAt: Date | null;
 
   @Column({ nullable: true, type: "varchar", length: 64 })

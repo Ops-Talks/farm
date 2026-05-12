@@ -10,6 +10,7 @@ import {
 } from "typeorm";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Maturity level awarded to a component after scorecard evaluation.
@@ -145,7 +146,7 @@ export class ScorecardResult {
     description: "Timestamp of when the evaluation was executed",
     nullable: true,
   })
-  @Column({ type: "datetime", name: "evaluated_at", nullable: true })
+  @Column({ type: dateColumnType(), name: "evaluated_at", nullable: true })
   evaluatedAt: Date;
 
   @ApiProperty({

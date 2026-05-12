@@ -11,6 +11,7 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
 import { GatewayType } from "../enums/gateway-type.enum";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a route entry synchronized from an API gateway (Kong or AWS API Gateway).
@@ -70,7 +71,7 @@ export class GatewayRoute {
     description: "Timestamp of last successful sync",
     nullable: true,
   })
-  @Column({ type: "datetime", nullable: true })
+  @Column({ type: dateColumnType(), nullable: true })
   syncedAt: Date | null;
 
   @ApiProperty({
