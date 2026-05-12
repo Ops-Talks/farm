@@ -48,6 +48,6 @@ export class ApiConsumer {
   consumerTeamId: string | null;
 
   @ApiProperty({ description: "Timestamp when the consumer was registered" })
-  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   addedAt: Date;
 }

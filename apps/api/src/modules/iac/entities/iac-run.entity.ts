@@ -121,7 +121,7 @@ export class IacRun {
     description: "Timestamp when the run started",
     nullable: true,
   })
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   startedAt: Date | null;
 
   @ApiProperty({
@@ -129,7 +129,7 @@ export class IacRun {
     description: "Timestamp when the run finished",
     nullable: true,
   })
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   finishedAt: Date | null;
 
   @ApiProperty({

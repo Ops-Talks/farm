@@ -70,7 +70,7 @@ export class GatewayRoute {
     description: "Timestamp of last successful sync",
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: "datetime", nullable: true })
   syncedAt: Date | null;
 
   @ApiProperty({

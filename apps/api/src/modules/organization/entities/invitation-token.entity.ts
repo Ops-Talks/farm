@@ -62,10 +62,10 @@ export class InvitationToken {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: "timestamp", transformer: dateTransformer })
+  @Column({ type: "datetime", transformer: dateTransformer })
   expiresAt: Date;
 
-  @Column({ nullable: true, type: "timestamp", transformer: dateTransformer })
+  @Column({ type: "datetime", nullable: true, transformer: dateTransformer })
   acceptedAt: Date | null;
 
   @Column({ nullable: true, type: "varchar", length: 64 })

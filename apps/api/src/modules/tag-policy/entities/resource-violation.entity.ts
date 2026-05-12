@@ -35,13 +35,13 @@ export class ResourceViolation {
   linkedComponentId?: string;
 
   /** Timestamp when this violation was first detected. */
-  @Column({ type: "timestamp" })
+  @Column({ type: "datetime" })
   detectedAt: Date;
 
   /**
    * Timestamp when the violation was resolved (all required keys present).
    * Null when the violation is still active.
    */
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   resolvedAt?: Date;
 }

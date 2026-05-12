@@ -15,6 +15,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Helm Chart](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2FOps-Talks%2Ffarm%2Fmain%2Fdeploy%2Fhelm%2Ffarm%2FChart.yaml&query=%24.version&label=helm%20chart&logo=helm&logoColor=white&color=0F1689)](deploy/helm/farm/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.

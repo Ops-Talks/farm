@@ -85,7 +85,7 @@ export class IacModuleVersion {
     description: "Timestamp of the last successful HCL parse",
     nullable: true,
   })
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   syncedAt: Date | null;
 
   @ApiProperty({

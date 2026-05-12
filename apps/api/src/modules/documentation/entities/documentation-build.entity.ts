@@ -103,6 +103,6 @@ export class DocumentationBuild {
     nullable: true,
     required: false,
   })
-  @Column({ type: "timestamptz", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   completedAt: Date | null;
 }

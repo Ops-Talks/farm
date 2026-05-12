@@ -33,7 +33,7 @@ export class OpaResult {
   violations: string[];
 
   /** Timestamp when the policy evaluation was performed */
-  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   evaluatedAt: Date;
 
   /** Row creation timestamp managed by TypeORM */

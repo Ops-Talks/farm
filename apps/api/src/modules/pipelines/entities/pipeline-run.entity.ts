@@ -74,7 +74,7 @@ export class PipelineRun {
     description: "Timestamp when execution started",
     nullable: true,
   })
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   startedAt: Date | null;
 
   @ApiProperty({
@@ -82,7 +82,7 @@ export class PipelineRun {
     description: "Timestamp when execution finished",
     nullable: true,
   })
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: "datetime", nullable: true })
   finishedAt: Date | null;
 
   @ApiProperty({

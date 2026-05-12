@@ -145,7 +145,7 @@ export class ScorecardResult {
     description: "Timestamp of when the evaluation was executed",
     nullable: true,
   })
-  @Column({ type: "timestamp", name: "evaluated_at", nullable: true })
+  @Column({ type: "datetime", name: "evaluated_at", nullable: true })
   evaluatedAt: Date;
 
   @ApiProperty({

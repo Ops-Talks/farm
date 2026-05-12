@@ -101,7 +101,7 @@ export class User {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp", transformer: dateTransformer })
+  @Column({ type: "datetime", nullable: true, transformer: dateTransformer })
   lastLogin: Date | null;
 
   @ApiProperty({

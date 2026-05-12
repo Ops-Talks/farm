@@ -43,7 +43,7 @@ export class ApiHealthCheck {
   apiSpec: ApiSpec | null;
 
   @ApiProperty({ description: "Timestamp when the check was performed" })
-  @Column({ type: "timestamp" })
+  @Column({ type: "datetime" })
   checkedAt: Date;
 
   @ApiProperty({ description: "Creation timestamp" })

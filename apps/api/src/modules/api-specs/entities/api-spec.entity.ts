@@ -55,14 +55,14 @@ export class ApiSpec {
     description: "Timestamp when the spec was marked deprecated",
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: "datetime", nullable: true })
   deprecatedAt: Date | null;
 
   @ApiProperty({
     description: "Timestamp when the spec is scheduled for sunset",
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: "datetime", nullable: true })
   sunsetAt: Date | null;
 
   @ApiProperty({
