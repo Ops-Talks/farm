@@ -8,11 +8,13 @@ import { Observable, tap } from "rxjs";
 import { Request, Response } from "express";
 import { InjectMetric } from "@willsoto/nestjs-prometheus";
 import { Counter, Histogram } from "prom-client";
+import { trace, isValidTraceId } from "@opentelemetry/api";
 
 /**
  * Interceptor that records Prometheus metrics for every HTTP request:
  * - http_requests_total: counter by method, route, and status code
  * - http_request_duration_seconds: histogram by method, route, and status code
+ *   with an OpenTelemetry trace exemplar attached when a valid span is active
  */
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
@@ -45,7 +47,24 @@ export class MetricsInterceptor implements NestInterceptor {
       route,
       status_code: String(res.statusCode),
     };
+    const duration = (Date.now() - startTime) / 1000;
+
     this.requestCounter.inc(labels);
-    this.requestDuration.observe(labels, (Date.now() - startTime) / 1000);
+
+    const spanContext = trace.getActiveSpan()?.spanContext();
+    if (spanContext && isValidTraceId(spanContext.traceId)) {
+      this.requestDuration.observe({
+        labels,
+        value: duration,
+        exemplarLabels: {
+          traceId: spanContext.traceId,
+          spanId: spanContext.spanId,
+        },
+      });
+    } else {
+      // No active span — use object form without exemplarLabels (required when
+      // enableExemplars=true replaces observe() with observeWithExemplar()).
+      this.requestDuration.observe({ labels, value: duration });
+    }
   }
 }

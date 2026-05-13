@@ -4,7 +4,7 @@ import {
   Logger,
   BadRequestException,
 } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { DataSource, FindOptionsWhere, Repository } from "typeorm";
 import { Dashboard } from "./entities/dashboard.entity";
 import { DashboardWidget } from "./entities/dashboard-widget.entity";
@@ -25,6 +25,7 @@ export class DashboardService {
     private readonly dashboardRepository: Repository<Dashboard>,
     @InjectRepository(DashboardWidget)
     private readonly widgetRepository: Repository<DashboardWidget>,
+    @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
 

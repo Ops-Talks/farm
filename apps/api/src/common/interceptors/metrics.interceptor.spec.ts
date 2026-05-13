@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ExecutionContext, CallHandler } from "@nestjs/common";
 import { of, throwError } from "rxjs";
 import { getToken } from "@willsoto/nestjs-prometheus";
+import * as otelApi from "@opentelemetry/api";
 import { MetricsInterceptor } from "./metrics.interceptor";
 
 describe("MetricsInterceptor", () => {
@@ -61,9 +62,11 @@ describe("MetricsInterceptor", () => {
           route: "/users",
           status_code: "200",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "GET", route: "/users", status_code: "200" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "GET", route: "/users", status_code: "200" },
+          }),
         );
         done();
       },
@@ -84,9 +87,11 @@ describe("MetricsInterceptor", () => {
           route: "/api/items",
           status_code: "201",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "POST", route: "/api/items", status_code: "201" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "POST", route: "/api/items", status_code: "201" },
+          }),
         );
         done();
       },
@@ -131,9 +136,11 @@ describe("MetricsInterceptor", () => {
           route: "/error",
           status_code: "500",
         });
+
         expect(mockHistogram.observe).toHaveBeenCalledWith(
-          { method: "GET", route: "/error", status_code: "500" },
-          expect.any(Number),
+          expect.objectContaining({
+            labels: { method: "GET", route: "/error", status_code: "500" },
+          }),
         );
         done();
       },
@@ -148,11 +155,71 @@ describe("MetricsInterceptor", () => {
 
     interceptor.intercept(context, next).subscribe({
       next: () => {
-        const [, duration] = mockHistogram.observe.mock.calls[0] as [
-          unknown,
-          number,
+        const call = mockHistogram.observe.mock.calls[0] as [
+          { labels: unknown; value: number },
         ];
-        expect(duration).toBeGreaterThanOrEqual(0);
+        expect(call[0].value).toBeGreaterThanOrEqual(0);
+        done();
+      },
+      error: done,
+    });
+  });
+
+  it("attaches exemplarLabels when a valid OTel span is active", (done) => {
+    const mockSpanContext = {
+      traceId: "abcdef1234567890abcdef1234567890",
+      spanId: "1234567890abcdef",
+      traceFlags: 1,
+    };
+    const mockSpan = {
+      spanContext: jest.fn().mockReturnValue(mockSpanContext),
+    };
+    jest
+      .spyOn(otelApi.trace, "getActiveSpan")
+      .mockReturnValue(mockSpan as unknown as otelApi.Span);
+    jest.spyOn(otelApi, "isValidTraceId").mockReturnValue(true);
+
+    const req = {
+      method: "GET",
+      path: "/traced",
+      route: { path: "/traced" },
+    };
+    const res = { statusCode: 200 };
+    const context = buildContext(req, res);
+    const next: CallHandler = { handle: () => of("ok") };
+
+    interceptor.intercept(context, next).subscribe({
+      next: () => {
+        expect(mockHistogram.observe).toHaveBeenCalledWith(
+          expect.objectContaining({
+            exemplarLabels: {
+              traceId: "abcdef1234567890abcdef1234567890",
+              spanId: "1234567890abcdef",
+            },
+          }),
+        );
+        done();
+      },
+      error: done,
+    });
+  });
+
+  it("observes without exemplarLabels when no valid span is active", (done) => {
+    jest.spyOn(otelApi.trace, "getActiveSpan").mockReturnValue(undefined);
+    jest.spyOn(otelApi, "isValidTraceId").mockReturnValue(false);
+
+    const req = { method: "GET", path: "/nospan", route: { path: "/nospan" } };
+    const res = { statusCode: 200 };
+    const context = buildContext(req, res);
+    const next: CallHandler = { handle: () => of("ok") };
+
+    interceptor.intercept(context, next).subscribe({
+      next: () => {
+        expect(mockHistogram.observe).toHaveBeenCalled();
+        const call = mockHistogram.observe.mock.calls[0] as [
+          Record<string, unknown>,
+        ];
+        expect(call[0]).not.toHaveProperty("exemplarLabels");
         done();
       },
       error: done,

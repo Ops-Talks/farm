@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "farm.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.api.labels" . | nindent 4 }}
+data:
+  # Application
+  NODE_ENV: {{ .Values.api.env.NODE_ENV | quote }}
+  DATABASE_SYNC: {{ .Values.api.env.DATABASE_SYNC | quote }}
+  CACHE_TTL: {{ .Values.api.env.CACHE_TTL | quote }}
+  ALLOWED_ORIGINS: {{ .Values.api.env.ALLOWED_ORIGINS | quote }}
+  PLUGINS_DIR: {{ .Values.api.env.PLUGINS_DIR | quote }}
+
+  # Database
+  DATABASE_TYPE: postgres
+  DATABASE_HOST: {{ include "farm.databaseHost" . | quote }}
+  DATABASE_PORT: {{ include "farm.databasePort" . | quote }}
+  DATABASE_USER: {{ include "farm.databaseUser" . | quote }}
+  DATABASE_NAME: {{ include "farm.databaseName" . | quote }}
+
+  # Redis
+  REDIS_HOST: {{ include "farm.redisHost" . | quote }}
+  REDIS_PORT: {{ include "farm.redisPort" . | quote }}
+
+  # Observability — OpenTelemetry
+  OTEL_ENABLED: {{ .Values.api.observability.otelEnabled | toString | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.api.observability.otelServiceName | quote }}
+  {{- if .Values.api.observability.otelExporterEndpoint }}
+  OTEL_EXPORTER_ENDPOINT: {{ .Values.api.observability.otelExporterEndpoint | quote }}
+  {{- end }}
+
+  # Observability — Pyroscope
+  PYROSCOPE_ENABLED: {{ .Values.api.observability.pyroscopeEnabled | toString | quote }}
+  {{- if .Values.api.observability.pyroscopeServerAddress }}
+  PYROSCOPE_URL: {{ .Values.api.observability.pyroscopeServerAddress | quote }}
+  {{- end }}
+
+  # Observability — Backend URLs (used by the API to proxy queries)
+  {{- if .Values.api.observability.grafanaUrl }}
+  GRAFANA_URL: {{ .Values.api.observability.grafanaUrl | quote }}
+  {{- end }}
+  {{- if .Values.api.observability.prometheusUrl }}
+  PROMETHEUS_URL: {{ .Values.api.observability.prometheusUrl | quote }}
+  {{- end }}
+  {{- if .Values.api.observability.tempoUrl }}
+  TEMPO_URL: {{ .Values.api.observability.tempoUrl | quote }}
+  {{- end }}
+  {{- if .Values.api.observability.lokiUrl }}
+  LOKI_URL: {{ .Values.api.observability.lokiUrl | quote }}
+  {{- end }}

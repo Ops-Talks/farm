@@ -13,6 +13,7 @@
 import { useEffect } from 'react';
 import { initTracing } from '@/lib/tracing';
 import { initWebVitals } from '@/lib/web-vitals';
+import { initFaro } from '@/lib/faro';
 
 export function TracingInit() {
   useEffect(() => {
@@ -23,6 +24,9 @@ export function TracingInit() {
     // Register Core Web Vitals observers after the OTel SDK is ready so that
     // metrics are exported through the same BatchSpanProcessor pipeline.
     initWebVitals();
+
+    // Initialize Grafana Faro RUM when NEXT_PUBLIC_FARO_URL is configured.
+    initFaro();
   }, []); // run once on mount
 
   // Renders nothing — this component exists solely for its side-effect.

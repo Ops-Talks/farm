@@ -7,10 +7,22 @@ jest.mock("axios", () => ({
     put: jest.fn(),
     delete: jest.fn(),
   },
+  isAxiosError: jest.fn((err: unknown) => {
+    return (
+      typeof err === "object" &&
+      err !== null &&
+      "isAxiosError" in err &&
+      (err as { isAxiosError: boolean }).isAxiosError === true
+    );
+  }),
 }));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { NotFoundException } from "@nestjs/common";
+import {
+  BadGatewayException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import axios from "axios";
 import { DocumentationService, sanitizeHtml } from "./documentation.service";
 import { Documentation } from "./entities/documentation.entity";
@@ -189,14 +201,54 @@ describe("DocumentationService", () => {
 
       const result = await service.getContent("uuid");
 
-      expect(axios.get).toHaveBeenCalledWith(mockDoc.sourceUrl);
+      expect(axios.get).toHaveBeenCalledWith(
+        mockDoc.sourceUrl,
+        expect.objectContaining({ timeout: 10000 }),
+      );
       expect(result).toBe(markdownContent);
     });
 
-    it("should throw NotFoundException if fetching fails", async () => {
+    it("should throw InternalServerErrorException for non-Axios errors", async () => {
       (axios.get as jest.Mock).mockRejectedValue(new Error("Network error"));
       await expect(service.getContent("uuid")).rejects.toThrow(
+        "Failed to fetch documentation content",
+      );
+    });
+
+    it("should throw ServiceUnavailableException when Axios has no response (network failure)", async () => {
+      const axiosNetworkError = Object.assign(
+        new Error("connect ECONNREFUSED"),
+        {
+          isAxiosError: true,
+          response: undefined,
+          code: "ECONNREFUSED",
+        },
+      );
+      (axios.get as jest.Mock).mockRejectedValue(axiosNetworkError);
+      await expect(service.getContent("uuid")).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
+
+    it("should throw NotFoundException when upstream returns 404", async () => {
+      const axiosNotFound = Object.assign(new Error("Request failed"), {
+        isAxiosError: true,
+        response: { status: 404 },
+      });
+      (axios.get as jest.Mock).mockRejectedValue(axiosNotFound);
+      await expect(service.getContent("uuid")).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it("should throw BadGatewayException when upstream returns 5xx", async () => {
+      const axiosUpstreamError = Object.assign(new Error("Request failed"), {
+        isAxiosError: true,
+        response: { status: 503 },
+      });
+      (axios.get as jest.Mock).mockRejectedValue(axiosUpstreamError);
+      await expect(service.getContent("uuid")).rejects.toThrow(
+        BadGatewayException,
       );
     });
   });

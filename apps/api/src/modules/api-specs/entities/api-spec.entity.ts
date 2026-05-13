@@ -12,6 +12,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
 import { ApiSpecFormat } from "../enums/api-spec-format.enum";
 import { ApiSpecStatus } from "../enums/api-spec-status.enum";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a versioned API specification (OpenAPI or AsyncAPI) associated
@@ -55,14 +56,14 @@ export class ApiSpec {
     description: "Timestamp when the spec was marked deprecated",
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: dateColumnType(), nullable: true })
   deprecatedAt: Date | null;
 
   @ApiProperty({
     description: "Timestamp when the spec is scheduled for sunset",
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: dateColumnType(), nullable: true })
   sunsetAt: Date | null;
 
   @ApiProperty({

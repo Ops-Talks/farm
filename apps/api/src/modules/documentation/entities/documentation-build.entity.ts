@@ -6,6 +6,7 @@ import {
   Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a documentation build record tracking the status and artifacts
@@ -103,6 +104,6 @@ export class DocumentationBuild {
     nullable: true,
     required: false,
   })
-  @Column({ type: "timestamptz", nullable: true })
+  @Column({ type: dateColumnType(), nullable: true })
   completedAt: Date | null;
 }

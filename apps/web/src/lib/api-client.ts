@@ -163,8 +163,41 @@ import type {
   ElasticStackResponse,
   // Thanos (Phase 32)
   ThanosResponse,
+  // Maturity Scorecard (FARM-S393 / FARM-S394)
+  ScorecardResult,
+  ScorecardResultDto,
+  ScorecardOverviewDto,
 } from "@/types/api";
 const API_BASE = "/api";
+
+// -- sessionStorage safe wrappers --
+// sessionStorage can throw DOMException (quota exceeded, SecurityError in
+// restricted browser contexts). Always use these wrappers so that token
+// storage failures degrade gracefully instead of crashing the app.
+
+function safeSessionGet(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSessionSet(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch (err) {
+    console.warn("[api-client] sessionStorage write failed", { key, error: String(err) });
+  }
+}
+
+function safeSessionRemove(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore — the item may already be absent
+  }
+}
 
 // -- Token storage --
 
@@ -178,9 +211,9 @@ export function setTokens(token: string, refresh: string, username: string) {
   currentUsername = username;
 
   if (typeof window !== "undefined") {
-    sessionStorage.setItem("farm_token", token);
-    sessionStorage.setItem("farm_refresh", refresh);
-    sessionStorage.setItem("farm_username", username);
+    safeSessionSet("farm_token", token);
+    safeSessionSet("farm_refresh", refresh);
+    safeSessionSet("farm_username", username);
   }
 }
 
@@ -190,23 +223,23 @@ export function clearTokens() {
   currentUsername = null;
 
   if (typeof window !== "undefined") {
-    sessionStorage.removeItem("farm_token");
-    sessionStorage.removeItem("farm_refresh");
-    sessionStorage.removeItem("farm_username");
+    safeSessionRemove("farm_token");
+    safeSessionRemove("farm_refresh");
+    safeSessionRemove("farm_username");
   }
 }
 
 export function getAccessToken(): string | null {
   if (accessToken) return accessToken;
   if (typeof window !== "undefined") {
-    accessToken = sessionStorage.getItem("farm_token");
+    accessToken = safeSessionGet("farm_token");
   }
   return accessToken;
 }
 
 function getRefreshData(): { username: string; refreshToken: string } | null {
-  const rt = refreshToken ?? sessionStorage.getItem("farm_refresh");
-  const un = currentUsername ?? sessionStorage.getItem("farm_username");
+  const rt = refreshToken ?? safeSessionGet("farm_refresh");
+  const un = currentUsername ?? safeSessionGet("farm_username");
   if (!rt || !un) return null;
   return { username: un, refreshToken: rt };
 }
@@ -244,7 +277,10 @@ async function tryRefreshToken(): Promise<boolean> {
     const result = (await res.json()) as RefreshTokenResponse;
     setTokens(result.token, result.refreshToken, data.username);
     return true;
-  } catch {
+  } catch (err) {
+    console.warn("[api-client] Token refresh failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }
@@ -276,7 +312,7 @@ async function request<T>(
   // The header is optional: when absent the backend falls back to
   // non-scoped behaviour, so API calls are never blocked.
   if (typeof window !== "undefined") {
-    const orgId = sessionStorage.getItem("farm_current_org");
+    const orgId = safeSessionGet("farm_current_org");
     if (orgId) {
       headers["X-Organization-Id"] = orgId;
     }
@@ -330,12 +366,24 @@ async function request<T>(
     typeof window !== "undefined" &&
     headers["X-Organization-Id"]
   ) {
-    sessionStorage.removeItem("farm_current_org");
+    safeSessionRemove("farm_current_org");
   }
 
   const body = (await res.json()) as T;
 
   if (!res.ok) {
+    // Log failed API responses so they are visible in browser devtools and
+    // allow end-to-end correlation using the X-Request-Id echoed by the API.
+    const requestId =
+      typeof res.headers?.get === "function"
+        ? res.headers.get("X-Request-Id")
+        : null;
+    const logFn = res.status >= 500 ? console.error : console.warn;
+    logFn("[api-client] API request failed", {
+      url: res.url,
+      status: res.status,
+      ...(requestId && { requestId }),
+    });
     throw new ApiError(res.status, body as unknown as ErrorResponse);
   }
 
@@ -3130,6 +3178,60 @@ export const elasticsearchIndicesOverview = {
     return request<OverviewComponentGroup[]>(
       `/v1/elasticsearch/indices`,
     );
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Maturity Scorecard (FARM-S393)
+// ---------------------------------------------------------------------------
+
+export const scorecards = {
+  /**
+   * Fetch the latest scorecard result for a component.
+   * Returns null when no scorecard has been computed yet (404 is normalised
+   * to null so callers don't have to handle ApiError for the empty state).
+   */
+  getByComponent(componentId: string): Promise<ScorecardResult | null> {
+    return request<ScorecardResult>(
+      `/v1/scorecards/components/${encodeURIComponent(componentId)}`,
+    ).catch((err: unknown) => {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    });
+  },
+
+  /**
+   * Trigger re-computation of the scorecard for a component and return the
+   * updated result.
+   */
+  refresh(componentId: string): Promise<ScorecardResult> {
+    return request<ScorecardResult>(
+      `/v1/scorecards/components/${encodeURIComponent(componentId)}/refresh`,
+      { method: 'POST' },
+    );
+  },
+
+  /**
+   * Fetch all scorecard results across components (FARM-S394).
+   * Supports optional server-side filtering by level, kind, or teamId.
+   */
+  listAll(filters?: {
+    level?: string;
+    kind?: string;
+    teamId?: string;
+  }): Promise<ScorecardResultDto[]> {
+    return request<ScorecardResultDto[]>(
+      `/v1/scorecards${toQueryString(filters ?? {})}`,
+    );
+  },
+
+  /**
+   * Fetch aggregated overview stats for the Scorecards Overview page
+   * (FARM-S394): total components, average score, level distribution, per-team
+   * breakdown.
+   */
+  getOverview(): Promise<ScorecardOverviewDto> {
+    return request<ScorecardOverviewDto>('/v1/scorecards/overview');
   },
 };
 

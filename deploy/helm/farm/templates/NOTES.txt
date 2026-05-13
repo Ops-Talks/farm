@@ -1,0 +1,66 @@
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.AppVersion }}.
+
+─────────────────────────────────────────────────────────────────────
+  FARM — release: {{ .Release.Name }}   namespace: {{ .Release.Namespace }}
+─────────────────────────────────────────────────────────────────────
+
+{{- if .Values.ingress.enabled }}
+Access the application at:
+
+  Web:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.web.hostname }}
+  API:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.api.hostname }}/api/docs
+{{- else }}
+No Ingress is enabled. To access the services locally, run:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "farm.fullname" . }}-api 3000:3000 &
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "farm.fullname" . }}-web 3001:3001 &
+
+  Then open:
+    http://localhost:3001          — Web UI
+    http://localhost:3000/api/docs — Swagger UI
+    http://localhost:3000/api/health — Health check
+{{- end }}
+
+{{- if .Values.migration.enabled }}
+
+DATABASE MIGRATIONS
+  A pre-install/pre-upgrade Job ran migrations before this release.
+  Check its status with:
+
+    kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration
+    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration
+{{- end }}
+
+{{- if not .Values.postgresql.enabled }}
+
+EXTERNAL DATABASE
+  Make sure your PostgreSQL instance is reachable at:
+    {{ include "farm.databaseHost" . }}:{{ include "farm.databasePort" . }}
+{{- end }}
+
+{{- if not .Values.redis.enabled }}
+
+EXTERNAL REDIS
+  Make sure your Redis instance is reachable at:
+    {{ include "farm.redisHost" . }}:{{ include "farm.redisPort" . }}
+{{- end }}
+
+{{- if .Values.serviceMonitor.enabled }}
+
+PROMETHEUS METRICS
+  A ServiceMonitor has been created. Ensure your Prometheus Operator
+  is configured to discover ServiceMonitors in this namespace.
+{{- end }}
+
+{{- if .Values.grafanaDashboards.enabled }}
+
+GRAFANA DASHBOARDS
+  Dashboard ConfigMaps have been created with label
+  {{ .Values.grafanaDashboards.labelKey }}: {{ .Values.grafanaDashboards.labelValue | quote }}
+  in namespace {{ default .Release.Namespace .Values.grafanaDashboards.namespace }}.
+  Ensure the Grafana sidecar is configured to watch that namespace.
+{{- end }}
+
+For full documentation and upgrade instructions, see:
+  deploy/helm/farm/README.md
+  https://github.com/Ops-Talks/farm

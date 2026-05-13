@@ -30,6 +30,11 @@ const config: KnipConfig = {
         // workspace entry, so Knip incorrectly flags them as unused.
         'class-transformer',
         'class-validator',
+        // @vitest/coverage-v8 is declared at root so npm hoists it alongside
+        // the root-overridden vitest. The apps/web vitest process resolves
+        // coverage-v8 from root node_modules at runtime; there is no root
+        // entry file that imports it directly.
+        '@vitest/coverage-v8',
       ],
       ignoreBinaries: [
         // tsc is invoked in .github/actions/setup-monorepo/action.yml to
@@ -135,6 +140,10 @@ const config: KnipConfig = {
         // framework file-system router, not imported from other modules.
         'src/app/**/{page,layout,route,loading,error,not-found,template,default}.{ts,tsx}',
 
+        // Next.js root-level global error boundary — replaces the entire root
+        // layout on unhandled errors; loaded by the framework, not imported.
+        'src/app/global-error.tsx',
+
         // OpenTelemetry instrumentation hook — loaded by Next.js via the
         // instrumentationHook experimental config option.
         'src/instrumentation.ts',
@@ -175,6 +184,18 @@ const config: KnipConfig = {
         // provides a tailwind CSS preset loaded via `@import "shadcn/tailwind.css"`
         // in globals.css. Neither usage is visible to static TS analysis.
         'shadcn',
+
+        // OTel Node SDK packages loaded via dynamic import() inside function
+        // bodies in tracing.server.ts to prevent webpack bundling. Knip
+        // cannot trace those runtime import() calls, so they are excluded
+        // from dead-code analysis.
+        '@opentelemetry/sdk-node',
+        '@opentelemetry/auto-instrumentations-node',
+
+        // winston-daily-rotate-file is imported as a side-effect in
+        // logger.server.ts to register DailyRotateFile with the winston
+        // transport registry for optional file logging deployments.
+        'winston-daily-rotate-file',
       ],
     },
 

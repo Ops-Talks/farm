@@ -8,6 +8,20 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: farm
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+  processor:
+    service_graphs: {}
+    span_metrics: {}
+
 storage:
   trace:
     backend: local
@@ -15,6 +29,11 @@ storage:
       path: /var/tempo/traces
     wal:
       path: /var/tempo/wal
+
+# Global defaults applied to all tenants. In single-tenant mode, Tempo injects
+# FakeTenantID = "single-tenant"; the per-tenant file also has an explicit entry for it.
+overrides:
+  per_tenant_override_config: /etc/tempo/overrides.yaml
 
 query_frontend:
   search:

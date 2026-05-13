@@ -1,0 +1,16 @@
+# Per-tenant overrides for Tempo 2.7.x (new format).
+# In single-tenant mode (multitenancy_enabled: false), Tempo's fake auth middleware injects
+# util.FakeTenantID = "single-tenant" (not "anonymous") as the userID — confirmed by the
+# tempo_distributor_spans_received_total{tenant="single-tenant"} metric.
+#
+# IMPORTANT: specifying any per-tenant override zeroes out all unspecified fields (Go zero-value).
+# Ingestion rate limits must be restated explicitly to avoid being reset to 0.
+overrides:
+  "single-tenant":
+    ingestion:
+      rate_limit_bytes: 15000000
+      burst_size_bytes: 20000000
+    metrics_generator:
+      processors:
+        - service-graphs
+        - span-metrics

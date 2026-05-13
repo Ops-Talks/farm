@@ -4,6 +4,7 @@ import {
   MiddlewareConsumer,
   OnApplicationBootstrap,
 } from "@nestjs/common";
+import { register as promRegister, openMetricsContentType } from "prom-client";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -54,6 +55,7 @@ import { OpaModule } from "./modules/opa/opa.module";
 import { IacModule } from "./modules/iac/iac.module";
 import { ElasticsearchModule } from "./modules/elasticsearch/elasticsearch.module";
 import { ElasticsearchIndexModule } from "./modules/elasticsearch-index/elasticsearch-index.module";
+import { ScorecardsModule } from "./modules/scorecards/scorecards.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
@@ -61,9 +63,20 @@ import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
+import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
+
+// Switch the default Prometheus registry to OpenMetrics content type so that
+// histograms with enableExemplars=true can attach OpenTelemetry exemplars.
+// Guarded against prom-client versions that may not expose setContentType.
+const _promSetContentType = (
+  promRegister as unknown as { setContentType?: (ct: string) => void }
+).setContentType;
+if (typeof _promSetContentType === "function") {
+  _promSetContentType.call(promRegister, openMetricsContentType);
+}
 
 @Module({
   imports: [
@@ -429,6 +442,15 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
         },
         module: ElasticsearchIndexModule,
       },
+      {
+        metadata: {
+          name: "core-scorecards",
+          version: "1.0.0",
+          description:
+            "Component scorecard evaluation, maturity levels, and criterion tracking",
+        },
+        module: ScorecardsModule,
+      },
     ]),
   ],
   controllers: [AppController],
@@ -448,6 +470,7 @@ import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard"
       help: "HTTP request duration in seconds",
       labelNames: ["method", "route", "status_code"],
       buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+      enableExemplars: true,
     }),
     {
       provide: APP_INTERCEPTOR,
@@ -484,7 +507,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(RequestLoggerMiddleware)
+      .apply(RequestIdMiddleware, RequestLoggerMiddleware)
       .exclude("api/health{*path}")
       .forRoutes("{*path}");
   }

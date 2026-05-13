@@ -20,6 +20,49 @@ import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
 // can patch HTTP, Express, and TypeORM modules at import time.
 initTracing();
 
+// Safety net for async failures that escape all try/catch boundaries.
+// Uses console.error because the Winston logger is not yet available at this
+// point in the process lifecycle. Both handlers initiate a graceful OTel
+// shutdown before exiting so in-flight spans are flushed.
+process.on("unhandledRejection", (reason: unknown) => {
+  const message =
+    reason instanceof Error ? (reason.stack ?? reason.message) : String(reason);
+  console.error("[FatalError] Unhandled promise rejection", {
+    reason: message,
+  });
+  void shutdownTracing().finally(() => process.exit(1));
+});
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("[FatalError] Uncaught exception", {
+    message: error.message,
+    stack: error.stack,
+  });
+  void shutdownTracing().finally(() => process.exit(1));
+});
+
+// Initialize Pyroscope continuous profiling when enabled via environment variable.
+if (process.env.PYROSCOPE_ENABLED === "true") {
+  try {
+    // Dynamic import so that the package is only loaded when profiling is active.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
+    const Pyroscope = require("@pyroscope/nodejs");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    Pyroscope.init({
+      serverAddress: process.env.PYROSCOPE_URL ?? "http://pyroscope:4040",
+      appName: "farm-api",
+      tags: { environment: process.env.NODE_ENV ?? "development" },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    Pyroscope.start();
+  } catch (err) {
+    console.warn(
+      "Pyroscope profiling could not be initialized (native dependency may be missing):",
+      (err as Error).message,
+    );
+  }
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
@@ -135,6 +178,10 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}/api`);
 }
-void bootstrap().catch(async () => {
+void bootstrap().catch(async (error: unknown) => {
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error("[FatalError] Bootstrap failed", { error: message });
   await shutdownTracing();
+  process.exit(1);
 });

@@ -89,7 +89,7 @@ export class CostEstimate {
     example: "2024-01-01T00:00:00Z",
     description: "Timestamp at which the measurement was taken",
   })
-  @Column({ type: "timestamp" })
+  @Column()
   measuredAt: Date;
 
   @ApiProperty({

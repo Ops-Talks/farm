@@ -4,6 +4,7 @@ import { firstValueFrom } from "rxjs";
 import * as crypto from "crypto";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 /**
  * Minimal shape of a CircleCI pipeline object.
@@ -80,13 +81,18 @@ export class CircleCIService {
     const url = `${CIRCLECI_BASE}/pipeline`;
     this.logger.debug(`CircleCI listPipelines: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ items: CircleCIPipeline[] }>(url, {
-        headers: { "x-circleci-token": token },
-      }),
-    );
-
-    let items = response.data.items ?? [];
+    let items: CircleCIPipeline[];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ items: CircleCIPipeline[] }>(url, {
+          headers: { "x-circleci-token": token },
+          timeout: 5000,
+        }),
+      );
+      items = response.data.items ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "CircleCIService.listPipelines");
+    }
 
     if (vcsUrl) {
       items = items.filter((p) => p.vcs?.origin_repository_url === vcsUrl);
@@ -118,13 +124,17 @@ export class CircleCIService {
       `CircleCI triggerPipeline: POST ${url} branch=${branch ?? "default"}`,
     );
 
-    const response = await firstValueFrom(
-      this.httpService.post<CircleCIPipeline>(url, body, {
-        headers: { "x-circleci-token": token },
-      }),
-    );
-
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<CircleCIPipeline>(url, body, {
+          headers: { "x-circleci-token": token },
+          timeout: 5000,
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "CircleCIService.triggerPipeline");
+    }
   }
 
   /**
@@ -152,5 +162,9 @@ export class CircleCIService {
     } catch {
       return false;
     }
+  }
+
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

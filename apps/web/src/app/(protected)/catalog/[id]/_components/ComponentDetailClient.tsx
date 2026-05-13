@@ -15,7 +15,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { catalog, deployments, finops, linkerd as linkerdApi, gatekeeper as gatekeeperApi, opa as opaApi } from "@/lib/api-client";
 import type { CatalogComponent, Deployment, LinkerdStatus, OpaStatus } from "@/types/api";
 import type { CostEstimate, ComponentActualCost } from "@/lib/api-client";
-import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
+import { ChevronLeft, ExternalLink, GitBranch } from "lucide-react";
+import { GitHubIcon } from "@/components/integrations/brand-icons";
 import { HelmChartCard } from "./HelmChartCard";
 import { ContainerImageCard } from "./ContainerImageCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
@@ -38,6 +39,7 @@ import { ContainerSecurityTab } from "./ContainerSecurityTab";
 import { IacModulesTab } from "./IacModulesTab";
 import { IacStacksTab } from "./IacStacksTab";
 import { ElasticsearchIndicesTab } from "./ElasticsearchIndicesTab";
+import { ScorecardTab } from "./ScorecardTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
@@ -92,7 +94,7 @@ function detectProvider(url: string): { label: string; icon: React.ReactNode } {
   if (hostname === "github.com" || (hostname !== null && hostname.endsWith(".github.com"))) {
     return {
       label: "View on GitHub",
-      icon: <Github className="h-4 w-4" />,
+      icon: <GitHubIcon className="h-4 w-4" />,
     };
   }
 
@@ -366,6 +368,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="iac-modules">IaC Modules</TabsTrigger>
           <TabsTrigger value="iac-stacks">IaC Stacks</TabsTrigger>
           <TabsTrigger value="elasticsearch">Elasticsearch</TabsTrigger>
+          <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
         </TabsList>
 
         {/* ── Overview tab ─────────────────────────────────────────────── */}
@@ -760,6 +763,13 @@ export function ComponentDetailClient() {
         <TabsContent value="elasticsearch">
           <ErrorBoundary>
             <ElasticsearchIndicesTab componentId={component.id} />
+          </ErrorBoundary>
+        </TabsContent>
+
+        {/* ── Scorecard tab (FARM-S393) ─────────────────────────────────── */}
+        <TabsContent value="scorecard">
+          <ErrorBoundary>
+            <ScorecardTab componentId={component.id} />
           </ErrorBoundary>
         </TabsContent>
       </Tabs>

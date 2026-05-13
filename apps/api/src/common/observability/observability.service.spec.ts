@@ -99,8 +99,8 @@ describe("ObservabilityService", () => {
     get: jest.fn((key: string) => {
       if (key === "grafana.url") return "http://localhost:3002";
       if (key === "prometheus.url") return "http://localhost:9090";
-      if (key === "tracing.jaegerUrl") return "http://localhost:16686";
       if (key === "loki.url") return "http://localhost:3100";
+      if (key === "tempo.url") return "http://localhost:3200";
       return undefined;
     }),
   };
@@ -344,82 +344,6 @@ describe("ObservabilityService", () => {
     });
   });
 
-  describe("queryJaegerTraces", () => {
-    it("should return Jaeger traces data", async () => {
-      const mockData = { data: [], total: 0 };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerTraces({
-        service: "api",
-        limit: "10",
-      });
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/traces",
-        { params: { service: "api", limit: "10" } },
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerTraces({});
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
-    });
-  });
-
-  describe("queryJaegerServices", () => {
-    it("should return Jaeger services list", async () => {
-      const mockData = { data: ["api", "frontend"] };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerServices();
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/services",
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerServices();
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
-    });
-  });
-
-  describe("queryJaegerTrace", () => {
-    it("should return a single trace detail", async () => {
-      const mockData = { data: [{ traceID: "abc123", spans: [] }] };
-      mockHttpService.get.mockReturnValue(of({ data: mockData }));
-
-      const result = await service.queryJaegerTrace("abc123");
-
-      expect(result).toEqual(mockData);
-      expect(mockHttpService.get).toHaveBeenCalledWith(
-        "http://localhost:16686/api/traces/abc123",
-      );
-    });
-
-    it("should return structured error when Jaeger is not available", async () => {
-      mockHttpService.get.mockReturnValue(
-        throwError(() => new Error("ECONNREFUSED")),
-      );
-
-      const result = await service.queryJaegerTrace("abc123");
-
-      expect(result).toEqual({ error: "Jaeger not available", data: null });
-    });
-  });
-
   describe("queryLoki", () => {
     it("should return Loki log data", async () => {
       const mockData = {
@@ -448,6 +372,207 @@ describe("ObservabilityService", () => {
       const result = await service.queryLoki({}, "/loki/api/v1/query_range");
 
       expect(result).toEqual({ error: "Loki not available", data: null });
+    });
+  });
+
+  describe("queryTempoTraces", () => {
+    it("should search traces and map service param to Tempo tags", async () => {
+      const mockTempoData = {
+        traces: [
+          {
+            traceID: "abc123",
+            rootServiceName: "farm-api",
+            rootTraceName: "GET /api/health",
+            startTimeUnixNano: "1620000000000000000",
+            durationMs: 42,
+          },
+        ],
+      };
+      mockHttpService.get.mockReturnValue(of({ data: mockTempoData }));
+
+      const result = (await service.queryTempoTraces({
+        service: "farm-api",
+        limit: "10",
+      })) as Record<string, unknown>;
+
+      expect(result.data).toHaveLength(1);
+      const trace = (result.data as Record<string, unknown>[])[0];
+      expect(trace["traceID"]).toBe("abc123");
+      expect(
+        (trace["processes"] as Record<string, { serviceName: string }>)["p1"]
+          ?.serviceName,
+      ).toBe("farm-api");
+      expect(result.total).toBe(1);
+      expect(result.errors).toBeNull();
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search",
+        { params: { tags: "service.name=farm-api", limit: "10" } },
+      );
+    });
+
+    it("should translate lookback to start/end before calling Tempo", async () => {
+      mockHttpService.get.mockReturnValue(of({ data: { traces: [] } }));
+
+      const before = Math.floor(Date.now() / 1000);
+      await service.queryTempoTraces({ lookback: "3600s" });
+      const after = Math.floor(Date.now() / 1000);
+
+      const call = mockHttpService.get.mock.calls[0] as [
+        string,
+        { params: Record<string, string> },
+      ];
+      const sentParams = call[1].params;
+      expect(sentParams).not.toHaveProperty("lookback");
+      expect(Number(sentParams["end"])).toBeGreaterThanOrEqual(before);
+      expect(Number(sentParams["end"])).toBeLessThanOrEqual(after + 1);
+      expect(Number(sentParams["start"])).toBeCloseTo(
+        Number(sentParams["end"]) - 3600,
+        -1,
+      );
+    });
+
+    it("should forward params without service mapping when service is absent", async () => {
+      mockHttpService.get.mockReturnValue(of({ data: { traces: [] } }));
+
+      const result = (await service.queryTempoTraces({
+        limit: "5",
+      })) as Record<string, unknown>;
+
+      expect(result.data).toEqual([]);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search",
+        { params: { limit: "5" } },
+      );
+    });
+
+    it("should return Jaeger-compatible error object when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = (await service.queryTempoTraces({})) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe("Tempo not available");
+      expect(result.errors).toBeNull();
+    });
+  });
+
+  describe("queryTempoServices", () => {
+    it("should return normalized service names from Tempo tag values endpoint", async () => {
+      const mockTempoData = {
+        tagValues: [
+          { type: "string", value: "farm-api" },
+          { type: "string", value: "farm-web" },
+        ],
+      };
+      mockHttpService.get.mockReturnValue(of({ data: mockTempoData }));
+
+      const result = (await service.queryTempoServices()) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toEqual(["farm-api", "farm-web"]);
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/search/tag/service.name/values",
+      );
+    });
+
+    it("should return empty data array when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = (await service.queryTempoServices()) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toEqual([]);
+      expect(result.error).toBe("Tempo not available");
+    });
+  });
+
+  describe("queryTempoTrace", () => {
+    it("should normalize an OTLP trace into Jaeger format", async () => {
+      const mockOtlpData = {
+        batches: [
+          {
+            resource: {
+              attributes: [
+                {
+                  key: "service.name",
+                  value: { stringValue: "farm-api" },
+                },
+              ],
+            },
+            scopeSpans: [
+              {
+                spans: [
+                  {
+                    traceId: "abc123",
+                    spanId: "span001",
+                    parentSpanId: "",
+                    name: "GET /api/health",
+                    startTimeUnixNano: "1620000000000000000",
+                    endTimeUnixNano: "1620000000042000000",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      mockHttpService.get.mockReturnValue(of({ data: mockOtlpData }));
+
+      const result = (await service.queryTempoTrace("abc123")) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toHaveLength(1);
+      const trace = (result.data as Record<string, unknown>[])[0];
+      expect(trace["traceID"]).toBe("abc123");
+      const spans = trace["spans"] as Record<string, unknown>[];
+      expect(spans).toHaveLength(1);
+      expect(spans[0]["operationName"]).toBe("GET /api/health");
+      expect(spans[0]["duration"]).toBe(42000); // 42ms in microseconds
+      expect(
+        (trace["processes"] as Record<string, { serviceName: string }>)["p1"]
+          ?.serviceName,
+      ).toBe("farm-api");
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        "http://localhost:3200/api/traces/abc123",
+      );
+    });
+
+    it("should return { data: null } when OTLP response has no batches", async () => {
+      mockHttpService.get.mockReturnValue(of({ data: {} }));
+
+      const result = (await service.queryTempoTrace("abc123")) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toBeNull();
+    });
+
+    it("should return error object when Tempo is not available", async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
+
+      const result = (await service.queryTempoTrace("abc123")) as Record<
+        string,
+        unknown
+      >;
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe("Tempo not available");
     });
   });
 });

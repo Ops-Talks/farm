@@ -1,0 +1,67 @@
+// ─── OTLP receiver ───────────────────────────────────────────────────────────
+otelcol.receiver.otlp "default" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4318" }
+
+  output {
+    traces = [otelcol.processor.tail_sampling.default.input]
+  }
+}
+
+// ─── Tail-based sampling ─────────────────────────────────────────────────────
+otelcol.processor.tail_sampling "default" {
+  decision_wait               = "10s"
+  num_traces                  = 50000
+  expected_new_traces_per_sec = 100
+
+  policy {
+    name = "keep-errors"
+    type = "status_code"
+    status_code { status_codes = ["ERROR"] }
+  }
+
+  policy {
+    name = "keep-slow"
+    type = "latency"
+    latency { threshold_ms = 1000 }
+  }
+
+  policy {
+    name = "probabilistic-healthy"
+    type = "probabilistic"
+    probabilistic { sampling_percentage = 10 }
+  }
+
+  output {
+    traces = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+
+// ─── Export to Tempo ─────────────────────────────────────────────────────────
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://tempo:4318"
+    tls { insecure = true }
+  }
+}
+
+// ─── Faro receiver (E95) ─────────────────────────────────────────────────────
+faro.receiver "default" {
+  server {
+    listen_address = "0.0.0.0"
+    listen_port    = 12347
+    cors_allowed_origins = [env("FARO_CORS_ALLOWED_ORIGINS")]
+  }
+
+  output {
+    logs   = [loki.write.default.receiver]
+    traces = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+
+// ─── Loki writer (for Faro logs) ─────────────────────────────────────────────
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

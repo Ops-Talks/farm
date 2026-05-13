@@ -162,7 +162,7 @@ export function TraceWaterfall({ traceId }: TraceWaterfallProps) {
       })
       .catch(() => {
         if (cancelled) return;
-        setError("Jaeger not available");
+        setError("Tracing backend not available");
         setTrace(null);
         setFetchedId(traceId);
       });

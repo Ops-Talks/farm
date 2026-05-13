@@ -80,7 +80,10 @@ export class KeycloakOidcService {
     } catch (err) {
       this.logger.error(
         `Failed to decrypt Keycloak credential for org ${orgId}`,
-        err,
+        {
+          error: err instanceof Error ? err.message : String(err),
+          context: "KeycloakOidcService",
+        },
       );
       return null;
     }
