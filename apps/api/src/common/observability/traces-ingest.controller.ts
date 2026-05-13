@@ -79,14 +79,16 @@ export class TracesIngestController {
       const text = await upstream.text();
       res.status(upstream.status).send(text);
     } catch (err) {
-      // Collector unreachable is expected when the observability stack is
-      // not running — log at debug to avoid noisy ERROR entries on every
-      // browser span flush. Operators that do run Tempo will see 5xx
-      // responses propagate to the SDK directly.
-      this.logger.debug(
+      // Log at WARN so that operators running the observability stack can
+      // detect collector unavailability via Alertmanager WARN-rate rules.
+      this.logger.warn(
         `Failed to forward traces to collector at ${endpoint}: ${
           err instanceof Error ? err.message : String(err)
         }`,
+        {
+          context: "TracesIngestController",
+          errorCode: (err as NodeJS.ErrnoException).code,
+        },
       );
       res.status(HttpStatus.BAD_GATEWAY).send("Collector unreachable");
     }

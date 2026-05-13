@@ -3,6 +3,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 /**
  * Minimal shape of an ArgoCD application object returned by the ArgoCD API.
@@ -82,13 +83,17 @@ export class ArgoCDService {
     const url = `${payload.url}/api/v1/applications`;
     this.logger.debug(`ArgoCD listApplications: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<{ items: ArgoCDApplication[] }>(url, {
-        headers: { Authorization: `Bearer ${payload.token}` },
-      }),
-    );
-
-    return response.data.items ?? [];
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<{ items: ArgoCDApplication[] }>(url, {
+          headers: { Authorization: `Bearer ${payload.token}` },
+          timeout: 5000,
+        }),
+      );
+      return response.data.items ?? [];
+    } catch (err) {
+      this.translateHttpError(err, "ArgoCDService.listApplications");
+    }
   }
 
   /**
@@ -107,13 +112,17 @@ export class ArgoCDService {
     const url = `${payload.url}/api/v1/applications/${appName}`;
     this.logger.debug(`ArgoCD getApplication: GET ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.get<ArgoCDApplication>(url, {
-        headers: { Authorization: `Bearer ${payload.token}` },
-      }),
-    );
-
-    return response.data;
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<ArgoCDApplication>(url, {
+          headers: { Authorization: `Bearer ${payload.token}` },
+          timeout: 5000,
+        }),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "ArgoCDService.getApplication");
+    }
   }
 
   /**
@@ -132,16 +141,24 @@ export class ArgoCDService {
     const url = `${payload.url}/api/v1/applications/${appName}/sync`;
     this.logger.log(`ArgoCD syncApplication: POST ${url}`);
 
-    const response = await firstValueFrom(
-      this.httpService.post<Record<string, unknown>>(
-        url,
-        {},
-        {
-          headers: { Authorization: `Bearer ${payload.token}` },
-        },
-      ),
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Record<string, unknown>>(
+          url,
+          {},
+          {
+            headers: { Authorization: `Bearer ${payload.token}` },
+            timeout: 5000,
+          },
+        ),
+      );
+      return response.data;
+    } catch (err) {
+      this.translateHttpError(err, "ArgoCDService.syncApplication");
+    }
+  }
 
-    return response.data;
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

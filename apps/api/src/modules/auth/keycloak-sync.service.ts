@@ -144,10 +144,26 @@ export class KeycloakSyncService {
     try {
       adminToken = await this.fetchAdminToken(tokenUrl, clientId, clientSecret);
     } catch (err) {
-      this.logger.error(
-        `Failed to obtain Keycloak admin token for org ${orgId}`,
-        err,
-      );
+      const code = (err as NodeJS.ErrnoException).code;
+      if (
+        code === "ECONNREFUSED" ||
+        code === "ETIMEDOUT" ||
+        code === "ENOTFOUND" ||
+        code === "ECONNRESET"
+      ) {
+        this.logger.warn(
+          `Keycloak unreachable for org ${orgId} — will retry on next sync cycle`,
+          { code, url: tokenUrl, context: KeycloakSyncService.name },
+        );
+      } else {
+        this.logger.error(
+          `Keycloak authentication failed for org ${orgId} — check client credentials`,
+          {
+            error: err instanceof Error ? err.message : String(err),
+            context: KeycloakSyncService.name,
+          },
+        );
+      }
       return { synced: 0, errors: 1 };
     }
 
@@ -159,10 +175,30 @@ export class KeycloakSyncService {
         adminToken,
       );
     } catch (err) {
-      this.logger.error(
-        `Failed to fetch Keycloak groups for org ${orgId}`,
-        err,
-      );
+      const code = (err as NodeJS.ErrnoException).code;
+      if (
+        code === "ECONNREFUSED" ||
+        code === "ETIMEDOUT" ||
+        code === "ENOTFOUND" ||
+        code === "ECONNRESET"
+      ) {
+        this.logger.warn(
+          `Keycloak Admin API unreachable for org ${orgId} — will retry on next sync cycle`,
+          {
+            code,
+            url: `${adminBase}/groups`,
+            context: KeycloakSyncService.name,
+          },
+        );
+      } else {
+        this.logger.error(
+          `Failed to fetch Keycloak groups for org ${orgId} — check realm and admin permissions`,
+          {
+            error: err instanceof Error ? err.message : String(err),
+            context: KeycloakSyncService.name,
+          },
+        );
+      }
       return { synced: 0, errors: 1 };
     }
 

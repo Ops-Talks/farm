@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { translateHttpError } from "./http-error";
 
 export interface GitHubActionsWorkflowRun {
   id: number;
@@ -56,12 +57,17 @@ export class GitHubActionsService {
     const url = repo
       ? `https://api.github.com/repos/${owner}/${repo}/actions/runs`
       : `https://api.github.com/orgs/${owner}/actions/runs`;
-    const res = await globalThis.fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "User-Agent": "Farm-Portal/1.0",
-      },
-    });
+    let res: Response;
+    try {
+      res = await globalThis.fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "User-Agent": "Farm-Portal/1.0",
+        },
+      });
+    } catch (err) {
+      this.translateHttpError(err, "GitHubActionsService.listWorkflowRuns");
+    }
     if (!res.ok) {
       this.logger.warn(`GitHub Actions API returned ${res.status}`);
       return [];
@@ -78,5 +84,9 @@ export class GitHubActionsService {
       updatedAt: r.updated_at as string,
       htmlUrl: r.html_url as string,
     }));
+  }
+
+  private translateHttpError(err: unknown, operation: string): never {
+    return translateHttpError(err, operation, this.logger);
   }
 }

@@ -1,6 +1,6 @@
 # Stage 1: Install dependencies
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
-FROM node:25-alpine AS deps
+FROM node:26-alpine AS deps
 LABEL org.opencontainers.image.title="farm-web" \
       org.opencontainers.image.description="Farm portal — Next.js web application" \
       org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
@@ -22,7 +22,7 @@ COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
 RUN cd packages/types && npx tsc
 
 # Stage 2: Build Next.js app
-FROM node:25-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 
 # node_modules includes the symlink node_modules/@farm/types -> ../../packages/types
@@ -40,7 +40,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Production
-FROM node:25-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall
 
 help:
 	@echo "Available Targets:"
@@ -34,6 +34,12 @@ help:
 	@echo "  make web-e2e    # Runs Playwright E2E tests (requires running dev server)"
 	@echo "  make seed       # Runs database seeds"
 	@echo "  make release TAG=0.8.3 # Creates a release with auto changelog generation"
+	@echo "  make helm-lint         # Lint and dry-run template the Helm chart"
+	@echo "  make helm-template     # Render Helm chart templates to stdout"
+	@echo "  make helm-install      # Install Farm using Helm (HELM_VALUES=path/to/values.yaml)"
+	@echo "  make helm-upgrade      # Upgrade Farm release using Helm"
+	@echo "  make helm-diff         # Show diff of pending Helm upgrade (requires helm-diff plugin)"
+	@echo "  make helm-uninstall    # Uninstall the Farm Helm release"
 
 docs: docs-up
 
@@ -127,3 +133,35 @@ web-test:
 
 web-e2e:
 	npm run test:e2e --prefix apps/web -- --project=chromium
+
+HELM_CHART := deploy/helm/farm
+HELM_RELEASE := farm
+HELM_NAMESPACE := farm
+HELM_VALUES ?= $(HELM_CHART)/values-dev.yaml
+
+helm-lint:
+	helm dependency update $(HELM_CHART)
+	helm lint $(HELM_CHART) -f $(HELM_VALUES)
+	helm template $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) > /dev/null
+
+helm-template:
+	helm dependency update $(HELM_CHART)
+	helm template $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES)
+
+helm-install:
+	helm dependency update $(HELM_CHART)
+	helm install $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
+		--namespace $(HELM_NAMESPACE) --create-namespace
+
+helm-upgrade:
+	helm dependency update $(HELM_CHART)
+	helm upgrade $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
+		--namespace $(HELM_NAMESPACE)
+
+helm-diff:
+	helm dependency update $(HELM_CHART)
+	helm diff upgrade $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
+		--namespace $(HELM_NAMESPACE)
+
+helm-uninstall:
+	helm uninstall $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)

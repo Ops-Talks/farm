@@ -15,7 +15,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { catalog, deployments, finops, linkerd as linkerdApi, gatekeeper as gatekeeperApi, opa as opaApi } from "@/lib/api-client";
 import type { CatalogComponent, Deployment, LinkerdStatus, OpaStatus } from "@/types/api";
 import type { CostEstimate, ComponentActualCost } from "@/lib/api-client";
-import { ChevronLeft, ExternalLink, GitBranch, Github } from "lucide-react";
+import { ChevronLeft, ExternalLink, GitBranch } from "lucide-react";
+import { GitHubIcon } from "@/components/integrations/brand-icons";
 import { HelmChartCard } from "./HelmChartCard";
 import { ContainerImageCard } from "./ContainerImageCard";
 import { CRDResourcesTab } from "./CRDResourcesTab";
@@ -93,7 +94,7 @@ function detectProvider(url: string): { label: string; icon: React.ReactNode } {
   if (hostname === "github.com" || (hostname !== null && hostname.endsWith(".github.com"))) {
     return {
       label: "View on GitHub",
-      icon: <Github className="h-4 w-4" />,
+      icon: <GitHubIcon className="h-4 w-4" />,
     };
   }
 

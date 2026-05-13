@@ -117,7 +117,7 @@ export class ActualCost {
     example: "2024-01-01T00:00:00Z",
     description: "Timestamp at which this cost record was synced from OpenCost",
   })
-  @Column({ type: "timestamp" })
+  @Column()
   syncedAt: Date;
 
   @ApiProperty({

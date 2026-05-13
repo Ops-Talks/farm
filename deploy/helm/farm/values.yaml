@@ -1,0 +1,416 @@
+# Default values for the Farm Helm chart.
+# Override any value with -f my-values.yaml or --set key=value.
+
+# -- Number of replicas for both api and web deployments.
+# Override per-workload with api.replicaCount / web.replicaCount.
+replicaCount: 1
+
+# -- Global image settings. Individual overrides are available under api.image and web.image.
+global:
+  # -- Container registry prefix applied to both images when set.
+  # Example: "ghcr.io/ops-talks" — leave empty to use image.repository as-is.
+  imageRegistry: ""
+  # -- Global image pull secrets applied to all pods.
+  imagePullSecrets: []
+
+# ─── API ─────────────────────────────────────────────────────────────────────
+
+api:
+  # -- Number of API replicas (overrides global replicaCount).
+  replicaCount: 1
+
+  image:
+    # -- Container registry. Combined with repository: <registry>/<repository>:<tag>.
+    registry: ""
+    repository: ops-talks/farm-api
+    tag: ""   # defaults to .Chart.AppVersion when empty
+    pullPolicy: IfNotPresent
+
+  # -- Image pull secrets specific to the API pod.
+  imagePullSecrets: []
+
+  serviceAccount:
+    # -- Create a dedicated ServiceAccount for the API pod.
+    create: true
+    # -- Annotations to add (e.g., for IRSA or Workload Identity).
+    annotations: {}
+    # -- Override the generated ServiceAccount name.
+    name: ""
+
+  # -- Annotations added to the API Deployment pod template.
+  podAnnotations: {}
+
+  # -- Labels added to the API Deployment pod template.
+  podLabels: {}
+
+  # -- Security context applied at the pod level.
+  podSecurityContext:
+    fsGroup: 1000
+
+  # -- Security context applied to the API container.
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1000
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  # -- CPU and memory resource requests/limits.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # -- Liveness probe configuration.
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Readiness probe configuration.
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Extra environment variables injected directly into the container.
+  # These supplement (and override) the values generated from api.env below.
+  extraEnv: []
+  # - name: SOME_VAR
+  #   value: "some-value"
+
+  # -- Application environment configuration (non-sensitive).
+  # All values end up in a ConfigMap and are injected via envFrom.
+  env:
+    NODE_ENV: production
+    DATABASE_SYNC: "false"
+    CACHE_TTL: "30"
+    ALLOWED_ORIGINS: ""
+    PLUGINS_DIR: ./plugins
+
+  # -- Observability configuration.
+  # Farm emits OpenTelemetry traces and Pyroscope profiles, and proxies queries
+  # to Grafana/Prometheus/Tempo/Loki through the API. All values are optional.
+  observability:
+    # OpenTelemetry (OTLP traces)
+    otelEnabled: false
+    otelExporterEndpoint: ""    # e.g. http://alloy.monitoring.svc:4318/v1/traces
+    otelServiceName: farm-api
+    # Pyroscope continuous profiling
+    pyroscopeEnabled: false
+    pyroscopeServerAddress: ""  # e.g. http://pyroscope.monitoring.svc:4040
+    # Backend proxy URLs (used by the API to forward observability queries)
+    grafanaUrl: ""              # e.g. http://grafana.monitoring.svc:3000
+    prometheusUrl: ""           # e.g. http://prometheus-operated.monitoring.svc:9090
+    tempoUrl: ""                # e.g. http://tempo.monitoring.svc:3200
+    lokiUrl: ""                 # e.g. http://loki.monitoring.svc:3100
+
+  # -- Sensitive environment variables injected via a Kubernetes Secret.
+  # In production always use existingSecret — never set real values here.
+  # DATABASE_PASSWORD is sourced from postgresql.auth.password or
+  # externalDatabase.password depending on which backend is active.
+  secrets:
+    # Required. Minimum 32 characters in production.
+    JWT_SECRET: "change-me-this-must-be-at-least-32-characters-long"
+    # Optional integrations — set to a non-null value only when the
+    # integration is enabled. Null fields are omitted from the Secret.
+    SMTP_PASS: ~
+    GITHUB_CLIENT_SECRET: ~
+    GOOGLE_CLIENT_SECRET: ~
+    KEYCLOAK_CLIENT_SECRET: ~
+    LDAP_BIND_PASSWORD: ~
+    IAC_INGEST_TOKEN: ~
+    SWAGGER_PASSWORD: ~
+
+  # -- When set, skip creating the Secret and reference this existing Secret
+  # by name for all sensitive env vars. Recommended for GitOps (External
+  # Secrets Operator, Sealed Secrets, etc.).
+  existingSecret: ""
+
+  # ─── HPA ──────────────────────────────────────────────────────────────────
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    # targetMemoryUtilizationPercentage: 80
+
+  # ─── PDB ──────────────────────────────────────────────────────────────────
+
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+
+  # -- Node selector for the API pod.
+  nodeSelector: {}
+
+  # -- Tolerations for the API pod.
+  tolerations: []
+
+  # -- Affinity rules for the API pod.
+  affinity: {}
+
+  # -- topologySpreadConstraints for the API pod.
+  topologySpreadConstraints: []
+
+# ─── WEB ─────────────────────────────────────────────────────────────────────
+
+web:
+  # -- Number of web replicas (overrides global replicaCount).
+  replicaCount: 1
+
+  image:
+    registry: ""
+    repository: ops-talks/farm-web
+    tag: ""   # defaults to .Chart.AppVersion when empty
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+
+  podAnnotations: {}
+  podLabels: {}
+
+  podSecurityContext:
+    fsGroup: 1001
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 1001
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  service:
+    type: ClusterIP
+    port: 3001
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3001
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3001
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  extraEnv: []
+
+  # -- Web application environment (non-sensitive).
+  env:
+    NODE_ENV: production
+    NEXT_TELEMETRY_DISABLED: "1"
+    # Internal URL used by Next.js server components to reach the API pod.
+    # Typically the in-cluster ClusterIP service address.
+    API_INTERNAL_URL: ""   # e.g. http://farm-api:3000/api — auto-set if empty
+    # Public URL exposed to the browser.
+    NEXT_PUBLIC_API_URL: ""
+    NEXT_PUBLIC_WS_URL: ""
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+
+# ─── INGRESS ─────────────────────────────────────────────────────────────────
+
+ingress:
+  enabled: false
+  # -- Ingress class name (e.g., "nginx", "traefik", "alb").
+  className: ""
+  # -- Annotations for the Ingress resource.
+  # Examples:
+  #   nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  #   cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  annotations: {}
+  # -- Hostname and path for the api service.
+  api:
+    hostname: farm-api.example.com
+    path: /
+    pathType: Prefix
+  # -- Hostname and path for the web service.
+  web:
+    hostname: farm.example.com
+    path: /
+    pathType: Prefix
+  # -- TLS configuration.
+  tls: []
+  # - secretName: farm-tls
+  #   hosts:
+  #     - farm.example.com
+  #     - farm-api.example.com
+
+# ─── MIGRATION ───────────────────────────────────────────────────────────────
+
+migration:
+  # -- Enable the pre-upgrade/pre-install migration Job.
+  enabled: true
+  # -- Restart policy for the migration Job pod.
+  restartPolicy: OnFailure
+  # -- Backoff limit before the Job is considered failed.
+  backoffLimit: 3
+  # -- Maximum duration in seconds before the Job is terminated (optional).
+  activeDeadlineSeconds: ~
+  # -- Resources for the migration Job pod.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # -- Additional annotations on the migration Job pod template.
+  podAnnotations: {}
+
+# ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
+# Used when postgresql.enabled is false (production default).
+
+externalDatabase:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  # -- Do NOT set this in values files. Provide via existingSecret or --set at
+  # install time. Null means the field is omitted from the rendered Secret.
+  password: ~
+  name: "farm"
+  # -- Reference an existing Kubernetes Secret for the DB password.
+  # The Secret must contain a key named "database-password".
+  existingSecret: ""
+  existingSecretKey: "database-password"
+
+# ─── EXTERNAL REDIS ──────────────────────────────────────────────────────────
+# Used when redis.enabled is false (production default).
+
+externalRedis:
+  host: "localhost"
+  port: 6379
+  # -- Do NOT set this in values files. Provide via existingSecret or --set.
+  # Null means Redis auth is not configured (unauthenticated Redis).
+  password: ~
+  existingSecret: ""
+  existingSecretKey: "redis-password"
+
+# ─── BITNAMI POSTGRESQL SUBCHART ─────────────────────────────────────────────
+# Only deployed when postgresql.enabled is true (suitable for dev/staging).
+# Full parameter reference: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+
+postgresql:
+  enabled: false
+  auth:
+    username: postgres
+    # -- Set this value only in overlay files (values-dev.yaml, --set flag).
+    # Never commit a real password here.
+    password: ~
+    database: farm
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# ─── BITNAMI REDIS SUBCHART ──────────────────────────────────────────────────
+# Only deployed when redis.enabled is true (suitable for dev/staging).
+# Full parameter reference: https://github.com/bitnami/charts/tree/main/bitnami/redis
+
+redis:
+  enabled: false
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+
+# ─── PROMETHEUS OPERATOR INTEGRATION ─────────────────────────────────────────
+# Requires kube-prometheus-stack (or prometheus-operator) to be installed.
+
+serviceMonitor:
+  # -- Create a Prometheus Operator ServiceMonitor to scrape the API /metrics endpoint.
+  enabled: false
+  # -- Namespace to create the ServiceMonitor in. Defaults to the release namespace.
+  namespace: ""
+  # -- Labels added to the ServiceMonitor (must match the Prometheus operator's serviceMonitorSelector).
+  # Example for kube-prometheus-stack default: release: kube-prometheus-stack
+  additionalLabels: {}
+  interval: 30s
+  scrapeTimeout: 10s
+  # -- Path to the metrics endpoint.
+  path: /api/metrics
+  # -- Scheme (http or https).
+  scheme: http
+
+prometheusRule:
+  # -- Create a Prometheus Operator PrometheusRule with the Farm alert rules.
+  enabled: false
+  # -- Namespace to create the PrometheusRule in. Defaults to the release namespace.
+  namespace: ""
+  # -- Labels added to the PrometheusRule (must match the Prometheus operator's ruleNamespaceSelector/ruleSelector).
+  additionalLabels: {}
+
+# ─── GRAFANA DASHBOARDS ───────────────────────────────────────────────────────
+# Packages the Farm Grafana dashboards as ConfigMaps with the grafana_dashboard: "1"
+# label for automatic discovery by the Grafana sidecar in kube-prometheus-stack.
+
+grafanaDashboards:
+  # -- Create ConfigMaps for all 6 Farm Grafana dashboards.
+  enabled: false
+  # -- Namespace to create the ConfigMaps in. Defaults to the release namespace.
+  # Set to the namespace where Grafana is installed (e.g., monitoring) for auto-import.
+  namespace: ""
+  # -- Label key used by the Grafana sidecar to discover dashboards.
+  labelKey: grafana_dashboard
+  # -- Label value used by the Grafana sidecar to discover dashboards.
+  labelValue: "1"
+  # -- Grafana folder to import dashboards into.
+  folder: Farm
+

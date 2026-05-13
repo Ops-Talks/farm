@@ -20,6 +20,27 @@ import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
 // can patch HTTP, Express, and TypeORM modules at import time.
 initTracing();
 
+// Safety net for async failures that escape all try/catch boundaries.
+// Uses console.error because the Winston logger is not yet available at this
+// point in the process lifecycle. Both handlers initiate a graceful OTel
+// shutdown before exiting so in-flight spans are flushed.
+process.on("unhandledRejection", (reason: unknown) => {
+  const message =
+    reason instanceof Error ? (reason.stack ?? reason.message) : String(reason);
+  console.error("[FatalError] Unhandled promise rejection", {
+    reason: message,
+  });
+  void shutdownTracing().finally(() => process.exit(1));
+});
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("[FatalError] Uncaught exception", {
+    message: error.message,
+    stack: error.stack,
+  });
+  void shutdownTracing().finally(() => process.exit(1));
+});
+
 // Initialize Pyroscope continuous profiling when enabled via environment variable.
 if (process.env.PYROSCOPE_ENABLED === "true") {
   try {
@@ -157,6 +178,10 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}/api`);
 }
-void bootstrap().catch(async () => {
+void bootstrap().catch(async (error: unknown) => {
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error("[FatalError] Bootstrap failed", { error: message });
   await shutdownTracing();
+  process.exit(1);
 });

@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
   Optional,
   Inject,
@@ -109,7 +110,18 @@ export class CatalogService {
       return discoveredCount;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      this.logger.error(`Discovery failed for ${url}: ${message}`);
+      this.logger.error(`Discovery failed for ${url}: ${message}`, {
+        context: CatalogService.name,
+        error: message,
+      });
+      // Preserve typed HTTP exceptions from gitClone (e.g. InternalServerErrorException
+      // when git binary is missing, BadRequestException when the URL is invalid).
+      if (
+        e instanceof BadRequestException ||
+        e instanceof InternalServerErrorException
+      ) {
+        throw e;
+      }
       throw new BadRequestException(`Discovery failed: ${message}`);
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
@@ -168,7 +180,7 @@ export class CatalogService {
     this.validateGitUrl(normalizedUrl);
 
     return new Promise((resolve, reject) => {
-      const process = spawn("git", [
+      const child = spawn("git", [
         "clone",
         "--depth",
         "1",
@@ -176,14 +188,29 @@ export class CatalogService {
         normalizedUrl,
         targetDir,
       ]);
-      process.on("close", (code) => {
+      child.on("close", (code) => {
         if (code === 0) {
           resolve();
         } else {
-          reject(new Error(`git clone failed with code ${code}`));
+          reject(
+            new BadRequestException(
+              `git clone failed with exit code ${code} — check that the repository URL is accessible`,
+            ),
+          );
         }
       });
-      process.on("error", (err) => reject(err));
+      child.on("error", (err) => {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") {
+          reject(
+            new InternalServerErrorException(
+              "git binary not found — ensure git is installed on the server",
+            ),
+          );
+        } else {
+          reject(err);
+        }
+      });
     });
   }
 

@@ -1,0 +1,42 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "farm.fullname" . }}-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  {{- if .Values.migration.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: {{ .Values.migration.restartPolicy }}
+      {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: migration
+          image: {{ include "farm.api.image" . }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command: ["npm", "run", "migration:run", "-w", "apps/api"]
+          envFrom:
+            - configMapRef:
+                name: {{ include "farm.fullname" . }}-api
+            - secretRef:
+                name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
+          {{- $externalSecretEnv := include "farm.api.externalSecretEnv" . | trim }}
+          {{- if $externalSecretEnv }}
+          env:
+            {{- $externalSecretEnv | nindent 12 }}
+          {{- end }}
+{{- end }}

@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, Logger } from "@nestjs/common";
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ServiceUnavailableException,
+  BadGatewayException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import axios from "axios";
+import { isAxiosError } from "axios";
 import { marked } from "marked";
 import { Documentation } from "./entities/documentation.entity";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
@@ -137,11 +145,44 @@ export class DocumentationService {
   async getContent(id: string): Promise<string> {
     const doc = await this.findOne(id);
     try {
-      const response = await axios.get<string>(doc.sourceUrl);
+      const response = await axios.get<string>(doc.sourceUrl, {
+        timeout: 10000,
+      });
       return response.data;
-    } catch {
-      throw new NotFoundException(
-        `Failed to fetch content from ${doc.sourceUrl}`,
+    } catch (err) {
+      if (isAxiosError(err)) {
+        if (!err.response) {
+          this.logger.error(
+            `Documentation source unreachable: ${doc.sourceUrl}`,
+            {
+              errorCode: err.code,
+              context: DocumentationService.name,
+            },
+          );
+          throw new ServiceUnavailableException(
+            "Documentation source is currently unreachable",
+          );
+        }
+        if (err.response.status === 404) {
+          throw new NotFoundException(
+            `Documentation source URL returned 404: ${doc.sourceUrl}`,
+          );
+        }
+        this.logger.error(
+          `Documentation source returned upstream error: ${doc.sourceUrl}`,
+          { status: err.response.status, context: DocumentationService.name },
+        );
+        throw new BadGatewayException(
+          "Documentation source returned an upstream error",
+        );
+      }
+      this.logger.error("Failed to fetch documentation content", {
+        url: doc.sourceUrl,
+        error: err instanceof Error ? err.message : String(err),
+        context: DocumentationService.name,
+      });
+      throw new InternalServerErrorException(
+        "Failed to fetch documentation content",
       );
     }
   }

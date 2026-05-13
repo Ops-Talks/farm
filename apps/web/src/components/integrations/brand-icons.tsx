@@ -2,10 +2,11 @@ import type { SVGProps } from "react";
 import {
   siArgo,
   siCircleci,
-  siJenkins,
-  siTravisci,
+  siGithub,
   siGithubactions,
   siGooglecloud,
+  siJenkins,
+  siTravisci,
 } from "simple-icons";
 
 // Brand icons sourced from simple-icons (https://simpleicons.org) for maximum accuracy.
@@ -45,6 +46,10 @@ export function TravisCIIcon(props: SVGProps<SVGSVGElement>) {
 
 export function GitHubActionsIcon(props: SVGProps<SVGSVGElement>) {
   return <SimpleIcon icon={siGithubactions} {...props} />;
+}
+
+export function GitHubIcon(props: SVGProps<SVGSVGElement>) {
+  return <SimpleIcon icon={siGithub} {...props} />;
 }
 
 // Official Azure DevOps SVG (not in simple-icons).

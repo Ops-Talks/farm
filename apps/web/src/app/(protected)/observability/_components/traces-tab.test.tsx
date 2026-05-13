@@ -90,13 +90,13 @@ describe("TracesTab", () => {
     expect(screen.getByRole("option", { name: "payment-service" })).toBeInTheDocument();
   });
 
-  it("shows unavailable message when Jaeger is unreachable", async () => {
+  it("shows unavailable message when tracing backend is unreachable", async () => {
     mockGetTraceServices.mockRejectedValue(new globalThis.Error("Connection refused"));
     mockGetTraces.mockRejectedValue(new globalThis.Error("Connection refused"));
     render(<TracesTab />);
 
     await waitFor(() => {
-      expect(screen.getByText("Jaeger not available")).toBeInTheDocument();
+      expect(screen.getByText("Tracing backend not available")).toBeInTheDocument();
     });
   });
 

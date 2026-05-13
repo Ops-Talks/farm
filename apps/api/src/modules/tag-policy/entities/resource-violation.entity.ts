@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from "typeorm";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Records a tagging violation detected for a cloud or Kubernetes resource.
@@ -35,13 +36,13 @@ export class ResourceViolation {
   linkedComponentId?: string;
 
   /** Timestamp when this violation was first detected. */
-  @Column({ type: "timestamp" })
+  @Column({ type: dateColumnType() })
   detectedAt: Date;
 
   /**
    * Timestamp when the violation was resolved (all required keys present).
    * Null when the violation is still active.
    */
-  @Column({ type: "timestamp", nullable: true })
+  @Column({ type: dateColumnType(), nullable: true })
   resolvedAt?: Date;
 }

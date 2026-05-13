@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "farm.fullname" . }}-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.web.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "farm.web.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "farm.web.selectorLabels" . | nindent 8 }}
+        {{- with .Values.web.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.web.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "farm.web.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "farm.web.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.web.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web
+          image: {{ include "farm.web.image" . }}
+          imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.web.containerSecurityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+          env:
+            - name: API_INTERNAL_URL
+              value: {{ include "farm.apiInternalUrl" . | quote }}
+            - name: NEXT_PUBLIC_API_URL
+              value: {{ .Values.web.env.NEXT_PUBLIC_API_URL | quote }}
+            - name: NEXT_PUBLIC_WS_URL
+              value: {{ .Values.web.env.NEXT_PUBLIC_WS_URL | quote }}
+            - name: NODE_ENV
+              value: {{ .Values.web.env.NODE_ENV | quote }}
+            {{- with .Values.web.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.web.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.web.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+      {{- with .Values.web.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
