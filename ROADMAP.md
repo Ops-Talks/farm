@@ -123,9 +123,10 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | `DONE` |
-| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `TODO` |
-| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `TODO` |
-| **Total** | **106** | **422** | |
+| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `DONE` |
+| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `DONE` |
+| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `TODO` |
+| **Total** | **111** | **438** | |
 
 ---
 
@@ -300,3 +301,60 @@ Ships the observability assets that plug into the user's existing monitoring sta
 | FARM-S458 | `templates/servicemonitor.yaml` — Prometheus Operator `ServiceMonitor` resource that configures scraping of the API `/metrics` endpoint; conditional on `serviceMonitor.enabled`; includes configurable `interval`, `scrapeTimeout`, `namespace`, and label selectors to match any `kube-prometheus-stack` installation | `TODO` |
 | FARM-S459 | `templates/prometheusrule.yaml` — Prometheus Operator `PrometheusRule` resource shipping the alert rules from `observability/prometheus-rules.yml` as a Kubernetes-native resource; conditional on `prometheusRule.enabled`; rules are embedded verbatim so they stay in sync with the docker-compose observability stack | `TODO` |
 | FARM-S460 | `templates/grafana-dashboards.yaml` — all 6 Grafana dashboard JSON files (`farm-api`, `farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`, `farm-infra`) packaged as individual Kubernetes `ConfigMap` resources with label `grafana_dashboard: "1"` for automatic discovery and import by the Grafana sidecar in `kube-prometheus-stack`; conditional on `grafanaDashboards.enabled`; dashboards are embedded from `observability/grafana/provisioning/dashboards/` at chart render time | `TODO` |
+
+---
+
+## Phase 43: CI/CD Pipeline Orchestration
+
+Evolves the Farm from a CI/CD **portal** (displays data from external tools) to a CI/CD **orchestrator** (uses external tools as execution backends). Closes the four main gaps: Component↔Pipeline binding, external CI backend delegation, webhook feedback loop, and automatic Deployment record creation.
+
+### FARM-E107: Component–Pipeline Binding `TODO`
+
+Establishes a first-class relationship between catalog components and their delivery pipelines. A component can have multiple pipelines (build, release, rollback). A pipeline is always scoped to a single component.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S461 | Add nullable `componentId` UUID FK to `Pipeline` entity with a TypeORM `ManyToOne` → `Component` relation. Generate and run migration. Update `CreatePipelineDto` / `UpdatePipelineDto` with optional `componentId` field. Update `PipelinesService.findAll` to accept `componentId` filter. | `TODO` |
+| FARM-S462 | New endpoint `GET /components/:id/pipelines` on the Catalog controller — lists all pipelines bound to a component, each entry includes latest run status and duration. Delegates to `PipelinesService.findByComponent(componentId)`. | `TODO` |
+| FARM-S463 | UI — "Pipelines" tab on the Component detail page. Lists bound pipelines with latest run status badge, last run timestamp, and a "Trigger" button. Clicking a run row navigates to the run detail page. | `TODO` |
+
+### FARM-E108: External CI Backend for Pipeline Stages `TODO`
+
+Makes the `PipelineProcessor` delegate stage execution to real external CI/CD tools. A stage's `config` gains a typed `backend` field; when present, the processor calls the corresponding integration service instead of running an internal script.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S464 | Extend the `PipelineStage` interface (stages JSON column) with a `backend?: { provider: 'github-actions' \| 'argocd' \| 'jenkins' \| 'circleci'; ref?: string; workflowId?: string; appName?: string; jobName?: string }` field. Update DTO validation schema. No DB migration needed (stages is already a JSON column). | `TODO` |
+| FARM-S465 | `PipelineProcessor`: when executing a `build` stage with `backend.provider = 'github-actions'`, call `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)`. When executing a `deploy` stage with `backend.provider = 'argocd'`, call `ArgoCDService.syncApplication(orgId, appName)`. Set stage status to `running` immediately, `succeeded` or `failed` based on the external call result. | `TODO` |
+| FARM-S466 | Extend `StageResult` interface with `externalRunId?: string` and `externalRunUrl?: string`. When triggering an external CI job, persist the external run ID and URL in the stage result immediately so webhooks can correlate back to this run. | `TODO` |
+| FARM-S467 | Add `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)` method using `POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches` GitHub API. Returns the newly created workflow run ID by polling `GET /repos/{owner}/{repo}/actions/runs` for up to 10 s after dispatch. | `TODO` |
+
+### FARM-E109: Webhook Feedback Loop `TODO`
+
+Closes the loop between external CI/CD tools and Farm pipeline runs. Today webhooks emit a `CI_BUILD_UPDATED` event that nobody handles. This epic wires that event to update the relevant `PipelineRun` stage and propagate the final run status.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S468 | Add `POST /webhooks/github-actions` endpoint. Validates `x-hub-signature-256` HMAC (secret stored as `IntegrationCredential` of type `GITHUB_ACTIONS`). Handles `workflow_run` events with action `completed`: looks up a `PipelineRun` whose any `StageResult.externalRunId` matches the incoming run ID, then updates that stage's status to `succeeded` or `failed`. | `TODO` |
+| FARM-S469 | Handle the existing `CI_BUILD_UPDATED` event emitted by the CircleCI / Jenkins / Travis CI webhook handlers. Implement `PipelinesService.updateStageFromExternalEvent(externalRunId, status, output)` — finds the `PipelineRun` with a matching `externalRunId` in any stage result, updates the stage, and advances the overall run status if all stages are terminal. | `TODO` |
+| FARM-S470 | Add `POST /webhooks/argocd` endpoint for ArgoCD `ResourceStatus` sync notifications. On `Synced`/`OutOfSync`/`Degraded` events, update the corresponding PipelineRun deploy stage. Document how to configure the ArgoCD notification webhook in `docs/developer-guide/`. | `TODO` |
+
+### FARM-E110: Pipeline → Deployment Auto-creation `TODO`
+
+When a pipeline's `deploy` stage succeeds, automatically create a `Deployment` record in the Farm environments module. This gives the catalog a full deployment history without manual data entry.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S471 | Extend `PipelineStage` config for the `deploy` type with `componentId?: string` and `environmentId?: string`. When a deploy stage transitions to `succeeded` in `PipelineProcessor`, call `DeploymentsService.create()` with the component/environment from the stage config and version from `PipelineRun.metadata.version`. | `TODO` |
+| FARM-S472 | Add nullable `deploymentId` UUID field to `PipelineRun` entity. After auto-creating the Deployment, persist its ID on the run. Generate and run migration. Allows the UI to navigate from a pipeline run directly to the deployment record. | `TODO` |
+| FARM-S473 | Emit `PIPELINE_RUN_UPDATED` WebSocket event on every stage status transition (not only on final run completion). Payload includes the updated `StageResult[]` so the UI can render live per-stage progress without polling. | `TODO` |
+
+### FARM-E111: Unified History UI `TODO`
+
+Surfaces the orchestration data in the Farm web UI so engineers can navigate from a component to its full delivery history — pipelines, runs, stages, external CI links, and deployments — in a single place.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S474 | UI — Component detail "Pipelines" tab (FARM-S463 provides the API). Show each bound pipeline as an expandable row with the last 5 run statuses as colored badges. Each badge links to the run detail page. | `TODO` |
+| FARM-S475 | UI — Pipeline run detail page: show per-stage progress with status icon, duration, and an external link button when `StageResult.externalRunUrl` is set (navigates to GitHub Actions run, ArgoCD app, or Jenkins job). | `TODO` |
+| FARM-S476 | UI — Deployments list page and component deployment history: show a "via pipeline" badge with a link to the `PipelineRun` when `Deployment` was created automatically from a pipeline (i.e., when the source `PipelineRun.deploymentId` is set). | `TODO` |

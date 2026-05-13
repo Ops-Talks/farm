@@ -97,19 +97,24 @@ export class PipelinesService {
   }
 
   /**
-   * Retrieves all pipelines, optionally scoped to an organization.
+   * Retrieves all pipelines, optionally scoped to an organization and/or component.
    * @param skip - Number of records to skip
    * @param take - Number of records to return
    * @param organizationId - Optional organization UUID filter
+   * @param componentId - Optional component UUID filter
    * @returns A tuple of [pipelines, total count]
    */
   async findAll(
     skip = 0,
     take = 20,
     organizationId?: string,
+    componentId?: string,
   ): Promise<[Pipeline[], number]> {
+    const where: Record<string, unknown> = {};
+    if (organizationId) where["organizationId"] = organizationId;
+    if (componentId) where["componentId"] = componentId;
     return this.pipelineRepository.findAndCount({
-      where: organizationId ? { organizationId } : {},
+      where,
       order: { name: "ASC" },
       skip,
       take,
@@ -223,7 +228,136 @@ export class PipelinesService {
   }
 
   /**
-   * Returns aggregate statistics for all runs belonging to a pipeline.
+   * Returns a paginated list of pipelines bound to the given component.
+   *
+   * @param componentId - Component UUID
+   * @param organizationId - Optional organization UUID to narrow the scope
+   * @param skip - Number of records to skip (default 0)
+   * @param take - Number of records to return (default 20)
+   * @returns A tuple of [pipelines, total count]
+   */
+  async findByComponent(
+    componentId: string,
+    organizationId?: string,
+    skip = 0,
+    take = 20,
+  ): Promise<[Pipeline[], number]> {
+    const where: Record<string, unknown> = { componentId };
+    if (organizationId) where["organizationId"] = organizationId;
+    return this.pipelineRepository.findAndCount({
+      where,
+      order: { name: "ASC" },
+      skip,
+      take,
+    });
+  }
+
+  /**
+   * Updates the first stage result matching the given externalRunId,
+   * setting its status to the mapped pipeline status and persisting.
+   * Called when a CI_BUILD_UPDATED event arrives from a webhook.
+   *
+   * @param externalRunId - The external CI run ID (e.g. GitHub Actions run ID)
+   * @param ciStatus - The CI status string (e.g. "completed")
+   * @param ciConclusion - The CI conclusion (e.g. "success", "failure")
+   * @param externalRunUrl - Link back to the run
+   */
+  async updateStageFromExternalEvent(
+    externalRunId: string,
+    ciStatus: string,
+    ciConclusion: string | null,
+    externalRunUrl: string | null,
+  ): Promise<void> {
+    // Find all runs with a stageResult matching this externalRunId.
+    // stageResults is simple-json, so we must load all running runs and filter in memory.
+    const runs = await this.runRepository.find({
+      where: { status: PipelineRunStatus.RUNNING },
+    });
+
+    for (const run of runs) {
+      const stageResults = run.stageResults ?? [];
+      const idx = stageResults.findIndex(
+        (sr) => sr.externalRunId === externalRunId,
+      );
+      if (idx === -1) continue;
+
+      const mapped = this.mapCIStatus(ciStatus, ciConclusion);
+      const updated = {
+        ...stageResults[idx],
+        status: mapped,
+        externalRunUrl:
+          externalRunUrl ?? stageResults[idx].externalRunUrl ?? null,
+        finishedAt:
+          stageResults[idx].finishedAt ??
+          (mapped !== "running" ? new Date().toISOString() : null),
+      };
+      run.stageResults = [
+        ...stageResults.slice(0, idx),
+        updated,
+        ...stageResults.slice(idx + 1),
+      ];
+
+      if (mapped === "failed") {
+        run.status = PipelineRunStatus.FAILED;
+        run.finishedAt = new Date();
+        run.durationMs = run.startedAt
+          ? run.finishedAt.getTime() - run.startedAt.getTime()
+          : null;
+      } else if (mapped === "succeeded") {
+        // Check if all stages are done.
+        const allDone = run.stageResults.every(
+          (sr) => sr.status === "succeeded" || sr.status === "approved",
+        );
+        if (allDone) {
+          run.status = PipelineRunStatus.SUCCEEDED;
+          run.finishedAt = new Date();
+          run.durationMs = run.startedAt
+            ? run.finishedAt.getTime() - run.startedAt.getTime()
+            : null;
+        }
+      }
+
+      await this.runRepository.save(run);
+
+      this.eventsGateway?.emitPipelineRunUpdated({
+        id: run.id,
+        pipelineId: run.pipelineId,
+        status: run.status,
+        triggeredBy: run.triggeredBy,
+        startedAt: run.startedAt,
+        finishedAt: run.finishedAt,
+        durationMs: run.durationMs,
+        timestamp: new Date().toISOString(),
+      });
+
+      this.logger.log(
+        `Updated stage ${stageResults[idx].stageId} in run ${run.id} via external event (externalRunId=${externalRunId})`,
+      );
+      break;
+    }
+  }
+
+  /**
+   * Maps a CI provider status/conclusion pair to an internal pipeline stage status.
+   *
+   * @param status - Provider-level status (e.g. "completed", "in_progress")
+   * @param conclusion - Provider-level conclusion (e.g. "success", "failure")
+   * @returns Internal status string
+   */
+  private mapCIStatus(status: string, conclusion: string | null): string {
+    if (status === "completed") {
+      if (conclusion === "success") return "succeeded";
+      if (conclusion === "failure" || conclusion === "timed_out")
+        return "failed";
+      // cancelled, skipped, neutral, etc.
+      return "failed";
+    }
+    if (status === "in_progress") return "running";
+    return "running";
+  }
+
+  /**
+   * Returns run statistics for a specific pipeline.
    *
    * @param pipelineId - Pipeline UUID
    * @returns Stats object containing totals, per-status counts, success rate,

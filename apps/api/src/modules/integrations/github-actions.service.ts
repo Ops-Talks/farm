@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { translateHttpError } from "./http-error";
@@ -88,5 +93,80 @@ export class GitHubActionsService {
 
   private translateHttpError(err: unknown, operation: string): never {
     return translateHttpError(err, operation, this.logger);
+  }
+
+  /**
+   * Triggers a GitHub Actions workflow via workflow_dispatch and polls
+   * for the newly created run ID (up to 10 seconds).
+   *
+   * @param orgId - Organization UUID
+   * @param workflowId - Workflow file name or numeric ID (e.g. "deploy.yml")
+   * @param ref - Git ref (branch, tag, SHA) to trigger
+   * @returns The triggered workflow run or null if the run could not be found within the poll window
+   */
+  async triggerWorkflow(
+    orgId: string,
+    workflowId: string,
+    ref: string,
+  ): Promise<GitHubActionsWorkflowRun | null> {
+    const { token, owner, repo } = await this.resolveCredential(orgId);
+    if (!repo) {
+      throw new BadRequestException(
+        "GitHub Actions credential must include a repo to trigger workflows",
+      );
+    }
+    const dispatchUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "Farm-Portal/1.0",
+      "Content-Type": "application/json",
+      Accept: "application/vnd.github+json",
+    };
+
+    const dispatchRes = await globalThis.fetch(dispatchUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ref }),
+    });
+
+    if (!dispatchRes.ok) {
+      const text = await dispatchRes.text().catch(() => "");
+      throw new BadRequestException(
+        `GitHub Actions dispatch failed: ${dispatchRes.status} ${text}`,
+      );
+    }
+
+    // Poll up to 10 seconds (5 x 2s) for the new run to appear.
+    const runsUrl = `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=5&branch=${encodeURIComponent(ref)}&event=workflow_dispatch`;
+    const before = new Date();
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await new Promise<void>((r) => setTimeout(r, 2000));
+      const runsRes = await globalThis.fetch(runsUrl, { headers });
+      if (!runsRes.ok) continue;
+      const data = (await runsRes.json()) as {
+        workflow_runs?: Record<string, unknown>[];
+      };
+      const run = (data.workflow_runs ?? []).find(
+        (r) => new Date(r["created_at"] as string) >= before,
+      );
+      if (run) {
+        return {
+          id: run["id"] as number,
+          name: run["name"] as string,
+          status: run["status"] as string,
+          conclusion: (run["conclusion"] as string | null) ?? null,
+          headBranch: run["head_branch"] as string,
+          createdAt: run["created_at"] as string,
+          updatedAt: run["updated_at"] as string,
+          htmlUrl: run["html_url"] as string,
+        };
+      }
+    }
+
+    this.logger.warn(
+      `Could not find newly triggered run for workflow ${workflowId} ref ${ref} within poll window`,
+    );
+    return null;
   }
 }

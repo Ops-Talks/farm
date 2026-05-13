@@ -3,7 +3,7 @@ name: farm
 description: Farm — open-source platform portal for managing software components, documentation, and team infrastructure.
 type: application
 version: 0.1.0
-appVersion: "0.25.0"
+appVersion: "0.25.1"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm

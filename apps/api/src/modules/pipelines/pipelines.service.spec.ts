@@ -157,6 +157,32 @@ describe("PipelinesService", () => {
         take: 20,
       });
     });
+
+    it("should filter by componentId when provided", async () => {
+      pipelineRepo.findAndCount.mockResolvedValue([[mockPipeline], 1]);
+
+      await service.findAll(0, 20, undefined, "comp-uuid-1");
+
+      expect(pipelineRepo.findAndCount).toHaveBeenCalledWith({
+        where: { componentId: "comp-uuid-1" },
+        order: { name: "ASC" },
+        skip: 0,
+        take: 20,
+      });
+    });
+
+    it("should filter by both organizationId and componentId when both provided", async () => {
+      pipelineRepo.findAndCount.mockResolvedValue([[mockPipeline], 1]);
+
+      await service.findAll(0, 20, "org-uuid-1", "comp-uuid-1");
+
+      expect(pipelineRepo.findAndCount).toHaveBeenCalledWith({
+        where: { organizationId: "org-uuid-1", componentId: "comp-uuid-1" },
+        order: { name: "ASC" },
+        skip: 0,
+        take: 20,
+      });
+    });
   });
 
   describe("findOne", () => {
@@ -1306,6 +1332,143 @@ describe("PipelinesService — additional branches", () => {
       await expect(
         service.findRun("pipeline-uuid-1", "nonexistent-run"),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // findByComponent
+  // -------------------------------------------------------------------------
+
+  describe("findByComponent", () => {
+    it("should return pipelines filtered by componentId", async () => {
+      pipelineRepo.findAndCount.mockResolvedValue([[mockPipeline], 1]);
+
+      const [data, total] = await service.findByComponent("comp-uuid-1");
+
+      expect(data).toHaveLength(1);
+      expect(total).toBe(1);
+      expect(pipelineRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { componentId: "comp-uuid-1" },
+        }),
+      );
+    });
+
+    it("should pass pagination params to findAndCount", async () => {
+      pipelineRepo.findAndCount.mockResolvedValue([[], 0]);
+
+      await service.findByComponent("comp-uuid-1", undefined, 10, 5);
+
+      expect(pipelineRepo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: 5 }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // updateStageFromExternalEvent
+  // -------------------------------------------------------------------------
+
+  describe("updateStageFromExternalEvent", () => {
+    const baseRun: Partial<PipelineRun> = {
+      id: "run-uuid-1",
+      pipelineId: "pipeline-uuid-1",
+      status: PipelineRunStatus.RUNNING,
+      triggeredBy: "user-uuid-1",
+      stageResults: [
+        {
+          stageId: "stage-1",
+          status: "running",
+          startedAt: "2024-01-01T00:00:00Z",
+          finishedAt: null,
+          output: null,
+          externalRunId: "42",
+        },
+      ],
+      startedAt: new Date("2024-01-01T00:00:00Z"),
+      finishedAt: null,
+      durationMs: null,
+      logs: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    it("updates the matching stage result status to succeeded", async () => {
+      runRepo.find.mockResolvedValue([{ ...baseRun }]);
+      runRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+
+      await service.updateStageFromExternalEvent(
+        "42",
+        "completed",
+        "success",
+        null,
+      );
+
+      const calls = runRepo.save.mock.calls as unknown as Array<[PipelineRun]>;
+      const savedRun: PipelineRun | undefined = calls[0]?.[0];
+      const firstStage = (savedRun?.stageResults ?? [])[0];
+      expect(firstStage?.status).toBe("succeeded");
+    });
+
+    it("updates the matching stage result status to failed", async () => {
+      runRepo.find.mockResolvedValue([{ ...baseRun }]);
+      runRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+
+      await service.updateStageFromExternalEvent(
+        "42",
+        "completed",
+        "failure",
+        null,
+      );
+
+      const calls = runRepo.save.mock.calls as unknown as Array<[PipelineRun]>;
+      const savedRun: PipelineRun | undefined = calls[0]?.[0];
+      const firstStage = (savedRun?.stageResults ?? [])[0];
+      expect(firstStage?.status).toBe("failed");
+    });
+
+    it("returns early without saving when no running run matches the externalRunId", async () => {
+      // Return a run whose stageResults do not contain externalRunId "999".
+      runRepo.find.mockResolvedValue([{ ...baseRun }]);
+
+      await service.updateStageFromExternalEvent(
+        "999",
+        "completed",
+        "success",
+        null,
+      );
+
+      expect(runRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("returns early without saving when no running runs exist", async () => {
+      runRepo.find.mockResolvedValue([]);
+
+      await service.updateStageFromExternalEvent(
+        "42",
+        "completed",
+        "success",
+        null,
+      );
+
+      expect(runRepo.save).not.toHaveBeenCalled();
+    });
+
+    it("maps an in_progress CI status to running", async () => {
+      runRepo.find.mockResolvedValue([{ ...baseRun }]);
+      runRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+
+      await service.updateStageFromExternalEvent(
+        "42",
+        "in_progress",
+        null,
+        null,
+      );
+
+      const calls = runRepo.save.mock.calls as unknown as Array<[PipelineRun]>;
+      const savedRun: PipelineRun | undefined = calls[0]?.[0];
+      const firstStage = (savedRun?.stageResults ?? [])[0];
+      expect(firstStage?.status).toBe("running");
     });
   });
 });

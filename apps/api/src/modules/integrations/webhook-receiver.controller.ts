@@ -6,10 +6,13 @@ import {
   HttpStatus,
   Logger,
   Optional,
+  Headers,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { FarmEvent } from "../../common/events/events.interfaces";
+import { createHmac, timingSafeEqual } from "crypto";
 
 /**
  * Controller for receiving inbound CI/CD webhook payloads.
@@ -102,6 +105,80 @@ export class WebhookReceiverController {
     this.logger.debug(`Travis CI webhook received: id=${buildId}`);
     this.eventEmitter?.emit(FarmEvent.CI_BUILD_UPDATED, {
       source: "travisci",
+      ...payload,
+    });
+    return { ok: true };
+  }
+
+  /**
+   * Receives GitHub Actions webhook payloads (workflow_run events).
+   * Validates x-hub-signature-256 if GITHUB_WEBHOOK_SECRET is set.
+   *
+   * @param signature - HMAC-SHA256 signature header from GitHub
+   * @param payload - Inbound GitHub Actions webhook body
+   */
+  @Post("github-actions")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Receive GitHub Actions webhook" })
+  @ApiBody({
+    schema: { type: "object", additionalProperties: true },
+    description: "GitHub Actions webhook payload",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Webhook received and processed.",
+  })
+  receiveGitHubActions(
+    @Headers("x-hub-signature-256") signature: string | undefined,
+    @Body() payload: Record<string, unknown>,
+  ): { ok: boolean } {
+    const secret = process.env.GITHUB_WEBHOOK_SECRET;
+    if (secret && signature) {
+      const rawBody = JSON.stringify(payload);
+      const expectedSig =
+        "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
+      // Buffers must be the same length for timingSafeEqual.
+      if (
+        signature.length !== expectedSig.length ||
+        !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))
+      ) {
+        this.logger.warn("GitHub Actions webhook signature mismatch");
+        throw new UnauthorizedException("Invalid webhook signature");
+      }
+    }
+    const event = payload["action"] as string | undefined;
+    this.logger.debug(`GitHub Actions webhook: action=${event ?? "unknown"}`);
+    this.eventEmitter?.emit(FarmEvent.CI_BUILD_UPDATED, {
+      source: "github-actions",
+      ...payload,
+    });
+    return { ok: true };
+  }
+
+  /**
+   * Receives ArgoCD sync status webhook payloads and emits a CI_BUILD_UPDATED event.
+   *
+   * @param payload - Inbound ArgoCD webhook body
+   */
+  @Post("argocd")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Receive ArgoCD sync status webhook" })
+  @ApiBody({
+    schema: { type: "object", additionalProperties: true },
+    description: "ArgoCD webhook payload",
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Webhook received and processed.",
+  })
+  receiveArgoCDWebhook(@Body() payload: Record<string, unknown>): {
+    ok: boolean;
+  } {
+    const appName =
+      typeof payload["app"] === "string" ? payload["app"] : "unknown";
+    this.logger.debug(`ArgoCD webhook received: app=${appName}`);
+    this.eventEmitter?.emit(FarmEvent.CI_BUILD_UPDATED, {
+      source: "argocd",
       ...payload,
     });
     return { ok: true };
