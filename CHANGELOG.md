@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1] - 2026-05-13
+
+### Changed
+- **sweagger**: Update Sweagger endpoints.
+- merge main into storybook/nextjs bump branch, resolve conflicts.
+- **ci**: align setup-monorepo action to Node 26 to match Dockerfiles.
+- **deps**: bump node from 25-alpine to 26-alpine in Dockerfiles.
+- **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
+- **deps**: bump the non-critical-updates group across 1 directory with 16 updates.
+- Chore/dependabot bumps (#154).
+- **deps-dev**: bump @storybook/nextjs from 9.1.20 to 10.3.6.
+- **deps-dev**: bump eslint from 9.39.4 to 10.3.0.
+
+### Fixed
+- revert release-it to ^19.0.0 — @release-it/keep-a-changelog@7 is incompatible with v20.
+- **tsconfig**: exclude story files from Next.js production build.
+
 ## [0.25.0] - 2026-05-11
 
 ### Added
