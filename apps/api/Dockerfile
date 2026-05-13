@@ -1,7 +1,7 @@
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
 
 # Stage 1: Install dependencies
-FROM node:25-alpine AS deps
+FROM node:26-alpine AS deps
 LABEL org.opencontainers.image.title="farm-api" \
       org.opencontainers.image.description="Farm portal — NestJS API service" \
       org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
@@ -23,7 +23,7 @@ COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
 RUN cd packages/types && npx tsc
 
 # Stage 2: Build NestJS app
-FROM node:25-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules    ./node_modules
@@ -35,7 +35,7 @@ WORKDIR /app/apps/api
 RUN npm run build
 
 # Stage 3: Production image
-FROM node:25-alpine AS production
+FROM node:26-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
