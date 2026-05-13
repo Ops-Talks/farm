@@ -7,6 +7,7 @@ import {
   Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
+import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Status values for an environment request lifecycle.
@@ -131,7 +132,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: dateColumnType(), nullable: true })
   reviewedAt: Date | null;
 
   @ApiProperty({
@@ -140,7 +141,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: dateColumnType(), nullable: true })
   provisionedAt: Date | null;
 
   @ApiProperty({
@@ -149,7 +150,7 @@ export class EnvironmentRequest {
     required: false,
     nullable: true,
   })
-  @Column({ nullable: true, type: "timestamp" })
+  @Column({ type: dateColumnType(), nullable: true })
   expiresAt: Date | null;
 
   @ApiProperty({

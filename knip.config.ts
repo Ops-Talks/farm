@@ -30,6 +30,11 @@ const config: KnipConfig = {
         // workspace entry, so Knip incorrectly flags them as unused.
         'class-transformer',
         'class-validator',
+        // @vitest/coverage-v8 is declared at root so npm hoists it alongside
+        // the root-overridden vitest. The apps/web vitest process resolves
+        // coverage-v8 from root node_modules at runtime; there is no root
+        // entry file that imports it directly.
+        '@vitest/coverage-v8',
       ],
       ignoreBinaries: [
         // tsc is invoked in .github/actions/setup-monorepo/action.yml to
