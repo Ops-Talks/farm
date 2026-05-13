@@ -21,6 +21,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiSecurity,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -92,6 +93,7 @@ export class IacController {
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
   @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity("IacIngestToken")
   @ApiOperation({
     summary: "Ingest an IaC run report (machine-to-machine)",
     description:
@@ -126,6 +128,7 @@ export class IacController {
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 2 } })
   @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity("IacIngestToken")
   @ApiOperation({
     summary: "Bulk import IaC stacks (machine-to-machine)",
     description:
@@ -165,6 +168,7 @@ export class IacController {
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
   @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity("IacIngestToken")
   @ApiOperation({
     summary: "Ingest module drift data (machine-to-machine)",
     description:
@@ -311,6 +315,7 @@ export class IacController {
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
   @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity("IacIngestToken")
   @ApiOperation({
     summary: "Ingest resource topology for a stack (machine-to-machine)",
     description:

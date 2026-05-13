@@ -35,6 +35,10 @@ import { CloudResource } from "./interfaces/cloud-resource.interface";
 @ApiTags("Cloud")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("cloud")
 export class CloudResourceController {
   private readonly logger = new Logger(CloudResourceController.name);

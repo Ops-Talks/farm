@@ -1,0 +1,69 @@
+# Alertmanager production configuration with Slack notifications.
+#
+# Usage:
+#   1. Set ALERTMANAGER_SLACK_WEBHOOK_URL in your environment or .env file.
+#   2. Replace observability/alertmanager.yml with this file, or mount it
+#      instead via a docker-compose override:
+#
+#        volumes:
+#          - ./observability/alertmanager-slack.yml:/etc/alertmanager/alertmanager.yml:ro
+#
+# The webhook URL is read at container startup via --config.expand-env=true.
+# Do NOT hardcode the URL here — always use the environment variable.
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'null'
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: 'critical'
+      group_wait: 10s
+      repeat_interval: 1h
+    - matchers:
+        - severity="warning"
+      receiver: 'warning'
+      repeat_interval: 4h
+
+receivers:
+  - name: 'null'
+
+  - name: 'warning'
+    slack_configs:
+      - api_url: '${ALERTMANAGER_SLACK_WEBHOOK_URL}'
+        channel: '#farm-alerts'
+        send_resolved: true
+        icon_emoji: ':warning:'
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+        text: |-
+          {{ range .Alerts -}}
+          *Service:* {{ .Labels.service }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  - name: 'critical'
+    slack_configs:
+      - api_url: '${ALERTMANAGER_SLACK_WEBHOOK_URL}'
+        channel: '#farm-alerts'
+        send_resolved: true
+        icon_emoji: ':fire:'
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+        text: |-
+          {{ range .Alerts -}}
+          *Service:* {{ .Labels.service }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+inhibit_rules:
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['alertname', 'service']

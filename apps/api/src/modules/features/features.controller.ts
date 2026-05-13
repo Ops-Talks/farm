@@ -11,9 +11,13 @@ import { FeaturesService, FeatureAvailabilityMap } from "./features.service";
 /**
  * Controller exposing the bulk feature availability endpoint.
  */
-@ApiTags("features")
+@ApiTags("Features")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: 401,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("features")
 export class FeaturesController {
   constructor(private readonly featuresService: FeaturesService) {}

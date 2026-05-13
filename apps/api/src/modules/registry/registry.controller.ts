@@ -18,6 +18,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -49,9 +50,13 @@ import { Component } from "../catalog/entities/component.entity";
  * Controller exposing container registry query endpoints.
  * All routes require a valid JWT token.
  */
-@ApiTags("registry")
+@ApiTags("Registry")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("registry")
 export class RegistryController {
   constructor(

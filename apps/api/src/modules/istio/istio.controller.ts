@@ -48,6 +48,10 @@ import {
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized - missing or invalid JWT token.",
 })
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient role.",
+})
 export class IstioController {
   constructor(
     private readonly istioService: IstioService,
