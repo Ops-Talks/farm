@@ -36,7 +36,7 @@ interface AuthenticatedRequest extends ExpressRequest {
  * Coexists with the legacy `OrgInvitation` flow under
  * `/organizations/:id/invitations`.
  */
-@ApiTags("Invitations (Phase 37)")
+@ApiTags("Invitations")
 @Controller("invitations")
 export class InvitationController {
   constructor(private readonly invitationService: InvitationService) {}

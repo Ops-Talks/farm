@@ -14,7 +14,8 @@ export class InviteMemberDto {
   email: string;
 
   @ApiPropertyOptional({
-    enum: [OrgRole.MEMBER, OrgRole.ADMIN],
+    enum: OrgRole,
+    enumName: "OrgRole",
     default: OrgRole.MEMBER,
     description: "Role to assign upon invitation acceptance",
   })

@@ -17,11 +17,19 @@ import type { SearchConfig } from "./entities/search-config.entity";
  * Admin-only controller for reading and updating the SearchConfig that
  * controls Elasticsearch boost weights and fuzziness for a given organization.
  */
-@ApiTags("search")
+@ApiTags("Search")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin")
 @Controller("search/config")
+@ApiResponse({
+  status: 401,
+  description: "Unauthorized — missing or invalid JWT.",
+})
+@ApiResponse({
+  status: 403,
+  description: "Forbidden — requires admin role.",
+})
 export class SearchConfigController {
   constructor(private readonly searchService: SearchService) {}
 

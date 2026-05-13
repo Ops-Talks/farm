@@ -7,7 +7,7 @@ import {
   Logger,
   Optional,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { FarmEvent } from "../../common/events/events.interfaces";
 
@@ -31,6 +31,10 @@ export class WebhookReceiverController {
   @Post("circleci")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Receive CircleCI webhook" })
+  @ApiBody({
+    schema: { type: "object", additionalProperties: true },
+    description: "CircleCI webhook payload",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Webhook received and processed.",
@@ -55,6 +59,10 @@ export class WebhookReceiverController {
   @Post("jenkins")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Receive Jenkins webhook" })
+  @ApiBody({
+    schema: { type: "object", additionalProperties: true },
+    description: "Jenkins webhook payload",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Webhook received and processed.",
@@ -78,6 +86,10 @@ export class WebhookReceiverController {
   @Post("travisci")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Receive Travis CI webhook" })
+  @ApiBody({
+    schema: { type: "object", additionalProperties: true },
+    description: "Travis CI webhook payload",
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Webhook received and processed.",

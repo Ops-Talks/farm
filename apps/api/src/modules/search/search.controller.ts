@@ -16,9 +16,13 @@ import type { AdvancedSearchResult } from "./interfaces/advanced-search-result.i
  * Controller exposing quick search and advanced faceted search
  * across catalog entities.
  */
-@ApiTags("search")
+@ApiTags("Search")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: 401,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("search")
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}

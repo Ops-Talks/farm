@@ -13,9 +13,13 @@ import { SetupService, SetupChecklistItem } from "./setup.service";
 /**
  * Controller exposing the admin setup checklist endpoints.
  */
-@ApiTags("setup")
+@ApiTags("Setup")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: 401,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("setup")
 export class SetupController {
   constructor(private readonly setupService: SetupService) {}

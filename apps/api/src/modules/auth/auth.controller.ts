@@ -20,6 +20,8 @@ import {
   ApiResponse,
   ApiHeader,
   ApiExcludeEndpoint,
+  ApiBearerAuth,
+  ApiParam,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "@nestjs/passport";
@@ -190,11 +192,22 @@ export class AuthController {
   @Get("users")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Get all users (admin only)" })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Return all users.",
     type: [User],
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: "Unauthorized — missing or invalid JWT.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: "Forbidden — insufficient role.",
+    type: ErrorResponseDto,
   })
   async findAll(): Promise<User[]> {
     return await this.authService.findAll();
@@ -208,6 +221,7 @@ export class AuthController {
   @Get("profile")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Get current user profile" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -234,6 +248,7 @@ export class AuthController {
   @Patch("profile")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Update current user profile" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -266,6 +281,7 @@ export class AuthController {
   @Patch("profile/password")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Change current user password" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -533,14 +549,21 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("admin")
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Trigger Keycloak group sync for an org (admin)" })
+  @ApiParam({ name: "orgId", description: "UUID of the organization to sync" })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Sync job enqueued.",
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: "Unauthorized.",
+    description: "Unauthorized — missing or invalid JWT.",
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: "Forbidden — insufficient role.",
     type: ErrorResponseDto,
   })
   async triggerKeycloakSync(

@@ -44,7 +44,7 @@ function toCsv(rows: Record<string, string | number>[]): string {
  * Controller that exposes analytics endpoints for catalog health,
  * DORA metrics, and platform usage reports.
  */
-@ApiTags("analytics")
+@ApiTags("Analytics")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller("analytics")

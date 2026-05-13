@@ -34,6 +34,11 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
   description: "Unauthorized - Authentication token is missing or invalid.",
   type: ErrorResponseDto,
 })
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient role.",
+  type: ErrorResponseDto,
+})
 export class CircleCIController {
   constructor(private readonly circleCIService: CircleCIService) {}
 

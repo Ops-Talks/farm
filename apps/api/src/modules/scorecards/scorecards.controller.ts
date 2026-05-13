@@ -32,9 +32,13 @@ import {
  * All routes are protected with JWT authentication.
  * The global /api prefix is applied in main.ts — no prefix is added here.
  */
-@ApiTags("scorecards")
+@ApiTags("Scorecards")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("scorecards")
 export class ScorecardsController {
   constructor(private readonly scorecardsService: ScorecardsService) {}

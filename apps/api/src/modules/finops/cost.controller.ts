@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  HttpStatus,
   Param,
   Query,
   NotFoundException,
@@ -26,9 +27,13 @@ import { Team } from "../teams/entities/team.entity";
 /**
  * REST endpoints for FinOps cost data: OpenCost actuals, history, and summaries.
  */
-@ApiTags("cost")
+@ApiTags("FinOps")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("cost")
 export class CostController {
   constructor(

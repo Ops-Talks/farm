@@ -27,9 +27,13 @@ import { OpaStatusResponseDto } from "./dto/opa-status-response.dto";
  * Controller for Open Policy Agent (OPA) integration endpoints.
  * Provides health status, on-demand policy evaluation, and result history.
  */
-@ApiTags("opa")
+@ApiTags("OPA")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
 @Controller("opa")
 export class OpaController {
   constructor(private readonly opaService: OpaService) {}

@@ -1,6 +1,13 @@
-# ALERTMANAGER_SLACK_WEBHOOK_URL is required for the 'warning' and 'critical' Slack receivers.
-# Set it in your environment or .env before starting the observability stack. If it is unset or invalid,
-# Alertmanager will still attempt to send notifications and will log delivery errors instead of silently dropping them.
+# Alertmanager base configuration — works without any external integrations.
+#
+# By default all alerts are routed to the "null" receiver (silently dropped).
+# This is intentional for local development: the observability stack runs
+# fully without requiring Slack or any other notification channel.
+#
+# For production, copy observability/alertmanager-slack.yml over this file
+# (or mount it instead) and set ALERTMANAGER_SLACK_WEBHOOK_URL in your
+# environment. The Slack config uses --config.expand-env=true to read the
+# webhook URL from the container's environment variable.
 global:
   resolve_timeout: 5m
 
@@ -10,47 +17,9 @@ route:
   group_interval: 5m
   repeat_interval: 4h
   receiver: 'null'
-  routes:
-    - matchers:
-        - severity="critical"
-      receiver: 'critical'
-      group_wait: 10s
-      repeat_interval: 1h
-    - matchers:
-        - severity="warning"
-      receiver: 'warning'
-      repeat_interval: 4h
 
 receivers:
   - name: 'null'
-
-  - name: 'warning'
-    slack_configs:
-      - api_url: '${ALERTMANAGER_SLACK_WEBHOOK_URL}'
-        channel: '#farm-alerts'
-        send_resolved: true
-        icon_emoji: ':warning:'
-        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
-        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
-        text: |-
-          {{ range .Alerts -}}
-          *Service:* {{ .Labels.service }}
-          *Description:* {{ .Annotations.description }}
-          {{ end }}
-
-  - name: 'critical'
-    slack_configs:
-      - api_url: '${ALERTMANAGER_SLACK_WEBHOOK_URL}'
-        channel: '#farm-alerts'
-        send_resolved: true
-        icon_emoji: ':fire:'
-        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
-        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
-        text: |-
-          {{ range .Alerts -}}
-          *Service:* {{ .Labels.service }}
-          *Description:* {{ .Annotations.description }}
-          {{ end }}
 
 inhibit_rules:
   - source_matchers:

@@ -15,7 +15,13 @@ import {
   Optional,
   Inject,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { Request as ExpressRequest } from "express";
 import { OrgRole } from "@farm/types";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -27,6 +33,7 @@ import {
 import { UpdateUserRoleDto } from "./dto/update-user-role.dto";
 import { SuspendUserDto } from "./dto/suspend-user.dto";
 import { AuditLogService } from "../audit-log/audit-log.service";
+import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
 interface AuthenticatedRequest extends ExpressRequest {
   user: { userId: string; username: string; roles: string[] };
@@ -38,6 +45,11 @@ interface AuthenticatedRequest extends ExpressRequest {
 @ApiTags("User Management")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+  type: ErrorResponseDto,
+})
 @Controller("users")
 export class UserManagementController {
   constructor(
@@ -67,6 +79,7 @@ export class UserManagementController {
   }
 
   @Get(":id")
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Get a single managed user" })
   async getOne(
     @Param("id") id: string,
@@ -76,6 +89,7 @@ export class UserManagementController {
   }
 
   @Patch(":id/role")
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Change a user's org role" })
   async updateRole(
     @Param("id") id: string,
@@ -96,6 +110,7 @@ export class UserManagementController {
   }
 
   @Patch(":id/suspend")
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Suspend or unsuspend a user (platform admin)" })
   async suspend(
     @Param("id") id: string,
@@ -108,6 +123,7 @@ export class UserManagementController {
 
   @Post(":id/reset-password")
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({
     summary: "Reset a user's password and email a temporary password",
   })
@@ -124,6 +140,7 @@ export class UserManagementController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Remove user from org or delete globally" })
   async remove(
     @Param("id") id: string,
@@ -134,6 +151,7 @@ export class UserManagementController {
   }
 
   @Get(":id/audit-trail")
+  @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Audit trail for a managed user" })
   async auditTrail(
     @Param("id") id: string,

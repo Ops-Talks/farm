@@ -22,7 +22,7 @@ import { SearchIndexService } from "./search-index.service";
  * Controller exposing the admin-only reindex endpoint for the Elasticsearch
  * farm-search index.
  */
-@ApiTags("search")
+@ApiTags("Search")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("search")

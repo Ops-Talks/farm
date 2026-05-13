@@ -17,6 +17,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -26,6 +27,7 @@ import { GatewayService } from "./gateway.service";
 import { GatewayRoute } from "./entities/gateway-route.entity";
 import { ApiHealthCheck } from "./entities/api-health-check.entity";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
 /**
  * Controller exposing gateway route discovery and health check endpoints.
@@ -34,6 +36,16 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("gateway")
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient role.",
+  type: ErrorResponseDto,
+})
 export class GatewayController {
   constructor(private readonly gatewayService: GatewayService) {}
 

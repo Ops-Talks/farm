@@ -36,6 +36,11 @@ interface AuthenticatedRequest extends ExpressRequest {
 @ApiTags("Invitations")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+  type: ErrorResponseDto,
+})
 @Controller("invitations")
 export class InvitationsController {
   constructor(private readonly organizationService: OrganizationService) {}
