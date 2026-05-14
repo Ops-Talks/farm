@@ -20,6 +20,7 @@ import {
   IntegrationCredential,
   IntegrationType,
 } from "../integrations/entities/integration-credential.entity";
+import { GitHubActionsService } from "../integrations/github-actions.service";
 import * as crypto from "crypto";
 
 /**
@@ -52,6 +53,7 @@ function buildRun(overrides: Partial<PipelineRun> = {}): PipelineRun {
     logs: null,
     stageResults: null,
     metadata: null,
+    deploymentId: null,
     pipeline: {} as Pipeline,
     createdAt: new Date("2024-01-01T00:00:00Z"),
     updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -2741,6 +2743,324 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         mockRunRepo.save.mock.calls as [PipelineRun][][]
       ).find((c) => c[0].status === PipelineRunStatus.FAILED);
       expect(failedSave).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // GitHub Actions backend dispatch
+  // -------------------------------------------------------------------------
+
+  describe("github-actions backend dispatch", () => {
+    const ghActionsStage: PipelineStage = {
+      id: "stage-gh-1",
+      name: "GH Actions Deploy",
+      type: "deploy",
+      config: { orgId: "org-uuid-1" },
+      order: 1,
+      backend: {
+        provider: "github-actions",
+        workflowId: "deploy.yml",
+        ref: "main",
+      },
+    };
+
+    it("sets stageResult to running when triggerWorkflow succeeds", async () => {
+      const mockGHService = {
+        triggerWorkflow: jest.fn().mockResolvedValue({
+          id: 999,
+          name: "Deploy",
+          status: "queued",
+          conclusion: null,
+          headBranch: "main",
+          createdAt: "2024-01-01T00:00:00Z",
+          updatedAt: "2024-01-01T00:00:00Z",
+          htmlUrl: "https://github.com/acme/repo/actions/runs/999",
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([ghActionsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockGHService.triggerWorkflow).toHaveBeenCalledWith(
+        "org-uuid-1",
+        "deploy.yml",
+        "main",
+      );
+      // After dispatching to an external backend the run stays RUNNING;
+      // completion is driven by incoming webhooks, not the processor.
+      const runningSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
+      // The stage result should have externalRunId set.
+      const savedRun = runningSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.externalRunId).toBe("999");
+      expect(savedRun.stageResults?.[0]?.status).toBe("running");
+    });
+
+    it("sets stageResult to running without externalRunId when triggerWorkflow returns null", async () => {
+      const mockGHService = {
+        triggerWorkflow: jest.fn().mockResolvedValue(null),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([ghActionsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const runningSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
+      const savedRun = runningSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.status).toBe("running");
+    });
+
+    it("sets stageResult to failed when triggerWorkflow throws", async () => {
+      const mockGHService = {
+        triggerWorkflow: jest
+          .fn()
+          .mockRejectedValue(new Error("Dispatch failed")),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([ghActionsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+    });
+
+    it("sets stageResult to failed when workflowId is missing", async () => {
+      const stageWithoutWorkflowId: PipelineStage = {
+        id: "stage-gh-noid",
+        name: "GH No WorkflowId",
+        type: "deploy",
+        config: {},
+        order: 1,
+        backend: { provider: "github-actions" },
+      };
+      const mockGHService = {
+        triggerWorkflow: jest.fn(),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([stageWithoutWorkflowId]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      expect(mockGHService.triggerWorkflow).not.toHaveBeenCalled();
+      const failedSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.FAILED);
+      expect(failedSave).toBeDefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Per-stage PIPELINE_STAGE_UPDATED events
+  // -------------------------------------------------------------------------
+
+  describe("per-stage PIPELINE_STAGE_UPDATED events", () => {
+    it("emits pipeline.stage.updated after each stage completes", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date("2024-01-01T00:00:00Z") });
+      const pipeline = buildPipeline([
+        { id: "s1", name: "Build", type: "script", config: {}, order: 1 },
+      ]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(job(run));
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      const stageEvents = (
+        mockEventsGateway.server.emit.mock.calls as [
+          string,
+          { stageId: string },
+        ][]
+      ).filter((call) => call[0] === "pipeline.stage.updated");
+      expect(stageEvents.length).toBeGreaterThanOrEqual(1);
+      expect(stageEvents[0][1]).toMatchObject({
+        stageId: "s1",
+        status: "succeeded",
+      });
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // finishedAt behaviour for external vs synchronous stages
+  // -------------------------------------------------------------------------
+
+  describe("finishedAt for delegated external backend stages", () => {
+    it("does not set stageResult.finishedAt when stage is dispatched to an external backend", async () => {
+      const ghActionsStage: PipelineStage = {
+        id: "stage-gh-ext",
+        name: "GH Actions Deploy",
+        type: "deploy",
+        config: { orgId: "org-1" },
+        order: 1,
+        backend: { provider: "github-actions", workflowId: "deploy.yml", ref: "main" },
+      };
+      const mockGHService = {
+        triggerWorkflow: jest.fn().mockResolvedValue({
+          id: 777,
+          name: "Deploy",
+          status: "queued",
+          conclusion: null,
+          headBranch: "main",
+          createdAt: "2024-01-01T00:00:00Z",
+          updatedAt: "2024-01-01T00:00:00Z",
+          htmlUrl: "https://github.com/acme/repo/actions/runs/777",
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([ghActionsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const runningSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
+      // finishedAt must remain null for a stage that hasn't completed yet.
+      const savedRun = runningSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.finishedAt).toBeNull();
+    });
+
+    it("sets stageResult.finishedAt for a synchronously completed stage", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date("2024-01-01T00:00:00Z") });
+      const pipeline = buildPipeline([
+        { id: "sync-stage", name: "Script", type: "script", config: {}, order: 1 },
+      ]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(job(run));
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      const succeededSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
+      expect(succeededSave).toBeDefined();
+      const savedRun = succeededSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.finishedAt).not.toBeNull();
     });
   });
 });

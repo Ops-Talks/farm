@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsArray,
+  IsUUID,
   Length,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -32,9 +33,53 @@ export class CreatePipelineDto {
   @ApiPropertyOptional({
     description: "Ordered list of pipeline stages",
     type: "array",
-    items: { type: "object" },
+    items: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        name: { type: "string" },
+        type: {
+          type: "string",
+          enum: [
+            "script",
+            "approval",
+            "deploy",
+            "notify",
+            "build",
+            "infracost",
+          ],
+        },
+        config: { type: "object", additionalProperties: true },
+        order: { type: "number" },
+        backend: {
+          type: "object",
+          nullable: true,
+          properties: {
+            provider: {
+              type: "string",
+              enum: ["github-actions", "argocd", "jenkins", "circleci"],
+            },
+            ref: { type: "string", nullable: true },
+            workflowId: { type: "string", nullable: true },
+            appName: { type: "string", nullable: true },
+            jobName: { type: "string", nullable: true },
+            componentId: { type: "string", nullable: true },
+            environmentId: { type: "string", nullable: true },
+          },
+        },
+      },
+      required: ["id", "name", "type", "config", "order"],
+    },
   })
   @IsArray()
   @IsOptional()
   stages?: PipelineStage[];
+
+  @ApiPropertyOptional({
+    example: "550e8400-e29b-41d4-a716-446655440001",
+    description: "Optional component UUID this pipeline is bound to",
+  })
+  @IsUUID()
+  @IsOptional()
+  componentId?: string;
 }

@@ -15,6 +15,8 @@ import {
   Optional,
   Req,
   NotFoundException,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -50,6 +52,8 @@ import {
   CATALOG_DISCOVERY_QUEUE,
   CatalogDiscoveryJobData,
 } from "./processors/catalog-discovery.processor";
+import { PipelinesService } from "../pipelines/pipelines.service";
+import { Pipeline } from "../pipelines/entities/pipeline.entity";
 
 /**
  * Controller for the software component catalog.
@@ -88,6 +92,8 @@ export class CatalogController {
     private readonly discoveryQueue?: Queue<CatalogDiscoveryJobData>,
     @Optional()
     private readonly finOpsService?: FinOpsService,
+    @Optional()
+    private readonly pipelinesService?: PipelinesService,
   ) {}
 
   /**
@@ -365,5 +371,40 @@ export class CatalogController {
       createdAt: estimate.createdAt,
       updatedAt: estimate.updatedAt,
     };
+  }
+
+  /**
+   * Lists pipelines bound to a specific component.
+   *
+   * @param id - Component UUID
+   * @param skip - Number of records to skip (default 0)
+   * @param take - Number of records to return (default 10)
+   * @returns Paginated list of pipelines
+   */
+  @Get("components/:id/pipelines")
+  @ApiOperation({ summary: "List pipelines bound to a component" })
+  @ApiParam({ name: "id", description: "Component UUID" })
+  @ApiResponse({
+    status: 200,
+    description: "List of pipelines with latest run status",
+  })
+  @ApiResponse({ status: 404, description: "Component not found" })
+  async findComponentPipelines(
+    @Param("id") id: string,
+    @Query("skip", new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query("take", new DefaultValuePipe(10), ParseIntPipe) take: number,
+  ): Promise<{ items: Pipeline[]; total: number }> {
+    // Throws NotFoundException if component does not exist.
+    await this.catalogService.findOne(id);
+    if (!this.pipelinesService) {
+      return { items: [], total: 0 };
+    }
+    const [items, total] = await this.pipelinesService.findByComponent(
+      id,
+      undefined,
+      skip,
+      take,
+    );
+    return { items, total };
   }
 }

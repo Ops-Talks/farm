@@ -9,6 +9,7 @@ export enum FarmEvent {
   DEPLOYMENT_UPDATED = "deployment.updated",
   PIPELINE_RUN_UPDATED = "pipeline.run.updated",
   PIPELINE_LOG = "pipeline.log",
+  PIPELINE_STAGE_UPDATED = "pipeline.stage.updated",
   AUDIT_LOG_CREATED = "audit-log.created",
   ROLLOUT_UPDATED = "rollout.updated",
   CI_BUILD_UPDATED = "ci.build.updated",
@@ -74,6 +75,21 @@ export interface PipelineLogPayload {
   runId: string;
   stage: string;
   message: string;
+  timestamp: string;
+}
+
+/**
+ * Payload structure for per-stage status-change events emitted during a run.
+ */
+export interface PipelineStageUpdatedPayload {
+  runId: string;
+  pipelineId: string;
+  stageId: string;
+  status: string;
+  externalRunId?: string | null;
+  externalRunUrl?: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
   timestamp: string;
 }
 

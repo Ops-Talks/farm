@@ -196,4 +196,142 @@ describe("GitHubActionsService", () => {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // triggerWorkflow()
+  // -------------------------------------------------------------------------
+
+  describe("triggerWorkflow()", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      mockCredentialService.findByType.mockResolvedValue(encryptedCredential);
+      mockCredentialService.decrypt.mockReturnValue(
+        JSON.stringify({
+          token: "gh-token",
+          owner: "acme",
+          repo: "my-app",
+        }),
+      );
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("throws NotFoundException when credential is not found", async () => {
+      mockCredentialService.findByType.mockResolvedValue(null);
+
+      await expect(
+        service.triggerWorkflow("org-1", "deploy.yml", "main"),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it("dispatches workflow_dispatch and returns the matching run after polling", async () => {
+      // Use a far-future date so `new Date(created_at) >= before` is always true.
+      const mockWorkflowRun = {
+        id: 42,
+        name: "Deploy",
+        status: "queued",
+        conclusion: null,
+        head_branch: "main",
+        created_at: "2099-01-01T00:00:00Z",
+        updated_at: "2099-01-01T00:00:01Z",
+        html_url: "https://github.com/acme/my-app/actions/runs/42",
+      };
+
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 204 }) // dispatch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: jest
+            .fn()
+            .mockResolvedValue({ workflow_runs: [mockWorkflowRun] }),
+        }) as typeof fetch;
+
+      const resultPromise = service.triggerWorkflow(
+        "org-1",
+        "deploy.yml",
+        "main",
+      );
+      await jest.runAllTimersAsync();
+      const result = await resultPromise;
+
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe(42);
+      expect(result?.headBranch).toBe("main");
+      expect(result?.htmlUrl).toBe(
+        "https://github.com/acme/my-app/actions/runs/42",
+      );
+    });
+
+    it("throws BadRequestException when dispatch returns a non-2xx status", async () => {
+      globalThis.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        text: jest.fn().mockResolvedValue("Unprocessable Entity"),
+      }) as typeof fetch;
+
+      await expect(
+        service.triggerWorkflow("org-1", "deploy.yml", "main"),
+      ).rejects.toThrow();
+    });
+
+    it("throws BadRequestException when repo is not in the credential", async () => {
+      mockCredentialService.decrypt.mockReturnValue(
+        JSON.stringify({ token: "gh-token", owner: "acme" }),
+      );
+
+      await expect(
+        service.triggerWorkflow("org-1", "deploy.yml", "main"),
+      ).rejects.toThrow();
+    });
+
+    it("returns null when no matching run is found after all polling attempts", async () => {
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 204 }) // dispatch
+        .mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
+        }) as typeof fetch;
+
+      const resultPromise = service.triggerWorkflow(
+        "org-1",
+        "deploy.yml",
+        "main",
+      );
+      await jest.runAllTimersAsync();
+      const result = await resultPromise;
+
+      expect(result).toBeNull();
+    });
+
+    it("sends the provided ref in the dispatch body", async () => {
+      globalThis.fetch = jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 204 })
+        .mockResolvedValue({
+          ok: true,
+          json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
+        }) as typeof fetch;
+
+      const resultPromise = service.triggerWorkflow(
+        "org-1",
+        "deploy.yml",
+        "main",
+      );
+      await jest.runAllTimersAsync();
+      await resultPromise;
+
+      const dispatchCall = (globalThis.fetch as jest.Mock).mock.calls[0] as [
+        string,
+        RequestInit,
+      ];
+      const body = JSON.parse(dispatchCall[1].body as string) as {
+        ref: string;
+      };
+      expect(body.ref).toBe("main");
+    });
+  });
 });

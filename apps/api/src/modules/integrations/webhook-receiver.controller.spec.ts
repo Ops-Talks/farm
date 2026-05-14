@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { UnauthorizedException } from "@nestjs/common";
 import { WebhookReceiverController } from "./webhook-receiver.controller";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
@@ -107,6 +108,148 @@ describe("WebhookReceiverController — without EventEmitter2", () => {
 
   it("should return ok=true without emitting when eventEmitter is absent (TravisCI)", () => {
     const result = controller.receiveTravisCI({ id: "99" });
+    expect(result).toEqual({ ok: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GitHub Actions webhook — HMAC validation
+// ---------------------------------------------------------------------------
+
+describe("WebhookReceiverController — receiveGitHubActions", () => {
+  let controller: WebhookReceiverController;
+  let eventEmitter: { emit: jest.Mock };
+
+  const WEBHOOK_SECRET = "test-webhook-secret";
+
+  beforeEach(async () => {
+    process.env.GITHUB_WEBHOOK_SECRET = WEBHOOK_SECRET;
+    eventEmitter = { emit: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [WebhookReceiverController],
+      providers: [{ provide: EventEmitter2, useValue: eventEmitter }],
+    }).compile();
+
+    controller = module.get<WebhookReceiverController>(
+      WebhookReceiverController,
+    );
+  });
+
+  afterEach(() => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+    jest.clearAllMocks();
+  });
+
+  function buildSignature(body: string, secret: string): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createHmac } = require("crypto") as typeof import("crypto");
+    return "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
+  }
+
+  it("should emit CI_BUILD_UPDATED and return ok=true for a valid HMAC signature (using rawBody)", () => {
+    const payload = {
+      action: "completed",
+      workflow_run: { id: 1, conclusion: "success" },
+    };
+    const rawBodyStr = JSON.stringify(payload);
+    const sig = buildSignature(rawBodyStr, WEBHOOK_SECRET);
+    const mockReq = { rawBody: Buffer.from(rawBodyStr) };
+
+    const result = controller.receiveGitHubActions(
+      sig,
+      payload,
+      mockReq as never,
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(eventEmitter.emit).toHaveBeenCalled();
+  });
+
+  it("should throw UnauthorizedException for an invalid HMAC signature", () => {
+    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
+    expect(() =>
+      controller.receiveGitHubActions("sha256=badhash", {
+        action: "completed",
+      }, mockReq as never),
+    ).toThrow();
+  });
+
+  it("should throw UnauthorizedException when signature is missing and secret is configured", () => {
+    // When a secret is configured, a missing signature must be rejected.
+    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
+    expect(() =>
+      controller.receiveGitHubActions(undefined, { action: "completed" }, mockReq as never),
+    ).toThrow(UnauthorizedException);
+  });
+
+  it("should throw UnauthorizedException when rawBody is missing and secret is configured", () => {
+    // Without rawBody, HMAC cannot be computed from the original bytes.
+    const payload = { action: "completed" };
+    const sig = buildSignature(JSON.stringify(payload), WEBHOOK_SECRET);
+    expect(() =>
+      controller.receiveGitHubActions(sig, payload, {} as never),
+    ).toThrow(UnauthorizedException);
+  });
+
+  it("should return ok=true when GITHUB_WEBHOOK_SECRET is not set (no validation)", () => {
+    delete process.env.GITHUB_WEBHOOK_SECRET;
+
+    const result = controller.receiveGitHubActions(undefined, {
+      action: "ping",
+    }, {} as never);
+    expect(result).toEqual({ ok: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ArgoCD webhook
+// ---------------------------------------------------------------------------
+
+describe("WebhookReceiverController — receiveArgoCDWebhook", () => {
+  let controller: WebhookReceiverController;
+  let eventEmitter: { emit: jest.Mock };
+
+  beforeEach(async () => {
+    eventEmitter = { emit: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [WebhookReceiverController],
+      providers: [{ provide: EventEmitter2, useValue: eventEmitter }],
+    }).compile();
+
+    controller = module.get<WebhookReceiverController>(
+      WebhookReceiverController,
+    );
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  it("should emit CI_BUILD_UPDATED and return ok=true for a sync-succeeded event", () => {
+    const payload = {
+      type: "sync-succeeded",
+      application: { metadata: { name: "my-app" } },
+    };
+
+    const result = controller.receiveArgoCDWebhook(payload);
+
+    expect(result).toEqual({ ok: true });
+    expect(eventEmitter.emit).toHaveBeenCalled();
+  });
+
+  it("should return ok=true for a health-degraded event", () => {
+    const payload = {
+      type: "health-degraded",
+      application: { metadata: { name: "my-app" } },
+    };
+
+    const result = controller.receiveArgoCDWebhook(payload);
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("should return ok=true for an unknown ArgoCD event type", () => {
+    const payload = { type: "unknown-event" };
+    const result = controller.receiveArgoCDWebhook(payload);
     expect(result).toEqual({ ok: true });
   });
 });

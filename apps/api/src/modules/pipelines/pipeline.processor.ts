@@ -5,7 +5,10 @@ import { Repository } from "typeorm";
 import { Job } from "bullmq";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { EventsGateway } from "../../common/events/events.gateway";
-import { FarmEvent } from "../../common/events/events.interfaces";
+import {
+  FarmEvent,
+  PipelineStageUpdatedPayload,
+} from "../../common/events/events.interfaces";
 import {
   PipelineRun,
   PipelineRunStatus,
@@ -39,6 +42,9 @@ import {
   IntegrationCredential,
   IntegrationType,
 } from "../integrations/entities/integration-credential.entity";
+import { GitHubActionsService } from "../integrations/github-actions.service";
+import { ArgoCDService } from "../integrations/argocd.service";
+import { DeploymentsService } from "../environments/deployments.service";
 import * as crypto from "crypto";
 
 /**
@@ -125,6 +131,9 @@ export class PipelineProcessor extends WorkerHost {
     @Optional()
     @InjectRepository(IntegrationCredential)
     private readonly credentialRepository?: Repository<IntegrationCredential>,
+    @Optional() private readonly githubActionsService?: GitHubActionsService,
+    @Optional() private readonly argoCDService?: ArgoCDService,
+    @Optional() private readonly deploymentsService?: DeploymentsService,
   ) {
     super();
   }
@@ -342,6 +351,62 @@ export class PipelineProcessor extends WorkerHost {
           if (!result.success) {
             run.status = PipelineRunStatus.FAILED;
           }
+        } else if (
+          stage.backend?.provider === "github-actions" &&
+          this.githubActionsService
+        ) {
+          const { workflowId, ref = "main" } = stage.backend;
+          if (!workflowId) {
+            stageResult.status = "failed";
+            stageResult.output = "github-actions backend requires workflowId";
+          } else {
+            const ghOrgId =
+              (stage.config["orgId"] as string | undefined) ??
+              pipeline.organizationId ??
+              "";
+            try {
+              const triggeredRun =
+                await this.githubActionsService.triggerWorkflow(
+                  ghOrgId,
+                  workflowId,
+                  ref,
+                );
+              if (triggeredRun) {
+                stageResult.externalRunId = String(triggeredRun.id);
+                stageResult.externalRunUrl = triggeredRun.htmlUrl;
+                stageResult.status = "running";
+                stageResult.output = `GitHub Actions run ${triggeredRun.id} triggered: ${triggeredRun.htmlUrl}`;
+              } else {
+                stageResult.status = "running";
+                stageResult.output =
+                  "GitHub Actions run triggered (run ID not yet available)";
+              }
+            } catch (err) {
+              stageResult.status = "failed";
+              stageResult.output =
+                err instanceof Error ? err.message : String(err);
+            }
+          }
+        } else if (stage.backend?.provider === "argocd" && this.argoCDService) {
+          const { appName } = stage.backend;
+          const acdOrgId =
+            (stage.config["orgId"] as string | undefined) ??
+            pipeline.organizationId ??
+            "";
+          if (!appName) {
+            stageResult.status = "failed";
+            stageResult.output = "argocd backend requires appName";
+          } else {
+            try {
+              await this.argoCDService.syncApplication(acdOrgId, appName);
+              stageResult.status = "running";
+              stageResult.output = `ArgoCD sync triggered for ${appName}`;
+            } catch (err) {
+              stageResult.status = "failed";
+              stageResult.output =
+                err instanceof Error ? err.message : String(err);
+            }
+          }
         } else {
           // Simulate work for all other stage types.
           await new Promise<void>((resolve) => setTimeout(resolve, 500));
@@ -349,14 +414,79 @@ export class PipelineProcessor extends WorkerHost {
           stageResult.output = `Stage "${stage.name}" completed successfully`;
         }
 
-        stageResult.finishedAt = new Date().toISOString();
+        // Auto-create a Deployment record when a deploy stage succeeds synchronously.
+        if (
+          stageResult.status === "succeeded" &&
+          stage.backend?.componentId &&
+          stage.backend?.environmentId &&
+          this.deploymentsService
+        ) {
+          try {
+            const deployment = await this.deploymentsService.create({
+              componentId: stage.backend.componentId,
+              environmentId: stage.backend.environmentId,
+              version:
+                typeof run.metadata?.["version"] === "string"
+                  ? run.metadata["version"]
+                  : "latest",
+              deployedBy: run.triggeredBy,
+              description: `Auto-created by pipeline run ${run.id}`,
+            });
+            run.deploymentId = deployment.id;
+            this.logger.log(
+              `Auto-created deployment ${deployment.id} from pipeline run ${run.id}`,
+            );
+          } catch (err) {
+            this.logger.warn(
+              `Failed to auto-create deployment from pipeline run ${run.id}: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+        }
+
+        // Only set finishedAt for synchronously completed stages; external
+        // backends (github-actions, argocd) will update it via webhook.
+        if (stageResult.status !== "running") {
+          stageResult.finishedAt = new Date().toISOString();
+        }
         run.stageResults = [...(run.stageResults ?? []), stageResult];
+
+        // Emit per-stage update event.
+        const stagePayload: PipelineStageUpdatedPayload = {
+          runId,
+          pipelineId,
+          stageId: stage.id,
+          status: stageResult.status,
+          externalRunId: stageResult.externalRunId ?? null,
+          externalRunUrl: stageResult.externalRunUrl ?? null,
+          startedAt: stageResult.startedAt,
+          finishedAt: stageResult.finishedAt,
+          timestamp: new Date().toISOString(),
+        };
+        this.eventsGateway.server?.emit(
+          FarmEvent.PIPELINE_STAGE_UPDATED,
+          stagePayload,
+        );
 
         this.emitLog(
           runId,
           stage.name,
           `Stage "${stage.name}" ${stageResult.status}`,
         );
+
+        // For delegated external backend stages the run stays RUNNING until
+        // a webhook drives it to a terminal state.
+        if (stageResult.status === "running") {
+          run.status = PipelineRunStatus.RUNNING;
+          await this.runRepository.save(run);
+          this.logger.log(
+            `Pipeline run ${runId} is waiting for external stage "${stage.name}" to complete`,
+          );
+          this.eventsGateway.server?.emit(
+            FarmEvent.PIPELINE_RUN_UPDATED,
+            this.buildRunSummary(run),
+          );
+          return;
+        }
 
         // Abort the run immediately if any non-approval stage has failed.
         if (stageResult.status === "failed") {

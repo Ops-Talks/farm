@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { BullModule } from "@nestjs/bullmq";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
@@ -13,6 +13,10 @@ import { InfracostStageExecutor } from "./infracost-stage.executor";
 import { CloudModule } from "../cloud/cloud.module";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
 import { Component } from "../catalog/entities/component.entity";
+import { Deployment } from "../environments/entities/deployment.entity";
+import { Environment } from "../environments/entities/environment.entity";
+import { IntegrationsModule } from "../integrations/integrations.module";
+import { EnvironmentsModule } from "../environments/environments.module";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -28,11 +32,15 @@ const isTest = process.env.NODE_ENV === "test";
       PipelineRun,
       IntegrationCredential,
       Component,
+      Deployment,
+      Environment,
     ]),
     ...(isTest
       ? []
       : [BullModule.registerQueue({ name: QUEUE_NAMES.PIPELINE_EXECUTION })]),
     CloudModule,
+    forwardRef(() => IntegrationsModule),
+    EnvironmentsModule,
   ],
   controllers: [PipelinesController],
   providers: [

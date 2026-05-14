@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { WebhookService } from "./webhook.service";
@@ -19,6 +19,7 @@ import { GitHubActionsService } from "./github-actions.service";
 import { GitHubActionsController } from "./github-actions.controller";
 import { AzureDevOpsService } from "./azure-devops.service";
 import { AzureDevOpsController } from "./azure-devops.controller";
+import { PipelinesModule } from "../pipelines/pipelines.module";
 
 /**
  * Module that registers webhook notification services, domain event listeners,
@@ -26,7 +27,11 @@ import { AzureDevOpsController } from "./azure-devops.controller";
  * ArgoCD, CircleCI, Jenkins, Travis CI, GitHub Actions, and Azure DevOps.
  */
 @Module({
-  imports: [HttpModule, TypeOrmModule.forFeature([IntegrationCredential])],
+  imports: [
+    HttpModule,
+    TypeOrmModule.forFeature([IntegrationCredential]),
+    forwardRef(() => PipelinesModule),
+  ],
   controllers: [
     IntegrationCredentialController,
     ArgoCDController,
