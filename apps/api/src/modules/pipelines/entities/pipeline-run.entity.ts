@@ -158,7 +158,7 @@ export class PipelineRun {
     required: false,
     nullable: true,
   })
-  @Column({ name: "deployment_id", type: "varchar", nullable: true })
+  @Column({ name: "deployment_id", type: "uuid", nullable: true })
   deploymentId: string | null;
 
   @ApiProperty({

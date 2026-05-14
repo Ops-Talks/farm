@@ -72,6 +72,7 @@ describe("PipelinesService", () => {
     eventsGateway = {
       emitPipelineRunUpdated: jest.fn(),
       emitPipelineLog: jest.fn(),
+      server: { emit: jest.fn() },
     };
 
     mockPipelineExecutionsCounter = { inc: jest.fn() };

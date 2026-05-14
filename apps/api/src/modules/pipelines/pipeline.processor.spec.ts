@@ -2805,13 +2805,14 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         "deploy.yml",
         "main",
       );
-      // The run should succeed (no abort since "running" != "failed").
-      const succeededSave = (
+      // After dispatching to an external backend the run stays RUNNING;
+      // completion is driven by incoming webhooks, not the processor.
+      const runningSave = (
         mockRunRepo.save.mock.calls as [PipelineRun][][]
-      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
-      expect(succeededSave).toBeDefined();
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
       // The stage result should have externalRunId set.
-      const savedRun = succeededSave?.[0] as PipelineRun;
+      const savedRun = runningSave?.[0] as PipelineRun;
       expect(savedRun.stageResults?.[0]?.externalRunId).toBe("999");
       expect(savedRun.stageResults?.[0]?.status).toBe("running");
     });
@@ -2843,11 +2844,11 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
 
       await proc.process(job(run));
 
-      const succeededSave = (
+      const runningSave = (
         mockRunRepo.save.mock.calls as [PipelineRun][][]
-      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
-      expect(succeededSave).toBeDefined();
-      const savedRun = succeededSave?.[0] as PipelineRun;
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
+      const savedRun = runningSave?.[0] as PipelineRun;
       expect(savedRun.stageResults?.[0]?.status).toBe("running");
     });
 

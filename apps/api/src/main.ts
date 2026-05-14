@@ -87,6 +87,22 @@ async function bootstrap() {
       },
     }),
   );
+  // Capture raw body for all inbound CI/CD webhook receivers so that HMAC
+  // signatures (e.g., x-hub-signature-256 from GitHub) can be verified against
+  // the exact bytes that were sent.
+  app.use(
+    "/api/v1/webhooks",
+    express.json({
+      limit: "1mb",
+      verify: (
+        req: express.Request & { rawBody?: Buffer },
+        _res: express.Response,
+        buf: Buffer,
+      ) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   // Standard limit for all other routes.
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));

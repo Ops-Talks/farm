@@ -162,7 +162,7 @@ export class Pipeline {
     nullable: true,
   })
   @Index()
-  @Column({ name: "component_id", type: "varchar", nullable: true })
+  @Column({ name: "component_id", type: "uuid", nullable: true })
   componentId: string | null;
 
   @ManyToOne(() => Component, {

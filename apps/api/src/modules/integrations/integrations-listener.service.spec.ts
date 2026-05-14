@@ -114,7 +114,7 @@ describe("IntegrationsListenerService — with PipelinesService", () => {
     it("calls updateStageFromExternalEvent for a completed github-actions workflow_run", async () => {
       const payload = {
         source: "github-actions",
-        action: "workflow_run",
+        action: "completed",
         workflow_run: {
           id: 42,
           status: "completed",
@@ -138,7 +138,7 @@ describe("IntegrationsListenerService — with PipelinesService", () => {
     it("does not call updateStageFromExternalEvent when conclusion is null", async () => {
       const payload = {
         source: "github-actions",
-        action: "workflow_run",
+        action: "completed",
         workflow_run: { id: 42, status: "in_progress", conclusion: null },
       };
 
@@ -180,7 +180,7 @@ describe("IntegrationsListenerService — with PipelinesService", () => {
     it("passes null htmlUrl when html_url is not a string", async () => {
       const payload = {
         source: "github-actions",
-        action: "workflow_run",
+        action: "completed",
         workflow_run: {
           id: 99,
           status: "completed",

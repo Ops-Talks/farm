@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { UnauthorizedException } from "@nestjs/common";
 import { WebhookReceiverController } from "./webhook-receiver.controller";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
@@ -146,33 +147,40 @@ describe("WebhookReceiverController — receiveGitHubActions", () => {
     return "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
   }
 
-  it("should emit CI_BUILD_UPDATED and return ok=true for a valid HMAC signature", () => {
+  it("should emit CI_BUILD_UPDATED and return ok=true for a valid HMAC signature (using rawBody)", () => {
     const payload = {
       action: "completed",
       workflow_run: { id: 1, conclusion: "success" },
     };
-    const sig = buildSignature(JSON.stringify(payload), WEBHOOK_SECRET);
+    const rawBodyStr = JSON.stringify(payload);
+    const sig = buildSignature(rawBodyStr, WEBHOOK_SECRET);
+    const mockReq = { rawBody: Buffer.from(rawBodyStr) };
 
-    const result = controller.receiveGitHubActions(sig, payload);
+    const result = controller.receiveGitHubActions(
+      sig,
+      payload,
+      mockReq as never,
+    );
 
     expect(result).toEqual({ ok: true });
     expect(eventEmitter.emit).toHaveBeenCalled();
   });
 
   it("should throw UnauthorizedException for an invalid HMAC signature", () => {
+    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
     expect(() =>
       controller.receiveGitHubActions("sha256=badhash", {
         action: "completed",
-      }),
+      }, mockReq as never),
     ).toThrow();
   });
 
-  it("should not throw when signature header is missing (secret present but no sig)", () => {
-    // Guard only activates when BOTH secret AND signature are present.
-    const result = controller.receiveGitHubActions(undefined, {
-      action: "completed",
-    });
-    expect(result).toEqual({ ok: true });
+  it("should throw UnauthorizedException when signature is missing and secret is configured", () => {
+    // When a secret is configured, a missing signature must be rejected.
+    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
+    expect(() =>
+      controller.receiveGitHubActions(undefined, { action: "completed" }, mockReq as never),
+    ).toThrow(UnauthorizedException);
   });
 
   it("should return ok=true when GITHUB_WEBHOOK_SECRET is not set (no validation)", () => {
@@ -180,7 +188,7 @@ describe("WebhookReceiverController — receiveGitHubActions", () => {
 
     const result = controller.receiveGitHubActions(undefined, {
       action: "ping",
-    });
+    }, {} as never);
     expect(result).toEqual({ ok: true });
   });
 });

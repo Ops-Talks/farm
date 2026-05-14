@@ -14,6 +14,10 @@ import { InjectMetric } from "@willsoto/nestjs-prometheus";
 import { Counter } from "prom-client";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { EventsGateway } from "../../common/events/events.gateway";
+import {
+  FarmEvent,
+  PipelineStageUpdatedPayload,
+} from "../../common/events/events.interfaces";
 import { Pipeline } from "./entities/pipeline.entity";
 import { PipelineRun, PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { CreatePipelineDto } from "./dto/create-pipeline.dto";
@@ -282,14 +286,16 @@ export class PipelinesService {
       if (idx === -1) continue;
 
       const mapped = this.mapCIStatus(ciStatus, ciConclusion);
+      // Always overwrite finishedAt when the stage transitions to a terminal
+      // status so the timestamp reflects the actual completion time.
+      const finishedAt =
+        mapped !== "running" ? new Date().toISOString() : null;
       const updated = {
         ...stageResults[idx],
         status: mapped,
         externalRunUrl:
           externalRunUrl ?? stageResults[idx].externalRunUrl ?? null,
-        finishedAt:
-          stageResults[idx].finishedAt ??
-          (mapped !== "running" ? new Date().toISOString() : null),
+        finishedAt,
       };
       run.stageResults = [
         ...stageResults.slice(0, idx),
@@ -318,6 +324,23 @@ export class PipelinesService {
       }
 
       await this.runRepository.save(run);
+
+      // Emit per-stage update so clients can react without polling.
+      const stagePayload: PipelineStageUpdatedPayload = {
+        runId: run.id,
+        pipelineId: run.pipelineId,
+        stageId: updated.stageId,
+        status: updated.status,
+        externalRunId: updated.externalRunId ?? null,
+        externalRunUrl: updated.externalRunUrl ?? null,
+        startedAt: updated.startedAt,
+        finishedAt: updated.finishedAt,
+        timestamp: new Date().toISOString(),
+      };
+      this.eventsGateway?.server?.emit(
+        FarmEvent.PIPELINE_STAGE_UPDATED,
+        stagePayload,
+      );
 
       this.eventsGateway?.emitPipelineRunUpdated({
         id: run.id,

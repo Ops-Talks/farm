@@ -8,7 +8,9 @@ import {
   Optional,
   Headers,
   UnauthorizedException,
+  Req,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { FarmEvent } from "../../common/events/events.interfaces";
@@ -131,10 +133,19 @@ export class WebhookReceiverController {
   receiveGitHubActions(
     @Headers("x-hub-signature-256") signature: string | undefined,
     @Body() payload: Record<string, unknown>,
+    @Req() req: Request & { rawBody?: Buffer },
   ): { ok: boolean } {
     const secret = process.env.GITHUB_WEBHOOK_SECRET;
-    if (secret && signature) {
-      const rawBody = JSON.stringify(payload);
+    if (secret) {
+      if (!signature) {
+        this.logger.warn(
+          "GitHub Actions webhook received without signature (secret is configured)",
+        );
+        throw new UnauthorizedException("Missing webhook signature");
+      }
+      const rawBody = req.rawBody
+        ? req.rawBody.toString("utf8")
+        : JSON.stringify(payload);
       const expectedSig =
         "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
       // Buffers must be the same length for timingSafeEqual.

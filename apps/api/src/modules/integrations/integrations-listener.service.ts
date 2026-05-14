@@ -73,7 +73,7 @@ export class IntegrationsListenerService {
         | undefined;
 
       if (
-        action === "workflow_run" &&
+        action === "completed" &&
         workflowRun &&
         workflowRun["conclusion"] !== null &&
         workflowRun["conclusion"] !== undefined

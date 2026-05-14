@@ -443,7 +443,11 @@ export class PipelineProcessor extends WorkerHost {
           }
         }
 
-        stageResult.finishedAt = new Date().toISOString();
+        // Only set finishedAt for synchronously completed stages; external
+        // backends (github-actions, argocd) will update it via webhook.
+        if (stageResult.status !== "running") {
+          stageResult.finishedAt = new Date().toISOString();
+        }
         run.stageResults = [...(run.stageResults ?? []), stageResult];
 
         // Emit per-stage update event.
@@ -468,6 +472,21 @@ export class PipelineProcessor extends WorkerHost {
           stage.name,
           `Stage "${stage.name}" ${stageResult.status}`,
         );
+
+        // For delegated external backend stages the run stays RUNNING until
+        // a webhook drives it to a terminal state.
+        if (stageResult.status === "running") {
+          run.status = PipelineRunStatus.RUNNING;
+          await this.runRepository.save(run);
+          this.logger.log(
+            `Pipeline run ${runId} is waiting for external stage "${stage.name}" to complete`,
+          );
+          this.eventsGateway.server?.emit(
+            FarmEvent.PIPELINE_RUN_UPDATED,
+            this.buildRunSummary(run),
+          );
+          return;
+        }
 
         // Abort the run immediately if any non-approval stage has failed.
         if (stageResult.status === "failed") {
