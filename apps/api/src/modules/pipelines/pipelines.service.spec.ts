@@ -1520,7 +1520,12 @@ describe("PipelinesService — additional branches", () => {
           PipelinesService,
           {
             provide: getRepositoryToken(Pipeline),
-            useValue: { findOne: jest.fn(), findAndCount: jest.fn(), create: jest.fn(), save: jest.fn() },
+            useValue: {
+              findOne: jest.fn(),
+              findAndCount: jest.fn(),
+              create: jest.fn(),
+              save: jest.fn(),
+            },
           },
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
@@ -1529,7 +1534,9 @@ describe("PipelinesService — additional branches", () => {
       const svc = module.get<PipelinesService>(PipelinesService);
 
       mockRunRepo.find.mockResolvedValue([{ ...baseRun }]);
-      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
 
       await svc.updateStageFromExternalEvent(
         "42",

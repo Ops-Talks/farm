@@ -167,19 +167,31 @@ describe("WebhookReceiverController — receiveGitHubActions", () => {
   });
 
   it("should throw UnauthorizedException for an invalid HMAC signature", () => {
-    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
+    const mockReq = {
+      rawBody: Buffer.from(JSON.stringify({ action: "completed" })),
+    };
     expect(() =>
-      controller.receiveGitHubActions("sha256=badhash", {
-        action: "completed",
-      }, mockReq as never),
+      controller.receiveGitHubActions(
+        "sha256=badhash",
+        {
+          action: "completed",
+        },
+        mockReq as never,
+      ),
     ).toThrow();
   });
 
   it("should throw UnauthorizedException when signature is missing and secret is configured", () => {
     // When a secret is configured, a missing signature must be rejected.
-    const mockReq = { rawBody: Buffer.from(JSON.stringify({ action: "completed" })) };
+    const mockReq = {
+      rawBody: Buffer.from(JSON.stringify({ action: "completed" })),
+    };
     expect(() =>
-      controller.receiveGitHubActions(undefined, { action: "completed" }, mockReq as never),
+      controller.receiveGitHubActions(
+        undefined,
+        { action: "completed" },
+        mockReq as never,
+      ),
     ).toThrow(UnauthorizedException);
   });
 
@@ -195,9 +207,13 @@ describe("WebhookReceiverController — receiveGitHubActions", () => {
   it("should return ok=true when GITHUB_WEBHOOK_SECRET is not set (no validation)", () => {
     delete process.env.GITHUB_WEBHOOK_SECRET;
 
-    const result = controller.receiveGitHubActions(undefined, {
-      action: "ping",
-    }, {} as never);
+    const result = controller.receiveGitHubActions(
+      undefined,
+      {
+        action: "ping",
+      },
+      {} as never,
+    );
     expect(result).toEqual({ ok: true });
   });
 });

@@ -2987,7 +2987,11 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
         type: "deploy",
         config: { orgId: "org-1" },
         order: 1,
-        backend: { provider: "github-actions", workflowId: "deploy.yml", ref: "main" },
+        backend: {
+          provider: "github-actions",
+          workflowId: "deploy.yml",
+          ref: "main",
+        },
       };
       const mockGHService = {
         triggerWorkflow: jest.fn().mockResolvedValue({
@@ -3017,7 +3021,9 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
       const pipeline = buildPipeline([ghActionsStage]);
 
       mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
-      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
       mockPipelineRepo.findOne.mockResolvedValue(pipeline);
 
       await proc.process(job(run));
@@ -3044,11 +3050,19 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
       const proc = module.get<PipelineProcessor>(PipelineProcessor);
       const run = buildRun({ startedAt: new Date("2024-01-01T00:00:00Z") });
       const pipeline = buildPipeline([
-        { id: "sync-stage", name: "Script", type: "script", config: {}, order: 1 },
+        {
+          id: "sync-stage",
+          name: "Script",
+          type: "script",
+          config: {},
+          order: 1,
+        },
       ]);
 
       mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
-      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockRunRepo.save.mockImplementation((r: PipelineRun) =>
+        Promise.resolve(r),
+      );
       mockPipelineRepo.findOne.mockResolvedValue(pipeline);
 
       const processPromise = proc.process(job(run));

@@ -288,8 +288,7 @@ export class PipelinesService {
       const mapped = this.mapCIStatus(ciStatus, ciConclusion);
       // Always overwrite finishedAt when the stage transitions to a terminal
       // status so the timestamp reflects the actual completion time.
-      const finishedAt =
-        mapped !== "running" ? new Date().toISOString() : null;
+      const finishedAt = mapped !== "running" ? new Date().toISOString() : null;
       const updated = {
         ...stageResults[idx],
         status: mapped,
