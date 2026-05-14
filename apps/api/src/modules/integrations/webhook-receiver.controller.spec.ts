@@ -183,6 +183,15 @@ describe("WebhookReceiverController — receiveGitHubActions", () => {
     ).toThrow(UnauthorizedException);
   });
 
+  it("should throw UnauthorizedException when rawBody is missing and secret is configured", () => {
+    // Without rawBody, HMAC cannot be computed from the original bytes.
+    const payload = { action: "completed" };
+    const sig = buildSignature(JSON.stringify(payload), WEBHOOK_SECRET);
+    expect(() =>
+      controller.receiveGitHubActions(sig, payload, {} as never),
+    ).toThrow(UnauthorizedException);
+  });
+
   it("should return ok=true when GITHUB_WEBHOOK_SECRET is not set (no validation)", () => {
     delete process.env.GITHUB_WEBHOOK_SECRET;
 

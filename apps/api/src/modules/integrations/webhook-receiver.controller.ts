@@ -148,10 +148,11 @@ export class WebhookReceiverController {
           "GitHub Actions webhook: rawBody is not available — " +
             "ensure the raw-body middleware is applied to this route",
         );
+        throw new UnauthorizedException(
+          "Raw request body unavailable for signature verification",
+        );
       }
-      const rawBody = req.rawBody
-        ? req.rawBody.toString("utf8")
-        : JSON.stringify(payload);
+      const rawBody = req.rawBody.toString("utf8");
       const expectedSig =
         "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
       // Buffers must be the same length for timingSafeEqual.
