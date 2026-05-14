@@ -1471,5 +1471,86 @@ describe("PipelinesService — additional branches", () => {
       const firstStage = (savedRun?.stageResults ?? [])[0];
       expect(firstStage?.status).toBe("running");
     });
+
+    it("always overwrites finishedAt when the stage transitions to a terminal status", async () => {
+      const runWithStaleFinishedAt: Partial<PipelineRun> = {
+        ...baseRun,
+        stageResults: [
+          {
+            stageId: "stage-1",
+            status: "running",
+            startedAt: "2024-01-01T00:00:00Z",
+            // Pre-existing finishedAt that should be overwritten.
+            finishedAt: "2024-01-01T00:00:01Z",
+            output: null,
+            externalRunId: "42",
+          },
+        ],
+      };
+      runRepo.find.mockResolvedValue([runWithStaleFinishedAt]);
+      runRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+
+      await service.updateStageFromExternalEvent(
+        "42",
+        "completed",
+        "success",
+        null,
+      );
+
+      const calls = runRepo.save.mock.calls as unknown as Array<[PipelineRun]>;
+      const savedRun = calls[0]?.[0];
+      const stage = (savedRun?.stageResults ?? [])[0];
+      // finishedAt must be updated to a new timestamp, not the stale value.
+      expect(stage?.finishedAt).not.toBe("2024-01-01T00:00:01Z");
+      expect(stage?.finishedAt).not.toBeNull();
+    });
+
+    it("emits PIPELINE_STAGE_UPDATED via eventsGateway when a stage is updated", async () => {
+      const mockServerEmit = jest.fn();
+      const mockEventsGateway = {
+        emitPipelineRunUpdated: jest.fn(),
+        server: { emit: mockServerEmit },
+      };
+      const mockRunRepo = {
+        find: jest.fn(),
+        save: jest.fn(),
+      };
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelinesService,
+          {
+            provide: getRepositoryToken(Pipeline),
+            useValue: { findOne: jest.fn(), findAndCount: jest.fn(), create: jest.fn(), save: jest.fn() },
+          },
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+      const svc = module.get<PipelinesService>(PipelinesService);
+
+      mockRunRepo.find.mockResolvedValue([{ ...baseRun }]);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+
+      await svc.updateStageFromExternalEvent(
+        "42",
+        "completed",
+        "success",
+        "https://github.com/acme/repo/actions/runs/42",
+      );
+
+      const serverEmitCalls = mockServerEmit.mock.calls as [
+        string,
+        Record<string, unknown>,
+      ][];
+      const stageEvent = serverEmitCalls.find(
+        ([event]) => event === "pipeline.stage.updated",
+      );
+      expect(stageEvent).toBeDefined();
+      expect(stageEvent?.[1]).toMatchObject({
+        stageId: "stage-1",
+        status: "succeeded",
+        externalRunUrl: "https://github.com/acme/repo/actions/runs/42",
+      });
+    });
   });
 });

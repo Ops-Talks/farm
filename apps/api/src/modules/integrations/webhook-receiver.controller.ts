@@ -143,6 +143,12 @@ export class WebhookReceiverController {
         );
         throw new UnauthorizedException("Missing webhook signature");
       }
+      if (!req.rawBody) {
+        this.logger.warn(
+          "GitHub Actions webhook: rawBody is not available — " +
+            "ensure the raw-body middleware is applied to this route",
+        );
+      }
       const rawBody = req.rawBody
         ? req.rawBody.toString("utf8")
         : JSON.stringify(payload);

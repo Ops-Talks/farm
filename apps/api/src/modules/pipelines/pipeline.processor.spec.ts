@@ -2974,4 +2974,93 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
       });
     });
   });
+
+  // -------------------------------------------------------------------------
+  // finishedAt behaviour for external vs synchronous stages
+  // -------------------------------------------------------------------------
+
+  describe("finishedAt for delegated external backend stages", () => {
+    it("does not set stageResult.finishedAt when stage is dispatched to an external backend", async () => {
+      const ghActionsStage: PipelineStage = {
+        id: "stage-gh-ext",
+        name: "GH Actions Deploy",
+        type: "deploy",
+        config: { orgId: "org-1" },
+        order: 1,
+        backend: { provider: "github-actions", workflowId: "deploy.yml", ref: "main" },
+      };
+      const mockGHService = {
+        triggerWorkflow: jest.fn().mockResolvedValue({
+          id: 777,
+          name: "Deploy",
+          status: "queued",
+          conclusion: null,
+          headBranch: "main",
+          createdAt: "2024-01-01T00:00:00Z",
+          updatedAt: "2024-01-01T00:00:00Z",
+          htmlUrl: "https://github.com/acme/repo/actions/runs/777",
+        }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+          { provide: GitHubActionsService, useValue: mockGHService },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun();
+      const pipeline = buildPipeline([ghActionsStage]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      await proc.process(job(run));
+
+      const runningSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.RUNNING);
+      expect(runningSave).toBeDefined();
+      // finishedAt must remain null for a stage that hasn't completed yet.
+      const savedRun = runningSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.finishedAt).toBeNull();
+    });
+
+    it("sets stageResult.finishedAt for a synchronously completed stage", async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          PipelineProcessor,
+          { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
+          { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const proc = module.get<PipelineProcessor>(PipelineProcessor);
+      const run = buildRun({ startedAt: new Date("2024-01-01T00:00:00Z") });
+      const pipeline = buildPipeline([
+        { id: "sync-stage", name: "Script", type: "script", config: {}, order: 1 },
+      ]);
+
+      mockRunRepo.findOne.mockResolvedValueOnce(run).mockResolvedValueOnce(run);
+      mockRunRepo.save.mockImplementation((r: PipelineRun) => Promise.resolve(r));
+      mockPipelineRepo.findOne.mockResolvedValue(pipeline);
+
+      const processPromise = proc.process(job(run));
+      await jest.runAllTimersAsync();
+      await processPromise;
+
+      const succeededSave = (
+        mockRunRepo.save.mock.calls as [PipelineRun][][]
+      ).find((c) => c[0].status === PipelineRunStatus.SUCCEEDED);
+      expect(succeededSave).toBeDefined();
+      const savedRun = succeededSave?.[0] as PipelineRun;
+      expect(savedRun.stageResults?.[0]?.finishedAt).not.toBeNull();
+    });
+  });
 });
