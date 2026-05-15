@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
@@ -92,6 +93,17 @@ export class Deployment {
   })
   @Column({ nullable: true })
   description: string;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440300",
+    description:
+      "UUID of the pipeline run that auto-created this deployment, if any",
+    required: false,
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "pipeline_run_id", type: "uuid", nullable: true })
+  pipelineRunId: string | null;
 
   @ApiProperty({
     example: { pipelineUrl: "https://ci.example.com/runs/123" },

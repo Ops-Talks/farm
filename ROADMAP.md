@@ -71,8 +71,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 38: LDAP Client Modernization | 1 | 3 | v0.24.6 | `DONE` |
 | Phase 39: Service Maturity Scorecards | 1 | 6 | v0.24.7 | `DONE` |
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | v0.24.10 | `DONE` |
-| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | - | `TODO` |
-| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | - | `TODO` |
+| Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | v0.25.1 | `DONE` |
+| Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | v0.25.0 | `DONE` |
+| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | pending | `DONE` |
 
 ---
 
@@ -125,8 +126,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | `DONE` |
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `DONE` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `DONE` |
-| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `TODO` |
-| **Total** | **111** | **438** | |
+| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `DONE` |
+| Phase 44: Multi-tenancy Hardening | 5 | 20 | `TODO` |
+| **Total** | **116** | **458** | |
 
 ---
 
@@ -198,47 +200,47 @@ Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reac
 
 Closes the gaps identified by the full Swagger audit (May 2026) across all 51 controllers and 118 DTO/entity files. The audit found near-universal absence of `@ApiResponse(401/403)`, 7 entities with zero `@ApiProperty`, 9 DTOs with undocumented enum fields, missing `@ApiParam` on 10 controllers, and critical issues in `app.controller.ts` and `auth.controller.ts` that break Swagger UI functionality. This phase brings the OpenAPI spec to a state suitable for public API release.
 
-### FARM-E97: Critical Swagger Fixes `TODO`
+### FARM-E97: Critical Swagger Fixes `DONE`
 
 Fixes that break Swagger UI functionality or produce actively misleading documentation. Must be resolved before any public API release.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S423 | Add `@ApiTags`, `@ApiOperation`, and `@ApiResponse(200)` to `app.controller.ts` — the root endpoint currently appears ungrouped and undocumented in Swagger UI, which is the first thing API consumers see | `TODO` |
-| FARM-S424 | Add `@ApiBearerAuth()` to all JWT-protected handlers in `auth/auth.controller.ts` (`GET /auth/users`, `GET /auth/profile`, `PATCH /auth/profile`, `PATCH /auth/profile/password`, `POST /auth/keycloak/sync/:orgId`) — without this the Swagger UI `Authorize` button does not attach the JWT token when testing these endpoints | `TODO` |
-| FARM-S425 | Replace `Record<string, unknown>` body types in `webhook-receiver.controller.ts` with typed DTOs and add `@ApiBody()` on the 3 POST webhook receivers — Swagger currently shows an empty body schema for all three | `TODO` |
-| FARM-S426 | Register an M2M auth scheme in `main.ts` `DocumentBuilder` (`.addApiKey` or second `.addBearerAuth`) for IAC ingest and documentation webhook endpoints that use a static `IAC_INGEST_TOKEN` rather than a JWT; annotate those endpoints with `@ApiSecurity('iac-token')` so consumers can distinguish M2M from JWT-protected routes | `TODO` |
+| FARM-S423 | Add `@ApiTags`, `@ApiOperation`, and `@ApiResponse(200)` to `app.controller.ts` — the root endpoint currently appears ungrouped and undocumented in Swagger UI, which is the first thing API consumers see | `DONE` |
+| FARM-S424 | Add `@ApiBearerAuth()` to all JWT-protected handlers in `auth/auth.controller.ts` (`GET /auth/users`, `GET /auth/profile`, `PATCH /auth/profile`, `PATCH /auth/profile/password`, `POST /auth/keycloak/sync/:orgId`) — without this the Swagger UI `Authorize` button does not attach the JWT token when testing these endpoints | `DONE` |
+| FARM-S425 | Replace `Record<string, unknown>` body types in `webhook-receiver.controller.ts` with typed DTOs and add `@ApiBody()` on the 3 POST webhook receivers — Swagger currently shows an empty body schema for all three | `DONE` |
+| FARM-S426 | Register an M2M auth scheme in `main.ts` `DocumentBuilder` (`.addApiKey` or second `.addBearerAuth`) for IAC ingest and documentation webhook endpoints that use a static `IAC_INGEST_TOKEN` rather than a JWT; annotate those endpoints with `@ApiSecurity('iac-token')` so consumers can distinguish M2M from JWT-protected routes | `DONE` |
 
-### FARM-E98: Auth Error Response Coverage `TODO`
+### FARM-E98: Auth Error Response Coverage `DONE`
 
 The most pervasive gap in the codebase: 46 of 49 JWT-protected controllers have no `@ApiResponse(401)`, and 30 of 32 controllers using `@Roles` have no `@ApiResponse(403)`. The fix is a class-level decorator pattern already established in `auth.controller.ts` and `iac.controller.ts`.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S427 | Add class-level `@ApiResponse({ status: 401, description: 'Unauthorized.', type: ErrorResponseDto })` to all 46 JWT-protected controllers missing it — covers every controller that has `@UseGuards(JwtAuthGuard)` but no 401 documentation | `TODO` |
-| FARM-S428 | Add class-level `@ApiResponse({ status: 403, description: 'Forbidden.', type: ErrorResponseDto })` to all ~30 controllers that apply `@Roles()` but have no 403 documentation | `TODO` |
+| FARM-S427 | Add class-level `@ApiResponse({ status: 401, description: 'Unauthorized.', type: ErrorResponseDto })` to all 46 JWT-protected controllers missing it — covers every controller that has `@UseGuards(JwtAuthGuard)` but no 401 documentation | `DONE` |
+| FARM-S428 | Add class-level `@ApiResponse({ status: 403, description: 'Forbidden.', type: ErrorResponseDto })` to all ~30 controllers that apply `@Roles()` but have no 403 documentation | `DONE` |
 
-### FARM-E99: DTO, Entity, and Parameter Annotation Completeness `TODO`
+### FARM-E99: DTO, Entity, and Parameter Annotation Completeness `DONE`
 
 Addresses structural gaps in DTO and entity annotations that cause incomplete or incorrect schema generation: missing enum values, invisible response type fields, undocumented path and query parameters.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S429 | Fix enum `@ApiProperty` gaps in 9 DTOs: add `{ enum: XxxEnum, enumName: 'XxxEnum' }` to `update-deployment.dto.ts`, `update-api-spec.dto.ts`, `update-incident-status.dto.ts`, `invite-member.dto.ts`, `update-member-role.dto.ts`, `list-runs-query.dto.ts`, `slo-budget-response.dto.ts`; add the missing `enum:` key to existing `@ApiProperty` in `create-invitation.dto.ts` and `list-deployments-query.dto.ts`. Also fix 5 entities where enum fields have `@ApiProperty` without `enum:` key (`component.entity.ts`, `deployment.entity.ts`, `team.entity.ts`, `user-organization.entity.ts`, `pipeline-run.entity.ts`) | `TODO` |
-| FARM-S430 | Add `@ApiParam` to 10 controllers with un-annotated path parameters: `user-management.controller.ts` (6 params), `invitation.controller.ts` (4), `istio.controller.ts` (4), `integration-credential.controller.ts` (3), `argocd.controller.ts` (2), `jenkins.controller.ts` (2), `kubernetes.controller.ts` (5 remaining), `auth.controller.ts` (1), `circleci.controller.ts` (1), `travisci.controller.ts` (1) | `TODO` |
-| FARM-S431 | Add `@ApiQuery` decorators to `user-management.controller.ts` `GET /users` for `page`, `pageSize`, `search`, `role`, and `orgId` pagination and filter parameters | `TODO` |
-| FARM-S432 | Add `@ApiProperty` to the 7 entities with zero annotations that are used as response types in controllers: `org-invitation.entity.ts` (14 fields), `tag-policy.entity.ts` (7), `resource-violation.entity.ts` (9), `search-config.entity.ts` (8), `opa-result.entity.ts` (8), `invitation-token.entity.ts` (19), and `password-reset.entity.ts` (6, internal but referenced) | `TODO` |
+| FARM-S429 | Fix enum `@ApiProperty` gaps in 9 DTOs: add `{ enum: XxxEnum, enumName: 'XxxEnum' }` to `update-deployment.dto.ts`, `update-api-spec.dto.ts`, `update-incident-status.dto.ts`, `invite-member.dto.ts`, `update-member-role.dto.ts`, `list-runs-query.dto.ts`, `slo-budget-response.dto.ts`; add the missing `enum:` key to existing `@ApiProperty` in `create-invitation.dto.ts` and `list-deployments-query.dto.ts`. Also fix 5 entities where enum fields have `@ApiProperty` without `enum:` key (`component.entity.ts`, `deployment.entity.ts`, `team.entity.ts`, `user-organization.entity.ts`, `pipeline-run.entity.ts`) | `DONE` |
+| FARM-S430 | Add `@ApiParam` to 10 controllers with un-annotated path parameters: `user-management.controller.ts` (6 params), `invitation.controller.ts` (4), `istio.controller.ts` (4), `integration-credential.controller.ts` (3), `argocd.controller.ts` (2), `jenkins.controller.ts` (2), `kubernetes.controller.ts` (5 remaining), `auth.controller.ts` (1), `circleci.controller.ts` (1), `travisci.controller.ts` (1) | `DONE` |
+| FARM-S431 | Add `@ApiQuery` decorators to `user-management.controller.ts` `GET /users` for `page`, `pageSize`, `search`, `role`, and `orgId` pagination and filter parameters | `DONE` |
+| FARM-S432 | Add `@ApiProperty` to the 7 entities with zero annotations that are used as response types in controllers: `org-invitation.entity.ts` (14 fields), `tag-policy.entity.ts` (7), `resource-violation.entity.ts` (9), `search-config.entity.ts` (8), `opa-result.entity.ts` (8), `invitation-token.entity.ts` (19), and `password-reset.entity.ts` (6, internal but referenced) | `DONE` |
 
-### FARM-E100: Swagger Config and Polish `TODO`
+### FARM-E100: Swagger Config and Polish `DONE`
 
 Low-severity completeness and consistency improvements to the Swagger setup that improve developer experience and API discoverability.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S433 | Enable `introspectComments: true` in the `@nestjs/swagger` plugin config in `nest-cli.json` — this converts existing JSDoc property comments into Swagger `description` values automatically, reducing the manual annotation burden across the ~240 unannotated fields in the top-10 most-gapped DTOs | `TODO` |
-| FARM-S434 | Normalize the 12 lowercase `@ApiTags` values to Title Case: `Analytics`, `Cost`, `Features`, `Integrations`, `OPA`, `Registry`, `Scorecards`, `Search`, `Setup` — mixed casing causes incorrect alphabetical sort order in the Swagger UI sidebar | `TODO` |
-| FARM-S435 | Add `DocumentBuilder.addTag()` entries with human-readable descriptions in `main.ts` for the major feature groups (Catalog, Authentication, Environments, Teams, Observability, IaC, Kubernetes, Integrations, FinOps, Scorecards, Search) so the Swagger UI sidebar shows tooltips for each group | `TODO` |
-| FARM-S436 | Fix `traces-ingest.controller.ts`: add missing `@ApiResponse(502)` (collector unreachable) and `@ApiResponse(204)` (no endpoint configured); remove the misleading `@ApiOperation.description` claim that a JWT is required when no `@UseGuards` is applied | `TODO` |
+| FARM-S433 | Enable `introspectComments: true` in the `@nestjs/swagger` plugin config in `nest-cli.json` — this converts existing JSDoc property comments into Swagger `description` values automatically, reducing the manual annotation burden across the ~240 unannotated fields in the top-10 most-gapped DTOs | `DONE` |
+| FARM-S434 | Normalize the 12 lowercase `@ApiTags` values to Title Case: `Analytics`, `Cost`, `Features`, `Integrations`, `OPA`, `Registry`, `Scorecards`, `Search`, `Setup` — mixed casing causes incorrect alphabetical sort order in the Swagger UI sidebar | `DONE` |
+| FARM-S435 | Add `DocumentBuilder.addTag()` entries with human-readable descriptions in `main.ts` for the major feature groups (Catalog, Authentication, Environments, Teams, Observability, IaC, Kubernetes, Integrations, FinOps, Scorecards, Search) so the Swagger UI sidebar shows tooltips for each group | `DONE` |
+| FARM-S436 | Fix `traces-ingest.controller.ts`: add missing `@ApiResponse(502)` (collector unreachable) and `@ApiResponse(204)` (no endpoint configured); remove the misleading `@ApiOperation.description` claim that a JWT is required when no `@UseGuards` is applied | `DONE` |
 
 ---
 
@@ -246,61 +248,61 @@ Low-severity completeness and consistency improvements to the Swagger setup that
 
 Delivers a production-grade Helm chart (`deploy/helm/farm/`) covering both application services (api, web), the database migration lifecycle as a pre-upgrade Job hook, optional bundled PostgreSQL and Redis via Bitnami subcharts (disabled by default for production), and example values files for development and production profiles. CI/CD image publishing is out of scope for this phase.
 
-### FARM-E101: Chart Foundation `TODO`
+### FARM-E101: Chart Foundation `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S437 | Create `deploy/helm/farm/Chart.yaml` with `apiVersion: v2`, chart name, versioning aligned to the Farm release version, and Bitnami `postgresql` (15.x) and `redis` (19.x) as optional dependencies. Run `helm dependency update` to generate `Chart.lock` | `TODO` |
-| FARM-S438 | Create `values.yaml` with the complete configurable schema: `image` (registry, repository, tag, pullPolicy), `replicaCount`, `resources`, `env`, `api.existingSecret`, `ingress` (className, annotations, TLS), `autoscaling`, `pdb`, `externalDatabase.*`, `externalRedis.*`, `postgresql` (enabled + Bitnami passthrough), `redis` (enabled + Bitnami passthrough), `migration` | `TODO` |
-| FARM-S439 | Create `templates/_helpers.tpl` with named template helpers: `farm.fullname`, `farm.name`, `farm.chart`, `farm.labels`, `farm.selectorLabels`, `farm.api.image`, `farm.web.image`, `farm.serviceAccountName.api`, `farm.serviceAccountName.web` | `TODO` |
-| FARM-S440 | Create `templates/NOTES.txt` with post-install access instructions (port-forward commands for api and web), migration Job status check command, and link to `deploy/helm/farm/README.md` | `TODO` |
+| FARM-S437 | Create `deploy/helm/farm/Chart.yaml` with `apiVersion: v2`, chart name, versioning aligned to the Farm release version, and Bitnami `postgresql` (15.x) and `redis` (19.x) as optional dependencies. Run `helm dependency update` to generate `Chart.lock` | `DONE` |
+| FARM-S438 | Create `values.yaml` with the complete configurable schema: `image` (registry, repository, tag, pullPolicy), `replicaCount`, `resources`, `env`, `api.existingSecret`, `ingress` (className, annotations, TLS), `autoscaling`, `pdb`, `externalDatabase.*`, `externalRedis.*`, `postgresql` (enabled + Bitnami passthrough), `redis` (enabled + Bitnami passthrough), `migration` | `DONE` |
+| FARM-S439 | Create `templates/_helpers.tpl` with named template helpers: `farm.fullname`, `farm.name`, `farm.chart`, `farm.labels`, `farm.selectorLabels`, `farm.api.image`, `farm.web.image`, `farm.serviceAccountName.api`, `farm.serviceAccountName.web` | `DONE` |
+| FARM-S440 | Create `templates/NOTES.txt` with post-install access instructions (port-forward commands for api and web), migration Job status check command, and link to `deploy/helm/farm/README.md` | `DONE` |
 
-### FARM-E102: API Workload `TODO`
-
-| ID | Story | Status |
-|----|-------|--------|
-| FARM-S441 | `templates/api/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, `envFrom` referencing ConfigMap and Secret, resource requests/limits from values, rolling update strategy (`maxUnavailable: 0`), and optional `topologySpreadConstraints` | `TODO` |
-| FARM-S442 | `templates/api/service.yaml` — ClusterIP Service for the API on port 3000 | `TODO` |
-| FARM-S443 | `templates/api/serviceaccount.yaml` — optional dedicated ServiceAccount controlled by `api.serviceAccount.create`, with optional annotations for IRSA/Workload Identity | `TODO` |
-| FARM-S444 | `templates/api/configmap.yaml` + `templates/api/secret.yaml` — non-sensitive environment variables in ConfigMap; sensitive variables (JWT_SECRET, database credentials, SMTP, OAuth) in a Kubernetes Secret; Secret creation is skipped when `api.existingSecret` is set (existingSecret pattern for GitOps with External Secrets Operator or Sealed Secrets) | `TODO` |
-| FARM-S445 | `templates/api/hpa.yaml` + `templates/api/pdb.yaml` — optional HorizontalPodAutoscaler (CPU threshold 70%, configurable `minReplicas`/`maxReplicas`) and optional PodDisruptionBudget (`minAvailable: 1`; skipped when `replicaCount` is 1 to avoid blocking single-replica upgrades) | `TODO` |
-
-### FARM-E103: Web Workload `TODO`
+### FARM-E102: API Workload `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S446 | `templates/web/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, env for `API_INTERNAL_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, rolling update strategy | `TODO` |
-| FARM-S447 | `templates/web/service.yaml` + `templates/web/serviceaccount.yaml` — ClusterIP Service on port 3001 and optional ServiceAccount following the same pattern as the API | `TODO` |
-| FARM-S448 | `templates/web/hpa.yaml` + `templates/web/pdb.yaml` — optional HPA and PodDisruptionBudget for the web workload, using the same values schema pattern as the API | `TODO` |
+| FARM-S441 | `templates/api/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, `envFrom` referencing ConfigMap and Secret, resource requests/limits from values, rolling update strategy (`maxUnavailable: 0`), and optional `topologySpreadConstraints` | `DONE` |
+| FARM-S442 | `templates/api/service.yaml` — ClusterIP Service for the API on port 3000 | `DONE` |
+| FARM-S443 | `templates/api/serviceaccount.yaml` — optional dedicated ServiceAccount controlled by `api.serviceAccount.create`, with optional annotations for IRSA/Workload Identity | `DONE` |
+| FARM-S444 | `templates/api/configmap.yaml` + `templates/api/secret.yaml` — non-sensitive environment variables in ConfigMap; sensitive variables (JWT_SECRET, database credentials, SMTP, OAuth) in a Kubernetes Secret; Secret creation is skipped when `api.existingSecret` is set (existingSecret pattern for GitOps with External Secrets Operator or Sealed Secrets) | `DONE` |
+| FARM-S445 | `templates/api/hpa.yaml` + `templates/api/pdb.yaml` — optional HorizontalPodAutoscaler (CPU threshold 70%, configurable `minReplicas`/`maxReplicas`) and optional PodDisruptionBudget (`minAvailable: 1`; skipped when `replicaCount` is 1 to avoid blocking single-replica upgrades) | `DONE` |
 
-### FARM-E104: Infrastructure Templates `TODO`
-
-| ID | Story | Status |
-|----|-------|--------|
-| FARM-S449 | `templates/ingress.yaml` — generic Ingress resource with optional TLS termination; `ingressClassName` and all annotations are fully configurable via values so the chart is neutral across nginx-ingress, Traefik, AWS Load Balancer Controller, and others; supports separate hostnames for api and web services in a single Ingress object | `TODO` |
-| FARM-S450 | `templates/migration-job.yaml` — Kubernetes Job annotated with `helm.sh/hook: pre-upgrade,pre-install`, `helm.sh/hook-weight: "-1"`, and `helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded`; uses the api image to run `npm run migration:run`; shares the same Secret/ConfigMap env references as the API Deployment so it always runs against the correct database | `TODO` |
-| FARM-S451 | Wire the Bitnami `postgresql` subchart: pass through all `postgresql.*` values; when `postgresql.enabled: false`, populate the API's database env vars from `externalDatabase.host/port/user/password/name` values instead | `TODO` |
-| FARM-S452 | Wire the Bitnami `redis` subchart: pass through all `redis.*` values; when `redis.enabled: false`, populate the API's Redis env vars from `externalRedis.host/port` values instead | `TODO` |
-
-### FARM-E105: DX and Documentation `TODO`
+### FARM-E103: Web Workload `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S453 | `values-dev.yaml` — example override file enabling embedded `postgresql` and `redis` subcharts, 1 replica, no TLS, debug log level; ready to use with `helm install farm deploy/helm/farm -f deploy/helm/farm/values-dev.yaml` | `TODO` |
-| FARM-S454 | `values-production.yaml` — example override file for production: external DB and Redis, 2 replicas, TLS ingress with cert-manager annotations, `existingSecret` references for all sensitive values; every field annotated with an inline comment | `TODO` |
-| FARM-S455 | `deploy/helm/farm/README.md` — prerequisites (Helm 3.x, kubectl), quick-start for dev and production profiles, migration lifecycle explanation, upgrade and rollback instructions, complete parameter reference table | `TODO` |
-| FARM-S456 | Add Makefile targets: `helm-lint` (`helm lint` + `helm template --debug`), `helm-template`, `helm-install`, `helm-upgrade`, `helm-diff` (requires helm-diff plugin), `helm-uninstall`; update ROADMAP.md Phase 42 status and Summary totals at completion | `TODO` |
+| FARM-S446 | `templates/web/deployment.yaml` — Deployment with readiness and liveness probes on `/api/health`, env for `API_INTERNAL_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`, rolling update strategy | `DONE` |
+| FARM-S447 | `templates/web/service.yaml` + `templates/web/serviceaccount.yaml` — ClusterIP Service on port 3001 and optional ServiceAccount following the same pattern as the API | `DONE` |
+| FARM-S448 | `templates/web/hpa.yaml` + `templates/web/pdb.yaml` — optional HPA and PodDisruptionBudget for the web workload, using the same values schema pattern as the API | `DONE` |
 
-### FARM-E106: Observability Integration Assets `TODO`
+### FARM-E104: Infrastructure Templates `DONE`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S449 | `templates/ingress.yaml` — generic Ingress resource with optional TLS termination; `ingressClassName` and all annotations are fully configurable via values so the chart is neutral across nginx-ingress, Traefik, AWS Load Balancer Controller, and others; supports separate hostnames for api and web services in a single Ingress object | `DONE` |
+| FARM-S450 | `templates/migration-job.yaml` — Kubernetes Job annotated with `helm.sh/hook: pre-upgrade,pre-install`, `helm.sh/hook-weight: "-1"`, and `helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded`; uses the api image to run `npm run migration:run`; shares the same Secret/ConfigMap env references as the API Deployment so it always runs against the correct database | `DONE` |
+| FARM-S451 | Wire the Bitnami `postgresql` subchart: pass through all `postgresql.*` values; when `postgresql.enabled: false`, populate the API's database env vars from `externalDatabase.host/port/user/password/name` values instead | `DONE` |
+| FARM-S452 | Wire the Bitnami `redis` subchart: pass through all `redis.*` values; when `redis.enabled: false`, populate the API's Redis env vars from `externalRedis.host/port` values instead | `DONE` |
+
+### FARM-E105: DX and Documentation `DONE`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S453 | `values-dev.yaml` — example override file enabling embedded `postgresql` and `redis` subcharts, 1 replica, no TLS, debug log level; ready to use with `helm install farm deploy/helm/farm -f deploy/helm/farm/values-dev.yaml` | `DONE` |
+| FARM-S454 | `values-production.yaml` — example override file for production: external DB and Redis, 2 replicas, TLS ingress with cert-manager annotations, `existingSecret` references for all sensitive values; every field annotated with an inline comment | `DONE` |
+| FARM-S455 | `deploy/helm/farm/README.md` — prerequisites (Helm 3.x, kubectl), quick-start for dev and production profiles, migration lifecycle explanation, upgrade and rollback instructions, complete parameter reference table | `DONE` |
+| FARM-S456 | Add Makefile targets: `helm-lint` (`helm lint` + `helm template --debug`), `helm-template`, `helm-install`, `helm-upgrade`, `helm-diff` (requires helm-diff plugin), `helm-uninstall`; update ROADMAP.md Phase 42 status and Summary totals at completion | `DONE` |
+
+### FARM-E106: Observability Integration Assets `DONE`
 
 Ships the observability assets that plug into the user's existing monitoring stack (e.g., kube-prometheus-stack + Grafana Loki). The chart does not deploy Grafana, Prometheus, Loki, Tempo, or Pyroscope — it integrates with whichever stack the user already has. All resources are opt-in via feature flags in values.yaml.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S457 | Extend `values.yaml` with an `api.observability` block covering OTEL (`otelEnabled`, `otelExporterEndpoint`, `otelServiceName`), Pyroscope (`pyroscopeEnabled`, `pyroscopeServerAddress`), and backend URLs (`grafanaUrl`, `prometheusUrl`, `tempoUrl`, `lokiUrl`); wire all fields into `templates/api/configmap.yaml` | `TODO` |
-| FARM-S458 | `templates/servicemonitor.yaml` — Prometheus Operator `ServiceMonitor` resource that configures scraping of the API `/metrics` endpoint; conditional on `serviceMonitor.enabled`; includes configurable `interval`, `scrapeTimeout`, `namespace`, and label selectors to match any `kube-prometheus-stack` installation | `TODO` |
-| FARM-S459 | `templates/prometheusrule.yaml` — Prometheus Operator `PrometheusRule` resource shipping the alert rules from `observability/prometheus-rules.yml` as a Kubernetes-native resource; conditional on `prometheusRule.enabled`; rules are embedded verbatim so they stay in sync with the docker-compose observability stack | `TODO` |
-| FARM-S460 | `templates/grafana-dashboards.yaml` — all 6 Grafana dashboard JSON files (`farm-api`, `farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`, `farm-infra`) packaged as individual Kubernetes `ConfigMap` resources with label `grafana_dashboard: "1"` for automatic discovery and import by the Grafana sidecar in `kube-prometheus-stack`; conditional on `grafanaDashboards.enabled`; dashboards are embedded from `observability/grafana/provisioning/dashboards/` at chart render time | `TODO` |
+| FARM-S457 | Extend `values.yaml` with an `api.observability` block covering OTEL (`otelEnabled`, `otelExporterEndpoint`, `otelServiceName`), Pyroscope (`pyroscopeEnabled`, `pyroscopeServerAddress`), and backend URLs (`grafanaUrl`, `prometheusUrl`, `tempoUrl`, `lokiUrl`); wire all fields into `templates/api/configmap.yaml` | `DONE` |
+| FARM-S458 | `templates/servicemonitor.yaml` — Prometheus Operator `ServiceMonitor` resource that configures scraping of the API `/metrics` endpoint; conditional on `serviceMonitor.enabled`; includes configurable `interval`, `scrapeTimeout`, `namespace`, and label selectors to match any `kube-prometheus-stack` installation | `DONE` |
+| FARM-S459 | `templates/prometheusrule.yaml` — Prometheus Operator `PrometheusRule` resource shipping the alert rules from `observability/prometheus-rules.yml` as a Kubernetes-native resource; conditional on `prometheusRule.enabled`; rules are embedded verbatim so they stay in sync with the docker-compose observability stack | `DONE` |
+| FARM-S460 | `templates/grafana-dashboards.yaml` — all 6 Grafana dashboard JSON files (`farm-api`, `farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`, `farm-infra`) packaged as individual Kubernetes `ConfigMap` resources with label `grafana_dashboard: "1"` for automatic discovery and import by the Grafana sidecar in `kube-prometheus-stack`; conditional on `grafanaDashboards.enabled`; dashboards are embedded from `observability/grafana/provisioning/dashboards/` at chart render time | `DONE` |
 
 ---
 
@@ -308,53 +310,116 @@ Ships the observability assets that plug into the user's existing monitoring sta
 
 Evolves the Farm from a CI/CD **portal** (displays data from external tools) to a CI/CD **orchestrator** (uses external tools as execution backends). Closes the four main gaps: Component↔Pipeline binding, external CI backend delegation, webhook feedback loop, and automatic Deployment record creation.
 
-### FARM-E107: Component–Pipeline Binding `TODO`
+### FARM-E107: Component–Pipeline Binding `DONE`
 
 Establishes a first-class relationship between catalog components and their delivery pipelines. A component can have multiple pipelines (build, release, rollback). A pipeline is always scoped to a single component.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S461 | Add nullable `componentId` UUID FK to `Pipeline` entity with a TypeORM `ManyToOne` → `Component` relation. Generate and run migration. Update `CreatePipelineDto` / `UpdatePipelineDto` with optional `componentId` field. Update `PipelinesService.findAll` to accept `componentId` filter. | `TODO` |
-| FARM-S462 | New endpoint `GET /components/:id/pipelines` on the Catalog controller — lists all pipelines bound to a component, each entry includes latest run status and duration. Delegates to `PipelinesService.findByComponent(componentId)`. | `TODO` |
-| FARM-S463 | UI — "Pipelines" tab on the Component detail page. Lists bound pipelines with latest run status badge, last run timestamp, and a "Trigger" button. Clicking a run row navigates to the run detail page. | `TODO` |
+| FARM-S461 | Add nullable `componentId` UUID FK to `Pipeline` entity with a TypeORM `ManyToOne` → `Component` relation. Generate and run migration. Update `CreatePipelineDto` / `UpdatePipelineDto` with optional `componentId` field. Update `PipelinesService.findAll` to accept `componentId` filter. | `DONE` |
+| FARM-S462 | New endpoint `GET /components/:id/pipelines` on the Catalog controller — lists all pipelines bound to a component, each entry includes latest run status and duration. Delegates to `PipelinesService.findByComponent(componentId)`. | `DONE` |
+| FARM-S463 | UI — "Pipelines" tab on the Component detail page. Lists bound pipelines with latest run status badge, last run timestamp, and a "Trigger" button. Clicking a run row navigates to the run detail page. | `DONE` |
 
-### FARM-E108: External CI Backend for Pipeline Stages `TODO`
+### FARM-E108: External CI Backend for Pipeline Stages `DONE`
 
 Makes the `PipelineProcessor` delegate stage execution to real external CI/CD tools. A stage's `config` gains a typed `backend` field; when present, the processor calls the corresponding integration service instead of running an internal script.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S464 | Extend the `PipelineStage` interface (stages JSON column) with a `backend?: { provider: 'github-actions' \| 'argocd' \| 'jenkins' \| 'circleci'; ref?: string; workflowId?: string; appName?: string; jobName?: string }` field. Update DTO validation schema. No DB migration needed (stages is already a JSON column). | `TODO` |
-| FARM-S465 | `PipelineProcessor`: when executing a `build` stage with `backend.provider = 'github-actions'`, call `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)`. When executing a `deploy` stage with `backend.provider = 'argocd'`, call `ArgoCDService.syncApplication(orgId, appName)`. Set stage status to `running` immediately, `succeeded` or `failed` based on the external call result. | `TODO` |
-| FARM-S466 | Extend `StageResult` interface with `externalRunId?: string` and `externalRunUrl?: string`. When triggering an external CI job, persist the external run ID and URL in the stage result immediately so webhooks can correlate back to this run. | `TODO` |
-| FARM-S467 | Add `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)` method using `POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches` GitHub API. Returns the newly created workflow run ID by polling `GET /repos/{owner}/{repo}/actions/runs` for up to 10 s after dispatch. | `TODO` |
+| FARM-S464 | Extend the `PipelineStage` interface (stages JSON column) with a `backend?: { provider: 'github-actions' \| 'argocd' \| 'jenkins' \| 'circleci'; ref?: string; workflowId?: string; appName?: string; jobName?: string }` field. Update DTO validation schema. No DB migration needed (stages is already a JSON column). | `DONE` |
+| FARM-S465 | `PipelineProcessor`: when executing a `build` stage with `backend.provider = 'github-actions'`, call `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)`. When executing a `deploy` stage with `backend.provider = 'argocd'`, call `ArgoCDService.syncApplication(orgId, appName)`. Set stage status to `running` immediately, `succeeded` or `failed` based on the external call result. | `DONE` |
+| FARM-S466 | Extend `StageResult` interface with `externalRunId?: string` and `externalRunUrl?: string`. When triggering an external CI job, persist the external run ID and URL in the stage result immediately so webhooks can correlate back to this run. | `DONE` |
+| FARM-S467 | Add `GitHubActionsService.triggerWorkflow(orgId, workflowId, ref)` method using `POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches` GitHub API. Returns the newly created workflow run ID by polling `GET /repos/{owner}/{repo}/actions/runs` for up to 10 s after dispatch. | `DONE` |
 
-### FARM-E109: Webhook Feedback Loop `TODO`
+### FARM-E109: Webhook Feedback Loop `DONE`
 
 Closes the loop between external CI/CD tools and Farm pipeline runs. Today webhooks emit a `CI_BUILD_UPDATED` event that nobody handles. This epic wires that event to update the relevant `PipelineRun` stage and propagate the final run status.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S468 | Add `POST /webhooks/github-actions` endpoint. Validates `x-hub-signature-256` HMAC (secret stored as `IntegrationCredential` of type `GITHUB_ACTIONS`). Handles `workflow_run` events with action `completed`: looks up a `PipelineRun` whose any `StageResult.externalRunId` matches the incoming run ID, then updates that stage's status to `succeeded` or `failed`. | `TODO` |
-| FARM-S469 | Handle the existing `CI_BUILD_UPDATED` event emitted by the CircleCI / Jenkins / Travis CI webhook handlers. Implement `PipelinesService.updateStageFromExternalEvent(externalRunId, status, output)` — finds the `PipelineRun` with a matching `externalRunId` in any stage result, updates the stage, and advances the overall run status if all stages are terminal. | `TODO` |
-| FARM-S470 | Add `POST /webhooks/argocd` endpoint for ArgoCD `ResourceStatus` sync notifications. On `Synced`/`OutOfSync`/`Degraded` events, update the corresponding PipelineRun deploy stage. Document how to configure the ArgoCD notification webhook in `docs/developer-guide/`. | `TODO` |
+| FARM-S468 | Add `POST /webhooks/github-actions` endpoint. Validates `x-hub-signature-256` HMAC (secret stored as `IntegrationCredential` of type `GITHUB_ACTIONS`). Handles `workflow_run` events with action `completed`: looks up a `PipelineRun` whose any `StageResult.externalRunId` matches the incoming run ID, then updates that stage's status to `succeeded` or `failed`. | `DONE` |
+| FARM-S469 | Handle the existing `CI_BUILD_UPDATED` event emitted by the CircleCI / Jenkins / Travis CI webhook handlers. Implement `PipelinesService.updateStageFromExternalEvent(externalRunId, status, output)` — finds the `PipelineRun` with a matching `externalRunId` in any stage result, updates the stage, and advances the overall run status if all stages are terminal. | `DONE` |
+| FARM-S470 | Add `POST /webhooks/argocd` endpoint for ArgoCD `ResourceStatus` sync notifications. On `Synced`/`OutOfSync`/`Degraded` events, update the corresponding PipelineRun deploy stage. Document how to configure the ArgoCD notification webhook in `docs/developer-guide/`. | `DONE` |
 
-### FARM-E110: Pipeline → Deployment Auto-creation `TODO`
+### FARM-E110: Pipeline → Deployment Auto-creation `DONE`
 
 When a pipeline's `deploy` stage succeeds, automatically create a `Deployment` record in the Farm environments module. This gives the catalog a full deployment history without manual data entry.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S471 | Extend `PipelineStage` config for the `deploy` type with `componentId?: string` and `environmentId?: string`. When a deploy stage transitions to `succeeded` in `PipelineProcessor`, call `DeploymentsService.create()` with the component/environment from the stage config and version from `PipelineRun.metadata.version`. | `TODO` |
-| FARM-S472 | Add nullable `deploymentId` UUID field to `PipelineRun` entity. After auto-creating the Deployment, persist its ID on the run. Generate and run migration. Allows the UI to navigate from a pipeline run directly to the deployment record. | `TODO` |
-| FARM-S473 | Emit `PIPELINE_RUN_UPDATED` WebSocket event on every stage status transition (not only on final run completion). Payload includes the updated `StageResult[]` so the UI can render live per-stage progress without polling. | `TODO` |
+| FARM-S471 | Extend `PipelineStage` config for the `deploy` type with `componentId?: string` and `environmentId?: string`. When a deploy stage transitions to `succeeded` in `PipelineProcessor`, call `DeploymentsService.create()` with the component/environment from the stage config and version from `PipelineRun.metadata.version`. | `DONE` |
+| FARM-S472 | Add nullable `deploymentId` UUID field to `PipelineRun` entity. After auto-creating the Deployment, persist its ID on the run. Generate and run migration. Allows the UI to navigate from a pipeline run directly to the deployment record. | `DONE` |
+| FARM-S473 | Emit `PIPELINE_RUN_UPDATED` WebSocket event on every stage status transition (not only on final run completion). Payload includes the updated `StageResult[]` so the UI can render live per-stage progress without polling. | `DONE` |
 
-### FARM-E111: Unified History UI `TODO`
+### FARM-E111: Unified History UI `DONE`
 
 Surfaces the orchestration data in the Farm web UI so engineers can navigate from a component to its full delivery history — pipelines, runs, stages, external CI links, and deployments — in a single place.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S474 | UI — Component detail "Pipelines" tab (FARM-S463 provides the API). Show each bound pipeline as an expandable row with the last 5 run statuses as colored badges. Each badge links to the run detail page. | `TODO` |
-| FARM-S475 | UI — Pipeline run detail page: show per-stage progress with status icon, duration, and an external link button when `StageResult.externalRunUrl` is set (navigates to GitHub Actions run, ArgoCD app, or Jenkins job). | `TODO` |
-| FARM-S476 | UI — Deployments list page and component deployment history: show a "via pipeline" badge with a link to the `PipelineRun` when `Deployment` was created automatically from a pipeline (i.e., when the source `PipelineRun.deploymentId` is set). | `TODO` |
+| FARM-S474 | UI — Component detail "Pipelines" tab (FARM-S463 provides the API). Show each bound pipeline as an expandable row with the last 5 run statuses as colored badges. Each badge links to the run detail page. | `DONE` |
+| FARM-S475 | UI — Pipeline run detail page: show per-stage progress with status icon, duration, and an external link button when `StageResult.externalRunUrl` is set (navigates to GitHub Actions run, ArgoCD app, or Jenkins job). | `DONE` |
+| FARM-S476 | UI — Deployments list page and component deployment history: show a "via pipeline" badge with a link to the `PipelineRun` when `Deployment` was created automatically from a pipeline (i.e., when the source `PipelineRun.deploymentId` is set). | `DONE` |
+
+---
+
+## Phase 44: Multi-tenancy Hardening
+
+Closes systematic cross-tenant data leakage gaps found across 10+ modules. Every `findOne(id)` call today queries by ID alone — no `organizationId` filter — meaning any authenticated user can read, modify, or delete another tenant's data by guessing a UUID. This phase fixes the schema, service, and controller layers in order of severity, then adds org-scoped uniqueness constraints and an e2e cross-tenant security test suite.
+
+**Reference pattern (correct implementation):** `IntegrationCredentialService` — every method accepts and filters by `orgId`; every controller endpoint reads `req.organizationId` and passes it down.
+
+### FARM-E112: Cross-cutting Guard & Repository Pattern `TODO`
+
+Provides the shared primitives the rest of the phase builds on.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S477 | Create `@OrgRequired()` decorator (in `src/common/decorators/`) that attaches metadata and a companion `OrgRequiredGuard` that throws `ForbiddenException` when `req.organizationId` is absent. Apply to all controller classes fixed in E114–E115 so missing the `X-Organization-Id` header is never silently ignored. | `TODO` |
+| FARM-S478 | Create `OrgScopedRepository<T>` utility class (in `src/common/repositories/`) that wraps a TypeORM `Repository<T>` and injects `organizationId` into every `find`, `findOne`, `findAndCount`, and `count` call. Provide a `withOrg(orgId)` factory method. Used as a drop-in in all fixed services. | `TODO` |
+
+### FARM-E113: Entity Schema — Add organizationId to Missing Entities `TODO`
+
+Schema changes and migrations that enable the service fixes in E114–E115.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S479 | Add nullable `organizationId` UUID column (indexed) to `PipelineRun` entity. Generate migration `1776600000001-AddPipelineRunOrgId`. Backfill from parent `Pipeline.organizationId` in the migration `up()`. | `TODO` |
+| FARM-S480 | Add nullable `organizationId` UUID column (indexed) to `ActualCost` and `CostEstimate` entities. Generate migration `1776600000002-AddFinOpsOrgId`. | `TODO` |
+| FARM-S481 | Add nullable `organizationId` UUID column (indexed) to `ContainerVulnerability` entity. Generate migration `1776600000003-AddContainerVulnOrgId`. | `TODO` |
+| FARM-S482 | Add nullable `organizationId` UUID column (indexed) to all IaC entities: `IacStack`, `IacRun`, `IacModule`, `IacResource`, `IacModuleDrift`, `IacModuleVersion`, `IacResourceDependency`. Generate migration `1776600000004-AddIaCOrgId`. | `TODO` |
+
+### FARM-E114: Service & Controller Fix — Tier 1 CRITICAL `TODO`
+
+Modules where a cross-tenant write or destructive action is possible today.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S483 | **Catalog:** `CatalogService.findOne(id, orgId?)` and `findAllWithContainerImage(orgId?)` filter by `organizationId` when provided. `CatalogController` GET/PATCH/DELETE `:id` endpoints read `req.organizationId` and pass it. Apply `@OrgRequired()`. Add `@ApiResponse(403)` to Swagger. Update unit and e2e tests. | `TODO` |
+| FARM-S484 | **Pipelines:** `PipelinesService.findOne(id, orgId?)` and `findRun(pipelineId, runId, orgId?)` filter by `organizationId`. `create()` sets `organizationId` on both `Pipeline` and `PipelineRun` from `req.organizationId`. `PipelinesController` GET/PATCH/DELETE/trigger endpoints pass `req.organizationId`. Pipeline `name` uniqueness constraint scoped to `[name, organizationId]` composite unique index. Migration `1776600000005-ScopePipelineNameUnique`. | `TODO` |
+| FARM-S485 | **IaC:** `IacService.getStack(id, orgId)`, `listStacks(orgId)`, and all run/module/resource queries filter by `organizationId`. `IacController` reads and passes `req.organizationId`. `IacStack` name+environment uniqueness scoped by org. Apply `@OrgRequired()`. | `TODO` |
+
+### FARM-E115: Service & Controller Fix — Tier 2 HIGH `TODO`
+
+Modules where cross-tenant reads and updates are possible.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S486 | **Environments:** `EnvironmentsService.findOne(id, orgId?)` filters by `organizationId`. `EnvironmentsController` GET/PATCH/DELETE `:id` pass `req.organizationId`. Environment `name` uniqueness scoped by org. Migration `1776600000006-ScopeEnvironmentNameUnique`. | `TODO` |
+| FARM-S487 | **SLO:** `SloService.findOne(id, orgId?)` and `getErrorBudget(id, orgId?)` filter by `organizationId`. `SloController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
+| FARM-S488 | **Incident:** `IncidentService.findOne(id, orgId?)` filters by `organizationId`. `IncidentController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
+| FARM-S489 | **Dashboard:** `DashboardService.findOne(id, orgId?)` filters by `organizationId`. `DashboardController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
+| FARM-S490 | **Documentation:** `DocumentationService.findOne(id, orgId?)` and `getContent(id, orgId?)` filter by `organizationId`. `DocumentationController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
+| FARM-S491 | **FinOps:** `FinOpsService` cost queries join through `Component.organizationId` to scope results. Where direct entity queries exist (`ActualCost`, `CostEstimate`), filter by `organizationId` after S480 adds the column. | `TODO` |
+| FARM-S492 | **Registry:** `ContainerVulnerabilityService` queries filter by `organizationId` after S481 adds the column. Controller passes `req.organizationId`. | `TODO` |
+
+### FARM-E116: Uniqueness Constraints & Cross-Tenant Security Tests `TODO`
+
+Prevents silent data collisions between tenants and provides regression coverage.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S493 | Scope `Pipeline.name` unique constraint to `[name, organizationId]` composite index. Remove the existing single-column unique constraint. Migration `1776600000007-ScopePipelineNameUniqueComposite` (if not covered by S484). | `TODO` |
+| FARM-S494 | Scope `Environment.name` unique constraint to `[name, organizationId]` composite index. Migration `1776600000008-ScopeEnvironmentNameUniqueComposite` (if not covered by S486). | `TODO` |
+| FARM-S495 | Scope `IacStack` name+environment uniqueness to include `organizationId`. Migration `1776600000009-ScopeIacStackNameUniqueComposite` (if not covered by S485). | `TODO` |
+| FARM-S496 | E2E cross-tenant security test suite (`test/security/cross-tenant.e2e-spec.ts`): for each fixed module, register two users in two different orgs, create a resource in org-A, then verify org-B gets HTTP 404 (not 200/403) for GET/PATCH/DELETE on that resource's ID. Covers: Component, Pipeline, PipelineRun, Environment, SLO, Incident, Dashboard, Documentation, IacStack. | `TODO` |

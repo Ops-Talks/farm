@@ -7,6 +7,7 @@ import { subscribe } from "@/lib/ws-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExternalLink } from "lucide-react";
 import type { Pipeline, PipelineRun, PipelineStageResult, PipelineLogPayload } from "@/types/api";
 import { FarmEvent, PipelineRunStatus } from "@/types/api";
 
@@ -377,6 +378,18 @@ export function RunDetail({ pipelineId, runId, pipeline }: RunDetailProps) {
                   <span className="text-xs text-muted-foreground ml-auto">
                     {new Date(sr.startedAt).toLocaleTimeString()}
                   </span>
+                )}
+                {sr.externalRunUrl && (
+                  <a
+                    href={sr.externalRunUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open external CI run"
+                    className="ml-auto inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs hover:bg-muted transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    CI Run
+                  </a>
                 )}
                 {sr.output && (
                   <span className="hidden sm:block max-w-[200px] truncate text-xs text-muted-foreground">

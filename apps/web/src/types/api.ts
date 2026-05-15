@@ -151,6 +151,8 @@ export interface Deployment {
   environment?: Environment;
   startedAt?: string;
   finishedAt?: string;
+  /** Set when this deployment was auto-created by a pipeline run. */
+  pipelineRunId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -456,6 +458,8 @@ export interface Pipeline {
   stages: PipelineStage[];
   organizationId?: string;
   createdBy: string;
+  /** UUID of the component this pipeline is bound to, if any. */
+  componentId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -466,6 +470,10 @@ export interface PipelineStageResult {
   startedAt?: string;
   finishedAt?: string;
   output?: string;
+  /** External CI run ID (e.g. GitHub Actions run ID). */
+  externalRunId?: string | null;
+  /** Direct URL to the external CI run. */
+  externalRunUrl?: string | null;
 }
 
 export interface PipelineRun {
@@ -478,6 +486,8 @@ export interface PipelineRun {
   durationMs?: number;
   logs?: string;
   stageResults?: PipelineStageResult[];
+  /** Set when this run auto-created a Deployment record on success. */
+  deploymentId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

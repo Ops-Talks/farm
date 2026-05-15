@@ -17,6 +17,7 @@ import { deployments } from "@/lib/api-client";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DeploymentStatus } from "@/types/api";
 import type { Deployment } from "@/types/api";
+import { GitBranch } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
@@ -176,7 +177,19 @@ export function DeploymentHistoryClient() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {d.deployedBy ?? "--"}
+                    <div className="flex items-center gap-2">
+                      {d.deployedBy ?? "--"}
+                      {d.pipelineRunId && (
+                        <Link
+                          href="/pipelines"
+                          title={`Pipeline run ${d.pipelineRunId.slice(0, 8)}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 hover:underline"
+                        >
+                          <GitBranch className="h-3 w-3" aria-hidden="true" />
+                          via pipeline
+                        </Link>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right text-sm text-muted-foreground">
                     {new Date(d.createdAt).toLocaleDateString()}

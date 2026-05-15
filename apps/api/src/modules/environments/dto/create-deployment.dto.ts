@@ -70,4 +70,13 @@ export class CreateDeploymentDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440300",
+    description: "UUID of the pipeline run that triggered this deployment",
+    required: false,
+  })
+  @IsUUID()
+  @IsOptional()
+  pipelineRunId?: string;
 }
