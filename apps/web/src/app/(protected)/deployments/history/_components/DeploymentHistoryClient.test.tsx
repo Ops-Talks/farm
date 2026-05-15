@@ -151,4 +151,32 @@ describe("DeploymentHistoryClient", () => {
       );
     });
   });
+
+  it("renders the 'via pipeline' badge when a deployment has a pipelineRunId", async () => {
+    mockListDeployments.mockResolvedValue(
+      makePaginated([makeDeployment({ pipelineRunId: "run-abcdef12" })]),
+    );
+    render(<DeploymentHistoryClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("via pipeline")).toBeInTheDocument();
+    });
+
+    // The badge is a Link pointing to /pipelines
+    const badge = screen.getByRole("link", { name: /via pipeline/i });
+    expect(badge).toHaveAttribute("href", "/pipelines");
+  });
+
+  it("does not render the 'via pipeline' badge when pipelineRunId is absent", async () => {
+    mockListDeployments.mockResolvedValue(
+      makePaginated([makeDeployment({ pipelineRunId: undefined })]),
+    );
+    render(<DeploymentHistoryClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText("auth-service")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("via pipeline")).not.toBeInTheDocument();
+  });
 });

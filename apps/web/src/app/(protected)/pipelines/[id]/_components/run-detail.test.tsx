@@ -861,4 +861,68 @@ describe("RunDetail", () => {
 
     expect(screen.getByText("·")).toBeInTheDocument();
   });
+
+  // -------------------------------------------------------------------------
+  // 27. externalRunUrl — renders an external CI link when set on a stage result
+  // -------------------------------------------------------------------------
+  it("renders an external CI link when externalRunUrl is set on a stage result", async () => {
+    const run = makeRun({
+      status: PipelineRunStatus.SUCCEEDED,
+      stageResults: [
+        {
+          stageId: "stage-approval-001",
+          status: PipelineRunStatus.SUCCEEDED,
+          externalRunUrl: "https://github.com/org/repo/actions/runs/12345",
+        },
+      ],
+    });
+    mockGetRun.mockResolvedValue(run);
+
+    render(
+      <RunDetail pipelineId={PIPELINE_ID} runId={RUN_ID} pipeline={mockPipeline} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("run-abc1")).toBeInTheDocument();
+    });
+
+    const externalLink = screen.getByRole("link", {
+      name: /open external ci run/i,
+    });
+    expect(externalLink).toHaveAttribute(
+      "href",
+      "https://github.com/org/repo/actions/runs/12345",
+    );
+    expect(externalLink).toHaveAttribute("target", "_blank");
+    expect(externalLink).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  // -------------------------------------------------------------------------
+  // 28. externalRunUrl — does NOT render link when externalRunUrl is absent
+  // -------------------------------------------------------------------------
+  it("does not render an external CI link when externalRunUrl is absent", async () => {
+    const run = makeRun({
+      status: PipelineRunStatus.SUCCEEDED,
+      stageResults: [
+        {
+          stageId: "stage-approval-001",
+          status: PipelineRunStatus.SUCCEEDED,
+          // externalRunUrl intentionally omitted
+        },
+      ],
+    });
+    mockGetRun.mockResolvedValue(run);
+
+    render(
+      <RunDetail pipelineId={PIPELINE_ID} runId={RUN_ID} pipeline={mockPipeline} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("run-abc1")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.queryByRole("link", { name: /open external ci run/i }),
+    ).not.toBeInTheDocument();
+  });
 });

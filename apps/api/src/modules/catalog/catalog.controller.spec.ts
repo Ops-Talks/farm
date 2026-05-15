@@ -328,3 +328,134 @@ describe("CatalogController — getCostEstimate with FinOpsService", () => {
     expect(result.currency).toBe("USD");
   });
 });
+
+// ---------------------------------------------------------------------------
+// CatalogController — findComponentPipelines
+// ---------------------------------------------------------------------------
+
+import { PipelinesService } from "../pipelines/pipelines.service";
+
+describe("CatalogController — findComponentPipelines", () => {
+  const mockCatalogSvc = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    setContainerImage: jest.fn(),
+  };
+
+  const mockPipelinesSvc = {
+    findByComponent: jest.fn(),
+  };
+
+  const mockPipeline = {
+    id: "pipe-1",
+    name: "build-staging",
+    organizationId: "org-1",
+    componentId: "comp-1",
+    stages: [],
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  };
+
+  describe("with PipelinesService available", () => {
+    let controller: CatalogController;
+
+    beforeEach(async () => {
+      jest.clearAllMocks();
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [CatalogController],
+        providers: [
+          { provide: CatalogService, useValue: mockCatalogSvc },
+          {
+            provide: CACHE_MANAGER,
+            useValue: {
+              get: jest.fn(),
+              set: jest.fn(),
+              del: jest.fn(),
+              clear: jest.fn(),
+            },
+          },
+          {
+            provide: PipelinesService,
+            useValue: mockPipelinesSvc,
+          },
+        ],
+      }).compile();
+
+      controller = module.get<CatalogController>(CatalogController);
+    });
+
+    it("returns paginated pipelines for the given component", async () => {
+      mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
+      mockPipelinesSvc.findByComponent.mockResolvedValue([[mockPipeline], 1]);
+
+      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+
+      expect(result).toEqual({ items: [mockPipeline], total: 1 });
+      expect(mockCatalogSvc.findOne).toHaveBeenCalledWith("comp-1");
+      expect(mockPipelinesSvc.findByComponent).toHaveBeenCalledWith(
+        "comp-1",
+        undefined,
+        0,
+        10,
+      );
+    });
+
+    it("throws NotFoundException when the component does not exist", async () => {
+      mockCatalogSvc.findOne.mockRejectedValue(
+        new NotFoundException("Component comp-missing not found"),
+      );
+
+      await expect(
+        controller.findComponentPipelines("comp-missing", 0, 10),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPipelinesSvc.findByComponent).not.toHaveBeenCalled();
+    });
+
+    it("returns empty list when findByComponent returns no results", async () => {
+      mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
+      mockPipelinesSvc.findByComponent.mockResolvedValue([[], 0]);
+
+      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+
+      expect(result).toEqual({ items: [], total: 0 });
+    });
+  });
+
+  describe("without PipelinesService (optional dep absent)", () => {
+    let controller: CatalogController;
+
+    beforeEach(async () => {
+      jest.clearAllMocks();
+      // Do NOT provide PipelinesService — it is optional in the controller
+      const module: TestingModule = await Test.createTestingModule({
+        controllers: [CatalogController],
+        providers: [
+          { provide: CatalogService, useValue: mockCatalogSvc },
+          {
+            provide: CACHE_MANAGER,
+            useValue: {
+              get: jest.fn(),
+              set: jest.fn(),
+              del: jest.fn(),
+              clear: jest.fn(),
+            },
+          },
+        ],
+      }).compile();
+
+      controller = module.get<CatalogController>(CatalogController);
+    });
+
+    it("returns empty list when PipelinesService is not injected", async () => {
+      mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
+
+      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+
+      expect(result).toEqual({ items: [], total: 0 });
+    });
+  });
+});

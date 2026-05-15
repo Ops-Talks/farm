@@ -41,6 +41,7 @@ import { IacStacksTab } from "./IacStacksTab";
 import { ElasticsearchIndicesTab } from "./ElasticsearchIndicesTab";
 import { ScorecardTab } from "./ScorecardTab";
 import { HarborReplicationTable } from "./HarborReplicationTable";
+import { ComponentPipelinesTab } from "./ComponentPipelinesTab";
 import { FluxBindingCard } from "./FluxBindingCard";
 import { KedaBindingCard } from "./KedaBindingCard";
 import { LogPipelineCard } from "./LogPipelineCard";
@@ -367,6 +368,7 @@ export function ComponentDetailClient() {
           <TabsTrigger value="container-security">Container Security</TabsTrigger>
           <TabsTrigger value="iac-modules">IaC Modules</TabsTrigger>
           <TabsTrigger value="iac-stacks">IaC Stacks</TabsTrigger>
+          <TabsTrigger value="pipelines">Pipelines</TabsTrigger>
           <TabsTrigger value="elasticsearch">Elasticsearch</TabsTrigger>
           <TabsTrigger value="scorecard">Scorecard</TabsTrigger>
         </TabsList>
@@ -758,6 +760,11 @@ export function ComponentDetailClient() {
         <TabsContent value="iac-stacks">
           <ErrorBoundary>
             <IacStacksTab component={component} />
+          </ErrorBoundary>
+        </TabsContent>
+        <TabsContent value="pipelines">
+          <ErrorBoundary>
+            <ComponentPipelinesTab componentId={component.id} />
           </ErrorBoundary>
         </TabsContent>
         <TabsContent value="elasticsearch">

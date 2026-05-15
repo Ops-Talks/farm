@@ -431,6 +431,7 @@ export class PipelineProcessor extends WorkerHost {
                   : "latest",
               deployedBy: run.triggeredBy,
               description: `Auto-created by pipeline run ${run.id}`,
+              pipelineRunId: run.id,
             });
             run.deploymentId = deployment.id;
             this.logger.log(

@@ -576,6 +576,13 @@ export const catalog = {
       body: JSON.stringify({ url }),
     });
   },
+
+  getComponentPipelines(
+    componentId: string,
+    params?: { skip?: number; take?: number },
+  ): Promise<{ items: Pipeline[]; total: number }> {
+    return request(`/v1/catalog/components/${componentId}/pipelines${toQueryString(params ?? {})}`);
+  },
 };
 
 // -- Environments API --
