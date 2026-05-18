@@ -21,6 +21,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { EnvironmentsService } from "./environments.service";
 import { CreateEnvironmentDto } from "./dto/create-environment.dto";
@@ -41,6 +42,12 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Environments")
 @ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @OrgRequired()
 @UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("environments")
@@ -56,7 +63,8 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have sufficient permissions.",
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({

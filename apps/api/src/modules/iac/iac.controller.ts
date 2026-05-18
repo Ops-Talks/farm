@@ -23,6 +23,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiSecurity,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -63,12 +64,30 @@ function extractBearer(authHeader: string | undefined): string {
  * bearer token (IAC_INGEST_TOKEN) inside the service.
  */
 @ApiTags("IaC")
+@ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("iac")
 @OrgRequired()
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({

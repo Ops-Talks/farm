@@ -21,6 +21,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { Request } from "express";
 import { SloService } from "./slo.service";
@@ -45,6 +46,12 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("SLOs")
 @ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @OrgRequired()
 @UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("slos")
@@ -60,7 +67,8 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have sufficient permissions.",
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({

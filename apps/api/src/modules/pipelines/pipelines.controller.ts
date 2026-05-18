@@ -25,6 +25,7 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -47,6 +48,12 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
  */
 @ApiTags("Pipelines")
 @ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @OrgRequired()
 @UseGuards(JwtAuthGuard, OrgRequiredGuard)
 @UseInterceptors(ClassSerializerInterceptor)
@@ -59,6 +66,12 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized - Authentication token is missing or invalid.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({

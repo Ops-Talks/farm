@@ -27,6 +27,7 @@ import {
   ApiNoContentResponse,
   ApiQuery,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -62,6 +63,12 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
  */
 @ApiTags("Catalog")
 @ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @OrgRequired()
 @UseGuards(JwtAuthGuard, RolesGuard, OrgRequiredGuard)
 @Controller("catalog")

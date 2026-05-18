@@ -15,7 +15,9 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
+import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
@@ -33,11 +35,34 @@ import { Team } from "../teams/entities/team.entity";
  */
 @ApiTags("FinOps")
 @ApiBearerAuth()
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
 @OrgRequired()
 @UseGuards(JwtAuthGuard, OrgRequiredGuard)
 @ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: "Bad Request - Validation failed.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  description: "Internal Server Error.",
+  type: ErrorResponseDto,
 })
 @Controller("cost")
 export class CostController {
