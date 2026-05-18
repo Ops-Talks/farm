@@ -40,6 +40,12 @@ vi.mock("@/lib/otel-context", () => ({
   getUserContext: vi.fn(() => null),
 }));
 
+// OrgSwitcher now calls useQueryClient() — stub it so no QueryClientProvider
+// wrapper is needed in AppShell tests.
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
+
 // FeatureAvailabilityProvider uses useQuery — mock to avoid needing QueryClientProvider.
 vi.mock("@/contexts/feature-availability-context", () => ({
   FeatureAvailabilityProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

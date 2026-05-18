@@ -10,6 +10,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 test.beforeEach(async ({ page }) => {
   await setupAuthStorage(page);
@@ -69,7 +70,7 @@ async function mockDeploymentRoutes(
     }),
   );
 
-  // Deployment matrix endpoint (registered last → highest priority)
+  // Deployment matrix endpoint
   await page.route("**/api/v1/deployments/matrix**", (route) =>
     route.fulfill({
       status: 200,
@@ -77,6 +78,9 @@ async function mockDeploymentRoutes(
       body: JSON.stringify(matrixData),
     }),
   );
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

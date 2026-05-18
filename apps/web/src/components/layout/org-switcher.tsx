@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Building2, ChevronsUpDown, Check, PlusCircle } from "lucide-react";
 import { useOrganization } from "@/contexts/organization-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -32,6 +33,7 @@ export function OrgSwitcher() {
   const { organizations, currentOrg, isLoading, switchOrg } =
     useOrganization();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Local search state — filters the visible org list inside the dropdown
   const [search, setSearch] = useState("");
@@ -113,6 +115,7 @@ export function OrgSwitcher() {
                       "org.switch",
                       () => {
                         switchOrg(org);
+                        queryClient.invalidateQueries();
                         if (user) {
                           setUserContext(user.id, user.username, org.id);
                         }

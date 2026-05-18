@@ -78,7 +78,7 @@ up-all:
 	docker compose -f docker-compose.yml -f docker-compose.observability.yml --profile docs up -d --build
 
 down-all:
-	docker compose -f docker-compose.yml -f docker-compose.observability.yml --profile docs down
+	docker compose -f docker-compose.yml -f docker-compose.observability.yml --profile docs down --rmi local
 
 healthcheck:
 	curl -fsS http://localhost:3000/api/health

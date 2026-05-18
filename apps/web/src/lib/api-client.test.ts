@@ -289,11 +289,17 @@ describe("api-client", () => {
       expect(callOptions.headers).not.toHaveProperty("X-Organization-Id");
     });
 
-    it("clears farm_current_org from sessionStorage when 403 is returned with X-Organization-Id header set", async () => {
+    it("clears farm_current_org from sessionStorage when 403 with ORG_STALE_MEMBERSHIP errorCode is returned", async () => {
       sessionStorage.setItem("farm_current_org", "org-stale-789");
       mockFetch.mockReturnValueOnce(
         jsonResponse(
-          { statusCode: 403, timestamp: "t", path: "/v1/auth/register", message: "Forbidden" },
+          {
+            statusCode: 403,
+            timestamp: "t",
+            path: "/v1/auth/register",
+            message: "Not a member of this organization",
+            errorCode: "ORG_STALE_MEMBERSHIP",
+          },
           403,
         ),
       );
@@ -303,6 +309,60 @@ describe("api-client", () => {
         // expected to throw ApiError
       }
       expect(sessionStorage.getItem("farm_current_org")).toBeNull();
+    });
+
+    it("dispatches farm:org:stale CustomEvent when 403 with ORG_STALE_MEMBERSHIP errorCode is returned", async () => {
+      sessionStorage.setItem("farm_current_org", "org-stale-789");
+      const events: Event[] = [];
+      const listener = (e: Event) => events.push(e);
+      window.addEventListener("farm:org:stale", listener);
+
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          {
+            statusCode: 403,
+            timestamp: "t",
+            path: "/v1/auth/register",
+            message: "Not a member of this organization",
+            errorCode: "ORG_STALE_MEMBERSHIP",
+          },
+          403,
+        ),
+      );
+      try {
+        await auth.register({ username: "u", email: "u@t.com", password: "pass1234" });
+      } catch {
+        // expected to throw ApiError
+      }
+
+      window.removeEventListener("farm:org:stale", listener);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(CustomEvent);
+      expect((events[0] as CustomEvent).type).toBe("farm:org:stale");
+    });
+
+    it("does not dispatch farm:org:stale for a generic 403 without ORG_STALE_MEMBERSHIP errorCode", async () => {
+      sessionStorage.setItem("farm_current_org", "org-admin-123");
+      const events: Event[] = [];
+      const listener = (e: Event) => events.push(e);
+      window.addEventListener("farm:org:stale", listener);
+
+      // Simulates a RolesGuard 403 (admin-only route) — no errorCode
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 403, timestamp: "t", path: "/v1/admin/users", message: "Forbidden resource" },
+          403,
+        ),
+      );
+      try {
+        await auth.getUsers();
+      } catch {
+        // expected to throw ApiError
+      }
+
+      window.removeEventListener("farm:org:stale", listener);
+      expect(events).toHaveLength(0);
+      expect(sessionStorage.getItem("farm_current_org")).toBe("org-admin-123");
     });
 
     it("forwards the org header on the retry fetch after a successful token refresh", async () => {

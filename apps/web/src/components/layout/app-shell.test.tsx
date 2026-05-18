@@ -102,6 +102,12 @@ vi.mock("@/lib/otel-context", () => ({
   getUserContext: vi.fn(() => null),
 }));
 
+// OrgSwitcher now calls useQueryClient() — stub it so no QueryClientProvider
+// wrapper is needed in AppShell tests.
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
+
 import React from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { fireEvent } from "@testing-library/react";

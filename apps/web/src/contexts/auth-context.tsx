@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearTokens();
     sessionStorage.removeItem("farm_user");
+    sessionStorage.removeItem("farm_current_org");
     disconnect();
     // Clear OTel user context so stale identity is not attached to future spans.
     clearUserContext();

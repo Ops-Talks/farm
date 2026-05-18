@@ -41,6 +41,12 @@ vi.mock("@/lib/otel-context", () => ({
   getUserContext: vi.fn(() => null),
 }));
 
+const mockInvalidateQueries = vi.fn();
+
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
+}));
+
 import { useOrganization } from "@/contexts/organization-context";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 
@@ -190,6 +196,7 @@ describe("OrgSwitcher", () => {
 
     await user.click(screen.getByText("Beta Inc"));
     expect(mockSwitchOrg).toHaveBeenCalledWith(mockOrganizations[1]);
+    expect(mockInvalidateQueries).toHaveBeenCalledTimes(1);
   });
 
   it("navigates to /organizations/new when 'Create organization' is clicked", async () => {

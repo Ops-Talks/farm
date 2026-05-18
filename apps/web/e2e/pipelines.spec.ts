@@ -12,6 +12,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -149,7 +150,7 @@ async function mockPipelineRoutes(
     }
   });
 
-  // --- 6. Pipeline list (GET) and creation (POST) — highest priority -------
+  // --- 6. Pipeline list (GET) and creation (POST) ---
   await page.route("**/api/v1/pipelines", (route) => {
     if (route.request().method() === "POST" && options.includeCreation) {
       route.fulfill({
@@ -167,6 +168,9 @@ async function mockPipelineRoutes(
       });
     }
   });
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ── Authenticated tests ──────────────────────────────────────────────────────

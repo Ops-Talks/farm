@@ -11,6 +11,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // ---------------------------------------------------------------------------
 // Inject mock auth tokens into sessionStorage before each test page load.
@@ -106,7 +107,7 @@ async function mockCatalogRoutes(
     );
   }
 
-  // Catalog list with query params (registered last → highest priority)
+  // Catalog list with query params
   await page.route("**/api/v1/catalog/components?**", (route) =>
     route.fulfill({
       status: 200,
@@ -114,6 +115,9 @@ async function mockCatalogRoutes(
       body: JSON.stringify(MOCK_COMPONENT_LIST),
     }),
   );
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

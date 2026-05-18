@@ -19,14 +19,15 @@
  */
 
 import type { Page } from "@playwright/test";
-import { MOCK_USER, MOCK_TOKENS } from "../global-setup";
+import { MOCK_USER, MOCK_TOKENS, MOCK_ORG } from "../global-setup";
 
 export async function setupAuthStorage(page: Page): Promise<void> {
   // Suppress Socket.IO polling so the WS client does not fire connection
   // errors while the backend is not running during E2E tests.
   await page.route("**/socket.io/**", (route) => route.abort());
 
-  // Intercept the organizations list so OrgSwitcher never hits the proxy.
+  // Intercept the organizations list so OrgReadyGate resolves with at least
+  // one org and does not redirect to /organizations/new.
   // Individual spec files can register more-specific routes that override
   // this catch-all (Playwright resolves routes in LIFO order).
   await page.route("**/api/v1/organizations", (route) => {
@@ -34,7 +35,7 @@ export async function setupAuthStorage(page: Page): Promise<void> {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([]),
+        body: JSON.stringify({ data: [MOCK_ORG], total: 1 }),
       });
     } else {
       void route.continue();
@@ -42,12 +43,13 @@ export async function setupAuthStorage(page: Page): Promise<void> {
   });
 
   await page.addInitScript(
-    ({ user, tokens }) => {
+    ({ user, tokens, orgId }) => {
       sessionStorage.setItem("farm_token", tokens.token);
       sessionStorage.setItem("farm_refresh", tokens.refreshToken);
       sessionStorage.setItem("farm_username", user.username);
       sessionStorage.setItem("farm_user", JSON.stringify(user));
+      sessionStorage.setItem("farm_current_org", orgId);
     },
-    { user: MOCK_USER, tokens: MOCK_TOKENS },
+    { user: MOCK_USER, tokens: MOCK_TOKENS, orgId: MOCK_ORG.id },
   );
 }

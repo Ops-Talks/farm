@@ -72,7 +72,10 @@ export class OrgRequiredGuard implements CanActivate {
     });
 
     if (!membership) {
-      throw new ForbiddenException("Not a member of this organization");
+      throw new ForbiddenException({
+        message: "Not a member of this organization",
+        errorCode: "ORG_STALE_MEMBERSHIP",
+      });
     }
 
     req.organizationId = orgId;

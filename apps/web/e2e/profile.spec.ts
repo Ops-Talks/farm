@@ -13,6 +13,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 import { MOCK_USER } from "./global-setup";
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,9 @@ async function mockProfileRoutes(page: import("@playwright/test").Page) {
       void route.continue();
     }
   });
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // Inject mock auth tokens only for authenticated scenarios
