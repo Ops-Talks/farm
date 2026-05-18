@@ -64,9 +64,7 @@ export class OrgRequiredGuard implements CanActivate {
     }
 
     if (!req.user?.userId) {
-      throw new ForbiddenException(
-        "Authentication required for this endpoint",
-      );
+      throw new ForbiddenException("Authentication required for this endpoint");
     }
 
     const membership = await this.userOrgRepo.findOne({

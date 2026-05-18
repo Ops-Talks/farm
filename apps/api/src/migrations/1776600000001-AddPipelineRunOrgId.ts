@@ -12,7 +12,7 @@ export class AddPipelineRunOrgId1776600000001 implements MigrationInterface {
     );
     await queryRunner.query(
       `UPDATE "pipeline_runs" pr
-       SET "organization_id" = p."organizationId"
+       SET "organization_id" = p."organizationId"::uuid
        FROM "pipelines" p
        WHERE pr."pipelineId" = p."id"
          AND pr."organization_id" IS NULL
