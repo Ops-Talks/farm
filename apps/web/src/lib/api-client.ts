@@ -356,15 +356,19 @@ async function request<T>(
     return undefined as T;
   }
 
-  // Stale organization context recovery: if the backend returns 403 for a
-  // request that included X-Organization-Id, the cached org id is no longer
-  // valid for this user (e.g., after a seed reset, org deletion, or
-  // membership revocation). Clear the cached org so the user is sent back
-  // to the org selector instead of being stuck with broken requests.
+  const body = (await res.json()) as T;
+
+  // Stale organization context recovery: only fire when the backend explicitly
+  // signals that the user is no longer a member of the requested organization
+  // (errorCode "ORG_STALE_MEMBERSHIP" set by OrgRequiredGuard). Generic 403s
+  // from RolesGuard or other guards must not trigger org state reset because
+  // the selected organization is still valid in those cases.
   if (
     res.status === 403 &&
     typeof window !== "undefined" &&
-    headers["X-Organization-Id"]
+    headers["X-Organization-Id"] &&
+    (body as unknown as { errorCode?: string })?.errorCode ===
+      "ORG_STALE_MEMBERSHIP"
   ) {
     safeSessionRemove("farm_current_org");
     // Notify OrganizationProvider to re-fetch so React state stays in sync
@@ -372,8 +376,6 @@ async function request<T>(
     // (circular dep), so a CustomEvent is used as the decoupling mechanism.
     window.dispatchEvent(new CustomEvent("farm:org:stale"));
   }
-
-  const body = (await res.json()) as T;
 
   if (!res.ok) {
     // Log failed API responses so they are visible in browser devtools and

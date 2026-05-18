@@ -79,6 +79,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
           JSON.stringify(responseContent)
         : responseContent;
 
+    // Pass through optional domain-specific error codes (e.g. ORG_STALE_MEMBERSHIP)
+    // so clients can distinguish structured failures from generic HTTP status codes.
+    const errorCode =
+      typeof responseContent === "object" && responseContent !== null
+        ? (responseContent as Record<string, unknown>).errorCode
+        : undefined;
+
     const spanContext = trace.getSpan(otelContext.active())?.spanContext();
     const requestId = (request as Request & { requestId?: string }).requestId;
 
@@ -94,6 +101,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message,
+      ...(errorCode && { errorCode }),
       ...(exposeCorrelation && requestId && { requestId }),
       ...(exposeCorrelation &&
         spanContext?.traceId && { traceId: spanContext.traceId }),

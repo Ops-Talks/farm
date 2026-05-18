@@ -75,7 +75,7 @@ describe("OrgRequiredGuard", () => {
     );
   });
 
-  it("throws ForbiddenException when user is not a member of the org", async () => {
+  it("throws ForbiddenException with ORG_STALE_MEMBERSHIP errorCode when user is not a member of the org", async () => {
     jest.spyOn(reflector, "getAllAndOverride").mockReturnValue(true);
     mockUserOrgRepo.findOne.mockResolvedValue(null);
     const ctx = createMockContext({
@@ -83,9 +83,16 @@ describe("OrgRequiredGuard", () => {
       user: { userId },
     });
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
-    await expect(guard.canActivate(ctx)).rejects.toThrow(
-      "Not a member of this organization",
-    );
+    let thrownError: ForbiddenException | undefined;
+    try {
+      await guard.canActivate(ctx);
+    } catch (e) {
+      thrownError = e as ForbiddenException;
+    }
+    expect(thrownError).toBeInstanceOf(ForbiddenException);
+    const response = thrownError!.getResponse() as Record<string, unknown>;
+    expect(response.message).toBe("Not a member of this organization");
+    expect(response.errorCode).toBe("ORG_STALE_MEMBERSHIP");
     expect(mockUserOrgRepo.findOne).toHaveBeenCalledWith({
       where: { userId, organizationId: orgId },
     });
