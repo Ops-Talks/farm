@@ -76,13 +76,17 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
             sessionStorage.setItem(ORG_STORAGE_KEY, fallback.id);
           }
         }
-      } else if (list.length > 0) {
-        // Auto-select first org when user has no saved selection.
-        // Works for single-org AND multi-org users.
-        const first = list[0];
-        if (first) {
-          setCurrentOrg(first);
-          sessionStorage.setItem(ORG_STORAGE_KEY, first.id);
+      } else {
+        if (list.length > 0) {
+          // Auto-select first org when user has no saved selection.
+          // Works for single-org AND multi-org users.
+          const first = list[0];
+          if (first) {
+            setCurrentOrg(first);
+            sessionStorage.setItem(ORG_STORAGE_KEY, first.id);
+          }
+        } else {
+          setCurrentOrg(null);
         }
       }
     } catch {
