@@ -77,13 +77,18 @@ export class PipelinesService {
    * Creates a new pipeline definition.
    * @param dto - Pipeline creation data
    * @param createdBy - UUID of the user creating the pipeline
+   * @param organizationId - Optional organization UUID to scope the pipeline
    * @returns The newly created pipeline
-   * @throws ConflictException if a pipeline with the same name already exists
+   * @throws ConflictException if a pipeline with the same name already exists in the org
    */
-  async create(dto: CreatePipelineDto, createdBy: string): Promise<Pipeline> {
-    const existing = await this.pipelineRepository.findOne({
-      where: { name: dto.name },
-    });
+  async create(
+    dto: CreatePipelineDto,
+    createdBy: string,
+    organizationId?: string,
+  ): Promise<Pipeline> {
+    const where: Record<string, unknown> = { name: dto.name };
+    if (organizationId) where["organizationId"] = organizationId;
+    const existing = await this.pipelineRepository.findOne({ where });
     if (existing) {
       throw new ConflictException(
         `Pipeline with name "${dto.name}" already exists`,
@@ -94,6 +99,7 @@ export class PipelinesService {
       ...dto,
       stages: dto.stages ?? [],
       createdBy,
+      ...(organizationId ? { organizationId } : {}),
     });
 
     this.logger.log(`Creating pipeline: ${dto.name}`);
@@ -126,13 +132,16 @@ export class PipelinesService {
   }
 
   /**
-   * Retrieves a single pipeline by ID.
+   * Retrieves a single pipeline by ID, optionally scoped to an organization.
    * @param id - Pipeline UUID
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The pipeline
-   * @throws NotFoundException if the pipeline does not exist
+   * @throws NotFoundException if the pipeline does not exist (or belongs to another org)
    */
-  async findOne(id: string): Promise<Pipeline> {
-    const pipeline = await this.pipelineRepository.findOne({ where: { id } });
+  async findOne(id: string, organizationId?: string): Promise<Pipeline> {
+    const where: Record<string, unknown> = { id };
+    if (organizationId) where["organizationId"] = organizationId;
+    const pipeline = await this.pipelineRepository.findOne({ where });
     if (!pipeline) {
       throw new NotFoundException(`Pipeline with ID "${id}" not found`);
     }
@@ -143,16 +152,23 @@ export class PipelinesService {
    * Updates an existing pipeline definition.
    * @param id - Pipeline UUID
    * @param dto - Fields to update
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The updated pipeline
-   * @throws NotFoundException if the pipeline does not exist
-   * @throws ConflictException if the new name conflicts with an existing pipeline
+   * @throws NotFoundException if the pipeline does not exist (or belongs to another org)
+   * @throws ConflictException if the new name conflicts with an existing pipeline in the org
    */
-  async update(id: string, dto: UpdatePipelineDto): Promise<Pipeline> {
-    const pipeline = await this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdatePipelineDto,
+    organizationId?: string,
+  ): Promise<Pipeline> {
+    const pipeline = await this.findOne(id, organizationId);
 
     if (dto.name && dto.name !== pipeline.name) {
+      const conflictWhere: Record<string, unknown> = { name: dto.name };
+      if (organizationId) conflictWhere["organizationId"] = organizationId;
       const conflict = await this.pipelineRepository.findOne({
-        where: { name: dto.name },
+        where: conflictWhere,
       });
       if (conflict) {
         throw new ConflictException(
@@ -168,10 +184,11 @@ export class PipelinesService {
   /**
    * Removes a pipeline and its associated runs.
    * @param id - Pipeline UUID
-   * @throws NotFoundException if the pipeline does not exist
+   * @param organizationId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if the pipeline does not exist (or belongs to another org)
    */
-  async remove(id: string): Promise<void> {
-    const pipeline = await this.findOne(id);
+  async remove(id: string, organizationId?: string): Promise<void> {
+    const pipeline = await this.findOne(id, organizationId);
     await this.pipelineRepository.remove(pipeline);
     this.logger.log(`Removed pipeline: ${pipeline.name}`);
   }
@@ -181,19 +198,22 @@ export class PipelinesService {
    * the job on the PIPELINE_EXECUTION queue.
    * @param pipelineId - Pipeline UUID
    * @param triggeredBy - UUID of the user triggering the run
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The newly created PipelineRun
-   * @throws NotFoundException if the pipeline does not exist
+   * @throws NotFoundException if the pipeline does not exist (or belongs to another org)
    */
   async triggerRun(
     pipelineId: string,
     triggeredBy: string,
+    organizationId?: string,
   ): Promise<PipelineRun> {
-    await this.findOne(pipelineId);
+    await this.findOne(pipelineId, organizationId);
 
     const run = this.runRepository.create({
       pipelineId,
       triggeredBy,
       status: PipelineRunStatus.QUEUED,
+      ...(organizationId ? { organizationId } : {}),
     });
 
     const savedRun = await this.runRepository.save(run);
@@ -514,16 +534,21 @@ export class PipelinesService {
   }
 
   /**
-   * Returns a single pipeline run, validating it belongs to the pipeline.
+   * Returns a single pipeline run, validating it belongs to the pipeline and org.
    * @param pipelineId - Pipeline UUID
    * @param runId - PipelineRun UUID
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The matching PipelineRun
-   * @throws NotFoundException if not found or run does not belong to the pipeline
+   * @throws NotFoundException if not found, run does not belong to the pipeline, or belongs to another org
    */
-  async findRun(pipelineId: string, runId: string): Promise<PipelineRun> {
-    const run = await this.runRepository.findOne({
-      where: { id: runId, pipelineId },
-    });
+  async findRun(
+    pipelineId: string,
+    runId: string,
+    organizationId?: string,
+  ): Promise<PipelineRun> {
+    const where: Record<string, unknown> = { id: runId, pipelineId };
+    if (organizationId) where["organizationId"] = organizationId;
+    const run = await this.runRepository.findOne({ where });
     if (!run) {
       throw new NotFoundException(
         `Run "${runId}" not found for pipeline "${pipelineId}"`,
@@ -539,16 +564,18 @@ export class PipelinesService {
    * @param pipelineId - Pipeline UUID
    * @param runId - PipelineRun UUID
    * @param userId - UUID of the user granting approval
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The updated PipelineRun
-   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws NotFoundException if the run does not belong to the pipeline (or belongs to another org)
    * @throws BadRequestException if the run is not in WAITING_APPROVAL status
    */
   async approveRun(
     pipelineId: string,
     runId: string,
     userId: string,
+    organizationId?: string,
   ): Promise<PipelineRun> {
-    const run = await this.findRun(pipelineId, runId);
+    const run = await this.findRun(pipelineId, runId, organizationId);
 
     if (run.status !== PipelineRunStatus.WAITING_APPROVAL) {
       throw new BadRequestException("Run is not waiting for approval");
@@ -613,16 +640,18 @@ export class PipelinesService {
    * @param pipelineId - Pipeline UUID
    * @param runId - PipelineRun UUID
    * @param userId - UUID of the user rejecting the run
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The updated PipelineRun
-   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws NotFoundException if the run does not belong to the pipeline (or belongs to another org)
    * @throws BadRequestException if the run is not in WAITING_APPROVAL status
    */
   async rejectRun(
     pipelineId: string,
     runId: string,
     userId: string,
+    organizationId?: string,
   ): Promise<PipelineRun> {
-    const run = await this.findRun(pipelineId, runId);
+    const run = await this.findRun(pipelineId, runId, organizationId);
 
     if (run.status !== PipelineRunStatus.WAITING_APPROVAL) {
       throw new BadRequestException("Run is not waiting for approval");
@@ -663,16 +692,18 @@ export class PipelinesService {
    * @param pipelineId - Pipeline UUID
    * @param runId - PipelineRun UUID
    * @param userId - UUID of the user requesting cancellation
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The updated PipelineRun
-   * @throws NotFoundException if the run does not belong to the pipeline
+   * @throws NotFoundException if the run does not belong to the pipeline (or belongs to another org)
    * @throws BadRequestException if the run is in a terminal status
    */
   async cancelRun(
     pipelineId: string,
     runId: string,
     userId: string,
+    organizationId?: string,
   ): Promise<PipelineRun> {
-    const run = await this.findRun(pipelineId, runId);
+    const run = await this.findRun(pipelineId, runId, organizationId);
 
     const cancellableStatuses: PipelineRunStatus[] = [
       PipelineRunStatus.QUEUED,

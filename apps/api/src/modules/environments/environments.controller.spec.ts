@@ -3,6 +3,8 @@ import { EnvironmentsController } from "./environments.controller";
 import { EnvironmentsService } from "./environments.service";
 import { EnvironmentType } from "./entities/environment.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("EnvironmentsController", () => {
   let controller: EnvironmentsController;
@@ -34,7 +36,10 @@ describe("EnvironmentsController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<EnvironmentsController>(EnvironmentsController);
     service = module.get<EnvironmentsService>(EnvironmentsService);
@@ -81,21 +86,28 @@ describe("EnvironmentsController", () => {
   });
 
   it("should return one environment", async () => {
-    const result = await controller.findOne("env-uuid-1");
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+    const result = await controller.findOne("env-uuid-1", mockReq);
     expect(result).toEqual(mockEnvironment);
-    expect(service.findOne).toHaveBeenCalledWith("env-uuid-1");
+    expect(service.findOne).toHaveBeenCalledWith("env-uuid-1", "org-uuid");
   });
 
   it("should update an environment", async () => {
-    const result = await controller.update("env-uuid-1", {
-      description: "Updated",
-    });
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+    const result = await controller.update(
+      "env-uuid-1",
+      {
+        description: "Updated",
+      },
+      mockReq,
+    );
     expect(result).toEqual(mockEnvironment);
     expect(service.update).toHaveBeenCalled();
   });
 
   it("should remove an environment", async () => {
-    await controller.remove("env-uuid-1");
-    expect(service.remove).toHaveBeenCalledWith("env-uuid-1");
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+    await controller.remove("env-uuid-1", mockReq);
+    expect(service.remove).toHaveBeenCalledWith("env-uuid-1", "org-uuid");
   });
 });

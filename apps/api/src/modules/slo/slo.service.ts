@@ -85,12 +85,17 @@ export class SloService {
 
   /**
    * Retrieves a single SLO by ID.
+   * When orgId is provided the result is additionally scoped to that
+   * organization — a mismatch returns 404 to avoid leaking resource existence.
    * @param id - The UUID of the SLO
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The SLO with the specified ID
-   * @throws NotFoundException if no SLO with the given ID exists
+   * @throws NotFoundException if no SLO with the given ID exists (or org does not match)
    */
-  async findOne(id: string): Promise<Slo> {
-    const slo = await this.sloRepository.findOne({ where: { id } });
+  async findOne(id: string, orgId?: string): Promise<Slo> {
+    const where: FindOptionsWhere<Slo> = { id };
+    if (orgId) where.organizationId = orgId;
+    const slo = await this.sloRepository.findOne({ where });
     if (!slo) {
       throw new NotFoundException(`SLO with ID "${id}" not found`);
     }
@@ -101,12 +106,17 @@ export class SloService {
    * Updates an existing SLO.
    * @param id - The UUID of the SLO to update
    * @param updateSloDto - Fields to update
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The updated SLO
-   * @throws NotFoundException if no SLO with the given ID exists
+   * @throws NotFoundException if no SLO with the given ID exists (or org does not match)
    * @throws ConflictException if the new name conflicts with an existing SLO
    */
-  async update(id: string, updateSloDto: UpdateSloDto): Promise<Slo> {
-    const slo = await this.findOne(id);
+  async update(
+    id: string,
+    updateSloDto: UpdateSloDto,
+    orgId?: string,
+  ): Promise<Slo> {
+    const slo = await this.findOne(id, orgId);
 
     if (updateSloDto.name && updateSloDto.name !== slo.name) {
       const existing = await this.sloRepository.findOne({
@@ -127,10 +137,11 @@ export class SloService {
   /**
    * Removes an SLO.
    * @param id - The UUID of the SLO to remove
-   * @throws NotFoundException if no SLO with the given ID exists
+   * @param orgId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if no SLO with the given ID exists (or org does not match)
    */
-  async remove(id: string): Promise<void> {
-    const slo = await this.findOne(id);
+  async remove(id: string, orgId?: string): Promise<void> {
+    const slo = await this.findOne(id, orgId);
     await this.sloRepository.remove(slo);
     this.logger.log(`Removed SLO: ${slo.name}`);
   }

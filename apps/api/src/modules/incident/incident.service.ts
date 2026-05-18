@@ -6,7 +6,7 @@ import {
   Optional,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { FindOptionsWhere, In, Repository } from "typeorm";
 import { Incident, IncidentStatus } from "./entities/incident.entity";
 import { IncidentUpdate } from "./entities/incident-update.entity";
 import { Component } from "../catalog/entities/component.entity";
@@ -145,13 +145,18 @@ export class IncidentService {
 
   /**
    * Retrieves a single incident by ID with all relations loaded.
+   * When orgId is provided the result is additionally scoped to that
+   * organization — a mismatch returns 404 to avoid leaking resource existence.
    * @param id - UUID of the incident
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The incident
-   * @throws NotFoundException if no incident with the given ID exists
+   * @throws NotFoundException if no incident with the given ID exists (or org does not match)
    */
-  async findOne(id: string): Promise<Incident> {
+  async findOne(id: string, orgId?: string): Promise<Incident> {
+    const where: FindOptionsWhere<Incident> = { id };
+    if (orgId) where.organizationId = orgId;
     const incident = await this.incidentRepository.findOne({
-      where: { id },
+      where,
       relations: ["affectedComponents", "affectedEnvironments", "updates"],
     });
     if (!incident) {
@@ -165,11 +170,16 @@ export class IncidentService {
    * relations when the corresponding ID arrays are provided.
    * @param id - UUID of the incident to update
    * @param dto - Fields to update
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The updated incident
-   * @throws NotFoundException if no incident with the given ID exists
+   * @throws NotFoundException if no incident with the given ID exists (or org does not match)
    */
-  async update(id: string, dto: UpdateIncidentDto): Promise<Incident> {
-    const incident = await this.findOne(id);
+  async update(
+    id: string,
+    dto: UpdateIncidentDto,
+    orgId?: string,
+  ): Promise<Incident> {
+    const incident = await this.findOne(id, orgId);
 
     const { affectedComponentIds, affectedEnvironmentIds, ...rest } = dto;
 
@@ -268,10 +278,11 @@ export class IncidentService {
   /**
    * Removes an incident.
    * @param id - UUID of the incident to remove
-   * @throws NotFoundException if no incident with the given ID exists
+   * @param orgId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if no incident with the given ID exists (or org does not match)
    */
-  async remove(id: string): Promise<void> {
-    const incident = await this.findOne(id);
+  async remove(id: string, orgId?: string): Promise<void> {
+    const incident = await this.findOne(id, orgId);
     await this.incidentRepository.remove(incident);
     this.logger.log(`Removed incident: ${id} — ${incident.title}`);
   }

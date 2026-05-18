@@ -80,6 +80,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/registry/components/${componentId}/vulnerabilities`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -92,6 +93,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
           `/api/v1/registry/components/${componentId}/vulnerabilities?severity=CRITICAL`,
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -114,6 +116,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
           `/api/v1/registry/components/${componentId}/vulnerabilities/summary`,
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(res.body).toMatchObject({
@@ -140,6 +143,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
           "/api/v1/registry/components/00000000-0000-0000-0000-000000000000/vulnerabilities/sync",
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
 
@@ -147,6 +151,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
       await request(app.getHttpServer())
         .post(`/api/v1/registry/components/${componentId}/vulnerabilities/sync`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(400);
     });
 
@@ -156,6 +161,7 @@ describe("Registry Vulnerabilities (e2e)", () => {
           `/api/v1/registry/components/${componentWithImageId}/vulnerabilities/sync`,
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       // No real adapter is configured, so sync runs inline and returns 0 CVEs

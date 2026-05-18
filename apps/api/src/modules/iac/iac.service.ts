@@ -6,7 +6,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, FindOptionsWhere } from "typeorm";
+import { Repository, FindOptionsWhere, IsNull } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { IacStack } from "./entities/iac-stack.entity";
 import { IacRun, IacRunStatus } from "./entities/iac-run.entity";
@@ -108,12 +108,20 @@ export class IacService {
    * @returns The persisted IacRun record
    * @throws UnauthorizedException when token is invalid
    */
-  async ingestRun(dto: IngestRunDto, token: string): Promise<IacRun> {
+  async ingestRun(
+    dto: IngestRunDto,
+    token: string,
+    organizationId?: string,
+  ): Promise<IacRun> {
     this.validateIngestToken(token);
 
-    // Find or create the stack
+    // Find or create the stack, scoped to the organization when provided
     let stack = await this.stackRepository.findOne({
-      where: { name: dto.stackName, environment: dto.environment },
+      where: {
+        name: dto.stackName,
+        environment: dto.environment,
+        organizationId: organizationId ?? IsNull(),
+      },
     });
 
     if (!stack) {
@@ -122,6 +130,7 @@ export class IacService {
         environment: dto.environment,
         provider: dto.provider ?? "terraform",
         autoImported: true,
+        organizationId: organizationId ?? null,
       });
       stack = await this.stackRepository.save(stack);
       this.logger.log(
@@ -166,6 +175,7 @@ export class IacService {
   async importStacks(
     dto: ImportStacksDto,
     token: string,
+    organizationId?: string,
   ): Promise<{ created: number; updated: number }> {
     this.validateIngestToken(token);
 
@@ -174,7 +184,11 @@ export class IacService {
 
     for (const item of dto.stacks) {
       const existing = await this.stackRepository.findOne({
-        where: { name: item.name, environment: item.environment },
+        where: {
+          name: item.name,
+          environment: item.environment,
+          organizationId: organizationId ?? IsNull(),
+        },
       });
 
       if (existing) {
@@ -197,6 +211,7 @@ export class IacService {
           basePath: item.basePath ?? null,
           externalToolUrl: item.externalToolUrl ?? null,
           autoImported: true,
+          organizationId: organizationId ?? null,
         });
         await this.stackRepository.save(stack);
         created++;
@@ -367,12 +382,17 @@ export class IacService {
    * Each result includes the most recent run summary.
    *
    * @param query - Optional environment and componentId filters
+   * @param organizationId - Optional organization UUID to scope results
    * @returns Array of StackDetailDto
    */
-  async listStacks(query: StackListQueryDto): Promise<StackDetailDto[]> {
+  async listStacks(
+    query: StackListQueryDto,
+    organizationId?: string,
+  ): Promise<StackDetailDto[]> {
     const where: FindOptionsWhere<IacStack> = {};
     if (query.environment) where.environment = query.environment;
     if (query.componentId) where.componentId = query.componentId;
+    if (organizationId) where.organizationId = organizationId;
 
     const stacks = await this.stackRepository.find({
       where,
@@ -392,11 +412,14 @@ export class IacService {
    * Returns a single stack by UUID with its most recent run summary.
    *
    * @param id - IacStack UUID
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns StackDetailDto
-   * @throws NotFoundException when no stack with that id exists
+   * @throws NotFoundException when no stack with that id exists (or belongs to another org)
    */
-  async getStack(id: string): Promise<StackDetailDto> {
-    const stack = await this.stackRepository.findOne({ where: { id } });
+  async getStack(id: string, organizationId?: string): Promise<StackDetailDto> {
+    const where: FindOptionsWhere<IacStack> = { id };
+    if (organizationId) where.organizationId = organizationId;
+    const stack = await this.stackRepository.findOne({ where });
     if (!stack) {
       throw new NotFoundException(`IacStack ${id} not found`);
     }

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { IsNull } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { UnauthorizedException, NotFoundException } from "@nestjs/common";
 import { IacService } from "./iac.service";
@@ -160,7 +161,11 @@ describe("IacService", () => {
       const result = await service.ingestRun(dto, VALID_TOKEN);
 
       expect(stackRepo.findOne).toHaveBeenCalledWith({
-        where: { name: dto.stackName, environment: dto.environment },
+        where: {
+          name: dto.stackName,
+          environment: dto.environment,
+          organizationId: IsNull(),
+        },
       });
       expect(stackRepo.create).not.toHaveBeenCalled();
       expect(runRepo.create).toHaveBeenCalled();

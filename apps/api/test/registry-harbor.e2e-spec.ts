@@ -11,10 +11,11 @@ import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 describe("Registry Harbor (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app, {
+    ({ token, organizationId } = await registerAndLogin(app, {
       username: "harbor-e2e-admin",
       email: "harbor-e2e@test.com",
       password: "TestPassword1",
@@ -37,6 +38,7 @@ describe("Registry Harbor (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/registry/repositories")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(503);
     });
   });
@@ -52,6 +54,7 @@ describe("Registry Harbor (e2e)", () => {
       const response = await request(app.getHttpServer())
         .get("/api/v1/registry/harbor/replications")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(response.body).toEqual([]);

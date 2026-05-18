@@ -12,10 +12,11 @@ import { IacRun } from "./iac-run.entity";
 
 /**
  * Represents an Infrastructure-as-Code stack tracked by Farm.
- * A stack is uniquely identified by its name and environment combination.
+ * A stack is uniquely identified by its name and environment combination
+ * within an organization.
  */
 @Entity("iac_stacks")
-@Index(["name", "environment"], { unique: true })
+@Index(["name", "environment", "organizationId"], { unique: true })
 export class IacStack {
   @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440000",
@@ -26,7 +27,7 @@ export class IacStack {
 
   @ApiProperty({
     example: "core-networking",
-    description: "Stack name — unique within an environment",
+    description: "Stack name — unique within an environment and organization",
   })
   @Column()
   name: string;
@@ -38,6 +39,15 @@ export class IacStack {
   @Index()
   @Column()
   environment: string;
+
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440010",
+    description: "Organization this stack belongs to",
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  organizationId: string | null;
 
   @ApiProperty({
     example: "terraform",

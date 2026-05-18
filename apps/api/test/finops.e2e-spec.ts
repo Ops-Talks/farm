@@ -68,12 +68,14 @@ interface PlatformCostItem {
 async function createComponent(
   app: INestApplication<App>,
   token: string,
+  organizationId: string,
   name: string,
   extra: Record<string, unknown> = {},
 ): Promise<string> {
   const res = await request(app.getHttpServer())
     .post("/api/v1/catalog/components")
     .set("Authorization", `Bearer ${token}`)
+    .set("X-Organization-Id", organizationId)
     .send({ name, kind: "service", owner: "platform-team", ...extra })
     .expect(201);
   return (res.body as { id: string }).id;
@@ -87,6 +89,7 @@ async function createComponent(
 describe("FinOps (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
   let costEstimateRepo: Repository<CostEstimate>;
   let actualCostRepo: Repository<ActualCost>;
   let teamRepo: Repository<Team>;
@@ -98,7 +101,7 @@ describe("FinOps (e2e)", () => {
     const openCostService = app.get(OpenCostService);
     jest.spyOn(openCostService, "getAllocation").mockResolvedValue(null);
 
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
 
     costEstimateRepo = app.get<Repository<CostEstimate>>(
       getRepositoryToken(CostEstimate),
@@ -125,11 +128,13 @@ describe("FinOps (e2e)", () => {
       const componentId = await createComponent(
         app,
         token,
+        organizationId,
         "no-estimate-service",
       );
       await request(app.getHttpServer())
         .get(`/api/v1/catalog/components/${componentId}/cost-estimate`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
 
@@ -137,6 +142,7 @@ describe("FinOps (e2e)", () => {
       const componentId = await createComponent(
         app,
         token,
+        organizationId,
         "estimated-service",
       );
 
@@ -153,6 +159,7 @@ describe("FinOps (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/catalog/components/${componentId}/cost-estimate`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as CostEstimateResponse;
@@ -174,6 +181,7 @@ describe("FinOps (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/cost/components/non-existent-uuid/actual")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
 
@@ -181,12 +189,14 @@ describe("FinOps (e2e)", () => {
       const componentId = await createComponent(
         app,
         token,
+        organizationId,
         "opencost-test-service",
       );
 
       const res = await request(app.getHttpServer())
         .get(`/api/v1/cost/components/${componentId}/actual`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as ActualCostResponse;
@@ -209,12 +219,14 @@ describe("FinOps (e2e)", () => {
       const componentId = await createComponent(
         app,
         token,
+        organizationId,
         "history-test-service",
       );
 
       const res = await request(app.getHttpServer())
         .get(`/api/v1/cost/components/${componentId}/history`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -225,6 +237,7 @@ describe("FinOps (e2e)", () => {
       const componentId = await createComponent(
         app,
         token,
+        organizationId,
         "history-records-service",
       );
 
@@ -251,6 +264,7 @@ describe("FinOps (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/cost/components/${componentId}/history`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as ActualCostRecord[];
@@ -272,6 +286,7 @@ describe("FinOps (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/cost/teams/non-existent-team/summary")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
 
@@ -284,9 +299,15 @@ describe("FinOps (e2e)", () => {
       });
       const savedTeam = await teamRepo.save(team);
 
-      const componentId = await createComponent(app, token, "team-service", {
-        teamId: savedTeam.id,
-      });
+      const componentId = await createComponent(
+        app,
+        token,
+        organizationId,
+        "team-service",
+        {
+          teamId: savedTeam.id,
+        },
+      );
 
       await actualCostRepo.save(
         actualCostRepo.create({
@@ -301,6 +322,7 @@ describe("FinOps (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/cost/teams/${savedTeam.id}/summary`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as TeamSummaryResponse;
@@ -323,16 +345,23 @@ describe("FinOps (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/cost/summary?limit=5")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
     });
 
     it("returns records sorted by totalCost DESC", async () => {
-      const cheapId = await createComponent(app, token, "cheap-comp-summary");
+      const cheapId = await createComponent(
+        app,
+        token,
+        organizationId,
+        "cheap-comp-summary",
+      );
       const expensiveId = await createComponent(
         app,
         token,
+        organizationId,
         "expensive-comp-summary",
       );
 
@@ -359,6 +388,7 @@ describe("FinOps (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/cost/summary?limit=10")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as PlatformCostItem[];

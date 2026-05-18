@@ -25,9 +25,12 @@ import {
   ApiNoContentResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { PipelinesService } from "./pipelines.service";
@@ -45,7 +48,14 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
  */
 @ApiTags("Pipelines")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("pipelines")
 @ApiResponse({
@@ -56,6 +66,12 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized - Authentication token is missing or invalid.",
+  type: ErrorResponseDto,
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -88,7 +104,11 @@ export class PipelinesController {
     @Body() dto: CreatePipelineDto,
     @Req() req: RequestWithOrg,
   ): Promise<Pipeline> {
-    return this.pipelinesService.create(dto, req.user?.userId ?? "anonymous");
+    return this.pipelinesService.create(
+      dto,
+      req.user?.userId ?? "anonymous",
+      req.organizationId,
+    );
   }
 
   /**
@@ -132,8 +152,11 @@ export class PipelinesController {
     description: "Pipeline not found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Pipeline> {
-    return this.pipelinesService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Pipeline> {
+    return this.pipelinesService.findOne(id, req.organizationId);
   }
 
   /**
@@ -162,8 +185,9 @@ export class PipelinesController {
   async update(
     @Param("id") id: string,
     @Body() dto: UpdatePipelineDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Pipeline> {
-    return this.pipelinesService.update(id, dto);
+    return this.pipelinesService.update(id, dto, req.organizationId);
   }
 
   /**
@@ -180,8 +204,11 @@ export class PipelinesController {
     description: "Pipeline not found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    return this.pipelinesService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    return this.pipelinesService.remove(id, req.organizationId);
   }
 
   /**
@@ -212,6 +239,7 @@ export class PipelinesController {
     return this.pipelinesService.triggerRun(
       id,
       req.user?.userId ?? "anonymous",
+      req.organizationId,
     );
   }
 
@@ -333,8 +361,9 @@ export class PipelinesController {
   async findRun(
     @Param("id") id: string,
     @Param("runId") runId: string,
+    @Req() req: RequestWithOrg,
   ): Promise<PipelineRun> {
-    return this.pipelinesService.findRun(id, runId);
+    return this.pipelinesService.findRun(id, runId, req.organizationId);
   }
 
   /**
@@ -374,6 +403,7 @@ export class PipelinesController {
       id,
       runId,
       req.user?.userId ?? "anonymous",
+      req.organizationId,
     );
   }
 
@@ -413,6 +443,7 @@ export class PipelinesController {
       id,
       runId,
       req.user?.userId ?? "anonymous",
+      req.organizationId,
     );
   }
 
@@ -452,6 +483,7 @@ export class PipelinesController {
       id,
       runId,
       req.user?.userId ?? "anonymous",
+      req.organizationId,
     );
   }
 }

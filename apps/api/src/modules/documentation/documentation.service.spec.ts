@@ -58,6 +58,7 @@ describe("DocumentationService", () => {
       ),
     find: jest.fn().mockResolvedValue([mockDoc]),
     findAndCount: jest.fn().mockResolvedValue([[mockDoc], 1]),
+    findOne: jest.fn().mockResolvedValue(mockDoc),
     findOneBy: jest.fn().mockResolvedValue(mockDoc),
     merge: jest.fn().mockImplementation(
       (entity: Documentation, dto: any) =>
@@ -374,7 +375,7 @@ describe("DocumentationService", () => {
   describe("update", () => {
     it("should merge and save the updated documentation", async () => {
       const updated = { ...mockDoc, title: "Updated Title" };
-      mockRepository.findOneBy.mockResolvedValue(mockDoc);
+      mockRepository.findOne.mockResolvedValue(mockDoc);
       mockRepository.merge.mockReturnValue(updated);
       mockRepository.save.mockResolvedValue(updated);
 
@@ -390,19 +391,21 @@ describe("DocumentationService", () => {
 
   describe("remove", () => {
     it("should find and remove the documentation entry", async () => {
-      mockRepository.findOneBy.mockResolvedValue(mockDoc);
+      mockRepository.findOne.mockResolvedValue(mockDoc);
       mockRepository.remove.mockResolvedValue(undefined);
 
       await service.remove("uuid");
 
-      expect(mockRepository.findOneBy).toHaveBeenCalledWith({ id: "uuid" });
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "uuid" },
+      });
       expect(mockRepository.remove).toHaveBeenCalledWith(mockDoc);
     });
   });
 
   describe("findOne — NotFoundException", () => {
     it("should throw NotFoundException when documentation is not found", async () => {
-      mockRepository.findOneBy.mockResolvedValue(null);
+      mockRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne("non-existent-id")).rejects.toThrow(
         NotFoundException,

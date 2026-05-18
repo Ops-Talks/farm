@@ -46,7 +46,10 @@ describe("CatalogController", () => {
           useValue: mockDiscoveryQueue,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CatalogController>(CatalogController);
     service = module.get(CatalogService);
@@ -86,12 +89,13 @@ describe("CatalogController", () => {
   });
 
   it("should return one component", async () => {
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
     service.findOne.mockResolvedValue({
       id: "1",
       name: "Test",
       type: "service",
     });
-    expect(await controller.findOne("1")).toEqual({
+    expect(await controller.findOne("1", mockReq)).toEqual({
       id: "1",
       name: "Test",
       type: "service",
@@ -99,13 +103,14 @@ describe("CatalogController", () => {
   });
 
   it("should update a component", async () => {
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
     service.update.mockResolvedValue({
       id: "1",
       name: "Updated",
       type: "service",
     });
     const updateDto: UpdateComponentDto = { name: "Updated" };
-    expect(await controller.update("1", updateDto)).toEqual({
+    expect(await controller.update("1", updateDto, mockReq)).toEqual({
       id: "1",
       name: "Updated",
       type: "service",
@@ -113,8 +118,9 @@ describe("CatalogController", () => {
   });
 
   it("should remove a component (no content)", async () => {
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
     service.remove.mockResolvedValue({ deleted: true });
-    expect(await controller.remove("1")).toBeUndefined();
+    expect(await controller.remove("1", mockReq)).toBeUndefined();
   });
 
   // ---------------------------------------------------------------------------
@@ -206,7 +212,10 @@ describe("CatalogController — without discovery queue", () => {
         { provide: CACHE_MANAGER, useValue: mockCacheManagerLocal },
         // No discovery queue — fallback to synchronous discovery
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CatalogController>(CatalogController);
     jest.clearAllMocks();
@@ -292,7 +301,10 @@ describe("CatalogController — getCostEstimate with FinOpsService", () => {
         },
         { provide: FinOpsService, useValue: mockFinOpsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CatalogController>(CatalogController);
   });
@@ -334,6 +346,8 @@ describe("CatalogController — getCostEstimate with FinOpsService", () => {
 // ---------------------------------------------------------------------------
 
 import { PipelinesService } from "../pipelines/pipelines.service";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("CatalogController — findComponentPipelines", () => {
   const mockCatalogSvc = {
@@ -382,19 +396,28 @@ describe("CatalogController — findComponentPipelines", () => {
             useValue: mockPipelinesSvc,
           },
         ],
-      }).compile();
+      })
+        .overrideGuard(OrgRequiredGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
 
       controller = module.get<CatalogController>(CatalogController);
     });
 
     it("returns paginated pipelines for the given component", async () => {
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
       mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
       mockPipelinesSvc.findByComponent.mockResolvedValue([[mockPipeline], 1]);
 
-      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+      const result = await controller.findComponentPipelines(
+        "comp-1",
+        0,
+        10,
+        mockReq,
+      );
 
       expect(result).toEqual({ items: [mockPipeline], total: 1 });
-      expect(mockCatalogSvc.findOne).toHaveBeenCalledWith("comp-1");
+      expect(mockCatalogSvc.findOne).toHaveBeenCalledWith("comp-1", "org-uuid");
       expect(mockPipelinesSvc.findByComponent).toHaveBeenCalledWith(
         "comp-1",
         undefined,
@@ -404,22 +427,29 @@ describe("CatalogController — findComponentPipelines", () => {
     });
 
     it("throws NotFoundException when the component does not exist", async () => {
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
       mockCatalogSvc.findOne.mockRejectedValue(
         new NotFoundException("Component comp-missing not found"),
       );
 
       await expect(
-        controller.findComponentPipelines("comp-missing", 0, 10),
+        controller.findComponentPipelines("comp-missing", 0, 10, mockReq),
       ).rejects.toThrow(NotFoundException);
 
       expect(mockPipelinesSvc.findByComponent).not.toHaveBeenCalled();
     });
 
     it("returns empty list when findByComponent returns no results", async () => {
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
       mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
       mockPipelinesSvc.findByComponent.mockResolvedValue([[], 0]);
 
-      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+      const result = await controller.findComponentPipelines(
+        "comp-1",
+        0,
+        10,
+        mockReq,
+      );
 
       expect(result).toEqual({ items: [], total: 0 });
     });
@@ -445,15 +475,24 @@ describe("CatalogController — findComponentPipelines", () => {
             },
           },
         ],
-      }).compile();
+      })
+        .overrideGuard(OrgRequiredGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
 
       controller = module.get<CatalogController>(CatalogController);
     });
 
     it("returns empty list when PipelinesService is not injected", async () => {
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
       mockCatalogSvc.findOne.mockResolvedValue({ id: "comp-1" });
 
-      const result = await controller.findComponentPipelines("comp-1", 0, 10);
+      const result = await controller.findComponentPipelines(
+        "comp-1",
+        0,
+        10,
+        mockReq,
+      );
 
       expect(result).toEqual({ items: [], total: 0 });
     });

@@ -36,16 +36,18 @@ interface ScorecardOverviewResponse {
 describe("Scorecards API (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
   let componentId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
 
     // Create a catalog component so the scorecard evaluator has something to work with.
     const res = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "e2e-scorecard-svc",
         kind: "service",
@@ -75,6 +77,7 @@ describe("Scorecards API (e2e)", () => {
     await request(app.getHttpServer())
       .get(`/api/v1/scorecards/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -86,6 +89,7 @@ describe("Scorecards API (e2e)", () => {
     const res = await request(app.getHttpServer())
       .post(`/api/v1/scorecards/components/${componentId}/refresh`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({})
       .expect(201);
 
@@ -112,6 +116,7 @@ describe("Scorecards API (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get(`/api/v1/scorecards/components/${componentId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const body = res.body as ScorecardResultResponse;
@@ -132,6 +137,7 @@ describe("Scorecards API (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/scorecards")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const body = res.body as ScorecardResultResponse[];
@@ -155,6 +161,7 @@ describe("Scorecards API (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/scorecards/overview")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const body = res.body as ScorecardOverviewResponse;

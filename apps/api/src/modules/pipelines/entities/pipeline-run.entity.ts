@@ -75,6 +75,15 @@ export class PipelineRun {
   triggeredBy: string;
 
   @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440010",
+    description: "Organization this run belongs to",
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  organizationId: string | null;
+
+  @ApiProperty({
     example: "2024-01-01T00:00:00Z",
     description: "Timestamp when execution started",
     nullable: true,

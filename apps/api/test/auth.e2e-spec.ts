@@ -93,20 +93,13 @@ describe("Auth Lifecycle (e2e)", () => {
     expect(users.some((u) => u.username === userData.username)).toBe(true);
 
     // Step 4: Verify JWT works on a guarded endpoint
-    const catalogRes = await request(app.getHttpServer())
-      .get("/api/v1/catalog/components")
+    const meRes = await request(app.getHttpServer())
+      .get("/api/v1/auth/profile")
       .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
-    const catalogBody = catalogRes.body as {
-      data: unknown[];
-      total: number;
-      skip: number;
-      take: number;
-    };
-    expect(Array.isArray(catalogBody.data)).toBe(true);
-    expect(catalogBody.skip).toBe(0);
-    expect(catalogBody.take).toBe(20);
+    const meBody = meRes.body as UserResponse;
+    expect(meBody.username).toBe(userData.username);
   });
 
   it("should refresh an access token using a valid refresh token", async () => {

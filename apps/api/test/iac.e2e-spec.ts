@@ -8,11 +8,12 @@ const INGEST_TOKEN = "e2e-iac-ingest-token";
 describe("IaC Module (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     process.env.IAC_INGEST_TOKEN = INGEST_TOKEN;
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -169,6 +170,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/dashboard")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const dashBody = res.body as {
@@ -201,6 +203,7 @@ describe("IaC Module (e2e)", () => {
       const ingestRes = await request(app.getHttpServer())
         .post("/api/v1/iac/runs/ingest")
         .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .set("X-Organization-Id", organizationId)
         .send({
           stackName: "paginated-stack",
           environment: "test",
@@ -217,6 +220,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac/stacks/${stackRunId}/runs?page=1&limit=10`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const runsBody = res.body as { total: number; data: unknown[] };
@@ -239,6 +243,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/module-drift")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -260,6 +265,7 @@ describe("IaC Module (e2e)", () => {
       await request(app.getHttpServer())
         .post("/api/v1/iac/runs/ingest")
         .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .set("X-Organization-Id", organizationId)
         .send({
           stackName: "stack-list-e2e",
           environment: "staging",
@@ -274,6 +280,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/stacks")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -288,6 +295,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/stacks?environment=staging")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const stacks = res.body as { environment: string }[];
@@ -301,6 +309,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/stacks?environment=nonexistent-env-xyz")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(res.body).toEqual([]);
@@ -312,6 +321,7 @@ describe("IaC Module (e2e)", () => {
           "/api/v1/iac/stacks?componentId=00000000-0000-0000-0000-000000000000",
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(res.body).toEqual([]);
@@ -321,6 +331,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac/stacks?environment=staging")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const stacks = res.body as Record<string, unknown>[];
@@ -339,6 +350,7 @@ describe("IaC Module (e2e)", () => {
       const ingestRes = await request(app.getHttpServer())
         .post("/api/v1/iac/runs/ingest")
         .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .set("X-Organization-Id", organizationId)
         .send({
           stackName: "stack-detail-e2e",
           environment: "production",
@@ -355,6 +367,7 @@ describe("IaC Module (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac/stacks/${stackDetailId}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as Record<string, unknown>;
@@ -374,6 +387,7 @@ describe("IaC Module (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/iac/stacks/00000000-0000-0000-0000-000000000000")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
   });
@@ -386,10 +400,11 @@ describe("IaC Module (e2e)", () => {
 describe("IaC Module Catalog (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -409,6 +424,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post("/api/v1/iac-modules")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .send(dto)
         .expect(201);
 
@@ -435,6 +451,7 @@ describe("IaC Module Catalog (e2e)", () => {
       await request(app.getHttpServer())
         .post("/api/v1/iac-modules")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .send(dto)
         .expect(409);
     });
@@ -456,6 +473,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -466,6 +484,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules?provider=aws")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as { provider: string }[];
@@ -479,7 +498,8 @@ describe("IaC Module Catalog (e2e)", () => {
     beforeAll(async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId);
       const modules = res.body as { id: string }[];
       moduleId = modules[0].id;
     });
@@ -488,6 +508,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac-modules/${moduleId}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as { id: string; name: string };
@@ -498,6 +519,7 @@ describe("IaC Module Catalog (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/iac-modules/00000000-0000-0000-0000-000000000000")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
   });
@@ -508,7 +530,8 @@ describe("IaC Module Catalog (e2e)", () => {
     beforeAll(async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId);
       const modules = res.body as { id: string }[];
       moduleId = modules[0].id;
     });
@@ -517,6 +540,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/iac-modules/${moduleId}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .send({ description: "Updated description" })
         .expect(200);
 
@@ -531,7 +555,8 @@ describe("IaC Module Catalog (e2e)", () => {
     beforeAll(async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId);
       const modules = res.body as { id: string }[];
       moduleId = modules[0].id;
     });
@@ -540,6 +565,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/iac-modules/${moduleId}/link-component`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .send({ componentId: "comp-test-uuid" })
         .expect(200);
 
@@ -554,7 +580,8 @@ describe("IaC Module Catalog (e2e)", () => {
     beforeAll(async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId);
       const modules = res.body as { id: string }[];
       moduleId = modules[0].id;
     });
@@ -563,6 +590,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .delete(`/api/v1/iac-modules/${moduleId}/unlink-component`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as { componentId: string | null };
@@ -576,7 +604,8 @@ describe("IaC Module Catalog (e2e)", () => {
     beforeAll(async () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/iac-modules")
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId);
       const modules = res.body as { id: string }[];
       moduleId = modules[0].id;
     });
@@ -585,6 +614,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac-modules/${moduleId}/versions`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -596,6 +626,7 @@ describe("IaC Module Catalog (e2e)", () => {
       const createRes = await request(app.getHttpServer())
         .post("/api/v1/iac-modules")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .send({
           name: "temp-module-to-delete",
           provider: "gcp",
@@ -607,11 +638,13 @@ describe("IaC Module Catalog (e2e)", () => {
       await request(app.getHttpServer())
         .delete(`/api/v1/iac-modules/${created.id}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(204);
 
       await request(app.getHttpServer())
         .get(`/api/v1/iac-modules/${created.id}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
   });
@@ -620,17 +653,19 @@ describe("IaC Module Catalog (e2e)", () => {
 describe("IaC Resource Topology (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
   let stackId: string;
 
   beforeAll(async () => {
     process.env.IAC_INGEST_TOKEN = INGEST_TOKEN;
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
 
     // Create a stack via run ingest which returns stackId directly
     const ingestRes = await request(app.getHttpServer())
       .post("/api/v1/iac/runs/ingest")
       .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         stackName: "resource-map-test",
         environment: "staging",
@@ -734,6 +769,7 @@ describe("IaC Resource Topology (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac/stacks/${stackId}/resources`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body739 = res.body as { resources: { address: string }[] };
@@ -758,6 +794,7 @@ describe("IaC Resource Topology (e2e)", () => {
           "/api/v1/iac/stacks/00000000-0000-0000-0000-000000000000/resources",
         )
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(404);
     });
 
@@ -783,6 +820,7 @@ describe("IaC Resource Topology (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac/stacks/${stackId}/resources`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const resBody = res.body as {
@@ -810,6 +848,7 @@ describe("IaC Resource Topology (e2e)", () => {
       const ingestRes = await request(app.getHttpServer())
         .post("/api/v1/iac/runs/ingest")
         .set("Authorization", `Bearer ${INGEST_TOKEN}`)
+        .set("X-Organization-Id", organizationId)
         .send({
           stackName: "empty-resource-stack",
           environment: "dev",
@@ -824,6 +863,7 @@ describe("IaC Resource Topology (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/iac/stacks/${emptyStackId}/resources`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const emptyBody = res.body as {

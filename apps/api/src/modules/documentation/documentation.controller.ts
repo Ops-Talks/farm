@@ -35,8 +35,10 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { ListDocumentationQueryDto } from "./dto/list-documentation-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
@@ -44,7 +46,14 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Documentation")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("docs")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -58,7 +67,8 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have sufficient permissions.",
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -108,11 +118,6 @@ export class DocumentationController {
     name: "componentId",
     required: false,
     description: "Filter docs by component UUID",
-  })
-  @ApiHeader({
-    name: "X-Organization-Id",
-    required: false,
-    description: "Filter docs by organization UUID",
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -238,8 +243,11 @@ export class DocumentationController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Documentation> {
-    return await this.documentationService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Documentation> {
+    return await this.documentationService.findOne(id, req.organizationId);
   }
 
   /**
@@ -260,8 +268,11 @@ export class DocumentationController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async getContent(@Param("id") id: string): Promise<string> {
-    return await this.documentationService.getContent(id);
+  async getContent(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<string> {
+    return await this.documentationService.getContent(id, req.organizationId);
   }
 
   /**
@@ -309,8 +320,13 @@ export class DocumentationController {
   async update(
     @Param("id") id: string,
     @Body() updateDocumentationDto: UpdateDocumentationDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Documentation> {
-    return await this.documentationService.update(id, updateDocumentationDto);
+    return await this.documentationService.update(
+      id,
+      updateDocumentationDto,
+      req.organizationId,
+    );
   }
 
   /**
@@ -328,7 +344,10 @@ export class DocumentationController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.documentationService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    await this.documentationService.remove(id, req.organizationId);
   }
 }

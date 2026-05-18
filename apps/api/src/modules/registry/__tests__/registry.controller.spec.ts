@@ -21,6 +21,7 @@ import { ContainerVulnerability } from "../entities/container-vulnerability.enti
 import { VulnerabilitySeverity } from "../enums/vulnerability-severity.enum";
 import { VULNERABILITY_SYNC_QUEUE } from "../processors/vulnerability-sync.processor";
 import { Component } from "../../catalog/entities/component.entity";
+import { OrgRequiredGuard } from "../../../common/guards/org-required.guard";
 
 const mockRepositories: RepositoryDto[] = [
   { name: "my-app", uri: "123.dkr.ecr.us-east-1.amazonaws.com/my-app" },
@@ -71,6 +72,8 @@ describe("RegistryController", () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(OrgRequiredGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -236,6 +239,8 @@ describe("RegistryController — additional endpoints", () => {
       providers,
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(OrgRequiredGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
