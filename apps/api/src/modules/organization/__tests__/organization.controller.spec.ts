@@ -63,6 +63,7 @@ describe("OrganizationController", () => {
           useValue: {
             create: jest.fn().mockResolvedValue(mockOrg),
             findAll: jest.fn().mockResolvedValue([[mockOrg], 1]),
+            findForUser: jest.fn().mockResolvedValue([[mockOrg], 1]),
             findOne: jest.fn().mockResolvedValue(mockOrg),
             update: jest.fn().mockResolvedValue(mockOrg),
             remove: jest.fn().mockResolvedValue(undefined),
@@ -138,33 +139,39 @@ describe("OrganizationController", () => {
 
   describe("findAll", () => {
     it("should return a PaginatedResponseDto with default pagination values", async () => {
-      const result = await controller.findAll({ skip: 0, take: 20 });
+      const result = await controller.findAll(
+        { skip: 0, take: 20 },
+        mockRequest,
+      );
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.skip).toBe(0);
       expect(result.take).toBe(20);
-      expect(service.findAll).toHaveBeenCalledWith(0, 20);
+      expect(service.findForUser).toHaveBeenCalledWith("user-uuid-1", 0, 20);
     });
 
     it("should forward custom skip and take values to the service", async () => {
-      (service.findAll as jest.Mock).mockResolvedValueOnce([
+      (service.findForUser as jest.Mock).mockResolvedValueOnce([
         [mockOrg, mockOrg],
         2,
       ]);
 
-      const result = await controller.findAll({ skip: 10, take: 5 });
+      const result = await controller.findAll(
+        { skip: 10, take: 5 },
+        mockRequest,
+      );
 
       expect(result.skip).toBe(10);
       expect(result.take).toBe(5);
       expect(result.total).toBe(2);
       expect(result.data).toHaveLength(2);
-      expect(service.findAll).toHaveBeenCalledWith(10, 5);
+      expect(service.findForUser).toHaveBeenCalledWith("user-uuid-1", 10, 5);
     });
 
     it("should fall back to 0 and 20 when skip and take are undefined", async () => {
-      const result = await controller.findAll({});
+      const result = await controller.findAll({}, mockRequest);
 
       // The controller uses `pagination.skip ?? 0` and `pagination.take ?? 20`
       // when constructing the PaginatedResponseDto, so even when undefined is
@@ -174,9 +181,12 @@ describe("OrganizationController", () => {
     });
 
     it("should return an empty data array when the service returns no results", async () => {
-      (service.findAll as jest.Mock).mockResolvedValueOnce([[], 0]);
+      (service.findForUser as jest.Mock).mockResolvedValueOnce([[], 0]);
 
-      const result = await controller.findAll({ skip: 0, take: 20 });
+      const result = await controller.findAll(
+        { skip: 0, take: 20 },
+        mockRequest,
+      );
 
       expect(result.data).toHaveLength(0);
       expect(result.total).toBe(0);
