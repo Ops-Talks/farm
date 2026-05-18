@@ -83,7 +83,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // so clients can distinguish structured failures from generic HTTP status codes.
     const errorCode =
       typeof responseContent === "object" && responseContent !== null
-        ? (responseContent as Record<string, unknown>).errorCode
+        ? typeof (responseContent as Record<string, unknown>).errorCode ===
+          "string"
+          ? (responseContent as Record<string, unknown>).errorCode
+          : undefined
         : undefined;
 
     const spanContext = trace.getSpan(otelContext.active())?.spanContext();
