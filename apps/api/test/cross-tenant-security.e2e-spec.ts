@@ -81,6 +81,23 @@ describe("Cross-tenant security (e2e)", () => {
         .set("X-Organization-Id", orgB)
         .expect(404);
     });
+
+    it("org B receives 404 when patching org A component", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/catalog/components/${componentId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ description: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A component", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/catalog/components/${componentId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
   });
 
   describe("Pipelines", () => {
@@ -111,6 +128,23 @@ describe("Cross-tenant security (e2e)", () => {
         .set("X-Organization-Id", orgB)
         .expect(404);
     });
+
+    it("org B receives 404 when patching org A pipeline", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/pipelines/${pipelineId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ description: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A pipeline", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/pipelines/${pipelineId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
   });
 
   describe("Environments", () => {
@@ -137,6 +171,23 @@ describe("Cross-tenant security (e2e)", () => {
     it("org B receives 404 for org A environment", async () => {
       await request(app.getHttpServer())
         .get(`/api/v1/environments/${envId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
+
+    it("org B receives 404 when patching org A environment", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/environments/${envId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ description: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A environment", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/environments/${envId}`)
         .set("Authorization", `Bearer ${tokenB}`)
         .set("X-Organization-Id", orgB)
         .expect(404);
@@ -177,6 +228,23 @@ describe("Cross-tenant security (e2e)", () => {
         .set("X-Organization-Id", orgB)
         .expect(404);
     });
+
+    it("org B receives 404 when patching org A SLO", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/slos/${sloId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ targetPercent: 95 })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A SLO", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/slos/${sloId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
   });
 
   describe("Incidents", () => {
@@ -211,6 +279,23 @@ describe("Cross-tenant security (e2e)", () => {
         .set("X-Organization-Id", orgB)
         .expect(404);
     });
+
+    it("org B receives 404 when patching org A incident", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/incidents/${incidentId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ description: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A incident", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/incidents/${incidentId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
   });
 
   describe("Dashboards", () => {
@@ -237,6 +322,23 @@ describe("Cross-tenant security (e2e)", () => {
     it("org B receives 404 for org A dashboard", async () => {
       await request(app.getHttpServer())
         .get(`/api/v1/dashboards/${dashboardId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
+
+    it("org B receives 404 when patching org A dashboard", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/dashboards/${dashboardId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ name: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A dashboard", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/dashboards/${dashboardId}`)
         .set("Authorization", `Bearer ${tokenB}`)
         .set("X-Organization-Id", orgB)
         .expect(404);
@@ -276,6 +378,23 @@ describe("Cross-tenant security (e2e)", () => {
     it("org B receives 404 for org A documentation", async () => {
       await request(app.getHttpServer())
         .get(`/api/v1/docs/${docId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(404);
+    });
+
+    it("org B receives 404 when patching org A documentation", async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/docs/${docId}`)
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .send({ title: "cross-tenant patch attempt" })
+        .expect(404);
+    });
+
+    it("org B receives 404 when deleting org A documentation", async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/docs/${docId}`)
         .set("Authorization", `Bearer ${tokenB}`)
         .set("X-Organization-Id", orgB)
         .expect(404);

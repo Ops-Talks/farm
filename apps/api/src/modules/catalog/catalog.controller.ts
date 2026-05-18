@@ -70,7 +70,7 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, RolesGuard, OrgRequiredGuard)
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("catalog")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

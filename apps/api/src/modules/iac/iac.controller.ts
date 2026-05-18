@@ -64,13 +64,6 @@ function extractBearer(authHeader: string | undefined): string {
  * bearer token (IAC_INGEST_TOKEN) inside the service.
  */
 @ApiTags("IaC")
-@ApiBearerAuth()
-@ApiHeader({
-  name: "X-Organization-Id",
-  required: true,
-  description:
-    "Organization context — all resources are scoped to this organization.",
-})
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("iac")
 @OrgRequired()
@@ -82,12 +75,6 @@ function extractBearer(authHeader: string | undefined): string {
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized - Authentication token is missing or invalid.",
-  type: ErrorResponseDto,
-})
-@ApiResponse({
-  status: HttpStatus.FORBIDDEN,
-  description:
-    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -236,12 +223,24 @@ export class IacController {
   @Get("stacks")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "List IaC stacks with optional filters" })
   @ApiQuery({ name: "environment", required: false, type: String })
   @ApiQuery({ name: "componentId", required: false, type: String })
   @ApiOkResponse({
     description: "Successfully retrieved stack list.",
     type: [StackDetailDto],
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   async listStacks(
     @Query() query: StackListQueryDto,
@@ -259,11 +258,23 @@ export class IacController {
   @Get("stacks/:id")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "Get an IaC stack by ID" })
   @ApiParam({ name: "id", description: "IacStack UUID" })
   @ApiOkResponse({
     description: "Successfully retrieved stack.",
     type: StackDetailDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -288,12 +299,24 @@ export class IacController {
   @Get("stacks/:id/runs")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "List runs for an IaC stack" })
   @ApiParam({ name: "id", description: "IacStack UUID" })
   @ApiQuery({ name: "page", required: false, type: Number })
   @ApiQuery({ name: "limit", required: false, type: Number })
   @ApiOkResponse({
     description: "Successfully retrieved run list.",
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   async getStackRuns(
     @Param("id") id: string,
@@ -315,10 +338,22 @@ export class IacController {
   @Get("dashboard")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "Get IaC dashboard summary" })
   @ApiOkResponse({
     description: "Successfully retrieved dashboard data.",
     type: DashboardDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   async getDashboard(): Promise<DashboardDto> {
     return this.iacService.getDashboard();
@@ -332,10 +367,22 @@ export class IacController {
   @Get("module-drift")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "Get module drift records" })
   @ApiOkResponse({
     description: "Successfully retrieved module drift data.",
     type: [IacModuleDrift],
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   async getModuleDrift(): Promise<IacModuleDrift[]> {
     return this.iacService.getModuleDrift();
@@ -395,11 +442,23 @@ export class IacController {
   @Get("stacks/:id/resources")
   @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "X-Organization-Id",
+    required: true,
+    description:
+      "Organization context — all resources are scoped to this organization.",
+  })
   @ApiOperation({ summary: "Get resource topology for a stack" })
   @ApiParam({ name: "id", description: "IacStack UUID" })
   @ApiOkResponse({
     description: "Successfully retrieved resource topology.",
     type: ResourceMapDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description:
+      "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,

@@ -63,14 +63,18 @@ export class OrgRequiredGuard implements CanActivate {
       );
     }
 
-    if (req.user?.userId) {
-      const membership = await this.userOrgRepo.findOne({
-        where: { userId: req.user.userId, organizationId: orgId },
-      });
+    if (!req.user?.userId) {
+      throw new ForbiddenException(
+        "Authentication required for this endpoint",
+      );
+    }
 
-      if (!membership) {
-        throw new ForbiddenException("Not a member of this organization");
-      }
+    const membership = await this.userOrgRepo.findOne({
+      where: { userId: req.user.userId, organizationId: orgId },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException("Not a member of this organization");
     }
 
     req.organizationId = orgId;
