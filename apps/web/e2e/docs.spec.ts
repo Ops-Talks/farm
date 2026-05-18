@@ -16,6 +16,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // ---------------------------------------------------------------------------
 // Shared mock data
@@ -199,6 +200,9 @@ async function mockDocsRoutes(
       body: JSON.stringify([]),
     }),
   );
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ---------------------------------------------------------------------------

@@ -77,9 +77,7 @@ async function stubFeatureAndOrgs(page: import("@playwright/test").Page) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify([
-        { id: "org_1", name: "Acme", slug: "acme" },
-      ]),
+      body: JSON.stringify({ data: [{ id: "org_1", name: "Acme", slug: "acme" }], total: 1 }),
     }),
   );
 }

@@ -74,6 +74,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | v0.25.1 | `DONE` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | v0.25.0 | `DONE` |
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | pending | `DONE` |
+| **Phase 45: Organization Context Hardening** | **3** | **10** | pending | `DONE` |
 
 ---
 
@@ -128,7 +129,8 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `DONE` |
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `DONE` |
 | Phase 44: Multi-tenancy Hardening | 5 | 20 | `DONE` |
-| **Total** | **116** | **458** | |
+| Phase 45: Organization Context Hardening | 3 | 10 | `DONE` |
+| **Total** | **119** | **468** | |
 
 ---
 
@@ -423,3 +425,40 @@ Prevents silent data collisions between tenants and provides regression coverage
 | FARM-S494 | Scope `Environment.name` unique constraint to `[name, organizationId]` composite index. | `DONE` |
 | FARM-S495 | Scope `IacStack` name+environment uniqueness to include `organizationId`. | `DONE` |
 | FARM-S496 | E2E cross-tenant security test suite (`test/cross-tenant-security.e2e-spec.ts`): registers two users in two orgs, creates a resource in org-A, verifies org-B gets HTTP 404 for GET/PATCH/DELETE. Covers: Component, Pipeline, Environment, SLO, Incident, Dashboard, Documentation. 14 tests, all passing. | `DONE` |
+
+---
+
+## Phase 45: Organization Context Hardening
+
+Eliminates a class of race conditions, stale-state bugs, and UX dead ends in the frontend organization context. Root cause analysis revealed that the `OrganizationProvider` bootstrap was decoupled from auth restoration, auto-select was missing for multi-org users, and 403 stale-recovery only cleaned `sessionStorage` without notifying React. This phase makes the org context a reliable state machine that correctly handles all user scenarios.
+
+### FARM-E117: Bootstrap & State Machine `DONE`
+
+Fixes core bootstrap reliability: the `OrgReadyGate` now blocks on both auth and org loading, auto-select fires for any user with memberships (not just single-org), zero-org users are redirected to onboarding, and logout explicitly clears the persisted org.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S497 | `organization-context.tsx` — change auto-select logic from `list.length === 1` to `list.length > 0` so any user with memberships gets a default org without manual intervention. Multi-org users previously landed with `currentOrg=null` causing 403 on all org-required endpoints. | `DONE` |
+| FARM-S498 | `org-ready-gate.tsx` — import `useAuth` and block rendering while `auth.isLoading OR org.isLoading`. On hard refresh, auth restore is async; the gate previously opened with an empty org list before auth finished, causing a brief 403 window. | `DONE` |
+| FARM-S499 | `org-ready-gate.tsx` — after both loading states settle, if `isAuthenticated && organizations.length === 0` redirect to `/organizations/new`. Users with no memberships were previously stranded with every org-required page returning 403 silently. | `DONE` |
+| FARM-S500 | `auth-context.tsx` `logout()` — add `sessionStorage.removeItem("farm_current_org")`. Logout cleared tokens and `farm_user` but left `farm_current_org` in sessionStorage; any direct storage reader after logout saw stale org data. | `DONE` |
+| FARM-S501 | `organization-context.tsx` `fetchOrgs()` — when `savedId` is found but no longer in the membership list (stale), after clearing sessionStorage auto-select `list[0]` if available instead of falling back to `currentOrg=null`. | `DONE` |
+
+### FARM-E118: Cache Coherence `DONE`
+
+Closes the two remaining data-consistency gaps: 403 stale-org recovery now notifies React state, and org switching invalidates TanStack Query caches so page data always reflects the active org.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S502 | `api-client.ts` 403 handler — after `safeSessionRemove("farm_current_org")` dispatch `window.dispatchEvent(new CustomEvent("farm:org:stale"))`. `organization-context.tsx` — add `addEventListener("farm:org:stale", fetchOrgs)` effect. Previously, 403 recovery cleared sessionStorage but left OrganizationProvider React state showing the stale org; the next request still included the wrong `X-Organization-Id`. | `DONE` |
+| FARM-S503 | `org-switcher.tsx` — add `useQueryClient()` and call `queryClient.invalidateQueries()` after `switchOrg(org)`. Query keys like `["pipelines"]` carry no org ID; switching org currently shows stale data from the previous org until manual refresh. | `DONE` |
+
+### FARM-E119: Test Coverage `DONE`
+
+Adds the missing test coverage for the org context changes and the backend guard.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S504 | Create `apps/web/src/components/org-ready-gate.test.tsx`. Cover: renders spinner when `auth.isLoading=true`; renders spinner when `org.isLoading=true`; renders children when both are `false` and org is set; redirects to `/organizations/new` when authenticated with 0 orgs. | `DONE` |
+| FARM-S505 | Update `apps/web/src/contexts/organization-context.test.tsx` to mock `useAuth` and cover: `isAuthenticated false→true` transition triggers `fetchOrgs`; `isAuthenticated=false` clears org state immediately; `farm:org:stale` custom event triggers re-fetch. | `DONE` |
+| FARM-S506 | Create `apps/api/src/common/guards/org-required.guard.spec.ts`. Cover: passes when valid `X-Organization-Id` header matches an active user membership; throws `ForbiddenException` when header is absent; throws `ForbiddenException` when user is not a member of the given org; throws `ForbiddenException` when org does not exist. | `DONE` |

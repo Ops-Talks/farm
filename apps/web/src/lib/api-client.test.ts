@@ -305,6 +305,30 @@ describe("api-client", () => {
       expect(sessionStorage.getItem("farm_current_org")).toBeNull();
     });
 
+    it("dispatches farm:org:stale CustomEvent when 403 is returned with X-Organization-Id header set", async () => {
+      sessionStorage.setItem("farm_current_org", "org-stale-789");
+      const events: Event[] = [];
+      const listener = (e: Event) => events.push(e);
+      window.addEventListener("farm:org:stale", listener);
+
+      mockFetch.mockReturnValueOnce(
+        jsonResponse(
+          { statusCode: 403, timestamp: "t", path: "/v1/auth/register", message: "Forbidden" },
+          403,
+        ),
+      );
+      try {
+        await auth.register({ username: "u", email: "u@t.com", password: "pass1234" });
+      } catch {
+        // expected to throw ApiError
+      }
+
+      window.removeEventListener("farm:org:stale", listener);
+      expect(events).toHaveLength(1);
+      expect(events[0]).toBeInstanceOf(CustomEvent);
+      expect((events[0] as CustomEvent).type).toBe("farm:org:stale");
+    });
+
     it("forwards the org header on the retry fetch after a successful token refresh", async () => {
       sessionStorage.setItem("farm_current_org", "org-retry-456");
       // First call returns 401 to trigger refresh; second returns 200.

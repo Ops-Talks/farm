@@ -10,6 +10,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 test.beforeEach(async ({ page }) => {
   await setupAuthStorage(page);
@@ -82,7 +83,7 @@ async function mockTeamsRoutes(
     }),
   );
 
-  // Team list (registered last = highest priority for the /teams path)
+    // Team list
   await page.route("**/api/v1/teams", (route) => {
     if (route.request().method() === "GET") {
       route.fulfill({
@@ -100,6 +101,9 @@ async function mockTeamsRoutes(
       route.continue();
     }
   });
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

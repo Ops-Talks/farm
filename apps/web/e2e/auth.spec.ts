@@ -8,7 +8,7 @@
 
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
-import { MOCK_USER, MOCK_TOKENS } from "./global-setup";
+import { MOCK_USER, MOCK_TOKENS, MOCK_ORG } from "./global-setup";
 
 // ── Shared mock data ────────────────────────────────────────────────────────
 
@@ -80,6 +80,19 @@ test("user can log in with valid credentials and is redirected to dashboard", as
       body: JSON.stringify(MOCK_LOGIN_RESPONSE),
     }),
   );
+
+  // Ensure OrgReadyGate resolves after redirect so /dashboard is not blocked.
+  await page.route("**/api/v1/organizations", (route) => {
+    if (route.request().method() === "GET") {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: [MOCK_ORG], total: 1 }),
+      });
+    } else {
+      void route.continue();
+    }
+  });
 
   await page.goto("/login");
 

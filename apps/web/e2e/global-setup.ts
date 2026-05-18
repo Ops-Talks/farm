@@ -42,6 +42,17 @@ export const MOCK_TOKENS = {
   refreshToken: "e2e-mock-refresh-token",
 };
 
+/** Default organization used by all e2e tests that do not define their own. */
+export const MOCK_ORG = {
+  id: "org-e2e-global-001",
+  name: "E2E Global Org",
+  slug: "e2e-global-org",
+  description: "Default organization injected by global-setup for e2e tests",
+  ownerId: "e2e-user-id",
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
 // ---------------------------------------------------------------------------
 
 async function globalSetup(config: FullConfig): Promise<void> {
@@ -97,6 +108,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
           { name: "farm_refresh", value: MOCK_TOKENS.refreshToken },
           { name: "farm_username", value: MOCK_USER.username },
           { name: "farm_user", value: JSON.stringify(MOCK_USER) },
+          { name: "farm_current_org", value: MOCK_ORG.id },
         ],
       },
     ],

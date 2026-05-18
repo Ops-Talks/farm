@@ -19,6 +19,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // ---------------------------------------------------------------------------
 // Authenticated test suite — beforeEach is scoped here so the unauthenticated
@@ -163,7 +164,7 @@ async function mockEnvironmentRoutes(
     }
   });
 
-  // 7. ArgoCD applications list — registered last, highest priority.
+  // 7. ArgoCD applications list.
   await page.route("**/api/v1/argocd/applications", (route) =>
     route.fulfill({
       status: 200,
@@ -171,6 +172,9 @@ async function mockEnvironmentRoutes(
       body: JSON.stringify(argocdApps),
     }),
   );
+
+  // Organizations — registered last so it wins over the catch-all.
+  await setupOrgMock(page);
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

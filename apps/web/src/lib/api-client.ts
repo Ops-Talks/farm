@@ -367,6 +367,10 @@ async function request<T>(
     headers["X-Organization-Id"]
   ) {
     safeSessionRemove("farm_current_org");
+    // Notify OrganizationProvider to re-fetch so React state stays in sync
+    // with sessionStorage. api-client cannot import organization-context
+    // (circular dep), so a CustomEvent is used as the decoupling mechanism.
+    window.dispatchEvent(new CustomEvent("farm:org:stale"));
   }
 
   const body = (await res.json()) as T;
