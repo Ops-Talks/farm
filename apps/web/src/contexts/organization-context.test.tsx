@@ -280,25 +280,6 @@ describe("OrganizationProvider", () => {
     expect(sessionStorage.getItem(ORG_STORAGE_KEY)).toBe("org-1");
   });
 
-  it("falls back to first org when saved org is stale (duplicate coverage)", async () => {
-    sessionStorage.setItem(ORG_STORAGE_KEY, "org-deleted");
-    vi.mocked(orgsApi.list).mockResolvedValue(mockOrgs as never);
-
-    render(
-      <OrganizationProvider>
-        <TestConsumer />
-      </OrganizationProvider>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId("loading").textContent).toBe("false");
-    });
-
-    // Should fall back to org-1 (first available) instead of null
-    expect(screen.getByTestId("current").textContent).toBe("org-1");
-    expect(sessionStorage.getItem(ORG_STORAGE_KEY)).toBe("org-1");
-  });
-
   it("isLoading is true immediately when isAuthenticated transitions to true, before the fetch resolves", async () => {
     // Hold the fetch in flight using a deferred promise so we can inspect
     // isLoading between the auth transition and the fetch completion.
