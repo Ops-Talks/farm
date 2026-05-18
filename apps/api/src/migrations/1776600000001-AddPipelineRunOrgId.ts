@@ -12,11 +12,11 @@ export class AddPipelineRunOrgId1776600000001 implements MigrationInterface {
     );
     await queryRunner.query(
       `UPDATE "pipeline_runs" pr
-       SET "organization_id" = p."organization_id"
+       SET "organization_id" = p."organizationId"
        FROM "pipelines" p
        WHERE pr."pipelineId" = p."id"
          AND pr."organization_id" IS NULL
-         AND p."organization_id" IS NOT NULL`,
+         AND p."organizationId" IS NOT NULL`,
     );
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "IDX_pipeline_runs_organization_id"
