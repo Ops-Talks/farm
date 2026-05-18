@@ -41,7 +41,7 @@
     "@azure/keyvault-secrets": "^4.10.0",
     "@bull-board/api": "^6.20.3",
     "@bull-board/express": "^6.20.3",
-    "@bull-board/nestjs": "^6.20.3",
+    "@bull-board/nestjs": "^7.1.5",
     "@elastic/elasticsearch": "^9.3.4",
     "@farm/types": "*",
     "@keyv/redis": "^5.1.6",
