@@ -74,6 +74,9 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | v0.25.1 | `DONE` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | v0.25.0 | `DONE` |
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | pending | `DONE` |
+
+Phase 44 is intentionally omitted from this completed-phase archive because it is tracked separately in the summary below and is not part of this completed sequence.
+
 | **Phase 45: Organization Context Hardening** | **3** | **10** | pending | `DONE` |
 
 ---
