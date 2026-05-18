@@ -11,10 +11,11 @@ import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 describe("Registry (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
-    ({ token } = await registerAndLogin(app));
+    ({ token, organizationId } = await registerAndLogin(app));
   });
 
   afterAll(async () => {
@@ -32,6 +33,7 @@ describe("Registry (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/registry/repositories")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(503);
     });
   });
@@ -47,6 +49,7 @@ describe("Registry (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/registry/repositories/my-app/tags")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(503);
     });
   });
@@ -62,6 +65,7 @@ describe("Registry (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/registry/repositories/my-app/manifest/latest")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(503);
     });
   });
@@ -77,6 +81,7 @@ describe("Registry (e2e)", () => {
       await request(app.getHttpServer())
         .get("/api/v1/registry/repositories/my-app/scan/latest")
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(503);
     });
   });

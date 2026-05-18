@@ -103,6 +103,15 @@ export class IacModule {
   @Column({ type: "varchar", nullable: true })
   componentId: string | null;
 
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440010",
+    description: "Organization this module belongs to",
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  organizationId: string | null;
+
   @OneToMany(() => IacModuleVersion, (v) => v.module, { cascade: false })
   versions: IacModuleVersion[];
 

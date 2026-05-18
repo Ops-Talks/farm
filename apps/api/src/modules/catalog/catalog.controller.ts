@@ -10,7 +10,6 @@ import {
   HttpStatus,
   Query,
   UseGuards,
-  UseInterceptors,
   Inject,
   Optional,
   Req,
@@ -29,7 +28,7 @@ import {
   ApiQuery,
   ApiBearerAuth,
 } from "@nestjs/swagger";
-import { CacheInterceptor, Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { CatalogService } from "./catalog.service";
@@ -44,7 +43,9 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { FinOpsService } from "../finops/finops.service";
 import { CostEstimateResponseDto } from "../finops/dto/cost-estimate-response.dto";
@@ -61,7 +62,8 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
  */
 @ApiTags("Catalog")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, RolesGuard, OrgRequiredGuard)
 @Controller("catalog")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -75,7 +77,8 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have sufficient permissions.",
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -189,7 +192,6 @@ export class CatalogController {
    * @returns A paginated list of components
    */
   @Get("components")
-  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "List all components" })
   @ApiQuery({
     name: "kindGroup",
@@ -238,7 +240,6 @@ export class CatalogController {
    * @returns The component with the specified ID
    */
   @Get("components/:id")
-  @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get component by ID" })
   @ApiParam({ name: "id", description: "The UUID of the component" })
   @ApiOkResponse({
@@ -250,8 +251,11 @@ export class CatalogController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Component> {
-    return await this.catalogService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: Request & RequestWithOrg,
+  ): Promise<Component> {
+    return await this.catalogService.findOne(id, req.organizationId);
   }
 
   /**
@@ -276,8 +280,13 @@ export class CatalogController {
   async update(
     @Param("id") id: string,
     @Body() updateComponentDto: UpdateComponentDto,
+    @Req() req: Request & RequestWithOrg,
   ): Promise<Component> {
-    const result = await this.catalogService.update(id, updateComponentDto);
+    const result = await this.catalogService.update(
+      id,
+      updateComponentDto,
+      req.organizationId,
+    );
     await this.cacheManager.clear();
     return result;
   }
@@ -297,8 +306,11 @@ export class CatalogController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.catalogService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: Request & RequestWithOrg,
+  ): Promise<void> {
+    await this.catalogService.remove(id, req.organizationId);
     await this.cacheManager.clear();
   }
 
@@ -393,9 +405,10 @@ export class CatalogController {
     @Param("id") id: string,
     @Query("skip", new DefaultValuePipe(0), ParseIntPipe) skip: number,
     @Query("take", new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Req() req: Request & RequestWithOrg,
   ): Promise<{ items: Pipeline[]; total: number }> {
-    // Throws NotFoundException if component does not exist.
-    await this.catalogService.findOne(id);
+    // Throws NotFoundException if component does not exist or belongs to another org.
+    await this.catalogService.findOne(id, req.organizationId);
     if (!this.pipelinesService) {
       return { items: [], total: 0 };
     }

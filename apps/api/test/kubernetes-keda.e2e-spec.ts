@@ -13,11 +13,13 @@ import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 describe("Kubernetes KEDA (e2e)", () => {
   let app: INestApplication<App>;
   let token: string;
+  let organizationId: string;
 
   beforeAll(async () => {
     app = await createE2EApp();
     const auth = await registerAndLogin(app);
     token = auth.token;
+    organizationId = auth.organizationId;
   });
 
   afterAll(async () => {
@@ -77,6 +79,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/kubernetes/keda/status")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect(res.body).toMatchObject({
@@ -93,6 +96,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/kubernetes/keda/scaled-objects")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
@@ -107,6 +111,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/kubernetes/keda/scaled-jobs")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
@@ -121,6 +126,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/kubernetes/keda/scaled-objects/default/my-app/triggers")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
@@ -136,6 +142,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const compRes = await request(app.getHttpServer())
       .post("/api/v1/catalog/components")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         name: "keda-e2e-component",
         kind: "service",
@@ -149,6 +156,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     const createRes = await request(app.getHttpServer())
       .post("/api/v1/kubernetes/keda/binding")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         scaledObjectName: "my-scaler",
         scaledObjectNamespace: "default",
@@ -169,6 +177,7 @@ describe("Kubernetes KEDA (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/kubernetes/keda/binding/${bindingId}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
   });
 });

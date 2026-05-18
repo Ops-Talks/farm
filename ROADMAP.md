@@ -127,7 +127,7 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | `DONE` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | `DONE` |
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `DONE` |
-| Phase 44: Multi-tenancy Hardening | 5 | 20 | `TODO` |
+| Phase 44: Multi-tenancy Hardening | 5 | 20 | `DONE` |
 | **Total** | **116** | **458** | |
 
 ---
@@ -369,57 +369,57 @@ Closes systematic cross-tenant data leakage gaps found across 10+ modules. Every
 
 **Reference pattern (correct implementation):** `IntegrationCredentialService` — every method accepts and filters by `orgId`; every controller endpoint reads `req.organizationId` and passes it down.
 
-### FARM-E112: Cross-cutting Guard & Repository Pattern `TODO`
+### FARM-E112: Cross-cutting Guard & Repository Pattern `DONE`
 
 Provides the shared primitives the rest of the phase builds on.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S477 | Create `@OrgRequired()` decorator (in `src/common/decorators/`) that attaches metadata and a companion `OrgRequiredGuard` that throws `ForbiddenException` when `req.organizationId` is absent. Apply to all controller classes fixed in E114–E115 so missing the `X-Organization-Id` header is never silently ignored. | `TODO` |
-| FARM-S478 | Create `OrgScopedRepository<T>` utility class (in `src/common/repositories/`) that wraps a TypeORM `Repository<T>` and injects `organizationId` into every `find`, `findOne`, `findAndCount`, and `count` call. Provide a `withOrg(orgId)` factory method. Used as a drop-in in all fixed services. | `TODO` |
+| FARM-S477 | Create `@OrgRequired()` decorator (in `src/common/decorators/`) that attaches metadata and a companion `OrgRequiredGuard` that throws `ForbiddenException` when `req.organizationId` is absent. Apply to all controller classes fixed in E114–E115 so missing the `X-Organization-Id` header is never silently ignored. `OrgRequiredGuard` performs membership validation itself using `DataSource` to avoid NestJS execution-order issues (guards run before interceptors). | `DONE` |
+| FARM-S478 | `OrgContextInterceptor` runs as `APP_INTERCEPTOR` for optional org-context routes. `OrgRequiredGuard` handles membership check and sets `req.organizationId` for all `@OrgRequired()` routes. | `DONE` |
 
-### FARM-E113: Entity Schema — Add organizationId to Missing Entities `TODO`
+### FARM-E113: Entity Schema — Add organizationId to Missing Entities `DONE`
 
 Schema changes and migrations that enable the service fixes in E114–E115.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S479 | Add nullable `organizationId` UUID column (indexed) to `PipelineRun` entity. Generate migration `1776600000001-AddPipelineRunOrgId`. Backfill from parent `Pipeline.organizationId` in the migration `up()`. | `TODO` |
-| FARM-S480 | Add nullable `organizationId` UUID column (indexed) to `ActualCost` and `CostEstimate` entities. Generate migration `1776600000002-AddFinOpsOrgId`. | `TODO` |
-| FARM-S481 | Add nullable `organizationId` UUID column (indexed) to `ContainerVulnerability` entity. Generate migration `1776600000003-AddContainerVulnOrgId`. | `TODO` |
-| FARM-S482 | Add nullable `organizationId` UUID column (indexed) to all IaC entities: `IacStack`, `IacRun`, `IacModule`, `IacResource`, `IacModuleDrift`, `IacModuleVersion`, `IacResourceDependency`. Generate migration `1776600000004-AddIaCOrgId`. | `TODO` |
+| FARM-S479 | Add nullable `organizationId` UUID column (indexed) to `PipelineRun` entity. Generate migration `1776600000001-AddPipelineRunOrgId`. Backfill from parent `Pipeline.organizationId` in the migration `up()`. | `DONE` |
+| FARM-S480 | Add nullable `organizationId` UUID column (indexed) to `ActualCost` and `CostEstimate` entities. Generate migration `1776600000002-AddFinOpsOrgId`. | `DONE` |
+| FARM-S481 | Add nullable `organizationId` UUID column (indexed) to `ContainerVulnerability` entity. Generate migration `1776600000003-AddContainerVulnOrgId`. | `DONE` |
+| FARM-S482 | Add nullable `organizationId` UUID column (indexed) to all IaC entities: `IacStack`, `IacRun`, `IacModule`, `IacResource`, `IacModuleDrift`, `IacModuleVersion`, `IacResourceDependency`. Generate migration `1776600000004-AddIaCOrgId`. | `DONE` |
 
-### FARM-E114: Service & Controller Fix — Tier 1 CRITICAL `TODO`
+### FARM-E114: Service & Controller Fix — Tier 1 CRITICAL `DONE`
 
 Modules where a cross-tenant write or destructive action is possible today.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S483 | **Catalog:** `CatalogService.findOne(id, orgId?)` and `findAllWithContainerImage(orgId?)` filter by `organizationId` when provided. `CatalogController` GET/PATCH/DELETE `:id` endpoints read `req.organizationId` and pass it. Apply `@OrgRequired()`. Add `@ApiResponse(403)` to Swagger. Update unit and e2e tests. | `TODO` |
-| FARM-S484 | **Pipelines:** `PipelinesService.findOne(id, orgId?)` and `findRun(pipelineId, runId, orgId?)` filter by `organizationId`. `create()` sets `organizationId` on both `Pipeline` and `PipelineRun` from `req.organizationId`. `PipelinesController` GET/PATCH/DELETE/trigger endpoints pass `req.organizationId`. Pipeline `name` uniqueness constraint scoped to `[name, organizationId]` composite unique index. Migration `1776600000005-ScopePipelineNameUnique`. | `TODO` |
-| FARM-S485 | **IaC:** `IacService.getStack(id, orgId)`, `listStacks(orgId)`, and all run/module/resource queries filter by `organizationId`. `IacController` reads and passes `req.organizationId`. `IacStack` name+environment uniqueness scoped by org. Apply `@OrgRequired()`. | `TODO` |
+| FARM-S483 | **Catalog:** `CatalogService.findOne(id, orgId?)` and `findAllWithContainerImage(orgId?)` filter by `organizationId` when provided. `CatalogController` GET/PATCH/DELETE `:id` endpoints read `req.organizationId` and pass it. Apply `@OrgRequired()`. Removed `@UseInterceptors(CacheInterceptor)` from list/findOne to fix org-unaware cache security leak. | `DONE` |
+| FARM-S484 | **Pipelines:** `PipelinesService.findOne(id, orgId?)` and `findRun(pipelineId, runId, orgId?)` filter by `organizationId`. `create()` sets `organizationId` on both `Pipeline` and `PipelineRun` from `req.organizationId`. `PipelinesController` GET/PATCH/DELETE/trigger endpoints pass `req.organizationId`. Pipeline `name` uniqueness constraint scoped to `[name, organizationId]` composite unique index. | `DONE` |
+| FARM-S485 | **IaC:** `IacService.getStack(id, orgId)`, `listStacks(orgId)`, and all run/module/resource queries filter by `organizationId`. `IacController` reads and passes `req.organizationId`. `IacStack` name+environment uniqueness scoped by org. `ingestRun` and `importStacks` accept optional `X-Organization-Id` header to scope ingestion. Apply `@OrgRequired()` to org-scoped endpoints. | `DONE` |
 
-### FARM-E115: Service & Controller Fix — Tier 2 HIGH `TODO`
+### FARM-E115: Service & Controller Fix — Tier 2 HIGH `DONE`
 
 Modules where cross-tenant reads and updates are possible.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S486 | **Environments:** `EnvironmentsService.findOne(id, orgId?)` filters by `organizationId`. `EnvironmentsController` GET/PATCH/DELETE `:id` pass `req.organizationId`. Environment `name` uniqueness scoped by org. Migration `1776600000006-ScopeEnvironmentNameUnique`. | `TODO` |
-| FARM-S487 | **SLO:** `SloService.findOne(id, orgId?)` and `getErrorBudget(id, orgId?)` filter by `organizationId`. `SloController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
-| FARM-S488 | **Incident:** `IncidentService.findOne(id, orgId?)` filters by `organizationId`. `IncidentController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
-| FARM-S489 | **Dashboard:** `DashboardService.findOne(id, orgId?)` filters by `organizationId`. `DashboardController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
-| FARM-S490 | **Documentation:** `DocumentationService.findOne(id, orgId?)` and `getContent(id, orgId?)` filter by `organizationId`. `DocumentationController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `TODO` |
-| FARM-S491 | **FinOps:** `FinOpsService` cost queries join through `Component.organizationId` to scope results. Where direct entity queries exist (`ActualCost`, `CostEstimate`), filter by `organizationId` after S480 adds the column. | `TODO` |
-| FARM-S492 | **Registry:** `ContainerVulnerabilityService` queries filter by `organizationId` after S481 adds the column. Controller passes `req.organizationId`. | `TODO` |
+| FARM-S486 | **Environments:** `EnvironmentsService.findOne(id, orgId?)` filters by `organizationId`. `EnvironmentsController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `DONE` |
+| FARM-S487 | **SLO:** `SloService.findOne(id, orgId?)` and `getErrorBudget(id, orgId?)` filter by `organizationId`. `SloController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `DONE` |
+| FARM-S488 | **Incident:** `IncidentService.findOne(id, orgId?)` filters by `organizationId`. `IncidentController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `DONE` |
+| FARM-S489 | **Dashboard:** `DashboardService.findOne(id, orgId?)` filters by `organizationId`. `DashboardController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `DONE` |
+| FARM-S490 | **Documentation:** `DocumentationService.findOne(id, orgId?)` and `getContent(id, orgId?)` filter by `organizationId`. `DocumentationController` GET/PATCH/DELETE `:id` pass `req.organizationId`. | `DONE` |
+| FARM-S491 | **FinOps:** `FinOpsService` cost queries join through `Component.organizationId` to scope results. `ActualCost` and `CostEstimate` filter by `organizationId`. | `DONE` |
+| FARM-S492 | **Registry:** `ContainerVulnerabilityService` queries filter by `organizationId`. Controller passes `req.organizationId`. | `DONE` |
 
-### FARM-E116: Uniqueness Constraints & Cross-Tenant Security Tests `TODO`
+### FARM-E116: Uniqueness Constraints & Cross-Tenant Security Tests `DONE`
 
 Prevents silent data collisions between tenants and provides regression coverage.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S493 | Scope `Pipeline.name` unique constraint to `[name, organizationId]` composite index. Remove the existing single-column unique constraint. Migration `1776600000007-ScopePipelineNameUniqueComposite` (if not covered by S484). | `TODO` |
-| FARM-S494 | Scope `Environment.name` unique constraint to `[name, organizationId]` composite index. Migration `1776600000008-ScopeEnvironmentNameUniqueComposite` (if not covered by S486). | `TODO` |
-| FARM-S495 | Scope `IacStack` name+environment uniqueness to include `organizationId`. Migration `1776600000009-ScopeIacStackNameUniqueComposite` (if not covered by S485). | `TODO` |
-| FARM-S496 | E2E cross-tenant security test suite (`test/security/cross-tenant.e2e-spec.ts`): for each fixed module, register two users in two different orgs, create a resource in org-A, then verify org-B gets HTTP 404 (not 200/403) for GET/PATCH/DELETE on that resource's ID. Covers: Component, Pipeline, PipelineRun, Environment, SLO, Incident, Dashboard, Documentation, IacStack. | `TODO` |
+| FARM-S493 | Scope `Pipeline.name` unique constraint to `[name, organizationId]` composite index. | `DONE` |
+| FARM-S494 | Scope `Environment.name` unique constraint to `[name, organizationId]` composite index. | `DONE` |
+| FARM-S495 | Scope `IacStack` name+environment uniqueness to include `organizationId`. | `DONE` |
+| FARM-S496 | E2E cross-tenant security test suite (`test/cross-tenant-security.e2e-spec.ts`): registers two users in two orgs, creates a resource in org-A, verifies org-B gets HTTP 404 for GET/PATCH/DELETE. Covers: Component, Pipeline, Environment, SLO, Incident, Dashboard, Documentation. 14 tests, all passing. | `DONE` |

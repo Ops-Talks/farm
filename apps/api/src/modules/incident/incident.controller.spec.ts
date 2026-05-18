@@ -9,6 +9,8 @@ import { IncidentService } from "./incident.service";
 import { IncidentUpdateService } from "./incident-update.service";
 import { IncidentSeverity, IncidentStatus } from "./entities/incident.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("IncidentController", () => {
   let controller: IncidentController;
@@ -67,7 +69,10 @@ describe("IncidentController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IncidentController>(IncidentController);
     incidentService = module.get<IncidentService>(IncidentService);
@@ -106,19 +111,28 @@ describe("IncidentController", () => {
   });
 
   it("should get incident by ID", async () => {
-    const result = await controller.findOne("incident-uuid-1");
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+    const result = await controller.findOne("incident-uuid-1", mockReq);
 
     expect(result).toEqual(mockIncident);
-    expect(incidentService.findOne).toHaveBeenCalledWith("incident-uuid-1");
+    expect(incidentService.findOne).toHaveBeenCalledWith(
+      "incident-uuid-1",
+      "org-uuid",
+    );
   });
 
   it("should update incident", async () => {
     const dto = { title: "Updated title" };
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-    const result = await controller.update("incident-uuid-1", dto);
+    const result = await controller.update("incident-uuid-1", dto, mockReq);
 
     expect(result).toEqual(mockIncident);
-    expect(incidentService.update).toHaveBeenCalledWith("incident-uuid-1", dto);
+    expect(incidentService.update).toHaveBeenCalledWith(
+      "incident-uuid-1",
+      dto,
+      "org-uuid",
+    );
   });
 
   it("should update incident status with user context", async () => {
@@ -140,9 +154,13 @@ describe("IncidentController", () => {
   });
 
   it("should delete incident", async () => {
-    await controller.remove("incident-uuid-1");
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+    await controller.remove("incident-uuid-1", mockReq);
 
-    expect(incidentService.remove).toHaveBeenCalledWith("incident-uuid-1");
+    expect(incidentService.remove).toHaveBeenCalledWith(
+      "incident-uuid-1",
+      "org-uuid",
+    );
   });
 
   it("should create manual timeline entry", async () => {

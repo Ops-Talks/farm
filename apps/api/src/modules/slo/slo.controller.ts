@@ -33,8 +33,11 @@ import { Slo } from "./entities/slo.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing Service Level Objectives and querying
@@ -42,7 +45,8 @@ import { Roles } from "../../common/decorators/roles.decorator";
  */
 @ApiTags("SLOs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("slos")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -138,8 +142,11 @@ export class SloController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Slo> {
-    return await this.sloService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Slo> {
+    return await this.sloService.findOne(id, req.organizationId);
   }
 
   /**
@@ -172,8 +179,9 @@ export class SloController {
   async update(
     @Param("id") id: string,
     @Body() updateSloDto: UpdateSloDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Slo> {
-    return await this.sloService.update(id, updateSloDto);
+    return await this.sloService.update(id, updateSloDto, req.organizationId);
   }
 
   /**
@@ -194,8 +202,11 @@ export class SloController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.sloService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    await this.sloService.remove(id, req.organizationId);
   }
 
   /**

@@ -4,6 +4,7 @@ import { PipelinesController } from "./pipelines.controller";
 import { PipelinesService } from "./pipelines.service";
 import { PipelineRunStatus } from "./entities/pipeline-run.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("PipelinesController", () => {
   let controller: PipelinesController;
@@ -36,6 +37,7 @@ describe("PipelinesController", () => {
 
   const mockRequest = {
     user: { userId: "user-uuid-1" },
+    organizationId: "org-uuid",
   } as unknown as import("../../common/interfaces/request-with-org.interface").RequestWithOrg;
 
   beforeEach(async () => {
@@ -78,7 +80,10 @@ describe("PipelinesController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PipelinesController>(PipelinesController);
     service = module.get<PipelinesService>(PipelinesService);
@@ -98,6 +103,7 @@ describe("PipelinesController", () => {
       expect(service.create).toHaveBeenCalledWith(
         { name: "deploy-to-production" },
         "user-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -116,28 +122,42 @@ describe("PipelinesController", () => {
 
   describe("findOne", () => {
     it("should return a pipeline by id", async () => {
-      const result = await controller.findOne("pipeline-uuid-1");
+      const result = await controller.findOne("pipeline-uuid-1", mockRequest);
       expect(result).toEqual(mockPipeline);
-      expect(service.findOne).toHaveBeenCalledWith("pipeline-uuid-1");
+      expect(service.findOne).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "org-uuid",
+      );
     });
   });
 
   describe("update", () => {
     it("should update a pipeline", async () => {
-      const result = await controller.update("pipeline-uuid-1", {
-        description: "Updated",
-      });
+      const result = await controller.update(
+        "pipeline-uuid-1",
+        {
+          description: "Updated",
+        },
+        mockRequest,
+      );
       expect(result).toEqual(mockPipeline);
-      expect(service.update).toHaveBeenCalledWith("pipeline-uuid-1", {
-        description: "Updated",
-      });
+      expect(service.update).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        {
+          description: "Updated",
+        },
+        "org-uuid",
+      );
     });
   });
 
   describe("remove", () => {
     it("should remove a pipeline", async () => {
-      await controller.remove("pipeline-uuid-1");
-      expect(service.remove).toHaveBeenCalledWith("pipeline-uuid-1");
+      await controller.remove("pipeline-uuid-1", mockRequest);
+      expect(service.remove).toHaveBeenCalledWith(
+        "pipeline-uuid-1",
+        "org-uuid",
+      );
     });
   });
 
@@ -152,6 +172,7 @@ describe("PipelinesController", () => {
       expect(service.triggerRun).toHaveBeenCalledWith(
         "pipeline-uuid-1",
         "user-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -170,11 +191,16 @@ describe("PipelinesController", () => {
 
   describe("findRun", () => {
     it("should return a specific run", async () => {
-      const result = await controller.findRun("pipeline-uuid-1", "run-uuid-1");
+      const result = await controller.findRun(
+        "pipeline-uuid-1",
+        "run-uuid-1",
+        mockRequest,
+      );
       expect(result).toEqual(mockRun);
       expect(service.findRun).toHaveBeenCalledWith(
         "pipeline-uuid-1",
         "run-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -191,6 +217,7 @@ describe("PipelinesController", () => {
         "pipeline-uuid-1",
         "run-uuid-1",
         "user-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -207,6 +234,7 @@ describe("PipelinesController", () => {
         "pipeline-uuid-1",
         "run-uuid-1",
         "user-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -223,6 +251,7 @@ describe("PipelinesController", () => {
         "pipeline-uuid-1",
         "run-uuid-1",
         "user-uuid-1",
+        "org-uuid",
       );
     });
   });
@@ -294,6 +323,7 @@ describe("PipelinesController", () => {
       expect(service.create).toHaveBeenCalledWith(
         { name: "new-pipeline" },
         "anonymous",
+        undefined,
       );
     });
   });
@@ -306,6 +336,7 @@ describe("PipelinesController", () => {
       expect(service.triggerRun).toHaveBeenCalledWith(
         "pipeline-uuid-1",
         "anonymous",
+        undefined,
       );
     });
   });

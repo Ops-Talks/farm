@@ -26,6 +26,15 @@ export class ActualCost {
   id: string;
 
   @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440010",
+    description: "Organization this cost record belongs to",
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  organizationId: string | null;
+
+  @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440000",
     description: "UUID of the component this cost record belongs to",
   })

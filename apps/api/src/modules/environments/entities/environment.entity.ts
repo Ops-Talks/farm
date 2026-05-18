@@ -22,6 +22,7 @@ export enum EnvironmentType {
  * Represents a deployment environment (e.g., dev, staging, production).
  */
 @Entity("environments")
+@Index(["name", "organizationId"], { unique: true })
 export class Environment {
   @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440010",
@@ -34,7 +35,7 @@ export class Environment {
     example: "production",
     description: "The unique environment name",
   })
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @ApiProperty({

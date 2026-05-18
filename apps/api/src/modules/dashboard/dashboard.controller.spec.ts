@@ -8,6 +8,8 @@ import {
   WidgetType,
 } from "./entities/dashboard-widget.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 const mockDashboardService = {
   create: jest.fn(),
@@ -63,7 +65,10 @@ describe("DashboardController", () => {
         { provide: DashboardService, useValue: mockDashboardService },
         { provide: WidgetService, useValue: mockWidgetService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<DashboardController>(DashboardController);
   });
@@ -132,11 +137,15 @@ describe("DashboardController", () => {
   describe("findOne", () => {
     it("should get dashboard by ID", async () => {
       mockDashboardService.findOne.mockResolvedValue(mockDashboard);
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-      const result = await controller.findOne("dash-uuid-1");
+      const result = await controller.findOne("dash-uuid-1", mockReq);
 
       expect(result).toEqual(mockDashboard);
-      expect(mockDashboardService.findOne).toHaveBeenCalledWith("dash-uuid-1");
+      expect(mockDashboardService.findOne).toHaveBeenCalledWith(
+        "dash-uuid-1",
+        "org-uuid",
+      );
     });
   });
 
@@ -145,13 +154,15 @@ describe("DashboardController", () => {
       const updateDto = { name: "Updated Dashboard" };
       const updatedDashboard = { ...mockDashboard, name: "Updated Dashboard" };
       mockDashboardService.update.mockResolvedValue(updatedDashboard);
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-      const result = await controller.update("dash-uuid-1", updateDto);
+      const result = await controller.update("dash-uuid-1", updateDto, mockReq);
 
       expect(result).toEqual(updatedDashboard);
       expect(mockDashboardService.update).toHaveBeenCalledWith(
         "dash-uuid-1",
         updateDto,
+        "org-uuid",
       );
     });
   });
@@ -180,11 +191,15 @@ describe("DashboardController", () => {
   describe("remove", () => {
     it("should delete a dashboard", async () => {
       mockDashboardService.remove.mockResolvedValue(undefined);
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-      const result = await controller.remove("dash-uuid-1");
+      const result = await controller.remove("dash-uuid-1", mockReq);
 
       expect(result).toBeUndefined();
-      expect(mockDashboardService.remove).toHaveBeenCalledWith("dash-uuid-1");
+      expect(mockDashboardService.remove).toHaveBeenCalledWith(
+        "dash-uuid-1",
+        "org-uuid",
+      );
     });
   });
 

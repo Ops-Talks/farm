@@ -189,6 +189,7 @@ describe("Documentation CRUD (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/docs/builds/${componentId}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);
@@ -207,6 +208,7 @@ describe("Documentation CRUD (e2e)", () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/docs/builds/${componentId}`)
         .set("Authorization", `Bearer ${token}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       expect(Array.isArray(res.body)).toBe(true);

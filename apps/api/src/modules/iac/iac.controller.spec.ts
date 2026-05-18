@@ -6,6 +6,8 @@ import { IacRunType, IacRunStatus } from "./entities/iac-run.entity";
 import type { IacRun } from "./entities/iac-run.entity";
 import type { IacModuleDrift } from "./entities/iac-module-drift.entity";
 import type { DashboardDto } from "./dto/dashboard.dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("IacController", () => {
   let controller: IacController;
@@ -78,7 +80,10 @@ describe("IacController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IacController>(IacController);
     service = module.get<IacService>(IacService);
@@ -102,19 +107,27 @@ describe("IacController", () => {
     };
 
     it("should delegate to IacService with the extracted token", async () => {
-      const result = await controller.ingestRun("Bearer my-secret-token", dto);
-      expect(service.ingestRun).toHaveBeenCalledWith(dto, "my-secret-token");
+      const result = await controller.ingestRun(
+        "Bearer my-secret-token",
+        undefined,
+        dto,
+      );
+      expect(service.ingestRun).toHaveBeenCalledWith(
+        dto,
+        "my-secret-token",
+        undefined,
+      );
       expect(result).toEqual(mockRun);
     });
 
     it("should pass an empty string when Authorization header is absent", async () => {
-      await controller.ingestRun(undefined, dto);
-      expect(service.ingestRun).toHaveBeenCalledWith(dto, "");
+      await controller.ingestRun(undefined, undefined, dto);
+      expect(service.ingestRun).toHaveBeenCalledWith(dto, "", undefined);
     });
 
     it("should pass an empty string when Authorization header is malformed", async () => {
-      await controller.ingestRun("Token abc123", dto);
-      expect(service.ingestRun).toHaveBeenCalledWith(dto, "");
+      await controller.ingestRun("Token abc123", undefined, dto);
+      expect(service.ingestRun).toHaveBeenCalledWith(dto, "", undefined);
     });
   });
 
@@ -129,15 +142,20 @@ describe("IacController", () => {
     it("should delegate to IacService with the extracted token", async () => {
       const result = await controller.importStacks(
         "Bearer my-secret-token",
+        undefined,
         dto,
       );
-      expect(service.importStacks).toHaveBeenCalledWith(dto, "my-secret-token");
+      expect(service.importStacks).toHaveBeenCalledWith(
+        dto,
+        "my-secret-token",
+        undefined,
+      );
       expect(result).toEqual({ created: 1, updated: 0 });
     });
 
     it("should pass an empty string when Authorization header is absent", async () => {
-      await controller.importStacks(undefined, dto);
-      expect(service.importStacks).toHaveBeenCalledWith(dto, "");
+      await controller.importStacks(undefined, undefined, dto);
+      expect(service.importStacks).toHaveBeenCalledWith(dto, "", undefined);
     });
   });
 
@@ -280,7 +298,10 @@ describe("IacController (stack endpoints)", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IacController>(IacController);
     service = module.get<IacService>(IacService);
@@ -294,15 +315,17 @@ describe("IacController (stack endpoints)", () => {
   describe("listStacks", () => {
     it("should delegate to IacService.listStacks and return the result", async () => {
       const query = { environment: "production" };
-      const result = await controller.listStacks(query);
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.listStacks(query, mockReq);
 
-      expect(service.listStacks).toHaveBeenCalledWith(query);
+      expect(service.listStacks).toHaveBeenCalledWith(query, "org-uuid");
       expect(result).toEqual([mockStackDetail]);
     });
 
     it("should pass an empty query object when no filters are provided", async () => {
-      await controller.listStacks({});
-      expect(service.listStacks).toHaveBeenCalledWith({});
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      await controller.listStacks({}, mockReq);
+      expect(service.listStacks).toHaveBeenCalledWith({}, "org-uuid");
     });
   });
 
@@ -311,9 +334,10 @@ describe("IacController (stack endpoints)", () => {
   // -------------------------------------------------------------------------
   describe("getStack", () => {
     it("should delegate to IacService.getStack with the provided id", async () => {
-      const result = await controller.getStack("stack-uuid-1");
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.getStack("stack-uuid-1", mockReq);
 
-      expect(service.getStack).toHaveBeenCalledWith("stack-uuid-1");
+      expect(service.getStack).toHaveBeenCalledWith("stack-uuid-1", "org-uuid");
       expect(result).toEqual(mockStackDetail);
     });
   });
@@ -365,7 +389,10 @@ describe("IacController — resource endpoints (FARM-S286)", () => {
         },
         { provide: IacResourceService, useValue: iacResourceService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IacController>(IacController);
   });

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **multi-tenancy**: `OrgRequiredGuard` now self-validates org membership via `DataSource` (guards run before interceptors in NestJS — fixes silent 403 that occurred when `OrgContextInterceptor` hadn't set `req.organizationId` yet).
+- **multi-tenancy**: Cross-tenant security e2e test suite (`test/cross-tenant-security.e2e-spec.ts`) — 14 tests covering Catalog, Pipelines, Environments, SLOs, Incidents, Dashboards, and Documentation.
+- **iac**: `ingestRun` and `importStacks` accept optional `X-Organization-Id` header to scope stack lookup and creation to an organization.
+
+### Fixed
+- **catalog**: Removed `@UseInterceptors(CacheInterceptor)` from list and findOne endpoints — org-unaware URL-keyed cache leaked org-A data to org-B.
+- **multi-tenancy**: All org-scoped controller unit tests now use `.overrideGuard(OrgRequiredGuard)` so tests compile without a real `DataSource` provider.
+- **e2e**: Added `X-Organization-Id` header to authenticated requests in registry, registry-harbor, registry-vulnerabilities, kubernetes-keda, kubernetes-flux, finops, scorecards, iac, and auth e2e test suites.
+- **iac**: `ingestRun` and `importStacks` use `IsNull()` TypeORM operator when no org id provided, fixing TS2322 compile error on `FindOptionsWhere`.
+
 ## [0.25.3] - 2026-05-15
 
 ### Added

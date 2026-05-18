@@ -10,6 +10,8 @@ import {
   SloBudgetStatus,
 } from "./dto/slo-budget-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 const mockSloService = {
   create: jest.fn(),
@@ -49,7 +51,10 @@ describe("SloController", () => {
         { provide: SloService, useValue: mockSloService },
         { provide: SloCalculatorService, useValue: mockCalculatorService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SloController>(SloController);
     sloService = module.get(SloService);
@@ -110,11 +115,12 @@ describe("SloController", () => {
 
   it("should get SLO by ID", async () => {
     sloService.findOne.mockResolvedValue(mockSlo);
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-    const result = await controller.findOne("slo-uuid-1");
+    const result = await controller.findOne("slo-uuid-1", mockReq);
 
     expect(result).toEqual(mockSlo);
-    expect(sloService.findOne).toHaveBeenCalledWith("slo-uuid-1");
+    expect(sloService.findOne).toHaveBeenCalledWith("slo-uuid-1", "org-uuid");
   });
 
   it("should get SLO budget", async () => {
@@ -147,19 +153,25 @@ describe("SloController", () => {
       ...mockSlo,
       description: "Updated description",
     });
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-    const result = await controller.update("slo-uuid-1", updateDto);
+    const result = await controller.update("slo-uuid-1", updateDto, mockReq);
 
     expect(result.description).toBe("Updated description");
-    expect(sloService.update).toHaveBeenCalledWith("slo-uuid-1", updateDto);
+    expect(sloService.update).toHaveBeenCalledWith(
+      "slo-uuid-1",
+      updateDto,
+      "org-uuid",
+    );
   });
 
   it("should delete an SLO", async () => {
     sloService.remove.mockResolvedValue(undefined);
+    const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-    const result = await controller.remove("slo-uuid-1");
+    const result = await controller.remove("slo-uuid-1", mockReq);
 
     expect(result).toBeUndefined();
-    expect(sloService.remove).toHaveBeenCalledWith("slo-uuid-1");
+    expect(sloService.remove).toHaveBeenCalledWith("slo-uuid-1", "org-uuid");
   });
 });

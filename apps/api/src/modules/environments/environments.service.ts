@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { FindOptionsWhere, Repository } from "typeorm";
 import { Environment } from "./entities/environment.entity";
 import { CreateEnvironmentDto } from "./dto/create-environment.dto";
 import { UpdateEnvironmentDto } from "./dto/update-environment.dto";
@@ -72,14 +72,17 @@ export class EnvironmentsService {
 
   /**
    * Retrieves a single environment by its unique identifier.
+   * When orgId is provided the result is additionally scoped to that
+   * organization — a mismatch returns 404 to avoid leaking resource existence.
    * @param id - The UUID of the environment
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The environment with the specified ID
-   * @throws NotFoundException if no environment with the given ID exists
+   * @throws NotFoundException if no environment with the given ID exists (or org does not match)
    */
-  async findOne(id: string): Promise<Environment> {
-    const environment = await this.environmentRepository.findOne({
-      where: { id },
-    });
+  async findOne(id: string, orgId?: string): Promise<Environment> {
+    const where: FindOptionsWhere<Environment> = { id };
+    if (orgId) where.organizationId = orgId;
+    const environment = await this.environmentRepository.findOne({ where });
     if (!environment) {
       throw new NotFoundException(`Environment with ID "${id}" not found`);
     }
@@ -90,15 +93,17 @@ export class EnvironmentsService {
    * Updates an existing environment.
    * @param id - The UUID of the environment to update
    * @param updateEnvironmentDto - Fields to update
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The updated environment
-   * @throws NotFoundException if no environment with the given ID exists
+   * @throws NotFoundException if no environment with the given ID exists (or org does not match)
    * @throws ConflictException if the new name conflicts with an existing environment
    */
   async update(
     id: string,
     updateEnvironmentDto: UpdateEnvironmentDto,
+    orgId?: string,
   ): Promise<Environment> {
-    const environment = await this.findOne(id);
+    const environment = await this.findOne(id, orgId);
 
     if (
       updateEnvironmentDto.name &&
@@ -124,10 +129,11 @@ export class EnvironmentsService {
   /**
    * Removes an environment.
    * @param id - The UUID of the environment to remove
-   * @throws NotFoundException if no environment with the given ID exists
+   * @param orgId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if no environment with the given ID exists (or org does not match)
    */
-  async remove(id: string): Promise<void> {
-    const environment = await this.findOne(id);
+  async remove(id: string, orgId?: string): Promise<void> {
+    const environment = await this.findOne(id, orgId);
     await this.environmentRepository.remove(environment);
     this.logger.log(`Removed environment: ${environment.name}`);
   }

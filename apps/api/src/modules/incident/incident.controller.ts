@@ -35,15 +35,19 @@ import { IncidentUpdate } from "./entities/incident-update.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing production incidents and their timelines.
  */
 @ApiTags("Incidents")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("incidents")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -134,8 +138,11 @@ export class IncidentController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Incident> {
-    return await this.incidentService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Incident> {
+    return await this.incidentService.findOne(id, req.organizationId);
   }
 
   /**
@@ -163,8 +170,9 @@ export class IncidentController {
   async update(
     @Param("id") id: string,
     @Body() dto: UpdateIncidentDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Incident> {
-    return await this.incidentService.update(id, dto);
+    return await this.incidentService.update(id, dto, req.organizationId);
   }
 
   /**
@@ -218,8 +226,11 @@ export class IncidentController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.incidentService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    await this.incidentService.remove(id, req.organizationId);
   }
 
   // ── Timeline sub-resource endpoints ─────────────────────────────────

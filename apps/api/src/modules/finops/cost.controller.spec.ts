@@ -7,6 +7,8 @@ import { OpenCostService } from "./open-cost.service";
 import { Component } from "../catalog/entities/component.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
 import { Team } from "../teams/entities/team.entity";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 /**
  * Unit tests for CostController.
@@ -48,7 +50,10 @@ describe("CostController", () => {
         },
         { provide: getRepositoryToken(Team), useValue: mockTeamRepo },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CostController>(CostController);
   });
@@ -57,10 +62,11 @@ describe("CostController", () => {
   describe("getActualCost()", () => {
     it("throws NotFoundException when component does not exist", async () => {
       mockComponentRepo.findOne.mockResolvedValue(null);
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-      await expect(controller.getActualCost("missing-id")).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.getActualCost("missing-id", mockReq),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("returns sevenDay and thirtyDay allocations", async () => {
@@ -71,8 +77,9 @@ describe("CostController", () => {
       mockOpenCostService.getAllocation
         .mockResolvedValueOnce({ totalCost: 1.0 })
         .mockResolvedValueOnce({ totalCost: 5.0 });
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
 
-      const result = await controller.getActualCost("comp-1");
+      const result = await controller.getActualCost("comp-1", mockReq);
 
       expect(result.componentId).toBe("comp-1");
       expect(result.sevenDay).toEqual({ totalCost: 1.0 });
@@ -83,6 +90,7 @@ describe("CostController", () => {
   // -------------------------------------------------------------------------
   describe("getCostHistory()", () => {
     it("returns mapped records with numeric totalCost", async () => {
+      mockComponentRepo.findOne.mockResolvedValue({ id: "comp-1" });
       mockActualCostRepo.find.mockResolvedValue([
         {
           id: "ac-1",
@@ -100,7 +108,8 @@ describe("CostController", () => {
         },
       ]);
 
-      const result = await controller.getCostHistory("comp-1");
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.getCostHistory("comp-1", mockReq);
 
       expect(result).toHaveLength(1);
       expect(typeof result[0].totalCost).toBe("number");

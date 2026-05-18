@@ -36,14 +36,18 @@ import { DashboardWidget } from "./entities/dashboard-widget.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Controller for managing custom dashboards and their widgets.
  */
 @ApiTags("Dashboards")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("dashboards")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -139,8 +143,11 @@ export class DashboardController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Dashboard> {
-    return await this.dashboardService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Dashboard> {
+    return await this.dashboardService.findOne(id, req.organizationId);
   }
 
   /**
@@ -167,8 +174,13 @@ export class DashboardController {
   async update(
     @Param("id") id: string,
     @Body() updateDashboardDto: UpdateDashboardDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Dashboard> {
-    return await this.dashboardService.update(id, updateDashboardDto);
+    return await this.dashboardService.update(
+      id,
+      updateDashboardDto,
+      req.organizationId,
+    );
   }
 
   /**
@@ -216,8 +228,11 @@ export class DashboardController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.dashboardService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    await this.dashboardService.remove(id, req.organizationId);
   }
 
   // ----------------------------------------------------------------

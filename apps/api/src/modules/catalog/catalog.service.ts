@@ -8,7 +8,7 @@ import {
   Inject,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
+import { Repository, In, FindOptionsWhere } from "typeorm";
 import * as yaml from "js-yaml";
 import * as fs from "fs/promises";
 import * as path from "path";
@@ -368,14 +368,17 @@ export class CatalogService {
   }
 
   /**
-   * Retrieves a single component by its unique identifier.
+   * Retrieves a single component by its unique identifier, optionally scoped to an organization.
    * @param id - The UUID of the component to retrieve
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The component with the specified ID
-   * @throws NotFoundException if no component with the given ID exists
+   * @throws NotFoundException if no component with the given ID exists (or belongs to another org)
    */
-  async findOne(id: string): Promise<Component> {
+  async findOne(id: string, organizationId?: string): Promise<Component> {
+    const where: FindOptionsWhere<Component> = { id };
+    if (organizationId) where.organizationId = organizationId;
     const component = await this.componentRepository.findOne({
-      where: { id },
+      where,
       relations: ["dependencies"],
     });
     if (!component) {
@@ -388,14 +391,16 @@ export class CatalogService {
    * Updates an existing component's data.
    * @param id - The UUID of the component to update
    * @param updateComponentDto - Fields to update
+   * @param organizationId - Optional organization UUID to scope the lookup
    * @returns The updated component
-   * @throws NotFoundException if no component with the given ID exists
+   * @throws NotFoundException if no component with the given ID exists (or belongs to another org)
    */
   async update(
     id: string,
     updateComponentDto: UpdateComponentDto,
+    organizationId?: string,
   ): Promise<Component> {
-    const component = await this.findOne(id);
+    const component = await this.findOne(id, organizationId);
     const { dependencyIds, ...rest } = updateComponentDto;
 
     const updated = this.componentRepository.merge(component, rest);
@@ -423,10 +428,11 @@ export class CatalogService {
   /**
    * Removes a component from the catalog.
    * @param id - The UUID of the component to remove
-   * @throws NotFoundException if no component with the given ID exists
+   * @param organizationId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if no component with the given ID exists (or belongs to another org)
    */
-  async remove(id: string): Promise<void> {
-    const component = await this.findOne(id);
+  async remove(id: string, organizationId?: string): Promise<void> {
+    const component = await this.findOne(id, organizationId);
     await this.componentRepository.remove(component);
 
     this.eventsGateway?.emitComponentDeleted({

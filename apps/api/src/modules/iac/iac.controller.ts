@@ -11,6 +11,7 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   Headers,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -25,6 +26,9 @@ import {
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { IacService } from "./iac.service";
 import { IacResourceService } from "./iac-resource.service";
@@ -61,6 +65,7 @@ function extractBearer(authHeader: string | undefined): string {
 @ApiTags("IaC")
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("iac")
+@OrgRequired()
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",
@@ -111,9 +116,14 @@ export class IacController {
   })
   async ingestRun(
     @Headers("authorization") authorization: string | undefined,
+    @Headers("x-organization-id") organizationId: string | undefined,
     @Body() dto: IngestRunDto,
   ): Promise<IacRun> {
-    return this.iacService.ingestRun(dto, extractBearer(authorization));
+    return this.iacService.ingestRun(
+      dto,
+      extractBearer(authorization),
+      organizationId,
+    );
   }
 
   /**
@@ -152,9 +162,14 @@ export class IacController {
   })
   async importStacks(
     @Headers("authorization") authorization: string | undefined,
+    @Headers("x-organization-id") organizationId: string | undefined,
     @Body() dto: ImportStacksDto,
   ): Promise<{ created: number; updated: number }> {
-    return this.iacService.importStacks(dto, extractBearer(authorization));
+    return this.iacService.importStacks(
+      dto,
+      extractBearer(authorization),
+      organizationId,
+    );
   }
 
   /**
@@ -200,7 +215,7 @@ export class IacController {
    * @returns Array of StackDetailDto
    */
   @Get("stacks")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "List IaC stacks with optional filters" })
   @ApiQuery({ name: "environment", required: false, type: String })
@@ -211,8 +226,9 @@ export class IacController {
   })
   async listStacks(
     @Query() query: StackListQueryDto,
+    @Req() req: RequestWithOrg,
   ): Promise<StackDetailDto[]> {
-    return this.iacService.listStacks(query);
+    return this.iacService.listStacks(query, req.organizationId);
   }
 
   /**
@@ -222,7 +238,7 @@ export class IacController {
    * @returns StackDetailDto
    */
   @Get("stacks/:id")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get an IaC stack by ID" })
   @ApiParam({ name: "id", description: "IacStack UUID" })
@@ -235,8 +251,11 @@ export class IacController {
     description: "IacStack not found.",
     type: ErrorResponseDto,
   })
-  async getStack(@Param("id") id: string): Promise<StackDetailDto> {
-    return this.iacService.getStack(id);
+  async getStack(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<StackDetailDto> {
+    return this.iacService.getStack(id, req.organizationId);
   }
 
   /**
@@ -248,7 +267,7 @@ export class IacController {
    * @returns Paginated run list with total count
    */
   @Get("stacks/:id/runs")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "List runs for an IaC stack" })
   @ApiParam({ name: "id", description: "IacStack UUID" })
@@ -275,7 +294,7 @@ export class IacController {
    * @returns DashboardDto with per-environment stack summaries
    */
   @Get("dashboard")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get IaC dashboard summary" })
   @ApiOkResponse({
@@ -292,7 +311,7 @@ export class IacController {
    * @returns Array of IacModuleDrift records
    */
   @Get("module-drift")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get module drift records" })
   @ApiOkResponse({
@@ -355,7 +374,7 @@ export class IacController {
    * @returns ResourceMapDto
    */
   @Get("stacks/:id/resources")
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get resource topology for a stack" })
   @ApiParam({ name: "id", description: "IacStack UUID" })

@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Param,
   Query,
+  Req,
   NotFoundException,
   UseGuards,
 } from "@nestjs/common";
@@ -19,6 +20,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { Component } from "../catalog/entities/component.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
 import { OpenCostService } from "./open-cost.service";
@@ -29,7 +33,8 @@ import { Team } from "../teams/entities/team.entity";
  */
 @ApiTags("FinOps")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",
@@ -59,8 +64,10 @@ export class CostController {
   @ApiParam({ name: "id", description: "Component UUID" })
   @ApiResponse({ status: 200, description: "Cost allocation data" })
   @ApiResponse({ status: 404, description: "Component not found" })
-  async getActualCost(@Param("id") id: string) {
-    const component = await this.componentRepo.findOne({ where: { id } });
+  async getActualCost(@Param("id") id: string, @Req() req: RequestWithOrg) {
+    const where: Record<string, unknown> = { id };
+    if (req.organizationId) where["organizationId"] = req.organizationId;
+    const component = await this.componentRepo.findOne({ where });
     if (!component) throw new NotFoundException(`Component ${id} not found`);
     const [sevenDay, thirtyDay] = await Promise.all([
       this.openCostService.getAllocation(component.name, "7d"),
@@ -81,7 +88,11 @@ export class CostController {
   })
   @ApiParam({ name: "id", description: "Component UUID" })
   @ApiResponse({ status: 200, description: "Array of ActualCost records" })
-  async getCostHistory(@Param("id") id: string) {
+  async getCostHistory(@Param("id") id: string, @Req() req: RequestWithOrg) {
+    const where: Record<string, unknown> = { id };
+    if (req.organizationId) where["organizationId"] = req.organizationId;
+    const component = await this.componentRepo.findOne({ where });
+    if (!component) throw new NotFoundException(`Component ${id} not found`);
     const records = await this.actualCostRepo.find({
       where: { componentId: id },
       order: { syncedAt: "DESC" },

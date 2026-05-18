@@ -30,8 +30,10 @@ import { Environment } from "./entities/environment.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
@@ -39,7 +41,8 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Environments")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
 @Controller("environments")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -137,8 +140,11 @@ export class EnvironmentsController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async findOne(@Param("id") id: string): Promise<Environment> {
-    return await this.environmentsService.findOne(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<Environment> {
+    return await this.environmentsService.findOne(id, req.organizationId);
   }
 
   /**
@@ -171,8 +177,13 @@ export class EnvironmentsController {
   async update(
     @Param("id") id: string,
     @Body() updateEnvironmentDto: UpdateEnvironmentDto,
+    @Req() req: RequestWithOrg,
   ): Promise<Environment> {
-    return await this.environmentsService.update(id, updateEnvironmentDto);
+    return await this.environmentsService.update(
+      id,
+      updateEnvironmentDto,
+      req.organizationId,
+    );
   }
 
   /**
@@ -193,7 +204,10 @@ export class EnvironmentsController {
     description: "Not Found.",
     type: ErrorResponseDto,
   })
-  async remove(@Param("id") id: string): Promise<void> {
-    await this.environmentsService.remove(id);
+  async remove(
+    @Param("id") id: string,
+    @Req() req: RequestWithOrg,
+  ): Promise<void> {
+    await this.environmentsService.remove(id, req.organizationId);
   }
 }

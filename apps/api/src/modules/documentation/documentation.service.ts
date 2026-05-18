@@ -7,7 +7,7 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { FindOptionsWhere, Repository } from "typeorm";
 import axios from "axios";
 import { isAxiosError } from "axios";
 import { marked } from "marked";
@@ -125,12 +125,17 @@ export class DocumentationService {
 
   /**
    * Retrieves a single entry by ID.
+   * When orgId is provided the result is additionally scoped to that
+   * organization — a mismatch returns 404 to avoid leaking resource existence.
    * @param id - UUID
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The found documentation
-   * @throws NotFoundException if not found
+   * @throws NotFoundException if not found (or org does not match)
    */
-  async findOne(id: string): Promise<Documentation> {
-    const documentation = await this.documentationRepository.findOneBy({ id });
+  async findOne(id: string, orgId?: string): Promise<Documentation> {
+    const where: FindOptionsWhere<Documentation> = { id };
+    if (orgId) where.organizationId = orgId;
+    const documentation = await this.documentationRepository.findOne({ where });
     if (!documentation) {
       throw new NotFoundException(`Documentation with ID "${id}" not found`);
     }
@@ -140,10 +145,11 @@ export class DocumentationService {
   /**
    * Fetches the raw Markdown content from the documentation's source URL.
    * @param id - The UUID of the documentation entry
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The raw Markdown content as a string
    */
-  async getContent(id: string): Promise<string> {
-    const doc = await this.findOne(id);
+  async getContent(id: string, orgId?: string): Promise<string> {
+    const doc = await this.findOne(id, orgId);
     try {
       const response = await axios.get<string>(doc.sourceUrl, {
         timeout: 10000,
@@ -278,13 +284,15 @@ export class DocumentationService {
    * Updates an entry.
    * @param id - UUID
    * @param updateDocumentationDto - Fields to update
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The updated documentation
    */
   async update(
     id: string,
     updateDocumentationDto: UpdateDocumentationDto,
+    orgId?: string,
   ): Promise<Documentation> {
-    const documentation = await this.findOne(id);
+    const documentation = await this.findOne(id, orgId);
     const updated = this.documentationRepository.merge(
       documentation,
       updateDocumentationDto,
@@ -295,9 +303,10 @@ export class DocumentationService {
   /**
    * Removes an entry.
    * @param id - UUID
+   * @param orgId - Optional organization UUID to scope the lookup
    */
-  async remove(id: string): Promise<void> {
-    const documentation = await this.findOne(id);
+  async remove(id: string, orgId?: string): Promise<void> {
+    const documentation = await this.findOne(id, orgId);
     await this.documentationRepository.remove(documentation);
   }
 }

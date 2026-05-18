@@ -3,6 +3,8 @@ import { DocumentationController } from "./documentation.controller";
 import { DocumentationService } from "./documentation.service";
 import { DocumentationBuildService } from "./documentation-build.service";
 import { PaginatedResponseDto } from "../../common/dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 
 describe("DocumentationController", () => {
   let controller: DocumentationController;
@@ -79,7 +81,10 @@ describe("DocumentationController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<DocumentationController>(DocumentationController);
     service = module.get<DocumentationService>(DocumentationService);
@@ -160,17 +165,19 @@ describe("DocumentationController", () => {
 
   describe("findOne", () => {
     it("should return one documentation entry by ID", async () => {
-      const result = await controller.findOne("doc-uuid-1");
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.findOne("doc-uuid-1", mockReq);
       expect(result).toEqual(mockDoc);
-      expect(service.findOne).toHaveBeenCalledWith("doc-uuid-1");
+      expect(service.findOne).toHaveBeenCalledWith("doc-uuid-1", "org-uuid");
     });
   });
 
   describe("getContent", () => {
     it("should return markdown content", async () => {
-      const result = await controller.getContent("doc-uuid-1");
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.getContent("doc-uuid-1", mockReq);
       expect(result).toBe("# Hello World");
-      expect(service.getContent).toHaveBeenCalledWith("doc-uuid-1");
+      expect(service.getContent).toHaveBeenCalledWith("doc-uuid-1", "org-uuid");
     });
   });
 
@@ -207,20 +214,30 @@ describe("DocumentationController", () => {
 
   describe("update", () => {
     it("should update a documentation entry", async () => {
-      const result = await controller.update("doc-uuid-1", {
-        title: "Updated Title",
-      });
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      const result = await controller.update(
+        "doc-uuid-1",
+        {
+          title: "Updated Title",
+        },
+        mockReq,
+      );
       expect(result).toEqual(mockDoc);
-      expect(service.update).toHaveBeenCalledWith("doc-uuid-1", {
-        title: "Updated Title",
-      });
+      expect(service.update).toHaveBeenCalledWith(
+        "doc-uuid-1",
+        {
+          title: "Updated Title",
+        },
+        "org-uuid",
+      );
     });
   });
 
   describe("remove", () => {
     it("should remove a documentation entry", async () => {
-      await controller.remove("doc-uuid-1");
-      expect(service.remove).toHaveBeenCalledWith("doc-uuid-1");
+      const mockReq = { organizationId: "org-uuid" } as RequestWithOrg;
+      await controller.remove("doc-uuid-1", mockReq);
+      expect(service.remove).toHaveBeenCalledWith("doc-uuid-1", "org-uuid");
     });
   });
 

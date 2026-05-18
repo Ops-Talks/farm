@@ -63,6 +63,15 @@ export class IacRun {
   stack: IacStack;
 
   @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440010",
+    description: "Organization this run belongs to",
+    nullable: true,
+  })
+  @Index()
+  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  organizationId: string | null;
+
+  @ApiProperty({
     enum: IacRunType,
     example: IacRunType.PLAN,
     description: "Whether this run was a plan or apply operation",

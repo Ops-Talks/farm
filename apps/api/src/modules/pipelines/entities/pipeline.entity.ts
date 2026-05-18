@@ -59,6 +59,7 @@ export interface PipelineStage {
  * Represents a pipeline definition containing an ordered list of stages.
  */
 @Entity("pipelines")
+@Index(["name", "organizationId"], { unique: true })
 export class Pipeline {
   @ApiProperty({
     example: "550e8400-e29b-41d4-a716-446655440200",
@@ -71,7 +72,7 @@ export class Pipeline {
     example: "deploy-to-production",
     description: "Unique pipeline name",
   })
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @ApiProperty({

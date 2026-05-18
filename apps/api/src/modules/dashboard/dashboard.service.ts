@@ -77,13 +77,18 @@ export class DashboardService {
 
   /**
    * Retrieves a single dashboard by ID with its widgets.
+   * When orgId is provided the result is additionally scoped to that
+   * organization — a mismatch returns 404 to avoid leaking resource existence.
    * @param id - The UUID of the dashboard
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The dashboard with the specified ID
-   * @throws NotFoundException if no dashboard with the given ID exists
+   * @throws NotFoundException if no dashboard with the given ID exists (or org does not match)
    */
-  async findOne(id: string): Promise<Dashboard> {
+  async findOne(id: string, orgId?: string): Promise<Dashboard> {
+    const where: FindOptionsWhere<Dashboard> = { id };
+    if (orgId) where.organizationId = orgId;
     const dashboard = await this.dashboardRepository.findOne({
-      where: { id },
+      where,
       relations: ["widgets"],
     });
     if (!dashboard) {
@@ -96,14 +101,16 @@ export class DashboardService {
    * Updates an existing dashboard.
    * @param id - The UUID of the dashboard to update
    * @param updateDashboardDto - Fields to update
+   * @param orgId - Optional organization UUID to scope the lookup
    * @returns The updated dashboard
-   * @throws NotFoundException if no dashboard with the given ID exists
+   * @throws NotFoundException if no dashboard with the given ID exists (or org does not match)
    */
   async update(
     id: string,
     updateDashboardDto: UpdateDashboardDto,
+    orgId?: string,
   ): Promise<Dashboard> {
-    const dashboard = await this.findOne(id);
+    const dashboard = await this.findOne(id, orgId);
     const updated = this.dashboardRepository.merge(
       dashboard,
       updateDashboardDto,
@@ -160,10 +167,11 @@ export class DashboardService {
   /**
    * Removes a dashboard and its widgets (cascade).
    * @param id - The UUID of the dashboard to remove
-   * @throws NotFoundException if no dashboard with the given ID exists
+   * @param orgId - Optional organization UUID to scope the lookup
+   * @throws NotFoundException if no dashboard with the given ID exists (or org does not match)
    */
-  async remove(id: string): Promise<void> {
-    const dashboard = await this.findOne(id);
+  async remove(id: string, orgId?: string): Promise<void> {
+    const dashboard = await this.findOne(id, orgId);
     await this.dashboardRepository.remove(dashboard);
     this.logger.log(`Removed dashboard: ${dashboard.name}`);
   }
