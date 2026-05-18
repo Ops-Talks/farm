@@ -127,6 +127,27 @@ export class OrganizationService {
   }
 
   /**
+   * Returns only the organizations that the given user is a member of.
+   * Used by the authenticated list endpoint so each user sees only their orgs.
+   */
+  async findForUser(
+    userId: string,
+    skip = 0,
+    take = 20,
+  ): Promise<[Organization[], number]> {
+    const [memberships, total] = await this.userOrganizationRepository
+      .createQueryBuilder("uo")
+      .innerJoinAndSelect("uo.organization", "org")
+      .where("uo.userId = :userId", { userId })
+      .orderBy("org.name", "ASC")
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
+
+    return [memberships.map((m) => m.organization), total];
+  }
+
+  /**
    * Retrieves a single organization by its unique identifier.
    * @param id - The UUID of the organization
    * @returns The organization with the specified ID

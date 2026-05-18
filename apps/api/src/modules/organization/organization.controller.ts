@@ -111,15 +111,17 @@ export class OrganizationController {
    * @returns A paginated list of organizations
    */
   @Get()
-  @ApiOperation({ summary: "List all organizations" })
+  @ApiOperation({ summary: "List organizations the current user belongs to" })
   @ApiOkResponse({
     description: "Successfully retrieved organization list.",
     type: PaginatedResponseDto,
   })
   async findAll(
     @Query() pagination: PaginationQueryDto,
+    @Request() req: AuthenticatedRequest,
   ): Promise<PaginatedResponseDto<Organization>> {
-    const [data, total] = await this.organizationService.findAll(
+    const [data, total] = await this.organizationService.findForUser(
+      req.user.userId,
       pagination.skip,
       pagination.take,
     );

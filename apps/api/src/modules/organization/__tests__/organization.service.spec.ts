@@ -820,4 +820,46 @@ describe("OrganizationService — invitation management", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("findForUser", () => {
+    it("should return only the organizations the user belongs to", async () => {
+      const mockOrg = { id: orgId, name: "farm-demo" } as Organization;
+      const mockMembership = { organization: mockOrg } as UserOrganization;
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockMembership], 1]),
+      };
+      userOrgRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const [orgs, total] = await service.findForUser(inviterId, 0, 20);
+
+      expect(orgs).toHaveLength(1);
+      expect(orgs[0]).toBe(mockOrg);
+      expect(total).toBe(1);
+      expect(qb.where).toHaveBeenCalledWith("uo.userId = :userId", {
+        userId: inviterId,
+      });
+    });
+
+    it("should return an empty list when the user has no memberships", async () => {
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      userOrgRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const [orgs, total] = await service.findForUser("no-member-id", 0, 20);
+
+      expect(orgs).toHaveLength(0);
+      expect(total).toBe(0);
+    });
+  });
 });
