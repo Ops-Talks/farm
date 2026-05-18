@@ -104,7 +104,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message,
-      ...(errorCode && { errorCode }),
+      ...(errorCode !== undefined ? { errorCode } : {}),
       ...(exposeCorrelation && requestId && { requestId }),
       ...(exposeCorrelation &&
         spanContext?.traceId && { traceId: spanContext.traceId }),
