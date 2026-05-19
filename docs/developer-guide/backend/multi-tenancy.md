@@ -104,7 +104,7 @@ Phase 46 introduced a fine-grained permission model layered on top of org roles.
 create(@Req() req: RequestWithOrg, @Body() dto: CreateComponentDto) { ... }
 ```
 
-- `OrgRequiredGuard` — reads `X-Organization-Id`, validates membership, sets `req.organizationId` and `req.orgRole`; throws 400 if header absent, 403 if not a member
+- `OrgRequiredGuard` — reads `X-Organization-Id`, validates membership, sets `req.organizationId` and `req.orgRole`; throws 403 (`ForbiddenException`) if the header is missing or the user is not a member, with the response message and any `errorCode` coming from the thrown forbidden error
 - `PermissionGuard` — reads `@RequiresPermission()` metadata and checks `req.orgRole` against `RolePermissions`
 
 **Frontend RBAC:**
