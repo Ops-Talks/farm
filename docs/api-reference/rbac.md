@@ -41,15 +41,14 @@ Each org role implicitly grants a set of named permissions. Endpoints declare a 
 
 | Permission | `member` | `admin` | `owner` |
 |---|:---:|:---:|:---:|
-| `CATALOG_READ` | Yes | Yes | Yes |
 | `CATALOG_WRITE` | — | Yes | Yes |
-| `CATALOG_DELETE` | — | — | Yes |
-| `TEAMS_READ` | Yes | Yes | Yes |
-| `TEAMS_WRITE` | — | Yes | Yes |
-| `ENVIRONMENTS_READ` | Yes | Yes | Yes |
-| `ENVIRONMENTS_WRITE` | — | Yes | Yes |
-| `PIPELINES_READ` | Yes | Yes | Yes |
-| `PIPELINES_RUN` | — | Yes | Yes |
+| `CATALOG_DELETE` | — | Yes | Yes |
+| `PIPELINE_TRIGGER` | Yes | Yes | Yes |
+| `PIPELINE_DELETE` | — | Yes | Yes |
+| `ENVIRONMENT_WRITE` | — | Yes | Yes |
+| `TEAM_MANAGE` | — | Yes | Yes |
+| `ORG_MANAGE` | — | Yes | Yes |
+| `IAC_WRITE` | — | Yes | Yes |
 
 ### Error response when permission is denied
 
