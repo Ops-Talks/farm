@@ -57,6 +57,29 @@ Farm uses the Next.js App Router with route groups:
 
 Each route segment can have its own `page.tsx`, `loading.tsx`, and `error.tsx` files.
 
+### Organization Context and RBAC
+
+`OrganizationContext` (`apps/web/src/contexts/organization-context.tsx`) provides multi-tenancy state:
+
+```typescript
+const { currentOrg, orgRole, isLoading, switchOrg } = useOrganization();
+```
+
+- `orgRole: OrgRole | null` — the current user's role in the selected organization (`"owner"`, `"admin"`, `"member"`, or `"viewer"`), fetched when `currentOrg` changes. The frontend API client prefixes `/api`, so the effective network route is `GET /api/v1/organizations/:id/members/me`
+- `orgRole` is `null` while loading or when no organization is selected
+
+Use `usePermission(permission: Permission)` from `apps/web/src/hooks/use-permission.ts` to gate write-action UI elements:
+
+```typescript
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
+
+const canWrite = usePermission(Permission.CATALOG_WRITE);
+return canWrite ? <RegisterButton /> : null;
+```
+
+All Playwright tests using `setupOrgMock` must also mock `GET **/api/v1/organizations/*/members/me` returning `{ role: "owner" }`. The `/api/v1` prefix must be included so the route matches `apps/web/e2e/helpers/setup-org-mock.ts`; otherwise permission-gated elements will be hidden and tests will produce false negatives.
+
 ### Authentication Flow
 
 ```

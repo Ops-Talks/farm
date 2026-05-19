@@ -36,6 +36,7 @@ farm/
         gateway.e2e-spec.ts                # API gateway routes
         api-specs.e2e-spec.ts              # API spec lifecycle
         istio.e2e-spec.ts                  # Istio service mesh integration
+        rbac.e2e-spec.ts                   # RBAC permission enforcement across modules
         jest-e2e.json                      # E2E Jest configuration
 ```
 
@@ -184,40 +185,39 @@ describe('CatalogController', () => {
 
 ## Writing End-to-End Tests
 
-E2E tests validate the API from an external perspective:
+E2E tests validate the API from an external perspective. Always use the `createE2EApp()` and `registerAndLogin()` helpers from `test/helpers/e2e-setup.ts` — they configure SQLite in-memory and handle admin token generation:
 
 ```typescript
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { INestApplication } from '@nestjs/common';
+import { createE2EApp, registerAndLogin } from './helpers/e2e-setup';
 
-describe('AppController (e2e)', () => {
+describe('Catalog (e2e)', () => {
   let app: INestApplication;
+  let token: string;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+  beforeAll(async () => {
+    app = await createE2EApp();
+    token = await registerAndLogin(app);
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await app.close();
   });
 
-  it('/api/health (GET)', () => {
+  it('GET /api/v1/catalog/components', async () => {
     return request(app.getHttpServer())
-      .get('/api/health')
+      .get('/api/v1/catalog/components')
+      .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.status).toBe('ok');
+        expect(Array.isArray(res.body)).toBe(true);
       });
   });
 });
 ```
+
+Note: all API routes use the `/api/v1/` prefix (URI versioning, default version `1`).
 
 ## Test Coverage
 
@@ -305,4 +305,4 @@ Tests run automatically on pull requests. You can run the full project check loc
 make check
 ```
 
-This command runs formatting, linting, unit tests, and E2E tests.
+This command runs formatting, linting (API + web), unit tests, E2E tests (API), and Playwright end-to-end tests (web). It is mandatory before opening any PR.

@@ -144,6 +144,7 @@ nav:
     - Deployments API: api-reference/deployments.md
     - Teams API: api-reference/teams.md
     - Organizations API: api-reference/organizations.md
+    - RBAC API: api-reference/rbac.md
     - Authentication API: api-reference/auth.md
     - Invitations API: api-reference/invitations.md
     - User Management API: api-reference/user-management.md

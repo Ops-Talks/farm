@@ -8,7 +8,7 @@
 [![Secret Scanning](https://github.com/Ops-Talks/farm/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/secret-scan.yml)
 [![Container Security](https://github.com/Ops-Talks/farm/actions/workflows/trivy.yml/badge.svg)](https://github.com/Ops-Talks/farm/actions/workflows/trivy.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D26-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)

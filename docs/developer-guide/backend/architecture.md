@@ -290,7 +290,9 @@ Org roles are stored in the `UserOrganization` join table and resolved at reques
 | `ADMIN` | 2 | Can manage members and org resources |
 | `MEMBER` | 1 | Read and contribute access to org resources |
 
-Guards are combined on a controller method as follows:
+#### Guard Chain for Org-Scoped Endpoints
+
+Organization management routes (update, delete, member management) use `OrgRolesGuard`:
 
 ```typescript
 @UseGuards(JwtAuthGuard, OrgRolesGuard)
@@ -298,6 +300,19 @@ Guards are combined on a controller method as follows:
 @Patch(':id')
 update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
 ```
+
+#### Guard Chain for Permission-Checked Endpoints (Phase 46)
+
+Resource endpoints (catalog, pipelines, teams, environments) use the three-guard chain:
+
+```typescript
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@RequiresPermission(Permission.CATALOG_WRITE)
+@Post()
+create(@Req() req: RequestWithOrg, @Body() dto: CreateComponentDto) { ... }
+```
+
+See the [Multi-Tenancy Guide](multi-tenancy.md) for the full permission model.
 
 ### OrgContextInterceptor
 
@@ -375,10 +390,11 @@ app.useGlobalPipes(
 
 ## API Prefix
 
-All API endpoints are prefixed with `/api`:
+All API endpoints are prefixed with `/api` and use URI versioning with default version `1`. All routes resolve as `/api/v1/{resource}`:
 
 ```typescript
 app.setGlobalPrefix("api");
+app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
 ```
 
 ## Error Handling

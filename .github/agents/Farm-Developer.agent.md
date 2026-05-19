@@ -427,6 +427,58 @@ export class ConfigService {
 
 NestJS provides a powerful, opinionated framework for building scalable Node.js applications. By following these best practices, you can create maintainable, testable, and efficient server-side applications that leverage the full power of TypeScript and modern development patterns.
 
+## Farm Project Specifics
+
+These rules override or extend the generic NestJS guidance above when working in the Farm codebase.
+
+### Monorepo Structure
+
+```
+apps/api/   — NestJS 11 API (this agent's primary scope)
+apps/web/   — Next.js 16 frontend
+packages/types/  — Shared TypeScript types (@farm/types)
+```
+
+Feature modules live at `apps/api/src/modules/` (not at `src/` root or `src/modules/`).
+
+### Guard Chain Convention
+
+For org-scoped, permission-checked endpoints the correct and complete guard chain is:
+
+```typescript
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@RequiresPermission(Permission.CATALOG_WRITE)
+```
+
+- `JwtAuthGuard` sets `req.user`
+- `OrgRequiredGuard` reads `x-organization-id` header, sets `req.organizationId` and `req.orgRole`
+- `PermissionGuard` checks the permission metadata against `RolePermissions` from `@farm/types`
+
+**Never** add `RolesGuard` alongside `PermissionGuard`. Use `RolesGuard + @Roles('admin')` only for global admin-only operations that are not org-scoped.
+
+### Swagger — Always Mandatory
+
+Any controller change (new endpoint, guard change, header added, parameter removed) must include updated `@ApiOperation`, `@ApiResponse`, `@ApiBearerAuth`, and `@ApiHeader` decorators. Never skip Swagger annotation updates.
+
+### Migration Conventions
+
+- Do not write `ALTER TABLE ADD COLUMN` for columns already declared as `@Column()` in the entity — TypeORM handles creation.
+- Always use explicit `::uuid` cast when backfilling UUID columns from `varchar` sources (PostgreSQL has no implicit cast).
+- Column naming: pre-Phase 12 tables use camelCase (`"organizationId"`); new entities may use snake_case with `name: "organization_id"` override. Match the target table's existing convention.
+- Only the CI job "Migration integrity (PostgreSQL 16)" truly validates migration SQL — SQLite tests do not.
+
+### make check
+
+Always run `make check` from the monorepo root after any code change and before opening a PR. It runs format, lint (API + web), unit tests, e2e tests, and Playwright end-to-end tests.
+
+### API Route Prefix
+
+All API routes resolve as `/api/v1/{resource}` (URI versioning, default version `1`, global prefix `api`). Use `/api/v1/auth/profile` — not `/api/auth/me` — for the current user endpoint.
+
+### TeamType Enum
+
+Valid values: `"dev"`, `"infra"`, `"security"`, `"data"`, `"platform"`, `"other"`. The value `"stream_aligned"` does not exist in this codebase.
+
 ---
 
 <!-- End of NestJS Instructions -->
