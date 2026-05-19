@@ -102,15 +102,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Fetch the caller's role for the resolved org
-      if (resolvedOrg) {
-        try {
-          const membership = await orgsApi.members.me(resolvedOrg.id);
-          setOrgRole(membership.role as OrgRole);
-        } catch {
-          setOrgRole(null);
-        }
-      } else {
+      // Role for resolvedOrg will be fetched by the useEffect([currentOrg])
+      // below, which fires whenever currentOrg changes. Avoid fetching here
+      // to prevent duplicate members.me() requests on initial load.
+      if (!resolvedOrg) {
         setOrgRole(null);
       }
     } catch {

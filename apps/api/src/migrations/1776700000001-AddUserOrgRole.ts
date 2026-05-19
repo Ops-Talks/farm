@@ -23,19 +23,19 @@ export class AddUserOrgRole1776700000001 implements MigrationInterface {
     await queryRunner.query(`
       UPDATE user_organizations
       SET role = 'owner'
-      WHERE (organization_id, user_id) IN (
-        SELECT organization_id, user_id
+      WHERE ("organizationId", "userId") IN (
+        SELECT "organizationId", "userId"
         FROM user_organizations uo1
         WHERE uo1.role != 'owner'
           AND NOT EXISTS (
             SELECT 1 FROM user_organizations uo2
-            WHERE uo2.organization_id = uo1.organization_id
+            WHERE uo2."organizationId" = uo1."organizationId"
               AND uo2.role = 'owner'
           )
-          AND uo1.created_at = (
-            SELECT MIN(uo3.created_at)
+          AND uo1."createdAt" = (
+            SELECT MIN(uo3."createdAt")
             FROM user_organizations uo3
-            WHERE uo3.organization_id = uo1.organization_id
+            WHERE uo3."organizationId" = uo1."organizationId"
           )
       )
     `);
