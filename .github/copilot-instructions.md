@@ -124,7 +124,7 @@ On the frontend:
 - `useOrganization()` from `OrganizationContext` provides `orgRole: OrgRole | null`
 - `usePermission(Permission.X)` returns `true` if the current user's org role grants that permission
 - Gate write-action UI elements: `const canWrite = usePermission(Permission.CATALOG_WRITE); return canWrite ? <Button /> : null;`
-- `orgRole` is fetched from `GET /v1/organizations/:id/members/me` when `currentOrg` changes in the context effect
+- `orgRole` is fetched when `currentOrg` changes in the context effect using the client path `GET /v1/organizations/:id/members/me`; because the web API client prefixes requests with `/api`, the actual network route is `GET /api/v1/organizations/:id/members/me`
 
 ### Migrations
 
