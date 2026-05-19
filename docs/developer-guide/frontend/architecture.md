@@ -65,7 +65,7 @@ Each route segment can have its own `page.tsx`, `loading.tsx`, and `error.tsx` f
 const { currentOrg, orgRole, isLoading, switchOrg } = useOrganization();
 ```
 
-- `orgRole: OrgRole | null` — the current user's role in the selected organization (`"owner"`, `"admin"`, or `"member"`), fetched from `GET /v1/organizations/:id/members/me` when `currentOrg` changes
+- `orgRole: OrgRole | null` — the current user's role in the selected organization (`"owner"`, `"admin"`, `"member"`, or `"viewer"`), fetched when `currentOrg` changes. The frontend API client prefixes `/api`, so the effective network route is `GET /api/v1/organizations/:id/members/me`
 - `orgRole` is `null` while loading or when no organization is selected
 
 Use `usePermission(permission: Permission)` from `apps/web/src/hooks/use-permission.ts` to gate write-action UI elements:

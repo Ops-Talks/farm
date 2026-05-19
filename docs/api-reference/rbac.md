@@ -21,9 +21,10 @@ Org roles are stored per `(userId, organizationId)` pair in the `UserOrganizatio
 
 | Role | Weight | Capabilities |
 |------|--------|--------------|
-| `owner` | 3 | Full control: delete org, transfer ownership, manage all members |
-| `admin` | 2 | Manage members, update org settings, all resource write/delete operations |
-| `member` | 1 | Read access and pipeline execution |
+| `owner` | 4 | Full control: delete org, transfer ownership, manage all members, all permissions including `ORG_MANAGE` |
+| `admin` | 3 | Manage members, update org settings, all resource write/delete operations except org management |
+| `member` | 2 | Create/update catalog entries, trigger pipelines, update environments, manage IaC resources |
+| `viewer` | 1 | Read-only access; no write permissions granted |
 
 The role is resolved at request time from the `X-Organization-Id` header. Pass this header on every org-scoped request:
 
@@ -39,16 +40,16 @@ X-Organization-Id: <org-uuid>
 
 Each org role implicitly grants a set of named permissions. Endpoints declare a required permission; the `PermissionGuard` checks the resolved org role at runtime.
 
-| Permission | `member` | `admin` | `owner` |
-|---|:---:|:---:|:---:|
-| `CATALOG_WRITE` | — | Yes | Yes |
-| `CATALOG_DELETE` | — | Yes | Yes |
-| `PIPELINE_TRIGGER` | Yes | Yes | Yes |
-| `PIPELINE_DELETE` | — | Yes | Yes |
-| `ENVIRONMENT_WRITE` | — | Yes | Yes |
-| `TEAM_MANAGE` | — | Yes | Yes |
-| `ORG_MANAGE` | — | Yes | Yes |
-| `IAC_WRITE` | — | Yes | Yes |
+| Permission | `viewer` | `member` | `admin` | `owner` |
+|---|:---:|:---:|:---:|:---:|
+| `CATALOG_WRITE` | — | Yes | Yes | Yes |
+| `CATALOG_DELETE` | — | — | Yes | Yes |
+| `PIPELINE_TRIGGER` | — | Yes | Yes | Yes |
+| `PIPELINE_DELETE` | — | — | Yes | Yes |
+| `ENVIRONMENT_WRITE` | — | Yes | Yes | Yes |
+| `TEAM_MANAGE` | — | — | Yes | Yes |
+| `ORG_MANAGE` | — | — | — | Yes |
+| `IAC_WRITE` | — | Yes | Yes | Yes |
 
 ### Error response when permission is denied
 
