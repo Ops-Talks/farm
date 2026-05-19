@@ -367,7 +367,7 @@ export interface MemberResponse {
   username: string;
   email: string;
   /** The role this user holds within the organization. */
-  role: "owner" | "admin" | "member";
+  role: "owner" | "admin" | "member" | "viewer";
   /** ISO-8601 timestamp of when the user joined the organization. */
   joinedAt: string;
 }

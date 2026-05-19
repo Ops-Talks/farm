@@ -47,6 +47,12 @@ vi.mock("@/lib/otel-spans", () => ({
   startSpan: vi.fn(() => ({ setAttribute: vi.fn(), end: vi.fn() })),
 }));
 
+// Mock usePermission so CatalogClient tests do not require OrganizationProvider.
+// Default to true (owner-level) so "Register Component" renders in most tests.
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import { CatalogClient } from "./CatalogClient";
 
 // ── Wrapper ───────────────────────────────────────────────────────────────────

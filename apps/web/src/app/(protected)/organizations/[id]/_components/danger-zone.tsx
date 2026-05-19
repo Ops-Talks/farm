@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { toast } from "sonner";
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
 
 interface DangerZoneProps {
   org: Organization;
@@ -30,8 +32,11 @@ export function DangerZone({ org, isOwner }: DangerZoneProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   // isPending state for delete ConfirmDialog
   const [isDeleting, setIsDeleting] = useState(false);
+  const canManageOrg = usePermission(Permission.ORG_MANAGE);
 
-  if (!isOwner) return null;
+  // Gate by both the legacy isOwner prop and the granular permission so
+  // the component works correctly regardless of which mechanism is used.
+  if (!isOwner && !canManageOrg) return null;
 
   const handleDelete = () => {
     setIsDeleting(true);
@@ -108,3 +113,4 @@ export function DangerZone({ org, isOwner }: DangerZoneProps) {
     </>
   );
 }
+

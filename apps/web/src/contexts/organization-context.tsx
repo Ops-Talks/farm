@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { Organization } from "@/types/api";
+import { OrgRole } from "@farm/types";
 import { organizations as orgsApi } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -21,6 +22,11 @@ interface OrganizationContextValue {
   organizations: Organization[];
   /** The currently selected organization (null = none / personal) */
   currentOrg: Organization | null;
+  /**
+   * The current user's role in the selected organization.
+   * Null while loading or when no organization is selected.
+   */
+  orgRole: OrgRole | null;
   /** True while the initial fetch is in-flight */
   isLoading: boolean;
   /** Switch the active organization */
@@ -35,6 +41,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
   const [orgList, setOrgList] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
+  const [orgRole, setOrgRole] = useState<OrgRole | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   // hasFetchedForCurrentAuth starts false and is reset on logout so that the
   // derived isLoading is true in the same render where isAuthenticated becomes
@@ -62,15 +69,19 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           ? sessionStorage.getItem(ORG_STORAGE_KEY)
           : null;
 
+      let resolvedOrg: Organization | null = null;
+
       if (savedId) {
         const found = list.find((o) => o.id === savedId) ?? null;
         if (found) {
+          resolvedOrg = found;
           setCurrentOrg(found);
         } else {
           // Stale org ID — user is no longer a member of that org.
           // Fall back to first available org so the user is not left with no context.
           sessionStorage.removeItem(ORG_STORAGE_KEY);
           const fallback = list[0] ?? null;
+          resolvedOrg = fallback;
           setCurrentOrg(fallback);
           if (fallback) {
             sessionStorage.setItem(ORG_STORAGE_KEY, fallback.id);
@@ -82,12 +93,20 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           // Works for single-org AND multi-org users.
           const first = list[0];
           if (first) {
+            resolvedOrg = first;
             setCurrentOrg(first);
             sessionStorage.setItem(ORG_STORAGE_KEY, first.id);
           }
         } else {
           setCurrentOrg(null);
         }
+      }
+
+      // Role for resolvedOrg will be fetched by the useEffect([currentOrg])
+      // below, which fires whenever currentOrg changes. Avoid fetching here
+      // to prevent duplicate members.me() requests on initial load.
+      if (!resolvedOrg) {
+        setOrgRole(null);
       }
     } catch {
       // If the fetch fails (e.g. no token yet) keep the current state
@@ -110,11 +129,38 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     } else {
       setOrgList([]);
       setCurrentOrg(null);
+      setOrgRole(null);
       // Reset so the next login triggers isLoading=true immediately in the
       // render where isAuthenticated becomes true (before any effects fire).
       setHasFetchedForCurrentAuth(false);
     }
   }, [isAuthenticated, fetchOrgs]);
+
+  // When the selected org changes (via switchOrg), re-fetch the membership
+  // role for the new org without refetching the full org list.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchRole = async () => {
+      if (!currentOrg) {
+        setOrgRole(null);
+        return;
+      }
+      try {
+        const membership = await orgsApi.members.me(currentOrg.id);
+        if (!cancelled) {
+          setOrgRole(membership.role as OrgRole);
+        }
+      } catch {
+        if (!cancelled) {
+          setOrgRole(null);
+        }
+      }
+    };
+    void fetchRole();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentOrg]);
 
   // When api-client clears a stale org on 403, re-fetch so React state stays
   // in sync with sessionStorage. The event is dispatched by api-client to
@@ -144,11 +190,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     () => ({
       organizations: orgList,
       currentOrg,
+      orgRole,
       isLoading,
       switchOrg,
       refreshOrgs,
     }),
-    [orgList, currentOrg, isLoading, switchOrg, refreshOrgs],
+    [orgList, currentOrg, orgRole, isLoading, switchOrg, refreshOrgs],
   );
 
   return (

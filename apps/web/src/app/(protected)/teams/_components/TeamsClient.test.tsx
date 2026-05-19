@@ -30,6 +30,11 @@ vi.mock("@/contexts/auth-context", () => ({
   useAuth: () => ({ hasRole: mockHasRole }),
 }));
 
+const mockUsePermission = vi.fn(() => false);
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: (...args: unknown[]) => mockUsePermission(...args),
+}));
+
 // ── Import component after mocks ──────────────────────────────────────────────
 
 import { TeamsClient } from "./TeamsClient";
@@ -70,6 +75,7 @@ describe("TeamsClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHasRole.mockReturnValue(false);
+    mockUsePermission.mockReturnValue(false);
   });
 
   // ── Loading state ────────────────────────────────────────────────────────────
@@ -127,6 +133,7 @@ describe("TeamsClient", () => {
 
   it("shows the Create Team button for admin users", async () => {
     mockHasRole.mockImplementation((role: string) => role === "admin");
+    mockUsePermission.mockReturnValue(true);
     mockList.mockResolvedValue({ data: [] });
 
     render(<TeamsClient />, { wrapper: createWrapper() });

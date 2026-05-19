@@ -27,6 +27,8 @@ import {
 } from "@/types/api";
 import type { CatalogComponent } from "@/types/api";
 import { recordSpan } from "@/lib/otel-spans";
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
 
 const KIND_GROUP_TABS = [
   { label: "All", id: "all" },
@@ -60,6 +62,7 @@ export function lifecycleBadgeClass(lifecycle: ComponentLifecycle): string {
 
 export function CatalogClient() {
   const queryClient = useQueryClient();
+  const canWrite = usePermission(Permission.CATALOG_WRITE);
 
   const [page, setPage] = useState(0);
   const [activeTab, setActiveTab] = useState("all");
@@ -126,9 +129,11 @@ export function CatalogClient() {
         title="Software Catalog"
         description={`${total} component${total !== 1 ? "s" : ""} registered`}
       >
-        <Link href="/catalog/new">
-          <Button>Register Component</Button>
-        </Link>
+        {canWrite && (
+          <Link href="/catalog/new">
+            <Button>Register Component</Button>
+          </Link>
+        )}
       </PageHeader>
 
       {/* Filters and Tabs */}

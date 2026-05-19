@@ -41,6 +41,10 @@ vi.mock("@/types/api", () => ({
   },
 }));
 
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import CatalogPage from "@/app/(protected)/catalog/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────

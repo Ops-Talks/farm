@@ -18,6 +18,9 @@ vi.mock("@/contexts/auth-context", () => ({
 vi.mock("@/lib/api-client", () => ({
   organizations: {
     list: vi.fn(),
+    members: {
+      me: vi.fn().mockResolvedValue({ role: "member" }),
+    },
   },
 }));
 

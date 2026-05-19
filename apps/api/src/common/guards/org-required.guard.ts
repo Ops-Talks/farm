@@ -79,6 +79,7 @@ export class OrgRequiredGuard implements CanActivate {
     }
 
     req.organizationId = orgId;
+    req.orgRole = membership.role;
     return true;
   }
 }

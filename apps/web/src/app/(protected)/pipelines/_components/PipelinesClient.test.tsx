@@ -29,6 +29,10 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
 }));
 
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import { PipelinesClient } from "./PipelinesClient";
 import { toast } from "sonner";
 

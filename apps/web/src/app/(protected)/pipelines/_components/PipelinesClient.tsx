@@ -21,8 +21,12 @@ import { EmptyState } from "@/components/shared/empty-state";
 import type { Pipeline } from "@/types/api";
 import { GitBranch } from "lucide-react";
 
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
+
 export function PipelinesClient() {
   const queryClient = useQueryClient();
+  const canTrigger = usePermission(Permission.PIPELINE_TRIGGER);
 
   // Fetch all pipelines — TanStack Query caches the result and keeps it fresh.
   const { data: pipelineList = [], isLoading } = useQuery<Pipeline[]>({
@@ -99,9 +103,11 @@ export function PipelinesClient() {
         title="Pipelines"
         description={`${pipelineList.length} pipeline${pipelineList.length !== 1 ? "s" : ""} configured`}
       >
-        <Link href="/pipelines/new">
-          <Button>Create Pipeline</Button>
-        </Link>
+        {canTrigger && (
+          <Link href="/pipelines/new">
+            <Button>Create Pipeline</Button>
+          </Link>
+        )}
       </PageHeader>
 
       {pipelineList.length === 0 ? (
@@ -110,9 +116,11 @@ export function PipelinesClient() {
           description="Create your first pipeline to automate deployments and workflows."
           icon={<GitBranch className="h-6 w-6 text-muted-foreground" />}
         >
-          <Link href="/pipelines/new">
-            <Button className="mt-2">Create Pipeline</Button>
-          </Link>
+          {canTrigger && (
+            <Link href="/pipelines/new">
+              <Button className="mt-2">Create Pipeline</Button>
+            </Link>
+          )}
         </EmptyState>
       ) : (
         <div className="rounded-md border">
@@ -156,22 +164,24 @@ export function PipelinesClient() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleTrigger(pipeline.id, pipeline.name)}
-                        // Disable the specific row's button while its mutation is in flight
-                        disabled={
-                          triggerMutation.isPending &&
+                      {canTrigger && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleTrigger(pipeline.id, pipeline.name)}
+                          // Disable the specific row's button while its mutation is in flight
+                          disabled={
+                            triggerMutation.isPending &&
+                            triggerMutation.variables?.id === pipeline.id
+                          }
+                          aria-label={`Trigger pipeline ${pipeline.name}`}
+                        >
+                          {triggerMutation.isPending &&
                           triggerMutation.variables?.id === pipeline.id
-                        }
-                        aria-label={`Trigger pipeline ${pipeline.name}`}
-                      >
-                        {triggerMutation.isPending &&
-                        triggerMutation.variables?.id === pipeline.id
-                          ? "Triggering…"
-                          : "Trigger"}
-                      </Button>
+                            ? "Triggering…"
+                            : "Trigger"}
+                        </Button>
+                      )}
                       <Link href={`/pipelines/${pipeline.id}`}>
                         <Button size="sm" variant="ghost">
                           View

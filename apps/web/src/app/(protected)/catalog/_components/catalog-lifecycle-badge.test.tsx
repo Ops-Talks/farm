@@ -33,6 +33,10 @@ vi.mock("@/types/api", () => ({
   },
 }));
 
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import { lifecycleBadgeClass, CatalogClient } from "./CatalogClient";
 
 // ---------------------------------------------------------------------------

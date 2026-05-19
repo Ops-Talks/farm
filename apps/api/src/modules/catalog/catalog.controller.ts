@@ -43,10 +43,11 @@ import { ListComponentsQueryDto } from "./dto/list-components-query.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "../../common/rbac/permissions";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { FinOpsService } from "../finops/finops.service";
 import { CostEstimateResponseDto } from "../finops/dto/cost-estimate-response.dto";
@@ -70,7 +71,7 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("catalog")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -113,7 +114,7 @@ export class CatalogController {
    */
   @Post("locations")
   @HttpCode(HttpStatus.ACCEPTED)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Register a new location for discovery" })
   @ApiResponse({
     status: HttpStatus.ACCEPTED,
@@ -149,7 +150,7 @@ export class CatalogController {
    */
   @Post("register-yaml")
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Register a component via YAML content" })
   @ApiCreatedResponse({
     description: "The component has been successfully registered.",
@@ -174,7 +175,7 @@ export class CatalogController {
    */
   @Post("components")
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Create a new component" })
   @ApiCreatedResponse({
     description: "The component has been successfully created.",
@@ -272,7 +273,7 @@ export class CatalogController {
    * @returns The updated component
    */
   @Patch("components/:id")
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Update a component" })
   @ApiParam({ name: "id", description: "The UUID of the component to update" })
   @ApiOkResponse({
@@ -304,7 +305,7 @@ export class CatalogController {
    */
   @Delete("components/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_DELETE)
   @ApiOperation({ summary: "Delete a component" })
   @ApiParam({ name: "id", description: "The UUID of the component to remove" })
   @ApiNoContentResponse({ description: "Component successfully removed." })

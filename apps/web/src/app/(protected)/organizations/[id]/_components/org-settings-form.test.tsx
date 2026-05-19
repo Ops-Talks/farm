@@ -34,6 +34,10 @@ vi.mock("@/contexts/organization-context", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import { OrgSettingsForm } from "@/app/(protected)/organizations/[id]/_components/org-settings-form";
 
 const ORG: Organization = {

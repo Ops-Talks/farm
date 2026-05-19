@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -35,6 +37,7 @@ interface OrgSettingsFormProps {
 
 export function OrgSettingsForm({ org, onUpdated }: OrgSettingsFormProps) {
   const { refreshOrgs } = useOrganization();
+  const canManageOrg = usePermission(Permission.ORG_MANAGE);
 
   const {
     register,
@@ -138,7 +141,7 @@ export function OrgSettingsForm({ org, onUpdated }: OrgSettingsFormProps) {
               <span className="text-xs text-muted-foreground">Unsaved changes</span>
             )}
             {/* isDirty from RHF replaces the manual isDirty calculation */}
-            <Button type="submit" disabled={isSubmitting || !isDirty}>
+            <Button type="submit" disabled={isSubmitting || !isDirty || !canManageOrg}>
               {isSubmitting ? "Saving…" : "Save Changes"}
             </Button>
           </div>

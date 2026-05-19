@@ -34,7 +34,7 @@ import { toast } from "sonner";
 // Types
 // ---------------------------------------------------------------------------
 
-type OrgRoleValue = "owner" | "admin" | "member";
+type OrgRoleValue = "owner" | "admin" | "member" | "viewer";
 
 interface MembersSectionProps {
   orgId: string;
@@ -74,6 +74,7 @@ const ROLE_BADGE_VARIANT: Record<OrgRoleValue, "secondary" | "default" | "outlin
   owner: "secondary", // muted / gray
   admin: "default",   // primary / blue
   member: "outline",
+  viewer: "outline",
 };
 
 /** Initials avatar built from Tailwind primitives (no external dependency). */

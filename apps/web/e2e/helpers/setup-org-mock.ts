@@ -11,6 +11,21 @@ import type { Page } from "@playwright/test";
 import { MOCK_ORG } from "../global-setup";
 
 export async function setupOrgMock(page: Page): Promise<void> {
+  // Mock GET /organizations/:id/members/me so the org context resolves
+  // orgRole = "owner" for all authenticated Playwright tests. This must be
+  // registered AFTER the catch-all so LIFO resolution selects it first.
+  await page.route("**/api/v1/organizations/*/members/me", (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        userId: "e2e-user-id",
+        organizationId: MOCK_ORG.id,
+        role: "owner",
+      }),
+    });
+  });
+
   await page.route("**/api/v1/organizations", (route) => {
     if (route.request().method() === "GET") {
       route.fulfill({

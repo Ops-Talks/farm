@@ -30,7 +30,10 @@ import {
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "../../common/rbac/permissions";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { PipelinesService } from "./pipelines.service";
@@ -55,7 +58,7 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard)
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("pipelines")
 @ApiResponse({
@@ -196,6 +199,7 @@ export class PipelinesController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RequiresPermission(Permission.PIPELINE_DELETE)
   @ApiOperation({ summary: "Delete a pipeline" })
   @ApiParam({ name: "id", description: "Pipeline UUID" })
   @ApiNoContentResponse({ description: "Pipeline successfully removed." })
@@ -220,6 +224,7 @@ export class PipelinesController {
    */
   @Post(":id/trigger")
   @HttpCode(HttpStatus.CREATED)
+  @RequiresPermission(Permission.PIPELINE_TRIGGER)
   @ApiOperation({ summary: "Trigger a pipeline run" })
   @ApiParam({ name: "id", description: "Pipeline UUID" })
   @ApiCreatedResponse({
