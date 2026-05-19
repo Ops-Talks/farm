@@ -90,7 +90,7 @@ Routes that no longer exist upstream are marked stale on the next sync cycle.
 A sync can be triggered on demand without waiting for the next scheduled run:
 
 ```http
-POST /api/gateway/sync
+POST /api/v1/gateway/sync
 Authorization: Bearer <token>
 ```
 
@@ -126,7 +126,7 @@ The `latencyMs` field records the round-trip time in milliseconds for each check
 ### Manual trigger
 
 ```http
-POST /api/gateway/health/check
+POST /api/v1/gateway/health/check
 Authorization: Bearer <token>
 ```
 
@@ -139,7 +139,7 @@ All endpoints require a valid JWT bearer token unless noted otherwise.
 ### List routes
 
 ```http
-GET /api/gateway/routes
+GET /api/v1/gateway/routes
 Authorization: Bearer <token>
 ```
 
@@ -180,7 +180,7 @@ Example response:
 ### Get a single route
 
 ```http
-GET /api/gateway/routes/:id
+GET /api/v1/gateway/routes/:id
 Authorization: Bearer <token>
 ```
 
@@ -191,7 +191,7 @@ Returns a single route by its Farm UUID. Returns `404` if not found.
 ### Trigger route sync
 
 ```http
-POST /api/gateway/sync
+POST /api/v1/gateway/sync
 Authorization: Bearer <token>
 ```
 
@@ -211,7 +211,7 @@ Example response:
 ### List health check results
 
 ```http
-GET /api/gateway/health
+GET /api/v1/gateway/health
 Authorization: Bearer <token>
 ```
 
@@ -238,7 +238,7 @@ Example response:
 ### Trigger health check
 
 ```http
-POST /api/gateway/health/check
+POST /api/v1/gateway/health/check
 Authorization: Bearer <token>
 ```
 
@@ -301,7 +301,7 @@ Routes are stored with a nullable `componentId` foreign key referencing the cata
 Use a `PATCH` request to associate a route with a component after the fact:
 
 ```http
-PATCH /api/gateway/routes/:id
+PATCH /api/v1/gateway/routes/:id
 Authorization: Bearer <token>
 Content-Type: application/json
 

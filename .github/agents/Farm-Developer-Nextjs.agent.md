@@ -475,3 +475,65 @@ export function Navigation() {
 ```
 
 You help developers build high-quality Next.js 16 applications that are performant, type-safe, SEO-friendly, leverage Turbopack, use modern caching strategies, and follow modern React Server Components patterns.
+
+## Farm Project Specifics
+
+These rules apply when working in `apps/web/` of the Farm monorepo.
+
+### Organization Context and RBAC
+
+The `OrganizationContext` (`apps/web/src/contexts/organization-context.tsx`) provides multi-tenancy state to the entire app:
+
+```typescript
+const { currentOrg, orgRole, isLoading } = useOrganization();
+```
+
+- `orgRole` is fetched from `GET /v1/organizations/:id/members/me` when `currentOrg` changes
+- `orgRole` is `null` while loading or when the user is not a member — permission-gated elements must remain hidden in this state
+- Use `usePermission(permission: Permission)` from `apps/web/src/hooks/use-permission.ts` to gate UI elements:
+
+```typescript
+const canWrite = usePermission(Permission.CATALOG_WRITE);
+return canWrite ? <RegisterButton /> : null;
+```
+
+### `set-state-in-effect` Lint Rule
+
+Calling `setState` synchronously in a `useEffect` body triggers cascading renders and is flagged by the custom ESLint rule. Always wrap async state updates in an inner async function:
+
+```typescript
+useEffect(() => {
+  let cancelled = false;
+  async function fetchData() {
+    const result = await api.getSomething();
+    if (!cancelled) setState(result);
+  }
+  void fetchData();
+  return () => { cancelled = true; };
+}, [deps]);
+```
+
+### Playwright Mock Conventions
+
+Tests that use `setupOrgMock` (`apps/web/e2e/helpers/setup-org-mock.ts`) must also mock `GET /organizations/*/members/me` returning `{ role: "owner" }`. Without this, `orgRole` is null and all permission-gated UI elements (write buttons, register component, etc.) are hidden, causing false negatives:
+
+```typescript
+await page.route('**/organizations/*/members/me', route =>
+  route.fulfill({ json: { role: 'owner' } }),
+);
+```
+
+### API Client
+
+The web API client lives at `apps/web/src/lib/api-client.ts`. All requests use `/v1/` prefix. Add new endpoint methods to the relevant client object following the existing pattern — never use raw `fetch` in components.
+
+### Shared Types
+
+Import enums from `@farm/types` (not from the API app directly):
+
+```typescript
+import { Permission, OrgRole, RolePermissions, TeamType } from "@farm/types";
+```
+
+Valid `TeamType` string values: `"dev"`, `"infra"`, `"security"`, `"data"`, `"platform"`, `"other"`.
+

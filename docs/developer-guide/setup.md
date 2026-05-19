@@ -8,8 +8,8 @@ This guide walks you through setting up a development environment for Farm.
 
 | Software | Version | Purpose |
 |----------|---------|---------|
-| Node.js | 20+ | JavaScript runtime |
-| npm | 10+ | Package manager |
+| Node.js | 22+ | JavaScript runtime |
+| npm | 11+ | Package manager |
 | Docker | 24+ | Containerization and environment isolation |
 | Docker Compose | 2.20+ | Multi-container orchestration |
 | Make | 4+ | Task automation and simplified commands |

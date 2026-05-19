@@ -112,6 +112,26 @@ Each member of an organization is assigned exactly one of the following roles:
 
 ---
 
+## Fine-Grained Permissions (Phase 46)
+
+Beyond the three org roles, Farm enforces fine-grained **named permissions** on every resource endpoint. Your org role implicitly grants a set of permissions:
+
+| Permission | `member` | `admin` | `owner` |
+|---|:---:|:---:|:---:|
+| `CATALOG_READ` | Yes | Yes | Yes |
+| `CATALOG_WRITE` | — | Yes | Yes |
+| `CATALOG_DELETE` | — | — | Yes |
+| `TEAMS_READ` | Yes | Yes | Yes |
+| `TEAMS_WRITE` | — | Yes | Yes |
+| `ENVIRONMENTS_READ` | Yes | Yes | Yes |
+| `ENVIRONMENTS_WRITE` | — | Yes | Yes |
+| `PIPELINES_READ` | Yes | Yes | Yes |
+| `PIPELINES_RUN` | — | Yes | Yes |
+
+If your role does not include the required permission for an endpoint, Farm returns `403 Forbidden`. The web UI automatically hides write-action buttons (register, edit, delete) based on your current role.
+
+---
+
 ## How Organization Scope Affects Resources
 
 When you include `X-Organization-Id` in a request, Farm applies an organization filter to all resource queries:

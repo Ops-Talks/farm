@@ -241,8 +241,8 @@ Farm's CI workflows live in `.github/workflows/`:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | push/PR to main | API: lint, test, e2e, build |
-| `web-ci.yml` | push/PR to main | Web: lint, test, e2e (Playwright) |
+| `ci.yml` | push/PR to main | API: lint, test, e2e, build, migration integrity (PostgreSQL 16) |
+| `web-ci.yml` | push/PR to main | Web: lint, test, e2e (Playwright), build |
 | `release.yml` | tag push | Changelog + release creation |
 | `trivy.yml` | schedule + PR | Container vulnerability scan |
 | `sast.yml` | PR | CodeQL static analysis |
@@ -251,7 +251,7 @@ Farm's CI workflows live in `.github/workflows/`:
 ### Adding a New Workflow Step
 
 1. Test locally using `act` (GitHub Actions local runner) before pushing
-2. Use the shared `setup-monorepo` action (`corepack enable && corepack install -g npm@^11`)
+2. Use the shared `setup-monorepo` action (`corepack enable && corepack install -g npm@^11`) — Node 26 base image
 3. Pin all third-party actions to a commit SHA, not a mutable tag
 4. Never store secrets in workflow files — use `${{ secrets.NAME }}`
 
