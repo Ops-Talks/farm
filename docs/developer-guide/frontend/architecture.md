@@ -78,7 +78,7 @@ const canWrite = usePermission(Permission.CATALOG_WRITE);
 return canWrite ? <RegisterButton /> : null;
 ```
 
-All Playwright tests using `setupOrgMock` must also mock `GET /organizations/*/members/me` returning `{ role: "owner" }`, otherwise permission-gated elements will be hidden and tests will produce false negatives.
+All Playwright tests using `setupOrgMock` must also mock `GET **/api/v1/organizations/*/members/me` returning `{ role: "owner" }`. The `/api/v1` prefix must be included so the route matches `apps/web/e2e/helpers/setup-org-mock.ts`; otherwise permission-gated elements will be hidden and tests will produce false negatives.
 
 ### Authentication Flow
 
