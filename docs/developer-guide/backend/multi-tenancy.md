@@ -87,15 +87,11 @@ Phase 46 introduced a fine-grained permission model layered on top of org roles.
 
 | Permission | Granted to |
 |---|---|
-| `CATALOG_READ` | `member`, `admin`, `owner` |
 | `CATALOG_WRITE` | `admin`, `owner` |
 | `CATALOG_DELETE` | `owner` |
-| `TEAMS_READ` | `member`, `admin`, `owner` |
-| `TEAMS_WRITE` | `admin`, `owner` |
-| `ENVIRONMENTS_READ` | `member`, `admin`, `owner` |
-| `ENVIRONMENTS_WRITE` | `admin`, `owner` |
-| `PIPELINES_READ` | `member`, `admin`, `owner` |
-| `PIPELINES_RUN` | `admin`, `owner` |
+| `TEAM_MANAGE` | `admin`, `owner` |
+| `PIPELINE_TRIGGER` | `admin`, `owner` |
+| `PIPELINE_DELETE` | `owner` |
 
 `RolePermissions` maps each `OrgRole` to its list of granted `Permission` values. Both are exported from `@farm/types` for use in the frontend.
 
