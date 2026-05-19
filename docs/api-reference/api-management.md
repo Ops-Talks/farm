@@ -8,10 +8,10 @@ APIs are first-class citizens in Farm alongside software components. Each compon
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `POST` | `/api/catalog/components/:id/api-specs` | Register a new API spec for a component | JWT |
-| `GET` | `/api/catalog/components/:id/api-specs` | List all specs for a component | JWT |
-| `GET` | `/api/api-specs/:id` | Get a single API spec | JWT |
-| `DELETE` | `/api/api-specs/:id` | Remove an API spec | JWT + Admin |
+| `POST` | `/api/v1/catalog/components/:id/api-specs` | Register a new API spec for a component | JWT |
+| `GET` | `/api/v1/catalog/components/:id/api-specs` | List all specs for a component | JWT |
+| `GET` | `/api/v1/api-specs/:id` | Get a single API spec | JWT |
+| `DELETE` | `/api/v1/api-specs/:id` | Remove an API spec | JWT + Admin |
 
 ### Request Body Fields — POST
 
@@ -27,7 +27,7 @@ The `format` field is optional. If provided, it explicitly sets the format. If o
 ### Example — Register an OpenAPI Spec
 
 ```bash
-curl -X POST http://localhost:3000/api/catalog/components/550e8400-e29b-41d4-a716-446655440001/api-specs \
+curl -X POST http://localhost:3000/api/v1/catalog/components/550e8400-e29b-41d4-a716-446655440001/api-specs \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -61,7 +61,7 @@ Use the `PATCH` endpoint to transition a spec through its lifecycle: `active` �
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `PATCH` | `/api/api-specs/:id` | Update status and sunset date | JWT + Admin |
+| `PATCH` | `/api/v1/api-specs/:id` | Update status and sunset date | JWT + Admin |
 
 ### Request Body Fields — PATCH
 
@@ -78,7 +78,7 @@ When a spec transitions to `deprecated` status, Farm emits a `api-spec:deprecate
 ### Example — Deprecate a Spec
 
 ```bash
-curl -X PATCH http://localhost:3000/api/api-specs/a1b2c3d4-0000-0000-0000-000000000001 \
+curl -X PATCH http://localhost:3000/api/v1/api-specs/a1b2c3d4-0000-0000-0000-000000000001 \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -107,7 +107,7 @@ Farm can compare two versions of an API spec and classify each change as breakin
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `GET` | `/api/api-specs/:id/diff?compareWith=:otherId` | Compare two spec versions | JWT |
+| `GET` | `/api/v1/api-specs/:id/diff?compareWith=:otherId` | Compare two spec versions | JWT |
 
 ### Response — SpecDiffResult
 
@@ -147,9 +147,9 @@ Track which components and teams depend on a given API spec. Use this informatio
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| `POST` | `/api/api-specs/:id/consumers` | Register a consumer | JWT + Admin |
-| `DELETE` | `/api/api-specs/:id/consumers/:consumerId` | Remove a consumer | JWT + Admin |
-| `GET` | `/api/catalog/components/:id/consumed-apis` | List all specs consumed by a component | JWT |
+| `POST` | `/api/v1/api-specs/:id/consumers` | Register a consumer | JWT + Admin |
+| `DELETE` | `/api/v1/api-specs/:id/consumers/:consumerId` | Remove a consumer | JWT + Admin |
+| `GET` | `/api/v1/catalog/components/:id/consumed-apis` | List all specs consumed by a component | JWT |
 
 ### Request Body Fields — POST /consumers
 
@@ -163,7 +163,7 @@ At least one of `consumerComponentId` or `consumerTeamId` must be provided. A co
 ### Example — Register a Consumer
 
 ```bash
-curl -X POST http://localhost:3000/api/api-specs/a1b2c3d4-0000-0000-0000-000000000001/consumers \
+curl -X POST http://localhost:3000/api/v1/api-specs/a1b2c3d4-0000-0000-0000-000000000001/consumers \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -178,7 +178,7 @@ Before deprecating an API, query `/consumed-apis` to identify all downstream con
 ```bash
 # Find all components that consume the spec's parent component's APIs
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/catalog/components/550e8400-e29b-41d4-a716-446655440001/consumed-apis
+  http://localhost:3000/api/v1/catalog/components/550e8400-e29b-41d4-a716-446655440001/consumed-apis
 ```
 
 ## Frontend
@@ -197,12 +197,12 @@ All API Catalog endpoints require a valid JWT in the `Authorization` header.
 
 | Access Level | Endpoints |
 |--------------|-----------|
-| JWT (any authenticated user) | `GET /api/catalog/components/:id/api-specs`, `GET /api/api-specs/:id`, `GET /api/api-specs/:id/diff`, `GET /api/catalog/components/:id/consumed-apis` |
-| JWT + Admin role | `POST /api/catalog/components/:id/api-specs`, `PATCH /api/api-specs/:id`, `DELETE /api/api-specs/:id`, `POST /api/api-specs/:id/consumers`, `DELETE /api/api-specs/:id/consumers/:consumerId` |
+| JWT (any authenticated user) | `GET /api/v1/catalog/components/:id/api-specs`, `GET /api/v1/api-specs/:id`, `GET /api/v1/api-specs/:id/diff`, `GET /api/v1/catalog/components/:id/consumed-apis` |
+| JWT + Admin role | `POST /api/v1/catalog/components/:id/api-specs`, `PATCH /api/v1/api-specs/:id`, `DELETE /api/v1/api-specs/:id`, `POST /api/v1/api-specs/:id/consumers`, `DELETE /api/v1/api-specs/:id/consumers/:consumerId` |
 
 ```bash
 curl -H "Authorization: Bearer <token>" \
-  http://localhost:3000/api/catalog/components/<id>/api-specs
+  http://localhost:3000/api/v1/catalog/components/<id>/api-specs
 ```
 
 ## WebSocket Events

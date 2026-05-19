@@ -1,6 +1,6 @@
 # Multi-Tenancy and RBAC
 
-This guide explains how Farm handles multi-tenancy through Organizations, how the two-tier RBAC model works, and how to integrate these features in both backend and frontend code.
+This guide explains how Farm handles multi-tenancy through Organizations, how the RBAC model works across global roles, org roles, and granular permissions, and how to integrate these features in both backend and frontend code.
 
 ## Overview
 
@@ -24,7 +24,7 @@ Create organization  -->  Invite members  -->  Assign roles  -->  Scope resource
 3. Resources (components, teams, environments, documentation, API specs, gateway routes) created while an org context is active are tagged with `organizationId`.
 4. Subsequent requests include the `X-Organization-Id` header to operate within the organization's scope.
 
-## Two-Tier RBAC
+## RBAC Model
 
 ### Tier 1 - Global Roles
 
@@ -74,6 +74,52 @@ Combining both tiers (global admin bypasses org role check):
 @Get()
 findAll(@Req() req: RequestWithOrg) { ... }
 ```
+
+### Tier 2 in Practice
+
+`OrgRolesGuard` is used for organization management operations (CRUD on the org itself and its members). For resource endpoints (catalog, pipelines, teams, environments), the fine-grained permission model (Tier 3) is used instead.
+
+### Tier 3 — Granular Permissions (Phase 46)
+
+Phase 46 introduced a fine-grained permission model layered on top of org roles. Instead of checking the raw org role, resource endpoints check specific named permissions resolved from the role.
+
+**Permission enum** (defined in `@farm/types`):
+
+| Permission | Granted to |
+|---|---|
+| `CATALOG_WRITE` | `admin`, `owner` |
+| `CATALOG_DELETE` | `owner` |
+| `TEAM_MANAGE` | `admin`, `owner` |
+| `PIPELINE_TRIGGER` | `admin`, `owner` |
+| `PIPELINE_DELETE` | `owner` |
+
+`RolePermissions` maps each `OrgRole` to its list of granted `Permission` values. Both are exported from `@farm/types` for use in the frontend.
+
+**Guard chain for resource endpoints:**
+
+```typescript
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@RequiresPermission(Permission.CATALOG_WRITE)
+@Post()
+create(@Req() req: RequestWithOrg, @Body() dto: CreateComponentDto) { ... }
+```
+
+- `OrgRequiredGuard` — reads `X-Organization-Id`, validates membership, sets `req.organizationId` and `req.orgRole`; throws 403 (`ForbiddenException`) if the header is missing or the user is not a member, with the response message and any `errorCode` coming from the thrown forbidden error
+- `PermissionGuard` — reads `@RequiresPermission()` metadata and checks `req.orgRole` against `RolePermissions`
+
+**Frontend RBAC:**
+
+```typescript
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
+
+function CatalogActions() {
+  const canWrite = usePermission(Permission.CATALOG_WRITE);
+  return canWrite ? <RegisterButton /> : null;
+}
+```
+
+`usePermission()` reads `orgRole` from `OrganizationContext` and checks it against `RolePermissions`. Returns `false` while the role is loading.
 
 ## Creating an Organization
 
@@ -228,6 +274,17 @@ If the user is not a member of that organization, the interceptor returns:
 - Fetches the list of organizations the current user belongs to on mount.
 - Persists the selected organization ID in `sessionStorage` under the key `farm_current_org` (plain string).
 - Exposes `switchOrg(id)` to change the active organization and `refreshOrgs()` to reload the list.
+- Fetches the current user's org role from `GET /v1/organizations/:id/members/me` when `currentOrg` changes, exposing it as `orgRole: OrgRole | null`.
+
+Use `usePermission(permission)` from `apps/web/src/hooks/use-permission.ts` to gate write-action UI elements based on the current user's org role:
+
+```typescript
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
+
+const canWrite = usePermission(Permission.CATALOG_WRITE);
+return canWrite ? <RegisterButton /> : null;
+```
 
 ### Automatic Header Injection
 
@@ -262,8 +319,12 @@ The `OrgSwitcher` dropdown in the sidebar lets users switch between their organi
 
 ## Guard Reference
 
-| Guard | Decorator | Enforcement Layer |
-|-------|-----------|------------------|
-| `JwtAuthGuard` | (applied via `@UseGuards`) | Verifies JWT and populates `req.user` |
-| `RolesGuard` | `@Roles('admin')` | Global platform roles from JWT payload |
-| `OrgRolesGuard` | `@OrgRoles('admin')` | Org-level roles from `UserOrganization` table |
+| Guard | Decorator | When to use |
+|-------|-----------|-------------|
+| `JwtAuthGuard` | (applied via `@UseGuards`) | All authenticated endpoints; verifies JWT and populates `req.user` |
+| `RolesGuard` | `@Roles('admin')` | Global admin-only operations not scoped to an organization |
+| `OrgRolesGuard` | `@OrgRoles('admin')` | Organization management routes (org CRUD, member management) |
+| `OrgRequiredGuard` | — | Org-scoped resource endpoints; validates membership and sets `req.orgRole` |
+| `PermissionGuard` | `@RequiresPermission(Permission.X)` | Fine-grained permission checks on resource endpoints (Phase 46) |
+
+**Never** combine `RolesGuard` and `PermissionGuard` on the same endpoint — they serve different concerns.
