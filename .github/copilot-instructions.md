@@ -114,7 +114,7 @@ The full guard chain for org-scoped, permission-checked endpoints:
 ```
 
 - `JwtAuthGuard` — validates JWT, populates `req.user`
-- `OrgRequiredGuard` — reads `x-organization-id` header, validates membership, sets `req.organizationId` and `req.orgRole`; throws 400 if header missing, 403 if not a member
+- `OrgRequiredGuard` — reads `x-organization-id` header, validates membership, sets `req.organizationId` and `req.orgRole`; throws 403 if the header is missing or the user is not a member
 - `PermissionGuard` — reads `@RequiresPermission()` metadata, checks `req.orgRole` against `RolePermissions` from `@farm/types`; throws 403 if insufficient
 - Never add `RolesGuard` alongside `PermissionGuard` — they serve different concerns and their combination creates redundant/conflicting checks
 - Use `RolesGuard` + `@Roles('admin')` only for global admin operations that are not org-scoped
