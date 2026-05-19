@@ -57,7 +57,8 @@ Each org role implicitly grants a set of named permissions. Endpoints declare a 
   "statusCode": 403,
   "timestamp": "2026-01-01T00:00:00.000Z",
   "path": "/api/v1/catalog/components",
-  "message": "Forbidden resource"
+  "message": "Insufficient permissions",
+  "errorCode": "INSUFFICIENT_PERMISSIONS"
 }
 ```
 
