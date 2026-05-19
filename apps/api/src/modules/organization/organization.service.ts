@@ -228,9 +228,10 @@ export class OrganizationService {
    * The role hierarchy weights used for comparison across member management methods.
    */
   private readonly roleHierarchy: Record<OrgRole, number> = {
-    [OrgRole.OWNER]: 3,
-    [OrgRole.ADMIN]: 2,
-    [OrgRole.MEMBER]: 1,
+    [OrgRole.OWNER]: 4,
+    [OrgRole.ADMIN]: 3,
+    [OrgRole.MEMBER]: 2,
+    [OrgRole.VIEWER]: 1,
   };
 
   /**
@@ -673,16 +674,17 @@ export class OrganizationService {
 
   /**
    * Checks if the actual role satisfies the required role based on hierarchy.
-   * Hierarchy: OWNER > ADMIN > MEMBER
+   * Hierarchy: OWNER > ADMIN > MEMBER > VIEWER
    * @param actual - The user's actual role
    * @param required - The minimum required role
    * @returns True if the actual role satisfies the required role
    */
   satisfiesRole(actual: OrgRole, required: OrgRole): boolean {
     const hierarchy: Record<OrgRole, number> = {
-      [OrgRole.OWNER]: 3,
-      [OrgRole.ADMIN]: 2,
-      [OrgRole.MEMBER]: 1,
+      [OrgRole.OWNER]: 4,
+      [OrgRole.ADMIN]: 3,
+      [OrgRole.MEMBER]: 2,
+      [OrgRole.VIEWER]: 1,
     };
     return (hierarchy[actual] ?? 0) >= (hierarchy[required] ?? 0);
   }
@@ -700,5 +702,41 @@ export class OrganizationService {
     return this.userOrganizationRepository.findOne({
       where: { userId, organizationId },
     });
+  }
+
+  /**
+   * Returns the current user's membership record within an organization,
+   * including their role, joined-at timestamp, username, and email.
+   *
+   * Used by the GET :id/members/me endpoint so the frontend can display the
+   * caller's own role without listing all members.
+   *
+   * @param orgId - The UUID of the organization
+   * @param userId - The UUID of the authenticated user
+   * @returns A MemberResponseDto for the caller
+   * @throws NotFoundException if the user is not a member of the organization
+   */
+  async findCurrentMembership(
+    orgId: string,
+    userId: string,
+  ): Promise<MemberResponseDto> {
+    const membership = await this.userOrganizationRepository.findOne({
+      where: { organizationId: orgId, userId },
+      relations: ["user"],
+    });
+
+    if (!membership) {
+      throw new NotFoundException(
+        `No membership found for user in organization ${orgId}`,
+      );
+    }
+
+    return {
+      userId: membership.userId,
+      username: membership.user.username,
+      email: membership.user.email,
+      role: membership.role,
+      joinedAt: membership.createdAt,
+    };
   }
 }

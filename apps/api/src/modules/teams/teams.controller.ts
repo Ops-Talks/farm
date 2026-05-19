@@ -21,6 +21,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { TeamsService } from "./teams.service";
 import { CreateTeamDto } from "./dto/create-team.dto";
@@ -32,8 +33,11 @@ import { Component } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "../../common/rbac/permissions";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
@@ -41,7 +45,14 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Teams")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "X-Organization-Id",
+  required: true,
+  description:
+    "Organization context — all resources are scoped to this organization.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("teams")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -55,7 +66,8 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have sufficient permissions.",
+  description:
+    "Forbidden - User does not have sufficient permissions or X-Organization-Id header is missing.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -67,13 +79,14 @@ export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   /**
-   * Creates a new team.
+   * Creates a new team. Requires TEAM_MANAGE permission (admin+).
    * @param createTeamDto - The data for the new team
+   * @param req - Incoming request used to extract the organization context
    * @returns The created team
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.TEAM_MANAGE)
   @ApiOperation({ summary: "Create a new team" })
   @ApiCreatedResponse({
     description: "The team has been successfully created.",
@@ -92,8 +105,9 @@ export class TeamsController {
   }
 
   /**
-   * Retrieves all teams.
+   * Retrieves all teams scoped to the current organization.
    * @param query - Query params including optional organizationId filter
+   * @param req - Incoming request used to extract the organization context
    * @returns A paginated list of teams
    */
   @Get()
@@ -141,13 +155,13 @@ export class TeamsController {
   }
 
   /**
-   * Updates an existing team.
+   * Updates an existing team. Requires TEAM_MANAGE permission (admin+).
    * @param id - The UUID of the team to update
    * @param updateTeamDto - Fields to update
    * @returns The updated team
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.TEAM_MANAGE)
   @ApiOperation({ summary: "Update a team" })
   @ApiParam({ name: "id", description: "The UUID of the team to update" })
   @ApiOkResponse({
@@ -172,12 +186,12 @@ export class TeamsController {
   }
 
   /**
-   * Removes a team.
+   * Removes a team. Requires TEAM_MANAGE permission (admin+).
    * @param id - The UUID of the team to remove
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles("admin")
+  @RequiresPermission(Permission.TEAM_MANAGE)
   @ApiOperation({ summary: "Delete a team" })
   @ApiParam({ name: "id", description: "The UUID of the team to remove" })
   @ApiNoContentResponse({ description: "Team successfully removed." })
@@ -212,14 +226,14 @@ export class TeamsController {
   }
 
   /**
-   * Adds a user to a team.
+   * Adds a user to a team. Requires TEAM_MANAGE permission (admin+).
    * @param id - The UUID of the team
    * @param userId - The UUID of the user to add
    * @returns The updated team with members
    */
   @Post(":id/members/:userId")
   @HttpCode(HttpStatus.OK)
-  @Roles("admin")
+  @RequiresPermission(Permission.TEAM_MANAGE)
   @ApiOperation({ summary: "Add a member to a team" })
   @ApiParam({ name: "id", description: "The UUID of the team" })
   @ApiParam({ name: "userId", description: "The UUID of the user to add" })
@@ -240,13 +254,13 @@ export class TeamsController {
   }
 
   /**
-   * Removes a user from a team.
+   * Removes a user from a team. Requires TEAM_MANAGE permission (admin+).
    * @param id - The UUID of the team
    * @param userId - The UUID of the user to remove
    * @returns The updated team with members
    */
   @Delete(":id/members/:userId")
-  @Roles("admin")
+  @RequiresPermission(Permission.TEAM_MANAGE)
   @ApiOperation({ summary: "Remove a member from a team" })
   @ApiParam({ name: "id", description: "The UUID of the team" })
   @ApiParam({

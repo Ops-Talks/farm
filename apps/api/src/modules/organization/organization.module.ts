@@ -12,6 +12,7 @@ import { User } from "../auth/entities/user.entity";
 import { OrgInvitation } from "./entities/org-invitation.entity";
 import { InvitationToken } from "./entities/invitation-token.entity";
 import { OrgRolesGuard } from "../../common/guards/org-roles.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import { AuditLogModule } from "../audit-log/audit-log.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 
@@ -39,11 +40,17 @@ const isTest = process.env.NODE_ENV === "test";
     InvitationsController,
     InvitationController,
   ],
-  providers: [OrganizationService, InvitationService, OrgRolesGuard],
+  providers: [
+    OrganizationService,
+    InvitationService,
+    OrgRolesGuard,
+    PermissionGuard,
+  ],
   exports: [
     OrganizationService,
     InvitationService,
     OrgRolesGuard,
+    PermissionGuard,
     TypeOrmModule,
   ],
 })

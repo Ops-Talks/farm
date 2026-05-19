@@ -841,6 +841,15 @@ export const organizations = {
       );
     },
 
+    /**
+     * Returns the authenticated user's own membership within the given
+     * organization. Maps to GET /api/v1/organizations/:id/members/me.
+     * @param orgId - The UUID of the organization
+     */
+    me(orgId: string): Promise<MemberResponse> {
+      return request(`/v1/organizations/${orgId}/members/me`);
+    },
+
     add(
       orgId: string,
       dto: { username: string; role?: string },

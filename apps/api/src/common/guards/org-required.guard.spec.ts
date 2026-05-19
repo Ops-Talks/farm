@@ -104,6 +104,7 @@ describe("OrgRequiredGuard", () => {
       id: "membership-1",
       userId,
       organizationId: orgId,
+      role: "member" as UserOrganization["role"],
     };
     mockUserOrgRepo.findOne.mockResolvedValue(membership);
 
@@ -121,6 +122,7 @@ describe("OrgRequiredGuard", () => {
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(req).toHaveProperty("organizationId", orgId);
+    expect(req).toHaveProperty("orgRole", "member");
     expect(mockUserOrgRepo.findOne).toHaveBeenCalledWith({
       where: { userId, organizationId: orgId },
     });

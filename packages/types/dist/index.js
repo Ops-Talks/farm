@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OrgRole = exports.PipelineRunStatus = exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
+exports.RolePermissions = exports.Permission = exports.OrgRole = exports.PipelineRunStatus = exports.FarmEvent = exports.TeamType = exports.EnvironmentType = exports.DeploymentStatus = exports.ComponentKindGroup = exports.ComponentLifecycle = exports.ComponentKind = void 0;
 var ComponentKind;
 (function (ComponentKind) {
     ComponentKind["SERVICE"] = "service";
@@ -90,12 +90,68 @@ var PipelineRunStatus;
 })(PipelineRunStatus || (exports.PipelineRunStatus = PipelineRunStatus = {}));
 /**
  * Represents the role a user holds within an organization.
- * OWNER has full control, ADMIN can manage resources, MEMBER has read access.
+ * OWNER has full control, ADMIN can manage resources, MEMBER can contribute,
+ * VIEWER has read-only access (no write permissions required).
  */
 var OrgRole;
 (function (OrgRole) {
     OrgRole["OWNER"] = "owner";
     OrgRole["ADMIN"] = "admin";
     OrgRole["MEMBER"] = "member";
+    OrgRole["VIEWER"] = "viewer";
 })(OrgRole || (exports.OrgRole = OrgRole = {}));
+/**
+ * Fine-grained permissions that can be required on individual API endpoints.
+ * Each permission string uses a resource:action convention.
+ */
+var Permission;
+(function (Permission) {
+    Permission["CATALOG_WRITE"] = "catalog:write";
+    Permission["CATALOG_DELETE"] = "catalog:delete";
+    Permission["PIPELINE_TRIGGER"] = "pipeline:trigger";
+    Permission["PIPELINE_DELETE"] = "pipeline:delete";
+    Permission["ENVIRONMENT_WRITE"] = "environment:write";
+    Permission["TEAM_MANAGE"] = "team:manage";
+    Permission["ORG_MANAGE"] = "org:manage";
+    Permission["IAC_WRITE"] = "iac:write";
+})(Permission || (exports.Permission = Permission = {}));
+/**
+ * Statically maps each OrgRole to the set of permissions it grants.
+ * Higher roles accumulate all permissions of lower roles.
+ *
+ * - viewer:  no write permissions — read-only
+ * - member:  can create/update catalog entries, trigger pipelines,
+ *            update environments, and modify IaC resources
+ * - admin:   member permissions plus ability to delete catalog entries,
+ *            delete pipelines, and manage teams
+ * - owner:   admin permissions plus org-level management
+ */
+exports.RolePermissions = {
+    [OrgRole.VIEWER]: [],
+    [OrgRole.MEMBER]: [
+        Permission.CATALOG_WRITE,
+        Permission.PIPELINE_TRIGGER,
+        Permission.ENVIRONMENT_WRITE,
+        Permission.IAC_WRITE,
+    ],
+    [OrgRole.ADMIN]: [
+        Permission.CATALOG_WRITE,
+        Permission.PIPELINE_TRIGGER,
+        Permission.ENVIRONMENT_WRITE,
+        Permission.IAC_WRITE,
+        Permission.CATALOG_DELETE,
+        Permission.PIPELINE_DELETE,
+        Permission.TEAM_MANAGE,
+    ],
+    [OrgRole.OWNER]: [
+        Permission.CATALOG_WRITE,
+        Permission.PIPELINE_TRIGGER,
+        Permission.ENVIRONMENT_WRITE,
+        Permission.IAC_WRITE,
+        Permission.CATALOG_DELETE,
+        Permission.PIPELINE_DELETE,
+        Permission.TEAM_MANAGE,
+        Permission.ORG_MANAGE,
+    ],
+};
 //# sourceMappingURL=index.js.map

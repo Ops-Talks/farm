@@ -16,21 +16,37 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { recordSpan } from "@/lib/otel-spans";
 import { setUserContext } from "@/lib/otel-context";
+import type { OrgRole } from "@farm/types";
+
+/** Maps each OrgRole value to a Badge variant for the org switcher. */
+const ROLE_BADGE_VARIANT: Record<
+  string,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
+  owner: "default",
+  admin: "secondary",
+  member: "outline",
+  viewer: "outline",
+};
 
 /**
  * OrgSwitcher — sidebar widget that shows the current organization and
  * opens a dropdown to let the user switch between orgs or create a new one.
+ *
+ * Displays the current user's role in the active org as a small badge next
+ * to the org name so users are always aware of their permission level.
  *
  * Uses the project-standard DropdownMenu (built on @base-ui/react/menu)
  * instead of Radix Popover + Command (which are not installed).
  */
 export function OrgSwitcher() {
   const router = useRouter();
-  const { organizations, currentOrg, isLoading, switchOrg } =
+  const { organizations, currentOrg, orgRole, isLoading, switchOrg } =
     useOrganization();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -71,6 +87,14 @@ export function OrgSwitcher() {
         <span className="flex items-center gap-2 min-w-0">
           <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="truncate text-sm">{label}</span>
+          {orgRole && (
+            <Badge
+              variant={ROLE_BADGE_VARIANT[(orgRole as OrgRole) ?? "member"] ?? "outline"}
+              className="ml-1 text-xs capitalize"
+            >
+              {orgRole}
+            </Badge>
+          )}
         </span>
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
       </DropdownMenuTrigger>

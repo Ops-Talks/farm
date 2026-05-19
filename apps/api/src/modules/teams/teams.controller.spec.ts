@@ -3,6 +3,12 @@ import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
 import { TeamType } from "./entities/team.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+
+/** Reusable pass-through guard stub. */
+const mockGuard = { canActivate: () => true };
 
 describe("TeamsController", () => {
   let controller: TeamsController;
@@ -57,7 +63,14 @@ describe("TeamsController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(OrgRequiredGuard)
+      .useValue(mockGuard)
+      .overrideGuard(PermissionGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<TeamsController>(TeamsController);
     service = module.get<TeamsService>(TeamsService);

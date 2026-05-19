@@ -11,8 +11,11 @@ import { Request } from "express";
 import { ORG_ROLES_KEY } from "../decorators/org-roles.decorator";
 import { UserOrganization } from "../../modules/organization/entities/user-organization.entity";
 import { OrgRole } from "@farm/types";
+import type { RequestWithOrg } from "../interfaces/request-with-org.interface";
 
-interface RequestWithUser extends Request {
+type OrgRequest = Request & RequestWithOrg;
+
+interface RequestWithUser extends OrgRequest {
   user: {
     userId: string;
     username: string;
@@ -27,9 +30,10 @@ interface RequestWithUser extends Request {
  * Higher values represent greater permissions.
  */
 const ORG_ROLE_HIERARCHY: Record<OrgRole, number> = {
-  [OrgRole.OWNER]: 3,
-  [OrgRole.ADMIN]: 2,
-  [OrgRole.MEMBER]: 1,
+  [OrgRole.OWNER]: 4,
+  [OrgRole.ADMIN]: 3,
+  [OrgRole.MEMBER]: 2,
+  [OrgRole.VIEWER]: 1,
 };
 
 /**
@@ -37,6 +41,9 @@ const ORG_ROLE_HIERARCHY: Record<OrgRole, number> = {
  * Reads the organizationId from route params or request body,
  * looks up the user's membership, and verifies the role satisfies
  * the minimum required role defined via @OrgRoles().
+ *
+ * Also sets req.orgRole after the membership lookup so PermissionGuard
+ * can perform fine-grained permission checks without a second DB round-trip.
  */
 @Injectable()
 export class OrgRolesGuard implements CanActivate {
@@ -89,6 +96,9 @@ export class OrgRolesGuard implements CanActivate {
     if (!membership) {
       throw new ForbiddenException("You are not a member of this organization");
     }
+
+    // Expose resolved role for downstream guards (e.g. PermissionGuard)
+    request.orgRole = membership.role;
 
     // Check that the user's role satisfies at least one of the required roles
     const userRoleWeight = ORG_ROLE_HIERARCHY[membership.role] ?? 0;

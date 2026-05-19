@@ -17,6 +17,9 @@ import { PageHeader } from "@/components/shared/page-header";
 import { FilterTabs } from "@/components/shared/filter-tabs";
 import { EmptyState } from "@/components/shared/empty-state";
 
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@farm/types";
+
 // Derive a 1-2 letter initial from a team displayName for the avatar.
 function teamInitials(displayName: string): string {
   return displayName
@@ -75,6 +78,7 @@ const TYPE_FILTERS = [
 
 export function TeamsClient() {
   const { hasRole } = useAuth();
+  const canManageTeams = usePermission(Permission.TEAM_MANAGE);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
@@ -107,7 +111,7 @@ export function TeamsClient() {
         title="Teams"
         description={`${allTeams.length} team${allTeams.length !== 1 ? "s" : ""} registered`}
       >
-        {hasRole("admin") && (
+        {(hasRole("admin") || canManageTeams) && (
           <Link href="/teams/new">
             <Button>Create Team</Button>
           </Link>

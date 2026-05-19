@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Req,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -37,7 +38,11 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginationQueryDto, PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../common/guards/org-roles.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRoles } from "../../common/decorators/org-roles.decorator";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "../../common/rbac/permissions";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 interface AuthenticatedRequest extends ExpressRequest {
   user: {
@@ -46,6 +51,8 @@ interface AuthenticatedRequest extends ExpressRequest {
     roles: string[];
   };
 }
+
+type AuthOrgRequest = AuthenticatedRequest & RequestWithOrg;
 
 /**
  * Controller for managing organizations and multi-tenant isolation.
@@ -155,15 +162,16 @@ export class OrganizationController {
   }
 
   /**
-   * Updates an existing organization. Requires at least ADMIN role in the organization.
+   * Updates an existing organization. Requires ORG_MANAGE permission (owner only).
    * @param id - The UUID of the organization to update
    * @param updateOrganizationDto - Fields to update
    * @param req - The authenticated request
    * @returns The updated organization
    */
   @Patch(":id")
-  @UseGuards(OrgRolesGuard)
-  @OrgRoles("admin")
+  @UseGuards(OrgRolesGuard, PermissionGuard)
+  @OrgRoles("member")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Update an organization" })
   @ApiParam({
     name: "id",
@@ -196,14 +204,15 @@ export class OrganizationController {
   }
 
   /**
-   * Removes an organization. Requires OWNER role in the organization.
+   * Removes an organization. Requires ORG_MANAGE permission (owner only).
    * @param id - The UUID of the organization to remove
    * @param req - The authenticated request
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(OrgRolesGuard)
-  @OrgRoles("owner")
+  @UseGuards(OrgRolesGuard, PermissionGuard)
+  @OrgRoles("member")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Delete an organization" })
   @ApiParam({
     name: "id",
@@ -225,6 +234,36 @@ export class OrganizationController {
   // ---------------------------------------------------------------------------
   // Member management endpoints
   // ---------------------------------------------------------------------------
+
+  /**
+   * Returns the current user's own membership record for the given organization.
+   * Useful for the frontend to display the caller's role without fetching all members.
+   * @param id - The UUID of the organization
+   * @param req - The authenticated request
+   * @returns The caller's MemberResponseDto
+   */
+  @Get(":id/members/me")
+  @UseGuards(OrgRolesGuard)
+  @OrgRoles("viewer")
+  @ApiOperation({
+    summary: "Get the current user's membership in an organization",
+  })
+  @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiOkResponse({
+    description: "Successfully retrieved current user's membership.",
+    type: MemberResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: "Not a member of this organization.",
+    type: ErrorResponseDto,
+  })
+  async findMyMembership(
+    @Param("id") id: string,
+    @Req() req: AuthOrgRequest,
+  ): Promise<MemberResponseDto> {
+    return this.organizationService.findCurrentMembership(id, req.user.userId);
+  }
 
   /**
    * Lists all members of the organization with pagination.

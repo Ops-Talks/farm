@@ -44,6 +44,11 @@ vi.mock("@/types/api", () => ({
   },
 }));
 
+const mockUsePermission = vi.fn(() => false);
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: (...args: unknown[]) => mockUsePermission(...args),
+}));
+
 import TeamsPage from "@/app/(protected)/teams/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────

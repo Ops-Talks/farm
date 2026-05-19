@@ -8,25 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.4] - 2026-05-18
 
 ### Added
-- **organizations**: New features and imporvements in the Organizations (#164).
-- **organizations**: New features and imporvements in the Organizations.
-- **organizations**: New features and imporvements in the Organizations.
+- **organizations**: `OrgReadyGate` frontend component that blocks protected pages until both auth and org loading are settled, eliminating race-condition redirects to `/organizations/new` (Phase 45, FARM-E117, #164).
+- **organizations**: `OrgRequiredGuard` backend guard that validates `X-Organization-Id` membership on all org-scoped endpoints, returning 403 with `ORG_STALE_MEMBERSHIP` error code for non-members (Phase 45, FARM-E117).
 
 ### Fixed
-- **migrations**: Fix wrong implementantion.
-- **migrations**: Fix wrong implementantion.
-- **migrations**: fix column name mismatches causing migration integrity CI failure.
-- address all 4 PR review comments for Phase 44 multi-tenancy hardening.
+- **organizations**: `organization-context.tsx` race condition — derived `isLoading` from `isFetching || (isAuthenticated && !hasFetchedForCurrentAuth)` so the loading gate is true in the same render where auth becomes active, preventing child effects from firing before the org fetch completes (Phase 45, FARM-E117).
+- **organizations**: `api-client.ts` 403 handler now gates stale-org recovery on `ORG_STALE_MEMBERSHIP` error code and dispatches `farm:org:stale` custom event, notifying `OrganizationProvider` to re-fetch without triggering false positives on unrelated 403 responses (Phase 45, FARM-E118).
+- **organizations**: `org-switcher.tsx` calls `queryClient.invalidateQueries()` on org switch to clear stale TanStack Query caches (Phase 45, FARM-E118).
+- **organizations**: `auth-context.tsx` `logout()` clears `farm_current_org` from `sessionStorage` to prevent stale org data persisting after session end (Phase 45, FARM-E117).
+- **migrations**: Column name mismatches in Phase 44 multi-tenancy migrations causing integrity CI failure.
+- **filter**: Validate `errorCode` is a string before spreading into error response, fixing TypeScript TS2698 build error introduced by the preceding Copilot Review auto-fix commit.
 
 ## [0.25.3] - 2026-05-15
 
 ### Added
-- **pipelines**: Improve pipelines.
+- **pipelines**: `ComponentPipelinesTab` frontend component linking catalog components to their pipeline runs, with full test coverage (305 tests) (Phase 43, #161).
+- **pipelines**: `PipelineDetailClient` frontend component for pipeline run detail view with external run URL and status badge, with full test coverage (379 tests) (Phase 43).
+- **pipelines**: `AddDeploymentPipelineRunId` migration — nullable `pipelineRunId` FK on `Deployment` entity to link deployments to their originating pipeline run.
 
 ## [0.25.2] - 2026-05-13
 
 ### Added
-- **pipelines**: Improve pipelines (#160).
+- **pipelines**: GitHub Actions webhook receiver (`WebhookReceiverController`) with HMAC-SHA256 signature verification and raw body buffer middleware (Phase 43, #160).
+- **pipelines**: `IntegrationsListenerService` — EventEmitter-based pipeline event listener that creates `PipelineRun` records on `pipeline.triggered` events.
+- **pipelines**: `AddPipelineComponentId` and `AddPipelineRunDeploymentId` migrations — nullable FKs linking pipelines to catalog components and pipeline runs to deployments.
 
 ## [0.25.1] - 2026-05-13
 

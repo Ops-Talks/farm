@@ -50,6 +50,10 @@ vi.mock("sonner", () => ({
   Toaster: () => null,
 }));
 
+vi.mock("@/hooks/use-permission", () => ({
+  usePermission: vi.fn().mockReturnValue(true),
+}));
+
 import PipelinesPage from "@/app/(protected)/pipelines/page";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────

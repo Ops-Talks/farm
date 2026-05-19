@@ -73,11 +73,14 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 | Phase 40: Observability 3.0 — Full-Stack Hardening | 7 | 23 | v0.24.10 | `DONE` |
 | Phase 41: Swagger/OpenAPI Hardening | 4 | 14 | v0.25.1 | `DONE` |
 | Phase 42: Kubernetes Deployment — Helm Chart | 6 | 24 | v0.25.0 | `DONE` |
-| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | pending | `DONE` |
+| Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | v0.25.0 - v0.25.3 | `DONE` |
 
 Phase 44 is intentionally omitted from this completed-phase archive because it is tracked separately in the summary below and is not part of this completed sequence.
 
-| **Phase 45: Organization Context Hardening** | **3** | **10** | pending | `DONE` |
+| **Phase 45: Organization Context Hardening** | **3** | **10** | v0.25.4 | `DONE` |
+| Phase 46: Granular RBAC | 3 | 12 | - | `IN PROGRESS` |
+| Phase 47: API Contract Stability | 2 | 7 | - | `TODO` |
+| Phase 48: Platform Resilience | 3 | 10 | - | `TODO` |
 
 ---
 
@@ -133,7 +136,10 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `DONE` |
 | Phase 44: Multi-tenancy Hardening | 5 | 20 | `DONE` |
 | Phase 45: Organization Context Hardening | 3 | 10 | `DONE` |
-| **Total** | **119** | **468** | |
+| Phase 46: Granular RBAC | 3 | 12 | `IN PROGRESS` |
+| Phase 47: API Contract Stability | 2 | 7 | `TODO` |
+| Phase 48: Platform Resilience | 3 | 10 | `TODO` |
+| **Total** | **127** | **497** | |
 
 ---
 
@@ -464,4 +470,106 @@ Adds the missing test coverage for the org context changes and the backend guard
 |----|-------|--------|
 | FARM-S504 | Create `apps/web/src/components/org-ready-gate.test.tsx`. Cover: renders spinner when `auth.isLoading=true`; renders spinner when `org.isLoading=true`; renders children when both are `false` and org is set; redirects to `/organizations/new` when authenticated with 0 orgs. | `DONE` |
 | FARM-S505 | Update `apps/web/src/contexts/organization-context.test.tsx` to mock `useAuth` and cover: `isAuthenticated false→true` transition triggers `fetchOrgs`; `isAuthenticated=false` clears org state immediately; `farm:org:stale` custom event triggers re-fetch. | `DONE` |
+| FARM-S505 | Update `apps/web/src/contexts/organization-context.test.tsx` to mock `useAuth` and cover: `isAuthenticated false→true` transition triggers `fetchOrgs`; `isAuthenticated=false` clears org state immediately; `farm:org:stale` custom event triggers re-fetch. | `DONE` |
 | FARM-S506 | Create `apps/api/src/common/guards/org-required.guard.spec.ts`. Cover: passes when valid `X-Organization-Id` header matches an active user membership; throws `ForbiddenException` when header is absent; throws `ForbiddenException` when user is not a member of the given org; throws `ForbiddenException` when org does not exist. | `DONE` |
+
+---
+
+## Phase 46: Granular RBAC
+
+Replaces the binary `admin/user` role model with a structured permission system scoped to organizations. Today every authenticated user in an org can trigger destructive actions (delete components, cancel pipeline runs, remove team members) regardless of intent. This phase introduces organization-scoped roles (`owner`, `admin`, `member`, `viewer`) and per-resource permission gates on both backend and frontend.
+
+### FARM-E120: Permission Model `IN PROGRESS`
+
+Defines the new role hierarchy and persists per-org role assignments. The current flat `roles: string[]` array on `User` is a global flag; it cannot express that a user is an `admin` in org-A but only a `member` in org-B.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S507 | Add `role` enum column (`owner`, `admin`, `member`, `viewer`) to `UserOrganization` entity. Generate migration `AddUserOrgRole`. Backfill: existing membership rows default to `member`; the first user in each org (lowest `createdAt`) is promoted to `owner`. | `TODO` |
+| FARM-S508 | Create `Permission` enum (`catalog:write`, `catalog:delete`, `pipeline:trigger`, `pipeline:delete`, `environment:write`, `team:manage`, `org:manage`, `iac:write`) and a `RolePermissions` map that statically defines which permissions each role holds. Store in `src/common/rbac/permissions.ts`. | `TODO` |
+| FARM-S509 | Extend `OrgRequiredGuard` to expose `req.orgRole` after membership lookup. Update `RequestWithOrg` interface with `orgRole: OrgRole`. No breaking change — downstream handlers may ignore it. | `TODO` |
+| FARM-S510 | Create `@RequiresPermission(permission: Permission)` decorator and `PermissionGuard` that reads `req.orgRole` and checks against `RolePermissions`. Must be placed after `OrgRequiredGuard`. Throw `ForbiddenException` with code `INSUFFICIENT_PERMISSIONS` when denied. | `TODO` |
+
+### FARM-E121: Backend Enforcement `TODO`
+
+Applies `@RequiresPermission()` to all mutating and destructive endpoints. Read-only `GET` endpoints require only `viewer` (the minimum org membership), so they need no additional decorator.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S511 | **Catalog:** Apply `@RequiresPermission('catalog:write')` to `POST /api/catalog` and `PATCH /api/catalog/:id`. Apply `@RequiresPermission('catalog:delete')` to `DELETE /api/catalog/:id`. Update Swagger `@ApiHeader` and `@ApiForbiddenResponse` annotations. | `TODO` |
+| FARM-S512 | **Pipelines:** Apply `@RequiresPermission('pipeline:trigger')` to `POST /api/pipelines/:id/trigger`. Apply `@RequiresPermission('pipeline:delete')` to `DELETE /api/pipelines/:id`. Update Swagger annotations. | `TODO` |
+| FARM-S513 | **Teams:** Apply `@RequiresPermission('team:manage')` to `POST /api/teams`, `PATCH /api/teams/:id`, `DELETE /api/teams/:id`, and all team membership mutation endpoints. Update Swagger annotations. | `TODO` |
+| FARM-S514 | **Organizations:** Apply `@RequiresPermission('org:manage')` to `PATCH /api/organizations/:id`, `DELETE /api/organizations/:id`, and all member role management endpoints. Only `owner` and `admin` hold this permission. Update Swagger annotations. | `TODO` |
+
+### FARM-E122: Frontend Permission Gates `TODO`
+
+Makes the UI reflect the user's actual permissions. Currently all authenticated org members see identical action buttons regardless of their role; clicking a disallowed action results in a confusing 403 with no explanation.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S515 | Add `orgRole` field to `OrganizationContext`. Fetch the current user's role from the `UserOrganization` membership returned by `GET /api/organizations/me/memberships` (or embed in the org list response). Expose via `useOrganization()` hook. | `TODO` |
+| FARM-S516 | Create `usePermission(permission: Permission): boolean` hook that derives a boolean from `orgRole` and the static `RolePermissions` map. Returns `false` while org is loading. | `TODO` |
+| FARM-S517 | Apply `usePermission` gates in Catalog (hide Edit/Delete buttons for `viewer`/`member`), Pipelines (hide Trigger/Delete for `viewer`), Teams (hide Add/Remove member for non-`admin`), and Organizations settings page (hide Rename/Delete for non-`owner`). | `TODO` |
+| FARM-S518 | Add role badge to the org-switcher dropdown and to the Organizations settings page member list, showing each member's current role with an inline role-change select for `owner`/`admin`. | `TODO` |
+
+---
+
+## Phase 47: API Contract Stability
+
+Establishes a stable, versioned public API surface so external integrations are not broken by internal refactors. Today all endpoints live under `/api` with no version prefix; any rename or removal is a silent breaking change for consumers.
+
+### FARM-E123: API Versioning `TODO`
+
+Introduces a `/api/v1` prefix for all public endpoints while keeping `/api` as a deprecated alias during a transition period.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S519 | Enable NestJS versioning (`VERSION_NEUTRAL` default + `v1` explicit) via `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`. Add `@Version('1')` to all public controllers. Keep the existing `/api` prefix for backward compatibility by registering a redirect middleware `/api/:path* → /api/v1/:path*` with a `Deprecation` response header. | `TODO` |
+| FARM-S520 | Update Swagger to document both `/api/v1` (primary) and the deprecated `/api` alias. Add `@ApiHeader({ name: 'Deprecation', description: 'Deprecated alias — use /api/v1' })` on the redirect middleware docs. | `TODO` |
+| FARM-S521 | Add `X-API-Version: 1` response header globally via a `VersionInterceptor`. Update all e2e specs to target `/api/v1` endpoints. | `TODO` |
+
+### FARM-E124: Contract Documentation `TODO`
+
+Provides a machine-readable and human-readable API contract alongside a changelog for breaking changes.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S522 | Generate a static `openapi.json` snapshot during CI build (`GET /api/v1/docs-json` → artifact). Add a CI step that diffs the new snapshot against the committed baseline and fails on breaking changes (removed fields, changed types) using `openapi-diff`. | `TODO` |
+| FARM-S523 | Add `API-CHANGELOG.md` to `apps/api/` documenting breaking changes per version. Include migration guide from `/api` to `/api/v1`. | `TODO` |
+| FARM-S524 | Publish the OpenAPI spec to the MkDocs documentation site under `api-reference/` so external consumers can browse it without running the server. | `TODO` |
+
+---
+
+## Phase 48: Platform Resilience
+
+Closes the operational gaps that prevent Farm from being deployed in a production environment with SLA requirements. Multi-replica support, graceful degradation per integration, and Redis failure isolation are the three pillars.
+
+### FARM-E125: High Availability Configuration `TODO`
+
+Ensures the API and worker processes can run as multiple replicas without race conditions or session affinity requirements.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S525 | Validate that all in-memory state (plugin registry, metrics cache) is either stateless or backed by Redis. Audit `PluginManagerService`, `BusinessMetricsService`, and `CacheModule` for in-process mutable state that would diverge across replicas. Document findings and remediate. | `TODO` |
+| FARM-S526 | Update Helm Chart `values.yaml` to support `replicaCount > 1` with a `PodDisruptionBudget` (`minAvailable: 1`) and `topologySpreadConstraints` for zone distribution. Add `Horizontal Pod Autoscaler` manifest triggered by CPU > 70%. | `TODO` |
+| FARM-S527 | Add Redis Sentinel support to `CacheModule` configuration. When `REDIS_SENTINEL_HOSTS` env var is set, instantiate `@keyv/redis` with Sentinel options instead of a single-host connection string. Document in `.env.example`. | `TODO` |
+
+### FARM-E126: Database Resilience `TODO`
+
+Prevents cascading failures caused by slow or unreachable database connections.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S528 | Configure TypeORM connection pool with `connectTimeoutMS`, `acquireTimeoutMillis`, and `idleTimeoutMillis` via `DATABASE_POOL_*` env vars. Add pool exhaustion metric (`db_pool_size`, `db_pool_waiting`) exposed on `/metrics`. | `TODO` |
+| FARM-S529 | Add a `TypeOrmHealthIndicator` to the existing `HealthModule` that checks DB connectivity with a 2-second timeout. Return `{ database: { status: 'down', message } }` in `/api/health` instead of crashing the health check. | `TODO` |
+| FARM-S530 | Add a migration lock mechanism: if `DATABASE_SYNC=false` and `migrationsRun=false` (production), ensure only one replica runs pending migrations on startup using a PostgreSQL advisory lock. Prevent duplicate migration runs in parallel pod startups. | `TODO` |
+
+### FARM-E127: Integration Circuit Breakers `TODO`
+
+Prevents a degraded external integration (GitHub, Kong, Kubernetes API, Slack) from blocking unrelated requests via cascading timeout failures.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S531 | Introduce `CircuitBreakerService` (using `opossum` or a lightweight alternative) wrapping all HTTP calls in `IntegrationsModule`, `KubernetesModule`, `HelmModule`, `GatewayModule`, and `RegistryModule`. Default thresholds: 50% failure rate over 10 req → open; 30s reset. | `TODO` |
+| FARM-S532 | When a circuit is open, return a structured `503 Service Unavailable` with `{ errorCode: 'INTEGRATION_UNAVAILABLE', integration: 'github' }` instead of letting the request hang until `fetch` timeout. Log circuit state transitions at WARN level. | `TODO` |
+| FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` (0=closed, 1=open, 2=half-open). Add Grafana panel to `farm-integrations.json` dashboard. | `TODO` |

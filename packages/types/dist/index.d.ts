@@ -78,13 +78,41 @@ export declare enum PipelineRunStatus {
 }
 /**
  * Represents the role a user holds within an organization.
- * OWNER has full control, ADMIN can manage resources, MEMBER has read access.
+ * OWNER has full control, ADMIN can manage resources, MEMBER can contribute,
+ * VIEWER has read-only access (no write permissions required).
  */
 export declare enum OrgRole {
     OWNER = "owner",
     ADMIN = "admin",
-    MEMBER = "member"
+    MEMBER = "member",
+    VIEWER = "viewer"
 }
+/**
+ * Fine-grained permissions that can be required on individual API endpoints.
+ * Each permission string uses a resource:action convention.
+ */
+export declare enum Permission {
+    CATALOG_WRITE = "catalog:write",
+    CATALOG_DELETE = "catalog:delete",
+    PIPELINE_TRIGGER = "pipeline:trigger",
+    PIPELINE_DELETE = "pipeline:delete",
+    ENVIRONMENT_WRITE = "environment:write",
+    TEAM_MANAGE = "team:manage",
+    ORG_MANAGE = "org:manage",
+    IAC_WRITE = "iac:write"
+}
+/**
+ * Statically maps each OrgRole to the set of permissions it grants.
+ * Higher roles accumulate all permissions of lower roles.
+ *
+ * - viewer:  no write permissions — read-only
+ * - member:  can create/update catalog entries, trigger pipelines,
+ *            update environments, and modify IaC resources
+ * - admin:   member permissions plus ability to delete catalog entries,
+ *            delete pipelines, and manage teams
+ * - owner:   admin permissions plus org-level management
+ */
+export declare const RolePermissions: Record<OrgRole, Permission[]>;
 /**
  * Token-based organization invitation (Phase 37).
  * The `token` field is only included in admin-facing responses immediately
