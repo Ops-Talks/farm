@@ -607,7 +607,7 @@ All three packages share the same version (bull-board monorepo) and must be bump
 
 Upgrades the `apps/web` test toolchain from Vite 7 to Vite 8 so `@vitejs/plugin-react@6` can be adopted. The Next.js production build is not affected — Next.js manages its own React transform independently.
 
-**Blocker:** `vitest@5` stable release. Currently `5.0.0-beta.3`.
+**Resolution:** No remaining blocker. `vitest@4` already supports Vite 8, so the upgrade was completed without waiting for `vitest@5` stable.
 
 | ID | Story | Status |
 |----|-------|--------|
