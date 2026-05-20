@@ -81,6 +81,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 46: Granular RBAC | 3 | 12 | - | `IN PROGRESS` |
 | Phase 47: API Contract Stability | 2 | 7 | - | `TODO` |
 | Phase 48: Platform Resilience | 3 | 10 | - | `TODO` |
+| Phase 49: Dependency Modernization | 1 | 3 | - | `DONE` |
 
 ---
 
@@ -139,7 +140,8 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 46: Granular RBAC | 3 | 12 | `IN PROGRESS` |
 | Phase 47: API Contract Stability | 2 | 7 | `TODO` |
 | Phase 48: Platform Resilience | 3 | 10 | `TODO` |
-| **Total** | **127** | **497** | |
+| Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
+| **Total** | **128** | **500** | |
 
 ---
 
@@ -572,3 +574,43 @@ Prevents a degraded external integration (GitHub, Kong, Kubernetes API, Slack) f
 | FARM-S531 | Introduce `CircuitBreakerService` (using `opossum` or a lightweight alternative) wrapping all HTTP calls in `IntegrationsModule`, `KubernetesModule`, `HelmModule`, `GatewayModule`, and `RegistryModule`. Default thresholds: 50% failure rate over 10 req → open; 30s reset. | `TODO` |
 | FARM-S532 | When a circuit is open, return a structured `503 Service Unavailable` with `{ errorCode: 'INTEGRATION_UNAVAILABLE', integration: 'github' }` instead of letting the request hang until `fetch` timeout. Log circuit state transitions at WARN level. | `TODO` |
 | FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` (0=closed, 1=open, 2=half-open). Add Grafana panel to `farm-integrations.json` dashboard. | `TODO` |
+
+---
+
+## Phase 49: Dependency Modernization `DONE`
+
+All four Dependabot MAJOR-version PRs resolved. Group A (bull-board) and Group B (vite/plugin-react) were both executed and merged in PRs `chore/bump-bull-board-v7` and `chore/bump-vite-plugin-react-v6`.
+
+> **Note on Group B:** The initial analysis flagged this as `BLOCKED` on `vitest@5` stable. On execution it was found that `vitest@4` already declares `vite: "^6.0.0 || ^7.0.0 || ^8.0.0"` in its peer dep range, making `vitest@5` unnecessary. The fix required adding `"vite": "^8.0.0"` to the root `package.json` overrides to deduplicate the two vite instances that npm resolved when `@vitejs/plugin-react@6` (which has vite@8 as a peer) and vitest@4 (which resolved to vite@7) coexisted.
+
+### Dependabot PR Inventory
+
+| PR Branch | Package | Bump | App | Risk | Group |
+|-----------|---------|------|-----|------|-------|
+| `dependabot/npm_and_yarn/bull-board/api-7.1.5` | `@bull-board/api` | 6.21.3 → 7.1.5 | `apps/api` | LOW | A |
+| `dependabot/npm_and_yarn/bull-board/express-7.1.5` | `@bull-board/express` | 6.21.3 → 7.1.5 | `apps/api` | LOW | A |
+| `dependabot/npm_and_yarn/bull-board/nestjs-7.1.5` | `@bull-board/nestjs` | 6.21.3 → 7.1.5 | `apps/api` | LOW | A |
+| `dependabot/npm_and_yarn/vitejs/plugin-react-6.0.2` | `@vitejs/plugin-react` | 5.2.0 → 6.0.2 | `apps/web` | HIGH | B |
+
+### Group A: @bull-board/* — Immediate Chore (outside this phase)
+
+All three packages share the same version (bull-board monorepo) and must be bumped together. The v7.0.0 changelog contains no breaking API removals — only adds `prefix`/`basePath` support and BullMQ Pro compatibility. Farm usage (`BullBoardModule.forRoot`, `BullBoardModule.forFeature`, `ExpressAdapter`, `BullMQAdapter`) is fully compatible.
+
+**Execution steps (can be done immediately as `chore/bump-bull-board-v7`):**
+1. Update `apps/api/package.json`: `@bull-board/api`, `@bull-board/express`, `@bull-board/nestjs` → `^7.1.5`.
+2. Run `npm install` from the monorepo root.
+3. Run `cd apps/api && npm run test && npm run test:e2e`.
+4. Run `make check`.
+5. Merge and close the three Dependabot PRs.
+
+### FARM-E128: Vite Ecosystem Upgrade `DONE`
+
+Upgrades the `apps/web` test toolchain from Vite 7 to Vite 8 so `@vitejs/plugin-react@6` can be adopted. The Next.js production build is not affected — Next.js manages its own React transform independently.
+
+**Resolution:** No remaining blocker. `vitest@4` already supports Vite 8, so the upgrade was completed without waiting for `vitest@5` stable.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S534 | Bump `apps/web/package.json`: `@vitejs/plugin-react` → `^6.0.2`. Add `"vite": "^8.0.0"` override to root `package.json` to deduplicate the dual-vite conflict. `vitest.config.ts` required no changes — `react()` is called without Babel options. | `DONE` |
+| FARM-S535 | Storybook `@storybook/nextjs@^10.x` confirmed compatible with vite@8 peer — no version bump required. | `DONE` |
+| FARM-S536 | `make check` passed: 3525 API unit, 351 API e2e, 2807 web unit, 70 Playwright. Branch `chore/bump-vite-plugin-react-v6` pushed; closes Dependabot PR. | `DONE` |
