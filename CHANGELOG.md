@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.5] - 2026-05-20
+
+### Changed
+- **deps**: bump @bull-board/* from 6.21.3 to 7.1.5.
+- Potential fix for pull request finding.
+- **roadmap**: mark Phase 49 DONE, update FARM-E128 stories.
+- **deps**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2, upgrade vite to 8.
+- **deps**: bump @bull-board/* from 6.21.3 to 7.1.5.
+- **deps-dev**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2.
+- **deps**: bump codecov/codecov-action from 5.5.3 to 6.0.1.
+- **deps**: bump the non-critical-updates group across 1 directory with 36 updates.
+- Patch/project docs (#173).
+- **rbac**: Increasing matury and hardening at RBAC.
+- **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
+
+### Fixed
+- resolve dual-vite conflict and web Docker Stage 2 build failure.
+- **docker**: copy workspace node_modules in web Stage 2 build.
+- **docker**: copy workspace node_modules in Stage 2 build.
+- **docker**: add workspace manifests to Stage 2 build context.
+- **docker**: copy workspace node_modules in Stage 2 build.
+- **docker**: add workspace manifests to Stage 2 build context.
+- **rbac**: address PR review feedback - dedupe role fetch, fix migration column names, remove RolesGuard from catalog, fix ROADMAP duplicate.
+
 ## [0.25.4] - 2026-05-18
 
 ### Added
