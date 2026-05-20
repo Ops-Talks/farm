@@ -29,6 +29,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules    ./node_modules
 COPY --from=deps /app/packages/types  ./packages/types
 
+# Provide workspace root so Node/TypeScript can resolve subpath exports
+# (e.g. @bull-board/api/bullMQAdapter) via the npm exports map.
+COPY package.json package-lock.json ./
+COPY packages/types/package.json    ./packages/types/
+COPY apps/api/package.json          ./apps/api/
+
 COPY apps/api ./apps/api
 
 WORKDIR /app/apps/api
