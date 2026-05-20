@@ -26,10 +26,14 @@ FROM node:26-alpine AS builder
 WORKDIR /app
 
 # node_modules includes the symlink node_modules/@farm/types -> ../../packages/types
-COPY --from=deps /app/node_modules   ./node_modules
+COPY --from=deps /app/node_modules          ./node_modules
+# npm may install workspace-only packages in the workspace's own node_modules
+# instead of hoisting them to root (e.g. @vitejs/plugin-react).
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 # The symlink target must be present with compiled dist/
-COPY --from=deps /app/packages/types ./packages/types
+COPY --from=deps /app/packages/types        ./packages/types
 
+# .dockerignore excludes **/node_modules so this COPY never overwrites the above.
 COPY apps/web/ ./apps/web/
 
 WORKDIR /app/apps/web
