@@ -320,3 +320,81 @@ Makefile             — Developer entrypoints (owned by SRE + Dev)
 - **Manual schema changes**: always use Helm migration hook — never `kubectl exec` into the DB
 - **Dashboard-only observability**: dashboards do not page; alerts are required for SLO compliance
 - **Single-region deployments without `topologySpreadConstraints`**: all pods may land on one AZ
+
+## Dockerfile Hardening Lessons (Farm-specific)
+
+### The `apk add --upgrade "pkg>=x.y.z-r0"` Anti-Pattern (BROKE CI)
+
+Both `apps/api/Dockerfile` and `apps/web/Dockerfile` hardcode CVE-driven minimum versions:
+
+```dockerfile
+RUN apk add --no-cache --upgrade "zlib>=1.3.2-r0" "libssl3>=3.5.6-r0" ...
+```
+
+This pattern has **failed CI before** when Alpine shipped patched versions that no longer satisfied the constraint (package moved to a newer apk repo branch, or version string format changed). The constraint becomes stale and the build hard-fails.
+
+**Correct pattern**:
+
+```dockerfile
+# Apply latest patches from the pinned base image's apk repos.
+RUN apk upgrade --no-cache
+```
+
+Then rely on:
+1. Trivy scan in CI (`.github/workflows/trivy.yml`) to flag CVEs in the base image
+2. Renovate to bump the base image digest weekly
+3. Pin the base by digest (`node:26-alpine@sha256:...`) so `apk upgrade` is deterministic
+
+If a specific CVE truly requires a floor version that the base image does not yet ship, prefer rebuilding from a newer base image rather than encoding a fragile version constraint.
+
+### npm Workspace Hoisting Issue
+
+In monorepo Docker builds, `npm ci` at the root **does not always hoist** workspace-only dependencies to `/app/node_modules`. Some packages (e.g. `@bull-board/api`, `@bull-board/nestjs`, `@vitejs/plugin-react`) land in `/app/apps/<app>/node_modules` due to peer-dependency resolution.
+
+When using multi-stage builds you must copy **both** locations:
+
+```dockerfile
+COPY --from=deps /app/node_modules           ./node_modules
+COPY --from=deps /app/apps/api/node_modules  ./apps/api/node_modules
+```
+
+Missing either copy causes "Cannot find module" at build or runtime. Document this in any new workspace Dockerfile.
+
+### Production Image Must Drop npm
+
+After `npm ci --omit=dev` in the production stage, remove npm itself so runtime images do not ship a package manager (smaller attack surface, smaller image, no accidental network installs):
+
+```dockerfile
+RUN npm ci --omit=dev --ignore-scripts --workspace=apps/api \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+```
+
+The `--workspace=<name>` flag is **mandatory** in monorepos — without it `npm ci` installs every workspace's production deps (Next.js, React, Tailwind, etc.) into the API image, inflating it by ~1 GB.
+
+### Multi-Stage Simplification Heuristics
+
+- 3 stages is the minimum for a monorepo Node app: `deps` (cacheable install) → `build` (TS/bundler) → `runtime` (slim final). Do not collapse `deps` into `build` — you lose the layer cache on every source change.
+- Use a single `deps` stage shared between API and Web via a `deploy/docker/base.Dockerfile` to avoid duplication of workspace-manifest COPYs.
+- Prefer `COPY --chown=user:group` over a separate `RUN chown -R` (saves one layer and one full filesystem walk).
+- Health checks should live in `apps/<name>/scripts/healthcheck.js` and be referenced as `HEALTHCHECK CMD ["node", "scripts/healthcheck.js"]` — inline `node -e "..."` is duplicated across Dockerfile, docker-compose, and Helm probes.
+
+### User ID Consistency
+
+Farm currently has an inconsistency:
+- `apps/api/Dockerfile` uses the built-in `node` user (UID **1000**)
+- `apps/web/Dockerfile` creates a custom `nextjs` user (UID **1001**)
+
+Standardize on **UID 1001** everywhere (matches the Helm `securityContext.runAsUser: 1001` documented above). Mismatched UIDs cause file-permission bugs when volumes are shared between containers (e.g. local dev bind mounts).
+
+### Dockerfile Modification Checklist
+
+- [ ] No hardcoded `apk add "pkg>=x.y.z-rN"` version pins — use `apk upgrade --no-cache` plus Renovate/Trivy
+- [ ] Base image pinned by digest (`@sha256:...`) in production Dockerfiles
+- [ ] Both `/app/node_modules` and `/app/apps/<name>/node_modules` copied from `deps` stage
+- [ ] Production stage runs `--workspace=apps/<name>` and strips npm
+- [ ] Final stage runs as UID 1001 (matches Helm `securityContext`)
+- [ ] `COPY --chown=` used instead of post-copy `chown -R`
+- [ ] HEALTHCHECK references a script file, not inline `node -e`
+- [ ] `.dockerignore` excludes `node_modules`, `.git`, `coverage`, `dist`, `.env*`, test files
+- [ ] `docker buildx build --platform linux/amd64,linux/arm64` succeeds (multi-arch ready)
+- [ ] Trivy scan reports 0 HIGH/CRITICAL CVEs on the final image

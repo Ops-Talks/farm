@@ -103,3 +103,13 @@ When the rate limit is exceeded, the API returns `429 Too Many Requests`.
 ## Versioning
 
 The API uses URI-based versioning. All resource endpoints are prefixed with `/api/v1/`. Infrastructure endpoints (`/api/health`, `/api/metrics`, `/api/docs`) remain version-neutral and do not include a version prefix.
+
+## OpenAPI Specification
+
+The full machine-readable OpenAPI 3.0 specification is available at:
+
+- **Live (requires running server):** `/api/docs-json`
+- **Static snapshot:** [`openapi.json`](../../apps/api/openapi.json) (generated in CI)
+
+The spec is also browsable via Swagger UI at `/api/docs` (HTTP Basic Auth protected; default credentials: `farm`/`farm`).
+

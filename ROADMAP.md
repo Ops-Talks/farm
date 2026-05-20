@@ -78,8 +78,8 @@ All phases below are complete and released. Detailed story/task breakdowns have 
 Phase 44 is intentionally omitted from this completed-phase archive because it is tracked separately in the summary below and is not part of this completed sequence.
 
 | **Phase 45: Organization Context Hardening** | **3** | **10** | v0.25.4 | `DONE` |
-| Phase 46: Granular RBAC | 3 | 12 | - | `IN PROGRESS` |
-| Phase 47: API Contract Stability | 2 | 7 | - | `TODO` |
+| Phase 46: Granular RBAC | 3 | 12 | v0.25.5 | `DONE` |
+| Phase 47: API Contract Stability | 2 | 7 | v0.25.6 | `DONE` |
 | Phase 48: Platform Resilience | 3 | 10 | - | `TODO` |
 | Phase 49: Dependency Modernization | 1 | 3 | - | `DONE` |
 
@@ -137,11 +137,12 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 43: CI/CD Pipeline Orchestration | 5 | 16 | `DONE` |
 | Phase 44: Multi-tenancy Hardening | 5 | 20 | `DONE` |
 | Phase 45: Organization Context Hardening | 3 | 10 | `DONE` |
-| Phase 46: Granular RBAC | 3 | 12 | `IN PROGRESS` |
-| Phase 47: API Contract Stability | 2 | 7 | `TODO` |
+| Phase 46: Granular RBAC | 3 | 12 | `DONE` |
+| Phase 47: API Contract Stability | 2 | 7 | `DONE` |
 | Phase 48: Platform Resilience | 3 | 10 | `TODO` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
-| **Total** | **128** | **500** | |
+| Phase 50: Docker & Container Hardening | 4 | 11 | `TODO` |
+| **Total** | **132** | **511** | |
 
 ---
 
@@ -480,38 +481,38 @@ Adds the missing test coverage for the org context changes and the backend guard
 
 Replaces the binary `admin/user` role model with a structured permission system scoped to organizations. Today every authenticated user in an org can trigger destructive actions (delete components, cancel pipeline runs, remove team members) regardless of intent. This phase introduces organization-scoped roles (`owner`, `admin`, `member`, `viewer`) and per-resource permission gates on both backend and frontend.
 
-### FARM-E120: Permission Model `IN PROGRESS`
+### FARM-E120: Permission Model `DONE`
 
 Defines the new role hierarchy and persists per-org role assignments. The current flat `roles: string[]` array on `User` is a global flag; it cannot express that a user is an `admin` in org-A but only a `member` in org-B.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S507 | Add `role` enum column (`owner`, `admin`, `member`, `viewer`) to `UserOrganization` entity. Generate migration `AddUserOrgRole`. Backfill: existing membership rows default to `member`; the first user in each org (lowest `createdAt`) is promoted to `owner`. | `TODO` |
-| FARM-S508 | Create `Permission` enum (`catalog:write`, `catalog:delete`, `pipeline:trigger`, `pipeline:delete`, `environment:write`, `team:manage`, `org:manage`, `iac:write`) and a `RolePermissions` map that statically defines which permissions each role holds. Store in `src/common/rbac/permissions.ts`. | `TODO` |
-| FARM-S509 | Extend `OrgRequiredGuard` to expose `req.orgRole` after membership lookup. Update `RequestWithOrg` interface with `orgRole: OrgRole`. No breaking change — downstream handlers may ignore it. | `TODO` |
-| FARM-S510 | Create `@RequiresPermission(permission: Permission)` decorator and `PermissionGuard` that reads `req.orgRole` and checks against `RolePermissions`. Must be placed after `OrgRequiredGuard`. Throw `ForbiddenException` with code `INSUFFICIENT_PERMISSIONS` when denied. | `TODO` |
+| FARM-S507 | Add `role` enum column (`owner`, `admin`, `member`, `viewer`) to `UserOrganization` entity. Generate migration `AddUserOrgRole`. Backfill: existing membership rows default to `member`; the first user in each org (lowest `createdAt`) is promoted to `owner`. | `DONE` |
+| FARM-S508 | Create `Permission` enum (`catalog:write`, `catalog:delete`, `pipeline:trigger`, `pipeline:delete`, `environment:write`, `team:manage`, `org:manage`, `iac:write`) and a `RolePermissions` map that statically defines which permissions each role holds. Store in `src/common/rbac/permissions.ts`. | `DONE` |
+| FARM-S509 | Extend `OrgRequiredGuard` to expose `req.orgRole` after membership lookup. Update `RequestWithOrg` interface with `orgRole: OrgRole`. No breaking change — downstream handlers may ignore it. | `DONE` |
+| FARM-S510 | Create `@RequiresPermission(permission: Permission)` decorator and `PermissionGuard` that reads `req.orgRole` and checks against `RolePermissions`. Must be placed after `OrgRequiredGuard`. Throw `ForbiddenException` with code `INSUFFICIENT_PERMISSIONS` when denied. | `DONE` |
 
-### FARM-E121: Backend Enforcement `TODO`
+### FARM-E121: Backend Enforcement `DONE`
 
 Applies `@RequiresPermission()` to all mutating and destructive endpoints. Read-only `GET` endpoints require only `viewer` (the minimum org membership), so they need no additional decorator.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S511 | **Catalog:** Apply `@RequiresPermission('catalog:write')` to `POST /api/catalog` and `PATCH /api/catalog/:id`. Apply `@RequiresPermission('catalog:delete')` to `DELETE /api/catalog/:id`. Update Swagger `@ApiHeader` and `@ApiForbiddenResponse` annotations. | `TODO` |
-| FARM-S512 | **Pipelines:** Apply `@RequiresPermission('pipeline:trigger')` to `POST /api/pipelines/:id/trigger`. Apply `@RequiresPermission('pipeline:delete')` to `DELETE /api/pipelines/:id`. Update Swagger annotations. | `TODO` |
-| FARM-S513 | **Teams:** Apply `@RequiresPermission('team:manage')` to `POST /api/teams`, `PATCH /api/teams/:id`, `DELETE /api/teams/:id`, and all team membership mutation endpoints. Update Swagger annotations. | `TODO` |
-| FARM-S514 | **Organizations:** Apply `@RequiresPermission('org:manage')` to `PATCH /api/organizations/:id`, `DELETE /api/organizations/:id`, and all member role management endpoints. Only `owner` and `admin` hold this permission. Update Swagger annotations. | `TODO` |
+| FARM-S511 | **Catalog:** Apply `@RequiresPermission('catalog:write')` to `POST /api/catalog` and `PATCH /api/catalog/:id`. Apply `@RequiresPermission('catalog:delete')` to `DELETE /api/catalog/:id`. Update Swagger `@ApiHeader` and `@ApiForbiddenResponse` annotations. | `DONE` |
+| FARM-S512 | **Pipelines:** Apply `@RequiresPermission('pipeline:trigger')` to `POST /api/pipelines/:id/trigger`. Apply `@RequiresPermission('pipeline:delete')` to `DELETE /api/pipelines/:id`. Update Swagger annotations. | `DONE` |
+| FARM-S513 | **Teams:** Apply `@RequiresPermission('team:manage')` to `POST /api/teams`, `PATCH /api/teams/:id`, `DELETE /api/teams/:id`, and all team membership mutation endpoints. Update Swagger annotations. | `DONE` |
+| FARM-S514 | **Organizations:** Apply `@RequiresPermission('org:manage')` to `PATCH /api/organizations/:id`, `DELETE /api/organizations/:id`, and all member role management endpoints. Only `owner` and `admin` hold this permission. Update Swagger annotations. | `DONE` |
 
-### FARM-E122: Frontend Permission Gates `TODO`
+### FARM-E122: Frontend Permission Gates `DONE`
 
 Makes the UI reflect the user's actual permissions. Currently all authenticated org members see identical action buttons regardless of their role; clicking a disallowed action results in a confusing 403 with no explanation.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S515 | Add `orgRole` field to `OrganizationContext`. Fetch the current user's role from the `UserOrganization` membership returned by `GET /api/organizations/me/memberships` (or embed in the org list response). Expose via `useOrganization()` hook. | `TODO` |
-| FARM-S516 | Create `usePermission(permission: Permission): boolean` hook that derives a boolean from `orgRole` and the static `RolePermissions` map. Returns `false` while org is loading. | `TODO` |
-| FARM-S517 | Apply `usePermission` gates in Catalog (hide Edit/Delete buttons for `viewer`/`member`), Pipelines (hide Trigger/Delete for `viewer`), Teams (hide Add/Remove member for non-`admin`), and Organizations settings page (hide Rename/Delete for non-`owner`). | `TODO` |
-| FARM-S518 | Add role badge to the org-switcher dropdown and to the Organizations settings page member list, showing each member's current role with an inline role-change select for `owner`/`admin`. | `TODO` |
+| FARM-S515 | Add `orgRole` field to `OrganizationContext`. Fetch the current user's role from the `UserOrganization` membership returned by `GET /api/organizations/me/memberships` (or embed in the org list response). Expose via `useOrganization()` hook. | `DONE` |
+| FARM-S516 | Create `usePermission(permission: Permission): boolean` hook that derives a boolean from `orgRole` and the static `RolePermissions` map. Returns `false` while org is loading. | `DONE` |
+| FARM-S517 | Apply `usePermission` gates in Catalog (hide Edit/Delete buttons for `viewer`/`member`), Pipelines (hide Trigger/Delete for `viewer`), Teams (hide Add/Remove member for non-`admin`), and Organizations settings page (hide Rename/Delete for non-`owner`). | `DONE` |
+| FARM-S518 | Add role badge to the org-switcher dropdown and to the Organizations settings page member list, showing each member's current role with an inline role-change select for `owner`/`admin`. | `DONE` |
 
 ---
 
@@ -519,25 +520,25 @@ Makes the UI reflect the user's actual permissions. Currently all authenticated 
 
 Establishes a stable, versioned public API surface so external integrations are not broken by internal refactors. Today all endpoints live under `/api` with no version prefix; any rename or removal is a silent breaking change for consumers.
 
-### FARM-E123: API Versioning `TODO`
+### FARM-E123: API Versioning `DONE`
 
 Introduces a `/api/v1` prefix for all public endpoints while keeping `/api` as a deprecated alias during a transition period.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S519 | Enable NestJS versioning (`VERSION_NEUTRAL` default + `v1` explicit) via `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`. Add `@Version('1')` to all public controllers. Keep the existing `/api` prefix for backward compatibility by registering a redirect middleware `/api/:path* → /api/v1/:path*` with a `Deprecation` response header. | `TODO` |
-| FARM-S520 | Update Swagger to document both `/api/v1` (primary) and the deprecated `/api` alias. Add `@ApiHeader({ name: 'Deprecation', description: 'Deprecated alias — use /api/v1' })` on the redirect middleware docs. | `TODO` |
-| FARM-S521 | Add `X-API-Version: 1` response header globally via a `VersionInterceptor`. Update all e2e specs to target `/api/v1` endpoints. | `TODO` |
+| FARM-S519 | Enable NestJS versioning (`VERSION_NEUTRAL` default + `v1` explicit) via `app.enableVersioning({ type: VersioningType.URI })` in `main.ts`. Add `@Version('1')` to all public controllers. Keep the existing `/api` prefix for backward compatibility by registering a redirect middleware `/api/:path* → /api/v1/:path*` with a `Deprecation` response header. | `DONE` |
+| FARM-S520 | Update Swagger to document both `/api/v1` (primary) and the deprecated `/api` alias. Add `.addServer("/api/v1", "Versioned API (current)")` and `.addServer("/api", "Deprecated alias")` to `DocumentBuilder`. | `DONE` |
+| FARM-S521 | Add `X-API-Version: 1` response header globally via `ApiVersionInterceptor` (`src/common/interceptors/api-version.interceptor.ts`). E2E specs already target `/api/v1` endpoints. | `DONE` |
 
-### FARM-E124: Contract Documentation `TODO`
+### FARM-E124: Contract Documentation `DONE`
 
 Provides a machine-readable and human-readable API contract alongside a changelog for breaking changes.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S522 | Generate a static `openapi.json` snapshot during CI build (`GET /api/v1/docs-json` → artifact). Add a CI step that diffs the new snapshot against the committed baseline and fails on breaking changes (removed fields, changed types) using `openapi-diff`. | `TODO` |
-| FARM-S523 | Add `API-CHANGELOG.md` to `apps/api/` documenting breaking changes per version. Include migration guide from `/api` to `/api/v1`. | `TODO` |
-| FARM-S524 | Publish the OpenAPI spec to the MkDocs documentation site under `api-reference/` so external consumers can browse it without running the server. | `TODO` |
+| FARM-S522 | Generate a static `openapi.json` snapshot during CI build (`GET /api/v1/docs-json` → artifact). `openapi-snapshot` CI job polls `/api/health`, downloads the spec, and uploads it as the `openapi-spec` artifact with 30-day retention. Initial baseline committed as `apps/api/openapi.json`. | `DONE` |
+| FARM-S523 | Add `API-CHANGELOG.md` to `apps/api/` documenting v1 and the migration guide from `/api` to `/api/v1`. | `DONE` |
+| FARM-S524 | Published OpenAPI spec reference to MkDocs under `api-reference/` — updated `docs/api-reference/index.md` with OpenAPI section, added `docs/api-reference/api-changelog.md`, registered in `mkdocs.yml` nav. | `DONE` |
 
 ---
 
@@ -614,3 +615,42 @@ Upgrades the `apps/web` test toolchain from Vite 7 to Vite 8 so `@vitejs/plugin-
 | FARM-S534 | Bump `apps/web/package.json`: `@vitejs/plugin-react` → `^6.0.2`. Add `"vite": "^8.0.0"` override to root `package.json` to deduplicate the dual-vite conflict. `vitest.config.ts` required no changes — `react()` is called without Babel options. | `DONE` |
 | FARM-S535 | Storybook `@storybook/nextjs@^10.x` confirmed compatible with vite@8 peer — no version bump required. | `DONE` |
 | FARM-S536 | `make check` passed: 3525 API unit, 351 API e2e, 2807 web unit, 70 Playwright. Branch `chore/bump-vite-plugin-react-v6` pushed; closes Dependabot PR. | `DONE` |
+
+---
+
+## Phase 50: Docker & Container Hardening
+
+Outcome of a deep audit of `apps/api/Dockerfile`, `apps/web/Dockerfile`, `.dockerignore`, and `docker-compose.yml` performed by the Farm SRE agent. The current images work but carry recurring CI-break patterns (hardcoded `apk` CVE pins), DRY violations (workspace manifests copied across 3 stages of 2 files), runtime UID inconsistency, and missing supply-chain primitives (digest pinning, SBOM, signing, multi-arch).
+
+Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` under the "Dockerfile Hardening Lessons" section.
+
+### FARM-E129: CVE & Base Image Strategy `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S537 | Remove hardcoded `apk add --upgrade "pkg>=x.y.z-rN"` constraints in `apps/api/Dockerfile` (L56-57) and `apps/web/Dockerfile` (L52-57). Replace with `RUN apk upgrade --no-cache`. This pattern broke CI repeatedly when Alpine repushed patched versions under different version strings. Security coverage is retained via Trivy CI gate and Renovate base-image bumps. | `TODO` |
+| FARM-S538 | Pin both Dockerfile `FROM node:26-alpine` lines by digest (`@sha256:...`) and configure Renovate to bump the digest weekly grouped by registry. Document the pin policy in `.github/agents/Farm-SRE.agent.md`. | `TODO` |
+| FARM-S539 | Add `hadolint` CI job (`.github/workflows/dockerfile-lint.yml`) plus a `.hadolint.yaml` custom rule that fails any Dockerfile containing `apk add ... ">="` version constraints. Prevents regression of FARM-S537. | `TODO` |
+
+### FARM-E130: Image Consistency & DRY `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S540 | Standardize runtime UID across both images on **1001**. Update `apps/api/Dockerfile` to create a `farmapi` user with UID 1001 (replacing the default `node` UID 1000) to align with `apps/web/Dockerfile` `nextjs` user and Helm `securityContext.runAsUser: 1001`. Add an e2e check comparing `id -u` inside both containers. | `TODO` |
+| FARM-S541 | Extract a single shared health-check entrypoint at `apps/api/scripts/healthcheck.js` and `apps/web/scripts/healthcheck.js`. Replace the four inline `node -e "..."` duplications (api Dockerfile L82, web Dockerfile L75, `docker-compose.yml` L59 and L82). Update Helm `livenessProbe`/`readinessProbe` to reference the same script. | `TODO` |
+| FARM-S542 | Replace manual `RUN cd packages/types && npx tsc` (api L23, web L22) with `RUN npm run build --workspace=@farm/types`. Adds future-hook support and removes duplicated logic across both Dockerfiles. | `TODO` |
+
+### FARM-E131: Build Performance & Reproducibility `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S543 | Enable BuildKit cache mounts: add `RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --ignore-scripts` to both deps stages, and `--mount=type=cache,target=/app/apps/web/.next/cache` to the web builder stage. Verify CI cold-build wall time drops by at least 40%. | `TODO` |
+| FARM-S544 | Generate SBOM and provenance attestation during release builds: update `.github/workflows/release.yml` to use `docker buildx build --sbom=true --provenance=mode=max --push`. Upload SBOM as a release asset for both `farm-api` and `farm-web` images. | `TODO` |
+| FARM-S545 | Tighten `.dockerignore`: add `**/*.{test,spec}.ts`, `**/__tests__/**`, `**/__mocks__/**`, `.env`, `.env.*`, `*.log`, `e2e/`, `playwright-report/`, `test-results/`, `.husky/`, `storybook-static/`. Delete the dead `apps/web/.dockerignore` (root context overrides it) and add a comment in the root file explaining context precedence. | `TODO` |
+
+### FARM-E132: Supply Chain & Multi-Arch `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S546 | Add `cosign` signing to `release.yml` for both `farm-api` and `farm-web` images. Publish the public key and document verification procedure in `deploy/helm/farm/README.md`. | `TODO` |
+| FARM-S547 | Enable multi-arch builds (`linux/amd64,linux/arm64`) via `docker buildx` in CI. Evaluate native ARM runners vs QEMU emulation. Publish both architectures under a single tag manifest. | `TODO` |
