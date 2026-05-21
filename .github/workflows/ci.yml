@@ -154,8 +154,8 @@ jobs:
           JWT_SECRET: ${{ steps.secrets.outputs.jwt }}
           NODE_ENV: test
           PORT: 3000
-          SWAGGER_USER: farm
-          SWAGGER_PASSWORD: farm
+          SWAGGER_USER: farm-ci-snapshot
+          SWAGGER_PASSWORD: farm-ci-snapshot
 
       - name: Wait for API to be ready
         run: |
@@ -173,7 +173,7 @@ jobs:
       - name: Download OpenAPI spec
         run: |
           curl -sf \
-            -u farm:farm \
+            -u farm-ci-snapshot:farm-ci-snapshot \
             http://localhost:3000/api/docs-json \
             -o openapi-snapshot.json
           echo "OpenAPI spec downloaded ($(wc -c < openapi-snapshot.json) bytes)"

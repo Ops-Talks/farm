@@ -21,10 +21,6 @@ description = "Farm-wide allowlist for test fixtures, doc examples, and placehol
 paths = [
   # Test fixtures with hardcoded JWT secrets and placeholder credentials
   '''apps/api/test/helpers/e2e-setup\.ts''',
-  # CI workflow — contains ephemeral test-only credentials for PostgreSQL and
-  # Swagger that are created fresh per job run and destroyed when the job ends.
-  # Real secrets use ${{ secrets.NAME }} and are never committed.
-  '''.github/workflows/ci\.yml''',
   '''apps/api/src/modules/auth/strategies/keycloak\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/keycloak-sync\.service\.spec\.ts''',
   '''apps/api/src/modules/pipelines/pipeline\.processor\.spec\.ts''',
@@ -54,4 +50,8 @@ regexes = [
   # Illustrative temp-password returned by POST /api/v1/users/:id/reset-password
   # when SMTP is not configured — a documentation example, not a real credential
   '''abCD12efGH34''',
+  # Ephemeral CI-only Swagger Basic Auth credential used in the openapi-snapshot
+  # job (.github/workflows/ci.yml). This credential has no access to real data
+  # and the Swagger UI is disabled outside of the CI test environment.
+  '''farm-ci-snapshot''',
 ]
