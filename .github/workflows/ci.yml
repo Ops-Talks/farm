@@ -89,6 +89,102 @@ jobs:
           report_type: test_results
           fail_ci_if_error: false
 
+  openapi-snapshot:
+    name: OpenAPI snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [api]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: farm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup monorepo
+        uses: ./.github/actions/setup-monorepo
+        with:
+          compile-types: 'false'
+
+      - name: Build API
+        run: npm run build -w apps/api
+
+      - name: Generate ephemeral JWT secret
+        id: secrets
+        run: echo "jwt=$(openssl rand -hex 32)" >> $GITHUB_OUTPUT
+
+      - name: Run migrations
+        run: npm run migration:run -w apps/api
+        env:
+          DATABASE_TYPE: postgres
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: farm
+          DATABASE_SYNC: "false"
+          JWT_SECRET: ${{ steps.secrets.outputs.jwt }}
+          NODE_ENV: test
+
+      - name: Start API server
+        run: node apps/api/dist/main.js &
+        env:
+          DATABASE_TYPE: postgres
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: password
+          DATABASE_NAME: farm
+          DATABASE_SYNC: "false"
+          JWT_SECRET: ${{ steps.secrets.outputs.jwt }}
+          NODE_ENV: test
+          PORT: 3000
+          SWAGGER_USER: farm-ci-snapshot
+          SWAGGER_PASSWORD: farm-ci-snapshot
+
+      - name: Wait for API to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "API is ready after ${i}s"
+              exit 0
+            fi
+            echo "Waiting for API... (attempt ${i}/30)"
+            sleep 1
+          done
+          echo "::error::API did not become ready within 30 seconds"
+          exit 1
+
+      - name: Download OpenAPI spec
+        run: |
+          curl -sf \
+            -u farm-ci-snapshot:farm-ci-snapshot \
+            http://localhost:3000/api/docs-json \
+            -o openapi-snapshot.json
+          echo "OpenAPI spec downloaded ($(wc -c < openapi-snapshot.json) bytes)"
+
+      - name: Upload OpenAPI spec artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: openapi-snapshot.json
+          retention-days: 30
+
   migrations:
     name: Migration integrity (PostgreSQL 16)
     runs-on: ubuntu-latest
@@ -144,7 +240,7 @@ jobs:
     name: All checks passed (API CI)
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    needs: [api, migrations]
+    needs: [api, migrations, openapi-snapshot]
     if: always()
     steps:
       - name: Verify all required jobs succeeded

@@ -13,6 +13,7 @@ import { AppModule } from "./app.module";
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const { version } = require("../package.json");
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
+import { ApiVersionInterceptor } from "./common/interceptors/api-version.interceptor";
 import { loggerConfigFactory } from "./common/logger/logger.config";
 import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
 
@@ -128,7 +129,10 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+    new ApiVersionInterceptor(),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const allowedOrigins =
@@ -138,6 +142,31 @@ async function bootstrap() {
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
   });
+
+  // S519 — Legacy redirect middleware.
+  // Intercepts requests to /api/{path} where {path} does NOT start with
+  // a version segment, "docs", "docs-json", "health", or "metrics" and issues
+  // a 308 Permanent Redirect to /api/v1/{path} so old clients are seamlessly
+  // forwarded to the versioned base URL without losing their HTTP method or body.
+  app.use(
+    (
+      req: import("express").Request,
+      res: import("express").Response,
+      next: import("express").NextFunction,
+    ) => {
+      const legacyPath =
+        /^\/api\/(?!v\d|docs|health|metrics|docs-json)(.*)$/.exec(req.path);
+      if (legacyPath) {
+        const redirectTarget = `/api/v1/${legacyPath[1]}`;
+        const location = req.url.replace(req.path, redirectTarget);
+        res.setHeader("Deprecation", "true");
+        res.setHeader("Link", `<${redirectTarget}>; rel="successor-version"`);
+        res.redirect(308, location);
+        return;
+      }
+      next();
+    },
+  );
 
   app.setGlobalPrefix("api");
   app.enableVersioning({
@@ -149,6 +178,8 @@ async function bootstrap() {
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
     .setVersion(version as string)
+    .addServer("/api/v1", "Versioned API (current)")
+    .addServer("/api", "Deprecated alias (redirects to /api/v1)")
     .addBearerAuth()
     .addApiKey(
       { type: "apiKey", in: "header", name: "x-ingest-token" },
