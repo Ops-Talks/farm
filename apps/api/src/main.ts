@@ -154,7 +154,8 @@ async function bootstrap() {
       res: import("express").Response,
       next: import("express").NextFunction,
     ) => {
-      const legacyPath = /^\/api\/(?!v\d|docs|health|metrics|docs-json)(.*)$/.exec(req.path);
+      const legacyPath =
+        /^\/api\/(?!v\d|docs|health|metrics|docs-json)(.*)$/.exec(req.path);
       if (legacyPath) {
         const redirectTarget = `/api/v1/${legacyPath[1]}`;
         const location = req.url.replace(req.path, redirectTarget);

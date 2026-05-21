@@ -21,6 +21,10 @@ description = "Farm-wide allowlist for test fixtures, doc examples, and placehol
 paths = [
   # Test fixtures with hardcoded JWT secrets and placeholder credentials
   '''apps/api/test/helpers/e2e-setup\.ts''',
+  # CI workflow — contains ephemeral test-only credentials for PostgreSQL and
+  # Swagger that are created fresh per job run and destroyed when the job ends.
+  # Real secrets use ${{ secrets.NAME }} and are never committed.
+  '''.github/workflows/ci\.yml''',
   '''apps/api/src/modules/auth/strategies/keycloak\.strategy\.spec\.ts''',
   '''apps/api/src/modules/auth/keycloak-sync\.service\.spec\.ts''',
   '''apps/api/src/modules/pipelines/pipeline\.processor\.spec\.ts''',
