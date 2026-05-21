@@ -18,6 +18,13 @@ useDefault = true
 [allowlist]
 description = "Farm-wide allowlist for test fixtures, doc examples, and placeholder defaults"
 
+commits = [
+  # Phase 47 initial commit — the openapi-snapshot job curl command originally
+  # used 'farm:farm' as Basic Auth. Replaced with 'farm-ci-snapshot' in the
+  # next commit. Credential was CI-only and protected no real data.
+  "b045dfd41b0fdc31e5f88a812393d3a546de53d7",
+]
+
 paths = [
   # Test fixtures with hardcoded JWT secrets and placeholder credentials
   '''apps/api/test/helpers/e2e-setup\.ts''',
