@@ -4,8 +4,7 @@ import {
   ExecutionContext,
   CallHandler,
 } from "@nestjs/common";
-import { Observable } from "rxjs";
-import { tap } from "rxjs/operators";
+import { Observable, tap } from "rxjs";
 import type { Response } from "express";
 
 /**
@@ -18,11 +17,10 @@ import type { Response } from "express";
 @Injectable()
 export class ApiVersionInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    return next.handle().pipe(
-      tap(() => {
-        const response = context.switchToHttp().getResponse<Response>();
-        response.setHeader("X-API-Version", "1");
-      }),
-    );
+    const setVersion = (): void => {
+      const response = context.switchToHttp().getResponse<Response>();
+      response.setHeader("X-API-Version", "1");
+    };
+    return next.handle().pipe(tap({ next: setVersion, error: setVersion }));
   }
 }

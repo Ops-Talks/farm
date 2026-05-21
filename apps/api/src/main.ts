@@ -145,16 +145,16 @@ async function bootstrap() {
 
   // S519 — Legacy redirect middleware.
   // Intercepts requests to /api/{path} where {path} does NOT start with
-  // a version segment, "docs", or "health" and issues a 308 Permanent Redirect
-  // to /api/v1/{path} so old clients are seamlessly forwarded to the versioned
-  // base URL without losing their HTTP method or body.
+  // a version segment, "docs", "docs-json", "health", or "metrics" and issues
+  // a 308 Permanent Redirect to /api/v1/{path} so old clients are seamlessly
+  // forwarded to the versioned base URL without losing their HTTP method or body.
   app.use(
     (
       req: import("express").Request,
       res: import("express").Response,
       next: import("express").NextFunction,
     ) => {
-      const legacyPath = /^\/api\/(?!v\d|docs|health)(.*)$/.exec(req.path);
+      const legacyPath = /^\/api\/(?!v\d|docs|health|metrics|docs-json)(.*)$/.exec(req.path);
       if (legacyPath) {
         const redirectTarget = `/api/v1/${legacyPath[1]}`;
         const location = req.url.replace(req.path, redirectTarget);

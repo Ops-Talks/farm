@@ -2,8 +2,7 @@
 
 Documents breaking and notable changes to the Farm API per version.
 
-The canonical source for this changelog is [`apps/api/API-CHANGELOG.md`](../../apps/api/API-CHANGELOG.md)
-in the monorepo root.
+The canonical source for this changelog is `apps/api/API-CHANGELOG.md` in the monorepo root.
 
 ## v1 (current)
 

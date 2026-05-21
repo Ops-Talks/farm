@@ -1,5 +1,5 @@
 import { ExecutionContext, CallHandler } from "@nestjs/common";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { ApiVersionInterceptor } from "./api-version.interceptor";
 
 describe("ApiVersionInterceptor", () => {
@@ -64,6 +64,22 @@ describe("ApiVersionInterceptor", () => {
         done();
       },
       error: done,
+    });
+  });
+
+  it("sets X-API-Version even when the handler throws an error", (done) => {
+    const setHeader = jest.fn();
+    const context = buildContext({ setHeader });
+    const next: CallHandler = {
+      handle: () => throwError(() => new Error("handler error")),
+    };
+
+    interceptor.intercept(context, next).subscribe({
+      next: () => done(new Error("expected error path")),
+      error: () => {
+        expect(setHeader).toHaveBeenCalledWith("X-API-Version", "1");
+        done();
+      },
     });
   });
 
