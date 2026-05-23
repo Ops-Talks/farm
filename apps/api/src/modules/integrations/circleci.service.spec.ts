@@ -6,6 +6,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import * as crypto from "crypto";
 import { CircleCIService, CircleCIPipeline } from "./circleci.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
@@ -57,6 +58,10 @@ describe("CircleCIService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

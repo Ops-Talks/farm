@@ -45,7 +45,7 @@ export class HealthController {
 
     return this.health.check([
       // Check database connection
-      () => this.db.pingCheck("database"),
+      () => this.db.pingCheck("database", { timeout: 2000 }),
       // Check heap memory usage
       () => this.memory.checkHeap("memory_heap", heapThresholdMb * 1024 * 1024),
       // Check RSS memory usage

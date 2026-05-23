@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { translateHttpError } from "./http-error";
@@ -35,6 +36,7 @@ export class GitHubActionsService {
 
   constructor(
     private readonly credentialService: IntegrationCredentialService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   private async resolveCredential(
@@ -64,12 +66,14 @@ export class GitHubActionsService {
       : `https://api.github.com/orgs/${owner}/actions/runs`;
     let res: Response;
     try {
-      res = await globalThis.fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "User-Agent": "Farm-Portal/1.0",
-        },
-      });
+      res = await this.cb.fire("github-actions", () =>
+        globalThis.fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": "Farm-Portal/1.0",
+          },
+        }),
+      );
     } catch (err) {
       this.translateHttpError(err, "GitHubActionsService.listWorkflowRuns");
     }
@@ -123,11 +127,13 @@ export class GitHubActionsService {
       Accept: "application/vnd.github+json",
     };
 
-    const dispatchRes = await globalThis.fetch(dispatchUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ ref }),
-    });
+    const dispatchRes = await this.cb.fire("github-actions", () =>
+      globalThis.fetch(dispatchUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ ref }),
+      }),
+    );
 
     if (!dispatchRes.ok) {
       const text = await dispatchRes.text().catch(() => "");
@@ -142,7 +148,9 @@ export class GitHubActionsService {
 
     for (let attempt = 0; attempt < 5; attempt++) {
       await new Promise<void>((r) => setTimeout(r, 2000));
-      const runsRes = await globalThis.fetch(runsUrl, { headers });
+      const runsRes = await this.cb.fire("github-actions", () =>
+        globalThis.fetch(runsUrl, { headers }),
+      );
       if (!runsRes.ok) continue;
       const data = (await runsRes.json()) as {
         workflow_runs?: Record<string, unknown>[];

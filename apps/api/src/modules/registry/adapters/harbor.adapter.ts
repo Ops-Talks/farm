@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
@@ -68,7 +69,10 @@ export class HarborAdapter implements IRegistryAdapter {
   private readonly baseUrl: string;
   private readonly authHeader: string;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly cb?: CircuitBreakerService,
+  ) {
     this.baseUrl = (config.get<string>("registry.url") ?? "").replace(
       /\/$/,
       "",
@@ -89,10 +93,21 @@ export class HarborAdapter implements IRegistryAdapter {
   }
 
   /**
+   * Issues a fetch request, routing through the circuit breaker when one is
+   * configured.
+   */
+  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+    if (this.cb) {
+      return this.cb.fire("harbor", () => globalThis.fetch(url, init));
+    }
+    return globalThis.fetch(url, init);
+  }
+
+  /**
    * Performs a GET request to the Harbor API and returns the parsed JSON body.
    */
   private async fetchJson<T>(path: string): Promise<T> {
-    const response = await globalThis.fetch(`${this.baseUrl}${path}`, {
+    const response = await this._fetch(`${this.baseUrl}${path}`, {
       headers: {
         Authorization: this.authHeader,
         "Content-Type": "application/json",

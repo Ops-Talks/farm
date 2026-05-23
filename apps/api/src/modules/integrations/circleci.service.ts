@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import * as crypto from "crypto";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { translateHttpError } from "./http-error";
@@ -10,8 +11,6 @@ import { translateHttpError } from "./http-error";
  * Minimal shape of a CircleCI pipeline object.
  */
 export interface CircleCIPipeline {
-  id: string;
-  project_slug: string;
   state: string;
   created_at: string;
   vcs?: {
@@ -41,6 +40,7 @@ export class CircleCIService {
   constructor(
     private readonly httpService: HttpService,
     private readonly credentialService: IntegrationCredentialService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   /**
@@ -83,11 +83,13 @@ export class CircleCIService {
 
     let items: CircleCIPipeline[];
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<{ items: CircleCIPipeline[] }>(url, {
-          headers: { "x-circleci-token": token },
-          timeout: 5000,
-        }),
+      const response = await this.cb.fire("circleci", () =>
+        firstValueFrom(
+          this.httpService.get<{ items: CircleCIPipeline[] }>(url, {
+            headers: { "x-circleci-token": token },
+            timeout: 5000,
+          }),
+        ),
       );
       items = response.data.items ?? [];
     } catch (err) {
@@ -125,11 +127,13 @@ export class CircleCIService {
     );
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post<CircleCIPipeline>(url, body, {
-          headers: { "x-circleci-token": token },
-          timeout: 5000,
-        }),
+      const response = await this.cb.fire("circleci", () =>
+        firstValueFrom(
+          this.httpService.post<CircleCIPipeline>(url, body, {
+            headers: { "x-circleci-token": token },
+            timeout: 5000,
+          }),
+        ),
       );
       return response.data;
     } catch (err) {

@@ -3,6 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
 import { OpaService } from "./opa.service";
 import { OpaResult } from "./entities/opa-result.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 describe("OpaService", () => {
   let service: OpaService;
@@ -28,6 +29,10 @@ describe("OpaService", () => {
         OpaService,
         { provide: ConfigService, useValue: mockConfigService },
         { provide: getRepositoryToken(OpaResult), useValue: mockRepository },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+        },
       ],
     }).compile();
 

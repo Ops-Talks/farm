@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { GatewayType } from "../enums/gateway-type.enum";
 import { HealthStatus } from "../enums/health-status.enum";
 import {
@@ -57,9 +58,23 @@ export class KongAdapter implements IGatewayAdapter {
   private readonly baseUrl: string;
   private readonly apiKey: string;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly cb?: CircuitBreakerService,
+  ) {
     this.baseUrl = config.get<string>("gateway.kong.url") ?? "";
     this.apiKey = config.get<string>("gateway.kong.apiKey") ?? "";
+  }
+
+  /**
+   * Issues a fetch request, routing through the circuit breaker when one is
+   * configured.
+   */
+  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+    if (this.cb) {
+      return this.cb.fire("kong", () => globalThis.fetch(url, init));
+    }
+    return globalThis.fetch(url, init);
   }
 
   /**
@@ -84,7 +99,7 @@ export class KongAdapter implements IGatewayAdapter {
     let url: string | null = `${this.baseUrl}/routes?size=1000`;
 
     while (url) {
-      const response = await globalThis.fetch(url, {
+      const response = await this._fetch(url, {
         headers: this.buildHeaders(),
       });
 
@@ -121,10 +136,9 @@ export class KongAdapter implements IGatewayAdapter {
   async getHealth(): Promise<GatewayHealthDto[]> {
     const healthChecks: GatewayHealthDto[] = [];
 
-    const upstreamsResponse = await globalThis.fetch(
-      `${this.baseUrl}/upstreams`,
-      { headers: this.buildHeaders() },
-    );
+    const upstreamsResponse = await this._fetch(`${this.baseUrl}/upstreams`, {
+      headers: this.buildHeaders(),
+    });
 
     if (!upstreamsResponse.ok) {
       this.logger.error(
@@ -137,7 +151,7 @@ export class KongAdapter implements IGatewayAdapter {
 
     for (const upstream of upstreams.data) {
       try {
-        const healthResponse = await globalThis.fetch(
+        const healthResponse = await this._fetch(
           `${this.baseUrl}/upstreams/${upstream.name}/health`,
           { headers: this.buildHeaders() },
         );

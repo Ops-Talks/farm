@@ -23,6 +23,18 @@ export const configuration = () => ({
     name: process.env.DATABASE_NAME || "farm",
     synchronize: process.env.DATABASE_SYNC === "true",
     poolSize: parseInt(process.env.DATABASE_POOL_SIZE ?? "10", 10) || 10,
+    poolConnectTimeout: parseInt(
+      process.env.DATABASE_POOL_CONNECT_TIMEOUT ?? "5000",
+      10,
+    ),
+    poolAcquireTimeout: parseInt(
+      process.env.DATABASE_POOL_ACQUIRE_TIMEOUT ?? "30000",
+      10,
+    ),
+    poolIdleTimeout: parseInt(
+      process.env.DATABASE_POOL_IDLE_TIMEOUT ?? "10000",
+      10,
+    ),
   },
   auth: {
     jwtSecret:
@@ -46,6 +58,8 @@ export const configuration = () => ({
     redisHost: process.env.REDIS_HOST || "",
     redisPort: parseInt(process.env.REDIS_PORT ?? "6379", 10) || 6379,
     ttl: parseInt(process.env.CACHE_TTL ?? "30", 10) || 30,
+    redisSentinelHosts: process.env.REDIS_SENTINEL_HOSTS || "",
+    redisSentinelName: process.env.REDIS_SENTINEL_NAME || "mymaster",
   },
   smtp: {
     host: process.env.SMTP_HOST || "",
@@ -169,6 +183,9 @@ export const validationSchema = Joi.object({
   DATABASE_NAME: Joi.string().default("farm"),
   DATABASE_SYNC: Joi.boolean().default(false),
   DATABASE_POOL_SIZE: Joi.number().integer().min(1).max(100).default(10),
+  DATABASE_POOL_CONNECT_TIMEOUT: Joi.number().integer().min(100).default(5000),
+  DATABASE_POOL_ACQUIRE_TIMEOUT: Joi.number().integer().min(100).default(30000),
+  DATABASE_POOL_IDLE_TIMEOUT: Joi.number().integer().min(100).default(10000),
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
     .default("info"),
@@ -188,6 +205,8 @@ export const validationSchema = Joi.object({
   OTEL_SERVICE_NAME: Joi.string().default("farm-api"),
   REDIS_HOST: Joi.string().allow("").default(""),
   REDIS_PORT: Joi.number().default(6379),
+  REDIS_SENTINEL_HOSTS: Joi.string().allow("").default(""),
+  REDIS_SENTINEL_NAME: Joi.string().default("mymaster"),
   CACHE_TTL: Joi.number().integer().min(1).default(30),
   SMTP_HOST: Joi.string().allow("").default(""),
   SMTP_PORT: Joi.number().default(587),

@@ -11,6 +11,7 @@ import { ConfigService } from "@nestjs/config";
 import { gatewayAdaptersFactory } from "../gateway.module";
 import { KongAdapter } from "../adapters/kong.adapter";
 import { AwsApiGatewayAdapter } from "../adapters/aws-api-gateway.adapter";
+import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 
 function buildConfig(values: Record<string, boolean>): ConfigService {
   return {
@@ -18,15 +19,20 @@ function buildConfig(values: Record<string, boolean>): ConfigService {
   } as unknown as ConfigService;
 }
 
+const mockCb = {
+  fire: jest.fn((_, fn: () => unknown) => fn()),
+} as unknown as CircuitBreakerService;
+
 describe("gatewayAdaptersFactory", () => {
   it("returns an empty array when neither Kong nor AWS is enabled", () => {
-    const result = gatewayAdaptersFactory(buildConfig({}));
+    const result = gatewayAdaptersFactory(buildConfig({}), mockCb);
     expect(result).toHaveLength(0);
   });
 
   it("returns a KongAdapter when only Kong is enabled", () => {
     const result = gatewayAdaptersFactory(
       buildConfig({ "gateway.kong.enabled": true }),
+      mockCb,
     );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(KongAdapter);
@@ -35,6 +41,7 @@ describe("gatewayAdaptersFactory", () => {
   it("returns an AwsApiGatewayAdapter when only AWS is enabled", () => {
     const result = gatewayAdaptersFactory(
       buildConfig({ "gateway.aws.enabled": true }),
+      mockCb,
     );
     expect(result).toHaveLength(1);
     expect(result[0]).toBeInstanceOf(AwsApiGatewayAdapter);
@@ -46,6 +53,7 @@ describe("gatewayAdaptersFactory", () => {
         "gateway.kong.enabled": true,
         "gateway.aws.enabled": true,
       }),
+      mockCb,
     );
     expect(result).toHaveLength(2);
     expect(result[0]).toBeInstanceOf(KongAdapter);

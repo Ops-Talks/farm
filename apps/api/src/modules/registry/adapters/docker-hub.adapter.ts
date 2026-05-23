@@ -1,5 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
@@ -90,7 +91,10 @@ export class DockerHubAdapter implements IRegistryAdapter {
   private readonly password: string;
   private authToken: string | null = null;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly cb?: CircuitBreakerService,
+  ) {
     this.baseUrl =
       config.get<string>("registry.url") || "https://hub.docker.com";
 
@@ -104,11 +108,22 @@ export class DockerHubAdapter implements IRegistryAdapter {
   }
 
   /**
+   * Issues a fetch request, routing through the circuit breaker when one is
+   * configured.
+   */
+  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+    if (this.cb) {
+      return this.cb.fire("docker-hub", () => globalThis.fetch(url, init));
+    }
+    return globalThis.fetch(url, init);
+  }
+
+  /**
    * Authenticates with Docker Hub and caches the token.
    */
   private async authenticate(): Promise<void> {
     const loginUrl = `${this.baseUrl.replace(/\/+$/, "")}/v2/users/login`;
-    const response = await globalThis.fetch(loginUrl, {
+    const response = await this._fetch(loginUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -145,14 +160,14 @@ export class DockerHubAdapter implements IRegistryAdapter {
       await this.authenticate();
     }
 
-    let response = await globalThis.fetch(url, {
+    let response = await this._fetch(url, {
       headers: this.buildHeaders(),
     });
 
     if (response.status === 401) {
       this.authToken = null;
       await this.authenticate();
-      response = await globalThis.fetch(url, { headers: this.buildHeaders() });
+      response = await this._fetch(url, { headers: this.buildHeaders() });
     }
 
     if (!response.ok) {

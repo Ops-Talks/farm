@@ -6,6 +6,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { ArgoCDService, ArgoCDApplication } from "./argocd.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
   return {
@@ -55,6 +56,10 @@ describe("ArgoCDService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

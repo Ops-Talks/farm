@@ -6,6 +6,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { JenkinsService, JenkinsJob, JenkinsBuild } from "./jenkins.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
   return {
@@ -78,6 +79,10 @@ describe("JenkinsService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

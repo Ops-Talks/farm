@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  HttpException,
   InternalServerErrorException,
   Logger,
   NotFoundException,
@@ -29,6 +30,12 @@ export function translateHttpError(
   operation: string,
   logger: Logger,
 ): never {
+  // Pass through existing HTTP exceptions (e.g. ServiceUnavailableException
+  // from an open circuit breaker) without re-wrapping them.
+  if (err instanceof HttpException) {
+    throw err;
+  }
+
   // Native fetch() raises TypeError for network-level failures (DNS, connection
   // refused, etc.).  Handle before the Axios check so callers that use fetch()
   // instead of HttpService also receive accurate 503 responses.

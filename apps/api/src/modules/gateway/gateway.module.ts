@@ -10,6 +10,7 @@ import { KongAdapter } from "./adapters/kong.adapter";
 import { AwsApiGatewayAdapter } from "./adapters/aws-api-gateway.adapter";
 import { IGatewayAdapter } from "./interfaces/gateway-adapter.interface";
 import { GATEWAY_ADAPTERS } from "./gateway.constants";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 export { GATEWAY_ADAPTERS } from "./gateway.constants";
 
@@ -19,10 +20,11 @@ export { GATEWAY_ADAPTERS } from "./gateway.constants";
  */
 export function gatewayAdaptersFactory(
   config: ConfigService,
+  cb: CircuitBreakerService,
 ): IGatewayAdapter[] {
   const adapters: IGatewayAdapter[] = [];
   if (config.get<boolean>("gateway.kong.enabled")) {
-    adapters.push(new KongAdapter(config));
+    adapters.push(new KongAdapter(config, cb));
   }
   if (config.get<boolean>("gateway.aws.enabled")) {
     adapters.push(new AwsApiGatewayAdapter(config));
@@ -46,7 +48,7 @@ export function gatewayAdaptersFactory(
     GatewayScheduler,
     {
       provide: GATEWAY_ADAPTERS,
-      inject: [ConfigService],
+      inject: [ConfigService, CircuitBreakerService],
       useFactory: gatewayAdaptersFactory,
     },
   ],

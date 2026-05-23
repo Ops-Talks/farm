@@ -18,6 +18,7 @@ import {
   VULNERABILITY_SYNC_QUEUE,
 } from "./processors/vulnerability-sync.processor";
 import { VulnerabilitySyncScheduler } from "./processors/vulnerability-sync.scheduler";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 export { REGISTRY_ADAPTER } from "./registry.constants";
 
@@ -31,6 +32,7 @@ const isTest = process.env.NODE_ENV === "test";
  */
 export function registryAdapterFactory(
   config: ConfigService,
+  cb: CircuitBreakerService,
 ): IRegistryAdapter | null {
   const type = config.get<string>("registry.type") ?? "";
 
@@ -38,11 +40,11 @@ export function registryAdapterFactory(
     case "ecr":
       return new EcrAdapter(config);
     case "gcr":
-      return new GcrAdapter(config);
+      return new GcrAdapter(config, cb);
     case "dockerhub":
-      return new DockerHubAdapter(config);
+      return new DockerHubAdapter(config, cb);
     case "harbor":
-      return new HarborAdapter(config);
+      return new HarborAdapter(config, cb);
     default:
       return null;
   }
@@ -68,7 +70,7 @@ export function registryAdapterFactory(
     VulnerabilityService,
     {
       provide: REGISTRY_ADAPTER,
-      inject: [ConfigService],
+      inject: [ConfigService, CircuitBreakerService],
       useFactory: registryAdapterFactory,
     },
     ...(isTest ? [] : [VulnerabilitySyncProcessor, VulnerabilitySyncScheduler]),

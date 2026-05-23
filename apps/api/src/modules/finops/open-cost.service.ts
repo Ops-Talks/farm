@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /**
  * Aggregated cost allocation returned by OpenCost for a single label selector.
@@ -22,7 +23,10 @@ export class OpenCostService {
   private readonly logger = new Logger(OpenCostService.name);
   private readonly baseUrl: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
+  ) {
     this.baseUrl = this.configService.get<string>(
       "OPENCOST_URL",
       "http://localhost:9090",
@@ -43,7 +47,9 @@ export class OpenCostService {
   ): Promise<OpenCostAllocation | null> {
     try {
       const url = `${this.baseUrl}/model/allocation?window=${encodeURIComponent(window)}&aggregate=label:app&filterLabels=app:${encodeURIComponent(labelSelector)}`;
-      const response = await globalThis.fetch(url);
+      const response = await this.cb.fire("open-cost", () =>
+        globalThis.fetch(url),
+      );
       if (!response.ok) {
         this.logger.warn(
           `OpenCost allocation request failed: ${response.status}`,

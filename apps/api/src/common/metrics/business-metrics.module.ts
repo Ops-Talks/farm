@@ -9,6 +9,12 @@ import { makeCounterProvider, getToken } from "@willsoto/nestjs-prometheus";
  * Providers use getOrCreateMetric under the hood, so re-importing this module
  * in tests (or registering the same metric name twice) is safe — prom-client
  * returns the existing metric instance instead of throwing.
+ *
+ * Counter values are per-process and are correctly scraped as such in
+ * multi-replica deployments: each Prometheus scrape target (replica) exposes
+ * its own counter independently. Aggregation across replicas is the
+ * responsibility of the Prometheus server (typically via sum() in PromQL).
+ * No cross-replica coordination is needed.
  */
 @Global()
 @Module({

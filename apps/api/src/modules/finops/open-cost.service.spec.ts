@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { OpenCostService } from "./open-cost.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /**
  * Unit tests for OpenCostService.
@@ -25,6 +26,10 @@ describe("OpenCostService", () => {
               return defaultVal ?? "";
             }),
           },
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

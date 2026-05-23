@@ -6,15 +6,23 @@ import { ServiceTemplateController } from "./service-template.controller";
 import { TemplateEngineService } from "./template-engine.service";
 import { ServiceTemplate } from "./entities/service-template.entity";
 import { ScaffoldRequest } from "./entities/scaffold-request.entity";
+import { DatabaseModule } from "../../common/database/database.module";
 
 /**
  * Module for managing service templates and scaffold operations
  * as part of the developer self-service workflow (Phase 15).
  * Extended in Phase 28 (Software Templates 2.0) with Nunjucks rendering,
  * dry-run validation, and live preview endpoints.
+ *
+ * DatabaseModule is imported to ensure MigrationLockService.onModuleInit()
+ * completes (migrations run) before this module's onModuleInit seed hook
+ * queries the service_templates table.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([ServiceTemplate, ScaffoldRequest])],
+  imports: [
+    TypeOrmModule.forFeature([ServiceTemplate, ScaffoldRequest]),
+    DatabaseModule,
+  ],
   controllers: [ServiceTemplateController],
   providers: [ServiceTemplateService, ScaffoldService, TemplateEngineService],
   exports: [ServiceTemplateService],
