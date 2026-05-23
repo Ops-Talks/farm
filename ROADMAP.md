@@ -574,7 +574,7 @@ Prevents a degraded external integration (GitHub, Kong, Kubernetes API, Slack) f
 |----|-------|--------|
 | FARM-S531 | Introduce `CircuitBreakerService` (using `opossum` or a lightweight alternative) wrapping all HTTP calls in `IntegrationsModule`, `KubernetesModule`, `HelmModule`, `GatewayModule`, and `RegistryModule`. Default thresholds: 50% failure rate over 10 req → open; 30s reset. | `DONE` |
 | FARM-S532 | When a circuit is open, return a structured `503 Service Unavailable` with `{ errorCode: 'INTEGRATION_UNAVAILABLE', integration: 'github' }` instead of letting the request hang until `fetch` timeout. Log circuit state transitions at WARN level. | `DONE` |
-| FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` (0=closed, 1=open, 2=half-open). Add Grafana panel to `farm-integrations.json` dashboard. | `DONE` |
+| FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` with three labeled series per integration (`state=open\|closed\|half_open`), each holding a 0/1 value. Add Grafana panel to `farm-integrations.json` dashboard. | `DONE` |
 
 ---
 

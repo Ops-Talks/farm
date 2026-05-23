@@ -38,6 +38,11 @@
                   "text": "OPEN",
                   "color": "red",
                   "index": 1
+                },
+                "2": {
+                  "text": "HALF-OPEN",
+                  "color": "orange",
+                  "index": 2
                 }
               }
             }
@@ -52,6 +57,10 @@
               {
                 "color": "red",
                 "value": 1
+              },
+              {
+                "color": "orange",
+                "value": 2
               }
             ]
           }
@@ -70,7 +79,7 @@
       },
       "targets": [
         {
-          "expr": "integration_circuit_state{state=\"open\", integration=\"$integration\"}",
+          "expr": "(integration_circuit_state{state=\"open\", integration=\"$integration\"} * 1) + (integration_circuit_state{state=\"half_open\", integration=\"$integration\"} * 2)",
           "legendFormat": "{{integration}}",
           "refId": "A"
         }

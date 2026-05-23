@@ -27,8 +27,8 @@ export const configuration = () => ({
       process.env.DATABASE_POOL_CONNECT_TIMEOUT ?? "5000",
       10,
     ),
-    poolAcquireTimeout: parseInt(
-      process.env.DATABASE_POOL_ACQUIRE_TIMEOUT ?? "30000",
+    statementTimeout: parseInt(
+      process.env.DATABASE_STATEMENT_TIMEOUT ?? "30000",
       10,
     ),
     poolIdleTimeout: parseInt(
@@ -184,7 +184,7 @@ export const validationSchema = Joi.object({
   DATABASE_SYNC: Joi.boolean().default(false),
   DATABASE_POOL_SIZE: Joi.number().integer().min(1).max(100).default(10),
   DATABASE_POOL_CONNECT_TIMEOUT: Joi.number().integer().min(100).default(5000),
-  DATABASE_POOL_ACQUIRE_TIMEOUT: Joi.number().integer().min(100).default(30000),
+  DATABASE_STATEMENT_TIMEOUT: Joi.number().integer().min(100).default(30000),
   DATABASE_POOL_IDLE_TIMEOUT: Joi.number().integer().min(100).default(10000),
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")

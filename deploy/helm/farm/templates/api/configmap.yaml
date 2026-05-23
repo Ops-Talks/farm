@@ -32,7 +32,7 @@ data:
 
   # Database connection pool timeouts
   DATABASE_POOL_CONNECT_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_CONNECT_TIMEOUT | default "5000" | quote }}
-  DATABASE_POOL_ACQUIRE_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_ACQUIRE_TIMEOUT | default "30000" | quote }}
+  DATABASE_STATEMENT_TIMEOUT: {{ .Values.api.env.DATABASE_STATEMENT_TIMEOUT | default "30000" | quote }}
   DATABASE_POOL_IDLE_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_IDLE_TIMEOUT | default "10000" | quote }}
 
   # Observability — OpenTelemetry

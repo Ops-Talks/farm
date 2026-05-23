@@ -86,6 +86,23 @@ describe("CircuitBreakerService", () => {
   });
 
   describe("Prometheus gauge updates", () => {
+    it("initializes the gauge to CLOSED state when the breaker is first created", async () => {
+      await service.fire("init-test", () => Promise.resolve(undefined));
+
+      expect(mockGauge.set).toHaveBeenCalledWith(
+        { integration: "init-test", state: "closed" },
+        1,
+      );
+      expect(mockGauge.set).toHaveBeenCalledWith(
+        { integration: "init-test", state: "open" },
+        0,
+      );
+      expect(mockGauge.set).toHaveBeenCalledWith(
+        { integration: "init-test", state: "half_open" },
+        0,
+      );
+    });
+
     it("updates gauge labels when the open event fires", async () => {
       await service.fire("gauge-test", () => Promise.resolve(undefined));
       service.getBreakers().get("gauge-test")!.open();

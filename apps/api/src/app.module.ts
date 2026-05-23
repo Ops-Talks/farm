@@ -129,7 +129,7 @@ if (typeof _promSetContentType === "function") {
                   configService.get<number>("database.poolIdleTimeout") ??
                   10000,
                 statement_timeout:
-                  configService.get<number>("database.poolAcquireTimeout") ??
+                  configService.get<number>("database.statementTimeout") ??
                   30000,
               }
             : undefined,

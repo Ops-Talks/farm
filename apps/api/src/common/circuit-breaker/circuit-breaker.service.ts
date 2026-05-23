@@ -61,6 +61,10 @@ export class CircuitBreakerService {
         this.circuitStateGauge.set({ integration, state: "half_open" }, 1);
       });
 
+      this.circuitStateGauge.set({ integration, state: "closed" }, 1);
+      this.circuitStateGauge.set({ integration, state: "open" }, 0);
+      this.circuitStateGauge.set({ integration, state: "half_open" }, 0);
+
       this.breakers.set(integration, breaker);
     }
     return this.breakers.get(integration)!;
@@ -79,10 +83,7 @@ export class CircuitBreakerService {
     try {
       return await (this.getBreaker(integration).fire(fn) as Promise<T>);
     } catch (err) {
-      if (
-        err instanceof Error &&
-        (err.message === "Breaker is open" || err.message.includes("open"))
-      ) {
+      if (err instanceof Error && err.message === "Breaker is open") {
         throw new ServiceUnavailableException({
           errorCode: "INTEGRATION_UNAVAILABLE",
           integration,
