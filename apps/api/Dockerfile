@@ -20,7 +20,7 @@ RUN npm ci --ignore-scripts
 # Build @farm/types so the workspace symlink target has compiled JS + types.
 COPY packages/types/src         ./packages/types/src
 COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
-RUN cd packages/types && npx tsc
+RUN npm run build --workspace=@farm/types
 
 # Stage 2: Build NestJS app
 FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS build
@@ -67,17 +67,28 @@ COPY apps/web/package.json               ./apps/web/
 RUN npm ci --omit=dev --ignore-scripts --workspace=apps/api \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
+# Create a non-root runtime user with UID/GID 1001 to align with the web image
+# (apps/web/Dockerfile `nextjs` user) and the Helm chart
+# `securityContext.runAsUser: 1001`. Aligned UIDs prevent file-permission bugs
+# when volumes or bind mounts are shared between containers.
+RUN addgroup -S -g 1001 farmapi \
+ && adduser -S -u 1001 -G farmapi farmapi
+
 # Copy compiled @farm/types (needed at runtime for any require('@farm/types'))
-COPY --from=build /app/packages/types ./packages/types
+COPY --from=build --chown=farmapi:farmapi /app/packages/types ./packages/types
 
 # Copy compiled NestJS output
-COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=farmapi:farmapi /app/apps/api/dist ./apps/api/dist
 
-RUN mkdir -p apps/api/logs && chown -R node:node apps/api/logs
+# Shared healthcheck entrypoint (FARM-S541) used by Dockerfile HEALTHCHECK,
+# docker-compose, and any K8s exec probes. Pure Node, no dependencies.
+COPY --chown=farmapi:farmapi apps/api/scripts/healthcheck.js ./apps/api/scripts/healthcheck.js
+
+RUN mkdir -p apps/api/logs && chown -R farmapi:farmapi apps/api/logs /app
 
 WORKDIR /app/apps/api
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "const http = require('http'); const req = http.request({hostname:'localhost',port:3000,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"
-USER node
+  CMD ["node", "scripts/healthcheck.js"]
+USER farmapi
 CMD ["node", "dist/main"]

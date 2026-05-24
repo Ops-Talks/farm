@@ -378,13 +378,26 @@ The `--workspace=<name>` flag is **mandatory** in monorepos — without it `npm 
 - Prefer `COPY --chown=user:group` over a separate `RUN chown -R` (saves one layer and one full filesystem walk).
 - Health checks should live in `apps/<name>/scripts/healthcheck.js` and be referenced as `HEALTHCHECK CMD ["node", "scripts/healthcheck.js"]` — inline `node -e "..."` is duplicated across Dockerfile, docker-compose, and Helm probes.
 
-### User ID Consistency
+### User ID Consistency (FARM-S540, resolved)
 
-Farm currently has an inconsistency:
-- `apps/api/Dockerfile` uses the built-in `node` user (UID **1000**)
-- `apps/web/Dockerfile` creates a custom `nextjs` user (UID **1001**)
+Both production images now run as **UID 1001**:
+- `apps/api/Dockerfile` creates a `farmapi` user (`addgroup -S -g 1001 farmapi && adduser -S -u 1001 -G farmapi farmapi`) and runs `USER farmapi`.
+- `apps/web/Dockerfile` continues to use the `nextjs` user at UID 1001.
+- `deploy/helm/farm/values.yaml` sets `api.containerSecurityContext.runAsUser: 1001` and `fsGroup: 1001` (aligned with the web values).
 
-Standardize on **UID 1001** everywhere (matches the Helm `securityContext.runAsUser: 1001` documented above). Mismatched UIDs cause file-permission bugs when volumes are shared between containers (e.g. local dev bind mounts).
+A `runtime-uid-check` job in `.github/workflows/dockerfile-lint.yml` builds both images and asserts `docker run --entrypoint id <image> -u` returns `1001`. Do not regress this: mismatched UIDs cause file-permission bugs when volumes are shared between containers (e.g. local dev bind mounts) and break `runAsNonRoot: true` admission policies that pin a specific UID.
+
+### Shared Healthcheck Script Pattern (FARM-S541, resolved)
+
+The four duplicated inline `node -e "..."` healthchecks have been consolidated into:
+- `apps/api/scripts/healthcheck.js`
+- `apps/web/scripts/healthcheck.js`
+
+Both are pure Node (no dependencies), respect the `PORT` env var, and hit `/api/health`. They are referenced by:
+- Dockerfile `HEALTHCHECK CMD ["node", "scripts/healthcheck.js"]` (api) / `["node", "apps/web/scripts/healthcheck.js"]` (web)
+- `docker-compose.yml` `healthcheck.test` for the `api` and `web` services
+
+Kubernetes probes in `deploy/helm/farm/values.yaml` deliberately keep `httpGet` (idiomatic for K8s) rather than `exec`ing the script. Both paths hit the same `/api/health` endpoint, so the SLI is consistent across environments. If a cluster needs to consolidate on the script, override with `exec.command: ["node", "scripts/healthcheck.js"]` in a values file.
 
 ### Base Image Digest Pin Policy (FARM-S538)
 

@@ -636,9 +636,9 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S540 | Standardize runtime UID across both images on **1001**. Update `apps/api/Dockerfile` to create a `farmapi` user with UID 1001 (replacing the default `node` UID 1000) to align with `apps/web/Dockerfile` `nextjs` user and Helm `securityContext.runAsUser: 1001`. Add an e2e check comparing `id -u` inside both containers. | `TODO` |
-| FARM-S541 | Extract a single shared health-check entrypoint at `apps/api/scripts/healthcheck.js` and `apps/web/scripts/healthcheck.js`. Replace the four inline `node -e "..."` duplications (api Dockerfile L82, web Dockerfile L75, `docker-compose.yml` L59 and L82). Update Helm `livenessProbe`/`readinessProbe` to reference the same script. | `TODO` |
-| FARM-S542 | Replace manual `RUN cd packages/types && npx tsc` (api L23, web L22) with `RUN npm run build --workspace=@farm/types`. Adds future-hook support and removes duplicated logic across both Dockerfiles. | `TODO` |
+| FARM-S540 | Standardize runtime UID across both images on **1001**. Update `apps/api/Dockerfile` to create a `farmapi` user with UID 1001 (replacing the default `node` UID 1000) to align with `apps/web/Dockerfile` `nextjs` user and Helm `securityContext.runAsUser: 1001`. Add an e2e check comparing `id -u` inside both containers. | `DONE` |
+| FARM-S541 | Extract a single shared health-check entrypoint at `apps/api/scripts/healthcheck.js` and `apps/web/scripts/healthcheck.js`. Replace the four inline `node -e "..."` duplications (api Dockerfile L82, web Dockerfile L75, `docker-compose.yml` L59 and L82). Update Helm `livenessProbe`/`readinessProbe` to reference the same script. | `DONE` |
+| FARM-S542 | Replace manual `RUN cd packages/types && npx tsc` (api L23, web L22) with `RUN npm run build --workspace=@farm/types`. Adds future-hook support and removes duplicated logic across both Dockerfiles. | `DONE` |
 
 ### FARM-E131: Build Performance & Reproducibility `TODO`
 

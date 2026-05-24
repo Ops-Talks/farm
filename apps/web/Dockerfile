@@ -19,7 +19,7 @@ RUN npm ci --ignore-scripts
 # Build @farm/types so the workspace symlink target has compiled JS.
 COPY packages/types/src ./packages/types/src
 COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
-RUN cd packages/types && npx tsc
+RUN npm run build --workspace=@farm/types
 
 # Stage 2: Build Next.js app
 FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS builder
@@ -71,7 +71,11 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
+# Shared healthcheck entrypoint (FARM-S541) used by Dockerfile HEALTHCHECK,
+# docker-compose, and any K8s exec probes. Pure Node, no dependencies.
+COPY --chown=nextjs:nodejs apps/web/scripts/healthcheck.js ./apps/web/scripts/healthcheck.js
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD node -e "const http = require('http'); const req = http.request({hostname:'localhost',port:3001,path:'/api/health',timeout:5000}, res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"
+  CMD ["node", "apps/web/scripts/healthcheck.js"]
 
 CMD ["node", "apps/web/server.js"]
