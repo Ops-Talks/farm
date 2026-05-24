@@ -24,6 +24,17 @@ data:
   REDIS_HOST: {{ include "farm.redisHost" . | quote }}
   REDIS_PORT: {{ include "farm.redisPort" . | quote }}
 
+  # Redis Sentinel (optional -- when set, takes precedence over REDIS_HOST)
+  {{- if .Values.api.env.REDIS_SENTINEL_HOSTS }}
+  REDIS_SENTINEL_HOSTS: {{ .Values.api.env.REDIS_SENTINEL_HOSTS | quote }}
+  REDIS_SENTINEL_NAME: {{ .Values.api.env.REDIS_SENTINEL_NAME | default "mymaster" | quote }}
+  {{- end }}
+
+  # Database connection pool timeouts
+  DATABASE_POOL_CONNECT_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_CONNECT_TIMEOUT | default "5000" | quote }}
+  DATABASE_STATEMENT_TIMEOUT: {{ .Values.api.env.DATABASE_STATEMENT_TIMEOUT | default "30000" | quote }}
+  DATABASE_POOL_IDLE_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_IDLE_TIMEOUT | default "10000" | quote }}
+
   # Observability — OpenTelemetry
   OTEL_ENABLED: {{ .Values.api.observability.otelEnabled | toString | quote }}
   OTEL_SERVICE_NAME: {{ .Values.api.observability.otelServiceName | quote }}

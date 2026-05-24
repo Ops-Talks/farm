@@ -2,6 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { ThanosService } from "./thanos.service";
 import { KubernetesService } from "./kubernetes.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 // ---------------------------------------------------------------------------
 // Shared mock objects
@@ -123,6 +124,10 @@ describe("ThanosService", () => {
         ThanosService,
         { provide: KubernetesService, useValue: mockKubernetesService },
         { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+        },
       ],
     }).compile();
 

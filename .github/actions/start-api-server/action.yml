@@ -38,7 +38,7 @@ runs:
         DATABASE_USER: postgres
         DATABASE_PASSWORD: password
         DATABASE_NAME: farm
-        DATABASE_SYNC: 'true'
+        DATABASE_SYNC: 'false'
         JWT_SECRET: ${{ inputs.jwt-secret }}
         JWT_EXPIRATION: 3600s
         REDIS_HOST: localhost

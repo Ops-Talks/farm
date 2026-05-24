@@ -1,6 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { ElasticsearchIndexStatsService } from "./elasticsearch-index-stats.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /**
  * Unit tests for ElasticsearchIndexStatsService (FARM-T402).
@@ -25,6 +26,10 @@ describe("ElasticsearchIndexStatsService", () => {
           useValue: {
             get: jest.fn((key: string) => configValues[key]),
           },
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

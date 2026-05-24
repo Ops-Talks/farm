@@ -135,7 +135,9 @@ describe("HealthController", () => {
 
     await controller.check();
 
-    expect(dbIndicator.pingCheck).toHaveBeenCalledWith("database");
+    expect(dbIndicator.pingCheck).toHaveBeenCalledWith("database", {
+      timeout: 2000,
+    });
   });
 
   it("calls memory.checkHeap for the memory_heap indicator", async () => {

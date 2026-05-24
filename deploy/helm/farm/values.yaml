@@ -104,6 +104,11 @@ api:
     CACHE_TTL: "30"
     ALLOWED_ORIGINS: ""
     PLUGINS_DIR: ./plugins
+    REDIS_SENTINEL_HOSTS: ""
+    REDIS_SENTINEL_NAME: "mymaster"
+    DATABASE_POOL_CONNECT_TIMEOUT: "5000"
+    DATABASE_STATEMENT_TIMEOUT: "30000"
+    DATABASE_POOL_IDLE_TIMEOUT: "10000"
 
   # -- Observability configuration.
   # Farm emits OpenTelemetry traces and Pyroscope profiles, and proxies queries
@@ -169,6 +174,14 @@ api:
   affinity: {}
 
   # -- topologySpreadConstraints for the API pod.
+  # Example for zone distribution (enable in values-production.yaml):
+  # topologySpreadConstraints:
+  #   - maxSkew: 1
+  #     topologyKey: topology.kubernetes.io/zone
+  #     whenUnsatisfiable: DoNotSchedule
+  #     labelSelector:
+  #       matchLabels:
+  #         app.kubernetes.io/component: api
   topologySpreadConstraints: []
 
 # ─── WEB ─────────────────────────────────────────────────────────────────────
@@ -261,6 +274,15 @@ web:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # -- topologySpreadConstraints for the web pod.
+  # Example for zone distribution (enable in values-production.yaml):
+  # topologySpreadConstraints:
+  #   - maxSkew: 1
+  #     topologyKey: topology.kubernetes.io/zone
+  #     whenUnsatisfiable: DoNotSchedule
+  #     labelSelector:
+  #       matchLabels:
+  #         app.kubernetes.io/component: web
   topologySpreadConstraints: []
 
 # ─── INGRESS ─────────────────────────────────────────────────────────────────

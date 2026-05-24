@@ -6,6 +6,7 @@ import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { TravisCIService, TravisCIBuild } from "./travisci.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
   return {
@@ -57,6 +58,10 @@ describe("TravisCIService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "./kubernetes.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -232,6 +233,7 @@ export class ElasticStackService {
   constructor(
     private readonly kubernetesService: KubernetesService,
     private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -686,9 +688,11 @@ export class ElasticStackService {
     }
 
     try {
-      const response = await globalThis.fetch(`${url}/_cluster/health`, {
-        signal: AbortSignal.timeout(3000),
-      });
+      const response = await this.cb.fire("elastic-stack", () =>
+        globalThis.fetch(`${url}/_cluster/health`, {
+          signal: AbortSignal.timeout(3000),
+        }),
+      );
 
       if (!response.ok) {
         this.logger.warn(

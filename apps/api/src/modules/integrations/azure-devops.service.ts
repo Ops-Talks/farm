@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { translateHttpError } from "./http-error";
@@ -29,6 +30,7 @@ export class AzureDevOpsService {
 
   constructor(
     private readonly credentialService: IntegrationCredentialService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   private async resolveCredential(
@@ -58,12 +60,14 @@ export class AzureDevOpsService {
     const url = `https://dev.azure.com/${organization}/${project}/_apis/build/builds?api-version=7.1`;
     let res: Response;
     try {
-      res = await globalThis.fetch(url, {
-        headers: {
-          Authorization: `Basic ${basicAuth}`,
-          "Content-Type": "application/json",
-        },
-      });
+      res = await this.cb.fire("azure-devops", () =>
+        globalThis.fetch(url, {
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      );
     } catch (err) {
       this.translateHttpError(err, "AzureDevOpsService.listPipelines");
     }

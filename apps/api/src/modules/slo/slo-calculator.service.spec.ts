@@ -4,6 +4,7 @@ import { SloCalculatorService } from "./slo-calculator.service";
 import { SloService } from "./slo.service";
 import { Slo, SloMetricType, SloWindow } from "./entities/slo.entity";
 import { SloBudgetStatus } from "./dto/slo-budget-response.dto";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 describe("SloCalculatorService", () => {
   let calculator: SloCalculatorService;
@@ -42,6 +43,10 @@ describe("SloCalculatorService", () => {
         SloCalculatorService,
         { provide: SloService, useValue: sloService },
         { provide: ConfigService, useValue: { get: configGet } },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+        },
       ],
     }).compile();
 
@@ -85,6 +90,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -136,6 +145,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -179,6 +192,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -219,6 +236,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -261,6 +282,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -290,6 +315,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -316,6 +345,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -366,6 +399,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -416,6 +453,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -445,6 +486,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -472,6 +517,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
@@ -499,6 +548,10 @@ describe("SloCalculatorService", () => {
           SloCalculatorService,
           { provide: SloService, useValue: sloService },
           { provide: ConfigService, useValue: { get: configGet } },
+          {
+            provide: CircuitBreakerService,
+            useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);

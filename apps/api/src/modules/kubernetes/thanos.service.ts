@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "./kubernetes.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -148,6 +149,7 @@ export class ThanosService {
   constructor(
     private readonly kubernetesService: KubernetesService,
     private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -443,10 +445,12 @@ export class ThanosService {
 
     try {
       // Probe /api/v1/labels to check for Thanos query-layer response headers.
-      const labelsResponse = await globalThis.fetch(`${url}/api/v1/labels`, {
-        method: "GET",
-        signal: AbortSignal.timeout(3000),
-      });
+      const labelsResponse = await this.cb.fire("thanos", () =>
+        globalThis.fetch(`${url}/api/v1/labels`, {
+          method: "GET",
+          signal: AbortSignal.timeout(3000),
+        }),
+      );
 
       if (!labelsResponse.ok) {
         return { type: "unknown" };
@@ -467,10 +471,12 @@ export class ThanosService {
 
     // No Thanos headers — probe /ready to distinguish Mimir, Cortex, Prometheus.
     try {
-      const readyResponse = await globalThis.fetch(`${url}/ready`, {
-        method: "GET",
-        signal: AbortSignal.timeout(3000),
-      });
+      const readyResponse = await this.cb.fire("thanos", () =>
+        globalThis.fetch(`${url}/ready`, {
+          method: "GET",
+          signal: AbortSignal.timeout(3000),
+        }),
+      );
 
       if (!readyResponse.ok) {
         return { type: "unknown" };

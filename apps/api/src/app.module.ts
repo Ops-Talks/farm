@@ -3,6 +3,7 @@ import {
   NestModule,
   MiddlewareConsumer,
   OnApplicationBootstrap,
+  Logger,
 } from "@nestjs/common";
 import { register as promRegister, openMetricsContentType } from "prom-client";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -18,6 +19,9 @@ import {
   makeHistogramProvider,
 } from "@willsoto/nestjs-prometheus";
 import { BusinessMetricsModule } from "./common/metrics/business-metrics.module";
+import { DatabaseMetricsModule } from "./common/metrics/database-metrics.module";
+import { DatabaseModule } from "./common/database/database.module";
+import { CircuitBreakerModule } from "./common/circuit-breaker/circuit-breaker.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PluginManagerModule } from "./modules/plugin-manager/plugin-manager.module";
@@ -67,6 +71,7 @@ import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
+import KeyvRedis from "@keyv/redis";
 
 // Switch the default Prometheus registry to OpenMetrics content type so that
 // histograms with enableExemplars=true can attach OpenTelemetry exemplars.
@@ -112,35 +117,77 @@ if (typeof _promSetContentType === "function") {
         synchronize: configService.get<boolean>("database.synchronize"),
         autoLoadEntities: true,
         migrations: [__dirname + "/migrations/*.{ts,js}"],
-        migrationsRun: configService.get<string>("env") === "production",
+        migrationsRun: false,
         extra:
           configService.get<string>("database.type") === "postgres"
-            ? { max: configService.get<number>("database.poolSize") ?? 10 }
+            ? {
+                max: configService.get<number>("database.poolSize") ?? 10,
+                connectionTimeoutMillis:
+                  configService.get<number>("database.poolConnectTimeout") ??
+                  5000,
+                idleTimeoutMillis:
+                  configService.get<number>("database.poolIdleTimeout") ??
+                  10000,
+                statement_timeout:
+                  configService.get<number>("database.statementTimeout") ??
+                  30000,
+              }
             : undefined,
       }),
     }),
     OrganizationModule,
     BusinessMetricsModule,
+    CircuitBreakerModule,
+    DatabaseMetricsModule,
+    DatabaseModule,
     HealthModule,
     ObservabilityModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
+      // eslint-disable-next-line @typescript-eslint/require-await -- async is required for TypeScript to accept the union return type against CacheModuleAsyncOptions
       useFactory: async (configService: ConfigService) => {
-        const redisHost = configService.get<string>("cache.redisHost");
+        const logger = new Logger("CacheModule");
         const ttl = (configService.get<number>("cache.ttl") ?? 30) * 1000;
+        const sentinelHosts = configService.get<string>(
+          "cache.redisSentinelHosts",
+        );
+        const sentinelName =
+          configService.get<string>("cache.redisSentinelName") ?? "mymaster";
+        const redisHost = configService.get<string>("cache.redisHost");
+
+        if (sentinelHosts) {
+          const sentinels = sentinelHosts.split(",").map((h) => {
+            const [host, port] = h.trim().split(":");
+            return { host, port: parseInt(port ?? "26379", 10) };
+          });
+          logger.log("CacheModule: using Redis Sentinel");
+          return {
+            stores: [
+              new KeyvRedis({
+                sentinels,
+                name: sentinelName,
+              } as ConstructorParameters<typeof KeyvRedis>[0]),
+            ],
+            ttl,
+          };
+        }
 
         if (redisHost) {
-          const KeyvRedis = (await import("@keyv/redis")).default;
           const redisPort =
             configService.get<number>("cache.redisPort") ?? 6379;
+          logger.log("CacheModule: using Redis single-host");
           return {
             stores: [new KeyvRedis(`redis://${redisHost}:${redisPort}`)],
             ttl,
           };
         }
 
+        logger.warn(
+          "CacheModule: no REDIS_HOST configured — using in-memory cache store. " +
+            "Not suitable for multi-replica deployments.",
+        );
         return { ttl };
       },
     }),

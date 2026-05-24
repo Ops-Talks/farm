@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /** Allowed health states reported by Elasticsearch's _cat/indices API. */
 export type IndexHealth = "green" | "yellow" | "red" | "unknown";
@@ -56,7 +57,10 @@ const REQUEST_TIMEOUT_MS = 5000;
 export class ElasticsearchIndexStatsService {
   private readonly logger = new Logger(ElasticsearchIndexStatsService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
+  ) {}
 
   /**
    * Returns live stats for one or more Elasticsearch index patterns.
@@ -267,11 +271,13 @@ export class ElasticsearchIndexStatsService {
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await globalThis.fetch(url, {
-        method: "GET",
-        headers,
-        signal: controller.signal,
-      });
+      const response = await this.cb.fire("elasticsearch-index", () =>
+        globalThis.fetch(url, {
+          method: "GET",
+          headers,
+          signal: controller.signal,
+        }),
+      );
 
       if (!response.ok) {
         if (response.status === 404) {

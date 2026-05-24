@@ -8,6 +8,17 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 
+/**
+ * Central registry for platform plugins registered at startup via
+ * PluginManagerModule.forRoot().
+ *
+ * All mutable state (plugins map, menuItems array, routes array) is populated
+ * deterministically during module initialization from the static configuration
+ * passed to forRoot(). No runtime writes occur after bootstrap, making this
+ * service safe for multi-replica deployments: every replica builds identical
+ * state from the same configuration without requiring cross-replica
+ * synchronization.
+ */
 @Injectable()
 export class PluginManagerService {
   private readonly logger = new Logger(PluginManagerService.name);

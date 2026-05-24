@@ -3,6 +3,7 @@ import { NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { GitHubActionsService } from "./github-actions.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 describe("GitHubActionsService", () => {
   let service: GitHubActionsService;
@@ -34,6 +35,10 @@ describe("GitHubActionsService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

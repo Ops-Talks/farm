@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { translateHttpError } from "./http-error";
@@ -9,8 +10,6 @@ import { translateHttpError } from "./http-error";
  * Minimal shape of a Travis CI build object.
  */
 export interface TravisCIBuild {
-  id: number;
-  number: string;
   state: string;
   started_at: string | null;
   finished_at: string | null;
@@ -45,6 +44,7 @@ export class TravisCIService {
   constructor(
     private readonly httpService: HttpService,
     private readonly credentialService: IntegrationCredentialService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   /**
@@ -96,11 +96,13 @@ export class TravisCIService {
     this.logger.debug(`Travis CI listBuilds: GET ${url}`);
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
-          headers: this.headers(token),
-          timeout: 5000,
-        }),
+      const response = await this.cb.fire("travisci", () =>
+        firstValueFrom(
+          this.httpService.get<{ builds: TravisCIBuild[] }>(url, {
+            headers: this.headers(token),
+            timeout: 5000,
+          }),
+        ),
       );
       return response.data.builds ?? [];
     } catch (err) {
@@ -124,11 +126,13 @@ export class TravisCIService {
     this.logger.log(`Travis CI restartBuild: POST ${url}`);
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.post<Record<string, unknown>>(url, null, {
-          headers: this.headers(token),
-          timeout: 5000,
-        }),
+      const response = await this.cb.fire("travisci", () =>
+        firstValueFrom(
+          this.httpService.post<Record<string, unknown>>(url, null, {
+            headers: this.headers(token),
+            timeout: 5000,
+          }),
+        ),
       );
       return response.data;
     } catch (err) {

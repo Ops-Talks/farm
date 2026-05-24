@@ -3,6 +3,7 @@ import { NotFoundException } from "@nestjs/common";
 import { AzureDevOpsService } from "./azure-devops.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 describe("AzureDevOpsService", () => {
   let service: AzureDevOpsService;
@@ -34,6 +35,10 @@ describe("AzureDevOpsService", () => {
         {
           provide: IntegrationCredentialService,
           useValue: mockCredentialService,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
       ],
     }).compile();

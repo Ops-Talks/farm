@@ -6,6 +6,7 @@ import {
   SloBudgetResponseDto,
   SloBudgetStatus,
 } from "./dto/slo-budget-response.dto";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /**
  * Maps SLO window enum values to their duration in days.
@@ -28,6 +29,7 @@ export class SloCalculatorService {
   constructor(
     private readonly sloService: SloService,
     private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
   ) {
     this.prometheusUrl = this.configService.get<string>("PROMETHEUS_URL");
   }
@@ -118,7 +120,9 @@ export class SloCalculatorService {
       const url = `${this.prometheusUrl}/api/v1/query_range?${params.toString()}`;
       this.logger.debug(`Querying Prometheus: ${url}`);
 
-      const response = await globalThis.fetch(url);
+      const response = await this.cb.fire("slo-calculator", () =>
+        globalThis.fetch(url),
+      );
 
       if (!response.ok) {
         this.logger.error(

@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { OpaResult } from "./entities/opa-result.entity";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 /**
  * Shape of the raw response body returned by the OPA /v1/data/:path endpoint.
@@ -33,6 +34,7 @@ export class OpaService {
     private readonly configService: ConfigService,
     @InjectRepository(OpaResult)
     private readonly opaResultRepository: Repository<OpaResult>,
+    private readonly cb: CircuitBreakerService,
   ) {
     this.opaUrl =
       this.configService.get<string>("opa.url") ?? "http://localhost:8181";
@@ -56,7 +58,9 @@ export class OpaService {
    */
   async isReachable(): Promise<boolean> {
     try {
-      const response = await globalThis.fetch(`${this.opaUrl}/health`);
+      const response = await this.cb.fire("opa", () =>
+        globalThis.fetch(`${this.opaUrl}/health`),
+      );
       return response.status === 200;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -82,11 +86,13 @@ export class OpaService {
   ): Promise<{ allowed: boolean; violations: string[] }> {
     const safePolicyPath = this.sanitizePolicyPath(policyPath);
     const url = `${this.opaUrl}/v1/data/${safePolicyPath}`;
-    const response = await globalThis.fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input }),
-    });
+    const response = await this.cb.fire("opa", () =>
+      globalThis.fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input }),
+      }),
+    );
 
     const responseText = await response.text();
 

@@ -5,6 +5,7 @@ import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { RegistryService } from "../registry/registry.service";
 import { IstioService } from "../istio/istio.service";
 import { LinkerdService } from "../linkerd/linkerd.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 describe("FeaturesService", () => {
   let service: FeaturesService;
@@ -31,6 +32,10 @@ describe("FeaturesService", () => {
         { provide: IstioService, useValue: mockIstioService },
         { provide: LinkerdService, useValue: mockLinkerdService },
         { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: CircuitBreakerService,
+          useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
+        },
       ],
     }).compile();
 

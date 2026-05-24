@@ -80,7 +80,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | **Phase 45: Organization Context Hardening** | **3** | **10** | v0.25.4 | `DONE` |
 | Phase 46: Granular RBAC | 3 | 12 | v0.25.5 | `DONE` |
 | Phase 47: API Contract Stability | 2 | 7 | v0.25.6 | `DONE` |
-| Phase 48: Platform Resilience | 3 | 10 | - | `TODO` |
+| Phase 48: Platform Resilience | 3 | 10 | - | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | - | `DONE` |
 
 ---
@@ -139,7 +139,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 45: Organization Context Hardening | 3 | 10 | `DONE` |
 | Phase 46: Granular RBAC | 3 | 12 | `DONE` |
 | Phase 47: API Contract Stability | 2 | 7 | `DONE` |
-| Phase 48: Platform Resilience | 3 | 10 | `TODO` |
+| Phase 48: Platform Resilience | 3 | 10 | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
 | Phase 50: Docker & Container Hardening | 4 | 11 | `TODO` |
 | **Total** | **132** | **511** | |
@@ -542,39 +542,39 @@ Provides a machine-readable and human-readable API contract alongside a changelo
 
 ---
 
-## Phase 48: Platform Resilience
+## Phase 48: Platform Resilience `DONE`
 
 Closes the operational gaps that prevent Farm from being deployed in a production environment with SLA requirements. Multi-replica support, graceful degradation per integration, and Redis failure isolation are the three pillars.
 
-### FARM-E125: High Availability Configuration `TODO`
+### FARM-E125: High Availability Configuration `DONE`
 
 Ensures the API and worker processes can run as multiple replicas without race conditions or session affinity requirements.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S525 | Validate that all in-memory state (plugin registry, metrics cache) is either stateless or backed by Redis. Audit `PluginManagerService`, `BusinessMetricsService`, and `CacheModule` for in-process mutable state that would diverge across replicas. Document findings and remediate. | `TODO` |
-| FARM-S526 | Update Helm Chart `values.yaml` to support `replicaCount > 1` with a `PodDisruptionBudget` (`minAvailable: 1`) and `topologySpreadConstraints` for zone distribution. Add `Horizontal Pod Autoscaler` manifest triggered by CPU > 70%. | `TODO` |
-| FARM-S527 | Add Redis Sentinel support to `CacheModule` configuration. When `REDIS_SENTINEL_HOSTS` env var is set, instantiate `@keyv/redis` with Sentinel options instead of a single-host connection string. Document in `.env.example`. | `TODO` |
+| FARM-S525 | Validate that all in-memory state (plugin registry, metrics cache) is either stateless or backed by Redis. Audit `PluginManagerService`, `BusinessMetricsService`, and `CacheModule` for in-process mutable state that would diverge across replicas. Document findings and remediate. | `DONE` |
+| FARM-S526 | Update Helm Chart `values.yaml` to support `replicaCount > 1` with a `PodDisruptionBudget` (`minAvailable: 1`) and `topologySpreadConstraints` for zone distribution. Add `Horizontal Pod Autoscaler` manifest triggered by CPU > 70%. | `DONE` |
+| FARM-S527 | Add Redis Sentinel support to `CacheModule` configuration. When `REDIS_SENTINEL_HOSTS` env var is set, instantiate `@keyv/redis` with Sentinel options instead of a single-host connection string. Document in `.env.example`. | `DONE` |
 
-### FARM-E126: Database Resilience `TODO`
+### FARM-E126: Database Resilience `DONE`
 
 Prevents cascading failures caused by slow or unreachable database connections.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S528 | Configure TypeORM connection pool with `connectTimeoutMS`, `acquireTimeoutMillis`, and `idleTimeoutMillis` via `DATABASE_POOL_*` env vars. Add pool exhaustion metric (`db_pool_size`, `db_pool_waiting`) exposed on `/metrics`. | `TODO` |
-| FARM-S529 | Add a `TypeOrmHealthIndicator` to the existing `HealthModule` that checks DB connectivity with a 2-second timeout. Return `{ database: { status: 'down', message } }` in `/api/health` instead of crashing the health check. | `TODO` |
-| FARM-S530 | Add a migration lock mechanism: if `DATABASE_SYNC=false` and `migrationsRun=false` (production), ensure only one replica runs pending migrations on startup using a PostgreSQL advisory lock. Prevent duplicate migration runs in parallel pod startups. | `TODO` |
+| FARM-S528 | Configure TypeORM connection pool with `connectTimeoutMS`, `acquireTimeoutMillis`, and `idleTimeoutMillis` via `DATABASE_POOL_*` env vars. Add pool exhaustion metric (`db_pool_size`, `db_pool_waiting`) exposed on `/metrics`. | `DONE` |
+| FARM-S529 | Add a `TypeOrmHealthIndicator` to the existing `HealthModule` that checks DB connectivity with a 2-second timeout. Return `{ database: { status: 'down', message } }` in `/api/health` instead of crashing the health check. | `DONE` |
+| FARM-S530 | Add a migration lock mechanism: if `DATABASE_SYNC=false` and `migrationsRun=false` (production), ensure only one replica runs pending migrations on startup using a PostgreSQL advisory lock. Prevent duplicate migration runs in parallel pod startups. | `DONE` |
 
-### FARM-E127: Integration Circuit Breakers `TODO`
+### FARM-E127: Integration Circuit Breakers `DONE`
 
 Prevents a degraded external integration (GitHub, Kong, Kubernetes API, Slack) from blocking unrelated requests via cascading timeout failures.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S531 | Introduce `CircuitBreakerService` (using `opossum` or a lightweight alternative) wrapping all HTTP calls in `IntegrationsModule`, `KubernetesModule`, `HelmModule`, `GatewayModule`, and `RegistryModule`. Default thresholds: 50% failure rate over 10 req → open; 30s reset. | `TODO` |
-| FARM-S532 | When a circuit is open, return a structured `503 Service Unavailable` with `{ errorCode: 'INTEGRATION_UNAVAILABLE', integration: 'github' }` instead of letting the request hang until `fetch` timeout. Log circuit state transitions at WARN level. | `TODO` |
-| FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` (0=closed, 1=open, 2=half-open). Add Grafana panel to `farm-integrations.json` dashboard. | `TODO` |
+| FARM-S531 | Introduce `CircuitBreakerService` (using `opossum` or a lightweight alternative) wrapping all HTTP calls in `IntegrationsModule`, `KubernetesModule`, `HelmModule`, `GatewayModule`, and `RegistryModule`. Default thresholds: 50% failure rate over 10 req → open; 30s reset. | `DONE` |
+| FARM-S532 | When a circuit is open, return a structured `503 Service Unavailable` with `{ errorCode: 'INTEGRATION_UNAVAILABLE', integration: 'github' }` instead of letting the request hang until `fetch` timeout. Log circuit state transitions at WARN level. | `DONE` |
+| FARM-S533 | Expose circuit breaker state as Prometheus gauge metric `integration_circuit_state{integration, state}` with three labeled series per integration (`state=open\|closed\|half_open`), each holding a 0/1 value. Add Grafana panel to `farm-integrations.json` dashboard. | `DONE` |
 
 ---
 

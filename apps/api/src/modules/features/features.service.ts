@@ -4,6 +4,7 @@ import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { RegistryService } from "../registry/registry.service";
 import { IstioService } from "../istio/istio.service";
 import { LinkerdService } from "../linkerd/linkerd.service";
+import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
 export interface FeatureAvailabilityMap {
   kubernetes: { available: boolean };
@@ -25,6 +26,7 @@ export class FeaturesService {
     private readonly istioService: IstioService,
     private readonly linkerdService: LinkerdService,
     private readonly configService: ConfigService,
+    private readonly cb: CircuitBreakerService,
   ) {}
 
   /**
@@ -43,10 +45,12 @@ export class FeaturesService {
     );
     let costAvailable = false;
     try {
-      const res = await globalThis.fetch(`${opencostUrl}/healthz`, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(3000),
-      });
+      const res = await this.cb.fire("open-cost", () =>
+        globalThis.fetch(`${opencostUrl}/healthz`, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(3000),
+        }),
+      );
       costAvailable = res.ok;
     } catch {
       costAvailable = false;

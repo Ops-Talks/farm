@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { GoogleAuth } from "google-auth-library";
+import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { RegistryType } from "../enums/registry-type.enum";
 import {
   IRegistryAdapter,
@@ -76,7 +77,10 @@ export class GcrAdapter implements IRegistryAdapter {
   private readonly projectId: string;
   private readonly baseUrl = "https://artifactregistry.googleapis.com/v1";
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly cb?: CircuitBreakerService,
+  ) {
     const credentialsJson = config.get<string>("registry.credentials") ?? "";
     this.location = config.get<string>("registry.url") ?? "us-central1";
 
@@ -90,6 +94,17 @@ export class GcrAdapter implements IRegistryAdapter {
       }
     }
     this.projectId = parsed.project_id ?? "";
+  }
+
+  /**
+   * Issues a fetch request, routing through the circuit breaker when one is
+   * configured.
+   */
+  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+    if (this.cb) {
+      return this.cb.fire("gcr", () => globalThis.fetch(url, init));
+    }
+    return globalThis.fetch(url, init);
   }
 
   /**
@@ -109,7 +124,7 @@ export class GcrAdapter implements IRegistryAdapter {
    */
   private async fetchJson<T>(url: string): Promise<T> {
     const token = await this.getAccessToken();
-    const response = await globalThis.fetch(url, {
+    const response = await this._fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
