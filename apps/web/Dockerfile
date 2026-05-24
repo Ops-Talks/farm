@@ -1,6 +1,6 @@
 # Stage 1: Install dependencies
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
-FROM node:26-alpine AS deps
+FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
 LABEL org.opencontainers.image.title="farm-web" \
       org.opencontainers.image.description="Farm portal — Next.js web application" \
       org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
@@ -22,7 +22,7 @@ COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
 RUN cd packages/types && npx tsc
 
 # Stage 2: Build Next.js app
-FROM node:26-alpine AS builder
+FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS builder
 WORKDIR /app
 
 # node_modules includes the symlink node_modules/@farm/types -> ../../packages/types
@@ -44,17 +44,17 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 3: Production
-FROM node:26-alpine AS runner
+FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache --upgrade \
-    "zlib>=1.3.2-r0" \
-    "libssl3>=3.5.6-r0" \
-    "libcrypto3>=3.5.6-r0" \
-    "musl>=1.2.5-r22" \
-    "musl-utils>=1.2.5-r22" \
+# Apply latest available security patches from the pinned base image's apk
+# repositories. Hardcoded "pkg>=x.y.z-rN" pins are intentionally avoided here:
+# they have broken CI repeatedly when Alpine repushed patched versions under
+# different version strings. CVE coverage is enforced by the Trivy gate in
+# .github/workflows/trivy.yml and base-image digest bumps via Dependabot.
+RUN apk upgrade --no-cache \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs && \

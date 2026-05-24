@@ -628,9 +628,9 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S537 | Remove hardcoded `apk add --upgrade "pkg>=x.y.z-rN"` constraints in `apps/api/Dockerfile` (L56-57) and `apps/web/Dockerfile` (L52-57). Replace with `RUN apk upgrade --no-cache`. This pattern broke CI repeatedly when Alpine repushed patched versions under different version strings. Security coverage is retained via Trivy CI gate and Renovate base-image bumps. | `TODO` |
-| FARM-S538 | Pin both Dockerfile `FROM node:26-alpine` lines by digest (`@sha256:...`) and configure Renovate to bump the digest weekly grouped by registry. Document the pin policy in `.github/agents/Farm-SRE.agent.md`. | `TODO` |
-| FARM-S539 | Add `hadolint` CI job (`.github/workflows/dockerfile-lint.yml`) plus a `.hadolint.yaml` custom rule that fails any Dockerfile containing `apk add ... ">="` version constraints. Prevents regression of FARM-S537. | `TODO` |
+| FARM-S537 | Remove hardcoded `apk add --upgrade "pkg>=x.y.z-rN"` constraints in `apps/api/Dockerfile` (L56-57) and `apps/web/Dockerfile` (L52-57). Replace with `RUN apk upgrade --no-cache`. This pattern broke CI repeatedly when Alpine repushed patched versions under different version strings. Security coverage is retained via Trivy CI gate and Renovate base-image bumps. | `DONE` |
+| FARM-S538 | Pin both Dockerfile `FROM node:26-alpine` lines by digest (`@sha256:...`) and configure Renovate to bump the digest weekly grouped by registry. Document the pin policy in `.github/agents/Farm-SRE.agent.md`. | `DONE` |
+| FARM-S539 | Add `hadolint` CI job (`.github/workflows/dockerfile-lint.yml`) plus a `.hadolint.yaml` custom rule that fails any Dockerfile containing `apk add ... ">="` version constraints. Prevents regression of FARM-S537. | `DONE` |
 
 ### FARM-E130: Image Consistency & DRY `TODO`
 

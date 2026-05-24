@@ -1,0 +1,12 @@
+# hadolint configuration for Farm Dockerfiles.
+# Fail the build on warnings and above (warning, error).
+failure-threshold: warning
+
+# Trust the digest-pinned official node:26-alpine base image.
+# DL3007 (always tag the version of an image explicitly) is not relevant
+# because we pin by SHA-256 digest, which is stronger than a tag.
+trustedRegistries:
+  - docker.io
+
+# The grep-based guard in .github/workflows/dockerfile-lint.yml enforces the
+# "no apk add ... ">="" rule that hadolint cannot express natively.

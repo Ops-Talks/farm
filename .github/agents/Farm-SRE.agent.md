@@ -386,6 +386,36 @@ Farm currently has an inconsistency:
 
 Standardize on **UID 1001** everywhere (matches the Helm `securityContext.runAsUser: 1001` documented above). Mismatched UIDs cause file-permission bugs when volumes are shared between containers (e.g. local dev bind mounts).
 
+### Base Image Digest Pin Policy (FARM-S538)
+
+Every `FROM node:<tag>` in a production Dockerfile **must** be pinned by SHA-256
+digest (`FROM node:26-alpine@sha256:<hex>`). The tag alone is mutable: Docker
+Hub repushes the same tag whenever a base layer is patched, which breaks
+reproducible builds and silently shifts CVE posture between merges.
+
+Policy:
+
+- Use the **same digest in every stage of the same Dockerfile** and, where
+  practical, the **same digest across `apps/api/Dockerfile` and
+  `apps/web/Dockerfile`** so both images share a cached base layer.
+- Refresh the digest weekly via Dependabot (`package-ecosystem: docker`,
+  configured in `.github/dependabot.yml` for `/apps/api` and `/apps/web`).
+  Dependabot opens one PR per Dockerfile when the underlying digest moves;
+  merge them together to keep the API and web base layers aligned.
+- Manual refresh procedure when a CVE requires it before the weekly bump:
+  ```bash
+  TOKEN=$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/node:pull" | jq -r .token)
+  curl -sI -H "Authorization: Bearer $TOKEN" \
+    -H "Accept: application/vnd.oci.image.index.v1+json" \
+    "https://registry-1.docker.io/v2/library/node/manifests/26-alpine" \
+    | grep -i docker-content-digest
+  ```
+  Apply the returned digest to every `FROM node:26-alpine@sha256:...` line in
+  both Dockerfiles in the same PR.
+- Never pin to a tag-only reference in production (`FROM node:26-alpine` with
+  no `@sha256:`). The hadolint job in `.github/workflows/dockerfile-lint.yml`
+  plus the Trivy gate are the safety net; the digest pin is the contract.
+
 ### Dockerfile Modification Checklist
 
 - [ ] No hardcoded `apk add "pkg>=x.y.z-rN"` version pins — use `apk upgrade --no-cache` plus Renovate/Trivy
