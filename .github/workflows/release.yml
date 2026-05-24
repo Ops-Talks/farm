@@ -112,3 +112,92 @@ jobs:
           output-file: sbom.spdx.json
           upload-artifact: true
           upload-release-assets: false
+
+      # Expose the freshly bumped version to downstream jobs so they can attach
+      # per-image SBOMs to the GitHub Release created by release-it.
+      - name: Capture released version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./apps/api/package.json').version")"
+          echo "Released version: ${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+  # FARM-S544: produce per-image SPDX SBOMs and SLSA provenance attestations
+  # for the official farm-api and farm-web container images, and attach the
+  # SBOMs as assets on the GitHub Release created by release-it.
+  #
+  # NOTE: Farm does not currently publish container images to a registry. Until
+  # a GHCR push is wired in (see FARM-E132 / FARM-S546 for cosign signing on
+  # the same images), the images are built locally with `push: false` and
+  # SBOMs are generated against the loaded image via anchore/sbom-action,
+  # matching the existing source-SBOM pattern in this workflow. When the
+  # registry push is added, flip `push: true`, add the registry-login step,
+  # and replace anchore/sbom-action with
+  # `docker buildx imagetools inspect <image>@<digest> --format '{{ json .SBOM.SPDX }}'`
+  # to read the attestation produced by build-push-action's `sbom: true`.
+  images-sbom:
+    name: Image SBOM — ${{ matrix.image.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: release
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: farm-api
+            dockerfile: apps/api/Dockerfile
+            target: production
+          - name: farm-web
+            dockerfile: apps/web/Dockerfile
+            target: runner
+    steps:
+      - name: Checkout released tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+
+      - name: Build ${{ matrix.image.name }} image (with SBOM + provenance)
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          target: ${{ matrix.image.target }}
+          load: true
+          tags: ${{ matrix.image.name }}:${{ needs.release.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}-release
+          cache-to: type=gha,scope=${{ matrix.image.name }}-release,mode=max
+          # SBOM and provenance flags are forward-looking — they take effect
+          # when `push: true` is enabled and the OCI exporter is used. With
+          # `load: true` the docker exporter strips attestations, so the SBOM
+          # is also generated explicitly below via anchore/sbom-action.
+          sbom: true
+          provenance: mode=max
+          push: false
+
+      - name: Generate SPDX SBOM for ${{ matrix.image.name }}
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ matrix.image.name }}:${{ needs.release.outputs.version }}
+          artifact-name: ${{ matrix.image.name }}-sbom.spdx.json
+          format: spdx-json
+          output-file: ${{ matrix.image.name }}-sbom.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
+
+      - name: Attach SBOM to GitHub Release ${{ needs.release.outputs.tag }}
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: ${{ needs.release.outputs.tag }}
+          files: ${{ matrix.image.name }}-sbom.spdx.json
+          fail_on_unmatched_files: true

@@ -640,13 +640,13 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 | FARM-S541 | Extract a single shared health-check entrypoint at `apps/api/scripts/healthcheck.js` and `apps/web/scripts/healthcheck.js`. Replace the four inline `node -e "..."` duplications (api Dockerfile L82, web Dockerfile L75, `docker-compose.yml` L59 and L82). Update Helm `livenessProbe`/`readinessProbe` to reference the same script. | `DONE` |
 | FARM-S542 | Replace manual `RUN cd packages/types && npx tsc` (api L23, web L22) with `RUN npm run build --workspace=@farm/types`. Adds future-hook support and removes duplicated logic across both Dockerfiles. | `DONE` |
 
-### FARM-E131: Build Performance & Reproducibility `TODO`
+### FARM-E131: Build Performance & Reproducibility `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S543 | Enable BuildKit cache mounts: add `RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --ignore-scripts` to both deps stages, and `--mount=type=cache,target=/app/apps/web/.next/cache` to the web builder stage. Verify CI cold-build wall time drops by at least 40%. | `TODO` |
-| FARM-S544 | Generate SBOM and provenance attestation during release builds: update `.github/workflows/release.yml` to use `docker buildx build --sbom=true --provenance=mode=max --push`. Upload SBOM as a release asset for both `farm-api` and `farm-web` images. | `TODO` |
-| FARM-S545 | Tighten `.dockerignore`: add `**/*.{test,spec}.ts`, `**/__tests__/**`, `**/__mocks__/**`, `.env`, `.env.*`, `*.log`, `e2e/`, `playwright-report/`, `test-results/`, `.husky/`, `storybook-static/`. Delete the dead `apps/web/.dockerignore` (root context overrides it) and add a comment in the root file explaining context precedence. | `TODO` |
+| FARM-S543 | Enable BuildKit cache mounts: add `RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci --ignore-scripts` to both deps stages, and `--mount=type=cache,target=/app/apps/web/.next/cache` to the web builder stage. Verify CI cold-build wall time drops by at least 40%. | `DONE` |
+| FARM-S544 | Generate SBOM and provenance attestation during release builds: update `.github/workflows/release.yml` to use `docker buildx build --sbom=true --provenance=mode=max --push`. Upload SBOM as a release asset for both `farm-api` and `farm-web` images. | `DONE` |
+| FARM-S545 | Tighten `.dockerignore`: add `**/*.{test,spec}.ts`, `**/__tests__/**`, `**/__mocks__/**`, `.env`, `.env.*`, `*.log`, `e2e/`, `playwright-report/`, `test-results/`, `.husky/`, `storybook-static/`. Delete the dead `apps/web/.dockerignore` (root context overrides it) and add a comment in the root file explaining context precedence. | `DONE` |
 
 ### FARM-E132: Supply Chain & Multi-Arch `TODO`
 

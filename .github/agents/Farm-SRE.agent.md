@@ -429,15 +429,67 @@ Policy:
   no `@sha256:`). The hadolint job in `.github/workflows/dockerfile-lint.yml`
   plus the Trivy gate are the safety net; the digest pin is the contract.
 
+### BuildKit Cache Mounts (FARM-S543)
+
+Both production Dockerfiles enable BuildKit cache mounts to cut cold-build wall
+time on CI (where npm fetches and Next.js compile dominate):
+
+```dockerfile
+# syntax=docker/dockerfile:1.7
+...
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --ignore-scripts
+...
+# Web builder stage only:
+RUN --mount=type=cache,target=/app/apps/web/.next/cache,sharing=locked \
+    npm run build
+```
+
+Rules when editing or adding stages:
+
+- The `# syntax=docker/dockerfile:1.7` (or `:1`) directive is **required** at
+  the very top of the Dockerfile. Without it, BuildKit silently ignores
+  `--mount=type=cache` and falls back to legacy frontends.
+- Apply the npm cache mount to **every** `npm ci` invocation, including the
+  production stage that runs `npm ci --omit=dev --workspace=...`.
+- The Next.js cache lives at `<project>/.next/cache` and is repopulated on
+  every `next build`. Use `sharing=locked` so parallel matrix jobs do not
+  corrupt the cache.
+- In CI, pair cache mounts with `cache-from: type=gha,scope=<image>` and
+  `cache-to: type=gha,mode=max,scope=<image>` on `docker/build-push-action`.
+  Use **distinct scopes per image** (`farm-api` vs `farm-web`); reuse the
+  same scope across jobs that build the same image (e.g.
+  `${image}-uidcheck`, `${image}-release`) so the cache hits across runs.
+- Local validation: `docker buildx prune -af && docker build ...` measures
+  cold; a follow-up `docker build --no-cache ...` measures the warm-cache
+  benefit (Docker layer cache disabled, BuildKit cache mounts retained).
+
+### Root `.dockerignore` is the Single Source of Truth (FARM-S545)
+
+When the build context is the monorepo root (which is the case for both
+`apps/api/Dockerfile` and `apps/web/Dockerfile`), BuildKit **only** honors the
+`.dockerignore` file at the context root. Workspace-level files such as
+`apps/web/.dockerignore` or `apps/api/.dockerignore` are silently ignored.
+
+- Do **not** add per-app `.dockerignore` files. Extend the root file.
+- When excluding new patterns, verify both Dockerfile builds still succeed —
+  a pattern that excludes a fixture some stage depended on must be narrowed,
+  not removed wholesale.
+- The leading comment block in `/.dockerignore` is normative; keep it in sync
+  if the precedence rule ever changes.
+
 ### Dockerfile Modification Checklist
 
 - [ ] No hardcoded `apk add "pkg>=x.y.z-rN"` version pins — use `apk upgrade --no-cache` plus Renovate/Trivy
 - [ ] Base image pinned by digest (`@sha256:...`) in production Dockerfiles
+- [ ] `# syntax=docker/dockerfile:1.7` directive present at the top of the file (required for cache mounts)
+- [ ] `RUN --mount=type=cache,target=/root/.npm,sharing=locked` on every `npm ci` step
+- [ ] Web builder stage uses `--mount=type=cache,target=/app/apps/web/.next/cache,sharing=locked` on `next build`
 - [ ] Both `/app/node_modules` and `/app/apps/<name>/node_modules` copied from `deps` stage
 - [ ] Production stage runs `--workspace=apps/<name>` and strips npm
 - [ ] Final stage runs as UID 1001 (matches Helm `securityContext`)
 - [ ] `COPY --chown=` used instead of post-copy `chown -R`
 - [ ] HEALTHCHECK references a script file, not inline `node -e`
-- [ ] `.dockerignore` excludes `node_modules`, `.git`, `coverage`, `dist`, `.env*`, test files
+- [ ] Root `.dockerignore` (not per-app) excludes `node_modules`, `.git`, `coverage`, `dist`, `.env*`, test files
 - [ ] `docker buildx build --platform linux/amd64,linux/arm64` succeeds (multi-arch ready)
 - [ ] Trivy scan reports 0 HIGH/CRITICAL CVEs on the final image

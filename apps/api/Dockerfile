@@ -1,4 +1,7 @@
+# syntax=docker/dockerfile:1.7
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
+# The `# syntax=` directive above enables BuildKit features such as
+# `RUN --mount=type=cache` used in the deps stage (FARM-S543).
 
 # Stage 1: Install dependencies
 FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
@@ -15,7 +18,8 @@ COPY packages/types/package.json         ./packages/types/
 COPY apps/api/package.json               ./apps/api/
 COPY apps/web/package.json               ./apps/web/
 
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --ignore-scripts
 
 # Build @farm/types so the workspace symlink target has compiled JS + types.
 COPY packages/types/src         ./packages/types/src
@@ -64,7 +68,8 @@ COPY apps/web/package.json               ./apps/web/
 # Install ONLY the API workspace's production dependencies.
 # Without --workspace, npm ci would install all workspaces (including apps/web with
 # Next.js, React, Tailwind, etc.), inflating the production image by ~1GB+.
-RUN npm ci --omit=dev --ignore-scripts --workspace=apps/api \
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --omit=dev --ignore-scripts --workspace=apps/api \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Create a non-root runtime user with UID/GID 1001 to align with the web image

@@ -1,5 +1,8 @@
+# syntax=docker/dockerfile:1.7
 # Stage 1: Install dependencies
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
+# The `# syntax=` directive above enables BuildKit features such as
+# `RUN --mount=type=cache` used in the deps and builder stages (FARM-S543).
 FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
 LABEL org.opencontainers.image.title="farm-web" \
       org.opencontainers.image.description="Farm portal — Next.js web application" \
@@ -14,7 +17,8 @@ COPY packages/types/package.json        ./packages/types/
 COPY apps/web/package.json              ./apps/web/
 COPY apps/api/package.json              ./apps/api/
 
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+    npm ci --ignore-scripts
 
 # Build @farm/types so the workspace symlink target has compiled JS.
 COPY packages/types/src ./packages/types/src
@@ -41,7 +45,12 @@ WORKDIR /app/apps/web
 ARG API_INTERNAL_URL=http://api:3000/api
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+# Cache the Next.js incremental build cache across builds (FARM-S543). The
+# directory lives inside the project (`<project>/.next/cache`) and is repopulated
+# on every `next build`; persisting it across builds skips Babel/SWC transforms
+# and the webpack module graph for unchanged files.
+RUN --mount=type=cache,target=/app/apps/web/.next/cache,sharing=locked \
+    npm run build
 
 # Stage 3: Production
 FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS runner
