@@ -92,6 +92,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Update Helm chart appVersion
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" deploy/helm/farm/Chart.yaml
+
       - name: Run Release
         run: npm run release -w apps/api -- --ci --increment=${{ github.event.inputs.increment || 'patch' }}
         env:

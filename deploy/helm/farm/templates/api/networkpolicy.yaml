@@ -1,0 +1,32 @@
+{{- if .Values.api.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "farm.fullname" . }}-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.api.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "farm.api.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "farm.web.selectorLabels" . | nindent 14 }}
+        {{- if .Values.api.networkPolicy.ingressControllerNamespaceSelector }}
+        - namespaceSelector:
+            {{- toYaml .Values.api.networkPolicy.ingressControllerNamespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.api.networkPolicy.ingressControllerPodSelector | nindent 12 }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - {} # Allow all egress — tighten with explicit rules in production
+{{- end }}

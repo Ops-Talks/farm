@@ -1,9 +1,10 @@
 # Default values for the Farm Helm chart.
 # Override any value with -f my-values.yaml or --set key=value.
 
-# -- Number of replicas for both api and web deployments.
-# Override per-workload with api.replicaCount / web.replicaCount.
-replicaCount: 1
+# -- Override the chart name used in resource names.
+nameOverride: ""
+# -- Override the full release name used in resource names.
+fullnameOverride: ""
 
 # -- Global image settings. Individual overrides are available under api.image and web.image.
 global:
@@ -54,7 +55,7 @@ api:
     allowPrivilegeEscalation: false
     runAsNonRoot: true
     runAsUser: 1001
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
     capabilities:
       drop:
         - ALL
@@ -99,11 +100,30 @@ api:
     timeoutSeconds: 5
     failureThreshold: 3
 
+  # -- Startup probe configuration. Runs before liveness/readiness; prevents
+  # premature restarts during slow cold starts.
+  startupProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    failureThreshold: 20
+    periodSeconds: 5
+
   # -- Extra environment variables injected directly into the container.
   # These supplement (and override) the values generated from api.env below.
   extraEnv: []
   # - name: SOME_VAR
   #   value: "some-value"
+
+  # -- Extra volumes for the API pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
+  extraVolumes: []
+  # - name: tmp
+  #   emptyDir: {}
+
+  # -- Extra volume mounts for the API container.
+  extraVolumeMounts: []
+  # - name: tmp
+  #   mountPath: /tmp
 
   # -- Application environment configuration (non-sensitive).
   # All values end up in a ConfigMap and are injected via envFrom.
@@ -118,6 +138,10 @@ api:
     DATABASE_POOL_CONNECT_TIMEOUT: "5000"
     DATABASE_STATEMENT_TIMEOUT: "30000"
     DATABASE_POOL_IDLE_TIMEOUT: "10000"
+    THROTTLE_TTL: "60000"
+    THROTTLE_LIMIT: "10"
+    DATABASE_POOL_SIZE: "10"
+    LOG_LEVEL: "info"
 
   # -- Observability configuration.
   # Farm emits OpenTelemetry traces and Pyroscope profiles, and proxies queries
@@ -166,6 +190,20 @@ api:
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     # targetMemoryUtilizationPercentage: 80
+    # -- HPA scale behavior. Controls scale-up and scale-down stabilization.
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Replicas
+            value: 1
+            periodSeconds: 60
+      scaleUp:
+        stabilizationWindowSeconds: 60
+        policies:
+          - type: Replicas
+            value: 2
+            periodSeconds: 60
 
   # ─── PDB ──────────────────────────────────────────────────────────────────
 
@@ -192,6 +230,15 @@ api:
   #       matchLabels:
   #         app.kubernetes.io/component: api
   topologySpreadConstraints: []
+
+  # -- NetworkPolicy configuration for the API pod.
+  networkPolicy:
+    # -- Enable NetworkPolicy for the API pod (requires a CNI that supports NetworkPolicy).
+    enabled: false
+    # -- Namespace selector for the Ingress controller pod (used to allow ingress traffic).
+    ingressControllerNamespaceSelector: {}
+    # -- Pod selector for the Ingress controller pod.
+    ingressControllerPodSelector: {}
 
 # ─── WEB ─────────────────────────────────────────────────────────────────────
 
@@ -257,7 +304,24 @@ web:
     timeoutSeconds: 5
     failureThreshold: 3
 
+  startupProbe:
+    httpGet:
+      path: /api/health
+      port: 3001
+    failureThreshold: 20
+    periodSeconds: 5
+
   extraEnv: []
+
+  # -- Extra volumes for the web pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
+  extraVolumes: []
+  # - name: tmp
+  #   emptyDir: {}
+
+  # -- Extra volume mounts for the web container.
+  extraVolumeMounts: []
+  # - name: tmp
+  #   mountPath: /tmp
 
   # -- Web application environment (non-sensitive).
   env:
@@ -275,6 +339,20 @@ web:
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
+    # -- HPA scale behavior. Controls scale-up and scale-down stabilization.
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Replicas
+            value: 1
+            periodSeconds: 60
+      scaleUp:
+        stabilizationWindowSeconds: 60
+        policies:
+          - type: Replicas
+            value: 2
+            periodSeconds: 60
 
   podDisruptionBudget:
     enabled: false
@@ -294,6 +372,12 @@ web:
   #         app.kubernetes.io/component: web
   topologySpreadConstraints: []
 
+  # -- NetworkPolicy configuration for the web pod.
+  networkPolicy:
+    enabled: false
+    ingressControllerNamespaceSelector: {}
+    ingressControllerPodSelector: {}
+
 # ─── INGRESS ─────────────────────────────────────────────────────────────────
 
 ingress:
@@ -310,11 +394,17 @@ ingress:
     hostname: farm-api.example.com
     path: /
     pathType: Prefix
+    # -- Annotations specific to the API Ingress resource.
+    # Merged with (and overrides) ingress.annotations for the API Ingress.
+    annotations: {}
   # -- Hostname and path for the web service.
   web:
     hostname: farm.example.com
     path: /
     pathType: Prefix
+    # -- Annotations specific to the web Ingress resource.
+    # Merged with (and overrides) ingress.annotations for the web Ingress.
+    annotations: {}
   # -- TLS configuration.
   tls: []
   # - secretName: farm-tls
@@ -331,8 +421,8 @@ migration:
   restartPolicy: OnFailure
   # -- Backoff limit before the Job is considered failed.
   backoffLimit: 3
-  # -- Maximum duration in seconds before the Job is terminated (optional).
-  activeDeadlineSeconds: ~
+  # -- Maximum duration in seconds before the Job is terminated.
+  activeDeadlineSeconds: 300
   # -- Resources for the migration Job pod.
   resources:
     requests:
@@ -427,6 +517,8 @@ prometheusRule:
   namespace: ""
   # -- Labels added to the PrometheusRule (must match the Prometheus operator's ruleNamespaceSelector/ruleSelector).
   additionalLabels: {}
+  # -- Base URL for alert runbooks. Appended with #alert-name-slug.
+  runbookBaseUrl: "https://github.com/Ops-Talks/farm/blob/main/docs/runbooks/alerts.md"
 
 # ─── GRAFANA DASHBOARDS ───────────────────────────────────────────────────────
 # Packages the Farm Grafana dashboards as ConfigMaps with the grafana_dashboard: "1"

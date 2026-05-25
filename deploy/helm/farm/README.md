@@ -251,11 +251,19 @@ api:
 | `api.image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `api.existingSecret` | External secret name (skips Secret creation) | `""` |
 | `api.env.*` | Non-sensitive environment variables | see values.yaml |
+| `api.env.THROTTLE_TTL` | Throttle window in milliseconds | `"60000"` |
+| `api.env.THROTTLE_LIMIT` | Maximum requests per throttle window | `"10"` |
+| `api.env.LOG_LEVEL` | Application log level | `"info"` |
+| `api.env.DATABASE_POOL_SIZE` | TypeORM connection pool size | `"10"` |
 | `api.secrets.*` | Sensitive env vars (only used if no existingSecret) | `""` |
 | `api.observability.*` | OTEL/Pyroscope/backend URL configuration | see values.yaml |
 | `api.resources` | CPU/memory requests and limits | see values.yaml |
+| `api.startupProbe` | Startup probe (httpGet /api/health, failureThreshold 20, periodSeconds 5) | see values.yaml |
 | `api.autoscaling.enabled` | Enable HPA | `false` |
-| `api.podDisruptionBudget.enabled` | Enable PDB | `false` |
+| `api.autoscaling.behavior` | HPA scale behavior (scale-down 300s / scale-up 60s) | see values.yaml |
+| `api.podDisruptionBudget.enabled` | Enable PDB (only meaningful with replicaCount >= 2) | `false` |
+| `api.topologySpreadConstraints` | Pod topology spread constraints (e.g. zone distribution) | `[]` |
+| `api.networkPolicy.enabled` | Enable NetworkPolicy for the API pod | `false` |
 
 ### Web
 
@@ -266,6 +274,25 @@ api:
 | `web.env.NEXT_PUBLIC_API_URL` | Public API base URL | `""` |
 | `web.env.NEXT_PUBLIC_WS_URL` | WebSocket URL for the browser | `""` |
 | `web.env.API_INTERNAL_URL` | Internal API URL (auto-resolved if empty) | `""` |
+| `web.startupProbe` | Startup probe (httpGet /api/health port 3001, failureThreshold 20, periodSeconds 5) | see values.yaml |
+| `web.autoscaling.behavior` | HPA scale behavior (scale-down 300s / scale-up 60s) | see values.yaml |
+| `web.topologySpreadConstraints` | Pod topology spread constraints (e.g. zone distribution) | `[]` |
+| `web.networkPolicy.enabled` | Enable NetworkPolicy for the web pod | `false` |
+
+### Migration Job
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `migration.enabled` | Run migration Job as pre-install/pre-upgrade hook | `true` |
+| `migration.activeDeadlineSeconds` | Maximum Job duration before termination | `300` |
+| `migration.backoffLimit` | Job retry limit before failure | `3` |
+
+### PrometheusRule
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `prometheusRule.enabled` | Create PrometheusRule | `false` |
+| `prometheusRule.runbookBaseUrl` | Base URL for alert runbooks (appended with #alert-name-slug) | GitHub README anchor |
 
 ### Ingress
 
@@ -273,10 +300,28 @@ api:
 |-----------|-------------|---------|
 | `ingress.enabled` | Enable Ingress | `false` |
 | `ingress.className` | Ingress class name | `""` |
-| `ingress.annotations` | Additional annotations | `{}` |
+| `ingress.annotations` | Shared annotations applied to both API and web Ingress resources | `{}` |
 | `ingress.api.hostname` | Hostname for the API Ingress rule | `""` |
+| `ingress.api.annotations` | Per-resource annotations for the API Ingress (merged with ingress.annotations) | `{}` |
 | `ingress.web.hostname` | Hostname for the Web Ingress rule | `""` |
+| `ingress.web.annotations` | Per-resource annotations for the web Ingress (merged with ingress.annotations) | `{}` |
 | `ingress.tls` | TLS configuration array | `[]` |
+
+#### WebSocket support
+
+Farm uses WebSockets for real-time events (`NEXT_PUBLIC_WS_URL`). When running
+behind NGINX Ingress Controller, increase the proxy timeout annotations to
+prevent mid-session disconnects (NGINX defaults to 60 s for idle connections):
+
+```yaml
+ingress:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+```
+
+These are pre-configured in `values-production.yaml`.
 
 ### External Database
 

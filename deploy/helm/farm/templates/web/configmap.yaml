@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "farm.fullname" . }}-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.web.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.web.env }}
+  {{- if eq $key "API_INTERNAL_URL" }}
+  {{ $key }}: {{ include "farm.apiInternalUrl" $ | quote }}
+  {{- else }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
