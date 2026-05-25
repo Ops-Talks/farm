@@ -42,6 +42,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "farm.fullname" . }}-api
+            - secretRef:
+                name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
