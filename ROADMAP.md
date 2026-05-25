@@ -141,7 +141,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 47: API Contract Stability | 2 | 7 | `DONE` |
 | Phase 48: Platform Resilience | 3 | 10 | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
-| Phase 50: Docker & Container Hardening | 4 | 11 | `TODO` |
+| Phase 50: Docker & Container Hardening | 4 | 11 | `DONE` |
 | **Total** | **132** | **511** | |
 
 ---
@@ -624,7 +624,7 @@ Outcome of a deep audit of `apps/api/Dockerfile`, `apps/web/Dockerfile`, `.docke
 
 Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` under the "Dockerfile Hardening Lessons" section.
 
-### FARM-E129: CVE & Base Image Strategy `TODO`
+### FARM-E129: CVE & Base Image Strategy `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
@@ -632,7 +632,7 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 | FARM-S538 | Pin both Dockerfile `FROM node:26-alpine` lines by digest (`@sha256:...`) and configure Renovate to bump the digest weekly grouped by registry. Document the pin policy in `.github/agents/Farm-SRE.agent.md`. | `DONE` |
 | FARM-S539 | Add `hadolint` CI job (`.github/workflows/dockerfile-lint.yml`) plus a `.hadolint.yaml` custom rule that fails any Dockerfile containing `apk add ... ">="` version constraints. Prevents regression of FARM-S537. | `DONE` |
 
-### FARM-E130: Image Consistency & DRY `TODO`
+### FARM-E130: Image Consistency & DRY `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
@@ -648,9 +648,9 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 | FARM-S544 | Generate SBOM and provenance attestation during release builds: update `.github/workflows/release.yml` to use `docker buildx build --sbom=true --provenance=mode=max --push`. Upload SBOM as a release asset for both `farm-api` and `farm-web` images. | `DONE` |
 | FARM-S545 | Tighten `.dockerignore`: add `**/*.{test,spec}.ts`, `**/__tests__/**`, `**/__mocks__/**`, `.env`, `.env.*`, `*.log`, `e2e/`, `playwright-report/`, `test-results/`, `.husky/`, `storybook-static/`. Delete the dead `apps/web/.dockerignore` (root context overrides it) and add a comment in the root file explaining context precedence. | `DONE` |
 
-### FARM-E132: Supply Chain & Multi-Arch `TODO`
+### FARM-E132: Supply Chain & Multi-Arch `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S546 | Add `cosign` signing to `release.yml` for both `farm-api` and `farm-web` images. Publish the public key and document verification procedure in `deploy/helm/farm/README.md`. | `TODO` |
-| FARM-S547 | Enable multi-arch builds (`linux/amd64,linux/arm64`) via `docker buildx` in CI. Evaluate native ARM runners vs QEMU emulation. Publish both architectures under a single tag manifest. | `TODO` |
+| FARM-S546 | Add `cosign` signing to `release.yml` for both `farm-api` and `farm-web` images. Publish the public key and document verification procedure in `deploy/helm/farm/README.md`. Implemented as Sigstore **keyless** signing (Fulcio + Rekor) using the GHA OIDC token — no public key to distribute. GHCR push (`ghcr.io/ops-talks/farm-api`, `ghcr.io/ops-talks/farm-web`) enabled with `packages: write` + `id-token: write`. Verification recipe documented in the Helm README under "Image Provenance and Signing". | `DONE` |
+| FARM-S547 | Enable multi-arch builds (`linux/amd64,linux/arm64`) via `docker buildx` in CI. Evaluate native ARM runners vs QEMU emulation. Publish both architectures under a single tag manifest. Implemented via `docker/setup-qemu-action` on the default amd64 runner; per-platform SBOM + SLSA provenance attestations are produced automatically by `sbom: true` + `provenance: mode=max`. Native ARM runner migration is documented in `Farm-SRE.agent.md` as a future optimization. | `DONE` |

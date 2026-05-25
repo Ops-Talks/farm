@@ -478,6 +478,74 @@ When the build context is the monorepo root (which is the case for both
 - The leading comment block in `/.dockerignore` is normative; keep it in sync
   if the precedence rule ever changes.
 
+### Cosign Keyless Signing (FARM-S546)
+
+Every release built by `.github/workflows/release.yml` pushes both Farm images
+to GHCR (`ghcr.io/ops-talks/farm-api`, `ghcr.io/ops-talks/farm-web`) and
+signs the resulting manifest with cosign using **Sigstore keyless** signing.
+
+Operating rules:
+
+- The signing identity is the GitHub Actions workflow itself. The job runs
+  with `permissions.id-token: write`, exchanges the OIDC token for a
+  short-lived Fulcio certificate, and records the signature in the public
+  Rekor transparency log. **No private key is stored anywhere.**
+- Verification is performed against the Sigstore public good trust root.
+  The canonical command is documented in `deploy/helm/farm/README.md` under
+  "Image Provenance and Signing". Any CD/admission system that pulls a Farm
+  image in production (e.g. Kyverno `verifyImages`, Connaisseur, sigstore
+  policy-controller) **must** be configured with:
+    - `certificateIdentityRegExp: ^https://github.com/Ops-Talks/farm/`
+    - `certificateOidcIssuer: https://token.actions.githubusercontent.com`
+- The same job produces SLSA v1.0 provenance (`provenance: mode=max`) and an
+  SPDX SBOM attestation (`sbom: true`). These are stored as OCI 1.1 referrers
+  on the same digest and verified with `cosign verify-attestation
+  --type slsaprovenance1` and `--type spdxjson` respectively.
+- A stand-alone `*-sbom.spdx.json` is also attached to the GitHub Release for
+  consumers without a cosign-aware client. Do not remove that uploader — it
+  is the only path for non-OCI consumers.
+- Never bypass cosign for a hotfix image. If the release workflow is broken,
+  fix the workflow; do not push unsigned images manually with `docker push`.
+  An unsigned image will fail any downstream admission policy that enforces
+  the trust root above.
+
+### Multi-Arch Builds via QEMU (FARM-S547)
+
+The release job builds `linux/amd64,linux/arm64` manifests in a single
+buildx invocation, using `docker/setup-qemu-action` on the default
+`ubuntu-latest` (amd64) runner to emulate ARM.
+
+Operating rules:
+
+- The pinned base image (`node:26-alpine@sha256:7c6af1...`) is itself a
+  multi-arch manifest list — verify with
+  `docker buildx imagetools inspect node:26-alpine@<digest>` before pinning a
+  new digest. If a single-platform child manifest is pinned by mistake, the
+  ARM build will fail with `no matching manifest for linux/arm64/v8`.
+- `sbom: true` and `provenance: mode=max` produce **per-platform** SBOM and
+  provenance attestations automatically — there is no separate ARM scan to
+  wire up. The single cosign sign on the manifest list digest covers both
+  child images via the OCI 1.1 referrers graph.
+- ARM emulation via QEMU is ~3-5x slower than native amd64. **Future
+  optimization**: migrate the matrix to GitHub-hosted ARM runners
+  (`ubuntu-24.04-arm` / `runs-on: [self-hosted, linux, arm64]`) once they
+  are GA for private repos, then split the matrix into per-platform jobs and
+  re-merge with `docker buildx imagetools create`. Until then, keep QEMU —
+  it has zero infrastructure cost.
+- Do not use `load: true` with multi-arch + `push: true`. The local docker
+  engine can only load a single platform; the build will silently drop the
+  ARM child. The release job sets only `push: true` for that reason; the
+  `runtime-uid-check` job in `dockerfile-lint.yml` continues to use
+  `load: true` because it only validates the host architecture and that is
+  the intended scope.
+- Local repro of the multi-arch build graph:
+  ```bash
+  docker buildx build --platform linux/amd64,linux/arm64 \
+    -f apps/api/Dockerfile --target deps .
+  ```
+  Building only the `deps` stage is enough to prove the manifest selection
+  works on both platforms without spending the full Next.js compile budget.
+
 ### Dockerfile Modification Checklist
 
 - [ ] No hardcoded `apk add "pkg>=x.y.z-rN"` version pins — use `apk upgrade --no-cache` plus Renovate/Trivy

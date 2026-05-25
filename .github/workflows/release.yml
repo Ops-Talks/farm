@@ -127,26 +127,36 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
 
-  # FARM-S544: produce per-image SPDX SBOMs and SLSA provenance attestations
-  # for the official farm-api and farm-web container images, and attach the
-  # SBOMs as assets on the GitHub Release created by release-it.
+  # FARM-S544 / FARM-E132: build, push, sign, and attest the official farm-api
+  # and farm-web container images on every release. The job:
   #
-  # NOTE: Farm does not currently publish container images to a registry. Until
-  # a GHCR push is wired in (see FARM-E132 / FARM-S546 for cosign signing on
-  # the same images), the images are built locally with `push: false` and
-  # SBOMs are generated against the loaded image via anchore/sbom-action,
-  # matching the existing source-SBOM pattern in this workflow. When the
-  # registry push is added, flip `push: true`, add the registry-login step,
-  # and replace anchore/sbom-action with
-  # `docker buildx imagetools inspect <image>@<digest> --format '{{ json .SBOM.SPDX }}'`
-  # to read the attestation produced by build-push-action's `sbom: true`.
+  #   1. Logs into GHCR using the workflow's GITHUB_TOKEN (no long-lived PAT).
+  #   2. Builds a multi-arch manifest list (linux/amd64 + linux/arm64) via
+  #      buildx + QEMU emulation on the default ubuntu-latest amd64 runner
+  #      (FARM-S547).
+  #   3. Pushes the image to ghcr.io/ops-talks/<name> tagged with the semver
+  #      version and "latest", with `sbom: true` + `provenance: mode=max` so
+  #      SLSA provenance and an SPDX SBOM attestation are attached per
+  #      platform via the OCI 1.1 referrers API.
+  #   4. Signs the pushed manifest with cosign keyless (Sigstore Fulcio +
+  #      Rekor) using the GHA OIDC token (FARM-S546).
+  #   5. Emits a stand-alone SPDX SBOM file and attaches it as a release
+  #      asset on the GitHub Release created by release-it, so downstream
+  #      consumers without cosign/oras can still grab the SBOM.
+  #
+  # Permissions:
+  #   contents: write  — required to attach SBOMs to the GitHub Release.
+  #   packages: write  — required to push images to GHCR.
+  #   id-token: write  — required for cosign keyless signing (OIDC).
   images-sbom:
-    name: Image SBOM — ${{ matrix.image.name }}
+    name: Image SBOM + sign — ${{ matrix.image.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     needs: release
     permissions:
       contents: write
+      packages: write
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -157,6 +167,13 @@ jobs:
           - name: farm-web
             dockerfile: apps/web/Dockerfile
             target: runner
+    env:
+      # GHCR requires the owner segment to be lowercase. The Farm org is
+      # "Ops-Talks" on GitHub; we hardcode the lowercased form here rather
+      # than relying on a shell `tr` step so the value is visible in the
+      # workflow file and easy to audit.
+      REGISTRY: ghcr.io
+      IMAGE_BASE: ghcr.io/ops-talks/${{ matrix.image.name }}
     steps:
       - name: Checkout released tag
         uses: actions/checkout@v5
@@ -164,31 +181,81 @@ jobs:
           ref: ${{ needs.release.outputs.tag }}
           persist-credentials: false
 
+      - name: Set up QEMU (multi-arch emulation)
+        # FARM-S547: enables building linux/arm64 on the default amd64
+        # ubuntu-latest runner. ARM builds via QEMU are ~3-5x slower than
+        # native; switch to GitHub-hosted ARM runners (`ubuntu-24.04-arm`)
+        # once they are GA for private repos to recover that wall time.
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
-      - name: Build ${{ matrix.image.name }} image (with SBOM + provenance)
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (tags + OCI labels)
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ${{ env.IMAGE_BASE }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push ${{ matrix.image.name }} image (multi-arch, with SBOM + provenance)
+        id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
           file: ${{ matrix.image.dockerfile }}
           target: ${{ matrix.image.target }}
-          load: true
-          tags: ${{ matrix.image.name }}:${{ needs.release.outputs.version }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.image.name }}-release
           cache-to: type=gha,scope=${{ matrix.image.name }}-release,mode=max
-          # SBOM and provenance flags are forward-looking — they take effect
-          # when `push: true` is enabled and the OCI exporter is used. With
-          # `load: true` the docker exporter strips attestations, so the SBOM
-          # is also generated explicitly below via anchore/sbom-action.
+          # sbom: true embeds an SPDX SBOM attestation per platform via the
+          # OCI 1.1 referrers API. provenance: mode=max produces a full
+          # SLSA v1.0 provenance attestation including build invocation
+          # parameters. Both are signed implicitly with the same OIDC
+          # identity buildx uses for keyless attestation.
           sbom: true
           provenance: mode=max
-          push: false
 
-      - name: Generate SPDX SBOM for ${{ matrix.image.name }}
+      - name: Install cosign
+        # FARM-S546: keyless signing via Sigstore Fulcio + Rekor. The OIDC
+        # token from `id-token: write` is exchanged for a short-lived
+        # signing certificate; no key material is stored in the repo or in
+        # GitHub Secrets. Verification instructions live in
+        # deploy/helm/farm/README.md under "Image Provenance and Signing".
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+      - name: Sign pushed image with cosign (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          REF="${IMAGE_BASE}@${IMAGE_DIGEST}"
+          echo "Signing ${REF}"
+          cosign sign --yes "${REF}"
+
+      - name: Generate SPDX SBOM file for ${{ matrix.image.name }}
+        # Even though build-push-action already attached an SPDX attestation
+        # to the manifest, we also emit a stand-alone file so the GitHub
+        # Release page carries a downloadable SBOM for consumers without
+        # cosign/oras. We point anchore at the pushed digest (not a local
+        # docker image, since multi-arch + push is incompatible with
+        # `load: true`).
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          image: ${{ matrix.image.name }}:${{ needs.release.outputs.version }}
+          image: ${{ env.IMAGE_BASE }}@${{ steps.build.outputs.digest }}
           artifact-name: ${{ matrix.image.name }}-sbom.spdx.json
           format: spdx-json
           output-file: ${{ matrix.image.name }}-sbom.spdx.json
