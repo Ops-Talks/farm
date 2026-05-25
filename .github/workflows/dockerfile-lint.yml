@@ -59,7 +59,7 @@ jobs:
       - name: Guard against hardcoded apk version pins
         run: |
           set -euo pipefail
-          if grep -E -i -n 'apk[[:space:]]+add[^#]*">=' "${{ matrix.dockerfile }}"; then
+          if grep -E -i -n 'apk[[:space:]]+add[^#]*>=' "${{ matrix.dockerfile }}"; then
             echo "::error file=${{ matrix.dockerfile }}::Hardcoded apk version pins ('apk add ... \">=...\"') are not allowed. Use 'apk upgrade --no-cache' and rely on the Trivy CVE gate plus base-image digest bumps. See FARM-S537."
             exit 1
           fi
