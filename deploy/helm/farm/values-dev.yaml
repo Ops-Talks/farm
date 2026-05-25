@@ -14,6 +14,13 @@ api:
     ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001"
   secrets:
     JWT_SECRET: "dev-jwt-secret-change-me-at-least-32-chars"
+  # emptyDir mounts required when readOnlyRootFilesystem: true
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 web:
   replicaCount: 1

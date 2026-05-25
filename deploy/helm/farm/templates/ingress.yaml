@@ -1,12 +1,14 @@
 {{- if .Values.ingress.enabled }}
+{{- if .Values.ingress.api.hostname }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "farm.fullname" . }}
+  name: {{ include "farm.fullname" . }}-api
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+    {{- include "farm.api.labels" . | nindent 4 }}
+  {{- with merge (dict) (.Values.ingress.api.annotations | default dict) (.Values.ingress.annotations | default dict) }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
@@ -19,7 +21,6 @@ spec:
     {{- toYaml .Values.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    {{- if .Values.ingress.api.hostname }}
     - host: {{ .Values.ingress.api.hostname | quote }}
       http:
         paths:
@@ -30,8 +31,29 @@ spec:
                 name: {{ include "farm.fullname" . }}-api
                 port:
                   number: {{ .Values.api.service.port }}
-    {{- end }}
-    {{- if .Values.ingress.web.hostname }}
+{{- end }}
+{{- if .Values.ingress.web.hostname }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "farm.fullname" . }}-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.web.labels" . | nindent 4 }}
+  {{- with merge (dict) (.Values.ingress.web.annotations | default dict) (.Values.ingress.annotations | default dict) }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className | quote }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+  {{- end }}
+  rules:
     - host: {{ .Values.ingress.web.hostname | quote }}
       http:
         paths:
@@ -42,5 +64,5 @@ spec:
                 name: {{ include "farm.fullname" . }}-web
                 port:
                   number: {{ .Values.web.service.port }}
-    {{- end }}
+{{- end }}
 {{- end }}

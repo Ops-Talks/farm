@@ -28,4 +28,8 @@ spec:
           type: Utilization
           averageUtilization: {{ .Values.api.autoscaling.targetMemoryUtilizationPercentage }}
   {{- end }}
+  {{- with .Values.api.autoscaling.behavior }}
+  behavior:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}

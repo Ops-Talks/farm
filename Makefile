@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall sloth-generate
 
 help:
 	@echo "Available Targets:"
@@ -165,3 +165,7 @@ helm-diff:
 
 helm-uninstall:
 	helm uninstall $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)
+
+sloth-generate: ## Generate PrometheusRule SLOs from Sloth source
+	sloth generate -i observability/sloth-slos.yml -o /tmp/sloth-output.yaml
+	@echo "Sloth SLOs generated at /tmp/sloth-output.yaml — review and embed into templates/prometheusrule.yaml"

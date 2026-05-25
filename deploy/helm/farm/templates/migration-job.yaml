@@ -13,21 +13,54 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: {{ .Values.migration.backoffLimit }}
-  {{- if .Values.migration.activeDeadlineSeconds }}
   activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
-  {{- end }}
   template:
     metadata:
       labels:
         {{- include "farm.labels" . | nindent 8 }}
         app.kubernetes.io/component: migration
+      {{- with .Values.migration.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       restartPolicy: {{ .Values.migration.restartPolicy }}
+      serviceAccountName: {{ include "farm.api.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: bitnami/postgresql:16
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              until pg_isready -h ${DATABASE_HOST} -p ${DATABASE_PORT} -U ${DATABASE_USER}; do
+                echo "Waiting for database..."; sleep 2;
+              done
+          envFrom:
+            - configMapRef:
+                name: {{ include "farm.fullname" . }}-api
+            - secretRef:
+                name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
       {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: migration
           image: {{ include "farm.api.image" . }}
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
           command: ["npm", "run", "migration:run", "-w", "apps/api"]
           envFrom:
             - configMapRef:

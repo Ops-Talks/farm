@@ -30,6 +30,13 @@ api:
     DATABASE_POOL_CONNECT_TIMEOUT: "5000"
     DATABASE_STATEMENT_TIMEOUT: "30000"
     DATABASE_POOL_IDLE_TIMEOUT: "10000"
+    # Throttle: 100 requests per minute per IP in production
+    THROTTLE_TTL: "60000"
+    THROTTLE_LIMIT: "100"
+    # DATABASE_POOL_SIZE: set to (maxReplicas * 10) / number_of_db_connections_available
+    # With HPA maxReplicas=10 and pool size 10, peak connections = 100. Tune accordingly.
+    DATABASE_POOL_SIZE: "10"
+    LOG_LEVEL: "info"
 
   observability:
     otelEnabled: true
@@ -39,7 +46,7 @@ api:
     pyroscopeServerAddress: "http://pyroscope.monitoring.svc.cluster.local:4040"
     grafanaUrl: "http://grafana.monitoring.svc.cluster.local:3000"
     prometheusUrl: "http://prometheus.monitoring.svc.cluster.local:9090"
-    tempoUrl: "http://tempo.monitoring.svc.cluster.local:3100"
+    tempoUrl: "http://tempo.monitoring.svc.cluster.local:3200"
     lokiUrl: "http://loki.monitoring.svc.cluster.local:3100"
 
   autoscaling:
@@ -67,6 +74,14 @@ api:
     limits:
       cpu: 1000m
       memory: 1Gi
+
+  # emptyDir mounts required when readOnlyRootFilesystem: true
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
 web:
   replicaCount: 2
@@ -112,6 +127,12 @@ ingress:
   className: nginx
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # WebSocket support: increase proxy timeouts to prevent mid-session disconnects.
+    # The web frontend uses WebSockets for real-time events; without these
+    # annotations the NGINX ingress controller closes idle connections after 60s.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
   api:
     hostname: api.example.com
     path: /

@@ -26,6 +26,7 @@ spec:
           annotations:
             summary: "Farm API high error rate"
             description: "API 5xx error rate is {{ `{{ $value | humanizePercentage }}` }} (threshold: 5%)"
+            runbook_url: {{ printf "%s#farmapihigherrorrate" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiHighLatency
           expr: |
@@ -39,6 +40,7 @@ spec:
           annotations:
             summary: "Farm API high P99 latency"
             description: "P99 latency is {{ `{{ $value | humanizeDuration }}` }} (threshold: 2s)"
+            runbook_url: {{ printf "%s#farmapihighlatency" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiNodeHeapHigh
           expr: |
@@ -52,6 +54,7 @@ spec:
           annotations:
             summary: "Farm API Node.js heap usage high"
             description: "Heap usage is {{ `{{ $value | humanizePercentage }}` }} (threshold: 80%)"
+            runbook_url: {{ printf "%s#farmapinodesheaphigh" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiDown
           expr: up{job="farm-api"} == 0
@@ -62,6 +65,7 @@ spec:
           annotations:
             summary: "Farm API is down"
             description: "The Farm API has been unreachable for more than 1 minute"
+            runbook_url: {{ printf "%s#farmapidown" .Values.prometheusRule.runbookBaseUrl | quote }}
 
     - name: farm_api_recording
       interval: 30s

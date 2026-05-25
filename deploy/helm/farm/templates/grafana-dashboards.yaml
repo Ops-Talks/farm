@@ -5,7 +5,7 @@
 {{- $labelKey := .Values.grafanaDashboards.labelKey }}
 {{- $labelValue := .Values.grafanaDashboards.labelValue }}
 {{- $folder := .Values.grafanaDashboards.folder }}
-{{- $dashboards := list "farm-api" "farm-infra" "farm-logs" "farm-rum" "farm-slo" "farm-traces" }}
+{{- $dashboards := list "farm-api" "farm-infra" "farm-integrations" "farm-logs" "farm-rum" "farm-slo" "farm-traces" }}
 {{- range $dashboards }}
 ---
 apiVersion: v1
