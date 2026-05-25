@@ -2,6 +2,76 @@
 
 Deploy Farm (API + Web) on Kubernetes using Helm.
 
+## Image Provenance and Signing
+
+Farm publishes signed, multi-arch container images to GitHub Container Registry
+on every release:
+
+| Image | Registry reference | Architectures |
+|-------|--------------------|---------------|
+| API   | `ghcr.io/ops-talks/farm-api` | `linux/amd64`, `linux/arm64` |
+| Web   | `ghcr.io/ops-talks/farm-web` | `linux/amd64`, `linux/arm64` |
+
+Each pushed manifest is signed with [cosign](https://github.com/sigstore/cosign)
+using **Sigstore keyless** signing (Fulcio short-lived certificates + Rekor
+transparency log). There is no public key to distribute or rotate — verification
+is performed against the Sigstore public good trust root using the GitHub
+Actions OIDC identity that produced the signature.
+
+In addition, every release build attaches:
+
+- An **SLSA v1.0 provenance attestation** (`provenance: mode=max`) describing
+  the build invocation, source revision, and builder identity, per platform.
+- An **SPDX SBOM attestation** (`sbom: true`) listing every package in the
+  final image, per platform.
+- A stand-alone **SPDX SBOM file** uploaded as an asset on the GitHub Release
+  (`farm-api-sbom.spdx.json`, `farm-web-sbom.spdx.json`) for consumers without
+  cosign/oras tooling.
+
+### Verify the cosign signature
+
+```bash
+COSIGN_EXPERIMENTAL=1 cosign verify \
+  --certificate-identity-regexp "^https://github.com/Ops-Talks/farm/" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/ops-talks/farm-api:<TAG>
+```
+
+Replace `<TAG>` with the semver version you are deploying (for example
+`1.2.3`). The same command works for `farm-web` — swap the image name.
+
+A successful verification prints the signature certificate subject (the
+`release.yml` workflow ref) and the Rekor transparency log index, and exits 0.
+Any tampering with the manifest, or a signature produced by a different
+workflow/identity, exits non-zero.
+
+### Verify the SBOM attestation
+
+```bash
+COSIGN_EXPERIMENTAL=1 cosign verify-attestation \
+  --type spdxjson \
+  --certificate-identity-regexp "^https://github.com/Ops-Talks/farm/" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/ops-talks/farm-api:<TAG>
+```
+
+To verify the SLSA provenance attestation, swap `--type spdxjson` for
+`--type slsaprovenance1`.
+
+### Trust root
+
+Farm relies on the [Sigstore public good](https://docs.sigstore.dev/system_config/public_deployment/)
+instance:
+
+- **Certificate authority**: Fulcio (`https://fulcio.sigstore.dev`)
+- **Transparency log**: Rekor (`https://rekor.sigstore.dev`)
+- **OIDC issuer**: `https://token.actions.githubusercontent.com`
+
+No long-lived signing key is held by the Farm project; signatures are bound to
+the immutable GitHub Actions workflow run that produced them. This means
+rotating "the key" is a no-op — every signature is already short-lived and
+publicly audited via Rekor.
+
 ## Prerequisites
 
 - Helm 3.10+

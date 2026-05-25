@@ -20,6 +20,10 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // Storybook build output
     "storybook-static/**",
+    // Container healthcheck script: pure Node CommonJS, runs inside the
+    // production image with no bundler. The Next.js/TypeScript ESLint preset
+    // (which bans require() imports) does not apply here. See FARM-S541.
+    "scripts/**",
   ]),
 ]);
 

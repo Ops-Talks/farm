@@ -1,14 +1,50 @@
+# Single source of truth for monorepo Docker build contexts.
+#
+# IMPORTANT: BuildKit only honors the .dockerignore file located at the build
+# context root (this file). Workspace-level files such as `apps/web/.dockerignore`
+# or `apps/api/.dockerignore` are NEVER honored when the build context is the
+# monorepo root (which is the case for both farm-api and farm-web — see
+# `apps/*/Dockerfile` comments). Do not add per-app .dockerignore files;
+# extend this one instead. See FARM-S545.
+
+# Dependencies and build outputs
 node_modules
 **/node_modules
+dist
+**/dist
+coverage
+**/coverage
+storybook-static
+.next
+**/.next
+
+# Logs and debug
 npm-debug.log
 yarn-error.log
-dist
-coverage
-site
+*.log
+
+# Environment and secrets
+.env
+.env.*
+
+# Test sources, fixtures, and reports
+**/*.test.ts
+**/*.spec.ts
+**/__tests__/**
+**/__mocks__/**
+e2e/
+playwright-report/
+test-results/
+
+# Repo metadata and editor state
 .git
 .github
 .vscode
 .idea
+.husky
+
+# Docs and infra not needed in image build contexts
 docs
+site
 Dockerfile*
 docker-compose*.yml

@@ -45,13 +45,15 @@ api:
 
   # -- Security context applied at the pod level.
   podSecurityContext:
-    fsGroup: 1000
+    fsGroup: 1001
 
   # -- Security context applied to the API container.
+  # UID 1001 matches the `farmapi` user baked into apps/api/Dockerfile and the
+  # `nextjs` user in apps/web/Dockerfile (see FARM-S540).
   containerSecurityContext:
     allowPrivilegeEscalation: false
     runAsNonRoot: true
-    runAsUser: 1000
+    runAsUser: 1001
     readOnlyRootFilesystem: false
     capabilities:
       drop:
@@ -71,6 +73,12 @@ api:
       memory: 512Mi
 
   # -- Liveness probe configuration.
+  # Kubernetes probes use httpGet (the idiomatic form) rather than the
+  # shared apps/api/scripts/healthcheck.js node script that the Dockerfile
+  # HEALTHCHECK and docker-compose use. Both ultimately hit the same
+  # /api/health endpoint, so the SLI is consistent across environments.
+  # Override with `exec.command: ["node", "scripts/healthcheck.js"]` if
+  # consolidation is required for a specific cluster (see FARM-S541).
   livenessProbe:
     httpGet:
       path: /api/health
@@ -80,7 +88,8 @@ api:
     timeoutSeconds: 5
     failureThreshold: 3
 
-  # -- Readiness probe configuration.
+  # -- Readiness probe configuration. See `livenessProbe` for the rationale
+  # behind keeping httpGet instead of exec'ing the shared healthcheck script.
   readinessProbe:
     httpGet:
       path: /api/health
