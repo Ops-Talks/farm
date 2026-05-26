@@ -42,14 +42,43 @@ spec:
     - ports:
         - protocol: TCP
           port: 80
-    # Database access
-    - ports:
+    # Database access — scoped by `to:` so the rule does not implicitly allow
+    # the DB port to any destination. If no selector is configured the rule is
+    # omitted entirely (DB egress is denied) and the operator must set
+    # api.networkPolicy.externalDatabaseEgress when using an external DB.
+    {{- if .Values.postgresql.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
         - protocol: TCP
           port: {{ include "farm.databasePort" . | int }}
-    # Redis access
-    - ports:
+    {{- else if .Values.api.networkPolicy.externalDatabaseEgress }}
+    - to:
+        {{- toYaml .Values.api.networkPolicy.externalDatabaseEgress | nindent 8 }}
+      ports:
+        - protocol: TCP
+          port: {{ include "farm.databasePort" . | int }}
+    {{- end }}
+    # Redis access — same `to:` scoping rule as the database egress above.
+    {{- if .Values.redis.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+              app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
         - protocol: TCP
           port: {{ include "farm.redisPort" . | int }}
+    {{- else if .Values.api.networkPolicy.externalRedisEgress }}
+    - to:
+        {{- toYaml .Values.api.networkPolicy.externalRedisEgress | nindent 8 }}
+      ports:
+        - protocol: TCP
+          port: {{ include "farm.redisPort" . | int }}
+    {{- end }}
     {{- with .Values.api.networkPolicy.additionalEgressRules }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

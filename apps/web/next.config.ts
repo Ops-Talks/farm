@@ -2,9 +2,9 @@ import type { NextConfig } from "next";
 import path from "path";
 
 // Used only for the /admin/:path* rewrite (Bull Board, which bypasses the NestJS
-// /api global prefix). The /api/:path* proxy is handled by the Route Handler at
-// app/api/[...path]/route.ts so that API_INTERNAL_URL is resolved at runtime,
-// not baked into the routes manifest at build time.
+// /api global prefix). The /api/:path* proxy is handled by the Next.js Proxy at
+// src/proxy.ts so that API_INTERNAL_URL is resolved at runtime, not baked into
+// the routes manifest at build time.
 const apiBaseUrl = (
   process.env.API_INTERNAL_URL ??
   process.env.NEXT_PUBLIC_API_URL ??

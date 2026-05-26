@@ -20,10 +20,22 @@
   External database host guard.
   "localhost" and empty string are never valid inside Kubernetes when using an
   external database. Both will silently misconfigure the API ConfigMap.
+  This guard is independent of api.existingSecret because the farm.databaseHost
+  helper is consumed regardless of how DB credentials are supplied.
 */ -}}
-{{- if and (not .Values.postgresql.enabled) (not .Values.api.existingSecret) -}}
+{{- if not .Values.postgresql.enabled -}}
   {{- if or (not .Values.externalDatabase.host) (eq .Values.externalDatabase.host "localhost") -}}
     {{- fail "CONFIGURATION: externalDatabase.host must be set to a valid hostname when postgresql.enabled is false. 'localhost' is not a valid in-cluster address." -}}
+  {{- end -}}
+{{- end -}}
+{{- /*
+  External Redis host guard.
+  Same rationale as the DB guard above: when the bundled Redis subchart is
+  disabled, externalRedis.host must point to a real in-cluster service or FQDN.
+*/ -}}
+{{- if not .Values.redis.enabled -}}
+  {{- if or (not .Values.externalRedis.host) (eq .Values.externalRedis.host "localhost") -}}
+    {{- fail "CONFIGURATION: externalRedis.host must be set to a valid hostname when redis.enabled is false. 'localhost' is not a valid in-cluster address." -}}
   {{- end -}}
 {{- end -}}
 {{- /*

@@ -24,8 +24,13 @@ data:
   DATABASE_SYNC: "false"
 ---
 # ── Hook weight -8: Secret with the DB password ──────────────────────────────
-# Only created when the chart manages the secret itself (no existingSecret).
-{{- if not .Values.api.existingSecret }}
+# Only created when the chart manages the secret itself:
+#   - api.existingSecret is empty (no operator-provided API secret), AND
+#   - externalDatabase.existingSecret is empty (no operator-provided DB secret).
+# When either of those is set, the migration Job consumes the password from
+# that Secret instead, so rendering an empty *-migration-secret would deploy
+# an unused/empty credential Secret.
+{{- if and (not .Values.api.existingSecret) (not .Values.externalDatabase.existingSecret) }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -106,9 +111,20 @@ spec:
             - /bin/sh
             - -c
             - |
-              until nc -z ${DATABASE_HOST} ${DATABASE_PORT:-5432}; do
-                echo "Waiting for database at ${DATABASE_HOST}:${DATABASE_PORT:-5432}..."; sleep 2;
+              RETRIES={{ .Values.migration.waitForDb.retries | default 60 }}
+              INTERVAL={{ .Values.migration.waitForDb.intervalSeconds | default 2 }}
+              i=0
+              while [ $i -lt $RETRIES ]; do
+                if nc -z "${DATABASE_HOST}" "${DATABASE_PORT:-5432}"; then
+                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432}"
+                  exit 0
+                fi
+                echo "Attempt $((i+1))/${RETRIES}: waiting for database at ${DATABASE_HOST}:${DATABASE_PORT:-5432}..."
+                sleep $INTERVAL
+                i=$((i+1))
               done
+              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable after ${RETRIES} attempts. Aborting migration." >&2
+              exit 1
           envFrom:
             - configMapRef:
                 name: {{ include "farm.fullname" . }}-migration-config

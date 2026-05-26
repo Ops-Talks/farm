@@ -1,6 +1,11 @@
 # values-dev.yaml
-# Local/dev profile: bundled PostgreSQL + Redis, single replica, no TLS.
-# Usage: helm install farm . -f values-dev.yaml
+# Local/dev profile for KinD: standalone PostgreSQL + Redis pods deployed via
+# deploy/helm/farm/kind-infra.yaml (Bitnami subcharts are disabled here because
+# the Bitnami registry requires authentication since the 2024 migration).
+#
+# Usage:
+#   kubectl apply -f deploy/helm/farm/kind-infra.yaml -n farm
+#   helm install farm . -f values-dev.yaml -n farm
 
 api:
   replicaCount: 1

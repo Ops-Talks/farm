@@ -1,9 +1,17 @@
-{{- if .Values.migration.preUpgradeCheck.enabled }}
+{{- if and .Values.migration.preUpgradeCheck.enabled .Values.migration.enabled }}
 # ── Pre-upgrade DB reachability check ─────────────────────────────────────────
 # Hook weight -20 ensures this Job runs before the migration Job (weight -1).
 # If the connectivity check fails the upgrade is aborted before any schema
 # changes are attempted, preventing a hung migration from consuming the
 # activeDeadlineSeconds budget while the database is unavailable.
+#
+# Gated on migration.enabled because the rest of the migration tooling
+# (ConfigMap, Secret, Job) is only rendered when migrations run.
+#
+# No serviceAccountName is set here on purpose: Helm processes hook weights
+# in ascending order, so this Job at -20 runs before the migration
+# ServiceAccount at -5 would exist. The TCP `nc` probe requires no API
+# permissions, so the namespace default ServiceAccount is sufficient.
 #
 # Only fires on `helm upgrade`. On fresh install there is no pre-upgrade hook
 # phase, so this Job is not created.
@@ -29,7 +37,7 @@ spec:
         app.kubernetes.io/component: pre-upgrade-check
     spec:
       restartPolicy: Never
-      serviceAccountName: {{ include "farm.fullname" . }}-migration
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       containers:

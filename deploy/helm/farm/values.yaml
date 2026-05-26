@@ -303,6 +303,19 @@ api:
     # Use this to allow custom ports (e.g., gRPC, SMTP, custom webhooks).
     # Example: [{ ports: [{ protocol: TCP, port: 587 }] }]
     additionalEgressRules: []
+    # -- NetworkPolicyPeer entries used as the `to:` selector for the database
+    # egress rule when postgresql.enabled is false. When empty, the egress rule
+    # is rendered with an empty peer list (no destinations matched), so external
+    # DB connectivity must be allowed via this field.
+    # Example (RDS via CIDR):
+    #   externalDatabaseEgress:
+    #     - ipBlock:
+    #         cidr: 10.0.0.0/16
+    externalDatabaseEgress: []
+    # -- NetworkPolicyPeer entries used as the `to:` selector for the Redis
+    # egress rule when redis.enabled is false. Same semantics as
+    # externalDatabaseEgress.
+    externalRedisEgress: []
 
 # ─── WEB ─────────────────────────────────────────────────────────────────────
 
@@ -566,6 +579,12 @@ migration:
     # Pin to a digest in production: busybox:1.36@sha256:<digest>
     # Refresh via Renovate or: docker buildx imagetools inspect busybox:1.36
     image: busybox:1.36
+    # -- Maximum number of attempts to reach the database before giving up.
+    # With the default intervalSeconds=2, retries=60 yields a ~2 minute budget,
+    # well under the typical activeDeadlineSeconds of the Job.
+    retries: 60
+    # -- Seconds between TCP probe attempts.
+    intervalSeconds: 2
 
   # -- Pre-upgrade database reachability check Job.
   # Runs as a pre-upgrade hook at weight -20 (before the migration at weight -1).

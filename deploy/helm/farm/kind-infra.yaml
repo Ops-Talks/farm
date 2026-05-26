@@ -4,14 +4,6 @@
 #
 # Usage: kubectl apply -f deploy/helm/farm/kind-infra.yaml -n farm
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: farm-infra-postgres-init
-data:
-  init.sql: |
-    CREATE DATABASE farm;
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
