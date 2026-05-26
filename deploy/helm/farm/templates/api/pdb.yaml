@@ -1,4 +1,8 @@
-{{- if and .Values.api.podDisruptionBudget.enabled (gt (int .Values.api.replicaCount) 1) }}
+{{- $effectiveReplicas := int .Values.api.replicaCount -}}
+{{- if .Values.api.autoscaling.enabled -}}
+  {{- $effectiveReplicas = int .Values.api.autoscaling.minReplicas -}}
+{{- end -}}
+{{- if and .Values.api.podDisruptionBudget.enabled (gt $effectiveReplicas 1) }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

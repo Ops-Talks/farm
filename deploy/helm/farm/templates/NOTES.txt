@@ -24,11 +24,21 @@ No Ingress is enabled. To access the services locally, run:
 {{- if .Values.migration.enabled }}
 
 DATABASE MIGRATIONS
-  A pre-install/pre-upgrade Job ran migrations before this release.
-  Check its status with:
+  Migration hook timing:
+  - Fresh install (helm install): the migration Job runs as a post-install hook
+    — after all chart resources (Deployments, Services, ConfigMaps) are created.
+    The database must be reachable before the migration pod starts.
+  - Upgrade (helm upgrade): the migration Job runs as a pre-upgrade hook
+    — before new application pods roll out. If the migration fails the Helm
+    upgrade is blocked; run `helm rollback` and check the logs immediately
+    because the Job is deleted on success.
 
+  Inspect migration status:
     kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration
-    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration
+    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration --tail=100
+
+  If the Job has already been deleted (hook-delete-policy cleaned it up):
+    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration --previous
 {{- end }}
 
 {{- if not .Values.postgresql.enabled }}

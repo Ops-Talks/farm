@@ -25,5 +25,25 @@ spec:
           port: 3001
     {{- end }}
   egress:
-    - {} # Allow all egress — tighten with explicit rules in production
+    # DNS resolution (required for Next.js server-side rendering)
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # API service (server-side fetch from Next.js to NestJS)
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "farm.api.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Outbound HTTPS — CDN assets, external auth providers, etc.
+    - ports:
+        - protocol: TCP
+          port: 443
+    {{- with .Values.web.networkPolicy.additionalEgressRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}

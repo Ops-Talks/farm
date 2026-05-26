@@ -1,0 +1,105 @@
+# KinD development infrastructure: standalone PostgreSQL + Redis using official
+# Docker Hub images (freely available). Used instead of the Bitnami subcharts,
+# which require authentication after the Bitnami registry migration (2024).
+#
+# Usage: kubectl apply -f deploy/helm/farm/kind-infra.yaml -n farm
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: farm-infra-postgres-init
+data:
+  init.sql: |
+    CREATE DATABASE farm;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farm-infra-postgres
+  labels:
+    app: farm-infra-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: farm-infra-postgres
+  template:
+    metadata:
+      labels:
+        app: farm-infra-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: farm
+            - name: POSTGRES_PASSWORD
+              value: farm
+            - name: POSTGRES_DB
+              value: farm
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "farm", "-d", "farm"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: pgdata
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farm-infra-postgres
+spec:
+  selector:
+    app: farm-infra-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farm-infra-redis
+  labels:
+    app: farm-infra-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: farm-infra-redis
+  template:
+    metadata:
+      labels:
+        app: farm-infra-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          args: ["--save", ""]
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: farm-infra-redis
+spec:
+  selector:
+    app: farm-infra-redis
+  ports:
+    - port: 6379
+      targetPort: 6379

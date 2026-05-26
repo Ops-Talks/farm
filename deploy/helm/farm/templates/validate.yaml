@@ -1,0 +1,40 @@
+{{- /*
+  Release-time validation of required security-sensitive values.
+  Runs during `helm install`, `helm upgrade`, and `helm template`.
+*/ -}}
+{{- if not .Values.api.existingSecret -}}
+  {{- $jwtDefault := "change-me-this-must-be-at-least-32-characters-long" -}}
+  {{- if not .Values.api.secrets.JWT_SECRET -}}
+    {{- fail "SECURITY: api.secrets.JWT_SECRET is required when api.existingSecret is not set. Generate a strong random secret: openssl rand -hex 32" -}}
+  {{- end -}}
+  {{- if eq .Values.api.secrets.JWT_SECRET $jwtDefault -}}
+    {{- fail "SECURITY: api.secrets.JWT_SECRET must be changed from the default placeholder. Generate a strong random secret: openssl rand -hex 32" -}}
+  {{- end -}}
+  {{- if .Values.postgresql.enabled -}}
+    {{- if not .Values.postgresql.auth.password -}}
+      {{- fail "SECURITY: postgresql.auth.password is required when postgresql.enabled is true and api.existingSecret is not set." -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- /*
+  External database host guard.
+  "localhost" and empty string are never valid inside Kubernetes when using an
+  external database. Both will silently misconfigure the API ConfigMap.
+*/ -}}
+{{- if and (not .Values.postgresql.enabled) (not .Values.api.existingSecret) -}}
+  {{- if or (not .Values.externalDatabase.host) (eq .Values.externalDatabase.host "localhost") -}}
+    {{- fail "CONFIGURATION: externalDatabase.host must be set to a valid hostname when postgresql.enabled is false. 'localhost' is not a valid in-cluster address." -}}
+  {{- end -}}
+{{- end -}}
+{{- /*
+  NetworkPolicy CNI guard.
+  Flannel silently ignores NetworkPolicy resources, giving a false sense of
+  security. Require operators to explicitly confirm their CNI enforces
+  NetworkPolicy before enabling it.
+*/ -}}
+{{- if and .Values.api.networkPolicy.enabled (not .Values.api.networkPolicy.cniConfirmed) -}}
+  {{- fail "NetworkPolicy requires a CNI that enforces it (Calico, Cilium, Canal, Weave Net). Flannel silently ignores NetworkPolicy resources. Set networkPolicy.enabled=false if your CNI does not support it, or suppress this check with api.networkPolicy.cniConfirmed=true." -}}
+{{- end -}}
+{{- if and .Values.web.networkPolicy.enabled (not .Values.web.networkPolicy.cniConfirmed) -}}
+  {{- fail "NetworkPolicy requires a CNI that enforces it (Calico, Cilium, Canal, Weave Net). Flannel silently ignores NetworkPolicy resources. Set networkPolicy.enabled=false if your CNI does not support it, or suppress this check with web.networkPolicy.cniConfirmed=true." -}}
+{{- end -}}

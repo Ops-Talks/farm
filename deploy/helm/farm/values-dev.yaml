@@ -10,7 +10,7 @@ api:
     pullPolicy: IfNotPresent
   env:
     NODE_ENV: development
-    DATABASE_SYNC: "true"
+    DATABASE_SYNC: "false"
     ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001"
   secrets:
     JWT_SECRET: "dev-jwt-secret-change-me-at-least-32-chars"
@@ -38,15 +38,29 @@ ingress:
 
 migration:
   enabled: true
+  # With post-install hook, PostgreSQL is being created in parallel.
+  # Disable waitForDb (avoids busybox multi-arch KinD issue) and rely on
+  # backoffLimit retries to handle the PostgreSQL startup race (~30-60s).
+  backoffLimit: 6
+  waitForDb:
+    enabled: false
 
 postgresql:
-  enabled: true
-  auth:
-    username: farm
-    password: farm
-    database: farm
+  enabled: false
 
 redis:
-  enabled: true
+  enabled: false
   auth:
     enabled: false
+
+# Point to standalone infra pods deployed via kind-infra.yaml
+externalDatabase:
+  host: farm-infra-postgres
+  port: 5432
+  user: farm
+  password: farm
+  name: farm
+
+externalRedis:
+  host: farm-infra-redis
+  port: 6379

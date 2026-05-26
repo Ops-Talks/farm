@@ -10,6 +10,12 @@ import {
 } from "@nestjs/terminus";
 import { ConfigService } from "@nestjs/config";
 
+/** Shape returned by the liveness probe endpoint. */
+export interface LivenessResult {
+  status: "ok";
+  info: { process: { status: "up" } };
+}
+
 /**
  * Health controller providing advanced monitoring of system resources
  * and database connectivity using Terminus.
@@ -24,6 +30,29 @@ export class HealthController {
     private readonly disk: DiskHealthIndicator,
     private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Liveness probe — returns immediately without touching any external
+   * dependency.  Kubernetes should use this endpoint for livenessProbe so that
+   * a slow database never causes the pod to be restarted.
+   */
+  @Get("live")
+  @ApiOperation({
+    summary: "Liveness probe — confirms the Node.js process is responsive",
+    description:
+      "Returns 200 immediately without checking the database, Redis, or any " +
+      "other external dependency.  Use this for Kubernetes livenessProbe.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "The Node.js process is alive and responsive.",
+    schema: {
+      example: { status: "ok", info: { process: { status: "up" } } },
+    },
+  })
+  live(): LivenessResult {
+    return { status: "ok", info: { process: { status: "up" } } };
+  }
 
   @Get()
   @HealthCheck()

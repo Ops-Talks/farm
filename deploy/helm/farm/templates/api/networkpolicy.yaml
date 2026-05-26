@@ -28,5 +28,29 @@ spec:
         - protocol: TCP
           port: 3000
   egress:
-    - {} # Allow all egress — tighten with explicit rules in production
+    # DNS resolution (required for all external lookups)
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Outbound HTTPS — external integrations (GitHub, ArgoCD, Kubernetes API, etc.)
+    - ports:
+        - protocol: TCP
+          port: 443
+    # Outbound HTTP
+    - ports:
+        - protocol: TCP
+          port: 80
+    # Database access
+    - ports:
+        - protocol: TCP
+          port: {{ include "farm.databasePort" . | int }}
+    # Redis access
+    - ports:
+        - protocol: TCP
+          port: {{ include "farm.redisPort" . | int }}
+    {{- with .Values.api.networkPolicy.additionalEgressRules }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}

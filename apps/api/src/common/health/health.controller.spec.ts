@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ServiceUnavailableException } from "@nestjs/common";
-import { HealthController } from "./health.controller";
+import { HealthController, LivenessResult } from "./health.controller";
 import {
   HealthCheckService,
   TypeOrmHealthIndicator,
@@ -293,5 +293,69 @@ describe("HealthController", () => {
       512 * 1024 * 1024,
     );
     expect(mem.checkRSS).toHaveBeenCalledWith("memory_rss", 1024 * 1024 * 1024);
+  });
+});
+
+describe("HealthController.live", () => {
+  let controller: HealthController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [
+        { provide: HealthCheckService, useValue: { check: jest.fn() } },
+        {
+          provide: TypeOrmHealthIndicator,
+          useValue: { pingCheck: jest.fn() },
+        },
+        {
+          provide: MemoryHealthIndicator,
+          useValue: { checkHeap: jest.fn(), checkRSS: jest.fn() },
+        },
+        {
+          provide: DiskHealthIndicator,
+          useValue: { checkStorage: jest.fn() },
+        },
+        {
+          provide: ConfigService,
+          useValue: { get: jest.fn().mockReturnValue(undefined) },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<HealthController>(HealthController);
+  });
+
+  it("should be defined", () => {
+    expect(controller).toBeDefined();
+  });
+
+  it("returns status ok with process up without touching any injected service", () => {
+    const result: LivenessResult = controller.live();
+
+    expect(result).toEqual({
+      status: "ok",
+      info: { process: { status: "up" } },
+    });
+  });
+
+  it("is synchronous and never calls HealthCheckService.check", () => {
+    // Obtain the underlying mock so we can assert it was never invoked.
+    const module = (controller as unknown as { [key: string]: unknown })[
+      "health"
+    ] as { check: jest.Mock };
+
+    controller.live();
+
+    expect(module.check).not.toHaveBeenCalled();
+  });
+
+  it("returns a stable reference shape on repeated calls", () => {
+    const first = controller.live();
+    const second = controller.live();
+
+    expect(first).toEqual(second);
+    expect(first.status).toBe("ok");
+    expect(first.info.process.status).toBe("up");
   });
 });

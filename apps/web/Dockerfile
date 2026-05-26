@@ -42,8 +42,6 @@ COPY apps/web/ ./apps/web/
 
 WORKDIR /app/apps/web
 
-ARG API_INTERNAL_URL=http://api:3000/api
-ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 # Cache the Next.js incremental build cache across builds (FARM-S543). The
 # directory lives inside the project (`<project>/.next/cache`) and is repopulated

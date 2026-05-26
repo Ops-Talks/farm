@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall sloth-generate
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall sloth-generate kind-build kind-load kind-infra kind-deploy kind-upgrade kind-status kind-logs kind-clean
 
 help:
 	@echo "Available Targets:"
@@ -40,6 +40,13 @@ help:
 	@echo "  make helm-upgrade      # Upgrade Farm release using Helm"
 	@echo "  make helm-diff         # Show diff of pending Helm upgrade (requires helm-diff plugin)"
 	@echo "  make helm-uninstall    # Uninstall the Farm Helm release"
+	@echo "  make kind-build        # Build API and web Docker images for KinD"
+	@echo "  make kind-load         # Load built images into the KinD cluster"
+	@echo "  make kind-deploy       # Build, load and install Farm into KinD (first run)"
+	@echo "  make kind-upgrade      # Build, load and upgrade Farm in KinD"
+	@echo "  make kind-status       # Show pod and service status in the Farm namespace"
+	@echo "  make kind-logs         # Tail logs from API pods in KinD"
+	@echo "  make kind-clean        # Uninstall Farm and delete the namespace from KinD"
 
 docs: docs-up
 
@@ -156,7 +163,8 @@ helm-install:
 helm-upgrade:
 	helm dependency update $(HELM_CHART)
 	helm upgrade $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
-		--namespace $(HELM_NAMESPACE)
+		--namespace $(HELM_NAMESPACE) \
+		--atomic --timeout 15m
 
 helm-diff:
 	helm dependency update $(HELM_CHART)
@@ -169,3 +177,50 @@ helm-uninstall:
 sloth-generate: ## Generate PrometheusRule SLOs from Sloth source
 	sloth generate -i observability/sloth-slos.yml -o /tmp/sloth-output.yaml
 	@echo "Sloth SLOs generated at /tmp/sloth-output.yaml — review and embed into templates/prometheusrule.yaml"
+
+# ─── KIND (local Kubernetes) ──────────────────────────────────────────────────
+
+KIND_CLUSTER  ?= lab01
+KIND_API_IMG  := farm-api:latest
+KIND_WEB_IMG  := farm-web:latest
+
+kind-build: ## Build API and web Docker images for KinD
+	docker build -t $(KIND_API_IMG) -f apps/api/Dockerfile .
+	docker build -t $(KIND_WEB_IMG) -f apps/web/Dockerfile .
+
+kind-load: ## Load built images into the KinD cluster
+	kind load docker-image $(KIND_API_IMG) --name $(KIND_CLUSTER)
+	kind load docker-image $(KIND_WEB_IMG) --name $(KIND_CLUSTER)
+
+kind-infra: ## Deploy standalone PostgreSQL + Redis (official images) into the Farm namespace
+	kubectl create namespace $(HELM_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	kubectl apply -f $(HELM_CHART)/kind-infra.yaml -n $(HELM_NAMESPACE)
+	kubectl rollout status deployment/farm-infra-postgres -n $(HELM_NAMESPACE) --timeout=120s
+	kubectl rollout status deployment/farm-infra-redis -n $(HELM_NAMESPACE) --timeout=60s
+
+kind-deploy: kind-build kind-load kind-infra ## Build, load, start infra and install/upgrade Farm into KinD
+	helm dependency update $(HELM_CHART)
+	helm upgrade --install $(HELM_RELEASE) $(HELM_CHART) \
+		-f $(HELM_CHART)/values-dev.yaml \
+		--namespace $(HELM_NAMESPACE) \
+		--create-namespace \
+		--timeout 15m \
+		--wait
+
+kind-upgrade: kind-build kind-load ## Build, load and upgrade Farm in KinD
+	helm dependency update $(HELM_CHART)
+	helm upgrade $(HELM_RELEASE) $(HELM_CHART) \
+		-f $(HELM_CHART)/values-dev.yaml \
+		--namespace $(HELM_NAMESPACE) \
+		--timeout 15m \
+		--wait
+
+kind-status: ## Show pod and service status in the Farm namespace
+	kubectl get pods,svc -n $(HELM_NAMESPACE)
+
+kind-logs: ## Tail logs from API pods in KinD
+	kubectl logs -n $(HELM_NAMESPACE) -l app.kubernetes.io/component=api --tail=100 -f
+
+kind-clean: ## Uninstall Farm and delete the namespace from KinD
+	helm uninstall $(HELM_RELEASE) --namespace $(HELM_NAMESPACE) || true
+	kubectl delete namespace $(HELM_NAMESPACE) --ignore-not-found

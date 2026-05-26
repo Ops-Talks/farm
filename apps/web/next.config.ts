@@ -1,14 +1,15 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const apiUrl =
+// Used only for the /admin/:path* rewrite (Bull Board, which bypasses the NestJS
+// /api global prefix). The /api/:path* proxy is handled by the Route Handler at
+// app/api/[...path]/route.ts so that API_INTERNAL_URL is resolved at runtime,
+// not baked into the routes manifest at build time.
+const apiBaseUrl = (
   process.env.API_INTERNAL_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api";
-
-// Base URL without the /api suffix — used for routes that bypass NestJS global
-// prefix (e.g. Bull Board at /admin/queues).
-const apiBaseUrl = apiUrl.replace(/\/api$/, "");
+  "http://localhost:3000/api"
+).replace(/\/api$/, "");
 
 // Content Security Policy directive string.
 // Uses 'unsafe-inline' and 'unsafe-eval' in script-src because Next.js requires
@@ -85,10 +86,6 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      {
-        source: "/api/:path*",
-        destination: `${apiUrl}/:path*`,
-      },
       {
         // Bull Board is mounted at /admin/queues on the API server — it does
         // not carry the /api global prefix used by NestJS controllers.

@@ -11,10 +11,8 @@ spec:
     matchLabels:
       {{- include "farm.web.selectorLabels" . | nindent 6 }}
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+    {{- toYaml .Values.web.updateStrategy | nindent 4 }}
+  minReadySeconds: {{ .Values.web.minReadySeconds }}
   template:
     metadata:
       labels:
@@ -32,6 +30,7 @@ spec:
       serviceAccountName: {{ include "farm.web.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.web.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.web.terminationGracePeriodSeconds }}
       containers:
         - name: web
           image: {{ include "farm.web.image" . }}
@@ -42,6 +41,8 @@ spec:
             - name: http
               containerPort: 3001
               protocol: TCP
+          lifecycle:
+            {{- toYaml .Values.web.lifecycle | nindent 12 }}
           envFrom:
             - configMapRef:
                 name: {{ include "farm.fullname" . }}-web

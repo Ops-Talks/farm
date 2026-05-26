@@ -20,6 +20,22 @@ api:
   # -- Number of API replicas (overrides global replicaCount).
   replicaCount: 1
 
+  # -- Deployment rolling update strategy.
+  # maxUnavailable: 0 ensures the old pod stays up until the new pod is ready.
+  # With replicaCount: 1, there is no spare capacity during the rollout —
+  # the new pod must start before the old pod is removed, which can briefly
+  # queue connections. Use replicaCount >= 2 for true zero-downtime updates.
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  # -- Minimum seconds a pod must be Ready before it is considered available.
+  # Prevents new pods from receiving traffic before they stabilize past
+  # their startup probe window.
+  minReadySeconds: 10
+
   image:
     # -- Container registry. Combined with repository: <registry>/<repository>:<tag>.
     registry: ""
@@ -33,10 +49,17 @@ api:
   serviceAccount:
     # -- Create a dedicated ServiceAccount for the API pod.
     create: true
-    # -- Annotations to add (e.g., for IRSA or Workload Identity).
+    # -- Cloud workload identity annotations (provider-specific, set by operator):
+    #   EKS IRSA:             eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>
+    #   GKE Workload Identity: iam.gke.io/service-account: <gsa>@<project>.iam.gserviceaccount.com
+    #   AKS Pod Identity:     azure.workload.identity/client-id: <client-id>
     annotations: {}
     # -- Override the generated ServiceAccount name.
     name: ""
+    # -- Controls automountServiceAccountToken on the ServiceAccount resource.
+    # Set to true when using workload identity mechanisms that require the
+    # default service account token to be projected into the pod.
+    automountServiceAccountToken: false
 
   # -- Annotations added to the API Deployment pod template.
   podAnnotations: {}
@@ -74,23 +97,23 @@ api:
       memory: 512Mi
 
   # -- Liveness probe configuration.
-  # Kubernetes probes use httpGet (the idiomatic form) rather than the
-  # shared apps/api/scripts/healthcheck.js node script that the Dockerfile
-  # HEALTHCHECK and docker-compose use. Both ultimately hit the same
-  # /api/health endpoint, so the SLI is consistent across environments.
-  # Override with `exec.command: ["node", "scripts/healthcheck.js"]` if
-  # consolidation is required for a specific cluster (see FARM-S541).
+  # Uses /api/health/live (process-only, no DB check) so that a slow database
+  # backup, vacuum, or transient connection spike does NOT cause Kubernetes to
+  # restart a healthy pod. Only the readiness probe checks external
+  # dependencies — a pod that cannot serve traffic will be removed from the
+  # load-balancer rotation without being killed and restarted.
   livenessProbe:
     httpGet:
-      path: /api/health
+      path: /api/health/live
       port: 3000
     initialDelaySeconds: 30
     periodSeconds: 30
     timeoutSeconds: 5
     failureThreshold: 3
 
-  # -- Readiness probe configuration. See `livenessProbe` for the rationale
-  # behind keeping httpGet instead of exec'ing the shared healthcheck script.
+  # -- Readiness probe configuration. Uses /api/health which checks DB,
+  # memory, and disk. A pod that fails readiness is removed from load-balancer
+  # rotation but NOT restarted, keeping the process alive for debugging.
   readinessProbe:
     httpGet:
       path: /api/health
@@ -124,6 +147,20 @@ api:
   extraVolumeMounts: []
   # - name: tmp
   #   mountPath: /tmp
+
+  # -- Seconds Kubernetes waits after SIGTERM before sending SIGKILL.
+  # Set to at least the longest expected in-flight request duration.
+  # The preStop sleep below counts against this budget.
+  terminationGracePeriodSeconds: 30
+
+  # -- Container lifecycle hooks.
+  # The preStop sleep allows kube-proxy to finish draining in-flight connections
+  # before SIGTERM is sent to the application process. Without this, requests
+  # routed to a terminating pod can receive connection-refused errors.
+  lifecycle:
+    preStop:
+      exec:
+        command: ["sleep", "5"]
 
   # -- Application environment configuration (non-sensitive).
   # All values end up in a ConfigMap and are injected via envFrom.
@@ -182,11 +219,30 @@ api:
   # Secrets Operator, Sealed Secrets, etc.).
   existingSecret: ""
 
+  # -- External Secrets Operator (ESO) integration.
+  # When enabled, renders an ExternalSecret resource that syncs secrets from
+  # a configured secret store into a Kubernetes Secret consumed by the API pod.
+  # Requires the External Secrets Operator CRD to be installed in the cluster.
+  # See https://external-secrets.io for installation instructions.
+  externalSecret:
+    enabled: false
+    secretStoreRef:
+      name: ""
+      kind: SecretStore
+    remoteRef:
+      # -- Key in the remote secret store (e.g., AWS Secrets Manager secret name,
+      # Vault path, GCP Secret Manager resource name).
+      key: ""
+
   # ─── HPA ──────────────────────────────────────────────────────────────────
 
   autoscaling:
     enabled: false
     minReplicas: 1
+    # -- Connection pool ceiling: maxReplicas * DATABASE_POOL_SIZE must not exceed
+    # PostgreSQL max_connections (default: 100).
+    # Example: maxReplicas=10, DATABASE_POOL_SIZE=10 => 100 connections (at ceiling).
+    # Reduce DATABASE_POOL_SIZE or use PgBouncer (transaction mode) for larger fleets.
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     # targetMemoryUtilizationPercentage: 80
@@ -221,7 +277,7 @@ api:
   affinity: {}
 
   # -- topologySpreadConstraints for the API pod.
-  # Example for zone distribution (enable in values-production.yaml):
+  # Example for zone distribution (enable in your operator values file):
   # topologySpreadConstraints:
   #   - maxSkew: 1
   #     topologyKey: topology.kubernetes.io/zone
@@ -235,10 +291,18 @@ api:
   networkPolicy:
     # -- Enable NetworkPolicy for the API pod (requires a CNI that supports NetworkPolicy).
     enabled: false
+    # -- Set to true to confirm your CNI enforces NetworkPolicy (Calico, Cilium, Canal, Weave Net).
+    # Flannel silently ignores NetworkPolicy resources without error. Setting this to true
+    # suppresses the Helm validation warning emitted when networkPolicy.enabled=true.
+    cniConfirmed: false
     # -- Namespace selector for the Ingress controller pod (used to allow ingress traffic).
     ingressControllerNamespaceSelector: {}
     # -- Pod selector for the Ingress controller pod.
     ingressControllerPodSelector: {}
+    # -- Additional egress rules appended to the default set (DNS, HTTPS, DB, Redis).
+    # Use this to allow custom ports (e.g., gRPC, SMTP, custom webhooks).
+    # Example: [{ ports: [{ protocol: TCP, port: 587 }] }]
+    additionalEgressRules: []
 
 # ─── WEB ─────────────────────────────────────────────────────────────────────
 
@@ -246,25 +310,58 @@ web:
   # -- Number of web replicas (overrides global replicaCount).
   replicaCount: 1
 
+  # -- Deployment rolling update strategy.
+  # maxUnavailable: 0 ensures the old pod stays up until the new pod is ready.
+  # Use replicaCount >= 2 for true zero-downtime rolling updates.
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  # -- Minimum seconds a pod must be Ready before it is considered available.
+  minReadySeconds: 10
+
+  # -- Container image configuration for the web service.
   image:
+    # -- Container registry. Combined with repository: <registry>/<repository>:<tag>.
     registry: ""
+    # -- Image repository.
     repository: ops-talks/farm-web
-    tag: ""   # defaults to .Chart.AppVersion when empty
+    # -- Image tag. Defaults to .Chart.AppVersion when empty.
+    tag: ""
+    # -- Image pull policy.
     pullPolicy: IfNotPresent
 
+  # -- Image pull secrets specific to the web pod.
   imagePullSecrets: []
 
   serviceAccount:
+    # -- Create a dedicated ServiceAccount for the web pod.
     create: true
+    # -- Cloud workload identity annotations (provider-specific, set by operator):
+    #   EKS IRSA:             eks.amazonaws.com/role-arn: arn:aws:iam::<account>:role/<role>
+    #   GKE Workload Identity: iam.gke.io/service-account: <gsa>@<project>.iam.gserviceaccount.com
+    #   AKS Pod Identity:     azure.workload.identity/client-id: <client-id>
     annotations: {}
+    # -- Override the generated ServiceAccount name.
     name: ""
+    # -- Controls automountServiceAccountToken on the ServiceAccount resource.
+    # Set to true when using workload identity mechanisms that require the
+    # default service account token to be projected into the pod.
+    automountServiceAccountToken: false
 
+  # -- Annotations added to the web Deployment pod template.
   podAnnotations: {}
+  # -- Labels added to the web Deployment pod template.
   podLabels: {}
 
+  # -- Security context applied at the pod level.
   podSecurityContext:
     fsGroup: 1001
 
+  # -- Security context applied to the web container.
+  # UID 1001 matches the `nextjs` user baked into apps/web/Dockerfile (see FARM-S540).
   containerSecurityContext:
     allowPrivilegeEscalation: false
     runAsNonRoot: true
@@ -274,10 +371,12 @@ web:
       drop:
         - ALL
 
+  # -- Kubernetes Service configuration for the web pod.
   service:
     type: ClusterIP
     port: 3001
 
+  # -- CPU and memory resource requests/limits.
   resources:
     requests:
       cpu: 100m
@@ -286,6 +385,7 @@ web:
       cpu: 500m
       memory: 512Mi
 
+  # -- Liveness probe configuration.
   livenessProbe:
     httpGet:
       path: /api/health
@@ -295,6 +395,7 @@ web:
     timeoutSeconds: 5
     failureThreshold: 3
 
+  # -- Readiness probe configuration.
   readinessProbe:
     httpGet:
       path: /api/health
@@ -304,6 +405,8 @@ web:
     timeoutSeconds: 5
     failureThreshold: 3
 
+  # -- Startup probe configuration. Runs before liveness/readiness; prevents
+  # premature restarts during slow cold starts (e.g., Next.js compilation).
   startupProbe:
     httpGet:
       path: /api/health
@@ -311,6 +414,7 @@ web:
     failureThreshold: 20
     periodSeconds: 5
 
+  # -- Extra environment variables injected directly into the container.
   extraEnv: []
 
   # -- Extra volumes for the web pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
@@ -322,6 +426,17 @@ web:
   extraVolumeMounts: []
   # - name: tmp
   #   mountPath: /tmp
+
+  # -- Seconds Kubernetes waits after SIGTERM before sending SIGKILL.
+  terminationGracePeriodSeconds: 30
+
+  # -- Container lifecycle hooks.
+  # The preStop sleep allows kube-proxy to finish draining in-flight connections
+  # before SIGTERM is sent to the application process.
+  lifecycle:
+    preStop:
+      exec:
+        command: ["sleep", "5"]
 
   # -- Web application environment (non-sensitive).
   env:
@@ -362,7 +477,7 @@ web:
   tolerations: []
   affinity: {}
   # -- topologySpreadConstraints for the web pod.
-  # Example for zone distribution (enable in values-production.yaml):
+  # Example for zone distribution (enable in your operator values file):
   # topologySpreadConstraints:
   #   - maxSkew: 1
   #     topologyKey: topology.kubernetes.io/zone
@@ -375,8 +490,15 @@ web:
   # -- NetworkPolicy configuration for the web pod.
   networkPolicy:
     enabled: false
+    # -- Set to true to confirm your CNI enforces NetworkPolicy (Calico, Cilium, Canal, Weave Net).
+    # Flannel silently ignores NetworkPolicy resources without error. Setting this to true
+    # suppresses the Helm validation warning emitted when networkPolicy.enabled=true.
+    cniConfirmed: false
     ingressControllerNamespaceSelector: {}
     ingressControllerPodSelector: {}
+    # -- Additional egress rules appended to the default set (DNS, HTTPS, API).
+    # Example: [{ ports: [{ protocol: TCP, port: 3100 }] }]
+    additionalEgressRules: []
 
 # ─── INGRESS ─────────────────────────────────────────────────────────────────
 
@@ -433,12 +555,35 @@ migration:
       memory: 256Mi
   # -- Additional annotations on the migration Job pod template.
   podAnnotations: {}
+  # -- initContainer that waits for the database TCP port to be reachable
+  # before the migration container starts. Uses busybox nc (netcat) for a
+  # lightweight TCP check compatible with air-gapped and KinD environments.
+  waitForDb:
+    # -- Enable the wait-for-db initContainer. Disable in dev/KinD environments
+    # where the job backoffLimit is sufficient to handle the PostgreSQL startup race.
+    enabled: true
+    # -- Image for the wait-for-db initContainer (busybox with nc/netcat).
+    # Pin to a digest in production: busybox:1.36@sha256:<digest>
+    # Refresh via Renovate or: docker buildx imagetools inspect busybox:1.36
+    image: busybox:1.36
+
+  # -- Pre-upgrade database reachability check Job.
+  # Runs as a pre-upgrade hook at weight -20 (before the migration at weight -1).
+  # If the database is unreachable the upgrade aborts before the migration starts,
+  # preventing the migration Job from hanging for activeDeadlineSeconds.
+  # Only fires on helm upgrade, not on initial install.
+  preUpgradeCheck:
+    enabled: false
 
 # ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
 # Used when postgresql.enabled is false (production default).
 
 externalDatabase:
-  host: "localhost"
+  # -- Hostname or FQDN of the external PostgreSQL server.
+  # Must be explicitly set when postgresql.enabled is false.
+  # "localhost" is never correct inside Kubernetes — set this to the actual
+  # database hostname (e.g. an RDS endpoint or a ClusterIP service name).
+  host: ""
   port: 5432
   user: "postgres"
   # -- Do NOT set this in values files. Provide via existingSecret or --set at
@@ -465,9 +610,21 @@ externalRedis:
 # ─── BITNAMI POSTGRESQL SUBCHART ─────────────────────────────────────────────
 # Only deployed when postgresql.enabled is true (suitable for dev/staging).
 # Full parameter reference: https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+#
+# REGISTRY NOTE: Bitnami images are hosted on Docker Hub (docker.io/bitnami/*).
+# Docker Hub rate-limits unauthenticated pulls (100 pulls/6h per IP for anonymous
+# clients). In air-gapped or rate-limited environments, mirror Bitnami images and
+# set postgresql.global.imageRegistry to your mirror host:
+#   ECR Public mirror:   public.ecr.aws/bitnami
+#   Corporate Harbor:    harbor.corp.example.com/bitnami-mirror
+# Leave empty to pull directly from Docker Hub (requires valid credentials in
+# imagePullSecrets or a pre-configured node-level credential store).
 
 postgresql:
   enabled: false
+  global:
+    # -- Registry mirror for Bitnami images. Empty string uses Docker Hub.
+    imageRegistry: ""
   auth:
     username: postgres
     # -- Set this value only in overlay files (values-dev.yaml, --set flag).
@@ -478,19 +635,31 @@ postgresql:
     persistence:
       enabled: true
       size: 8Gi
+      # -- StorageClass for the PostgreSQL PVC.
+      # Empty string uses the cluster default StorageClass.
+      storageClass: ""
 
 # ─── BITNAMI REDIS SUBCHART ──────────────────────────────────────────────────
 # Only deployed when redis.enabled is true (suitable for dev/staging).
 # Full parameter reference: https://github.com/bitnami/charts/tree/main/bitnami/redis
+#
+# REGISTRY NOTE: Bitnami images are hosted on Docker Hub. See the PostgreSQL
+# section above for registry mirror guidance.
 
 redis:
   enabled: false
+  global:
+    # -- Registry mirror for Bitnami images. Empty string uses Docker Hub.
+    imageRegistry: ""
   auth:
     enabled: false
   master:
     persistence:
       enabled: true
       size: 2Gi
+      # -- StorageClass for the Redis PVC.
+      # Empty string uses the cluster default StorageClass.
+      storageClass: ""
 
 # ─── PROMETHEUS OPERATOR INTEGRATION ─────────────────────────────────────────
 # Requires kube-prometheus-stack (or prometheus-operator) to be installed.

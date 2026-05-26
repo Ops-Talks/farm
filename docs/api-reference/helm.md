@@ -119,5 +119,5 @@ spec:
     chart: my-service
     repository: https://charts.example.com
     version: 1.2.3
-    valuesFile: values-production.yaml
+    valuesFile: my-values.yaml   # operator's own values file in their GitOps repo
 ```
