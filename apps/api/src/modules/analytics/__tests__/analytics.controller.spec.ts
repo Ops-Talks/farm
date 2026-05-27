@@ -6,6 +6,9 @@ import { AnalyticsService } from "../analytics.service";
 import { CatalogAnalyticsDto } from "../dto/catalog-analytics.dto";
 import { DoraAnalyticsDto } from "../dto/dora-analytics.dto";
 import { UsageAnalyticsDto } from "../dto/usage-analytics.dto";
+import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
+import { OptionalOrgGuard } from "../../../common/guards/optional-org.guard";
+import type { RequestWithOrg } from "../../../common/interfaces/request-with-org.interface";
 
 const mockCatalogData: CatalogAnalyticsDto = {
   ownershipCoverage: {
@@ -50,6 +53,18 @@ const mockUsageData: UsageAnalyticsDto = {
   ],
 };
 
+/** Minimal request mock without org context (global queries). */
+const mockReq: RequestWithOrg = {
+  organizationId: undefined,
+  user: { userId: "u1", username: "u1", roles: [] },
+};
+
+/** Request mock with org context (org-scoped queries). */
+const mockReqWithOrg: RequestWithOrg = {
+  organizationId: "org-abc-123",
+  user: { userId: "u1", username: "u1", roles: [] },
+};
+
 describe("AnalyticsController", () => {
   let controller: AnalyticsController;
 
@@ -63,7 +78,12 @@ describe("AnalyticsController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AnalyticsController],
       providers: [{ provide: AnalyticsService, useValue: mockService }],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(OptionalOrgGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AnalyticsController>(AnalyticsController);
     jest.clearAllMocks();
@@ -82,10 +102,19 @@ describe("AnalyticsController", () => {
 
   describe("getCatalogAnalytics", () => {
     it("returns catalog analytics data from the service", async () => {
-      const result = await controller.getCatalogAnalytics();
+      const result = await controller.getCatalogAnalytics(mockReq);
 
       expect(mockService.getCatalogAnalytics).toHaveBeenCalledTimes(1);
+      expect(mockService.getCatalogAnalytics).toHaveBeenCalledWith(undefined);
       expect(result).toEqual(mockCatalogData);
+    });
+
+    it("passes organizationId to the service when org context is present", async () => {
+      await controller.getCatalogAnalytics(mockReqWithOrg);
+
+      expect(mockService.getCatalogAnalytics).toHaveBeenCalledWith(
+        "org-abc-123",
+      );
     });
   });
 
@@ -95,10 +124,11 @@ describe("AnalyticsController", () => {
 
   describe("getDoraMetrics", () => {
     it("returns DORA metrics with default period of 30 days", async () => {
-      const result = await controller.getDoraMetrics(30);
+      const result = await controller.getDoraMetrics(mockReq, 30);
 
       expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
         30,
+        undefined,
         undefined,
         undefined,
       );
@@ -107,6 +137,7 @@ describe("AnalyticsController", () => {
 
     it("passes componentId and environmentId filters to the service", async () => {
       const result = await controller.getDoraMetrics(
+        mockReq,
         7,
         "comp-uuid-1",
         "env-uuid-1",
@@ -116,16 +147,21 @@ describe("AnalyticsController", () => {
         7,
         "comp-uuid-1",
         "env-uuid-1",
+        undefined,
       );
       expect(result).toEqual(mockDoraData);
     });
 
     it("coerces string query param to number", async () => {
       // Query params arrive as strings from HTTP layer; the controller does Number(days)
-      const result = await controller.getDoraMetrics("14" as unknown as number);
+      const result = await controller.getDoraMetrics(
+        mockReq,
+        "14" as unknown as number,
+      );
 
       expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
         14,
+        undefined,
         undefined,
         undefined,
       );
@@ -135,14 +171,26 @@ describe("AnalyticsController", () => {
     it("applies the built-in default of 30 days when no days argument is passed", async () => {
       // Calling the method without an explicit value triggers the ES default-parameter
       // substitution (`days = 30`), which Istanbul tracks as a separate branch.
-      const result = await controller.getDoraMetrics();
+      const result = await controller.getDoraMetrics(mockReq);
 
       expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
         30,
         undefined,
         undefined,
+        undefined,
       );
       expect(result).toEqual(mockDoraData);
+    });
+
+    it("passes organizationId to the service when org context is present", async () => {
+      await controller.getDoraMetrics(mockReqWithOrg, 30);
+
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        30,
+        undefined,
+        undefined,
+        "org-abc-123",
+      );
     });
   });
 
@@ -152,25 +200,34 @@ describe("AnalyticsController", () => {
 
   describe("getUsageAnalytics", () => {
     it("returns usage analytics with default period of 30 days", async () => {
-      const result = await controller.getUsageAnalytics(30);
+      const result = await controller.getUsageAnalytics(mockReq, 30);
 
-      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30, undefined);
       expect(result).toEqual(mockUsageData);
     });
 
     it("forwards custom days parameter to the service", async () => {
-      await controller.getUsageAnalytics(7);
+      await controller.getUsageAnalytics(mockReq, 7);
 
-      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(7);
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(7, undefined);
     });
 
     it("applies the built-in default of 30 days when no days argument is passed", async () => {
       // Calling without an explicit value triggers the ES default-parameter
-      // substitution (`days = 30`), which Istanbul tracks as a separate branch.
-      const result = await controller.getUsageAnalytics();
+      // substitution (`days = 30`), which Istanbul tracks as its own branch.
+      const result = await controller.getUsageAnalytics(mockReq);
 
-      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30, undefined);
       expect(result).toEqual(mockUsageData);
+    });
+
+    it("passes organizationId to the service when org context is present", async () => {
+      await controller.getUsageAnalytics(mockReqWithOrg, 30);
+
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(
+        30,
+        "org-abc-123",
+      );
     });
   });
 
@@ -213,7 +270,12 @@ describe("AnalyticsController", () => {
     it("sets Content-Type to text/csv for catalog report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as Response);
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/csv");
     });
@@ -221,7 +283,12 @@ describe("AnalyticsController", () => {
     it("sets Content-Disposition with filename for catalog report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as Response);
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       const dispositionCall = res.setHeader.mock.calls.find(
         (c: string[]) => c[0] === "Content-Disposition",
@@ -235,7 +302,12 @@ describe("AnalyticsController", () => {
     it("responds with HTTP 200 for a valid export", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as Response);
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
       expect(res.send).toHaveBeenCalled();
@@ -244,7 +316,12 @@ describe("AnalyticsController", () => {
     it("generates CSV content for catalog report with expected sections", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("catalog", 30, res as unknown as Response);
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toContain("Ownership");
@@ -255,9 +332,19 @@ describe("AnalyticsController", () => {
     it("generates CSV content for dora report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("dora", 30, res as unknown as Response);
+      await controller.exportReport(
+        "dora",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
-      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        30,
+        undefined,
+        undefined,
+        undefined,
+      );
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toContain("Deployment Frequency");
     });
@@ -265,9 +352,14 @@ describe("AnalyticsController", () => {
     it("generates CSV content for usage report", async () => {
       const res = buildMockRes();
 
-      await controller.exportReport("usage", 30, res as unknown as Response);
+      await controller.exportReport(
+        "usage",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
-      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30);
+      expect(mockService.getUsageAnalytics).toHaveBeenCalledWith(30, undefined);
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toContain("Top Components");
     });
@@ -276,7 +368,12 @@ describe("AnalyticsController", () => {
       const res = buildMockRes();
       const today = new Date().toISOString().split("T")[0];
 
-      await controller.exportReport("dora", 30, res as unknown as Response);
+      await controller.exportReport(
+        "dora",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       const dispositionCall = res.setHeader.mock.calls.find(
         (c: string[]) => c[0] === "Content-Disposition",
@@ -301,7 +398,12 @@ describe("AnalyticsController", () => {
       });
 
       const res = buildMockRes();
-      await controller.exportReport("catalog", 30, res as unknown as Response);
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       const csvBody = res.send.mock.calls[0][0] as string;
       // coveragePercent is null, so r[h] ?? "" fires for that cell
@@ -321,7 +423,12 @@ describe("AnalyticsController", () => {
       });
 
       const res = buildMockRes();
-      await controller.exportReport("usage", 30, res as unknown as Response);
+      await controller.exportReport(
+        "usage",
+        30,
+        mockReq,
+        res as unknown as Response,
+      );
 
       const csvBody = res.send.mock.calls[0][0] as string;
       expect(csvBody).toBe("");
@@ -334,11 +441,32 @@ describe("AnalyticsController", () => {
       await controller.exportReport(
         "dora",
         undefined,
+        mockReq,
         res as unknown as Response,
       );
 
-      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(30);
+      expect(mockService.getDoraMetrics).toHaveBeenCalledWith(
+        30,
+        undefined,
+        undefined,
+        undefined,
+      );
       expect(res.send).toHaveBeenCalled();
+    });
+
+    it("passes organizationId to service when org context is present for export", async () => {
+      const res = buildMockRes();
+
+      await controller.exportReport(
+        "catalog",
+        30,
+        mockReqWithOrg,
+        res as unknown as Response,
+      );
+
+      expect(mockService.getCatalogAnalytics).toHaveBeenCalledWith(
+        "org-abc-123",
+      );
     });
   });
 });

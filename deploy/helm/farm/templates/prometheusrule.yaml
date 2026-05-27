@@ -43,17 +43,23 @@ spec:
             runbook_url: {{ printf "%s#farmapihighlatency" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiNodeHeapHigh
+          # FARM-S608: switched from nodejs_heap_size_used_bytes/nodejs_heap_size_total_bytes
+          # (which measures only the V8 heap) to container_memory_working_set_bytes /
+          # container_spec_memory_limit_bytes (which measures actual container memory
+          # pressure against the cgroup limit, the same signal the OOM killer uses).
+          # This is a more actionable SLI: if working_set/limit > 0.8 the container is
+          # close to its OOM kill threshold.
           expr: |
-            nodejs_heap_size_used_bytes{job="farm-api"}
+            container_memory_working_set_bytes{container="api", job="kubelet"}
             /
-            nodejs_heap_size_total_bytes{job="farm-api"} > 0.80
+            container_spec_memory_limit_bytes{container="api", job="kubelet"} > 0.80
           for: 5m
           labels:
             severity: warning
             service: farm-api
           annotations:
-            summary: "Farm API Node.js heap usage high"
-            description: "Heap usage is {{ `{{ $value | humanizePercentage }}` }} (threshold: 80%)"
+            summary: "Farm API container memory pressure high"
+            description: "Container working set memory is {{ `{{ $value | humanizePercentage }}` }} of the cgroup limit (threshold: 80%)"
             runbook_url: {{ printf "%s#farmapinodesheaphigh" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiDown

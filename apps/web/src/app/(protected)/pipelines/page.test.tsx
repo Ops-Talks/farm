@@ -54,7 +54,7 @@ vi.mock("@/hooks/use-permission", () => ({
   usePermission: vi.fn().mockReturnValue(true),
 }));
 
-import PipelinesPage from "@/app/(protected)/pipelines/page";
+import { PipelinesClient as PipelinesPage } from "@/app/(protected)/pipelines/_components/PipelinesClient";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";

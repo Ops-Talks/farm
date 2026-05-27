@@ -30,10 +30,15 @@ import {
   TopComponentDto,
   UsageAnalyticsDto,
 } from "./dto/usage-analytics.dto";
+import { withOrgFilter } from "../../common/repositories/tenant-scoped.repository";
 
 /**
  * Service that computes analytics reports for catalog health, DORA metrics,
  * and platform usage.
+ *
+ * All query methods accept an optional orgId parameter. When provided, results
+ * are scoped to that organization. When absent, queries are global (useful for
+ * admin-level dashboards).
  */
 @Injectable()
 export class AnalyticsService {
@@ -51,18 +56,23 @@ export class AnalyticsService {
   /**
    * Returns catalog health analytics including ownership coverage, lifecycle
    * distribution, kind distribution, and a list of unowned components.
+   *
+   * @param orgId - Optional organization UUID to scope the results.
    */
-  async getCatalogAnalytics(): Promise<CatalogAnalyticsDto> {
+  async getCatalogAnalytics(orgId?: string): Promise<CatalogAnalyticsDto> {
     this.logger.log("Computing catalog analytics");
 
     // Ownership coverage
-    const total = await this.componentRepository.count();
+    const totalQb = this.componentRepository.createQueryBuilder("c");
+    withOrgFilter(totalQb, "c", orgId);
+    const total = await totalQb.getCount();
 
-    const withOwner = await this.componentRepository
+    const withOwnerQb = this.componentRepository
       .createQueryBuilder("c")
       .where("c.owner IS NOT NULL")
-      .andWhere("c.owner != ''")
-      .getCount();
+      .andWhere("c.owner != ''");
+    withOrgFilter(withOwnerQb, "c", orgId);
+    const withOwner = await withOwnerQb.getCount();
 
     const withoutOwner = total - withOwner;
     const coveragePercent =
@@ -76,13 +86,14 @@ export class AnalyticsService {
     };
 
     // Lifecycle distribution — include all lifecycle values even those with 0
+    const lifecycleQb = this.componentRepository
+      .createQueryBuilder("c")
+      .select("c.lifecycle", "lifecycle")
+      .addSelect("COUNT(*)", "count")
+      .groupBy("c.lifecycle");
+    withOrgFilter(lifecycleQb, "c", orgId);
     const lifecycleRows: { lifecycle: string; count: string }[] =
-      await this.componentRepository
-        .createQueryBuilder("c")
-        .select("c.lifecycle", "lifecycle")
-        .addSelect("COUNT(*)", "count")
-        .groupBy("c.lifecycle")
-        .getRawMany();
+      await lifecycleQb.getRawMany();
 
     const lifecycleCountMap = new Map<string, number>(
       lifecycleRows.map((r) => [r.lifecycle, parseInt(r.count, 10)]),
@@ -96,14 +107,15 @@ export class AnalyticsService {
     }));
 
     // Kind distribution — only kinds with at least 1 component
+    const kindQb = this.componentRepository
+      .createQueryBuilder("c")
+      .select("c.kind", "kind")
+      .addSelect("COUNT(*)", "count")
+      .groupBy("c.kind")
+      .having("COUNT(*) > 0");
+    withOrgFilter(kindQb, "c", orgId);
     const kindRows: { kind: string; count: string }[] =
-      await this.componentRepository
-        .createQueryBuilder("c")
-        .select("c.kind", "kind")
-        .addSelect("COUNT(*)", "count")
-        .groupBy("c.kind")
-        .having("COUNT(*) > 0")
-        .getRawMany();
+      await kindQb.getRawMany();
 
     const kindDistribution: KindCountDto[] = kindRows.map((r) => ({
       kind: r.kind,
@@ -111,12 +123,13 @@ export class AnalyticsService {
     }));
 
     // Unowned components (limit 50)
-    const unownedRaw = await this.componentRepository
+    const unownedQb = this.componentRepository
       .createQueryBuilder("c")
       .select(["c.id", "c.name", "c.kind"])
       .where("c.owner IS NULL OR c.owner = ''")
-      .limit(50)
-      .getMany();
+      .limit(50);
+    withOrgFilter(unownedQb, "c", orgId);
+    const unownedRaw = await unownedQb.getMany();
 
     const unownedComponents: UnownedComponentDto[] = unownedRaw.map((c) => ({
       id: c.id,
@@ -136,14 +149,16 @@ export class AnalyticsService {
    * Returns DORA metrics (deployment frequency, change failure rate,
    * mean time to recovery, lead time for changes) for a given period.
    *
-   * @param days - Number of days to look back from now
-   * @param componentId - Optional UUID to filter by component
+   * @param days          - Number of days to look back from now
+   * @param componentId   - Optional UUID to filter by component
    * @param environmentId - Optional UUID to filter by environment
+   * @param orgId         - Optional organization UUID to scope the results
    */
   async getDoraMetrics(
     days: number,
     componentId?: string,
     environmentId?: string,
+    orgId?: string,
   ): Promise<DoraAnalyticsDto> {
     this.logger.log(
       `Computing DORA metrics for last ${days} days` +
@@ -153,7 +168,7 @@ export class AnalyticsService {
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    // Base query builder factory
+    // Base query builder factory — all DORA queries start from here.
     const base = () => {
       const qb = this.deploymentRepository
         .createQueryBuilder("d")
@@ -164,6 +179,15 @@ export class AnalyticsService {
       }
       if (environmentId) {
         qb.andWhere("d.environmentId = :environmentId", { environmentId });
+      }
+      // Scope by org via a join to the component table.
+      if (orgId) {
+        qb.innerJoin(
+          Component,
+          "comp",
+          "comp.id = d.componentId AND comp.organizationId = :orgId",
+          { orgId },
+        );
       }
       return qb;
     };
@@ -284,24 +308,26 @@ export class AnalyticsService {
    * Returns platform usage analytics from the audit log including total events,
    * top accessed components, most active users, and action breakdown.
    *
-   * @param days - Number of days to look back from now
+   * @param days  - Number of days to look back from now
+   * @param orgId - Optional organization UUID to scope the results
    */
-  async getUsageAnalytics(days: number): Promise<UsageAnalyticsDto> {
+  async getUsageAnalytics(
+    days: number,
+    orgId?: string,
+  ): Promise<UsageAnalyticsDto> {
     this.logger.log(`Computing usage analytics for last ${days} days`);
 
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     // Total audit events
-    const totalAuditEvents = await this.auditLogRepository
+    const totalQb = this.auditLogRepository
       .createQueryBuilder("al")
-      .where("al.createdAt >= :since", { since })
-      .getCount();
+      .where("al.createdAt >= :since", { since });
+    withOrgFilter(totalQb, "al", orgId);
+    const totalAuditEvents = await totalQb.getCount();
 
     // Top components (resourceType = 'Component', GROUP BY resourceId)
-    const topComponentRows: {
-      componentId: string;
-      accessCount: string;
-    }[] = await this.auditLogRepository
+    const topComponentQb = this.auditLogRepository
       .createQueryBuilder("al")
       .select("al.resourceId", "componentId")
       .addSelect("COUNT(*)", "accessCount")
@@ -311,8 +337,12 @@ export class AnalyticsService {
       })
       .groupBy("al.resourceId")
       .orderBy("COUNT(*)", "DESC")
-      .limit(10)
-      .getRawMany();
+      .limit(10);
+    withOrgFilter(topComponentQb, "al", orgId);
+    const topComponentRows: {
+      componentId: string;
+      accessCount: string;
+    }[] = await topComponentQb.getRawMany();
 
     const componentIds = topComponentRows.map((r) => r.componentId);
     const nameMap = new Map<string, string>();
@@ -336,11 +366,7 @@ export class AnalyticsService {
     }));
 
     // Active users
-    const activeUserRows: {
-      actorId: string;
-      actorUsername: string;
-      actionCount: string;
-    }[] = await this.auditLogRepository
+    const activeUserQb = this.auditLogRepository
       .createQueryBuilder("al")
       .select("al.actorId", "actorId")
       .addSelect("al.actorUsername", "actorUsername")
@@ -349,8 +375,13 @@ export class AnalyticsService {
       .groupBy("al.actorId")
       .addGroupBy("al.actorUsername")
       .orderBy("COUNT(*)", "DESC")
-      .limit(10)
-      .getRawMany();
+      .limit(10);
+    withOrgFilter(activeUserQb, "al", orgId);
+    const activeUserRows: {
+      actorId: string;
+      actorUsername: string;
+      actionCount: string;
+    }[] = await activeUserQb.getRawMany();
 
     const activeUsers: ActiveUserDto[] = activeUserRows.map((r) => ({
       actorId: r.actorId,
@@ -359,17 +390,18 @@ export class AnalyticsService {
     }));
 
     // Action breakdown
-    const actionBreakdownRows: {
-      action: string;
-      count: string;
-    }[] = await this.auditLogRepository
+    const actionQb = this.auditLogRepository
       .createQueryBuilder("al")
       .select("al.action", "action")
       .addSelect("COUNT(*)", "count")
       .where("al.createdAt >= :since", { since })
       .groupBy("al.action")
-      .orderBy("COUNT(*)", "DESC")
-      .getRawMany();
+      .orderBy("COUNT(*)", "DESC");
+    withOrgFilter(actionQb, "al", orgId);
+    const actionBreakdownRows: {
+      action: string;
+      count: string;
+    }[] = await actionQb.getRawMany();
 
     const actionBreakdown: ActionBreakdownDto[] = actionBreakdownRows.map(
       (r) => ({

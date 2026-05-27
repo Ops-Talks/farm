@@ -2,14 +2,26 @@ apiVersion: v2
 name: farm
 description: Farm — open-source platform portal for managing software components, documentation, and team infrastructure.
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "0.25.7"
+kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
+icon: https://raw.githubusercontent.com/Ops-Talks/farm/main/docs/assets/logo.png
 maintainers:
   - name: Ops-Talks
     url: https://github.com/Ops-Talks
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/maintainers: |
+    - name: Farm Maintainers
+      email: ops@farm.dev
+  artifacthub.io/changes: |
+    - kind: added
+      description: "Phase 53 Helm SRE hardening (FARM-E147 S604-S612)"
 
 dependencies:
   - name: postgresql

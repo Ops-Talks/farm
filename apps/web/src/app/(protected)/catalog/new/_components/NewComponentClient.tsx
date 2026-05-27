@@ -18,6 +18,9 @@ import {
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { useScrollToError } from "@/hooks/use-scroll-to-error";
+// S603: Server Actions — run mutations on the server when API_INTERNAL_URL is
+// configured; __clientFallback signals to use the browser api-client instead.
+import { createComponentAction, registerComponentYamlAction } from "../actions";
 
 type FormTab = "form" | "yaml";
 
@@ -126,7 +129,8 @@ export function NewComponentClient() {
             }
           : undefined;
 
-      const created = await catalog.createComponent({
+      // S603: Try server action first; fall back to browser api-client.
+      const input = {
         name: values.name,
         kind: values.kind,
         description: values.description || undefined,
@@ -135,10 +139,23 @@ export function NewComponentClient() {
         tags: tags.length > 0 ? tags : undefined,
         repositoryUrl: values.repositoryUrl?.trim() || undefined,
         helmChart,
-      });
+      };
+      const result = await createComponentAction(input);
 
-      toast.success(`Component "${created.name}" registered`);
-      router.push(`/catalog/${created.id}`);
+      if ("__clientFallback" in result) {
+        const created = await catalog.createComponent(input);
+        toast.success(`Component "${created.name}" registered`);
+        router.push(`/catalog/${created.id}`);
+        return;
+      }
+
+      if ("error" in result) {
+        setFormError("root", { message: result.error });
+        return;
+      }
+
+      toast.success(`Component "${result.component.name}" registered`);
+      router.push(`/catalog/${result.component.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setFormError("root", {
@@ -154,9 +171,23 @@ export function NewComponentClient() {
 
   const onYamlSubmit = async (values: YamlFormValues) => {
     try {
-      const created = await catalog.registerYaml(values.yaml);
-      toast.success(`Component "${created.name}" registered from YAML`);
-      router.push(`/catalog/${created.id}`);
+      // S603: Try server action first; fall back to browser api-client.
+      const result = await registerComponentYamlAction(values.yaml);
+
+      if ("__clientFallback" in result) {
+        const created = await catalog.registerYaml(values.yaml);
+        toast.success(`Component "${created.name}" registered from YAML`);
+        router.push(`/catalog/${created.id}`);
+        return;
+      }
+
+      if ("error" in result) {
+        setYamlError("root", { message: result.error });
+        return;
+      }
+
+      toast.success(`Component "${result.component.name}" registered from YAML`);
+      router.push(`/catalog/${result.component.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setYamlError("root", {

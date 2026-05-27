@@ -70,9 +70,13 @@ export class User {
   @Column("simple-array", { nullable: true })
   roles: string[];
 
-  @Exclude()
-  @Column({ nullable: true, type: "varchar" })
-  refreshToken: string | null;
+  @ApiProperty({
+    example: 0,
+    description:
+      "Incremented on password change or explicit session revocation",
+  })
+  @Column({ type: "int", default: 0 })
+  tokenVersion: number;
 
   @ApiProperty({
     example: "github",

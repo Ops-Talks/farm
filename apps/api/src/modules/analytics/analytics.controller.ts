@@ -3,11 +3,13 @@ import {
   Get,
   HttpStatus,
   Query,
+  Req,
   Res,
   UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
+  ApiHeader,
   ApiOperation,
   ApiQuery,
   ApiResponse,
@@ -19,7 +21,9 @@ import { CatalogAnalyticsDto } from "./dto/catalog-analytics.dto";
 import { DoraAnalyticsDto } from "./dto/dora-analytics.dto";
 import { UsageAnalyticsDto } from "./dto/usage-analytics.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OptionalOrgGuard } from "../../common/guards/optional-org.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
  * Serializes a flat array of record objects to a CSV string.
@@ -43,11 +47,21 @@ function toCsv(rows: Record<string, string | number>[]): string {
 /**
  * Controller that exposes analytics endpoints for catalog health,
  * DORA metrics, and platform usage reports.
+ *
+ * All endpoints accept an optional X-Organization-Id header. When provided,
+ * query results are scoped to that organization. Omitting the header returns
+ * global (cross-organization) results for admin-level dashboards.
  */
 @ApiTags("Analytics")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, OptionalOrgGuard)
 @Controller("analytics")
+@ApiHeader({
+  name: "X-Organization-Id",
+  description:
+    "Optional organization UUID. When present, results are scoped to that organization.",
+  required: false,
+})
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized - Authentication token is missing or invalid.",
@@ -72,8 +86,10 @@ export class AnalyticsController {
     description: "Catalog analytics successfully retrieved.",
     type: CatalogAnalyticsDto,
   })
-  async getCatalogAnalytics(): Promise<CatalogAnalyticsDto> {
-    return this.analyticsService.getCatalogAnalytics();
+  async getCatalogAnalytics(
+    @Req() req: RequestWithOrg,
+  ): Promise<CatalogAnalyticsDto> {
+    return this.analyticsService.getCatalogAnalytics(req.organizationId);
   }
 
   /**
@@ -107,6 +123,7 @@ export class AnalyticsController {
     type: DoraAnalyticsDto,
   })
   async getDoraMetrics(
+    @Req() req: RequestWithOrg,
     @Query("days") days = 30,
     @Query("componentId") componentId?: string,
     @Query("environmentId") environmentId?: string,
@@ -116,6 +133,7 @@ export class AnalyticsController {
       periodDays,
       componentId,
       environmentId,
+      req.organizationId,
     );
   }
 
@@ -138,10 +156,14 @@ export class AnalyticsController {
     type: UsageAnalyticsDto,
   })
   async getUsageAnalytics(
+    @Req() req: RequestWithOrg,
     @Query("days") days = 30,
   ): Promise<UsageAnalyticsDto> {
     const periodDays = Number(days);
-    return this.analyticsService.getUsageAnalytics(periodDays);
+    return this.analyticsService.getUsageAnalytics(
+      periodDays,
+      req.organizationId,
+    );
   }
 
   /**
@@ -172,16 +194,18 @@ export class AnalyticsController {
   async exportReport(
     @Query("report") report: "catalog" | "dora" | "usage",
     @Query("days") days = 30,
+    @Req() req: RequestWithOrg,
     @Res() res: Response,
   ): Promise<void> {
     const periodDays = Number(days);
+    const orgId = req.organizationId;
     const date = new Date().toISOString().split("T")[0];
     const filename = `farm-${report}-${date}.csv`;
 
     let csv = "";
 
     if (report === "catalog") {
-      const data = await this.analyticsService.getCatalogAnalytics();
+      const data = await this.analyticsService.getCatalogAnalytics(orgId);
 
       const rows: Record<string, string | number>[] = [
         {
@@ -218,7 +242,12 @@ export class AnalyticsController {
 
       csv = toCsv(rows);
     } else if (report === "dora") {
-      const data = await this.analyticsService.getDoraMetrics(periodDays);
+      const data = await this.analyticsService.getDoraMetrics(
+        periodDays,
+        undefined,
+        undefined,
+        orgId,
+      );
 
       const rows: Record<string, string | number>[] = [
         { Metric: "Period Days", Value: data.periodDays },
@@ -262,7 +291,10 @@ export class AnalyticsController {
 
       csv = toCsv(rows);
     } else {
-      const data = await this.analyticsService.getUsageAnalytics(periodDays);
+      const data = await this.analyticsService.getUsageAnalytics(
+        periodDays,
+        orgId,
+      );
 
       const componentRows: Record<string, string | number>[] =
         data.topComponents.map((c) => ({

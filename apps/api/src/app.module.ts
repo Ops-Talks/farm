@@ -66,6 +66,7 @@ import { QueuesModule } from "./common/queues/queues.module";
 import { ObservabilityModule } from "./common/observability/observability.module";
 import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
+import { CommonServicesModule } from "./common/services/common-services.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
@@ -141,6 +142,7 @@ if (typeof _promSetContentType === "function") {
     DatabaseMetricsModule,
     DatabaseModule,
     HealthModule,
+    CommonServicesModule,
     ObservabilityModule,
     CacheModule.registerAsync({
       isGlobal: true,

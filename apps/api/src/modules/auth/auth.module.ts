@@ -25,6 +25,7 @@ import { LdapAuthStrategy } from "./strategies/ldap.strategy";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
 import { Team } from "../teams/entities/team.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
 import { AuditLogModule } from "../audit-log/audit-log.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 
@@ -43,6 +44,7 @@ const isTest = process.env.NODE_ENV === "test";
       UserOrganization,
       IntegrationCredential,
       Team,
+      RefreshToken,
     ]),
     PassportModule,
     HttpModule,

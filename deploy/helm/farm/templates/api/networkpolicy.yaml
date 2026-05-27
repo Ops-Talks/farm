@@ -45,13 +45,21 @@ spec:
     # Database access — scoped by `to:` so the rule does not implicitly allow
     # the DB port to any destination. If no selector is configured the rule is
     # omitted entirely (DB egress is denied) and the operator must set
-    # api.networkPolicy.externalDatabaseEgress when using an external DB.
+    # api.networkPolicy.externalDatabaseEgress or externalDatabase.egressIpBlock
+    # when using an external DB.
     {{- if .Values.postgresql.enabled }}
     - to:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: postgresql
               app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - protocol: TCP
+          port: {{ include "farm.databasePort" . | int }}
+    {{- else if .Values.externalDatabase.egressIpBlock }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.externalDatabase.egressIpBlock }}
       ports:
         - protocol: TCP
           port: {{ include "farm.databasePort" . | int }}
@@ -69,6 +77,13 @@ spec:
             matchLabels:
               app.kubernetes.io/name: redis
               app.kubernetes.io/instance: {{ .Release.Name }}
+      ports:
+        - protocol: TCP
+          port: {{ include "farm.redisPort" . | int }}
+    {{- else if .Values.externalRedis.egressIpBlock }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.externalRedis.egressIpBlock }}
       ports:
         - protocol: TCP
           port: {{ include "farm.redisPort" . | int }}

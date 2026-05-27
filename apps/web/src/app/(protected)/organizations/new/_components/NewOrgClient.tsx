@@ -17,6 +17,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+// S603: Server Action — runs the mutation on the server when API_INTERNAL_URL
+// is configured; falls back to the browser api-client via __clientFallback.
+import { createOrganizationAction } from "../actions";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -59,15 +62,40 @@ export function NewOrgClient() {
 
   const onSubmit = async (values: NewOrgFormValues) => {
     try {
-      const created = await orgsApi.create({
-        name: values.name.trim(),
-        description: values.description?.trim() || undefined,
+      // S603: Try the server action first. When API_INTERNAL_URL is not
+      // configured (CI / Playwright / local dev), it returns __clientFallback
+      // and we transparently fall through to the browser api-client so existing
+      // Playwright route mocks and unit test mocks remain unaffected.
+      const result = await createOrganizationAction({
+        name: values.name,
+        description: values.description,
       });
-      toast.success(`Organization "${created.name}" created`);
-      // Refresh the org list in context and switch to the newly created org
+
+      if ("__clientFallback" in result) {
+        // Fall back to browser-side api-client (Playwright / test environments)
+        const created = await orgsApi.create({
+          name: values.name.trim(),
+          description: values.description?.trim() || undefined,
+        });
+        toast.success(`Organization "${created.name}" created`);
+        await refreshOrgs();
+        switchOrg(created);
+        router.push(`/organizations/${created.id}`);
+        return;
+      }
+
+      if ("error" in result) {
+        setError("root", { message: result.error });
+        return;
+      }
+
+      // Server action succeeded
+      toast.success(`Organization "${result.org.name}" created`);
       await refreshOrgs();
-      switchOrg(created);
-      router.push(`/organizations/${created.id}`);
+      // refreshOrgs gives us the full org object; switchOrg expects it.
+      // Use a minimal org shape — OrganizationContext will reload from API.
+      switchOrg(result.org as Parameters<typeof switchOrg>[0]);
+      router.push(`/organizations/${result.org.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         const msg = err.body.message;

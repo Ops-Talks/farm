@@ -10,6 +10,7 @@ import { OrgRole } from "@farm/types";
 import { UserManagementService } from "../user-management.service";
 import { User } from "../entities/user.entity";
 import { PasswordReset } from "../entities/password-reset.entity";
+import { RefreshToken } from "../entities/refresh-token.entity";
 import { Organization } from "../../organization/entities/organization.entity";
 import { UserOrganization } from "../../organization/entities/user-organization.entity";
 import { AuditLogService } from "../../audit-log/audit-log.service";
@@ -23,6 +24,12 @@ const repoMock = () => ({
   delete: jest.fn().mockResolvedValue({ affected: 0 }),
   update: jest.fn().mockResolvedValue({ affected: 1 }),
   count: jest.fn().mockResolvedValue(0),
+  createQueryBuilder: jest.fn().mockReturnValue({
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected: 1 }),
+  }),
 });
 
 describe("UserManagementService", () => {
@@ -31,6 +38,7 @@ describe("UserManagementService", () => {
   let resets: ReturnType<typeof repoMock>;
   let orgs: ReturnType<typeof repoMock>;
   let userOrgs: ReturnType<typeof repoMock>;
+  let refreshTokens: ReturnType<typeof repoMock>;
   let queue: { add: jest.Mock };
 
   const platformAdmin = {
@@ -49,6 +57,7 @@ describe("UserManagementService", () => {
     resets = repoMock();
     orgs = repoMock();
     userOrgs = repoMock();
+    refreshTokens = repoMock();
     queue = { add: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -58,6 +67,7 @@ describe("UserManagementService", () => {
         { provide: getRepositoryToken(PasswordReset), useValue: resets },
         { provide: getRepositoryToken(Organization), useValue: orgs },
         { provide: getRepositoryToken(UserOrganization), useValue: userOrgs },
+        { provide: getRepositoryToken(RefreshToken), useValue: refreshTokens },
         {
           provide: ConfigService,
           useValue: {
@@ -122,11 +132,11 @@ describe("UserManagementService", () => {
       users.findOne.mockResolvedValue({
         id: "x",
         suspended: false,
-        refreshToken: "r",
       });
       const u = await service.setSuspended(platformAdmin, "x", true);
       expect(u.suspended).toBe(true);
-      expect(u.refreshToken).toBeNull();
+      // Refresh tokens are revoked via the refresh_tokens table, not users.refreshToken
+      expect(refreshTokens.createQueryBuilder).toHaveBeenCalled();
     });
   });
 
@@ -437,17 +447,15 @@ describe("UserManagementService", () => {
   });
 
   describe("setSuspended (extended)", () => {
-    it("activates a user (suspended: false) without clearing refreshToken", async () => {
+    it("activates a user (suspended: false) without revoking refresh tokens", async () => {
       users.findOne.mockResolvedValue({
         id: "x",
         suspended: true,
-        refreshToken: "tok",
       });
       const u = await service.setSuspended(platformAdmin, "x", false);
       expect(u.suspended).toBe(false);
-      expect((u as unknown as Record<string, unknown>)["refreshToken"]).toBe(
-        "tok",
-      );
+      // Token revocation must NOT occur on activation
+      expect(refreshTokens.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it("throws NotFoundException when user does not exist", async () => {
@@ -513,6 +521,10 @@ describe("UserManagementService", () => {
           { provide: getRepositoryToken(Organization), useValue: orgs },
           { provide: getRepositoryToken(UserOrganization), useValue: userOrgs },
           {
+            provide: getRepositoryToken(RefreshToken),
+            useValue: refreshTokens,
+          },
+          {
             provide: ConfigService,
             useValue: {
               get: jest.fn((k: string) => {
@@ -552,6 +564,10 @@ describe("UserManagementService", () => {
           { provide: getRepositoryToken(PasswordReset), useValue: resets },
           { provide: getRepositoryToken(Organization), useValue: orgs },
           { provide: getRepositoryToken(UserOrganization), useValue: userOrgs },
+          {
+            provide: getRepositoryToken(RefreshToken),
+            useValue: refreshTokens,
+          },
           {
             provide: ConfigService,
             useValue: {

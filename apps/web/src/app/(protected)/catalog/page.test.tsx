@@ -45,7 +45,7 @@ vi.mock("@/hooks/use-permission", () => ({
   usePermission: vi.fn().mockReturnValue(true),
 }));
 
-import CatalogPage from "@/app/(protected)/catalog/page";
+import { CatalogClient as CatalogPage } from "@/app/(protected)/catalog/_components/CatalogClient";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";

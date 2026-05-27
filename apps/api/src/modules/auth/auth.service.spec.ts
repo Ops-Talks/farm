@@ -13,6 +13,7 @@ import { ConflictException, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { AuthService } from "./auth.service";
 import { User } from "./entities/user.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
 
 describe("AuthService", () => {
   let service: AuthService;
@@ -24,11 +25,11 @@ describe("AuthService", () => {
     displayName: "John",
     password: "hashed_password",
     roles: ["user"],
-    refreshToken: null,
+    tokenVersion: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
     hashPassword: jest.fn(),
-  };
+  } as unknown as User;
 
   const mockRepository = {
     findOne: jest.fn(),
@@ -41,6 +42,21 @@ describe("AuthService", () => {
     ),
     find: jest.fn().mockResolvedValue([mockUser]),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
+  };
+
+  const mockRefreshTokenRepository = {
+    findOne: jest.fn(),
+    create: jest
+      .fn()
+      .mockImplementation((dto: Partial<RefreshToken>) => dto as RefreshToken),
+    save: jest.fn().mockResolvedValue({ id: "rt-uuid" }),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+    createQueryBuilder: jest.fn().mockReturnValue({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    }),
   };
 
   const mockJwtService = {
@@ -56,6 +72,10 @@ describe("AuthService", () => {
           useValue: mockRepository,
         },
         {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: mockRefreshTokenRepository,
+        },
+        {
           provide: JwtService,
           useValue: mockJwtService,
         },
@@ -65,6 +85,16 @@ describe("AuthService", () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     (bcrypt.hash as jest.Mock).mockResolvedValue("hashed-token");
+    mockRefreshTokenRepository.create.mockImplementation(
+      (dto: Partial<RefreshToken>) => dto as RefreshToken,
+    );
+    mockRefreshTokenRepository.save.mockResolvedValue({ id: "rt-uuid" });
+    mockRefreshTokenRepository.createQueryBuilder.mockReturnValue({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    });
   });
 
   it("should be defined", () => {
@@ -111,10 +141,8 @@ describe("AuthService", () => {
       expect(result.refreshToken).toBeDefined();
       expect(typeof result.refreshToken).toBe("string");
       expect(result.user.username).toBe(mockUser.username);
-      expect(mockRepository.update).toHaveBeenCalledWith(
-        "uuid",
-        expect.objectContaining({ refreshToken: "hashed-token" }),
-      );
+      // Refresh token is now persisted via the refresh_tokens table
+      expect(mockRefreshTokenRepository.save).toHaveBeenCalledTimes(1);
     });
 
     it("should throw UnauthorizedException for invalid password", async () => {
@@ -132,7 +160,7 @@ describe("AuthService", () => {
       ...mockUser,
       oauthProvider: "github",
       oauthProviderId: "gh-123",
-    };
+    } as unknown as User;
 
     it("should return existing user when found by OAuth provider and provider ID", async () => {
       // Branch: outer `if (!user)` is false — user already linked to this OAuth identity
@@ -157,7 +185,7 @@ describe("AuthService", () => {
         ...mockUser,
         oauthProvider: null,
         oauthProviderId: null,
-      };
+      } as unknown as User;
 
       // 1st call: by oauthProvider+oauthProviderId -> not found
       mockRepository.findOne.mockResolvedValueOnce(null);
@@ -198,7 +226,7 @@ describe("AuthService", () => {
         email: "new@example.com",
         oauthProvider: "github",
         oauthProviderId: "gh-789",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(newUser);
 
       const result = await service.findOrCreateOAuthUser("github", "gh-789", {
@@ -233,7 +261,7 @@ describe("AuthService", () => {
         username: "github_gh_999",
         oauthProvider: "github",
         oauthProviderId: "gh-999",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(createdUser);
 
       await service.findOrCreateOAuthUser("github", "gh-999", {
@@ -264,7 +292,7 @@ describe("AuthService", () => {
         email: "no_email_user@github.oauth",
         oauthProvider: "github",
         oauthProviderId: "gh-noemail",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(createdUser);
 
       await service.findOrCreateOAuthUser("github", "gh-noemail", {
@@ -293,7 +321,7 @@ describe("AuthService", () => {
         displayName: "nodisplayname",
         oauthProvider: "github",
         oauthProviderId: "gh-nodisplay",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(createdUser);
 
       await service.findOrCreateOAuthUser("github", "gh-nodisplay", {
@@ -314,7 +342,10 @@ describe("AuthService", () => {
     it("should append _1 suffix when the base username is already taken", async () => {
       // Branch: while-loop body executes once (one collision, then free)
 
-      const takenUser: User = { ...mockUser, username: "collider" };
+      const takenUser: User = {
+        ...mockUser,
+        username: "collider",
+      } as unknown as User;
 
       // 1st call: by oauthProvider+oauthProviderId -> null
       mockRepository.findOne.mockResolvedValueOnce(null);
@@ -330,7 +361,7 @@ describe("AuthService", () => {
         username: "collider_1",
         oauthProvider: "github",
         oauthProviderId: "gh-collide",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(createdUser);
 
       await service.findOrCreateOAuthUser("github", "gh-collide", {
@@ -347,7 +378,10 @@ describe("AuthService", () => {
     it("should keep incrementing the suffix until a free username is found", async () => {
       // Branch: while-loop body executes twice (two collisions, then free)
 
-      const takenUser: User = { ...mockUser, username: "taken" };
+      const takenUser: User = {
+        ...mockUser,
+        username: "taken",
+      } as unknown as User;
 
       // 1st call: by oauthProvider+oauthProviderId -> null
       mockRepository.findOne.mockResolvedValueOnce(null);
@@ -365,7 +399,7 @@ describe("AuthService", () => {
         username: "taken_2",
         oauthProvider: "google",
         oauthProviderId: "g-taken",
-      };
+      } as unknown as User;
       mockRepository.save.mockResolvedValueOnce(createdUser);
 
       await service.findOrCreateOAuthUser("google", "g-taken", {

@@ -1471,8 +1471,8 @@ export const analytics = {
    */
   async exportReport(report: "catalog" | "dora" | "usage", days = 30): Promise<void> {
     const token = getAccessToken();
-    // Use the Next.js rewrite proxy so auth cookies / CORS are handled
-    // consistently with the rest of the API calls.
+    // Direct request to /api endpoint — routed by the Kubernetes Ingress to
+    // the API service. Cookies are sent automatically by the browser.
     const url = `${API_BASE}/v1/analytics/export?report=${report}&days=${days}`;
     const res = await fetch(url, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},

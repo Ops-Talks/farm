@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { HealthPanel } from "@/components/dashboard/health-panel";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
@@ -5,6 +6,11 @@ import { QueuePanel } from "@/components/dashboard/queue-panel";
 import { RecentPipelinesWidget } from "./_components/recent-pipelines-widget";
 import { SetupChecklistCard } from "@/components/dashboard/setup-checklist-card";
 import { IntegrationHealthCard } from "@/components/dashboard/integration-health-card";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "System overview and health status",
+};
 
 export default function DashboardPage() {
   return (

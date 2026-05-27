@@ -1,0 +1,396 @@
+{{- /*
+  AUTO-GENERATED FILE — do not edit by hand.
+
+  Regenerate after updating observability/sloth-slos.yml:
+    make sloth-generate
+
+  Source: observability/sloth-slos.yml
+  Tool:   sloth v0.11+ (https://sloth.dev)
+  Command: sloth generate -i observability/sloth-slos.yml -o /tmp/sloth-out.yaml
+           (output is then wrapped with the Helm conditionals below and committed)
+
+  CI drift check: .github/workflows/helm-lint.yml regenerates the rules and
+  fails on any diff between the committed file and fresh output.
+
+  These multi-window/multi-burn-rate rules (MWMB) supersede the simple
+  FarmApiDown and FarmApiHighErrorRate point-threshold alerts when
+  prometheusRule.sloth.enabled: true. Both sets co-exist; operators should
+  silence the legacy alerts via Alertmanager inhibit_rules once the SLO burn
+  rate alerts are tuned.
+*/ -}}
+{{- if and .Values.prometheusRule.enabled .Values.prometheusRule.sloth.enabled }}
+{{- $svcLabel := "farm-api" }}
+{{- $runbook  := .Values.prometheusRule.runbookBaseUrl }}
+# -- SLO: farm-api — requests-availability (99.5%) ────────────────────────────
+# Error budget: 0.5% of requests over a 30-day window.
+# Multi-burn-rate windows and burn rates (Google SRE Workbook, Chapter 5):
+#   Critical/page  — 1h  short window, burn 14.4 (consumes 2%   of 30d budget)
+#   Critical/page  — 6h  short window, burn 6    (consumes 5%   of 30d budget)
+#   Warning/ticket — 1d  short window, burn 3    (consumes 10%  of 30d budget)
+#   Warning/ticket — 3d  short window, burn 1    (consumes 30%  of 30d budget)
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "farm.fullname" . }}-sloth
+  namespace: {{ .Values.prometheusRule.namespace | default .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    # Sloth metadata labels — required for Sloth dashboard compatibility.
+    sloth.dev/service: {{ $svcLabel }}
+    sloth.dev/version: "v1"
+spec:
+  groups:
+    # ── SLI recording rules: farm-api / requests-availability ─────────────────
+    - name: sloth-slo-sli-recordings-farm-api-requests-availability
+      interval: 30s
+      rules:
+        - record: slo:sli_error:ratio_rate5m
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[5m])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[5m])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "5m"
+
+        - record: slo:sli_error:ratio_rate30m
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[30m])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[30m])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "30m"
+
+        - record: slo:sli_error:ratio_rate1h
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[1h])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1h])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "1h"
+
+        - record: slo:sli_error:ratio_rate2h
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[2h])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[2h])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "2h"
+
+        - record: slo:sli_error:ratio_rate6h
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[6h])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[6h])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "6h"
+
+        - record: slo:sli_error:ratio_rate1d
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[1d])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1d])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "1d"
+
+        - record: slo:sli_error:ratio_rate3d
+          expr: |
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}",status_code=~"5.."}[3d])))
+            /
+            (sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[3d])))
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_window: "3d"
+
+    # ── SLO alert rules: farm-api / requests-availability ─────────────────────
+    - name: sloth-slo-alerts-farm-api-requests-availability
+      rules:
+        # Critical — fast burn (5m + 1h windows, burn rate 14.4)
+        # Fires when ~2% of the 30-day error budget is consumed in 1 hour.
+        - alert: FarmApiAvailabilitySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate5m{sloth_id="farm-api-requests-availability"} > (14.4 * 0.005)
+              and
+              slo:sli_error:ratio_rate1h{sloth_id="farm-api-requests-availability"} > (14.4 * 0.005)
+            )
+          for: 2m
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_severity: "page"
+            severity: critical
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API availability SLO fast burn (critical)"
+            description: "Error rate exceeds 14.4x the 30-day budget burn rate. Immediate action required."
+            runbook_url: {{ printf "%s#farmapihigherrorrate" $runbook | quote }}
+
+        # Critical — slow burn (30m + 6h windows, burn rate 6)
+        # Fires when ~5% of the 30-day error budget is consumed in 6 hours.
+        - alert: FarmApiAvailabilitySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate30m{sloth_id="farm-api-requests-availability"} > (6 * 0.005)
+              and
+              slo:sli_error:ratio_rate6h{sloth_id="farm-api-requests-availability"} > (6 * 0.005)
+            )
+          for: 15m
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_severity: "page"
+            severity: critical
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API availability SLO slow burn (critical)"
+            description: "Error rate exceeds 6x the 30-day budget burn rate over the last 6 hours."
+            runbook_url: {{ printf "%s#farmapihigherrorrate" $runbook | quote }}
+
+        # Warning — medium burn (2h + 1d windows, burn rate 3)
+        # Fires when ~10% of the 30-day error budget will be consumed in 1 day.
+        - alert: FarmApiAvailabilitySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate2h{sloth_id="farm-api-requests-availability"} > (3 * 0.005)
+              and
+              slo:sli_error:ratio_rate1d{sloth_id="farm-api-requests-availability"} > (3 * 0.005)
+            )
+          for: 1h
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_severity: "ticket"
+            severity: warning
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API availability SLO budget burn (warning)"
+            description: "Error rate exceeds 3x the 30-day budget burn rate. Create a ticket."
+            runbook_url: {{ printf "%s#farmapihigherrorrate" $runbook | quote }}
+
+        # Warning — slow burn (6h + 3d windows, burn rate 1)
+        # Fires when ~30% of the 30-day error budget will be consumed in 3 days.
+        - alert: FarmApiAvailabilitySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate6h{sloth_id="farm-api-requests-availability"} > (1 * 0.005)
+              and
+              slo:sli_error:ratio_rate3d{sloth_id="farm-api-requests-availability"} > (1 * 0.005)
+            )
+          for: 3h
+          labels:
+            sloth_id: "farm-api-requests-availability"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-availability"
+            sloth_severity: "ticket"
+            severity: warning
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API availability SLO budget drain (warning)"
+            description: "Error rate at 1x burn rate — error budget draining over 3 days."
+            runbook_url: {{ printf "%s#farmapihigherrorrate" $runbook | quote }}
+
+    # ── SLI recording rules: farm-api / requests-latency ──────────────────────
+    - name: sloth-slo-sli-recordings-farm-api-requests-latency
+      interval: 30s
+      rules:
+        - record: slo:sli_error:ratio_rate5m
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[5m]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[5m]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[5m]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "5m"
+
+        - record: slo:sli_error:ratio_rate30m
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[30m]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[30m]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[30m]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "30m"
+
+        - record: slo:sli_error:ratio_rate1h
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1h]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[1h]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1h]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "1h"
+
+        - record: slo:sli_error:ratio_rate2h
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[2h]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[2h]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[2h]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "2h"
+
+        - record: slo:sli_error:ratio_rate6h
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[6h]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[6h]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[6h]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "6h"
+
+        - record: slo:sli_error:ratio_rate1d
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1d]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[1d]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[1d]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "1d"
+
+        - record: slo:sli_error:ratio_rate3d
+          expr: |
+            (
+              sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[3d]))
+              - sum(rate(http_request_duration_seconds_bucket{job="{{ $svcLabel }}",le="0.5"}[3d]))
+            )
+            / sum(rate(http_request_duration_seconds_count{job="{{ $svcLabel }}"}[3d]))
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_window: "3d"
+
+    # ── SLO alert rules: farm-api / requests-latency ──────────────────────────
+    - name: sloth-slo-alerts-farm-api-requests-latency
+      rules:
+        - alert: FarmApiLatencySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate5m{sloth_id="farm-api-requests-latency"} > (14.4 * 0.005)
+              and
+              slo:sli_error:ratio_rate1h{sloth_id="farm-api-requests-latency"} > (14.4 * 0.005)
+            )
+          for: 2m
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_severity: "page"
+            severity: critical
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API latency SLO fast burn (critical)"
+            description: "P99 latency SLO budget burning at 14.4x rate. Immediate action required."
+            runbook_url: {{ printf "%s#farmapihighlatency" $runbook | quote }}
+
+        - alert: FarmApiLatencySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate30m{sloth_id="farm-api-requests-latency"} > (6 * 0.005)
+              and
+              slo:sli_error:ratio_rate6h{sloth_id="farm-api-requests-latency"} > (6 * 0.005)
+            )
+          for: 15m
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_severity: "page"
+            severity: critical
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API latency SLO slow burn (critical)"
+            description: "P99 latency SLO budget burning at 6x rate over the last 6 hours."
+            runbook_url: {{ printf "%s#farmapihighlatency" $runbook | quote }}
+
+        - alert: FarmApiLatencySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate2h{sloth_id="farm-api-requests-latency"} > (3 * 0.005)
+              and
+              slo:sli_error:ratio_rate1d{sloth_id="farm-api-requests-latency"} > (3 * 0.005)
+            )
+          for: 1h
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_severity: "ticket"
+            severity: warning
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API latency SLO budget burn (warning)"
+            description: "P99 latency SLO budget burning at 3x rate over 1 day."
+            runbook_url: {{ printf "%s#farmapihighlatency" $runbook | quote }}
+
+        - alert: FarmApiLatencySLO
+          expr: |
+            (
+              slo:sli_error:ratio_rate6h{sloth_id="farm-api-requests-latency"} > (1 * 0.005)
+              and
+              slo:sli_error:ratio_rate3d{sloth_id="farm-api-requests-latency"} > (1 * 0.005)
+            )
+          for: 3h
+          labels:
+            sloth_id: "farm-api-requests-latency"
+            sloth_service: {{ $svcLabel }}
+            sloth_slo: "requests-latency"
+            sloth_severity: "ticket"
+            severity: warning
+            service: {{ $svcLabel }}
+          annotations:
+            summary: "Farm API latency SLO budget drain (warning)"
+            description: "P99 latency SLO budget draining at 1x rate over 3 days."
+            runbook_url: {{ printf "%s#farmapihighlatency" $runbook | quote }}
+{{- end }}

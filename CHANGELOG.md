@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FARM-S591**: Delete global `OrgContextInterceptor` and `APP_INTERCEPTOR` registration — eliminates redundant DB call on every request. Add `OptionalOrgContextGuard` for endpoints accepting optional org header.
 - **FARM-S592**: Replace `cacheManager.clear()` with `TenantCacheService` + `CacheKeyBuilder`. Cache keys scoped to `org:${orgId}:<namespace>:<resource>` — cross-tenant cache poisoning eliminated.
 - **FARM-S593**: Migrate ~20 org-scoped controllers from `RolesGuard+@Roles("admin")` to canonical `JwtAuthGuard→OrgRequiredGuard→PermissionGuard+@RequiresPermission(...)` chain. Updated Swagger annotations on all affected controllers.
+- **FARM-S594**: Harden JWT strategy: `validate()` now performs DB lookup, rejects suspended users, and strictly checks `tokenVersion` claim — legacy tokens without `tokenVersion` are rejected. Timing oracle in `auth.service.ts` eliminated via constant-time bcrypt against dummy hash. Migration `1748000000001` adds `users.tokenVersion INT NOT NULL DEFAULT 0`.
+- **FARM-S595**: Replace `users.refreshToken` column with dedicated `refresh_tokens` table. SHA-256 jti storage, family-based token rotation with reuse detection (entire family revoked on replay). Migration `1748000000002` creates table and drops legacy column.
+- **FARM-S598**: Migrate JWT tokens from `sessionStorage` to `httpOnly; Secure; SameSite=Lax` cookies. API sets cookies on login/refresh. `api-client.ts` no longer reads tokens client-side — eliminates XSS token theft surface.
+- **FARM-S599**: Enforce CSP via `middleware.ts` (request-time evaluation). Production: strict `'self'` policy dropping `unsafe-inline`/`unsafe-eval`. Dev/E2E: relaxed policy with `PLAYWRIGHT_E2E=1` support.
+- **FARM-S600**: Eliminate XSS surfaces in `DocsClient.tsx` and `advanced-search-modal.tsx` with `isomorphic-dompurify` sanitization. 15 unit tests covering known XSS payload variants.
+- **FARM-S596**: Introduce `withOrgFilter()` helper and REQUEST-scoped `OrgContextService`. `analytics.service.ts` refactored — all QueryBuilder chains tenant-scoped. `OrgRequiredGuard` now sets org context for downstream services. Cross-tenant isolation covered by `cross-tenant-security.e2e-spec.ts`.
+
+### Added
+- **FARM-S601**: Convert 5 high-traffic pages to async RSC with `HydrationBoundary` and per-segment `loading.tsx` skeletons: catalog, catalog/[id], teams, pipelines (dashboard already RSC). `generateMetadata` added to `catalog/[id]`.
+- **FARM-S603**: Server Actions (`actions.ts`) for org creation, team creation, and component registration. `__clientFallback` pattern keeps all 70 Playwright tests green without `API_INTERNAL_URL`.
+- **FARM-E147 (S604–S612)**: Helm chart SRE hardening:
+  - Migration race condition documented in `NOTES.txt`; initContainer wait-for-job added to API Deployment.
+  - Helm CI gate (`.github/workflows/helm-lint.yml`) with lint, template, kubeconform, and ct lint steps.
+  - NetworkPolicy egress: podSelector/ipBlock per service; `validate.yaml` guard for ingress+networkpolicy.
+  - Chart version bumped to `0.2.0`; `kubeVersion`, `icon`, ArtifactHub annotations added to `Chart.yaml`.
+  - `_sloth-rules.gen.yaml`: Sloth SLO multi-window/multi-burn-rate recording rules and alerts.
+  - `external-secret.yaml`: ESO v1, `dataFrom` range loop, configurable secrets.
+  - `migration-job.yaml`: bounded wait loop with `nc` binary check, busybox digest pin.
+  - `values.schema.json`: JSON Schema draft-07 validation for all Helm values.
+  - `release.yml`: bumps both chart version and appVersion; strips pre-release suffix from patch increment.
 
 ### Changed
 - **architecture (FARM-E148)**: Replace app-level proxies with Kubernetes Ingress path-based routing.

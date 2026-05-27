@@ -113,17 +113,19 @@ spec:
             - |
               RETRIES={{ .Values.migration.waitForDb.retries | default 60 }}
               INTERVAL={{ .Values.migration.waitForDb.intervalSeconds | default 2 }}
-              i=0
-              while [ $i -lt $RETRIES ]; do
+              if ! command -v nc >/dev/null 2>&1; then
+                echo "ERROR: nc (netcat) not found in wait-for-db image. Aborting." >&2
+                exit 1
+              fi
+              for i in $(seq 1 "$RETRIES"); do
                 if nc -z "${DATABASE_HOST}" "${DATABASE_PORT:-5432}"; then
-                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432}"
+                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432} (attempt ${i}/${RETRIES})"
                   exit 0
                 fi
-                echo "Attempt $((i+1))/${RETRIES}: waiting for database at ${DATABASE_HOST}:${DATABASE_PORT:-5432}..."
-                sleep $INTERVAL
-                i=$((i+1))
+                echo "Attempt ${i}/${RETRIES}: waiting for database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} (retry in ${INTERVAL}s)..."
+                sleep "$INTERVAL"
               done
-              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable after ${RETRIES} attempts. Aborting migration." >&2
+              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable after ${RETRIES} attempts (${RETRIES} x ${INTERVAL}s = $((RETRIES * INTERVAL))s total). Aborting migration." >&2
               exit 1
           envFrom:
             - configMapRef:

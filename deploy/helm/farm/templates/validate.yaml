@@ -39,11 +39,20 @@
   {{- end -}}
 {{- end -}}
 {{- /*
-  NetworkPolicy CNI guard.
-  Flannel silently ignores NetworkPolicy resources, giving a false sense of
-  security. Require operators to explicitly confirm their CNI enforces
-  NetworkPolicy before enabling it.
+  NetworkPolicy + Ingress selector guard.
+  When the API NetworkPolicy is enabled alongside an Ingress, traffic from the
+  Ingress controller is blocked unless at least one of the namespace/pod
+  selectors is configured. An unconfigured selector locks out all external
+  HTTP traffic silently, which is harder to diagnose than a Helm failure.
 */ -}}
+{{- if and .Values.api.networkPolicy.enabled .Values.ingress.enabled -}}
+  {{- $hasNsSelector  := .Values.api.networkPolicy.ingressControllerNamespaceSelector -}}
+  {{- $hasPodSelector := .Values.api.networkPolicy.ingressControllerPodSelector -}}
+  {{- if not (or $hasNsSelector $hasPodSelector) -}}
+    {{- fail "CONFIGURATION: api.networkPolicy.enabled=true and ingress.enabled=true but neither api.networkPolicy.ingressControllerNamespaceSelector nor api.networkPolicy.ingressControllerPodSelector is set. The NetworkPolicy will block all Ingress controller traffic. Set at least one selector, or disable api.networkPolicy.enabled." -}}
+  {{- end -}}
+{{- end -}}
+
 {{- if and .Values.api.networkPolicy.enabled (not .Values.api.networkPolicy.cniConfirmed) -}}
   {{- fail "NetworkPolicy requires a CNI that enforces it (Calico, Cilium, Canal, Weave Net). Flannel silently ignores NetworkPolicy resources. Set networkPolicy.enabled=false if your CNI does not support it, or suppress this check with api.networkPolicy.cniConfirmed=true." -}}
 {{- end -}}

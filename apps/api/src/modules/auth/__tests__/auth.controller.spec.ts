@@ -20,6 +20,7 @@ import { PermissionGuard } from "../../../common/guards/permission.guard";
  * Builds a minimal fake JWT string whose payload can be base64url-decoded by
  * the refresh endpoint without actual signature verification.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildFakeJwt(payload: Record<string, unknown>): string {
   const header = Buffer.from(
     JSON.stringify({ alg: "HS256", typ: "JWT" }),
@@ -32,6 +33,7 @@ const mockAuthService = {
   register: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
+  logout: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn(),
   findOrCreateOAuthUser: jest.fn(),
   getProfile: jest.fn(),
@@ -185,7 +187,6 @@ describe("AuthController", () => {
       const mockReq = {
         cookies: {
           refresh_token: "old-rt",
-          access_token: buildFakeJwt({ sub: "u1", username: "user" }),
         },
       };
       const mockRes = { cookie: jest.fn() };
@@ -196,7 +197,7 @@ describe("AuthController", () => {
         mockRes as never,
       );
 
-      expect(service.refresh).toHaveBeenCalledWith("user", "old-rt");
+      expect(service.refresh).toHaveBeenCalledWith("old-rt");
       expect(mockRes.cookie).toHaveBeenCalledWith(
         "access_token",
         "new-access",
@@ -220,9 +221,14 @@ describe("AuthController", () => {
   });
 
   describe("logout", () => {
-    it("should clear both auth cookies and return a message", () => {
+    it("should clear both auth cookies and return a message", async () => {
+      mockAuthService.logout = jest.fn().mockResolvedValue(undefined);
+      const mockReq = { cookies: { refresh_token: "some-rt" } };
       const mockRes = { clearCookie: jest.fn() };
-      const result = controller.logout(mockRes as never);
+      const result = await controller.logout(
+        mockReq as never,
+        mockRes as never,
+      );
       expect(mockRes.clearCookie).toHaveBeenCalledWith(
         "access_token",
         expect.objectContaining({ path: "/" }),

@@ -9,13 +9,23 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash, randomUUID } from "crypto";
 import { User } from "./entities/user.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { BCRYPT_ROUNDS } from "../../common/constants/bcrypt";
+
+/**
+ * A pre-computed bcrypt hash used as a dummy target when the requested
+ * username does not exist.  Running compare() against this constant ensures
+ * that every code path through validateUser() takes a full bcrypt round,
+ * preventing a timing oracle that would reveal valid usernames.
+ */
+const DUMMY_HASH =
+  "$2b$12$K9DJCHZGHoSOFwqB5RJwNeDWGjGGBbM2O.vE4G3K5R6YFP.YV74Yy";
 
 /**
  * Service handling authentication and user-related business logic.
@@ -25,6 +35,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -55,12 +67,16 @@ export class AuthService {
 
   /**
    * Authenticates a user and returns a JWT access token plus a refresh token.
+   * The refresh token is stored in the dedicated refresh_tokens table (hashed)
+   * so that multiple devices can hold independent tokens simultaneously.
    * @param loginDto - Login credentials
-   * @returns The user, JWT access token, and refresh token
+   * @param meta - Optional request metadata attached to the token record
+   * @returns The user, JWT access token, and raw refresh token
    * @throws UnauthorizedException if credentials are invalid
    */
   async login(
     loginDto: LoginDto,
+    meta: { userAgent?: string; ip?: string } = {},
   ): Promise<{ user: User; token: string; refreshToken: string }> {
     const { username, password } = loginDto;
 
@@ -84,90 +100,126 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       roles: user.roles,
+      tokenVersion: user.tokenVersion,
     };
 
-    const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
-    await this.userRepository.update(user.id, {
-      refreshToken: hashedRefreshToken,
-      lastLogin: new Date(),
-    });
+    await this.userRepository.update(user.id, { lastLogin: new Date() });
+
+    const rawRefreshToken = await this.createRefreshToken(user.id, meta);
 
     return {
       user,
       token: this.jwtService.sign(payload),
-      refreshToken,
+      refreshToken: rawRefreshToken,
     };
   }
 
   /**
-   * Refreshes an access token using a valid refresh token.
-   * Rotates the refresh token on each use to prevent replay attacks.
-   * @param username - The username associated with the refresh token
-   * @param refreshToken - The current refresh token
+   * Refreshes an access token using a raw refresh token.
+   * Implements token-family invalidation: if a revoked token is presented,
+   * all tokens in the same family are immediately revoked (reuse detection).
+   * @param rawToken - The raw (unhashed) refresh token from the cookie
    * @returns A new JWT access token and a rotated refresh token
-   * @throws UnauthorizedException if the refresh token is invalid or expired
+   * @throws UnauthorizedException if the token is invalid, expired, or reused
    */
   async refresh(
-    username: string,
-    refreshToken: string,
+    rawToken: string,
   ): Promise<{ token: string; refreshToken: string }> {
-    const user = await this.userRepository.findOne({ where: { username } });
+    const jti = this.hashToken(rawToken);
+    const tokenRecord = await this.refreshTokenRepository.findOne({
+      where: { jti },
+    });
 
-    if (!user || !user.refreshToken) {
+    if (!tokenRecord) {
       throw new UnauthorizedException("Invalid refresh token");
     }
 
-    const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isValid) {
-      // Possible token reuse attack; invalidate all refresh tokens for this user
-      await this.userRepository.update(user.id, {
-        refreshToken: undefined,
-      });
-      throw new UnauthorizedException("Invalid refresh token");
+    // Reuse detection: a revoked token was presented — invalidate the whole family
+    if (tokenRecord.revokedAt !== null) {
+      await this.revokeFamilyTokens(tokenRecord.familyId);
+      throw new UnauthorizedException("Refresh token reuse detected");
     }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      await this.refreshTokenRepository.update(
+        { id: tokenRecord.id },
+        { revokedAt: new Date() },
+      );
+      throw new UnauthorizedException("Refresh token expired");
+    }
+
+    // Revoke the consumed token before issuing the successor
+    await this.refreshTokenRepository.update(
+      { id: tokenRecord.id },
+      { revokedAt: new Date() },
+    );
+
+    const user = await this.userRepository.findOne({
+      where: { id: tokenRecord.userId },
+    });
+    if (!user) throw new UnauthorizedException("User not found");
 
     const payload = {
       username: user.username,
       sub: user.id,
       roles: user.roles,
+      tokenVersion: user.tokenVersion,
     };
 
-    const newRefreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(
-      newRefreshToken,
-      BCRYPT_ROUNDS,
-    );
-    await this.userRepository.update(user.id, {
-      refreshToken: hashedRefreshToken,
+    const newRawToken = await this.createRefreshToken(user.id, {
+      userAgent: tokenRecord.userAgent ?? undefined,
+      ip: tokenRecord.ip ?? undefined,
+      familyId: tokenRecord.familyId,
     });
 
     return {
       token: this.jwtService.sign(payload),
-      refreshToken: newRefreshToken,
+      refreshToken: newRawToken,
     };
   }
 
   /**
-   * Validates a user for Passport strategy.
+   * Revokes the refresh token stored in the cookie so the device is signed out.
+   * Best-effort: if the token cannot be found the call is silently ignored so
+   * that clearing the cookie on the client side is always the authoritative
+   * logout action.
+   * @param rawToken - The raw refresh token from the cookie (may be undefined)
+   */
+  async logout(rawToken?: string): Promise<void> {
+    if (!rawToken) return;
+    const jti = this.hashToken(rawToken);
+    await this.refreshTokenRepository.update(
+      { jti },
+      { revokedAt: new Date() },
+    );
+  }
+
+  /**
+   * Validates a user for Passport local strategy.
+   * Runs a constant-time bcrypt comparison even when the username does not
+   * exist, preventing a timing oracle that would reveal valid usernames.
    * If the stored hash was produced with a lower cost than BCRYPT_ROUNDS, the
-   * password is transparently re-hashed at the new cost so every successful
-   * login silently upgrades legacy hashes.
+   * password is transparently re-hashed on the next successful login.
    * @param username - User's username
    * @param pass - Plaintext password attempt
    * @returns The validated user or null
    */
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userRepository.findOne({ where: { username } });
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      // Transparently upgrade hashes that were stored with an older cost factor.
-      if (bcrypt.getRounds(user.password) < BCRYPT_ROUNDS) {
-        user.password = await bcrypt.hash(pass, BCRYPT_ROUNDS);
-        await this.userRepository.save(user);
-      }
-      return user;
+    if (!user) {
+      // Always run a full bcrypt round to prevent username enumeration via timing.
+      await bcrypt.compare(pass, DUMMY_HASH);
+      return null;
     }
-    return null;
+    if (!(await bcrypt.compare(pass, user.password))) {
+      return null;
+    }
+    // Transparently upgrade hashes that were stored with an older cost factor.
+    if (bcrypt.getRounds(user.password) < BCRYPT_ROUNDS) {
+      user.password = await bcrypt.hash(pass, BCRYPT_ROUNDS);
+      await this.userRepository.save(user);
+    }
+    return user;
   }
 
   /**
@@ -220,7 +272,8 @@ export class AuthService {
 
   /**
    * Changes the password of the authenticated user.
-   * Invalidates all existing sessions by clearing the stored refresh token.
+   * Increments tokenVersion so all outstanding JWTs are immediately
+   * invalidated, and revokes every refresh token in the database for the user.
    * @param userId - The authenticated user's UUID
    * @param dto - Current password, new password, and confirmation
    * @throws NotFoundException if no user exists with the given ID
@@ -239,10 +292,12 @@ export class AuthService {
     if (!valid)
       throw new UnauthorizedException("Current password is incorrect");
 
-    // Assign plain text — @BeforeUpdate hook will hash it
+    // Assign plain text — @BeforeUpdate hook will hash it.
+    // Increment tokenVersion to invalidate all existing access-tokens.
     user.password = dto.newPassword;
-    user.refreshToken = null;
+    user.tokenVersion = (user.tokenVersion ?? 0) + 1;
     await this.userRepository.save(user);
+    await this.revokeAllUserTokens(userId);
   }
 
   /**
@@ -313,18 +368,15 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       roles: user.roles,
+      tokenVersion: user.tokenVersion,
     };
 
-    const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
-    await this.userRepository.update(user.id, {
-      refreshToken: hashedRefreshToken,
-    });
+    const rawRefreshToken = await this.createRefreshToken(user.id, {});
 
     return {
       user,
       token: this.jwtService.sign(payload),
-      refreshToken,
+      refreshToken: rawRefreshToken,
     };
   }
 
@@ -342,17 +394,81 @@ export class AuthService {
       username: user.username,
       sub: user.id,
       roles: user.roles,
+      tokenVersion: user.tokenVersion,
     };
-    const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
-    await this.userRepository.update(user.id, {
-      refreshToken: hashedRefreshToken,
-    });
+    const rawRefreshToken = await this.createRefreshToken(user.id, {});
     return {
       user,
       token: this.jwtService.sign(payload),
-      refreshToken,
+      refreshToken: rawRefreshToken,
     };
+  }
+
+  /**
+   * Revokes all active refresh tokens for a given user.
+   * Called on password change, account suspension, and admin password reset.
+   * @param userId - The user's UUID
+   */
+  async revokeAllUserTokens(userId: string): Promise<void> {
+    await this.refreshTokenRepository
+      .createQueryBuilder()
+      .update(RefreshToken)
+      .set({ revokedAt: new Date() })
+      .where("userId = :userId AND revokedAt IS NULL", { userId })
+      .execute();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Creates a new RefreshToken record and returns the raw (unhashed) token.
+   */
+  private async createRefreshToken(
+    userId: string,
+    meta: { userAgent?: string; ip?: string; familyId?: string },
+  ): Promise<string> {
+    const rawToken = randomBytes(40).toString("hex");
+    const jti = this.hashToken(rawToken);
+    const familyId = meta.familyId ?? randomUUID();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const record = this.refreshTokenRepository.create({
+      userId,
+      jti,
+      familyId,
+      issuedAt: now,
+      expiresAt,
+      revokedAt: null,
+      userAgent: meta.userAgent ?? null,
+      ip: meta.ip ?? null,
+    });
+    await this.refreshTokenRepository.save(record);
+    return rawToken;
+  }
+
+  /**
+   * Revokes all tokens that belong to the given token family.
+   * Used when a reused (already-revoked) token is presented.
+   */
+  private async revokeFamilyTokens(familyId: string): Promise<void> {
+    await this.refreshTokenRepository
+      .createQueryBuilder()
+      .update(RefreshToken)
+      .set({ revokedAt: new Date() })
+      .where("familyId = :familyId AND revokedAt IS NULL", { familyId })
+      .execute();
+  }
+
+  /**
+   * Returns the SHA-256 hex digest of a raw token string.
+   * This is stored as the jti (JWT ID) in the refresh_tokens table so the
+   * plaintext token never touches the database.
+   */
+  private hashToken(rawToken: string): string {
+    return createHash("sha256").update(rawToken).digest("hex");
   }
 
   /**

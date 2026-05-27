@@ -23,6 +23,20 @@ spec:
       ports:
         - protocol: TCP
           port: 3001
+    {{- else }}
+    # No ingressControllerNamespaceSelector is set. Fall back to allowing traffic
+    # from the API component (server-side rendering calls from Next.js back to
+    # NestJS) so pod-to-pod communication is not completely denied when
+    # NetworkPolicy is enabled without a configured Ingress controller selector.
+    # Set web.networkPolicy.ingressControllerNamespaceSelector to restrict this
+    # to only the Ingress controller namespace once your CNI is configured.
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "farm.api.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 3001
     {{- end }}
   egress:
     # DNS resolution (required for Next.js server-side rendering)

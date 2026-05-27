@@ -92,11 +92,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update Helm chart appVersion
+      - name: Update Helm chart appVersion and chart version
         run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" deploy/helm/farm/Chart.yaml
+          APP_VERSION="${{ github.ref_name }}"
+          APP_VERSION="${APP_VERSION#v}"
+          # Bump appVersion to match the released application tag.
+          sed -i "s/^appVersion: .*/appVersion: \"${APP_VERSION}\"/" deploy/helm/farm/Chart.yaml
+          # Compute and apply a patch bump for the chart version (SemVer).
+          # The chart version tracks Helm schema/template changes independently
+          # of the app version. We apply a patch increment on every release so
+          # Chart.yaml always reflects the latest shipped state.
+          CURRENT_CHART_VERSION=$(grep '^version:' deploy/helm/farm/Chart.yaml | awk '{print $2}')
+          CHART_MAJOR=$(echo "$CURRENT_CHART_VERSION" | cut -d. -f1)
+          CHART_MINOR=$(echo "$CURRENT_CHART_VERSION" | cut -d. -f2)
+          CHART_PATCH=$(echo "$CURRENT_CHART_VERSION" | cut -d. -f3 | cut -d- -f1)
+          CHART_VERSION="${CHART_MAJOR}.${CHART_MINOR}.$((CHART_PATCH + 1))"
+          sed -i "s/^version: .*/version: ${CHART_VERSION}/" deploy/helm/farm/Chart.yaml
+          echo "Chart version bumped: ${CURRENT_CHART_VERSION} -> ${CHART_VERSION}"
 
       - name: Run Release
         run: npm run release -w apps/api -- --ci --increment=${{ github.event.inputs.increment || 'patch' }}

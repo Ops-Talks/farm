@@ -23,7 +23,18 @@ spec:
       annotations:
         # Force pod restart when ConfigMap or Secret content changes.
         checksum/config: {{ include (print $.Template.BasePath "/api/configmap.yaml") . | sha256sum }}
+        {{- if .Values.api.existingSecret }}
+        # FARM-S609: when an externally managed Secret is referenced, hash its
+        # resourceVersion so that rotations (ESO re-sync, SealedSecret redecrypt,
+        # manual kubectl update) roll the Deployment automatically.
+        # The lookup returns "" in helm template --dry-run mode; the sha256sum of
+        # an empty string is stable and does not cause spurious rollouts.
+        # Alternate: annotate the Deployment with reloader.stakater.com/auto: "true"
+        # and install Reloader — see README "Secret Rotation" for details.
+        checksum/secret: {{ (lookup "v1" "Secret" .Release.Namespace .Values.api.existingSecret).metadata.resourceVersion | default "" | sha256sum }}
+        {{- else }}
         checksum/secret: {{ include (print $.Template.BasePath "/api/secret.yaml") . | sha256sum }}
+        {{- end }}
         {{- with .Values.api.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -33,6 +44,30 @@ spec:
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      {{- if .Values.migration.waitForJob }}
+      # FARM-S604: optional strict sequencing — block API startup until the
+      # migration Job completes. Requires ClusterRole "get/list/watch" on
+      # batch/jobs for the API ServiceAccount. Disabled by default because
+      # TypeORM's advisory lock makes parallel execution idempotent.
+      initContainers:
+        - name: wait-for-migration
+          image: bitnami/kubectl:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - kubectl
+            - wait
+            - --for=condition=complete
+            - job/{{ include "farm.fullname" . }}-migration
+            - --timeout=300s
+            - --namespace={{ .Release.Namespace }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      {{- end }}
       containers:
         - name: api
           image: {{ include "farm.api.image" . }}

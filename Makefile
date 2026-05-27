@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall sloth-generate kind-build kind-load kind-infra kind-deploy kind-upgrade kind-status kind-logs kind-clean
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall sloth-generate helm-schema kind-build kind-load kind-infra kind-deploy kind-upgrade kind-status kind-logs kind-clean
 
 help:
 	@echo "Available Targets:"
@@ -178,9 +178,28 @@ helm-diff:
 helm-uninstall:
 	helm uninstall $(HELM_RELEASE) --namespace $(HELM_NAMESPACE)
 
-sloth-generate: ## Generate PrometheusRule SLOs from Sloth source
-	sloth generate -i observability/sloth-slos.yml -o /tmp/sloth-output.yaml
-	@echo "Sloth SLOs generated at /tmp/sloth-output.yaml — review and embed into templates/prometheusrule.yaml"
+sloth-generate: ## Regenerate PrometheusRule SLO groups from the Sloth source (FARM-S608)
+	@command -v sloth >/dev/null 2>&1 || { echo "ERROR: sloth is not installed. Install with: go install github.com/slok/sloth/cmd/sloth@latest"; exit 1; }
+	sloth generate -i observability/sloth-slos.yml -o /tmp/sloth-raw.yaml
+	@echo "---" > /tmp/sloth-wrapped.yaml
+	@echo "# AUTO-GENERATED — do not edit by hand. Run: make sloth-generate" >> /tmp/sloth-wrapped.yaml
+	@echo "# Source: observability/sloth-slos.yml" >> /tmp/sloth-wrapped.yaml
+	@echo "#" >> /tmp/sloth-wrapped.yaml
+	@echo "# Wrapped in Helm conditionals for inclusion in the Farm chart." >> /tmp/sloth-wrapped.yaml
+	@echo "# Gate: prometheusRule.enabled=true AND prometheusRule.sloth.enabled=true" >> /tmp/sloth-wrapped.yaml
+	@echo '{{- if and .Values.prometheusRule.enabled .Values.prometheusRule.sloth.enabled }}' >> /tmp/sloth-wrapped.yaml
+	@cat /tmp/sloth-raw.yaml >> /tmp/sloth-wrapped.yaml
+	@echo '{{- end }}' >> /tmp/sloth-wrapped.yaml
+	cp /tmp/sloth-wrapped.yaml deploy/helm/farm/templates/_sloth-rules.gen.yaml
+	@echo "Sloth rules written to deploy/helm/farm/templates/_sloth-rules.gen.yaml"
+	@echo "Run 'helm lint deploy/helm/farm' to validate."
+
+helm-schema: ## Regenerate values.schema.json from values.yaml (FARM-S611)
+	@command -v helm >/dev/null 2>&1 || { echo "ERROR: helm is not installed."; exit 1; }
+	@command -v helm-schema-gen >/dev/null 2>&1 || \
+		helm plugin install https://github.com/karuppiah7890/helm-schema-gen.git 2>/dev/null || true
+	helm schema-gen deploy/helm/farm/values.yaml > deploy/helm/farm/values.schema.json
+	@echo "Schema written to deploy/helm/farm/values.schema.json"
 
 # ─── KIND (local Kubernetes) ──────────────────────────────────────────────────
 

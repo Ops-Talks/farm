@@ -49,7 +49,7 @@ vi.mock("@/hooks/use-permission", () => ({
   usePermission: (...args: unknown[]) => mockUsePermission(...args),
 }));
 
-import TeamsPage from "@/app/(protected)/teams/page";
+import { TeamsClient as TeamsPage } from "@/app/(protected)/teams/_components/TeamsClient";
 
 // ── Accessibility (axe) ────────────────────────────────────────────────────────
 import { axe } from "vitest-axe";

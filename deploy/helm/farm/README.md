@@ -250,19 +250,52 @@ helm install farm . -f my-farm-values.yaml -n farm --create-namespace
 helm upgrade farm . -f my-values.yaml -n farm
 ```
 
-## Database Migrations
+## Migration Behavior
 
 Migrations run automatically as a Kubernetes Job on every install and upgrade.
 The hook timing differs by operation:
 
-- **Fresh install** (`helm install`): the migration Job runs as a `post-install`
-  hook — after all chart resources (Deployments, Services, ConfigMaps) are
-  created. The database must be reachable before the migration pod starts.
+- **Fresh install** (`helm install`): the migration Job uses the `post-install`
+  hook phase, which runs after all chart resources (Deployments, Services,
+  ConfigMaps, subcharts) have been created. The API Deployment is therefore
+  created in parallel with the migration Job.
+
+  **Race condition analysis:** TypeORM migrations are idempotent — a migration
+  already applied is silently skipped. If both the hook Job and the API
+  container's startup `migration:run` attempt to run simultaneously against an
+  empty database, TypeORM's advisory lock prevents duplicate execution and the
+  second runner exits cleanly. No data corruption occurs.
+
+  **Traffic gating:** the API's readiness probe (`GET /api/health`) is not
+  satisfied until the application — including its own `migration:run` startup
+  step — completes. Kubernetes does not route traffic to the pod before the
+  probe passes. The combination of readiness probing and TypeORM idempotency
+  makes the fresh-install race benign in practice.
+
 - **Upgrade** (`helm upgrade`): the migration Job runs as a `pre-upgrade` hook
   — before new application pods roll out. If the migration fails the upgrade is
-  blocked and you must roll back manually. The Job is deleted on success.
+  blocked and the running release is unchanged. Check logs immediately because
+  the Job is deleted on success by the `hook-delete-policy`.
 
-Disable with:
+### Strict migration sequencing (optional)
+
+Set `migration.waitForJob: true` to inject an `initContainer` into the API
+Deployment that blocks startup until the migration Job completes:
+
+```yaml
+migration:
+  waitForJob: true
+```
+
+This eliminates any theoretical parallel-execution window on fresh install.
+**Requires** a ClusterRole granting `get`/`list`/`watch` on `batch/jobs` for
+the API ServiceAccount, because the `bitnami/kubectl` initContainer calls
+`kubectl wait --for=condition=complete job/<name>`.
+
+The default `waitForJob: false` is correct for the vast majority of deployments
+because TypeORM idempotency makes strict sequencing unnecessary.
+
+Disable the migration Job entirely with:
 
 ```yaml
 migration:
@@ -362,12 +395,58 @@ api:
 The Vault Agent sidecar injects the rendered template as a file; configure the
 application to source it at startup.
 
-### JWT Secret Rotation
+### JWT Secret Rotation and Automatic Pod Rollout
+
+The Farm chart tracks secret changes and triggers automatic pod rollouts in two
+complementary ways.
+
+**Built-in checksum (no extra tooling):**
+
+When `api.existingSecret` is set, the Deployment pod template includes:
+
+```yaml
+annotations:
+  checksum/secret: <sha256 of the existingSecret resourceVersion>
+```
+
+The `lookup` Helm function reads the Kubernetes Secret's `resourceVersion` at
+`helm upgrade` time. If the secret was rotated between upgrades (ESO re-sync,
+SealedSecret redecrypt, or a manual `kubectl apply`), the `resourceVersion`
+changes, the annotation changes, and Kubernetes triggers a rolling restart.
+
+**Limitation**: the checksum is only re-evaluated on `helm upgrade`. If the
+Secret is rotated between Helm releases without an upgrade, the Deployment is
+NOT automatically rolled. Use the Reloader pattern below for continuous
+detection.
+
+**Reloader pattern (recommended for production):**
+
+Install [Stakater Reloader](https://github.com/stakater/Reloader) and add the
+annotation to the API Deployment:
+
+```bash
+helm install reloader stakater/reloader \
+  -n reloader --create-namespace
+```
+
+```yaml
+# in your operator values file
+api:
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
+```
+
+With `auto: "true"`, Reloader watches Secrets and ConfigMaps referenced by the
+Deployment's `envFrom`/`env` and triggers a rolling restart within seconds of
+any change — without requiring a `helm upgrade`. This is the recommended
+approach when using ESO with short refresh intervals or Vault Agent with
+lease-based rotation.
 
 1. **Update the secret** in your secret store (Kubernetes Secret, ESO backend,
    or Vault path).
 
-2. **Trigger a rolling restart**:
+2. **Rolling restart is automatic** (with Reloader) or triggered on next upgrade
+   (with checksum). If neither is configured, manually restart:
 
    ```bash
    kubectl rollout restart deployment/farm-api -n farm

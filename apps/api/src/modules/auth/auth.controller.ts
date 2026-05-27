@@ -246,36 +246,13 @@ export class AuthController {
     ];
     const refreshToken = cookieRefresh ?? body.refreshToken;
 
-    // Username: body takes precedence (API clients / e2e tests), then fall
-    // back to decoding the access_token cookie payload without verification.
-    let username = body.username;
-    if (!username) {
-      const accessToken = (req.cookies as Record<string, string | undefined>)[
-        "access_token"
-      ];
-      if (accessToken) {
-        try {
-          const parts: string[] = accessToken.split(".");
-          if (parts.length === 3) {
-            const decoded = JSON.parse(
-              Buffer.from(parts[1] ?? "", "base64url").toString("utf8"),
-            ) as { username?: string };
-            username = decoded.username;
-          }
-        } catch {
-          // Payload decode failed — fall through to the error below.
-        }
-      }
-    }
-
-    if (!refreshToken || !username) {
+    if (!refreshToken) {
       throw new UnauthorizedException(
-        "Missing refresh credentials: provide a refresh_token cookie or body field, " +
-          "and a username body field or access_token cookie.",
+        "Missing refresh token: provide a refresh_token cookie or body field.",
       );
     }
 
-    const result = await this.authService.refresh(username, refreshToken);
+    const result = await this.authService.refresh(refreshToken);
 
     const isProduction = process.env.NODE_ENV === "production";
     const baseCookieOptions = {
@@ -299,8 +276,9 @@ export class AuthController {
   }
 
   /**
-   * Logs out the current user by clearing the auth cookies.
-   * Should be called before redirecting to the login page.
+   * Logs out the current user by clearing the auth cookies and revoking the
+   * refresh token so it cannot be used again even if the cookie persists.
+   * @param req - Express request used to read the refresh_token cookie
    * @param res - Express response used to clear Set-Cookie headers
    * @returns A confirmation message
    */
@@ -319,7 +297,16 @@ export class AuthController {
       },
     },
   })
-  logout(@Res({ passthrough: true }) res: Response): { message: string } {
+  async logout(
+    @Req() req: Request & { cookies: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
+    const cookieRefresh = (req.cookies as Record<string, string | undefined>)[
+      "refresh_token"
+    ];
+    // Best-effort revocation — if the token is not found the logout still
+    // succeeds (clearing the cookie is the authoritative sign-out action).
+    await this.authService.logout(cookieRefresh);
     res.clearCookie("access_token", { path: "/" });
     res.clearCookie("refresh_token", { path: "/api/v1/auth/refresh" });
     return { message: "Logged out successfully" };

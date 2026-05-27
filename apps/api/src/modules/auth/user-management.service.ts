@@ -16,6 +16,7 @@ import * as bcrypt from "bcrypt";
 import { OrgRole } from "@farm/types";
 import { User } from "./entities/user.entity";
 import { PasswordReset } from "./entities/password-reset.entity";
+import { RefreshToken } from "./entities/refresh-token.entity";
 import { Organization } from "../organization/entities/organization.entity";
 import { UserOrganization } from "../organization/entities/user-organization.entity";
 import { BCRYPT_ROUNDS } from "../../common/constants/bcrypt";
@@ -82,6 +83,8 @@ export class UserManagementService {
     private readonly organizationRepository: Repository<Organization>,
     @InjectRepository(UserOrganization)
     private readonly userOrganizationRepository: Repository<UserOrganization>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
     private readonly configService: ConfigService,
     @Optional() private readonly auditLog?: AuditLogService,
     @Optional()
@@ -308,7 +311,7 @@ export class UserManagementService {
 
     user.suspended = suspended;
     if (suspended) {
-      user.refreshToken = null;
+      await this.revokeAllUserTokens(user.id);
     }
     const saved = await this.userRepository.save(user);
     void this.auditLog
@@ -354,8 +357,9 @@ export class UserManagementService {
     // Persist hash to user.password directly so the temp password works for login.
     await this.userRepository.update(
       { id: targetUserId },
-      { password: tempPasswordHash, refreshToken: null },
+      { password: tempPasswordHash },
     );
+    await this.revokeAllUserTokens(targetUserId);
 
     const smtpEnabled =
       !!this.configService.get<string>("smtp.host") &&
@@ -516,5 +520,22 @@ export class UserManagementService {
       createdAt: user.createdAt,
       orgMemberships,
     };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Token management helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Revokes all active refresh tokens for the given user.
+   * Called on suspension and admin-initiated password reset.
+   */
+  private async revokeAllUserTokens(userId: string): Promise<void> {
+    await this.refreshTokenRepository
+      .createQueryBuilder()
+      .update(RefreshToken)
+      .set({ revokedAt: new Date() })
+      .where("userId = :userId AND revokedAt IS NULL", { userId })
+      .execute();
   }
 }

@@ -24,14 +24,37 @@ No Ingress is enabled. To access the services locally, run:
 {{- if .Values.migration.enabled }}
 
 DATABASE MIGRATIONS
-  Migration hook timing:
-  - Fresh install (helm install): the migration Job runs as a post-install hook
-    — after all chart resources (Deployments, Services, ConfigMaps) are created.
-    The database must be reachable before the migration pod starts.
-  - Upgrade (helm upgrade): the migration Job runs as a pre-upgrade hook
+  Hook timing and idempotency:
+
+  - Fresh install (helm install): the migration Job uses the "post-install" hook
+    phase, which means it runs AFTER all chart resources (Deployments, Services,
+    ConfigMaps, the bundled postgresql/redis subcharts) have been created.
+    The API Deployment is therefore created in parallel with the migration Job.
+
+    Race condition analysis: the Farm API Dockerfile CMD runs "migration:run" at
+    startup via TypeORM. TypeORM migrations are idempotent — a migration that has
+    already been applied is silently skipped. If both the hook Job and the API
+    container attempt to run migrations simultaneously against an empty database,
+    TypeORM's advisory lock prevents duplicate execution and the second runner
+    exits cleanly. No data corruption occurs.
+
+    Traffic gating: the API pod's readiness probe (GET /api/health) is not
+    satisfied until the application — including its own migration:run startup
+    step — completes. Kubernetes will not route traffic to the pod before it
+    passes the probe. The combination of readiness probing and TypeORM idempotency
+    makes the fresh-install race benign.
+
+  - Upgrade (helm upgrade): the migration Job runs as a "pre-upgrade" hook
     — before new application pods roll out. If the migration fails the Helm
-    upgrade is blocked; run `helm rollback` and check the logs immediately
-    because the Job is deleted on success.
+    upgrade is blocked and the running release is unchanged. Check logs
+    immediately because the Job is deleted on success by hook-delete-policy.
+
+  Optional strict sequencing (migration.waitForJob):
+    Set migration.waitForJob=true to add an initContainer to the API Deployment
+    that blocks startup until the migration Job completes. This eliminates any
+    theoretical parallel-execution window on fresh install at the cost of
+    requiring ClusterRole permissions for the migration ServiceAccount.
+    See deploy/helm/farm/README.md "Migration Behavior" for details.
 
   Inspect migration status:
     kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration

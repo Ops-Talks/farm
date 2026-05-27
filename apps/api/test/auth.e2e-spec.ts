@@ -182,16 +182,9 @@ describe("Auth Lifecycle (e2e)", () => {
     // Rotated token should differ from the original.
     expect(newRefreshToken).not.toBe(refreshToken);
 
-    // Old refresh token should no longer work.
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/refresh")
-      .set(
-        "Cookie",
-        `refresh_token=${refreshToken}; access_token=${accessToken}`,
-      )
-      .expect(401);
-
-    // New refresh token should work.
+    // New refresh token should work BEFORE testing the old one, because
+    // presenting the already-consumed T1 triggers family-wide invalidation
+    // (reuse detection) which would also revoke T2.
     const secondRefresh = await request(app.getHttpServer())
       .post("/api/v1/auth/refresh")
       .set(
@@ -203,6 +196,159 @@ describe("Auth Lifecycle (e2e)", () => {
     expect((secondRefresh.body as { message: string }).message).toBe(
       "Token refreshed",
     );
+
+    // Old refresh token should no longer work (its family is now revoked by
+    // the reuse-detection guard after this call, which is fine — T2 was
+    // already verified above).
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set(
+        "Cookie",
+        `refresh_token=${refreshToken}; access_token=${accessToken}`,
+      )
+      .expect(401);
+  });
+
+  it("should reject an old JWT after a password change (tokenVersion invalidation)", async () => {
+    const userData = {
+      username: "token_version_user",
+      email: "token_version@test.com",
+      password: "TokenPass1",
+      displayName: "Token Version User",
+    };
+
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .send(userData)
+      .expect(201);
+
+    const loginRes = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: userData.username, password: userData.password })
+      .expect(200);
+
+    const accessToken = extractCookieValue(
+      loginRes.headers["set-cookie"],
+      "access_token",
+    );
+    expect(accessToken).toBeTruthy();
+
+    // Verify the token works before the password change.
+    await request(app.getHttpServer())
+      .get("/api/v1/auth/profile")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(200);
+
+    // Change the password — this increments tokenVersion in the DB.
+    await request(app.getHttpServer())
+      .patch("/api/v1/auth/profile/password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        currentPassword: userData.password,
+        newPassword: "NewTokenPass1",
+        confirmPassword: "NewTokenPass1",
+      })
+      .expect(204);
+
+    // The old access token must now be rejected (stale tokenVersion).
+    await request(app.getHttpServer())
+      .get("/api/v1/auth/profile")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .expect(401);
+  });
+
+  it("should revoke the entire token family when a reused refresh token is detected", async () => {
+    const userData = {
+      username: "reuse_detect_user",
+      email: "reuse_detect@test.com",
+      password: "ReusePass1",
+      displayName: "Reuse Detect User",
+    };
+
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .send(userData)
+      .expect(201);
+
+    const loginRes = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: userData.username, password: userData.password })
+      .expect(200);
+
+    const loginCookies = loginRes.headers["set-cookie"] as string[];
+    const t1 = extractCookieValue(loginCookies, "refresh_token");
+    const accessT1 = extractCookieValue(loginCookies, "access_token");
+
+    // Legitimately rotate T1 → T2.
+    const rotateRes = await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `refresh_token=${t1}; access_token=${accessT1}`)
+      .expect(200);
+
+    const rotateCookies = rotateRes.headers["set-cookie"] as string[];
+    const t2 = extractCookieValue(rotateCookies, "refresh_token");
+    const accessT2 = extractCookieValue(rotateCookies, "access_token");
+    expect(t2).not.toBe(t1);
+
+    // An attacker replays T1 (already consumed). This triggers reuse detection,
+    // revoking the entire token family — including T2.
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `refresh_token=${t1}; access_token=${accessT1}`)
+      .expect(401);
+
+    // T2 (from the legitimate rotation) must also be rejected now that the
+    // family has been revoked by the reuse detection above.
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `refresh_token=${t2}; access_token=${accessT2}`)
+      .expect(401);
+  });
+
+  it("should allow two parallel logins (multi-device) to coexist independently", async () => {
+    // Register a shared user for this test.
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/register")
+      .send({
+        username: "multi_device_user",
+        email: "multi_device@test.com",
+        password: "MultiDevice1",
+        displayName: "Multi Device User",
+      })
+      .expect(201);
+
+    // Login from device 1.
+    const login1 = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: "multi_device_user", password: "MultiDevice1" })
+      .expect(200);
+    const cookies1 = login1.headers["set-cookie"] as string[];
+    const rt1 = extractCookieValue(cookies1, "refresh_token");
+    const at1 = extractCookieValue(cookies1, "access_token");
+
+    // Login from device 2 (same credentials, independent session).
+    const login2 = await request(app.getHttpServer())
+      .post("/api/v1/auth/login")
+      .send({ username: "multi_device_user", password: "MultiDevice1" })
+      .expect(200);
+    const cookies2 = login2.headers["set-cookie"] as string[];
+    const rt2 = extractCookieValue(cookies2, "refresh_token");
+    const at2 = extractCookieValue(cookies2, "access_token");
+
+    // Both sessions must have distinct refresh tokens.
+    expect(rt1).not.toBe(rt2);
+
+    // Device 1 can still refresh its token independently.
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `refresh_token=${rt1}; access_token=${at1}`)
+      .expect(200);
+
+    // Device 2 can also refresh its token independently (not affected by device 1's refresh).
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/refresh")
+      .set("Cookie", `refresh_token=${rt2}; access_token=${at2}`)
+      .expect(200);
   });
 
   it("should reject registration with weak password", async () => {

@@ -400,4 +400,71 @@ describe("Cross-tenant security (e2e)", () => {
         .expect(404);
     });
   });
+
+  describe("Analytics", () => {
+    beforeAll(async () => {
+      // Org A creates a catalog component to ensure it shows up in analytics.
+      await createCatalogComponent("analytics-isolation-comp");
+    });
+
+    it("org A catalog analytics include only org A components", async () => {
+      const res = await request(app.getHttpServer())
+        .get("/api/v1/analytics/catalog")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .set("X-Organization-Id", orgA)
+        .expect(200);
+
+      const body = res.body as {
+        ownershipCoverage: { total: number };
+      };
+      expect(body.ownershipCoverage.total).toBeGreaterThanOrEqual(1);
+    });
+
+    it("org B catalog analytics are isolated from org A data", async () => {
+      const resA = await request(app.getHttpServer())
+        .get("/api/v1/analytics/catalog")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .set("X-Organization-Id", orgA)
+        .expect(200);
+
+      const resB = await request(app.getHttpServer())
+        .get("/api/v1/analytics/catalog")
+        .set("Authorization", `Bearer ${tokenB}`)
+        .set("X-Organization-Id", orgB)
+        .expect(200);
+
+      const totalA = (resA.body as { ownershipCoverage: { total: number } })
+        .ownershipCoverage.total;
+      const totalB = (resB.body as { ownershipCoverage: { total: number } })
+        .ownershipCoverage.total;
+
+      // Org A has created multiple components; org B has created none.
+      // Their totals must differ, proving org-level data isolation.
+      expect(totalA).toBeGreaterThan(totalB);
+    });
+
+    it("analytics endpoint returns 200 without org header (global view)", async () => {
+      // The org header is optional — omitting it returns a global aggregate.
+      await request(app.getHttpServer())
+        .get("/api/v1/analytics/catalog")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .expect(200);
+    });
+
+    it("org A DORA metrics endpoint returns 200 with org context", async () => {
+      await request(app.getHttpServer())
+        .get("/api/v1/analytics/dora")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .set("X-Organization-Id", orgA)
+        .expect(200);
+    });
+
+    it("org A usage analytics endpoint returns 200 with org context", async () => {
+      await request(app.getHttpServer())
+        .get("/api/v1/analytics/usage")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .set("X-Organization-Id", orgA)
+        .expect(200);
+    });
+  });
 });

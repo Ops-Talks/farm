@@ -122,14 +122,14 @@ describe("AnalyticsService", () => {
     });
 
     it("correctly computes ownership coverage percent to 1 decimal", async () => {
-      mockComponentRepo.count.mockResolvedValue(3);
-
-      // The service calls createQueryBuilder multiple times for:
-      //   1. withOwner count
-      //   2. lifecycle distribution (getRawMany)
-      //   3. kind distribution (getRawMany)
-      //   4. unowned components (getMany)
+      // The service calls createQueryBuilder 5 times for getCatalogAnalytics:
+      //   1. total count        (getCount)
+      //   2. withOwner count    (getCount)
+      //   3. lifecycle dist.    (getRawMany)
+      //   4. kind dist.         (getRawMany)
+      //   5. unowned components (getMany)
       const calls = [
+        createMockQb({ getCount: jest.fn().mockResolvedValue(3) }),
         createMockQb({ getCount: jest.fn().mockResolvedValue(2) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue([]) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue([]) }),
@@ -147,11 +147,10 @@ describe("AnalyticsService", () => {
     });
 
     it("includes all ComponentLifecycle values in lifecycleDistribution even if count is 0", async () => {
-      mockComponentRepo.count.mockResolvedValue(5);
-
       const lifecycleRows = [{ lifecycle: "production", count: "5" }];
 
       const calls = [
+        createMockQb({ getCount: jest.fn().mockResolvedValue(5) }),
         createMockQb({ getCount: jest.fn().mockResolvedValue(5) }),
         createMockQb({
           getRawMany: jest.fn().mockResolvedValue(lifecycleRows),
@@ -179,14 +178,13 @@ describe("AnalyticsService", () => {
     });
 
     it("only includes kinds with at least 1 component in kindDistribution", async () => {
-      mockComponentRepo.count.mockResolvedValue(4);
-
       const kindRows = [
         { kind: "service", count: "3" },
         { kind: "library", count: "1" },
       ];
 
       const calls = [
+        createMockQb({ getCount: jest.fn().mockResolvedValue(4) }),
         createMockQb({ getCount: jest.fn().mockResolvedValue(4) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue([]) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue(kindRows) }),
@@ -203,14 +201,13 @@ describe("AnalyticsService", () => {
     });
 
     it("returns unowned components with id, name, kind (limit 50)", async () => {
-      mockComponentRepo.count.mockResolvedValue(2);
-
       const unownedComponents = [
         { id: "uuid-1", name: "svc-a", kind: "service" },
         { id: "uuid-2", name: "lib-b", kind: "library" },
       ];
 
       const calls = [
+        createMockQb({ getCount: jest.fn().mockResolvedValue(2) }),
         createMockQb({ getCount: jest.fn().mockResolvedValue(0) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue([]) }),
         createMockQb({ getRawMany: jest.fn().mockResolvedValue([]) }),

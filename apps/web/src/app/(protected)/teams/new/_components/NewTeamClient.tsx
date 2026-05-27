@@ -17,6 +17,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+// S603: Server Action — runs the mutation on the server when API_INTERNAL_URL
+// is configured; falls back to the browser api-client via __clientFallback.
+import { createTeamAction } from "../actions";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -62,16 +65,40 @@ export function NewTeamClient() {
 
   const onSubmit = async (values: NewTeamFormValues) => {
     try {
-      const created = await teams.create({
-        name: values.name.trim(),
-        displayName: values.displayName.trim(),
-        description: values.description?.trim() || undefined,
+      // S603: Try the server action first. Falls back to browser api-client
+      // via __clientFallback when API_INTERNAL_URL is not set (CI / Playwright).
+      const result = await createTeamAction({
+        name: values.name,
+        displayName: values.displayName,
+        description: values.description,
         type: values.type,
-        contactEmail: values.contactEmail?.trim() || undefined,
-        slackChannel: values.slackChannel?.trim() || undefined,
+        contactEmail: values.contactEmail,
+        slackChannel: values.slackChannel,
       });
-      toast.success(`Team "${created.displayName}" created`);
-      router.push(`/teams/${created.id}`);
+
+      if ("__clientFallback" in result) {
+        // Browser-side fallback — keeps Playwright route mocks working
+        const created = await teams.create({
+          name: values.name.trim(),
+          displayName: values.displayName.trim(),
+          description: values.description?.trim() || undefined,
+          type: values.type,
+          contactEmail: values.contactEmail?.trim() || undefined,
+          slackChannel: values.slackChannel?.trim() || undefined,
+        });
+        toast.success(`Team "${created.displayName}" created`);
+        router.push(`/teams/${created.id}`);
+        return;
+      }
+
+      if ("error" in result) {
+        setError("root", { message: result.error });
+        return;
+      }
+
+      // Server action succeeded
+      toast.success(`Team "${result.team.displayName}" created`);
+      router.push(`/teams/${result.team.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
         const msg = err.body.message;

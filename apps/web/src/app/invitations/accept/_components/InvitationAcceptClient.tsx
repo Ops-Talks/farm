@@ -8,7 +8,8 @@
 //   • Preview card with login/signup CTAs (when not authenticated)
 //   • Preview card with "Accept" button (when authenticated)
 //
-// On accept it POSTs to /v1/invitations/by-token/:token/accept and redirects
+// On accept it calls the acceptInvitationAction server action (S603) which
+// POSTs to /v1/invitations/by-token/:token/accept server-side, then redirects
 // to the org dashboard.
 
 import { useEffect, useState } from "react";
@@ -30,6 +31,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError, invitations } from "@/lib/api-client";
 import type { InvitationPreview } from "@/types/api";
+// S603: Server Action for the accept mutation
+import { acceptInvitationAction } from "../actions";
 
 type ViewState =
   | { kind: "loading" }
@@ -103,15 +106,33 @@ export default function InvitationAcceptClient() {
     if (!token) return;
     setAccepting(true);
     try {
-      const res = await invitations.acceptByToken(token);
+      // S603: Try the server action first. When API_INTERNAL_URL is not
+      // configured (CI / Playwright / local dev), it returns
+      // { error: "__clientFallback" } and we fall through to the browser
+      // api-client so existing tests remain unaffected.
+      const result = await acceptInvitationAction(token);
+
+      if ("error" in result && result.error === "__clientFallback") {
+        // Browser-side fallback path — used in all test environments
+        const res = await invitations.acceptByToken(token);
+        toast.success("Invitation accepted!");
+        const orgSlugOrId =
+          (res as { orgSlug?: string; orgId?: string }).orgSlug ??
+          (res as { orgId?: string }).orgId ??
+          null;
+        router.push(orgSlugOrId ? `/organizations/${orgSlugOrId}` : "/organizations");
+        return;
+      }
+
+      if ("error" in result) {
+        toast.error(result.error);
+        setAccepting(false);
+        return;
+      }
+
+      // Server action succeeded
       toast.success("Invitation accepted!");
-      // Backend returns a MemberResponse (no orgSlug); fall back to /organizations
-      // when we cannot resolve a more specific destination.
-      const orgSlugOrId =
-        (res as { orgSlug?: string; orgId?: string }).orgSlug ??
-        (res as { orgId?: string }).orgId ??
-        null;
-      router.push(orgSlugOrId ? `/organizations/${orgSlugOrId}` : "/organizations");
+      router.push(result.orgSlugOrId ? `/organizations/${result.orgSlugOrId}` : "/organizations");
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : "Failed to accept invitation.";

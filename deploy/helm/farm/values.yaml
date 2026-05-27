@@ -229,10 +229,43 @@ api:
     secretStoreRef:
       name: ""
       kind: SecretStore
+    # -- How often ESO re-syncs the secret from the remote store.
+    refreshInterval: "1h"
     remoteRef:
       # -- Key in the remote secret store (e.g., AWS Secrets Manager secret name,
       # Vault path, GCP Secret Manager resource name).
+      # Used as the default key for all data entries when data[].remoteRef.key is empty.
       key: ""
+    # -- Individual key mappings (maps to ESO spec.data[]).
+    # When set, these entries replace the default JWT_SECRET/DATABASE_PASSWORD/REDIS_PASSWORD
+    # list and allow arbitrary secret keys to be mapped. This covers all optional
+    # integration secrets: SMTP_PASS, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_SECRET,
+    # KEYCLOAK_CLIENT_SECRET, LDAP_BIND_PASSWORD, IAC_INGEST_TOKEN, SWAGGER_PASSWORD.
+    # Example:
+    #   data:
+    #     - secretKey: JWT_SECRET
+    #       remoteRef:
+    #         key: ""          # inherits api.externalSecret.remoteRef.key when empty
+    #         property: JWT_SECRET
+    #     - secretKey: DATABASE_PASSWORD
+    #       remoteRef:
+    #         property: DATABASE_PASSWORD
+    #     - secretKey: SMTP_PASS
+    #       remoteRef:
+    #         property: SMTP_PASS
+    data: []
+    # -- Bulk extraction (maps to ESO spec.dataFrom[]).
+    # Use for extract (pull all keys from a single secret) or find (regex key selection).
+    # Example (extract all keys from a single remote secret):
+    #   dataFrom:
+    #     - extract:
+    #         key: prod/farm/api-secrets
+    # Example (find with regex):
+    #   dataFrom:
+    #     - find:
+    #         name:
+    #           regexp: "^FARM_"
+    dataFrom: []
 
   # ─── HPA ──────────────────────────────────────────────────────────────────
 
@@ -583,15 +616,28 @@ migration:
     # where the job backoffLimit is sufficient to handle the PostgreSQL startup race.
     enabled: true
     # -- Image for the wait-for-db initContainer (busybox with nc/netcat).
-    # Pin to a digest in production: busybox:1.36@sha256:<digest>
-    # Refresh via Renovate or: docker buildx imagetools inspect busybox:1.36
-    image: busybox:1.36
+    # Pin to a digest in production for reproducible builds (FARM-S612):
+    #   busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662
+    # Refresh via: docker buildx imagetools inspect busybox:1.36
+    # Or via Renovate (package-ecosystem: docker in .github/dependabot.yml).
+    image: "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
     # -- Maximum number of attempts to reach the database before giving up.
     # With the default intervalSeconds=2, retries=60 yields a ~2 minute budget,
     # well under the typical activeDeadlineSeconds of the Job.
     retries: 60
     # -- Seconds between TCP probe attempts.
     intervalSeconds: 2
+
+  # -- Block the API Deployment startup until the migration Job has completed.
+  # When true, an initContainer using bitnami/kubectl is injected into the API
+  # Deployment that runs:
+  #   kubectl wait --for=condition=complete job/<release>-migration --timeout=300s
+  # This eliminates the post-install TypeORM parallel-execution window on fresh
+  # install at the cost of requiring a ClusterRole that grants "get/list/watch"
+  # on batch/jobs in the release namespace for the API ServiceAccount.
+  # Default false: TypeORM's advisory lock makes parallel migration execution
+  # safe (idempotent) without requiring extra RBAC.
+  waitForJob: false
 
   # -- Pre-upgrade database reachability check Job.
   # Runs as a pre-upgrade hook at weight -20 (before the migration at weight -1).
@@ -620,6 +666,12 @@ externalDatabase:
   # The Secret must contain a key named "database-password".
   existingSecret: ""
   existingSecretKey: "database-password"
+  # -- CIDR block for the NetworkPolicy egress rule to the external database.
+  # Convenience shorthand for api.networkPolicy.externalDatabaseEgress when
+  # the external DB is reachable via a known IP range (e.g. RDS VPC CIDR).
+  # Example: "10.0.0.0/16"
+  # Leave empty to use api.networkPolicy.externalDatabaseEgress (full peer spec).
+  egressIpBlock: ""
 
 # ─── EXTERNAL REDIS ──────────────────────────────────────────────────────────
 # Used when redis.enabled is false (production default).
@@ -632,6 +684,12 @@ externalRedis:
   password: ~
   existingSecret: ""
   existingSecretKey: "redis-password"
+  # -- CIDR block for the NetworkPolicy egress rule to the external Redis.
+  # Convenience shorthand for api.networkPolicy.externalRedisEgress when the
+  # external Redis is reachable via a known IP range (e.g. ElastiCache VPC CIDR).
+  # Example: "10.0.0.0/16"
+  # Leave empty to use api.networkPolicy.externalRedisEgress (full peer spec).
+  egressIpBlock: ""
 
 # ─── BITNAMI POSTGRESQL SUBCHART ─────────────────────────────────────────────
 # Only deployed when postgresql.enabled is true (suitable for dev/staging).
@@ -714,6 +772,17 @@ prometheusRule:
   additionalLabels: {}
   # -- Base URL for alert runbooks. Appended with #alert-name-slug.
   runbookBaseUrl: "https://github.com/Ops-Talks/farm/blob/main/docs/runbooks/alerts.md"
+  # -- Sloth-generated multi-window/multi-burn-rate SLO rules.
+  # When enabled, the chart renders _sloth-rules.gen.yaml which contains
+  # PrometheusRule groups produced by:
+  #   sloth generate -i observability/sloth-slos.yml -o deploy/helm/farm/templates/_sloth-rules.gen.yaml
+  # These multi-burn-rate rules supersede the simple FarmApiDown and
+  # FarmApiHighErrorRate point-threshold alerts for availability signalling.
+  # Regenerate after editing observability/sloth-slos.yml: make sloth-generate
+  sloth:
+    # -- Include the Sloth-generated multi-burn-rate SLO groups in the PrometheusRule.
+    # Requires prometheusRule.enabled: true.
+    enabled: false
 
 # ─── GRAFANA DASHBOARDS ───────────────────────────────────────────────────────
 # Packages the Farm Grafana dashboards as ConfigMaps with the grafana_dashboard: "1"
