@@ -73,7 +73,7 @@ export class PostMortemController {
   /**
    * Creates a new post-mortem for an incident.
    * The organizationId is resolved from the X-Organization-Id header by
-   * OptionalOrgGuard and may be undefined when the header is absent.
+   * OrgRequiredGuard and must be present in the request header.
    * @param req - The incoming request containing the JWT user payload and org context
    * @param dto - The data for the new post-mortem
    * @returns The created post-mortem

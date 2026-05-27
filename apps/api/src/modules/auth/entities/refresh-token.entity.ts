@@ -27,7 +27,7 @@ export class RefreshToken {
   id: string;
 
   @Index("IDX_refresh_tokens_userId")
-  @Column({ type: "varchar" })
+  @Column({ type: "uuid" })
   userId: string;
 
   /**
@@ -41,8 +41,8 @@ export class RefreshToken {
    * Groups tokens issued for the same login session across rotations.
    * Presenting a revoked token causes the entire family to be invalidated.
    */
-  @Column({ type: "varchar", nullable: true })
-  familyId: string;
+  @Column({ type: "uuid", nullable: true })
+  familyId: string | null;
 
   @Column({ type: dateColumnType(), transformer: dateTransformer })
   issuedAt: Date;

@@ -5,7 +5,7 @@
  *
  * Two actions cover the two form tabs in NewComponentClient:
  *   • createComponentAction  — structured form → POST /v1/catalog/components
- *   • registerComponentYamlAction — raw YAML → POST /v1/catalog/components/yaml
+ *   • registerComponentYamlAction — raw YAML → POST /v1/catalog/register-yaml
  *
  * Both fall back to { __clientFallback: true } when API_INTERNAL_URL is not
  * configured so existing Playwright and unit tests remain unaffected.
@@ -31,6 +31,7 @@ export interface CreateComponentInput {
     version?: string;
     valuesRef?: string;
   };
+  orgId?: string;
 }
 
 export type CreateComponentResult =
@@ -48,6 +49,8 @@ export async function createComponentAction(
   const accessToken = cookieStore.get("access_token")?.value;
   if (!accessToken) return { __clientFallback: true };
 
+  const { orgId, ...payload } = input;
+
   let res: Response;
   try {
     res = await fetch(`${internalUrl}/v1/catalog/components`, {
@@ -55,8 +58,9 @@ export async function createComponentAction(
       headers: {
         "Content-Type": "application/json",
         Cookie: `access_token=${accessToken}`,
+        ...(orgId ? { "X-Organization-Id": orgId } : {}),
       },
-      body: JSON.stringify(input),
+      body: JSON.stringify(payload),
     });
   } catch {
     return { __clientFallback: true };
@@ -74,7 +78,7 @@ export async function createComponentAction(
 
   const component = await res.json() as { id: string; name: string };
 
-  revalidateTag("catalog", {});
+  revalidateTag("catalog");
   revalidatePath("/catalog");
 
   return { success: true, component };
@@ -90,6 +94,7 @@ export type RegisterYamlResult =
 
 export async function registerComponentYamlAction(
   yaml: string,
+  orgId?: string,
 ): Promise<RegisterYamlResult> {
   const internalUrl = process.env.API_INTERNAL_URL;
   if (!internalUrl) return { __clientFallback: true };
@@ -100,11 +105,12 @@ export async function registerComponentYamlAction(
 
   let res: Response;
   try {
-    res = await fetch(`${internalUrl}/v1/catalog/components/yaml`, {
+    res = await fetch(`${internalUrl}/v1/catalog/register-yaml`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-yaml",
         Cookie: `access_token=${accessToken}`,
+        ...(orgId ? { "X-Organization-Id": orgId } : {}),
       },
       body: yaml,
     });
@@ -124,7 +130,7 @@ export async function registerComponentYamlAction(
 
   const component = await res.json() as { id: string; name: string };
 
-  revalidateTag("catalog", {});
+  revalidateTag("catalog");
   revalidatePath("/catalog");
 
   return { success: true, component };

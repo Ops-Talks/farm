@@ -535,7 +535,7 @@ export class UserManagementService {
       .createQueryBuilder()
       .update(RefreshToken)
       .set({ revokedAt: new Date() })
-      .where("userId = :userId AND revokedAt IS NULL", { userId })
+      .where('"userId" = :userId AND "revokedAt" IS NULL', { userId })
       .execute();
   }
 }

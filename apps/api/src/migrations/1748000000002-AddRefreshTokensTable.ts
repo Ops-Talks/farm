@@ -20,9 +20,9 @@ export class AddRefreshTokensTable1748000000002 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "refresh_tokens" (
         "id"        uuid          NOT NULL DEFAULT gen_random_uuid(),
-        "userId"    varchar       NOT NULL,
+        "userId"    uuid          NOT NULL,
         "jti"       varchar       NOT NULL,
-        "familyId"  varchar,
+        "familyId"  uuid,
         "issuedAt"  timestamp     NOT NULL,
         "expiresAt" timestamp     NOT NULL,
         "revokedAt" timestamp,

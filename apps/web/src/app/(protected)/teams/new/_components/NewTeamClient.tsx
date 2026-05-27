@@ -20,6 +20,7 @@ import { toast } from "sonner";
 // S603: Server Action — runs the mutation on the server when API_INTERNAL_URL
 // is configured; falls back to the browser api-client via __clientFallback.
 import { createTeamAction } from "../actions";
+import { useOrganization } from "@/contexts/organization-context";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -44,6 +45,7 @@ const TEAM_TYPES = Object.values(TeamType);
 
 export function NewTeamClient() {
   const router = useRouter();
+  const { currentOrg } = useOrganization();
 
   const {
     register,
@@ -74,6 +76,7 @@ export function NewTeamClient() {
         type: values.type,
         contactEmail: values.contactEmail,
         slackChannel: values.slackChannel,
+        orgId: currentOrg?.id,
       });
 
       if ("__clientFallback" in result) {

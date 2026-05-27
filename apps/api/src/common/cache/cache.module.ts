@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { CacheModule as NestCacheModule } from "@nestjs/cache-manager";
 import { TenantCacheService } from "./tenant-cache.service";
 
 /**
@@ -13,7 +12,6 @@ import { TenantCacheService } from "./tenant-cache.service";
  * it to satisfy the DI token inside TenantCacheService.
  */
 @Module({
-  imports: [NestCacheModule.register()],
   providers: [TenantCacheService],
   exports: [TenantCacheService],
 })

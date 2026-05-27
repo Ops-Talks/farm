@@ -18,6 +18,7 @@ export interface CreateTeamInput {
   type: string;
   contactEmail?: string;
   slackChannel?: string;
+  orgId?: string;
 }
 
 export type CreateTeamResult =
@@ -38,6 +39,8 @@ export async function createTeamAction(
   const accessToken = cookieStore.get("access_token")?.value;
   if (!accessToken) return { __clientFallback: true };
 
+  const { orgId, ...payload } = input;
+
   let res: Response;
   try {
     res = await fetch(`${internalUrl}/v1/teams`, {
@@ -45,14 +48,15 @@ export async function createTeamAction(
       headers: {
         "Content-Type": "application/json",
         Cookie: `access_token=${accessToken}`,
+        ...(orgId ? { "X-Organization-Id": orgId } : {}),
       },
       body: JSON.stringify({
-        name: input.name.trim(),
-        displayName: input.displayName.trim(),
-        description: input.description?.trim() || undefined,
-        type: input.type,
-        contactEmail: input.contactEmail?.trim() || undefined,
-        slackChannel: input.slackChannel?.trim() || undefined,
+        name: payload.name.trim(),
+        displayName: payload.displayName.trim(),
+        description: payload.description?.trim() || undefined,
+        type: payload.type,
+        contactEmail: payload.contactEmail?.trim() || undefined,
+        slackChannel: payload.slackChannel?.trim() || undefined,
       }),
     });
   } catch {
@@ -71,7 +75,7 @@ export async function createTeamAction(
 
   const team = await res.json() as { id: string; name: string; displayName: string };
 
-  revalidateTag("teams", {});
+  revalidateTag("teams");
   revalidatePath("/teams");
 
   return { success: true, team };

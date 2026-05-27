@@ -68,8 +68,7 @@ export async function createOrganizationAction(
 
   const org = await res.json() as { id: string; name: string; slug?: string };
 
-  // Invalidate the organisations list in any server-rendered cache.
-  revalidateTag("organizations", {});
+  revalidateTag("organizations");
   revalidatePath("/organizations");
 
   return { success: true, org };

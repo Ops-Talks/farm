@@ -67,7 +67,7 @@ export async function acceptInvitationAction(
   const orgSlugOrId = data.orgSlug ?? data.orgId ?? null;
 
   // Purge the organisations list cache so the sidebar refreshes.
-  revalidateTag("organizations", {});
+  revalidateTag("organizations");
   revalidatePath("/organizations");
 
   return { success: true, orgSlugOrId };

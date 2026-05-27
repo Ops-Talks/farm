@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { useScrollToError } from "@/hooks/use-scroll-to-error";
+import { useOrganization } from "@/contexts/organization-context";
 // S603: Server Actions — run mutations on the server when API_INTERNAL_URL is
 // configured; __clientFallback signals to use the browser api-client instead.
 import { createComponentAction, registerComponentYamlAction } from "../actions";
@@ -62,6 +63,7 @@ type YamlFormValues = z.infer<typeof yamlFormSchema>;
 
 export function NewComponentClient() {
   const router = useRouter();
+  const { currentOrg } = useOrganization();
   const [tab, setTab] = useState<FormTab>("form");
 
   // --- Interactive form ---
@@ -139,6 +141,7 @@ export function NewComponentClient() {
         tags: tags.length > 0 ? tags : undefined,
         repositoryUrl: values.repositoryUrl?.trim() || undefined,
         helmChart,
+        orgId: currentOrg?.id,
       };
       const result = await createComponentAction(input);
 
@@ -172,7 +175,7 @@ export function NewComponentClient() {
   const onYamlSubmit = async (values: YamlFormValues) => {
     try {
       // S603: Try server action first; fall back to browser api-client.
-      const result = await registerComponentYamlAction(values.yaml);
+      const result = await registerComponentYamlAction(values.yaml, currentOrg?.id);
 
       if ("__clientFallback" in result) {
         const created = await catalog.registerYaml(values.yaml);

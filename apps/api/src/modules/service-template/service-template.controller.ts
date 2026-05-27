@@ -88,7 +88,7 @@ export class ServiceTemplateController {
   /**
    * Creates a new service template.
    * The organizationId is resolved from the X-Organization-Id header by
-   * OptionalOrgGuard and may be undefined when the header is absent.
+   * OrgRequiredGuard and must be present in the request header.
    * @param req - The incoming request containing the JWT user payload and org context
    * @param createDto - The data for the new service template
    * @returns The created service template
