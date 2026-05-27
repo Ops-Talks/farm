@@ -3,7 +3,11 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 import { User } from "../src/modules/auth/entities/user.entity";
 
 describe("Plugin Manager (e2e)", () => {
@@ -132,7 +136,10 @@ describe("Plugin Manager (e2e)", () => {
         .send({ username: "plugin_viewer", password: "ViewerPass1" })
         .expect(200);
 
-      const viewerToken = (loginRes.body as { token: string }).token;
+      const viewerToken = extractCookieValue(
+        loginRes.headers["set-cookie"],
+        "access_token",
+      );
 
       await request(app.getHttpServer())
         .get("/api/v1/plugins")
@@ -249,7 +256,10 @@ describe("Plugin Manager (e2e)", () => {
           .send({ username: "registry_viewer", password: "ViewerPass2" })
           .expect(200);
 
-        const nonAdminToken = (loginRes.body as { token: string }).token;
+        const nonAdminToken = extractCookieValue(
+          loginRes.headers["set-cookie"],
+          "access_token",
+        );
 
         await request(app.getHttpServer())
           .post("/api/v1/plugins/registry")

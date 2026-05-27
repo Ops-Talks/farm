@@ -82,7 +82,7 @@ export default defineConfig({
   // port 3010 already running (reuseExistingServer skips the cold start).
   webServer: {
     command:
-      "PORT=3010 HOSTNAME=localhost node .next/standalone/apps/web/server.js",
+      "PLAYWRIGHT_E2E=1 PORT=3010 HOSTNAME=localhost node .next/standalone/apps/web/server.js",
     url: "http://localhost:3010",
     reuseExistingServer: !isCI,
     timeout: 120_000,

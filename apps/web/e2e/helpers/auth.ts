@@ -35,9 +35,15 @@ const MOCK_LOGIN_RESPONSE = {
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
   // Catch-all registered FIRST so the specific routes (registered after)
-  // take priority in Playwright's LIFO route resolution. This catch-all
-  // handles non-login requests (e.g., dashboard API calls after redirect).
+  // take priority in Playwright's LIFO route resolution. Auth-scoped URLs
+  // are passed through so that setupAuthStorage's profile mock (when present)
+  // can intercept GET /auth/profile, or so the real server can return a 404
+  // that causes AuthProvider to set user to null and show the login form.
   await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
     route.fulfill({
       status: 200,
       contentType: "application/json",

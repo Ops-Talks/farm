@@ -10,6 +10,7 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcrypt";
+import { BCRYPT_ROUNDS } from "../../../common/constants/bcrypt";
 import { dateTransformer } from "../../../common/transformers/date.transformer";
 import { dateColumnType } from "../../../common/utils/column-type.util";
 
@@ -61,7 +62,7 @@ export class User {
   @BeforeUpdate()
   async hashPassword(): Promise<void> {
     if (this.password && !this.password.startsWith("$2b$")) {
-      this.password = await bcrypt.hash(this.password, 10);
+      this.password = await bcrypt.hash(this.password, BCRYPT_ROUNDS);
     }
   }
 

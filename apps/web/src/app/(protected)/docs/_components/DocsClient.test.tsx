@@ -1173,4 +1173,55 @@ describe("DocsClient", () => {
       );
     });
   });
+
+  // -------------------------------------------------------------------------
+  // XSS: DOMPurify sanitization of rendered HTML content (FARM-S600)
+  // -------------------------------------------------------------------------
+  describe("XSS sanitization via DOMPurify", () => {
+    it("strips onerror event handlers from img tags in rendered HTML", async () => {
+      // Simulate the API returning an XSS payload in the rendered Markdown HTML.
+      mocks.docsGetRendered.mockResolvedValue(
+        '<img src="x" onerror="alert(1)">',
+      );
+      mocks.docsGet.mockResolvedValue(mockDoc);
+
+      await renderAndWait();
+      fireEvent.click(screen.getByTestId("tree-select-btn"));
+
+      // Wait for the prose container to appear (content loaded).
+      await waitFor(() =>
+        expect(document.querySelector(".prose")).toBeInTheDocument(),
+      );
+
+      // The onerror attribute must have been stripped by DOMPurify.
+      const proseHtml = document.querySelector(".prose")?.innerHTML ?? "";
+      expect(proseHtml).not.toContain("onerror");
+    });
+
+    it("strips script tags from rendered HTML", async () => {
+      // Set up the full happy path first, then override the rendered content
+      // mock with an XSS payload before selecting a doc.
+      setupHappyPath(/* isAdmin = */ false);
+      mocks.docsGetRendered.mockResolvedValue(
+        "<p>Safe content</p><script>alert('xss')</script>",
+      );
+      mocks.docsGet.mockResolvedValue(mockDoc);
+
+      render(<DocsClient />);
+      await waitFor(() =>
+        expect(screen.getByText(/document(s)? registered/i)).toBeInTheDocument(),
+      );
+
+      fireEvent.click(screen.getByTestId("tree-select-btn"));
+
+      await waitFor(() =>
+        expect(document.querySelector(".prose")).toBeInTheDocument(),
+      );
+
+      const proseHtml = document.querySelector(".prose")?.innerHTML ?? "";
+      expect(proseHtml).not.toContain("<script");
+      // Safe paragraph content must still be present.
+      expect(proseHtml).toContain("Safe content");
+    });
+  });
 });

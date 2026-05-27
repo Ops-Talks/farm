@@ -4,6 +4,8 @@ import { SearchService } from "./search.service";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import type { SearchConfig } from "./entities/search-config.entity";
 import type { UpdateSearchConfigDto } from "./dto/update-search-config.dto";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 /**
  * Unit tests for SearchConfigController.
@@ -32,7 +34,12 @@ describe("SearchConfigController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SearchConfigController],
       providers: [{ provide: SearchService, useValue: searchService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SearchConfigController>(SearchConfigController);
   });

@@ -79,9 +79,7 @@ describe("configuration", () => {
       expect(config.database.name).toBe("farm");
       expect(config.database.synchronize).toBe(false);
       expect(config.database.poolSize).toBe(10);
-      expect(config.auth.jwtSecret).toBe(
-        "super-secret-key-change-me-in-production",
-      );
+      expect(config.auth.jwtSecret).toBe("");
       expect(config.auth.jwtExpiresIn).toBe("3600s");
       expect(config.cors.allowedOrigins).toBe("*");
       expect(config.throttle.ttl).toBe(60000);
@@ -221,13 +219,39 @@ describe("validationSchema", () => {
     });
   });
 
-  it("validates successfully with all defaults", () => {
+  it("validates successfully when NODE_ENV is 'test' (JWT_SECRET is optional in test)", () => {
     jest.isolateModules(() => {
       const { validationSchema } =
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require("./configuration") as typeof import("./configuration");
-      const { error } = validationSchema.validate({});
+      // In the test environment JWT_SECRET and Swagger credentials are optional.
+      const { error } = validationSchema.validate({ NODE_ENV: "test" });
       expect(error).toBeUndefined();
+    });
+  });
+
+  it("requires JWT_SECRET in non-test environments", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error } = validationSchema.validate({ NODE_ENV: "development" });
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/JWT_SECRET/);
+    });
+  });
+
+  it("requires JWT_SECRET to be at least 32 characters in non-test environments", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error } = validationSchema.validate({
+        NODE_ENV: "development",
+        JWT_SECRET: "too-short",
+      });
+      expect(error).toBeDefined();
+      expect(error?.message).toMatch(/JWT_SECRET/);
     });
   });
 
@@ -249,6 +273,8 @@ describe("validationSchema", () => {
       const { error } = validationSchema.validate({
         NODE_ENV: "production",
         JWT_SECRET: "a-sufficiently-long-secret-key-here",
+        SWAGGER_USER: "ops-admin",
+        SWAGGER_PASSWORD: "a-strong-swagger-password",
       });
       expect(error).toBeUndefined();
     });
@@ -262,9 +288,25 @@ describe("validationSchema", () => {
       const { error } = validationSchema.validate({
         NODE_ENV: "production",
         JWT_SECRET: "a-sufficiently-long-secret-key-here",
+        SWAGGER_USER: "ops-admin",
+        SWAGGER_PASSWORD: "a-strong-swagger-password",
         SMTP_HOST: "smtp.example.com",
       });
       expect(error).toBeUndefined();
+    });
+  });
+
+  it("requires SWAGGER_USER and SWAGGER_PASSWORD in non-test environments", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error } = validationSchema.validate({
+        NODE_ENV: "production",
+        JWT_SECRET: "a-sufficiently-long-secret-key-here",
+        // SWAGGER_USER and SWAGGER_PASSWORD deliberately omitted.
+      });
+      expect(error).toBeDefined();
     });
   });
 });

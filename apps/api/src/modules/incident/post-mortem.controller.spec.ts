@@ -7,6 +7,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { NotFoundException } from "@nestjs/common";
 import { PostMortemController } from "./post-mortem.controller";
 import { PostMortemService } from "./post-mortem.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("PostMortemController", () => {
   let controller: PostMortemController;
@@ -49,7 +51,12 @@ describe("PostMortemController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PostMortemController>(PostMortemController);
     postMortemService = module.get<PostMortemService>(PostMortemService);

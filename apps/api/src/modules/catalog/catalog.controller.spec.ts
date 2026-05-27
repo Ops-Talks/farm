@@ -1,5 +1,4 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { getQueueToken } from "@nestjs/bullmq";
 import { NotFoundException } from "@nestjs/common";
 import { CatalogController } from "./catalog.controller";
@@ -10,6 +9,7 @@ import { UpdateComponentDto } from "./dto/update-component.dto";
 import { ComponentKind } from "./entities/component.entity";
 import { PaginatedResponseDto } from "../../common/dto";
 import { CATALOG_DISCOVERY_QUEUE } from "./processors/catalog-discovery.processor";
+import { TenantCacheService } from "../../common/cache/tenant-cache.service";
 
 const mockCatalogService = {
   create: jest.fn(),
@@ -20,11 +20,11 @@ const mockCatalogService = {
   setContainerImage: jest.fn(),
 };
 
-const mockCacheManager = {
+const mockTenantCacheService = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
-  clear: jest.fn(),
+  invalidateByPrefix: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockDiscoveryQueue = {
@@ -40,7 +40,7 @@ describe("CatalogController", () => {
       controllers: [CatalogController],
       providers: [
         { provide: CatalogService, useValue: mockCatalogService },
-        { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        { provide: TenantCacheService, useValue: mockTenantCacheService },
         {
           provide: getQueueToken(CATALOG_DISCOVERY_QUEUE),
           useValue: mockDiscoveryQueue,
@@ -197,11 +197,11 @@ describe("CatalogController — without discovery queue", () => {
     discoverFromLocation: jest.fn(),
     registerYaml: jest.fn(),
   };
-  const mockCacheManagerLocal = {
+  const mockTenantCacheLocal = {
     get: jest.fn(),
     set: jest.fn(),
     del: jest.fn(),
-    clear: jest.fn(),
+    invalidateByPrefix: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -209,7 +209,7 @@ describe("CatalogController — without discovery queue", () => {
       controllers: [CatalogController],
       providers: [
         { provide: CatalogService, useValue: mockCatalogServiceLocal },
-        { provide: CACHE_MANAGER, useValue: mockCacheManagerLocal },
+        { provide: TenantCacheService, useValue: mockTenantCacheLocal },
         // No discovery queue — fallback to synchronous discovery
       ],
     })
@@ -258,7 +258,9 @@ describe("CatalogController — without discovery queue", () => {
         expect.any(String),
         "org-uuid-1",
       );
-      expect(mockCacheManagerLocal.clear).toHaveBeenCalled();
+      expect(mockTenantCacheLocal.invalidateByPrefix).toHaveBeenCalledWith(
+        "org:org-uuid-1:catalog:",
+      );
     });
   });
 });
@@ -291,12 +293,12 @@ describe("CatalogController — getCostEstimate with FinOpsService", () => {
           },
         },
         {
-          provide: CACHE_MANAGER,
+          provide: TenantCacheService,
           useValue: {
             get: jest.fn(),
             set: jest.fn(),
             del: jest.fn(),
-            clear: jest.fn(),
+            invalidateByPrefix: jest.fn().mockResolvedValue(undefined),
           },
         },
         { provide: FinOpsService, useValue: mockFinOpsService },
@@ -383,12 +385,12 @@ describe("CatalogController — findComponentPipelines", () => {
         providers: [
           { provide: CatalogService, useValue: mockCatalogSvc },
           {
-            provide: CACHE_MANAGER,
+            provide: TenantCacheService,
             useValue: {
               get: jest.fn(),
               set: jest.fn(),
               del: jest.fn(),
-              clear: jest.fn(),
+              invalidateByPrefix: jest.fn().mockResolvedValue(undefined),
             },
           },
           {
@@ -466,12 +468,12 @@ describe("CatalogController — findComponentPipelines", () => {
         providers: [
           { provide: CatalogService, useValue: mockCatalogSvc },
           {
-            provide: CACHE_MANAGER,
+            provide: TenantCacheService,
             useValue: {
               get: jest.fn(),
               set: jest.fn(),
               del: jest.fn(),
-              clear: jest.fn(),
+              invalidateByPrefix: jest.fn().mockResolvedValue(undefined),
             },
           },
         ],

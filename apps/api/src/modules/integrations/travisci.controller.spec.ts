@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { TravisCIController } from "./travisci.controller";
 import { TravisCIService } from "./travisci.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("TravisCIController", () => {
   let controller: TravisCIController;
@@ -25,7 +27,12 @@ describe("TravisCIController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TravisCIController],
       providers: [{ provide: TravisCIService, useValue: travisCIService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<TravisCIController>(TravisCIController);
   });

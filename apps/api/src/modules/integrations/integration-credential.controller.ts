@@ -18,14 +18,18 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { CreateIntegrationCredentialDto } from "./dto/create-integration-credential.dto";
 import { UpdateIntegrationCredentialDto } from "./dto/update-integration-credential.dto";
 import { IntegrationCredential } from "./entities/integration-credential.entity";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
@@ -35,7 +39,13 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Integration Credentials")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("integrations/credentials")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -60,7 +70,7 @@ export class IntegrationCredentialController {
    * @returns The created credential entity
    */
   @Post()
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Create a new integration credential" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -134,7 +144,7 @@ export class IntegrationCredentialController {
    * @returns The updated credential entity
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Update an integration credential" })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -156,7 +166,7 @@ export class IntegrationCredentialController {
    * @param req - Request object carrying resolved organization context
    */
   @Delete(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an integration credential" })
   @ApiResponse({

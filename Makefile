@@ -145,6 +145,10 @@ HELM_CHART := deploy/helm/farm
 HELM_RELEASE := farm
 HELM_NAMESPACE := farm
 HELM_VALUES ?= $(HELM_CHART)/values-dev.yaml
+# Pinned ingress-nginx manifest for KinD. Bump version in lockstep with the
+# ingress-nginx subchart version in Chart.yaml.
+INGRESS_NGINX_VERSION := v1.12.2
+INGRESS_NGINX_MANIFEST := https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-$(INGRESS_NGINX_VERSION)/deploy/static/provider/kind/deploy.yaml
 
 helm-lint:
 	helm dependency update $(HELM_CHART)
@@ -199,6 +203,10 @@ kind-infra: ## Deploy standalone PostgreSQL + Redis (official images) into the F
 	kubectl rollout status deployment/farm-infra-redis -n $(HELM_NAMESPACE) --timeout=60s
 
 kind-deploy: kind-build kind-load kind-infra ## Build, load, start infra and install/upgrade Farm into KinD
+	@echo "Installing ingress-nginx $(INGRESS_NGINX_VERSION)..."
+	kubectl apply -f $(INGRESS_NGINX_MANIFEST)
+	kubectl rollout status deployment/ingress-nginx-controller \
+		-n ingress-nginx --timeout=120s
 	helm dependency update $(HELM_CHART)
 	helm upgrade --install $(HELM_RELEASE) $(HELM_CHART) \
 		-f $(HELM_CHART)/values-dev.yaml \

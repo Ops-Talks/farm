@@ -2,6 +2,9 @@
 jest.mock("bcrypt", () => ({
   compare: jest.fn(),
   hash: jest.fn().mockResolvedValue("hashed-token"),
+  // Return a value >= BCRYPT_ROUNDS so the lazy re-hash branch is not taken
+  // in tests that only verify the happy-path of validateUser.
+  getRounds: jest.fn().mockReturnValue(12),
 }));
 import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "../auth.service";
@@ -204,16 +207,36 @@ describe("AuthService", () => {
       password: "hashed",
       roles: ["user"],
     };
-    it("returns user when valid", async () => {
+
+    it("returns user when valid and hash is already at current cost", async () => {
       repo.findOne.mockResolvedValue(user);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      // getRounds returns 12 (default mock) — no re-hash expected.
       expect(await service.validateUser("u", "p")).toEqual(user);
+      expect(repo.save).not.toHaveBeenCalled();
     });
 
     it("returns null when invalid", async () => {
       repo.findOne.mockResolvedValue(user);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       expect(await service.validateUser("u", "p")).toBeNull();
+    });
+
+    it("re-hashes and persists when stored hash cost is below BCRYPT_ROUNDS", async () => {
+      const staleUser = { ...user };
+      repo.findOne.mockResolvedValue(staleUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      // Simulate a legacy hash stored at a cost strictly below BCRYPT_ROUNDS.
+      // Using 1 is always safely below any reasonable default (4 in test, 12 in prod).
+      (bcrypt.getRounds as jest.Mock).mockReturnValueOnce(1);
+      (bcrypt.hash as jest.Mock).mockResolvedValue("upgraded-hash");
+      repo.save.mockResolvedValue({ ...staleUser, password: "upgraded-hash" });
+
+      const result = await service.validateUser("u", "p");
+
+      expect(bcrypt.hash).toHaveBeenCalled();
+      expect(repo.save).toHaveBeenCalled();
+      expect(result).not.toBeNull();
     });
   });
 

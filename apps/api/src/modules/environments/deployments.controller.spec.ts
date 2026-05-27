@@ -3,6 +3,8 @@ import { DeploymentsController } from "./deployments.controller";
 import { DeploymentsService } from "./deployments.service";
 import { DeploymentStatus } from "./entities/deployment.entity";
 import { PaginatedResponseDto } from "../../common/dto";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("DeploymentsController", () => {
   let controller: DeploymentsController;
@@ -55,7 +57,12 @@ describe("DeploymentsController", () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<DeploymentsController>(DeploymentsController);
     service = module.get<DeploymentsService>(DeploymentsService);

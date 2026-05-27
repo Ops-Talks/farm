@@ -6,6 +6,8 @@ import { GatewayRoute } from "../entities/gateway-route.entity";
 import { ApiHealthCheck } from "../entities/api-health-check.entity";
 import { GatewayType } from "../enums/gateway-type.enum";
 import { HealthStatus } from "../enums/health-status.enum";
+import { OrgRequiredGuard } from "../../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../../common/guards/permission.guard";
 
 const mockRoute: GatewayRoute = {
   id: "route-uuid-1",
@@ -49,7 +51,12 @@ describe("GatewayController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [GatewayController],
       providers: [{ provide: GatewayService, useValue: mockGatewayService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<GatewayController>(GatewayController);
   });

@@ -199,19 +199,17 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  message: string;
   user: User;
-  token: string;
-  refreshToken: string;
 }
 
 export interface RefreshTokenRequest {
-  username: string;
-  refreshToken: string;
+  username?: string;
+  refreshToken?: string;
 }
 
 export interface RefreshTokenResponse {
-  token: string;
-  refreshToken: string;
+  message: string;
 }
 
 // -- Common DTOs --

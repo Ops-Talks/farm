@@ -46,9 +46,7 @@ export class KeycloakOidcService {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
   ) {
-    const jwtSecret =
-      this.configService.get<string>("auth.jwtSecret") ??
-      "super-secret-key-change-me-in-production";
+    const jwtSecret = this.configService.get<string>("auth.jwtSecret") ?? "";
     // Derive the same 32-byte key used by IntegrationCredentialService.
     this.encryptionKey = crypto.createHash("sha256").update(jwtSecret).digest();
   }

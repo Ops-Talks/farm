@@ -15,6 +15,7 @@ import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
+import { BCRYPT_ROUNDS } from "../../common/constants/bcrypt";
 
 /**
  * Service handling authentication and user-related business logic.
@@ -86,7 +87,7 @@ export class AuthService {
     };
 
     const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
     await this.userRepository.update(user.id, {
       refreshToken: hashedRefreshToken,
       lastLogin: new Date(),
@@ -133,7 +134,10 @@ export class AuthService {
     };
 
     const newRefreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(newRefreshToken, 10);
+    const hashedRefreshToken = await bcrypt.hash(
+      newRefreshToken,
+      BCRYPT_ROUNDS,
+    );
     await this.userRepository.update(user.id, {
       refreshToken: hashedRefreshToken,
     });
@@ -146,13 +150,21 @@ export class AuthService {
 
   /**
    * Validates a user for Passport strategy.
+   * If the stored hash was produced with a lower cost than BCRYPT_ROUNDS, the
+   * password is transparently re-hashed at the new cost so every successful
+   * login silently upgrades legacy hashes.
    * @param username - User's username
-   * @param password - User's password
+   * @param pass - Plaintext password attempt
    * @returns The validated user or null
    */
   async validateUser(username: string, pass: string): Promise<User | null> {
     const user = await this.userRepository.findOne({ where: { username } });
     if (user && (await bcrypt.compare(pass, user.password))) {
+      // Transparently upgrade hashes that were stored with an older cost factor.
+      if (bcrypt.getRounds(user.password) < BCRYPT_ROUNDS) {
+        user.password = await bcrypt.hash(pass, BCRYPT_ROUNDS);
+        await this.userRepository.save(user);
+      }
       return user;
     }
     return null;
@@ -304,7 +316,7 @@ export class AuthService {
     };
 
     const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
     await this.userRepository.update(user.id, {
       refreshToken: hashedRefreshToken,
     });
@@ -332,7 +344,7 @@ export class AuthService {
       roles: user.roles,
     };
     const refreshToken = randomBytes(40).toString("hex");
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
     await this.userRepository.update(user.id, {
       refreshToken: hashedRefreshToken,
     });

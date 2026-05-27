@@ -52,9 +52,7 @@ const isTest = process.env.NODE_ENV === "test";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>("auth.jwtSecret") ??
-          "super-secret-key-change-me-in-production",
+        secret: configService.get<string>("auth.jwtSecret"),
         signOptions: {
           expiresIn: (configService.get<string>("auth.jwtExpiresIn") ??
             "3600s") as `${number}${"s" | "m" | "h" | "d"}`,

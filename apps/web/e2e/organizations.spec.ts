@@ -92,15 +92,19 @@ async function mockOrgsRoutes(
 ): Promise<void> {
   // Catch-all registered FIRST so specific routes (registered after) take
   // priority. Playwright resolves routes in LIFO order — last registered wins.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  // mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
-
-  // Member removal endpoint: DELETE /organizations/{id}/members/{userId}.
+    });
+  });
   // Registered before the members base-path route even though Playwright treats
   // these as distinct URL patterns — explicit ordering makes the priority clear.
   if (options.includeMemberRemove) {

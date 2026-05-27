@@ -2,6 +2,9 @@ jest.mock("bcrypt", () => ({
   hash: jest.fn(),
   compare: jest.fn(),
   genSalt: jest.fn(),
+  // Return a value >= BCRYPT_ROUNDS so the lazy re-hash branch is not taken
+  // in tests that only verify the happy path of validateUser.
+  getRounds: jest.fn().mockReturnValue(12),
 }));
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";

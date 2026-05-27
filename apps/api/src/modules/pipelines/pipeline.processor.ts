@@ -687,8 +687,7 @@ export class PipelineProcessor extends WorkerHost {
    */
   private decryptCredential(encryptedValue: string): string {
     if (!this.encryptionKey) {
-      const jwtSecret =
-        process.env.JWT_SECRET ?? "super-secret-key-change-me-in-production";
+      const jwtSecret = process.env.JWT_SECRET ?? "";
       this.encryptionKey = crypto
         .createHash("sha256")
         .update(jwtSecret)

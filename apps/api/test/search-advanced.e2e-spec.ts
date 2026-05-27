@@ -1,7 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../src/modules/auth/entities/user.entity";
@@ -170,7 +174,10 @@ describe("Advanced Search (e2e)", () => {
       .send({ username: regular.username, password: regular.password })
       .expect(200);
 
-    const regularToken = (loginRes.body as { token: string }).token;
+    const regularToken = extractCookieValue(
+      loginRes.headers["set-cookie"],
+      "access_token",
+    );
 
     await request(app.getHttpServer())
       .patch("/api/v1/search/config")
@@ -187,7 +194,10 @@ describe("Advanced Search (e2e)", () => {
       .send({ username: "regular-user-s316", password: "TestPassword1" })
       .expect(200);
 
-    const regularToken = (loginRes.body as { token: string }).token;
+    const regularToken = extractCookieValue(
+      loginRes.headers["set-cookie"],
+      "access_token",
+    );
 
     // Promote to non-admin explicitly ensures roles array has no 'admin'
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));

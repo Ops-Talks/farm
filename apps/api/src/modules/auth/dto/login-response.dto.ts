@@ -36,24 +36,22 @@ class LoginUserDto {
 }
 
 /**
- * Data Transfer Object for the login response.
+ * Data Transfer Object for the cookie-based login response.
+ *
+ * Tokens are delivered via httpOnly Set-Cookie headers (access_token,
+ * refresh_token) rather than in the response body, so no token fields
+ * are present here.
  */
 export class LoginResponseDto {
+  @ApiProperty({
+    example: "Login successful",
+    description: "Human-readable confirmation message",
+  })
+  message: string;
+
   @ApiProperty({
     description: "The authenticated user profile",
     type: LoginUserDto,
   })
   user: LoginUserDto;
-
-  @ApiProperty({
-    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    description: "JWT access token",
-  })
-  token: string;
-
-  @ApiProperty({
-    example: "a1b2c3d4e5f6...",
-    description: "Refresh token for obtaining new access tokens",
-  })
-  refreshToken: string;
 }

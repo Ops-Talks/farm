@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { CircleCIController } from "./circleci.controller";
 import { CircleCIService } from "./circleci.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("CircleCIController", () => {
   let controller: CircleCIController;
@@ -25,7 +27,12 @@ describe("CircleCIController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CircleCIController],
       providers: [{ provide: CircleCIService, useValue: circleCIService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CircleCIController>(CircleCIController);
   });

@@ -3,6 +3,8 @@ import { HelmController } from "./helm.controller";
 import { HelmService } from "./helm.service";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { HelmRelease } from "./helm-release.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 const mockReleases: HelmRelease[] = [
   {
@@ -36,7 +38,12 @@ describe("HelmController", () => {
         { provide: HelmService, useValue: mockHelmService },
         { provide: KubernetesService, useValue: kubernetesService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<HelmController>(HelmController);
     helmService = module.get(HelmService);

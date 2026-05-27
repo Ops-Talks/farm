@@ -11,6 +11,8 @@ import { CreateServiceTemplateDto } from "./dto/create-service-template.dto";
 import { UpdateServiceTemplateDto } from "./dto/update-service-template.dto";
 import { DryRunResultDto } from "./dto/dry-run-result.dto";
 import { PaginatedResponseDto } from "../../common/dto";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 const mockTemplateService = {
   create: jest.fn(),
@@ -79,7 +81,12 @@ describe("ServiceTemplateController", () => {
         { provide: ServiceTemplateService, useValue: mockTemplateService },
         { provide: ScaffoldService, useValue: mockScaffoldService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ServiceTemplateController>(
       ServiceTemplateController,

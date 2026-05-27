@@ -84,13 +84,19 @@ async function mockDocsRoutes(
   options: { empty?: boolean; includeCreation?: boolean } = {},
 ): Promise<void> {
   // 1. Catch-all — registered FIRST so specific routes override it.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  //    Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  //    mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   // 2. Catalog components list — used by both the sidebar selector and the
   //    create form to populate the component <select>.
@@ -207,8 +213,8 @@ async function mockDocsRoutes(
 
 // ---------------------------------------------------------------------------
 // Authenticated test suite
-// Auth tokens are seeded before each test via addInitScript so the React
-// auth context sees a valid admin session before it hydrates.
+// Auth routes are mocked before each test via setupAuthStorage so the React
+// auth context sees a valid admin session after it hydrates.
 // ---------------------------------------------------------------------------
 
 test.describe("docs page — authenticated", () => {
@@ -437,13 +443,21 @@ test.describe("docs page — unauthenticated", () => {
     // Suppress Socket.IO noise; no auth tokens are seeded so we also
     // return 401 for any API call that might fire before the redirect.
     await page.route("**/socket.io/**", (route) => route.abort());
-    await page.route("**/api/v1/**", (route) =>
-      route.fulfill({
+    // Return 401 for all non-auth API calls to simulate an unauthenticated
+    // session. Auth-scoped URLs continue to the real server (Next.js returns
+    // 404 for /api/v1/auth/profile) so that AuthProvider sees an error,
+    // sets user to null, and the AuthGuard redirects to /login.
+    await page.route("**/api/v1/**", (route) => {
+      if (route.request().url().includes("/api/v1/auth/")) {
+        void route.continue();
+        return;
+      }
+      void route.fulfill({
         status: 401,
         contentType: "application/json",
         body: JSON.stringify({ message: "Unauthorized" }),
-      }),
-    );
+      });
+    });
 
     await page.goto("/docs");
 

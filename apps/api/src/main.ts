@@ -1,5 +1,7 @@
 import { NestFactory, Reflector } from "@nestjs/core";
 import * as express from "express";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import cookieParser = require("cookie-parser");
 import {
   ValidationPipe,
   ClassSerializerInterceptor,
@@ -70,6 +72,10 @@ async function bootstrap() {
     // Disable the default 100 kb body-parser so we can apply per-path limits.
     bodyParser: false,
   });
+
+  // Parse cookies on every incoming request so httpOnly auth cookies are
+  // accessible via req.cookies in controllers and strategies.
+  app.use(cookieParser());
 
   // OTLP trace payloads from the browser SDK can be large (many batched spans).
   app.use("/api/v1/traces/ingest", express.json({ limit: "10mb" }));
@@ -181,6 +187,14 @@ async function bootstrap() {
     .addServer("/api/v1", "Versioned API (current)")
     .addServer("/api", "Deprecated alias (redirects to /api/v1)")
     .addBearerAuth()
+    .addCookieAuth("access_token", {
+      type: "apiKey",
+      in: "cookie",
+      name: "access_token",
+      description:
+        "httpOnly JWT cookie set by POST /auth/login. " +
+        "Used by browser clients; API clients use Bearer auth instead.",
+    })
     .addApiKey(
       { type: "apiKey", in: "header", name: "x-ingest-token" },
       "IacIngestToken",

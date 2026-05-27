@@ -2,6 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ForbiddenException } from "@nestjs/common";
 import { EnvironmentRequestController } from "./environment-request.controller";
 import { EnvironmentRequestService } from "./environment-request.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import {
   EnvironmentRequest,
   EnvironmentRequestStatus,
@@ -61,7 +63,12 @@ describe("EnvironmentRequestController", () => {
       providers: [
         { provide: EnvironmentRequestService, useValue: mockService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<EnvironmentRequestController>(
       EnvironmentRequestController,

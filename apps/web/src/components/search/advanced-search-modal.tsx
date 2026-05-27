@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef, useState, type ElementType, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import DOMPurify from "isomorphic-dompurify";
 import {
   Search,
   X,
@@ -20,21 +21,19 @@ import { useFacetedSearch } from "@/hooks/use-faceted-search";
 
 // ── Highlight helper ────────────────────────────────────────────────────────
 // Takes the first fragment from the highlights array, swaps <em>…</em> for
-// <strong>…</strong>, then strips every other HTML tag to prevent XSS.
+// <strong>…</strong>, then sanitizes with DOMPurify using a strict allowlist
+// that permits only <strong> tags. This replaces the previous hand-rolled
+// regex loop which could be bypassed by crafted nested/reconstructed tags.
 function renderHighlight(fragments: string[] | undefined, fallback: string): string {
   if (!fragments?.length) return fallback;
   const raw = fragments[0]!;
   const withStrong = raw.replace(/<em>/gi, '<strong>').replace(/<\/em>/gi, '</strong>');
-  // strip any remaining tags except <strong> and </strong>
-  // Loop until stable to handle incomplete multi-character sanitization
-  // (e.g. nested or reconstructed tags like <<script>script>).
-  let sanitized = withStrong;
-  let prev: string;
-  do {
-    prev = sanitized;
-    sanitized = sanitized.replace(/<(?!\/?strong[ />])[^>]+>/gi, '');
-  } while (sanitized !== prev);
-  return sanitized;
+  // DOMPurify strips everything except <strong>: no event handlers, no
+  // script tags, no iframes — even if the server returns malicious markup.
+  return DOMPurify.sanitize(withStrong, {
+    ALLOWED_TAGS: ['strong'],
+    ALLOWED_ATTR: [],
+  });
 }
 
 // ── Type icon map ────────────────────────────────────────────────────────────

@@ -10,14 +10,14 @@ vi.mock("next/navigation", () => ({
 }));
 
 const mockLogin = vi.fn();
-const mockSetTokens = vi.fn();
-const mockClearTokens = vi.fn();
-const mockGetAccessToken = vi.fn<() => string | null>(() => null);
+const mockGetProfile = vi.fn();
+const mockLogout = vi.fn();
 vi.mock("@/lib/api-client", () => ({
-  auth: { login: (...args: unknown[]) => mockLogin(...args) },
-  setTokens: (...args: unknown[]) => mockSetTokens(...args),
-  clearTokens: () => mockClearTokens(),
-  getAccessToken: () => mockGetAccessToken(),
+  auth: {
+    login: (...args: unknown[]) => mockLogin(...args),
+    getProfile: () => mockGetProfile(),
+    logout: () => mockLogout(),
+  },
 }));
 
 vi.mock("@/lib/ws-client", () => ({
@@ -48,24 +48,36 @@ function TestConsumer() {
 describe("AuthContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetAccessToken.mockReturnValue(null);
+    // Default: getProfile() fails with 401 → user stays null (unauthenticated).
+    mockGetProfile.mockRejectedValue(new Error("Unauthorized"));
+    mockLogout.mockResolvedValue({ message: "Logged out successfully" });
     sessionStorage.clear();
   });
 
-  it("should start unauthenticated", () => {
+  it("should start unauthenticated when getProfile returns 401", async () => {
     render(
       <AuthProvider><TestConsumer /></AuthProvider>,
     );
+    // Wait for the async restoreSession effect to settle.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
     expect(screen.getByTestId("auth-status").textContent).toBe("unauthenticated");
     expect(screen.getByTestId("user-name").textContent).toBe("none");
   });
 
   it("should login and set user", async () => {
     const user = userEvent.setup();
+    // FARM-S598: login response contains message + user (tokens are in cookies).
     const loginResponse = {
-      user: { id: "1", username: "admin", displayName: "Farm Admin", roles: ["admin"], email: "admin@farm.dev" },
-      token: "jwt-token",
-      refreshToken: "refresh-token",
+      message: "Login successful",
+      user: {
+        id: "1",
+        username: "admin",
+        displayName: "Farm Admin",
+        roles: ["admin"],
+        email: "admin@farm.dev",
+      },
     };
     mockLogin.mockResolvedValueOnce(loginResponse);
 
@@ -78,7 +90,7 @@ describe("AuthContext", () => {
     });
 
     expect(mockLogin).toHaveBeenCalledWith({ username: "admin", password: "pass" });
-    expect(mockSetTokens).toHaveBeenCalledWith("jwt-token", "refresh-token", "admin");
+    // setTokens must NOT be called — tokens arrive via httpOnly cookies only.
     expect(screen.getByTestId("auth-status").textContent).toBe("authenticated");
     expect(screen.getByTestId("user-name").textContent).toBe("Farm Admin");
     expect(screen.getByTestId("has-admin").textContent).toBe("yes");
@@ -90,8 +102,14 @@ describe("AuthContext", () => {
   it("should logout and clear state", async () => {
     const user = userEvent.setup();
     const loginResponse = {
-      user: { id: "1", username: "admin", displayName: "Admin", roles: ["admin"], email: "a@b.c" },
-      token: "t", refreshToken: "r",
+      message: "Login successful",
+      user: {
+        id: "1",
+        username: "admin",
+        displayName: "Admin",
+        roles: ["admin"],
+        email: "a@b.c",
+      },
     };
     mockLogin.mockResolvedValueOnce(loginResponse);
 
@@ -108,27 +126,35 @@ describe("AuthContext", () => {
       await user.click(screen.getByText("Logout"));
     });
 
-    expect(mockClearTokens).toHaveBeenCalled();
+    // The logout endpoint is called to clear httpOnly cookies server-side.
+    expect(mockLogout).toHaveBeenCalled();
     expect(screen.getByTestId("auth-status").textContent).toBe("unauthenticated");
     expect(mockPush).toHaveBeenCalledWith("/login");
     // OTel context must be cleared on logout.
     expect(mockClearUserContext).toHaveBeenCalled();
   });
 
-  it("should restore session from sessionStorage", () => {
-    mockGetAccessToken.mockReturnValue("stored-token");
-    const storedUser = JSON.stringify({
-      id: "1", username: "dev", displayName: "Developer", roles: ["user"], email: "d@f.g",
-    });
-    vi.mocked(sessionStorage.getItem).mockImplementation((key: string) => {
-      if (key === "farm_user") return storedUser;
-      if (key === "farm_token") return "stored-token";
-      return null;
-    });
+  it("should restore session via getProfile when the access_token cookie is valid", async () => {
+    // FARM-S598: session is restored by calling getProfile() — if the
+    // httpOnly access_token cookie is valid the API returns the user object.
+    const storedUser = {
+      id: "1",
+      username: "dev",
+      displayName: "Developer",
+      roles: ["user"],
+      email: "d@f.g",
+    };
+    mockGetProfile.mockResolvedValueOnce(storedUser);
 
     render(
       <AuthProvider><TestConsumer /></AuthProvider>,
     );
+
+    // Wait for the async restoreSession effect to settle.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
     expect(screen.getByTestId("auth-status").textContent).toBe("authenticated");
     expect(screen.getByTestId("user-name").textContent).toBe("Developer");
   });
@@ -136,8 +162,14 @@ describe("AuthContext", () => {
   it("should report hasRole correctly for non-admin", async () => {
     const user = userEvent.setup();
     mockLogin.mockResolvedValueOnce({
-      user: { id: "2", username: "dev", displayName: "Dev", roles: ["user"], email: "d@f.g" },
-      token: "t", refreshToken: "r",
+      message: "Login successful",
+      user: {
+        id: "2",
+        username: "dev",
+        displayName: "Dev",
+        roles: ["user"],
+        email: "d@f.g",
+      },
     });
 
     render(

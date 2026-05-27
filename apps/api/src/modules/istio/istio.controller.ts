@@ -13,14 +13,18 @@ import {
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
+  ApiHeader,
   ApiOperation,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { IstioService } from "./istio.service";
 import { IstioMetricsService } from "./istio-metrics.service";
 import { PatchWeightsDto } from "./dto/patch-weights.dto";
@@ -38,7 +42,7 @@ import {
  * All routes are under /api/v1/istio and require JWT authentication.
  *
  * Operations that mutate cluster state (weight patching) additionally
- * require the ADMIN role, enforced by RolesGuard.
+ * require the ENVIRONMENT_WRITE permission, enforced by PermissionGuard.
  */
 @ApiTags("Istio")
 @ApiBearerAuth()
@@ -142,9 +146,15 @@ export class IstioController {
    */
   @Patch("virtual-services/:namespace/:name/weights")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RolesGuard)
-  @Roles("admin")
+  @OrgRequired()
+  @UseGuards(OrgRequiredGuard, PermissionGuard)
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  @ApiHeader({
+    name: "x-organization-id",
+    required: true,
+    description: "Organization ID",
+  })
   @ApiOperation({ summary: "Patch VirtualService route weights (admin only)" })
   @ApiQuery({ name: "kubeconfig", required: false })
   @ApiResponse({
@@ -153,7 +163,7 @@ export class IstioController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: "Forbidden - admin role required.",
+    description: "Forbidden - requires ENVIRONMENT_WRITE permission.",
   })
   async patchWeights(
     @Param("namespace") namespace: string,

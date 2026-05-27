@@ -5,6 +5,7 @@ import { ComponentElasticsearchIndexService } from "./component-elasticsearch-in
 import { ElasticsearchIndexStatsService } from "./elasticsearch-index-stats.service";
 import { CatalogService } from "../catalog/catalog.service";
 import { ComponentElasticsearchIndex } from "./entities/component-elasticsearch-index.entity";
+import { OptionalOrgGuard } from "../../common/guards/optional-org.guard";
 
 /**
  * Unit tests for the stats endpoint added in FARM-T403.
@@ -75,7 +76,10 @@ describe("ComponentElasticsearchIndexController (stats)", () => {
         { provide: ElasticsearchIndexStatsService, useValue: statsService },
         { provide: CatalogService, useValue: catalogService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OptionalOrgGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(ComponentElasticsearchIndexController);
   });

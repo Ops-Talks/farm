@@ -20,6 +20,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { AlertingService } from "./alerting.service";
 import { CreateAlertingRuleDto } from "./dto/create-alerting-rule.dto";
@@ -29,15 +30,24 @@ import { AlertingRule } from "./entities/alerting-rule.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 
 /**
  * Controller for managing PromQL-based alerting rules.
  */
 @ApiTags("Alerting Rules")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("alerting-rules")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -69,7 +79,7 @@ export class AlertingController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Create a new alerting rule" })
   @ApiCreatedResponse({
     description: "The alerting rule has been successfully created.",
@@ -137,7 +147,7 @@ export class AlertingController {
    * @returns The updated alerting rule
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Update an alerting rule" })
   @ApiParam({
     name: "id",
@@ -170,7 +180,7 @@ export class AlertingController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Delete an alerting rule" })
   @ApiParam({
     name: "id",

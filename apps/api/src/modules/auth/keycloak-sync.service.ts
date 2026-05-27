@@ -98,9 +98,7 @@ export class KeycloakSyncService {
     @InjectQueue(QUEUE_NAMES.KEYCLOAK_SYNC)
     private readonly keycloakSyncQueue: Queue<KeycloakSyncJobData> | null,
   ) {
-    const jwtSecret =
-      this.configService.get<string>("auth.jwtSecret") ??
-      "super-secret-key-change-me-in-production";
+    const jwtSecret = this.configService.get<string>("auth.jwtSecret") ?? "";
     this.encryptionKey = crypto.createHash("sha256").update(jwtSecret).digest();
   }
 

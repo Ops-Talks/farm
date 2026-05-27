@@ -12,10 +12,14 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { HelmService } from "./helm.service";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { HelmRelease } from "./helm-release.interface";
@@ -76,8 +80,14 @@ export class HelmController {
    * @returns Sync result with count and any error messages
    */
   @Post("releases/sync")
-  @UseGuards(RolesGuard)
-  @Roles("admin")
+  @OrgRequired()
+  @UseGuards(OrgRequiredGuard, PermissionGuard)
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
+  @ApiHeader({
+    name: "x-organization-id",
+    required: true,
+    description: "Organization ID",
+  })
   @ApiOperation({
     summary: "Sync Helm releases into Farm deployment records (admin only)",
   })
@@ -92,7 +102,7 @@ export class HelmController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: "Forbidden - Requires admin role.",
+    description: "Forbidden - Requires ENVIRONMENT_WRITE permission.",
     type: ErrorResponseDto,
   })
   async syncReleases(

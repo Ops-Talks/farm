@@ -8,9 +8,5 @@ metadata:
 data:
   {{- range $key := (.Values.web.env | keys | sortAlpha) }}
   {{- $value := get $.Values.web.env $key }}
-  {{- if and (eq $key "API_INTERNAL_URL") (not $value) }}
-  {{ $key }}: {{ include "farm.apiInternalUrl" $ | quote }}
-  {{- else }}
   {{ $key }}: {{ $value | quote }}
-  {{- end }}
   {{- end }}

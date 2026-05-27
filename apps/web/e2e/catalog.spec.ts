@@ -52,15 +52,19 @@ async function mockCatalogRoutes(
 ) {
   // Catch-all registered FIRST so specific routes (registered after) take
   // priority. Playwright resolves routes in LIFO order — last registered wins.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  // mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
-
-  // Deployments for this component (detail page sidebar)
+    });
+  });
   await page.route(
     `**/api/v1/deployments/latest?componentId=${MOCK_COMPONENT.id}`,
     (route) =>

@@ -31,13 +31,19 @@ test("user can log in with valid credentials and is redirected to dashboard", as
 }) => {
   // Stub any dashboard API calls that fire after redirect — registered FIRST
   // so the specific login route (registered after) has higher LIFO priority.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs continue to the next handler (or real server) so that
+  // the login page renders correctly before credentials are submitted.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.continue();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   // Stub endpoints that require a specific shape to avoid render crashes.
   await page.route("**/api/v1/setup/checklist", (route) =>

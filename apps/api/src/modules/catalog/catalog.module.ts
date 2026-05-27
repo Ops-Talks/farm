@@ -16,6 +16,7 @@ import { ContainerImageSyncScheduler } from "./processors/container-image-sync.s
 import { RegistryModule } from "../registry/registry.module";
 import { FinOpsModule } from "../finops/finops.module";
 import { PipelinesModule } from "../pipelines/pipelines.module";
+import { TenantCacheModule } from "../../common/cache/cache.module";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -35,6 +36,7 @@ const isTest = process.env.NODE_ENV === "test";
         ]),
     FinOpsModule,
     PipelinesModule,
+    TenantCacheModule,
   ],
   controllers: [CatalogController],
   providers: [

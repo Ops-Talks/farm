@@ -65,6 +65,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/environment-requests?status=pending")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -80,6 +81,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/environment-requests/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect((getRes.body as EnvRequestResponse).name).toBe(
@@ -90,6 +92,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     const approveRes = await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/approve`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ comment: "Looks good" })
       .expect(200);
 
@@ -102,6 +105,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     const expireRes = await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/expire`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect((expireRes.body as EnvRequestResponse).status).toBe("expired");
@@ -125,6 +129,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     const rejectRes = await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/reject`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ comment: "Too expensive" })
       .expect(200);
 
@@ -151,6 +156,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/approve`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({})
       .expect(200);
 
@@ -158,6 +164,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/environment-requests/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ name: "new-name" })
       .expect(400);
   });
@@ -180,6 +187,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/reject`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({})
       .expect(200);
 
@@ -187,6 +195,7 @@ describe("Environment Requests CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/v1/environment-requests/${created.id}/approve`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({})
       .expect(400);
   });
@@ -208,12 +217,14 @@ describe("Environment Requests CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/environment-requests/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Verify deletion
     await request(app.getHttpServer())
       .get(`/api/v1/environment-requests/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 });

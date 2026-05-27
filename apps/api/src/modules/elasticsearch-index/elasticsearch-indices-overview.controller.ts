@@ -46,7 +46,7 @@ export interface OverviewComponentGroup {
  * Designed to be cheap regardless of fleet size:
  *   - Single TypeORM query with a left join on `component` (no N+1).
  *   - Stats fetched in batches per unique `esUrl`, reusing connections.
- *   - Multi-tenant aware via the `OrgContextInterceptor`: when an
+ *   - Multi-tenant aware via the request context: when an
  *     `X-Organization-Id` header is provided and validated, the result is
  *     scoped to that organization; otherwise the global view is returned.
  */

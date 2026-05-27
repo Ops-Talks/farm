@@ -11,10 +11,14 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SearchIndexService } from "./search-index.service";
 
@@ -24,7 +28,13 @@ import { SearchIndexService } from "./search-index.service";
  */
 @ApiTags("Search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("search")
 export class SearchReindexController {
   constructor(private readonly searchIndexService: SearchIndexService) {}
@@ -36,7 +46,7 @@ export class SearchReindexController {
    * Only users with the "admin" role may invoke this endpoint.
    */
   @Post("reindex")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Reindex all catalog entities into Elasticsearch",
@@ -58,7 +68,10 @@ export class SearchReindexController {
     },
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
-  @ApiResponse({ status: 403, description: "Forbidden — admin role required." })
+  @ApiResponse({
+    status: 403,
+    description: "Forbidden — ORG_MANAGE permission required.",
+  })
   async reindex(
     @Req() req: RequestWithOrg,
   ): Promise<{ message: string; indexed: number }> {

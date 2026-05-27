@@ -1,35 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-// Used only for the /admin/:path* rewrite (Bull Board, which bypasses the NestJS
-// /api global prefix). The /api/:path* proxy is handled by the Next.js Proxy at
-// src/proxy.ts so that API_INTERNAL_URL is resolved at runtime, not baked into
-// the routes manifest at build time.
-const apiBaseUrl = (
-  process.env.API_INTERNAL_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api"
-).replace(/\/api$/, "");
-
-// Content Security Policy directive string.
-// Uses 'unsafe-inline' and 'unsafe-eval' in script-src because Next.js requires
-// them for hydration and dev mode HMR. Tighten with nonces or hashes once a
-// nonce-based approach is wired through the middleware.
-// connect-src includes ws:/wss: to allow the Socket.IO client to open WebSocket
-// connections during development and in production.
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "connect-src 'self' ws: wss: http://localhost:* https://*",
-  "frame-src 'none'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-].join("; ");
-
 const nextConfig: NextConfig = {
   output: "standalone",
   // Required for monorepo: trace file dependencies from the repo root so that
@@ -43,17 +14,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply security headers to every route.
-        source: "/(.*)",
+        // Scope security headers to all application routes but skip static
+        // asset paths. _next/static and _next/image files are immutable,
+        // content-hashed bundles — headers add overhead there.
+        // favicon.ico is excluded for the same reason.
+        // Reference: https://nextjs.org/docs/app/guides/content-security-policy
+        //
+        // NOTE: Content-Security-Policy is intentionally absent here.
+        // CSP must be dynamic (dev / E2E = permissive, prod = strict) and
+        // next.config.ts headers() is evaluated at build time, so it cannot
+        // read runtime env vars like PLAYWRIGHT_E2E. CSP is set in
+        // src/middleware.ts which executes at request time.
+        source: "/((?!_next/static|_next/image|favicon\\.ico).*)",
         headers: [
-          // CSP is intentionally set in report-only mode so violations are
-          // surfaced in the browser console without blocking the app.
-          // Once the policy has been validated in production, switch the key
-          // to "Content-Security-Policy" to enforce it.
-          {
-            key: "Content-Security-Policy-Report-Only",
-            value: contentSecurityPolicy,
-          },
           // Enforce HTTPS for one year, including all subdomains.
           {
             key: "Strict-Transport-Security",
@@ -81,16 +54,6 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=()",
           },
         ],
-      },
-    ];
-  },
-  async rewrites() {
-    return [
-      {
-        // Bull Board is mounted at /admin/queues on the API server — it does
-        // not carry the /api global prefix used by NestJS controllers.
-        source: "/admin/:path*",
-        destination: `${apiBaseUrl}/admin/:path*`,
       },
     ];
   },

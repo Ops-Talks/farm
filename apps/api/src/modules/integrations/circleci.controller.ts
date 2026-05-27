@@ -14,11 +14,15 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { CircleCIService, CircleCIPipeline } from "./circleci.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
@@ -27,7 +31,13 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("CircleCI")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("circleci")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -86,7 +96,7 @@ export class CircleCIController {
    * @returns The triggered pipeline object
    */
   @Post("pipelines/:slug/trigger")
-  @Roles("admin")
+  @RequiresPermission(Permission.PIPELINE_TRIGGER)
   @ApiOperation({ summary: "Trigger a CircleCI pipeline" })
   @ApiQuery({
     name: "branch",

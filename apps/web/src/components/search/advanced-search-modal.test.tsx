@@ -316,4 +316,70 @@ describe("AdvancedSearchModal", () => {
     fireEvent.change(input, { target: { value: "new-query" } });
     expect(setQuery).toHaveBeenCalledWith("new-query");
   });
+
+  // ── XSS sanitization via DOMPurify (FARM-S600) ──────────────────────────
+
+  it("strips <script> tags from highlight markup — no script element rendered", () => {
+    // Simulate a malicious server response where the highlight fragment
+    // contains a raw <script> tag. DOMPurify must strip it entirely.
+    const maliciousResult = makeResult({
+      hits: [
+        {
+          id: "xss-1",
+          type: "component",
+          name: "safe-service",
+          url: "/catalog/xss-1",
+          score: 1.0,
+          highlights: {
+            name: ["<script>alert(1)</script>safe-service"],
+          },
+        },
+      ],
+      total: 1,
+      totalPages: 1,
+    });
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({ query: "safe", isLoading: false, result: maliciousResult }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+
+    // No <script> element must exist anywhere in the rendered output.
+    const scriptEl = document.querySelector("script[data-injected]");
+    expect(scriptEl).toBeNull();
+    // Verify via raw HTML: the tag must have been stripped.
+    const resultsPane = document.getElementById("advanced-search-results");
+    expect(resultsPane?.innerHTML).not.toContain("<script");
+  });
+
+  it("strips event-handler attributes from highlight markup", () => {
+    // Simulate a highlight fragment that tries to inject an onerror handler.
+    const xssResult = makeResult({
+      hits: [
+        {
+          id: "xss-2",
+          type: "component",
+          name: "my-service",
+          url: "/catalog/xss-2",
+          score: 1.0,
+          highlights: {
+            name: ['<em>my</em>-service<img src="x" onerror="alert(1)">'],
+          },
+        },
+      ],
+      total: 1,
+      totalPages: 1,
+    });
+    mockUseFacetedSearch.mockReturnValue(
+      makeHookState({ query: "my", isLoading: false, result: xssResult }),
+    );
+    render(<AdvancedSearchModal open={true} onClose={onClose} />);
+
+    const resultsPane = document.getElementById("advanced-search-results");
+    // onerror must have been stripped by DOMPurify.
+    expect(resultsPane?.innerHTML).not.toContain("onerror");
+    // The <strong> highlight wrapper for "my" must still be present.
+    const strongEl = resultsPane?.querySelector("strong");
+    expect(strongEl).toBeTruthy();
+    expect(strongEl?.textContent).toBe("my");
+  });
 });

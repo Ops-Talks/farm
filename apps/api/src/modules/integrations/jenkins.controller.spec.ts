@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { JenkinsController } from "./jenkins.controller";
 import { JenkinsService } from "./jenkins.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("JenkinsController", () => {
   let controller: JenkinsController;
@@ -34,7 +36,12 @@ describe("JenkinsController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [JenkinsController],
       providers: [{ provide: JenkinsService, useValue: jenkinsService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<JenkinsController>(JenkinsController);
   });

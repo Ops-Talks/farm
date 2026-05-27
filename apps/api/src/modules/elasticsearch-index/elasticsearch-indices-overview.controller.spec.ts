@@ -3,6 +3,7 @@ import { ElasticsearchIndicesOverviewController } from "./elasticsearch-indices-
 import { ComponentElasticsearchIndexService } from "./component-elasticsearch-index.service";
 import { ElasticsearchIndexStatsService } from "./elasticsearch-index-stats.service";
 import { ComponentElasticsearchIndex } from "./entities/component-elasticsearch-index.entity";
+import { RolesGuard } from "../../common/guards/roles.guard";
 
 /**
  * Unit tests for the admin overview controller (FARM-T407).
@@ -43,7 +44,10 @@ describe("ElasticsearchIndicesOverviewController", () => {
         { provide: ComponentElasticsearchIndexService, useValue: indexService },
         { provide: ElasticsearchIndexStatsService, useValue: statsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(ElasticsearchIndicesOverviewController);
   });

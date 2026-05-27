@@ -328,7 +328,7 @@ describe("PluginRenderer", () => {
       globalThis.fetch = originalFetch;
     });
 
-    it("forwards a valid farm:api-request to /api/plugin-proxy with correct body", async () => {
+    it("calls the API directly with a valid farm:api-request", async () => {
       const responsePayload = { items: [{ id: "1" }] };
       globalThis.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
@@ -351,10 +351,9 @@ describe("PluginRenderer", () => {
 
       await waitFor(() => {
         expect(globalThis.fetch).toHaveBeenCalledWith(
-          "/api/plugin-proxy",
+          "/api/v1/catalog",
           expect.objectContaining({
-            method: "POST",
-            body: expect.stringContaining("/api/v1/catalog"),
+            method: "GET",
           }),
         );
       });

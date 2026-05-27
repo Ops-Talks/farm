@@ -2,6 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { SearchReindexController } from "./search-reindex.controller";
 import { SearchIndexService } from "./search-index.service";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 /**
  * Unit tests for SearchReindexController.
@@ -24,7 +26,12 @@ describe("SearchReindexController", () => {
           useValue: mockSearchIndexService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SearchReindexController>(SearchReindexController);
   });

@@ -33,9 +33,7 @@ export class IntegrationCredentialService {
     private readonly credentialRepository: Repository<IntegrationCredential>,
     private readonly configService: ConfigService,
   ) {
-    const jwtSecret =
-      this.configService.get<string>("auth.jwtSecret") ??
-      "super-secret-key-change-me-in-production";
+    const jwtSecret = this.configService.get<string>("auth.jwtSecret") ?? "";
     // Derive a 32-byte key from the JWT secret using SHA-256.
     this.encryptionKey = crypto.createHash("sha256").update(jwtSecret).digest();
   }

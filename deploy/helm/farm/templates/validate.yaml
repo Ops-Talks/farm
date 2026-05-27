@@ -50,3 +50,18 @@
 {{- if and .Values.web.networkPolicy.enabled (not .Values.web.networkPolicy.cniConfirmed) -}}
   {{- fail "NetworkPolicy requires a CNI that enforces it (Calico, Cilium, Canal, Weave Net). Flannel silently ignores NetworkPolicy resources. Set networkPolicy.enabled=false if your CNI does not support it, or suppress this check with web.networkPolicy.cniConfirmed=true." -}}
 {{- end -}}
+{{- /*
+  Ingress hostname guard.
+  When ingress is enabled, at least one of ingress.hostname, ingress.api.hostname,
+  or ingress.web.hostname must be set. An enabled Ingress with no hostname renders
+  resources with an empty host rule, which silently matches all requests and
+  causes unexpected routing in multi-tenant clusters.
+*/ -}}
+{{- if .Values.ingress.enabled -}}
+  {{- $hasShared := .Values.ingress.hostname -}}
+  {{- $hasApi := .Values.ingress.api.hostname -}}
+  {{- $hasWeb := .Values.ingress.web.hostname -}}
+  {{- if not (or $hasShared $hasApi $hasWeb) -}}
+    {{- fail "CONFIGURATION: ingress.enabled is true but no hostname is configured. Set ingress.hostname (shared) or ingress.api.hostname / ingress.web.hostname for subdomain routing." -}}
+  {{- end -}}
+{{- end -}}

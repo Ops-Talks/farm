@@ -90,19 +90,30 @@ describe("api-client", () => {
       expect(getAccessToken()).toBeNull();
     });
 
-    it("should persist tokens to sessionStorage", () => {
+    it("setTokens stores tokens in memory only (not sessionStorage)", () => {
+      // FARM-S598: tokens are no longer written to sessionStorage to eliminate
+      // the XSS attack vector. Only in-memory state is set.
       setTokens("access-123", "refresh-456", "admin");
-      expect(sessionStorage.setItem).toHaveBeenCalledWith("farm_token", "access-123");
-      expect(sessionStorage.setItem).toHaveBeenCalledWith("farm_refresh", "refresh-456");
-      expect(sessionStorage.setItem).toHaveBeenCalledWith("farm_username", "admin");
+      expect(getAccessToken()).toBe("access-123");
+      expect(sessionStorage.setItem).not.toHaveBeenCalledWith(
+        "farm_token",
+        expect.any(String),
+      );
+      expect(sessionStorage.setItem).not.toHaveBeenCalledWith(
+        "farm_refresh",
+        expect.any(String),
+      );
     });
 
-    it("should remove tokens from sessionStorage on clear", () => {
+    it("clearTokens removes in-memory state only (not sessionStorage token keys)", () => {
+      // FARM-S598: token keys are never written to sessionStorage, so there is
+      // nothing to remove from there either.
       setTokens("t", "r", "u");
       clearTokens();
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith("farm_token");
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith("farm_refresh");
-      expect(sessionStorage.removeItem).toHaveBeenCalledWith("farm_username");
+      expect(getAccessToken()).toBeNull();
+      expect(sessionStorage.removeItem).not.toHaveBeenCalledWith("farm_token");
+      expect(sessionStorage.removeItem).not.toHaveBeenCalledWith("farm_refresh");
+      expect(sessionStorage.removeItem).not.toHaveBeenCalledWith("farm_username");
     });
   });
 
@@ -126,18 +137,44 @@ describe("api-client", () => {
   });
 
   describe("auth", () => {
-    it("should call login endpoint", async () => {
-      const response = { user: { id: "1", username: "admin" }, token: "t", refreshToken: "r" };
+    it("should call login endpoint and receive message + user (no tokens in body)", async () => {
+      // FARM-S598: tokens are delivered via httpOnly Set-Cookie headers.
+      const response = {
+        message: "Login successful",
+        user: { id: "1", username: "admin" },
+      };
       mockFetch.mockReturnValueOnce(jsonResponse(response));
       const result = await auth.login({ username: "admin", password: "pass" });
       expect(result).toEqual(response);
-      expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/login", expect.objectContaining({ method: "POST" }));
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/login",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
 
-    it("should call refresh endpoint", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ token: "new-t", refreshToken: "new-r" }));
-      const result = await auth.refresh({ username: "admin", refreshToken: "old-r" });
-      expect(result.token).toBe("new-t");
+    it("should call refresh endpoint without a request body", async () => {
+      // FARM-S598: no body needed — the browser sends the refresh_token cookie.
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "Token refreshed" }));
+      const result = await auth.refresh();
+      expect(result.message).toBe("Token refreshed");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/refresh",
+        expect.objectContaining({ method: "POST" }),
+      );
+      const callOptions = mockFetch.mock.calls[0][1] as RequestInit;
+      expect(callOptions.body).toBeUndefined();
+    });
+
+    it("should call logout endpoint", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ message: "Logged out successfully" }),
+      );
+      const result = await auth.logout();
+      expect(result.message).toBe("Logged out successfully");
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/v1/auth/logout",
+        expect.objectContaining({ method: "POST" }),
+      );
     });
 
     it("should call getUsers endpoint", async () => {
@@ -374,11 +411,11 @@ describe("api-client", () => {
           401,
         ))
         .mockReturnValueOnce(
-          // Simulated token-refresh response
+          // Cookie-based refresh succeeds; body is not parsed by tryRefreshToken.
           Promise.resolve({
             ok: true,
             status: 200,
-            json: () => Promise.resolve({ token: "new-tok", refreshToken: "new-ref" }),
+            json: () => Promise.resolve({ message: "Token refreshed" }),
           }),
         )
         .mockReturnValueOnce(jsonResponse([]));
@@ -710,11 +747,21 @@ describe("api-client", () => {
   // ─── Extended error handling ──────────────────────────────────────────────
 
   describe("error handling extended", () => {
-    it("should throw ApiError(401) when response is 401 and no refresh token is stored", async () => {
-      // No tokens set → getRefreshData() returns null → refresh skipped → falls through to !res.ok throw
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({ statusCode: 401, timestamp: "t", path: "/v1/auth/users", message: "Unauthorized" }, 401),
-      );
+    it("should throw ApiError(401) when the cookie-based refresh also fails after a 401", async () => {
+      // FARM-S598: refresh is always attempted on 401 (even without in-memory
+      // tokens) because httpOnly cookies may be present. Here the refresh also
+      // fails, so ApiError(401) is propagated to the caller.
+      mockFetch
+        .mockReturnValueOnce(
+          jsonResponse(
+            { statusCode: 401, timestamp: "t", path: "/v1/auth/users", message: "Unauthorized" },
+            401,
+          ),
+        )
+        // Cookie-based refresh attempt — also fails
+        .mockReturnValueOnce(
+          Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({}) } as Response),
+        );
       const err = await auth.getUsers().catch((e) => e);
       expect(err).toBeInstanceOf(ApiError);
       expect(err.status).toBe(401);
@@ -814,14 +861,11 @@ describe("api-client", () => {
   // ─── Token storage (extra branch) ─────────────────────────────────────────
 
   describe("token storage extra branches", () => {
-    it("should read access token from sessionStorage when in-memory token is null", () => {
-      // clearTokens() already called in beforeEach → accessToken is null
-      // Now place token in sessionStorage backing store
-      sessionStorage.setItem("farm_token", "session-stored-token");
-      const token = getAccessToken();
-      expect(token).toBe("session-stored-token");
-      // cleanup
-      sessionStorage.removeItem("farm_token");
+    it("getAccessToken returns null when no token has been set in memory", () => {
+      // clearTokens() already called in beforeEach — no in-memory token.
+      // FARM-S598: tokens are no longer read from sessionStorage, so null is
+      // returned even if a stale sessionStorage entry exists.
+      expect(getAccessToken()).toBeNull();
     });
   });
 

@@ -58,30 +58,23 @@ describe("JwtStrategy", () => {
   });
 });
 
-describe("JwtStrategy — fallback secret", () => {
-  let strategy: JwtStrategy;
-
-  it("should use the fallback secret when configService returns undefined", async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        JwtStrategy,
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn().mockReturnValue(undefined),
+describe("JwtStrategy — missing secret", () => {
+  it("throws when configService returns undefined (no insecure fallback)", async () => {
+    // passport-jwt requires a non-empty secret or key. With the hardcoded
+    // fallback removed, supplying undefined must now result in an error at
+    // construction time rather than silently using an insecure default.
+    await expect(
+      Test.createTestingModule({
+        providers: [
+          JwtStrategy,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn().mockReturnValue(undefined),
+            },
           },
-        },
-      ],
-    }).compile();
-
-    strategy = module.get<JwtStrategy>(JwtStrategy);
-    expect(strategy).toBeDefined();
-
-    const payload = { sub: "u1", username: "alice", roles: ["user"] };
-    expect(strategy.validate(payload)).toEqual({
-      userId: "u1",
-      username: "alice",
-      roles: ["user"],
-    });
+        ],
+      }).compile(),
+    ).rejects.toThrow();
   });
 });

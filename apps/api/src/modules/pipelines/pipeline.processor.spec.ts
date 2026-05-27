@@ -1879,13 +1879,16 @@ describe("PipelineProcessor — additional branches", () => {
       expect(body.get("client_id")).toBe("farm-client");
     });
 
-    it("should use the default jwtSecret when JWT_SECRET env is not set", async () => {
-      // Ensure JWT_SECRET is unset so the ?? fallback is used.
+    it("derives the encryption key from an empty string when JWT_SECRET env is not set", async () => {
+      // With the insecure fallback removed, an absent JWT_SECRET produces an
+      // empty-string key (process.env.JWT_SECRET ?? ""). The credential must
+      // have been encrypted with the same empty-string-derived key for
+      // decryption to succeed.
       delete process.env.JWT_SECRET;
 
       const encryptedValue = buildEncryptedCredential(
         mockPayload,
-        "super-secret-key-change-me-in-production",
+        "", // matches process.env.JWT_SECRET ?? ""
       );
 
       const credRepo = {

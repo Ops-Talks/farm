@@ -1,7 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 
 interface ComponentResponse {
   id: string;
@@ -301,6 +305,7 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/elasticsearch/indices")
       .set("Authorization", `Bearer ${adminToken}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
     expect(res.body).toEqual([]);
   });
@@ -321,7 +326,10 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
       .post("/api/v1/auth/login")
       .send({ username: regular.username, password: regular.password })
       .expect(200);
-    const regularToken = (loginRes.body as { token: string }).token;
+    const regularToken = extractCookieValue(
+      loginRes.headers["set-cookie"],
+      "access_token",
+    );
 
     await request(app.getHttpServer())
       .get("/api/v1/elasticsearch/indices")
@@ -361,6 +369,7 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
       const res = await request(app.getHttpServer())
         .get("/api/v1/elasticsearch/indices")
         .set("Authorization", `Bearer ${adminToken}`)
+        .set("X-Organization-Id", organizationId)
         .expect(200);
 
       const body = res.body as Array<{
@@ -423,6 +432,7 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
         const res = await request(app.getHttpServer())
           .get("/api/v1/elasticsearch/indices")
           .set("Authorization", `Bearer ${adminToken}`)
+          .set("X-Organization-Id", organizationId)
           .expect(200);
 
         const body = res.body as Array<{

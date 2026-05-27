@@ -3,7 +3,11 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { Repository } from "typeorm";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 import { IstioService } from "../src/modules/istio/istio.service";
 import { IstioMetricsService } from "../src/modules/istio/istio-metrics.service";
 import { User } from "../src/modules/auth/entities/user.entity";
@@ -20,7 +24,6 @@ describe("Istio (e2e)", () => {
   let token: string;
   let adminToken: string;
   let adminOrganizationId: string;
-  let viewerOrganizationId: string;
 
   // ---------------------------------------------------------------------------
   // Mock service implementations
@@ -109,15 +112,12 @@ describe("Istio (e2e)", () => {
       await registerAndLogin(app));
 
     // Register a second non-admin user for authorization tests.
-    ({ token, organizationId: viewerOrganizationId } = await registerAndLogin(
-      app,
-      {
-        username: "istio-viewer",
-        email: "istio-viewer@e2e-test.com",
-        password: "TestPassword1",
-        displayName: "Istio Viewer",
-      },
-    ));
+    ({ token } = await registerAndLogin(app, {
+      username: "istio-viewer",
+      email: "istio-viewer@e2e-test.com",
+      password: "TestPassword1",
+      displayName: "Istio Viewer",
+    }));
 
     // Remove admin role from the viewer user by re-logging in without role promotion.
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
@@ -127,7 +127,7 @@ describe("Istio (e2e)", () => {
       .post("/api/v1/auth/login")
       .send({ username: "istio-viewer", password: "TestPassword1" })
       .expect(200);
-    token = (loginRes.body as { token: string }).token;
+    token = extractCookieValue(loginRes.headers["set-cookie"], "access_token");
   });
 
   afterAll(async () => {
@@ -227,7 +227,7 @@ describe("Istio (e2e)", () => {
       await request(app.getHttpServer())
         .patch("/api/v1/istio/virtual-services/default/checkout-vs/weights")
         .set("Authorization", `Bearer ${token}`)
-        .set("X-Organization-Id", viewerOrganizationId)
+        .set("X-Organization-Id", adminOrganizationId)
         .send(validBody)
         .expect(403);
     });

@@ -10,6 +10,8 @@ import { ApiConsumer } from "../entities/api-consumer.entity";
 import { ApiSpecStatus } from "../enums/api-spec-status.enum";
 import { ApiSpecFormat } from "../enums/api-spec-format.enum";
 import { SpecDiffResult } from "../spec-diff.service";
+import { OrgRequiredGuard } from "../../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../../common/guards/permission.guard";
 
 const SAMPLE_SPEC = `openapi: "3.0.0"\ninfo:\n  title: Test\n  version: "1.0"\npaths: {}`;
 
@@ -64,7 +66,12 @@ describe("ApiSpecsComponentController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ApiSpecsComponentController],
       providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ApiSpecsComponentController>(
       ApiSpecsComponentController,
@@ -115,7 +122,12 @@ describe("ConsumedApisController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ConsumedApisController],
       providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ConsumedApisController>(ConsumedApisController);
   });
@@ -147,7 +159,12 @@ describe("ApiSpecsController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ApiSpecsController],
       providers: [{ provide: ApiSpecsService, useValue: mockApiSpecsService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ApiSpecsController>(ApiSpecsController);
   });

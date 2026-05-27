@@ -3,7 +3,11 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 import { UserOrganization } from "../src/modules/organization/entities/user-organization.entity";
 import { OrgRole } from "@farm/types";
 
@@ -57,7 +61,10 @@ describe("RBAC enforcement (e2e)", () => {
       .post("/api/v1/auth/login")
       .send({ username: "rbac-viewer", password: "TestPassword1" })
       .expect(200);
-    viewerToken = (viewerLogin.body as { token: string }).token;
+    viewerToken = extractCookieValue(
+      viewerLogin.headers["set-cookie"],
+      "access_token",
+    );
 
     // Retrieve viewer user id
     const viewerMe = await request(app.getHttpServer())

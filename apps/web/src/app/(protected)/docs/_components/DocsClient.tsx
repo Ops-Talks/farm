@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import { docs, catalog, ApiError } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import type {
@@ -189,6 +190,27 @@ export function DocsClient() {
   const componentMap = useMemo(
     () => new Map(components.map((c) => [c.id, c])),
     [components],
+  );
+
+  // Sanitize server-rendered HTML to prevent XSS from any malicious content
+  // the API response might contain. isomorphic-dompurify works in both
+  // Node.js (SSR) and browser environments.
+  // Only the tags and attributes required to render Markdown output are
+  // permitted; event-handler attributes (onerror, onclick, …) are stripped.
+  const sanitizedHtml = useMemo(
+    () =>
+      DOMPurify.sanitize(renderedHtml, {
+        ALLOWED_TAGS: [
+          "h1", "h2", "h3", "h4", "h5", "h6",
+          "p", "ul", "ol", "li", "blockquote",
+          "pre", "code", "strong", "em", "a",
+          "img", "table", "thead", "tbody", "tr",
+          "th", "td", "hr", "br", "span", "div",
+        ],
+        ALLOWED_ATTR: ["href", "src", "alt", "class", "id", "target", "rel"],
+        FORCE_BODY: true,
+      }),
+    [renderedHtml],
   );
 
   if (loading) {
@@ -420,7 +442,7 @@ export function DocsClient() {
                 {/* Rendered content */}
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: renderedHtml }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                 />
               </div>
             )}

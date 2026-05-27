@@ -18,6 +18,7 @@ import { User } from "./entities/user.entity";
 import { PasswordReset } from "./entities/password-reset.entity";
 import { Organization } from "../organization/entities/organization.entity";
 import { UserOrganization } from "../organization/entities/user-organization.entity";
+import { BCRYPT_ROUNDS } from "../../common/constants/bcrypt";
 import { AuditLogService } from "../audit-log/audit-log.service";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { NotificationJobData } from "../../common/queues/notification.processor";
@@ -340,7 +341,7 @@ export class UserManagementService {
     if (!user) throw new NotFoundException("User not found");
 
     const tempPassword = randomBytes(9).toString("base64").slice(0, 12);
-    const tempPasswordHash = await bcrypt.hash(tempPassword, 10);
+    const tempPasswordHash = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
     const expiresAt = new Date(Date.now() + TEMP_PASSWORD_TTL_MS);
 
     const reset = this.passwordResetRepository.create({

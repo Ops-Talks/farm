@@ -86,13 +86,19 @@ async function mockPipelineRoutes(
   );
 
   // --- 1. Catch-all (lowest priority — registered first) -------------------
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  //     Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  //     mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   // --- 2. Runs list glob (matches /runs and /runs?status=...) ---------------
   // Must be registered BEFORE the stats route so that the more-specific stats

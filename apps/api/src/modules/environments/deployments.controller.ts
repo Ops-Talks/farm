@@ -19,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { DeploymentsService } from "./deployments.service";
 import { CreateDeploymentDto } from "./dto/create-deployment.dto";
@@ -32,15 +33,24 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { ListDeploymentsQueryDto } from "./dto/list-deployments-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 
 /**
  * Controller for managing component deployments to environments.
  */
 @ApiTags("Deployments")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("deployments")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -72,7 +82,7 @@ export class DeploymentsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Record a new deployment" })
   @ApiCreatedResponse({
     description: "The deployment has been successfully recorded.",
@@ -226,7 +236,7 @@ export class DeploymentsController {
    * @returns The updated deployment
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Update deployment status" })
   @ApiParam({
     name: "id",

@@ -22,6 +22,7 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { EnvironmentRequestService } from "./environment-request.service";
 import { CreateEnvironmentRequestDto } from "./dto/create-environment-request.dto";
@@ -32,8 +33,11 @@ import { EnvironmentRequest } from "./entities/environment-request.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
 /**
@@ -42,7 +46,13 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Environment Requests")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("environment-requests")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -195,7 +205,7 @@ export class EnvironmentRequestController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Delete an environment request" })
   @ApiParam({
     name: "id",
@@ -223,7 +233,7 @@ export class EnvironmentRequestController {
    */
   @Post(":id/approve")
   @HttpCode(HttpStatus.OK)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Approve an environment request" })
   @ApiParam({
     name: "id",
@@ -260,7 +270,7 @@ export class EnvironmentRequestController {
    */
   @Post(":id/reject")
   @HttpCode(HttpStatus.OK)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Reject an environment request" })
   @ApiParam({
     name: "id",
@@ -295,7 +305,7 @@ export class EnvironmentRequestController {
    */
   @Post(":id/expire")
   @HttpCode(HttpStatus.OK)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Expire an active environment request" })
   @ApiParam({
     name: "id",

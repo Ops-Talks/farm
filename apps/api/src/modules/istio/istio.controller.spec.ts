@@ -1,11 +1,14 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { ExecutionContext } from "@nestjs/common";
+import { ExecutionContext, ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { IstioController } from "./istio.controller";
 import { IstioService } from "./istio.service";
 import { IstioMetricsService } from "./istio-metrics.service";
-import { RolesGuard } from "../../common/guards/roles.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { Permission } from "@farm/types";
+import { REQUIRES_PERMISSION_KEY } from "../../common/decorators/requires-permission.decorator";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -93,6 +96,8 @@ describe("IstioController", () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(OrgRequiredGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -204,24 +209,34 @@ describe("IstioController", () => {
       );
     });
 
-    it("is protected by RolesGuard requiring admin role", () => {
-      // Verify the guard metadata on the method.
+    it("is protected by PermissionGuard requiring ENVIRONMENT_WRITE permission", () => {
+      // Verify the guard metadata on the method via PermissionGuard.
       const reflector = new Reflector();
-      const guard = new RolesGuard(reflector);
+      const guard = new PermissionGuard(reflector);
 
-      // Build a minimal execution context that simulates a non-admin user.
+      // Build a minimal execution context that simulates a user with no orgRole
+      // (i.e., not a member of any organization, so permission check fails).
       const mockContext = {
         getHandler: () => IstioController.prototype.patchWeights,
         getClass: () => IstioController,
         switchToHttp: () => ({
           getRequest: () => ({
             user: { userId: "1", username: "user", roles: ["viewer"] },
+            orgRole: undefined,
           }),
         }),
       } as unknown as ExecutionContext;
 
-      const canActivate = guard.canActivate(mockContext);
-      expect(canActivate).toBe(false);
+      // PermissionGuard throws ForbiddenException when a permission is required
+      // but the request carries no orgRole that satisfies it.
+      expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
+
+      // Confirm the required permission annotation is ENVIRONMENT_WRITE.
+      const requiredPermission = reflector.getAllAndOverride<Permission>(
+        REQUIRES_PERMISSION_KEY,
+        [IstioController.prototype.patchWeights, IstioController],
+      );
+      expect(requiredPermission).toBe(Permission.ENVIRONMENT_WRITE);
     });
   });
 
@@ -367,7 +382,10 @@ describe("IstioController — additional branch coverage", () => {
         { provide: IstioService, useValue: mockIstioService },
         { provide: IstioMetricsService, useValue: mockIstioMetricsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IstioController>(IstioController);
     jest.clearAllMocks();

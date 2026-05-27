@@ -20,10 +20,14 @@ import {
   ApiOkResponse,
   ApiNoContentResponse,
   ApiResponse,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { TagPolicyService } from "./tag-policy.service";
 import { KyvernoExportService } from "./kyverno-export.service";
@@ -40,7 +44,13 @@ import { ComplianceSummaryDto } from "./dto/compliance-summary.dto";
  */
 @ApiTags("Tag Policies")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("tag-policies")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -159,7 +169,7 @@ export class TagPolicyController {
    * Requires the "admin" role.
    */
   @Post()
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a new tag governance policy" })
   @ApiCreatedResponse({
@@ -201,7 +211,7 @@ export class TagPolicyController {
    * Requires the "admin" role.
    */
   @Get(":id/export/kyverno")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({
     summary: "Export a tag policy as a Kyverno ClusterPolicy YAML manifest",
   })
@@ -233,7 +243,7 @@ export class TagPolicyController {
    * Requires the "admin" role.
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Update a tag policy" })
   @ApiParam({ name: "id", description: "Tag policy UUID" })
   @ApiOkResponse({
@@ -257,7 +267,7 @@ export class TagPolicyController {
    * Requires the "admin" role.
    */
   @Delete(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete a tag policy" })
   @ApiParam({ name: "id", description: "Tag policy UUID" })

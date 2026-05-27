@@ -2,6 +2,8 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { IntegrationCredentialController } from "./integration-credential.controller";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("IntegrationCredentialController", () => {
   let controller: IntegrationCredentialController;
@@ -39,7 +41,12 @@ describe("IntegrationCredentialController", () => {
       providers: [
         { provide: IntegrationCredentialService, useValue: credentialService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<IntegrationCredentialController>(
       IntegrationCredentialController,

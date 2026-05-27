@@ -11,6 +11,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
+
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import {
@@ -69,7 +70,6 @@ import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
-import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 import KeyvRedis from "@keyv/redis";
 
@@ -522,10 +522,6 @@ if (typeof _promSetContentType === "function") {
     {
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: OrgContextInterceptor,
     },
   ],
 })

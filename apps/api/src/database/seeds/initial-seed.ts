@@ -47,6 +47,7 @@ import {
 } from "../../modules/incident/entities/incident.entity";
 import { TagPolicy } from "../../modules/tag-policy/entities/tag-policy.entity";
 import * as bcrypt from "bcrypt";
+import { BCRYPT_ROUNDS } from "../../common/constants/bcrypt";
 
 /**
  * Persona membership: pair of organization slug and the OrgRole the persona
@@ -244,7 +245,7 @@ export async function seedUsers(
       if (resetPasswords) {
         // Hash explicitly: TypeORM lifecycle hooks do not run reliably under
         // mocks, and we want a deterministic bcrypt hash on disk.
-        user.password = await bcrypt.hash(persona.password, 10);
+        user.password = await bcrypt.hash(persona.password, BCRYPT_ROUNDS);
         mutated = true;
       }
       if (mutated) {

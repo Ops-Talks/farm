@@ -14,11 +14,15 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { ArgoCDService, ArgoCDApplication } from "./argocd.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
@@ -27,7 +31,13 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("ArgoCD")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("argocd")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -106,7 +116,7 @@ export class ArgoCDController {
    * @returns The sync response from ArgoCD
    */
   @Post("applications/:name/sync")
-  @Roles("admin")
+  @RequiresPermission(Permission.PIPELINE_TRIGGER)
   @ApiOperation({ summary: "Trigger an ArgoCD application sync" })
   @ApiResponse({
     status: HttpStatus.CREATED,

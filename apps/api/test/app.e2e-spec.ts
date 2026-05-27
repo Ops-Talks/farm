@@ -16,6 +16,11 @@ describe("AppController (e2e)", () => {
     // parallel under NODE_OPTIONS=--max-old-space-size=1024.
     process.env.HEALTH_HEAP_THRESHOLD_MB = "900";
     process.env.HEALTH_RSS_THRESHOLD_MB = "1400";
+    // JWT_SECRET must be present (min 32 chars) — the hardcoded fallback was
+    // removed as part of FARM-S589.
+    process.env.JWT_SECRET =
+      process.env.JWT_SECRET ??
+      "e2e-test-secret-that-is-at-least-32-characters";
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

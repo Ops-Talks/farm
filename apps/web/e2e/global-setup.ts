@@ -4,17 +4,19 @@
  * Responsibilities:
  *  1. Attempt to register the E2E test user via the real API (best-effort;
  *     gracefully skips when the backend is not reachable).
- *  2. Synthesise an authenticated browser session by injecting the required
- *     sessionStorage keys directly (no real login round-trip needed here).
+ *  2. Synthesise a minimal browser session state — auth tokens now live in
+ *     httpOnly cookies set by the server, so only non-sensitive session keys
+ *     (e.g. farm_current_org) are injected here.  Authenticated state is
+ *     restored by mocking the GET /api/v1/auth/profile endpoint in each test
+ *     via setupAuthStorage().
  *  3. Persist the session state to `e2e/.auth/user.json` so individual test
- *     files can load it with `test.use({ storageState: AUTH_FILE })` and
- *     start each test as an already-authenticated user.
+ *     files can load it with `test.use({ storageState: AUTH_FILE })`.
  *
- * Why sessionStorage injection instead of the login form?
- *  The app stores auth tokens in sessionStorage (see api-client.ts) rather
- *  than cookies.  Playwright's storageState captures sessionStorage values per
- *  origin, so we can seed the values once here and reuse them in every test
- *  that doesn't explicitly test the login flow itself.
+ * Why no sessionStorage token injection?
+ *  Tokens are now stored in httpOnly; Secure; SameSite=Lax cookies (FARM-S598).
+ *  Playwright cannot set httpOnly cookies through the storageState file.
+ *  Each test that needs an authenticated session must instead mock the profile
+ *  endpoint via setupAuthStorage() so AuthProvider.restoreSession() succeeds.
  */
 
 import path from "path";
@@ -87,13 +89,14 @@ async function globalSetup(config: FullConfig): Promise<void> {
     );
   }
 
-  // 3. Write the auth state file directly.
+  // 3. Write the auth state file.
   //
-  //    Playwright's storageState() only captures localStorage — sessionStorage
-  //    is tab-scoped and intentionally excluded from the format.  Since the app
-  //    stores auth tokens in sessionStorage, we build the state file by hand so
-  //    that Playwright's storageState loader can restore the right values via
-  //    addInitScript before the page boots.
+  //    Tokens are now in httpOnly cookies — they cannot be seeded through this
+  //    file.  We only persist non-sensitive session values that are stored in
+  //    sessionStorage and are still read by the client (e.g. farm_current_org
+  //    for the active organization header).  Each individual test that needs
+  //    an authenticated session mocks GET /api/v1/auth/profile via
+  //    setupAuthStorage() so AuthProvider.restoreSession() succeeds.
   const baseURL =
     config.projects[0]?.use?.baseURL ?? "http://localhost:3010";
 
@@ -104,10 +107,6 @@ async function globalSetup(config: FullConfig): Promise<void> {
         origin: baseURL,
         localStorage: [],
         sessionStorage: [
-          { name: "farm_token", value: MOCK_TOKENS.token },
-          { name: "farm_refresh", value: MOCK_TOKENS.refreshToken },
-          { name: "farm_username", value: MOCK_USER.username },
-          { name: "farm_user", value: JSON.stringify(MOCK_USER) },
           { name: "farm_current_org", value: MOCK_ORG.id },
         ],
       },

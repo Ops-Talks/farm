@@ -43,6 +43,7 @@ describe("Service Templates CRUD (e2e)", () => {
     const res = await request(app.getHttpServer())
       .get("/api/v1/service-templates")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const body = res.body as { data: TemplateResponse[]; total: number };
@@ -96,6 +97,7 @@ describe("Service Templates CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/service-templates?language=typescript")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const listBody = listRes.body as {
@@ -110,6 +112,7 @@ describe("Service Templates CRUD (e2e)", () => {
     const getRes = await request(app.getHttpServer())
       .get(`/api/v1/service-templates/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     expect((getRes.body as TemplateResponse).name).toBe("e2e-custom-template");
@@ -118,6 +121,7 @@ describe("Service Templates CRUD (e2e)", () => {
     const updateRes = await request(app.getHttpServer())
       .patch(`/api/v1/service-templates/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({ description: "Updated description" })
       .expect(200);
 
@@ -161,12 +165,14 @@ describe("Service Templates CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .delete(`/api/v1/service-templates/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(204);
 
     // Verify deletion
     await request(app.getHttpServer())
       .get(`/api/v1/service-templates/${created.id}`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(404);
   });
 
@@ -181,12 +187,14 @@ describe("Service Templates CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post("/api/v1/service-templates")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(201);
 
     await request(app.getHttpServer())
       .post("/api/v1/service-templates")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send(createDto)
       .expect(409);
   });
@@ -196,6 +204,7 @@ describe("Service Templates CRUD (e2e)", () => {
     const listRes = await request(app.getHttpServer())
       .get("/api/v1/service-templates")
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .expect(200);
 
     const body = listRes.body as { data: TemplateResponse[] };
@@ -205,6 +214,7 @@ describe("Service Templates CRUD (e2e)", () => {
     await request(app.getHttpServer())
       .post(`/api/v1/service-templates/${nestTemplate!.id}/scaffold`)
       .set("Authorization", `Bearer ${token}`)
+      .set("X-Organization-Id", organizationId)
       .send({
         targetRepository: "org/missing-vars",
         variables: {},

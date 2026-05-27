@@ -2,12 +2,16 @@ import { Body, Controller, Get, Patch, Req, UseGuards } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
+  ApiHeader,
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SearchService } from "./search.service";
 import { UpdateSearchConfigDto } from "./dto/update-search-config.dto";
@@ -19,8 +23,14 @@ import type { SearchConfig } from "./entities/search-config.entity";
  */
 @ApiTags("Search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin")
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@RequiresPermission(Permission.ORG_MANAGE)
 @Controller("search/config")
 @ApiResponse({
   status: 401,
@@ -28,7 +38,7 @@ import type { SearchConfig } from "./entities/search-config.entity";
 })
 @ApiResponse({
   status: 403,
-  description: "Forbidden — requires admin role.",
+  description: "Forbidden — requires ORG_MANAGE permission.",
 })
 export class SearchConfigController {
   constructor(private readonly searchService: SearchService) {}

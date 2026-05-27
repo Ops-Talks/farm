@@ -14,15 +14,20 @@ import {
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiHeader,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { ApiSpecsService } from "./api-specs.service";
 import { ApiSpec } from "./entities/api-spec.entity";
 import { ApiConsumer } from "./entities/api-consumer.entity";
@@ -38,7 +43,21 @@ import { SpecDiffResult } from "./spec-diff.service";
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden - Insufficient org-scoped permissions.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("catalog/components/:componentId/api-specs")
 export class ApiSpecsComponentController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}
@@ -68,7 +87,21 @@ export class ApiSpecsComponentController {
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden - Insufficient org-scoped permissions.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("catalog/components/:componentId/consumed-apis")
 export class ConsumedApisController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}
@@ -90,7 +123,21 @@ export class ConsumedApisController {
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized - Authentication token is missing or invalid.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden - Insufficient org-scoped permissions.",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("api-specs")
 export class ApiSpecsController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}
@@ -106,7 +153,7 @@ export class ApiSpecsController {
   @ApiOperation({ summary: "Update an API spec (admin only)" })
   @ApiParam({ name: "id", description: "API spec UUID" })
   @ApiOkResponse({ type: ApiSpec })
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @Patch(":id")
   update(
     @Param("id") id: string,
@@ -118,7 +165,7 @@ export class ApiSpecsController {
   @ApiOperation({ summary: "Delete an API spec (admin only)" })
   @ApiParam({ name: "id", description: "API spec UUID" })
   @ApiNoContentResponse()
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(":id")
   remove(@Param("id") id: string): Promise<void> {
@@ -151,7 +198,7 @@ export class ApiSpecsController {
   @ApiParam({ name: "id", description: "API spec UUID" })
   @ApiParam({ name: "consumerId", description: "Consumer record UUID" })
   @ApiNoContentResponse()
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(":id/consumers/:consumerId")
   removeConsumer(

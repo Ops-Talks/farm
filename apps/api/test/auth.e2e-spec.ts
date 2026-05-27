@@ -14,10 +14,30 @@ interface UserResponse {
   roles: string[];
 }
 
+/**
+ * Shape returned by the cookie-based login endpoint.
+ * Tokens are delivered via Set-Cookie headers, not in the body.
+ */
 interface LoginResponse {
+  message: string;
   user: UserResponse;
-  token: string;
-  refreshToken: string;
+}
+
+/**
+ * Extracts the raw cookie value for the given cookie name from a supertest
+ * response's Set-Cookie header array.
+ */
+function extractCookieValue(
+  setCookieHeader: string | string[] | undefined,
+  name: string,
+): string {
+  const arr = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : setCookieHeader
+      ? [setCookieHeader]
+      : [];
+  const entry = arr.find((c) => c.startsWith(`${name}=`));
+  return entry ? (entry.split(";")[0].split("=")[1] ?? "") : "";
 }
 
 describe("Auth Lifecycle (e2e)", () => {
@@ -59,13 +79,21 @@ describe("Auth Lifecycle (e2e)", () => {
       .expect(200);
 
     const loginBody = loginRes.body as LoginResponse;
-    expect(loginBody.token).toBeDefined();
-    expect(typeof loginBody.token).toBe("string");
-    expect(loginBody.refreshToken).toBeDefined();
-    expect(typeof loginBody.refreshToken).toBe("string");
+    // Tokens are no longer in the body — they arrive via Set-Cookie.
+    expect(loginBody.message).toBe("Login successful");
     expect(loginBody.user.username).toBe(userData.username);
+    expect(loginBody).not.toHaveProperty("token");
+    expect(loginBody).not.toHaveProperty("refreshToken");
 
-    const token = loginBody.token;
+    // Verify that Set-Cookie headers carry the httpOnly auth cookies.
+    const setCookieHeader = loginRes.headers["set-cookie"] as string[];
+    expect(setCookieHeader).toBeDefined();
+    const accessCookie = extractCookieValue(setCookieHeader, "access_token");
+    expect(accessCookie).toBeTruthy();
+    const refreshCookie = extractCookieValue(setCookieHeader, "refresh_token");
+    expect(refreshCookie).toBeTruthy();
+
+    const token = accessCookie;
 
     // Promote user to admin so GET /auth/users is accessible
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
@@ -79,7 +107,10 @@ describe("Auth Lifecycle (e2e)", () => {
       .post("/api/v1/auth/login")
       .send({ username: userData.username, password: userData.password })
       .expect(200);
-    const adminToken = (adminLoginRes.body as LoginResponse).token;
+    const adminToken = extractCookieValue(
+      adminLoginRes.headers["set-cookie"],
+      "access_token",
+    );
 
     // Step 3: Use admin JWT token to access the users list (admin only)
     const usersRes = await request(app.getHttpServer())
@@ -120,40 +151,58 @@ describe("Auth Lifecycle (e2e)", () => {
       .send({ username: userData.username, password: userData.password })
       .expect(200);
 
-    const loginBody = loginRes.body as LoginResponse;
-    const refreshToken = loginBody.refreshToken;
+    // Extract tokens from Set-Cookie headers.
+    const loginCookies = loginRes.headers["set-cookie"] as string[];
+    const refreshToken = extractCookieValue(loginCookies, "refresh_token");
+    const accessToken = extractCookieValue(loginCookies, "access_token");
+    expect(refreshToken).toBeTruthy();
+    expect(accessToken).toBeTruthy();
 
-    // Use refresh token to get a new access token
+    // Use refresh token cookie + username body to get a new access token.
     const refreshRes = await request(app.getHttpServer())
       .post("/api/v1/auth/refresh")
-      .send({ username: userData.username, refreshToken })
+      .set(
+        "Cookie",
+        `refresh_token=${refreshToken}; access_token=${accessToken}`,
+      )
       .expect(200);
 
-    const refreshBody = refreshRes.body as {
-      token: string;
-      refreshToken: string;
-    };
-    expect(refreshBody.token).toBeDefined();
-    expect(refreshBody.refreshToken).toBeDefined();
-    // Rotated token should differ from the original
-    expect(refreshBody.refreshToken).not.toBe(refreshToken);
+    const refreshBody = refreshRes.body as { message: string };
+    expect(refreshBody.message).toBe("Token refreshed");
+    // Tokens are NOT in the body — they arrive via Set-Cookie.
+    expect(refreshBody).not.toHaveProperty("token");
+    expect(refreshBody).not.toHaveProperty("refreshToken");
 
-    // Old refresh token should no longer work
+    // Verify new cookies are issued.
+    const refreshCookies = refreshRes.headers["set-cookie"] as string[];
+    const newRefreshToken = extractCookieValue(refreshCookies, "refresh_token");
+    const newAccessToken = extractCookieValue(refreshCookies, "access_token");
+    expect(newRefreshToken).toBeTruthy();
+    expect(newAccessToken).toBeTruthy();
+    // Rotated token should differ from the original.
+    expect(newRefreshToken).not.toBe(refreshToken);
+
+    // Old refresh token should no longer work.
     await request(app.getHttpServer())
       .post("/api/v1/auth/refresh")
-      .send({ username: userData.username, refreshToken })
+      .set(
+        "Cookie",
+        `refresh_token=${refreshToken}; access_token=${accessToken}`,
+      )
       .expect(401);
 
-    // New refresh token should work
+    // New refresh token should work.
     const secondRefresh = await request(app.getHttpServer())
       .post("/api/v1/auth/refresh")
-      .send({
-        username: userData.username,
-        refreshToken: refreshBody.refreshToken,
-      })
+      .set(
+        "Cookie",
+        `refresh_token=${newRefreshToken}; access_token=${newAccessToken}`,
+      )
       .expect(200);
 
-    expect((secondRefresh.body as { token: string }).token).toBeDefined();
+    expect((secondRefresh.body as { message: string }).message).toBe(
+      "Token refreshed",
+    );
   });
 
   it("should reject registration with weak password", async () => {
@@ -254,7 +303,10 @@ describe("Auth Lifecycle (e2e)", () => {
       .send({ username: userData.username, password: userData.password })
       .expect(200);
 
-    const userToken = (loginRes.body as { token: string }).token;
+    const userToken = extractCookieValue(
+      loginRes.headers["set-cookie"],
+      "access_token",
+    );
 
     // Try to access admin-only endpoint
     await request(app.getHttpServer())
@@ -292,7 +344,7 @@ describe("User Profile Management (e2e)", () => {
       .send({ username: profileUser.username, password: profileUser.password })
       .expect(200);
 
-    token = (loginRes.body as { token: string }).token;
+    token = extractCookieValue(loginRes.headers["set-cookie"], "access_token");
   });
 
   afterAll(async () => {
@@ -399,7 +451,10 @@ describe("User Profile Management (e2e)", () => {
         .send({ username: profileUser.username, password: "NewProfilePass1" })
         .expect(200);
 
-      const freshToken = (loginRes.body as { token: string }).token;
+      const freshToken = extractCookieValue(
+        loginRes.headers["set-cookie"],
+        "access_token",
+      );
 
       await request(app.getHttpServer())
         .patch("/api/v1/auth/profile/password")
@@ -419,7 +474,10 @@ describe("User Profile Management (e2e)", () => {
         .send({ username: profileUser.username, password: "NewProfilePass1" })
         .expect(200);
 
-      const freshToken = (loginRes.body as { token: string }).token;
+      const freshToken = extractCookieValue(
+        loginRes.headers["set-cookie"],
+        "access_token",
+      );
 
       await request(app.getHttpServer())
         .patch("/api/v1/auth/profile/password")

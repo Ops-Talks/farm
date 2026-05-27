@@ -495,9 +495,7 @@ api:
 |-----------|-------------|---------|
 | `web.replicaCount` | Desired pod replicas | `1` |
 | `web.image.repository` | Image repository | `ops-talks/farm-web` |
-| `web.env.NEXT_PUBLIC_API_URL` | Public API base URL | `""` |
 | `web.env.NEXT_PUBLIC_WS_URL` | WebSocket URL for the browser | `""` |
-| `web.env.API_INTERNAL_URL` | Internal API URL (auto-resolved if empty) | `""` |
 | `web.startupProbe` | Startup probe (httpGet /api/health port 3001, failureThreshold 20, periodSeconds 5) | see values.yaml |
 | `web.autoscaling.behavior` | HPA scale behavior (scale-down 300s / scale-up 60s) | see values.yaml |
 | `web.topologySpreadConstraints` | Pod topology spread constraints (e.g. zone distribution) | `[]` |
@@ -528,16 +526,32 @@ api:
 
 ### Ingress
 
+Farm ships with two separate Ingress resources — one for the API and one for the
+web — both sharing a single hostname with path-based routing. This is the
+Kubernetes-native pattern: the Ingress controller (NGINX, Traefik, etc.) routes
+`/api` and `/admin` to the API service and `/` to the web service. The web app
+uses relative URLs (`/api/v1/...`) so no rebuild is required between environments.
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `ingress.enabled` | Enable Ingress | `false` |
-| `ingress.className` | Ingress class name | `""` |
-| `ingress.annotations` | Shared annotations applied to both API and web Ingress resources | `{}` |
-| `ingress.api.hostname` | Hostname for the API Ingress rule | `""` |
-| `ingress.api.annotations` | Per-resource annotations for the API Ingress (merged with ingress.annotations) | `{}` |
-| `ingress.web.hostname` | Hostname for the Web Ingress rule | `""` |
-| `ingress.web.annotations` | Per-resource annotations for the web Ingress (merged with ingress.annotations) | `{}` |
+| `ingress.className` | Ingress class name (e.g., `"nginx"`, `"traefik"`) | `""` |
+| `ingress.hostname` | Shared hostname for both Ingress resources | `""` |
+| `ingress.annotations` | Shared annotations applied to both Ingress resources | `{}` |
+| `ingress.api.hostname` | Override hostname for the API Ingress (defaults to `ingress.hostname`) | `""` |
+| `ingress.api.paths` | Paths routed to the API service | `[{path: /api}, {path: /admin}]` |
+| `ingress.api.annotations` | Per-resource annotations for the API Ingress | `{}` |
+| `ingress.web.hostname` | Override hostname for the web Ingress (defaults to `ingress.hostname`) | `""` |
+| `ingress.web.paths` | Paths routed to the web service | `[{path: /}]` |
+| `ingress.web.annotations` | Per-resource annotations for the web Ingress | `{}` |
 | `ingress.tls` | TLS configuration array | `[]` |
+
+**KinD / local development**: enable ingress-nginx (`make kind-deploy` handles this
+automatically) and set `ingress.hostname: "farm.local"` in `values-dev.yaml`. Add
+`127.0.0.1 farm.local` to `/etc/hosts`, then access the app at `http://farm.local`.
+
+**Subdomain routing**: override `ingress.api.hostname` and `ingress.web.hostname`
+individually when each service must live on its own subdomain.
 
 #### WebSocket support
 

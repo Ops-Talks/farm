@@ -77,10 +77,10 @@ export default function LoginClient() {
     setLdapLoading(true);
     try {
       const res = await auth.loginLdap({ username: ldapUsername, password: ldapPassword });
-      // Mirror the token-storage logic used by auth-context so the session is
-      // immediately valid without a full page reload.
+      // Store LDAP tokens in memory so getAccessToken() returns them for
+      // WebSocket auth. httpOnly cookies are not set by the LDAP endpoint.
+      // LDAP cookie support is tracked as a separate ticket.
       setTokens(res.token, res.refreshToken, res.user.username);
-      sessionStorage.setItem("farm_user", JSON.stringify(res.user));
       window.location.href = "/dashboard";
     } catch {
       setLdapError("LDAP authentication failed. Check your credentials.");

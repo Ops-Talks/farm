@@ -23,7 +23,7 @@ import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // ---------------------------------------------------------------------------
 // Authenticated test suite — beforeEach is scoped here so the unauthenticated
-// describe block below does not inherit the addInitScript token injection.
+// describe block below does not inherit the auth route mocks.
 // ---------------------------------------------------------------------------
 test.describe("Environments — authenticated", () => {
   test.beforeEach(async ({ page }) => {
@@ -100,13 +100,19 @@ async function mockEnvironmentRoutes(
   } = options;
 
   // 1. Catch-all — absorbs any /api/v1/* request not matched by a later handler.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  //    Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  //    mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   // 2. Cloud cost — CloudCostWidget only fires when an org is selected; stub
   //    the endpoint so it never reaches the Next.js proxy even if orgId is set.

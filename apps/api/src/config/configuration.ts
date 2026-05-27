@@ -37,8 +37,10 @@ export const configuration = () => ({
     ),
   },
   auth: {
-    jwtSecret:
-      process.env.JWT_SECRET || "super-secret-key-change-me-in-production",
+    // No insecure fallback. Joi validation ensures this is set (min 32 chars)
+    // for every NODE_ENV except "test". E2E tests set a long test secret via
+    // e2e-setup.ts; unit tests do not boot the full config module.
+    jwtSecret: process.env.JWT_SECRET ?? "",
     jwtExpiresIn: process.env.JWT_EXPIRATION || "3600s",
   },
   cors: {
@@ -116,8 +118,9 @@ export const configuration = () => ({
     dir: process.env.PLUGINS_DIR || "./plugins",
   },
   swagger: {
-    user: process.env.SWAGGER_USER || "farm",
-    password: process.env.SWAGGER_PASSWORD || "farm",
+    // No insecure defaults. Joi validation requires these in non-test envs.
+    user: process.env.SWAGGER_USER ?? "",
+    password: process.env.SWAGGER_PASSWORD ?? "",
   },
   gateway: {
     kong: {
@@ -189,10 +192,13 @@ export const validationSchema = Joi.object({
   LOG_LEVEL: Joi.string()
     .valid("error", "warn", "info", "http", "verbose", "debug", "silly")
     .default("info"),
+  // JWT_SECRET is required (min 32 chars) for every environment except "test".
+  // The "test" exemption allows e2e tests to supply a short secret via
+  // e2e-setup.ts without forcing every CI matrix to manage secrets.
   JWT_SECRET: Joi.string().when("NODE_ENV", {
-    is: "production",
-    then: Joi.string().min(32).required(),
-    otherwise: Joi.string().default("super-secret-key-change-me-in-production"),
+    is: "test",
+    then: Joi.string().optional(),
+    otherwise: Joi.string().required().min(32),
   }),
   JWT_EXPIRATION: Joi.string().default("3600s"),
   ALLOWED_ORIGINS: Joi.string().default("*"),
@@ -239,9 +245,18 @@ export const validationSchema = Joi.object({
   KUBECONFIG_PATH: Joi.string().allow("").default(""),
   // Plugin directory
   PLUGINS_DIR: Joi.string().default("./plugins"),
-  // Swagger Basic Auth
-  SWAGGER_USER: Joi.string().default("farm"),
-  SWAGGER_PASSWORD: Joi.string().default("farm"),
+  // Swagger Basic Auth credentials are required in non-test environments so
+  // the UI endpoint is never protected by the insecure "farm:farm" defaults.
+  SWAGGER_USER: Joi.string().when("NODE_ENV", {
+    is: "test",
+    then: Joi.string().optional(),
+    otherwise: Joi.string().required(),
+  }),
+  SWAGGER_PASSWORD: Joi.string().when("NODE_ENV", {
+    is: "test",
+    then: Joi.string().optional(),
+    otherwise: Joi.string().required(),
+  }),
   // Gateway integration (all optional)
   GATEWAY_KONG_ENABLED: Joi.boolean().default(false),
   GATEWAY_KONG_URL: Joi.string().allow("").default(""),

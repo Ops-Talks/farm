@@ -6,6 +6,8 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Test, TestingModule } from "@nestjs/testing";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import cookieParser = require("cookie-parser");
 import { AppModule } from "../../src/app.module";
 import { User } from "../../src/modules/auth/entities/user.entity";
 import { Organization } from "../../src/modules/organization/entities/organization.entity";
@@ -15,6 +17,26 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import request from "supertest";
 import { App } from "supertest/types";
+
+/**
+ * Extracts the value of a named httpOnly cookie from a supertest response's
+ * Set-Cookie header. The login and refresh endpoints deliver tokens this way.
+ *
+ * Usage:
+ *   const token = extractCookieValue(loginRes.headers["set-cookie"], "access_token");
+ */
+export function extractCookieValue(
+  setCookieHeader: string | string[] | undefined,
+  name: string,
+): string {
+  const arr = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : setCookieHeader
+      ? [setCookieHeader]
+      : [];
+  const entry = arr.find((c) => c.startsWith(`${name}=`));
+  return entry ? (entry.split(";")[0].split("=")[1] ?? "") : "";
+}
 
 /**
  * Creates and initializes a NestJS application for E2E testing
@@ -33,6 +55,9 @@ export async function createE2EApp(): Promise<INestApplication<App>> {
   }).compile();
 
   const app = moduleFixture.createNestApplication();
+  // cookie-parser must be registered before NestJS route handlers so that
+  // req.cookies is populated by the time controllers read auth cookies.
+  app.use(cookieParser());
   app.setGlobalPrefix("api");
   app.enableVersioning({
     type: VersioningType.URI,
@@ -86,7 +111,24 @@ export async function registerAndLogin(
     .send({ username: user.username, password: user.password })
     .expect(200);
 
-  const token = (loginRes.body as { token: string }).token;
+  // The login endpoint now delivers tokens via httpOnly Set-Cookie headers.
+  // Extract the access_token value so e2e tests can pass it as an
+  // Authorization: Bearer header — the JWT strategy accepts both sources.
+  const setCookieHeader = loginRes.headers["set-cookie"] as
+    | string[]
+    | string
+    | undefined;
+  const cookieArr = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : setCookieHeader
+      ? [setCookieHeader]
+      : [];
+  const accessCookieEntry = cookieArr.find((c: string) =>
+    c.startsWith("access_token="),
+  );
+  const token = accessCookieEntry
+    ? (accessCookieEntry.split(";")[0].split("=")[1] ?? "")
+    : "";
 
   // Retrieve the persisted user to get its generated id
   const userEntity = await userRepo.findOne({

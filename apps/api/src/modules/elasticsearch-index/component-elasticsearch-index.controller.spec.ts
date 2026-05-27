@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from "@nestjs/common";
 import { ComponentElasticsearchIndexController } from "./component-elasticsearch-index.controller";
 import { ComponentElasticsearchIndexService } from "./component-elasticsearch-index.service";
 import { ComponentElasticsearchIndex } from "./entities/component-elasticsearch-index.entity";
+import { OptionalOrgGuard } from "../../common/guards/optional-org.guard";
 
 describe("ComponentElasticsearchIndexController", () => {
   let controller: ComponentElasticsearchIndexController;
@@ -34,7 +35,10 @@ describe("ComponentElasticsearchIndexController", () => {
       providers: [
         { provide: ComponentElasticsearchIndexService, useValue: service },
       ],
-    }).compile();
+    })
+      .overrideGuard(OptionalOrgGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(ComponentElasticsearchIndexController);
   });

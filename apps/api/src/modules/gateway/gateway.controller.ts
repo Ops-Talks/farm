@@ -21,8 +21,11 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { GatewayService } from "./gateway.service";
 import { GatewayRoute } from "./entities/gateway-route.entity";
 import { ApiHealthCheck } from "./entities/api-health-check.entity";
@@ -34,7 +37,13 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Gateway")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("gateway")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -80,7 +89,7 @@ export class GatewayController {
 
   @ApiOperation({ summary: "Trigger a manual gateway route sync (admin only)" })
   @ApiCreatedResponse({ schema: { example: { message: "Sync triggered" } } })
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @HttpCode(HttpStatus.CREATED)
   @Post("sync")
   async syncRoutes(): Promise<{ message: string }> {
@@ -106,7 +115,7 @@ export class GatewayController {
   @ApiCreatedResponse({
     schema: { example: { message: "Health check triggered" } },
   })
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @HttpCode(HttpStatus.CREATED)
   @Post("health/check")
   async triggerHealthCheck(): Promise<{ message: string }> {

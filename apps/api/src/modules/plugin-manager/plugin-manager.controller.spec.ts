@@ -5,6 +5,8 @@ import { PluginManagerController } from "./plugin-manager.controller";
 import { PluginManagerService } from "./plugin-manager.service";
 import { PluginInstanceService } from "./services/plugin-instance.service";
 import { PluginRegistryService } from "./services/plugin-registry.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("PluginManagerController", () => {
   let controller: PluginManagerController;
@@ -82,7 +84,12 @@ describe("PluginManagerController", () => {
           useValue: mockPluginRegistryService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PluginManagerController>(PluginManagerController);
     service = module.get<PluginManagerService>(PluginManagerService);
@@ -144,7 +151,12 @@ describe("PluginManagerController", () => {
           useValue: mockPluginRegistryService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     const ctrl = module.get<PluginManagerController>(PluginManagerController);
     const svc = module.get<PluginManagerService>(PluginManagerService);

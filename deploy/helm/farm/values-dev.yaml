@@ -39,7 +39,21 @@ web:
     NEXT_PUBLIC_APP_URL: "http://localhost:3001"
 
 ingress:
-  enabled: false
+  enabled: true
+  className: "nginx"
+  # Single shared hostname — path-based routing via ingress-nginx.
+  # Add "127.0.0.1 farm.local" to /etc/hosts to access the cluster.
+  hostname: "farm.local"
+  api:
+    paths:
+      - path: /api
+        pathType: Prefix
+      - path: /admin
+        pathType: Prefix
+  web:
+    paths:
+      - path: /
+        pathType: Prefix
 
 migration:
   enabled: true

@@ -13,6 +13,7 @@ import {
   HttpStatus,
   Next,
   Optional,
+  UnauthorizedException,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -22,6 +23,7 @@ import {
   ApiExcludeEndpoint,
   ApiBearerAuth,
   ApiParam,
+  ApiCookieAuth,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "@nestjs/passport";
@@ -35,7 +37,7 @@ import { AuthService } from "./auth.service";
 import { KeycloakOidcService } from "./keycloak-oidc.service";
 import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
-import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { RefreshTokenCookieDto } from "./dto/refresh-token-cookie.dto";
 import { LoginResponseDto } from "./dto/login-response.dto";
 import { RefreshResponseDto } from "./dto/refresh-response.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
@@ -45,6 +47,11 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { KeycloakSyncJobData } from "./keycloak-sync.service";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
@@ -110,10 +117,13 @@ export class AuthController {
   }
 
   /**
-   * Authenticates a user and returns an access token with a refresh token.
+   * Authenticates a user and sets httpOnly cookies for the access and refresh
+   * tokens.  Tokens are NOT returned in the response body (XSS hardening —
+   * only httpOnly cookies are inaccessible to JavaScript).
    * Applies strict rate limiting: 5 requests per minute, bypasses the long-window global limit.
    * @param loginDto - Login credentials
-   * @returns The authenticated user, access token, and refresh token
+   * @param res - Express response used to write Set-Cookie headers
+   * @returns A confirmation message and the user profile (no tokens in body)
    */
   @Post("login")
   @HttpCode(HttpStatus.OK)
@@ -128,8 +138,18 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description:
-      "Successfully authenticated. Returns access token and refresh token.",
+      "Successfully authenticated. " +
+      "Tokens are delivered via httpOnly Set-Cookie headers " +
+      "(access_token, 15 min; refresh_token, 7 days — scoped to /api/v1/auth/refresh).",
     type: LoginResponseDto,
+    headers: {
+      "Set-Cookie": {
+        description:
+          "access_token=<jwt>; HttpOnly; SameSite=Lax and " +
+          "refresh_token=<opaque>; HttpOnly; SameSite=Lax; Path=/api/v1/auth/refresh",
+        schema: { type: "string" },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -141,19 +161,48 @@ export class AuthController {
     description: "Too many requests. Rate limit: 5 per minute.",
     type: ErrorResponseDto,
   })
-  async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
-    return await this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseDto> {
+    const result = await this.authService.login(loginDto);
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const baseCookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax" as const,
+      path: "/",
+    };
+
+    res.cookie("access_token", result.token, {
+      ...baseCookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie("refresh_token", result.refreshToken, {
+      ...baseCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: "/api/v1/auth/refresh", // scope to refresh endpoint only
+    });
+
+    // Return user profile without tokens — cookies carry them instead.
+    return { message: "Login successful", user: result.user };
   }
 
   /**
-   * Refreshes an access token using a valid refresh token.
-   * The refresh token is rotated on each use.
-   * @param refreshTokenDto - Username and current refresh token
-   * @returns A new access token and rotated refresh token
+   * Refreshes an access token using the refresh_token httpOnly cookie.
+   * The refresh token is rotated on each use; new tokens are set via cookies.
+   * Username is resolved from the body (backward-compat) or decoded from the
+   * access_token cookie payload (browser clients).
+   * @param body - Optional body — may contain `username` and/or `refreshToken`
+   * @param req - Express request carrying cookies
+   * @param res - Express response used to write Set-Cookie headers
+   * @returns A confirmation message (no tokens in body)
    */
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @Throttle({ short: { ttl: 60000, limit: 10 } })
+  @ApiCookieAuth()
   @ApiOperation({ summary: "Refresh access token" })
   @ApiHeader({
     name: "X-RateLimit-Limit",
@@ -163,8 +212,17 @@ export class AuthController {
   @ApiResponse({
     status: HttpStatus.OK,
     description:
-      "Successfully refreshed. Returns new access token and rotated refresh token.",
+      "Successfully refreshed. " +
+      "Rotated tokens are delivered via httpOnly Set-Cookie headers.",
     type: RefreshResponseDto,
+    headers: {
+      "Set-Cookie": {
+        description:
+          "access_token=<jwt>; HttpOnly; SameSite=Lax and " +
+          "refresh_token=<opaque>; HttpOnly; SameSite=Lax; Path=/api/v1/auth/refresh",
+        schema: { type: "string" },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -177,16 +235,98 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   async refresh(
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Body() body: RefreshTokenCookieDto,
+    @Req() req: Request & { cookies: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
   ): Promise<RefreshResponseDto> {
-    return await this.authService.refresh(
-      refreshTokenDto.username,
-      refreshTokenDto.refreshToken,
-    );
+    // Refresh token: httpOnly cookie takes precedence, body is a fallback for
+    // API clients and e2e tests that cannot set cookies via supertest.
+    const cookieRefresh = (req.cookies as Record<string, string | undefined>)[
+      "refresh_token"
+    ];
+    const refreshToken = cookieRefresh ?? body.refreshToken;
+
+    // Username: body takes precedence (API clients / e2e tests), then fall
+    // back to decoding the access_token cookie payload without verification.
+    let username = body.username;
+    if (!username) {
+      const accessToken = (req.cookies as Record<string, string | undefined>)[
+        "access_token"
+      ];
+      if (accessToken) {
+        try {
+          const parts: string[] = accessToken.split(".");
+          if (parts.length === 3) {
+            const decoded = JSON.parse(
+              Buffer.from(parts[1] ?? "", "base64url").toString("utf8"),
+            ) as { username?: string };
+            username = decoded.username;
+          }
+        } catch {
+          // Payload decode failed — fall through to the error below.
+        }
+      }
+    }
+
+    if (!refreshToken || !username) {
+      throw new UnauthorizedException(
+        "Missing refresh credentials: provide a refresh_token cookie or body field, " +
+          "and a username body field or access_token cookie.",
+      );
+    }
+
+    const result = await this.authService.refresh(username, refreshToken);
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const baseCookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax" as const,
+      path: "/",
+    };
+
+    res.cookie("access_token", result.token, {
+      ...baseCookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie("refresh_token", result.refreshToken, {
+      ...baseCookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: "/api/v1/auth/refresh",
+    });
+
+    return { message: "Token refreshed" };
   }
 
   /**
-   * Retrieves all registered users. Requires admin role.
+   * Logs out the current user by clearing the auth cookies.
+   * Should be called before redirecting to the login page.
+   * @param res - Express response used to clear Set-Cookie headers
+   * @returns A confirmation message
+   */
+  @Post("logout")
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: "Logout — clear auth cookies" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Cookies cleared. User is now logged out.",
+    schema: {
+      type: "object",
+      properties: {
+        message: { type: "string", example: "Logged out successfully" },
+      },
+    },
+  })
+  logout(@Res({ passthrough: true }) res: Response): { message: string } {
+    res.clearCookie("access_token", { path: "/" });
+    res.clearCookie("refresh_token", { path: "/api/v1/auth/refresh" });
+    return { message: "Logged out successfully" };
+  }
+
+  /**
+   * Retrieves all registered users. Requires global admin role.
    * @returns An array of all user profiles
    */
   @Get("users")
@@ -206,7 +346,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: "Forbidden — insufficient role.",
+    description: "Forbidden — insufficient org-scoped permissions.",
     type: ErrorResponseDto,
   })
   async findAll(): Promise<User[]> {
@@ -540,16 +680,22 @@ export class AuthController {
 
   /**
    * Manually triggers a Keycloak group sync job for the specified organization.
-   * Requires admin role.
+   * Requires ORG_MANAGE permission.
    *
    * @param orgId - UUID of the organization to sync
    * @returns Whether the job was successfully enqueued
    */
   @Post("keycloak/sync/:orgId")
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles("admin")
+  @OrgRequired()
+  @UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
+  @ApiHeader({
+    name: "x-organization-id",
+    required: true,
+    description: "Organization ID",
+  })
   @ApiOperation({ summary: "Trigger Keycloak group sync for an org (admin)" })
   @ApiParam({ name: "orgId", description: "UUID of the organization to sync" })
   @ApiResponse({
@@ -563,7 +709,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.FORBIDDEN,
-    description: "Forbidden — insufficient role.",
+    description: "Forbidden — insufficient org-scoped permissions.",
     type: ErrorResponseDto,
   })
   async triggerKeycloakSync(

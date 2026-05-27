@@ -8,6 +8,8 @@ import {
 import { CreateAlertingRuleDto } from "./dto/create-alerting-rule.dto";
 import { ListAlertingRulesQueryDto } from "./dto/list-alerting-rules-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("AlertingController", () => {
   let controller: AlertingController;
@@ -41,7 +43,12 @@ describe("AlertingController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AlertingController],
       providers: [{ provide: AlertingService, useValue: mockService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AlertingController>(AlertingController);
     jest.clearAllMocks();

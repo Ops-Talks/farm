@@ -82,6 +82,7 @@
     "change-case": "^5.4.4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "cookie-parser": "^1.4.7",
     "express": "^5.0.0",
     "google-auth-library": "^10.6.2",
     "handlebars": "^4.7.9",
@@ -119,6 +120,7 @@
     "@release-it/keep-a-changelog": "^7.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
@@ -155,6 +157,9 @@
       "ts"
     ],
     "rootDir": "src",
+    "setupFiles": [
+      "<rootDir>/jest.setup.ts"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "<rootDir>/../src/jest-helper-patch.js"

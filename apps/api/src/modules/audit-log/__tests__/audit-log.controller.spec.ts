@@ -3,6 +3,8 @@ import { AuditLogController } from "../audit-log.controller";
 import { AuditLogService } from "../audit-log.service";
 import { AuditLog } from "../entities/audit-log.entity";
 import type { RequestWithOrg } from "../../../common/interfaces/request-with-org.interface";
+import { OrgRequiredGuard } from "../../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../../common/guards/permission.guard";
 
 describe("AuditLogController", () => {
   let controller: AuditLogController;
@@ -47,7 +49,12 @@ describe("AuditLogController", () => {
           useValue: mockAuditLogService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuditLogController>(AuditLogController);
     service = module.get<AuditLogService>(AuditLogService);

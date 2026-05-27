@@ -3,6 +3,8 @@ import { NotFoundException } from "@nestjs/common";
 import { TagPolicyController } from "./tag-policy.controller";
 import { TagPolicyService } from "./tag-policy.service";
 import { KyvernoExportService } from "./kyverno-export.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 import { TagPolicy } from "./entities/tag-policy.entity";
 import { ResourceViolation } from "./entities/resource-violation.entity";
 import { CreateTagPolicyDto } from "./dto/create-tag-policy.dto";
@@ -67,7 +69,12 @@ describe("TagPolicyController", () => {
         { provide: TagPolicyService, useValue: mockService },
         { provide: KyvernoExportService, useValue: mockKyvernoExportService },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<TagPolicyController>(TagPolicyController);
     service = module.get(TagPolicyService);

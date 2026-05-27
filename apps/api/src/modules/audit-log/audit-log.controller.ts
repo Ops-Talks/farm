@@ -13,12 +13,16 @@ import {
   ApiBearerAuth,
   ApiResponse,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { AuditLogService } from "./audit-log.service";
 import { AuditLog } from "./entities/audit-log.entity";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
@@ -38,7 +42,13 @@ class AuditLogsQueryDto {
  */
 @ApiTags("Audit Log")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("audit-logs")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -47,7 +57,7 @@ class AuditLogsQueryDto {
 })
 @ApiResponse({
   status: HttpStatus.FORBIDDEN,
-  description: "Forbidden - User does not have the 'admin' role.",
+  description: "Forbidden - Insufficient org-scoped permissions.",
   type: ErrorResponseDto,
 })
 @ApiResponse({
@@ -64,7 +74,7 @@ export class AuditLogController {
    * @returns An array of audit log entries
    */
   @Get()
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "List audit log entries" })
   @ApiQuery({
     name: "resourceType",

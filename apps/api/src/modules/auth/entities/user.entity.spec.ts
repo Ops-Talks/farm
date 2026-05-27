@@ -3,6 +3,7 @@ jest.mock("bcrypt", () => ({
 }));
 import * as bcrypt from "bcrypt";
 import { User } from "./user.entity";
+import { BCRYPT_ROUNDS } from "../../../common/constants/bcrypt";
 
 /**
  * Unit tests for the User entity's hashPassword lifecycle hook.
@@ -13,7 +14,9 @@ import { User } from "./user.entity";
 describe("User entity - hashPassword", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (bcrypt.hash as jest.Mock).mockResolvedValue("$2b$10$newhashedvalue");
+    (bcrypt.hash as jest.Mock).mockResolvedValue(
+      `$2b$${BCRYPT_ROUNDS}$newhashedvalue`,
+    );
   });
 
   it("should hash the password when it is plain-text", async () => {
@@ -22,8 +25,8 @@ describe("User entity - hashPassword", () => {
 
     await user.hashPassword();
 
-    expect(bcrypt.hash).toHaveBeenCalledWith("plain-secret", 10);
-    expect(user.password).toBe("$2b$10$newhashedvalue");
+    expect(bcrypt.hash).toHaveBeenCalledWith("plain-secret", BCRYPT_ROUNDS);
+    expect(user.password).toBe(`$2b$${BCRYPT_ROUNDS}$newhashedvalue`);
   });
 
   it("should not rehash a password that already starts with $2b$", async () => {

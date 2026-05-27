@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ArgoCDController } from "./argocd.controller";
 import { ArgoCDService } from "./argocd.service";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../common/guards/permission.guard";
 
 describe("ArgoCDController", () => {
   let controller: ArgoCDController;
@@ -29,7 +31,12 @@ describe("ArgoCDController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ArgoCDController],
       providers: [{ provide: ArgoCDService, useValue: argoCDService }],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ArgoCDController>(ArgoCDController);
   });

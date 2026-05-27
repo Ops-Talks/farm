@@ -1,7 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import {
+  createE2EApp,
+  extractCookieValue,
+  registerAndLogin,
+} from "./helpers/e2e-setup";
 
 interface InvitationResponse {
   id: string;
@@ -199,7 +203,10 @@ describe("Organization Invitations (e2e)", () => {
         .send({ username: "acceptor-user", password: "TestPassword1" })
         .expect(200);
 
-      const acceptorToken = (loginRes.body as { token: string }).token;
+      const acceptorToken = extractCookieValue(
+        loginRes.headers["set-cookie"],
+        "access_token",
+      );
 
       await request(app.getHttpServer())
         .post(

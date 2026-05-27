@@ -32,8 +32,9 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 
@@ -49,7 +50,7 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("environments")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -82,7 +83,7 @@ export class EnvironmentsController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Create a new environment" })
   @ApiCreatedResponse({
     description: "The environment has been successfully created.",
@@ -162,7 +163,7 @@ export class EnvironmentsController {
    * @returns The updated environment
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Update an environment" })
   @ApiParam({
     name: "id",
@@ -200,7 +201,7 @@ export class EnvironmentsController {
    */
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles("admin")
+  @RequiresPermission(Permission.ENVIRONMENT_WRITE)
   @ApiOperation({ summary: "Delete an environment" })
   @ApiParam({
     name: "id",

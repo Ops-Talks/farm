@@ -10,7 +10,6 @@ import {
   HttpStatus,
   Query,
   UseGuards,
-  Inject,
   Optional,
   Req,
   NotFoundException,
@@ -29,7 +28,6 @@ import {
   ApiBearerAuth,
   ApiHeader,
 } from "@nestjs/swagger";
-import { Cache, CACHE_MANAGER } from "@nestjs/cache-manager";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { CatalogService } from "./catalog.service";
@@ -57,6 +55,8 @@ import {
 } from "./processors/catalog-discovery.processor";
 import { PipelinesService } from "../pipelines/pipelines.service";
 import { Pipeline } from "../pipelines/entities/pipeline.entity";
+import { TenantCacheService } from "../../common/cache/tenant-cache.service";
+import { CacheKeyBuilder } from "../../common/cache/cache-key.builder";
 
 /**
  * Controller for the software component catalog.
@@ -97,7 +97,7 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
 export class CatalogController {
   constructor(
     private readonly catalogService: CatalogService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly tenantCacheService: TenantCacheService,
     @Optional()
     @InjectQueue(CATALOG_DISCOVERY_QUEUE)
     private readonly discoveryQueue?: Queue<CatalogDiscoveryJobData>,
@@ -164,7 +164,9 @@ export class CatalogController {
       registerYamlDto.yaml,
       req.organizationId,
     );
-    await this.cacheManager.clear();
+    await this.tenantCacheService.invalidateByPrefix(
+      CacheKeyBuilder.orgPrefix(req.organizationId ?? "", "catalog"),
+    );
     return result;
   }
 
@@ -189,7 +191,9 @@ export class CatalogController {
       createComponentDto,
       req.organizationId,
     );
-    await this.cacheManager.clear();
+    await this.tenantCacheService.invalidateByPrefix(
+      CacheKeyBuilder.orgPrefix(req.organizationId ?? "", "catalog"),
+    );
     return result;
   }
 
@@ -295,7 +299,9 @@ export class CatalogController {
       updateComponentDto,
       req.organizationId,
     );
-    await this.cacheManager.clear();
+    await this.tenantCacheService.invalidateByPrefix(
+      CacheKeyBuilder.orgPrefix(req.organizationId ?? "", "catalog"),
+    );
     return result;
   }
 
@@ -319,7 +325,9 @@ export class CatalogController {
     @Req() req: Request & RequestWithOrg,
   ): Promise<void> {
     await this.catalogService.remove(id, req.organizationId);
-    await this.cacheManager.clear();
+    await this.tenantCacheService.invalidateByPrefix(
+      CacheKeyBuilder.orgPrefix(req.organizationId ?? "", "catalog"),
+    );
   }
 
   /**

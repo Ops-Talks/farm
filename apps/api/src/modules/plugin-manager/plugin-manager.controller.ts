@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { CacheInterceptor } from "@nestjs/cache-manager";
 import { ConfigService } from "@nestjs/config";
@@ -29,8 +30,11 @@ import {
   PluginManifest,
 } from "./interfaces/plugin.interface";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PluginInstanceService } from "./services/plugin-instance.service";
 import { PluginRegistryService } from "./services/plugin-registry.service";
@@ -43,7 +47,13 @@ import { PluginRegistryEntry } from "./entities/plugin-registry-entry.entity";
 
 @ApiTags("Plugins")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("plugins")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
@@ -97,7 +107,7 @@ export class PluginManagerController {
    * Retrieves all route contributions from registered plugins
    */
   @Get("routes")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @UseInterceptors(CacheInterceptor)
   @ApiOperation({ summary: "Get all plugin route contributions" })
   @ApiResponse({
@@ -115,7 +125,7 @@ export class PluginManagerController {
    * @returns Array of manifests discovered during the reload scan
    */
   @Post("reload")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Reload plugins from the plugins directory" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -162,7 +172,7 @@ export class PluginManagerController {
    * Publishes a plugin manifest to the community registry. Admin only.
    */
   @Post("registry")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Publish a plugin manifest to the registry" })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -237,7 +247,7 @@ export class PluginManagerController {
    * Installs a plugin for an organization. Admin only.
    */
   @Post(":pluginId/install")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @ApiOperation({ summary: "Install a plugin" })
   @ApiParam({ name: "pluginId", description: "Registry plugin ID to install" })
   @ApiResponse({
@@ -266,7 +276,7 @@ export class PluginManagerController {
    * Enables a disabled plugin instance. Admin only.
    */
   @Post(":id/enable")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Enable a plugin instance" })
   @ApiParam({ name: "id", description: "Plugin instance UUID" })
@@ -293,7 +303,7 @@ export class PluginManagerController {
    * Disables an active plugin instance. Admin only.
    */
   @Post(":id/disable")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Disable a plugin instance" })
   @ApiParam({ name: "id", description: "Plugin instance UUID" })
@@ -320,7 +330,7 @@ export class PluginManagerController {
    * Uninstalls a plugin instance. Admin only.
    */
   @Delete(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.ORG_MANAGE)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Uninstall a plugin instance" })
   @ApiParam({ name: "id", description: "Plugin instance UUID" })

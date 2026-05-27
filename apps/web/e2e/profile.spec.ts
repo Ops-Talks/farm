@@ -39,13 +39,20 @@ const MOCK_PROFILE = {
 
 async function mockProfileRoutes(page: import("@playwright/test").Page) {
   // Catch-all so unrelated API calls don't bleed through.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  // mock (registered in beforeEach) can intercept GET /auth/profile, while
+  // /auth/profile/password is handled by its own explicit mock below.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({}),
-    }),
-  );
+    });
+  });
 
   // PATCH /auth/profile/password is stubbed explicitly for the password
   // change flow. This glob does not overlap with **/api/v1/auth/profile,

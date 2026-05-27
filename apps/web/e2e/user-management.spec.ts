@@ -12,6 +12,7 @@
 
 import { test, expect } from "@playwright/test";
 import { setupAuthStorage } from "./helpers/setup-auth-storage";
+import { setupOrgMock } from "./helpers/setup-org-mock";
 
 // sessionStorage cannot be restored via storageState (per-tab only), so we
 // seed the auth tokens with addInitScript before each test page load.
@@ -57,13 +58,21 @@ const EMPTY_USERS = { users: [], total: 0, page: 1, pageSize: 20 };
 
 async function stubFeatureAndOrgs(page: import("@playwright/test").Page) {
   // Catch-all so unrelated API calls don't 404 and crash the page.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs fall through via route.fallback() so that
+  // setupAuthStorage's profile mock (registered in beforeEach) intercepts
+  // GET /auth/profile. route.continue() would make a real network request
+  // (no backend in E2E) — route.fallback() passes to the next Playwright handler.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   await page.route("**/api/v1/features/availability", (route) =>
     route.fulfill({
@@ -73,13 +82,7 @@ async function stubFeatureAndOrgs(page: import("@playwright/test").Page) {
     }),
   );
 
-  await page.route("**/api/v1/organizations*", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ data: [{ id: "org_1", name: "Acme", slug: "acme" }], total: 1 }),
-    }),
-  );
+  await setupOrgMock(page);
 }
 
 test("renders the users table with mocked data", async ({ page }) => {

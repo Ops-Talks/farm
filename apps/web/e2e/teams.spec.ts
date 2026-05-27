@@ -47,13 +47,19 @@ async function mockTeamsRoutes(
   // Catch-all registered FIRST so specific routes (registered after) take
   // priority. Playwright resolves routes in LIFO order — the last registered
   // route wins — so the catch-all must be first to have the lowest priority.
-  await page.route("**/api/v1/**", (route) =>
-    route.fulfill({
+  // Auth-scoped URLs are passed through so that setupAuthStorage's profile
+  // mock (registered in beforeEach) can intercept GET /auth/profile.
+  await page.route("**/api/v1/**", (route) => {
+    if (route.request().url().includes("/api/v1/auth/")) {
+      void route.fallback();
+      return;
+    }
+    void route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ data: [], total: 0 }),
-    }),
-  );
+    });
+  });
 
   // Team members (more specific than the teams base route — register first
   // among the specific routes so it is not shadowed by the teams base route)

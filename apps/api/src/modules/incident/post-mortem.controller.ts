@@ -19,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiBearerAuth,
+  ApiHeader,
 } from "@nestjs/swagger";
 import { Request } from "express";
 import { PostMortemService } from "./post-mortem.service";
@@ -27,15 +28,24 @@ import { UpdatePostMortemDto } from "./dto/update-post-mortem.dto";
 import { PostMortem } from "./entities/post-mortem.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
+import { OrgRequired } from "../../common/decorators/org-required.decorator";
+import { PermissionGuard } from "../../common/guards/permission.guard";
+import { RequiresPermission } from "../../common/decorators/requires-permission.decorator";
+import { Permission } from "@farm/types";
 
 /**
  * Controller for managing post-mortem analyses.
  */
 @ApiTags("Post-Mortems")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiHeader({
+  name: "x-organization-id",
+  required: true,
+  description: "Organization ID",
+})
+@OrgRequired()
+@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
 @Controller("post-mortems")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
@@ -62,15 +72,15 @@ export class PostMortemController {
 
   /**
    * Creates a new post-mortem for an incident.
-   * The organizationId is taken from the OrgContextInterceptor (X-Organization-Id header)
-   * and cannot be overridden by the request body.
+   * The organizationId is resolved from the X-Organization-Id header by
+   * OptionalOrgGuard and may be undefined when the header is absent.
    * @param req - The incoming request containing the JWT user payload and org context
    * @param dto - The data for the new post-mortem
    * @returns The created post-mortem
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Create a new post-mortem" })
   @ApiCreatedResponse({
     description: "The post-mortem has been successfully created.",
@@ -153,7 +163,7 @@ export class PostMortemController {
    * @returns The updated post-mortem
    */
   @Patch(":id")
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Update a post-mortem" })
   @ApiParam({
     name: "id",
@@ -183,7 +193,7 @@ export class PostMortemController {
    * @returns The approved post-mortem
    */
   @Patch(":id/approve")
-  @Roles("admin")
+  @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Approve a post-mortem" })
   @ApiParam({
     name: "id",

@@ -18,9 +18,7 @@ import { EventsGateway } from "./events.gateway";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>("auth.jwtSecret") ??
-          "super-secret-key-change-me-in-production",
+        secret: configService.get<string>("auth.jwtSecret"),
       }),
     }),
   ],

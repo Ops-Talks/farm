@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- **FARM-S589**: Remove all hardcoded `"super-secret-key-change-me-in-production"` fallbacks from `configuration.ts`, `auth.module.ts`, `jwt.strategy.ts`, `events.module.ts`, and `integration-credential.service.ts`. Joi schema now requires `JWT_SECRET` (min 32 chars) and Swagger credentials outside `test` environment — API fails fast at boot when unset.
+- **FARM-S590**: Centralize bcrypt cost in `src/common/constants/bcrypt.ts` (`BCRYPT_ROUNDS=12`, env-overridable). All 7 bcrypt call sites updated. Lazy re-hash on login transparently upgrades legacy cost-10 hashes. Unit tests use `BCRYPT_ROUNDS=4` via `jest.setup.ts`.
+- **FARM-S591**: Delete global `OrgContextInterceptor` and `APP_INTERCEPTOR` registration — eliminates redundant DB call on every request. Add `OptionalOrgContextGuard` for endpoints accepting optional org header.
+- **FARM-S592**: Replace `cacheManager.clear()` with `TenantCacheService` + `CacheKeyBuilder`. Cache keys scoped to `org:${orgId}:<namespace>:<resource>` — cross-tenant cache poisoning eliminated.
+- **FARM-S593**: Migrate ~20 org-scoped controllers from `RolesGuard+@Roles("admin")` to canonical `JwtAuthGuard→OrgRequiredGuard→PermissionGuard+@RequiresPermission(...)` chain. Updated Swagger annotations on all affected controllers.
+
+### Changed
+- **architecture (FARM-E148)**: Replace app-level proxies with Kubernetes Ingress path-based routing.
+  - Delete `apps/web/src/proxy.ts` (Next.js Middleware URL rewriter — anti-pattern).
+  - Delete `apps/web/src/app/api/plugin-proxy/route.ts` (Route Handler proxy — anti-pattern).
+  - Remove `API_INTERNAL_URL` from web app, Helm chart values, configmap template, and `_helpers.tpl`.
+  - Remove `admin` rewrite from `next.config.ts`; Bull Board accessible via Ingress `/admin` path.
+  - Update `PluginRenderer.tsx` to call the API directly at the validated same-origin relative URL.
+  - Split `deploy/helm/farm/templates/ingress.yaml` into `ingress-api.yaml` and `ingress-web.yaml`.
+  - Add `ingress.hostname` (shared) to `values.yaml`; API gets paths `[/api, /admin]`, web gets `[/]`.
+  - Add ingress hostname guard to `validate.yaml`.
+  - Update `values-dev.yaml` with `ingress.enabled: true`, `className: nginx`, `hostname: farm.local`.
+  - Update `Makefile` `kind-deploy` to install ingress-nginx `v1.12.2` before Helm upgrade.
+
 ## [0.25.7] - 2026-05-25
 
 ### Added

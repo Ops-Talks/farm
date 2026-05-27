@@ -212,18 +212,6 @@ Resolve the Redis port.
 {{- end }}
 
 {{/*
-Resolve the API internal URL for the Web service.
-Auto-constructs the in-cluster URL when web.env.API_INTERNAL_URL is not set.
-*/}}
-{{- define "farm.apiInternalUrl" -}}
-{{- if .Values.web.env.API_INTERNAL_URL -}}
-{{- .Values.web.env.API_INTERNAL_URL -}}
-{{- else -}}
-{{- printf "http://%s-api:%d/api" (include "farm.fullname" .) (int .Values.api.service.port) -}}
-{{- end -}}
-{{- end }}
-
-{{/*
 Merged image pull secrets from global and workload-specific lists.
 */}}
 {{- define "farm.api.imagePullSecrets" -}}

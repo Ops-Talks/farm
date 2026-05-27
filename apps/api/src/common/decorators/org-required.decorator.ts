@@ -7,7 +7,7 @@ export const ORG_REQUIRED_KEY = "orgRequired";
 
 /**
  * Marks a controller or individual route handler as requiring a resolved
- * organizationId on the request (set by OrgContextInterceptor).
+ * organizationId on the request (set by OrgRequiredGuard).
  *
  * Pair with OrgRequiredGuard to enforce the restriction.
  */

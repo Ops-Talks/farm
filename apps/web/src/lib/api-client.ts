@@ -172,22 +172,14 @@ const API_BASE = "/api";
 
 // -- sessionStorage safe wrappers --
 // sessionStorage can throw DOMException (quota exceeded, SecurityError in
-// restricted browser contexts). Always use these wrappers so that token
-// storage failures degrade gracefully instead of crashing the app.
+// restricted browser contexts). Always use these wrappers so that storage
+// failures degrade gracefully instead of crashing the app.
 
 function safeSessionGet(key: string): string | null {
   try {
     return sessionStorage.getItem(key);
   } catch {
     return null;
-  }
-}
-
-function safeSessionSet(key: string, value: string): void {
-  try {
-    sessionStorage.setItem(key, value);
-  } catch (err) {
-    console.warn("[api-client] sessionStorage write failed", { key, error: String(err) });
   }
 }
 
@@ -200,48 +192,48 @@ function safeSessionRemove(key: string): void {
 }
 
 // -- Token storage --
+//
+// Tokens are now delivered as httpOnly cookies by the API (FARM-S598).
+// The in-memory variables below serve as a backward-compatibility layer for
+// flows that cannot use cookies (LDAP, OAuth callbacks) so that
+// `getAccessToken()` and `setTokens()` continue to work for WebSocket auth
+// and the LoginClient LDAP path.
+//
+// sessionStorage is no longer written: storing tokens there is the exact
+// XSS vulnerability FARM-S598 was created to eliminate.
 
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 let currentUsername: string | null = null;
 
+/**
+ * Store tokens in memory only.
+ * Used by LDAP and OAuth callback flows that bypass the cookie-based login
+ * endpoint. The browser-cookie path (standard login) does not call this.
+ */
 export function setTokens(token: string, refresh: string, username: string) {
   accessToken = token;
   refreshToken = refresh;
   currentUsername = username;
-
-  if (typeof window !== "undefined") {
-    safeSessionSet("farm_token", token);
-    safeSessionSet("farm_refresh", refresh);
-    safeSessionSet("farm_username", username);
-  }
 }
 
+/**
+ * Clear the in-memory token state.
+ * The httpOnly cookies are cleared server-side by POST /auth/logout.
+ */
 export function clearTokens() {
   accessToken = null;
   refreshToken = null;
   currentUsername = null;
-
-  if (typeof window !== "undefined") {
-    safeSessionRemove("farm_token");
-    safeSessionRemove("farm_refresh");
-    safeSessionRemove("farm_username");
-  }
 }
 
+/**
+ * Return the current in-memory access token if one exists (LDAP / OAuth
+ * flows). Returns null for standard cookie-based sessions — the browser
+ * sends the httpOnly cookie automatically without this value.
+ */
 export function getAccessToken(): string | null {
-  if (accessToken) return accessToken;
-  if (typeof window !== "undefined") {
-    accessToken = safeSessionGet("farm_token");
-  }
   return accessToken;
-}
-
-function getRefreshData(): { username: string; refreshToken: string } | null {
-  const rt = refreshToken ?? safeSessionGet("farm_refresh");
-  const un = currentUsername ?? safeSessionGet("farm_username");
-  if (!rt || !un) return null;
-  return { username: un, refreshToken: rt };
 }
 
 // -- Error class --
@@ -262,21 +254,15 @@ let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefreshToken(): Promise<boolean> {
-  const data = getRefreshData();
-  if (!data) return false;
-
   try {
+    // POST with credentials so the browser sends the refresh_token httpOnly
+    // cookie. No body is required — the server reads the cookie directly.
     const res = await fetch(`${API_BASE}/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      credentials: "include",
     });
-
-    if (!res.ok) return false;
-
-    const result = (await res.json()) as RefreshTokenResponse;
-    setTokens(result.token, result.refreshToken, data.username);
-    return true;
+    return res.ok;
   } catch (err) {
     console.warn("[api-client] Token refresh failed", {
       error: err instanceof Error ? err.message : String(err),
@@ -296,6 +282,9 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
+  // For LDAP / OAuth flows the token lives in memory; inject it as a Bearer
+  // header so those paths continue to work. For standard cookie-based
+  // sessions this will be null and the httpOnly cookie is sent automatically.
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -318,10 +307,23 @@ async function request<T>(
     }
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  // credentials: 'include' ensures the browser sends httpOnly cookies
+  // (access_token, refresh_token) on every API request.
+  let res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 
-  // Automatic token refresh on 401
-  if (res.status === 401 && getRefreshData()) {
+  // Automatic token refresh on 401 — attempt regardless of whether an
+  // in-memory token exists, because cookie-based sessions also return 401
+  // when the access_token cookie has expired.
+  // Auth endpoints (/login, /register) return 401 for wrong credentials, not
+  // expired sessions — skip the refresh loop so the original error body is
+  // preserved and shown to the user (e.g. "Invalid credentials").
+  const isCredentialEndpoint =
+    path.endsWith("/auth/login") || path.endsWith("/auth/register");
+  if (res.status === 401 && !isCredentialEndpoint) {
     if (!isRefreshing) {
       isRefreshing = true;
       refreshPromise = tryRefreshToken().finally(() => {
@@ -333,12 +335,20 @@ async function request<T>(
     const refreshed = await (refreshPromise ?? Promise.resolve(false));
 
     if (refreshed) {
+      // After a successful refresh the rotated access_token cookie is set
+      // automatically. For in-memory (LDAP) tokens, update the header too.
       const newToken = getAccessToken();
       if (newToken) {
         headers["Authorization"] = `Bearer ${newToken}`;
       }
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+        credentials: "include",
+      });
     } else {
+      // Clear any stale in-memory tokens; httpOnly cookies are cleared by
+      // the logout endpoint on the server.
       clearTokens();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
@@ -447,10 +457,24 @@ export const auth = {
     });
   },
 
-  refresh(data: RefreshTokenRequest): Promise<RefreshTokenResponse> {
+  /**
+   * Refresh the access token using the httpOnly refresh_token cookie.
+   * No body is required — the server reads the cookie automatically.
+   * Rotated tokens are delivered via Set-Cookie in the response.
+   */
+  refresh(): Promise<RefreshTokenResponse> {
     return request("/v1/auth/refresh", {
       method: "POST",
-      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Terminate the current session by clearing both auth cookies server-side.
+   * Always call this instead of manually removing tokens from storage.
+   */
+  logout(): Promise<{ message: string }> {
+    return request("/v1/auth/logout", {
+      method: "POST",
     });
   },
 
@@ -527,14 +551,23 @@ export const auth = {
 
   /**
    * Authenticate with LDAP / Active Directory credentials.
-   * Returns the same LoginResponse shape as the local login endpoint.
+   * The LDAP endpoint is not yet cookie-based — it returns tokens directly in
+   * the response body. Tokens are stored in memory by LoginClient.tsx via
+   * setTokens(). LDAP cookie support is tracked as a separate ticket.
    */
-  loginLdap(data: { username: string; password: string }): Promise<LoginResponse> {
-    return request<LoginResponse>('/v1/auth/login/ldap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+  loginLdap(data: { username: string; password: string }): Promise<{
+    user: User;
+    token: string;
+    refreshToken: string;
+  }> {
+    return request<{ user: User; token: string; refreshToken: string }>(
+      '/v1/auth/login/ldap',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      },
+    );
   },
 };
 

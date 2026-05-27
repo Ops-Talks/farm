@@ -192,16 +192,17 @@ function SandboxedIframe({ entryPoint }: SandboxedIframeProps) {
         }
 
         const token = getAccessToken();
-        // Route through the server-side proxy. The user-controlled path lives in
-        // the POST body, not in the fetch URL, which removes the CodeQL CSRF taint
-        // chain (the URL argument is now a fixed string literal).
-        fetch("/api/plugin-proxy", {
-          method: "POST",
+        // Call the API directly using the validated same-origin relative URL.
+        // safeUrl is guaranteed to start with /api/v1/ and be same-origin
+        // (validated above), so this fetch is equivalent to any other api-client
+        // call and does not introduce open-redirect or CSRF risks.
+        fetch(safeUrl, {
+          method,
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ path: safeUrl, method, body: data.body ?? null }),
+          body: data.body != null ? JSON.stringify(data.body) : undefined,
         })
           .then((res) => res.json())
           .then((responseData) => {

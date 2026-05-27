@@ -13,6 +13,20 @@ import { KeycloakOidcService } from "../keycloak-oidc.service";
 import { QUEUE_NAMES } from "../../../common/queues/queue-names";
 import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
+import { OrgRequiredGuard } from "../../../common/guards/org-required.guard";
+import { PermissionGuard } from "../../../common/guards/permission.guard";
+
+/**
+ * Builds a minimal fake JWT string whose payload can be base64url-decoded by
+ * the refresh endpoint without actual signature verification.
+ */
+function buildFakeJwt(payload: Record<string, unknown>): string {
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${header}.${body}.fakesignature`;
+}
 
 const mockAuthService = {
   register: jest.fn(),
@@ -51,7 +65,12 @@ describe("AuthController", () => {
           useValue: mockKeycloakSyncQueue,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     service = module.get(AuthService);
@@ -75,13 +94,28 @@ describe("AuthController", () => {
 
   it("login should return token and user", async () => {
     const dto: LoginDto = { username: "u", password: "p" };
-    const result = {
-      user: { id: "1" },
+    const serviceResult = {
+      user: { id: "1", username: "u" },
       token: "t",
       refreshToken: "rt",
     };
-    service.login.mockResolvedValue(result);
-    expect(await controller.login(dto)).toEqual(result);
+    service.login.mockResolvedValue(serviceResult);
+    const mockRes = { cookie: jest.fn() };
+    const result = await controller.login(dto, mockRes as never);
+    expect(result).toEqual({
+      message: "Login successful",
+      user: serviceResult.user,
+    });
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      "access_token",
+      "t",
+      expect.objectContaining({ httpOnly: true }),
+    );
+    expect(mockRes.cookie).toHaveBeenCalledWith(
+      "refresh_token",
+      "rt",
+      expect.objectContaining({ httpOnly: true }),
+    );
   });
 
   it("findAll should return users", async () => {
@@ -141,15 +175,63 @@ describe("AuthController", () => {
   });
 
   describe("refresh", () => {
-    it("should call authService.refresh with username and refreshToken", async () => {
-      const result = { token: "new-token", refreshToken: "new-refresh" };
-      service.refresh.mockResolvedValue(result);
-      const response = await controller.refresh({
-        username: "user",
-        refreshToken: "old-rt",
-      });
-      expect(response).toEqual(result);
+    it("should rotate tokens via cookies when refresh token cookie is present", async () => {
+      const serviceResult = {
+        token: "new-access",
+        refreshToken: "new-refresh",
+      };
+      service.refresh.mockResolvedValue(serviceResult);
+
+      const mockReq = {
+        cookies: {
+          refresh_token: "old-rt",
+          access_token: buildFakeJwt({ sub: "u1", username: "user" }),
+        },
+      };
+      const mockRes = { cookie: jest.fn() };
+
+      const result = await controller.refresh(
+        {},
+        mockReq as never,
+        mockRes as never,
+      );
+
       expect(service.refresh).toHaveBeenCalledWith("user", "old-rt");
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        "access_token",
+        "new-access",
+        expect.objectContaining({ httpOnly: true }),
+      );
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        "refresh_token",
+        "new-refresh",
+        expect.objectContaining({ httpOnly: true }),
+      );
+      expect(result).toEqual({ message: "Token refreshed" });
+    });
+
+    it("should throw UnauthorizedException when refresh token is absent", async () => {
+      const mockReq = { cookies: {} };
+      const mockRes = { cookie: jest.fn() };
+      await expect(
+        controller.refresh({}, mockReq as never, mockRes as never),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("logout", () => {
+    it("should clear both auth cookies and return a message", () => {
+      const mockRes = { clearCookie: jest.fn() };
+      const result = controller.logout(mockRes as never);
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        "access_token",
+        expect.objectContaining({ path: "/" }),
+      );
+      expect(mockRes.clearCookie).toHaveBeenCalledWith(
+        "refresh_token",
+        expect.objectContaining({ path: "/api/v1/auth/refresh" }),
+      );
+      expect(result).toEqual({ message: "Logged out successfully" });
     });
   });
 
@@ -396,7 +478,12 @@ describe("AuthController", () => {
           { provide: KeycloakOidcService, useValue: mockKeycloakOidcService },
           // Queue is intentionally omitted to simulate null optional dependency.
         ],
-      }).compile();
+      })
+        .overrideGuard(OrgRequiredGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(PermissionGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
 
       const ctrl = module.get<AuthController>(AuthController);
       const result = await ctrl.triggerKeycloakSync("org-no-queue");
@@ -443,7 +530,12 @@ describe("AuthController — LDAP and providers (with ConfigService)", () => {
           useValue: mockKeycloakSyncQueue,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(OrgRequiredGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     jest.clearAllMocks();
