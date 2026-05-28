@@ -232,6 +232,16 @@ api:
     ingressControllerNamespaceSelector: {}
     # -- Pod selector for the Ingress controller pod.
     ingressControllerPodSelector: {}
+    # -- NetworkPolicyPeer entries for the database egress rule when postgresql.enabled is false
+    # and externalDatabase.egressIpBlock is empty. When also empty, DB egress is denied.
+    # Example (RDS via CIDR): [{ ipBlock: { cidr: "10.0.0.0/16" } }]
+    externalDatabaseEgress: []
+    # -- NetworkPolicyPeer entries for the Redis egress rule when redis.enabled is false
+    # and externalRedis.egressIpBlock is empty.
+    externalRedisEgress: []
+    # -- Additional egress rules appended verbatim. Use to open custom ports (gRPC, SMTP, etc.).
+    # Example: [{ ports: [{ protocol: TCP, port: 587 }] }]
+    additionalEgressRules: []
 
 # ─── WEB ─────────────────────────────────────────────────────────────────────
 
@@ -371,42 +381,6 @@ web:
     ingressControllerNamespaceSelector: {}
     ingressControllerPodSelector: {}
 
-# ─── INGRESS ─────────────────────────────────────────────────────────────────
-
-ingress:
-  enabled: false
-  # -- Ingress class name (e.g., "nginx", "traefik", "alb").
-  className: ""
-  # -- Shared annotations applied to both the API and web Ingress resources.
-  # Per-service annotations in ingress.api.annotations / ingress.web.annotations
-  # take precedence via merge when set.
-  # Examples (WebSocket / long-poll support — required for Farm's live updates):
-  #   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-  #   nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-  annotations: {}
-  # -- Hostname and path for the API service.
-  api:
-    hostname: farm-api.example.com
-    path: /
-    pathType: Prefix
-    # -- Annotations specific to the API Ingress resource.
-    # Merged with (and overrides) ingress.annotations for the API Ingress.
-    annotations: {}
-  # -- Hostname and path for the web service.
-  web:
-    hostname: farm.example.com
-    path: /
-    pathType: Prefix
-    # -- Annotations specific to the web Ingress resource.
-    # Merged with (and overrides) ingress.annotations for the web Ingress.
-    annotations: {}
-  # -- TLS configuration.
-  tls: []
-  # - secretName: farm-tls
-  #   hosts:
-  #     - farm.example.com
-  #     - farm-api.example.com
-
 # ─── MIGRATION ───────────────────────────────────────────────────────────────
 
 migration:
@@ -428,6 +402,20 @@ migration:
       memory: 256Mi
   # -- Additional annotations on the migration Job pod template.
   podAnnotations: {}
+  # -- Init container that waits for the database to be reachable before running migrations.
+  waitForDb:
+    enabled: true
+    # -- Image used for the TCP probe. Must have `nc` (netcat) available.
+    # Pin to a digest in production: busybox:1.36@sha256:<digest>
+    image: busybox:1.36
+    # -- Maximum number of TCP probe attempts before giving up.
+    # With intervalSeconds=2 and retries=60, the budget is ~2 minutes.
+    retries: 60
+    # -- Seconds between TCP probe attempts.
+    intervalSeconds: 2
+  # -- Pre-upgrade DB reachability check Job (runs at hook weight -20, before migration).
+  preUpgradeCheck:
+    enabled: true
 
 # ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
 # Used when postgresql.enabled is false (production default).
@@ -444,6 +432,11 @@ externalDatabase:
   # The Secret must contain a key named "database-password".
   existingSecret: ""
   existingSecretKey: "database-password"
+  # -- CIDR block for the NetworkPolicy egress rule to the external database.
+  # Convenience shorthand for api.networkPolicy.externalDatabaseEgress when the
+  # external DB is reachable via a known IP range (e.g. RDS VPC CIDR).
+  # Example: "10.0.0.0/16". Leave empty to use externalDatabaseEgress (full peer spec).
+  egressIpBlock: ""
 
 # ─── EXTERNAL REDIS ──────────────────────────────────────────────────────────
 # Used when redis.enabled is false (production default).
@@ -456,6 +449,10 @@ externalRedis:
   password: ~
   existingSecret: ""
   existingSecretKey: "redis-password"
+  # -- CIDR block for the NetworkPolicy egress rule to the external Redis.
+  # Convenience shorthand for api.networkPolicy.externalRedisEgress.
+  # Example: "10.0.0.0/16". Leave empty to use externalRedisEgress (full peer spec).
+  egressIpBlock: ""
 
 # ─── BITNAMI POSTGRESQL SUBCHART ─────────────────────────────────────────────
 # Only deployed when postgresql.enabled is true (suitable for dev/staging).

@@ -1,0 +1,76 @@
+{{- if and .Values.migration.preUpgradeCheck.enabled .Values.migration.enabled }}
+# ── Pre-upgrade DB reachability check ─────────────────────────────────────────
+# Hook weight -20 ensures this Job runs before the migration Job (weight -1).
+# If the connectivity check fails the upgrade is aborted before any schema
+# changes are attempted, preventing a hung migration from consuming the
+# activeDeadlineSeconds budget while the database is unavailable.
+#
+# Gated on migration.enabled because the rest of the migration tooling
+# (ConfigMap, Secret, Job) is only rendered when migrations run.
+#
+# No serviceAccountName is set on purpose: Helm processes hook weights in
+# ascending order, so this Job at weight -20 runs before the migration
+# ServiceAccount at weight -5 is created. The TCP nc probe requires no API
+# permissions, so the namespace default ServiceAccount is sufficient.
+#
+# Only fires on `helm upgrade`. On fresh install there is no pre-upgrade hook
+# phase, so this Job is not created.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "farm.fullname" . }}-pre-upgrade-check
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pre-upgrade-check
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 60
+  template:
+    metadata:
+      labels:
+        {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: pre-upgrade-check
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      containers:
+        - name: db-check
+          image: {{ .Values.migration.waitForDb.image }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              RETRIES=6
+              INTERVAL=5
+              i=0
+              while [ $i -lt $RETRIES ]; do
+                if nc -z "${DATABASE_HOST}" "${DATABASE_PORT:-5432}"; then
+                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432}"
+                  exit 0
+                fi
+                echo "Attempt $((i+1))/${RETRIES}: database not ready, retrying in ${INTERVAL}s..."
+                sleep $INTERVAL
+                i=$((i+1))
+              done
+              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable. Aborting upgrade."
+              exit 1
+          # Env vars are inlined because the migration-config ConfigMap (hook weight -10)
+          # does not exist yet when this Job runs at hook weight -20.
+          env:
+            - name: DATABASE_HOST
+              value: {{ include "farm.databaseHost" . | quote }}
+            - name: DATABASE_PORT
+              value: {{ include "farm.databasePort" . | quote }}
+{{- end }}

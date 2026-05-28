@@ -205,7 +205,19 @@
           "properties": {
             "enabled": { "type": "boolean" },
             "ingressControllerNamespaceSelector": { "type": "object" },
-            "ingressControllerPodSelector": { "type": "object" }
+            "ingressControllerPodSelector": { "type": "object" },
+            "externalDatabaseEgress": {
+              "type": "array",
+              "items": { "type": "object" }
+            },
+            "externalRedisEgress": {
+              "type": "array",
+              "items": { "type": "object" }
+            },
+            "additionalEgressRules": {
+              "type": "array",
+              "items": { "type": "object" }
+            }
           }
         }
       }
@@ -335,37 +347,6 @@
         }
       }
     },
-    "ingress": {
-      "description": "Ingress configuration for API and web services.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "type": "boolean" },
-        "className": { "type": "string" },
-        "annotations": { "type": "object" },
-        "api": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "hostname": { "type": "string" },
-            "path": { "type": "string" },
-            "pathType": { "type": "string", "enum": ["Prefix", "Exact", "ImplementationSpecific"] },
-            "annotations": { "type": "object" }
-          }
-        },
-        "web": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "hostname": { "type": "string" },
-            "path": { "type": "string" },
-            "pathType": { "type": "string", "enum": ["Prefix", "Exact", "ImplementationSpecific"] },
-            "annotations": { "type": "object" }
-          }
-        },
-        "tls": { "type": "array" }
-      }
-    },
     "migration": {
       "description": "Pre-install/pre-upgrade database migration Job configuration.",
       "type": "object",
@@ -385,7 +366,24 @@
           "minimum": 1
         },
         "resources": { "type": "object" },
-        "podAnnotations": { "type": "object" }
+        "podAnnotations": { "type": "object" },
+        "waitForDb": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "image": { "type": "string" },
+            "retries": { "type": "integer", "minimum": 1 },
+            "intervalSeconds": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "preUpgradeCheck": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        }
       }
     },
     "externalDatabase": {
@@ -402,7 +400,8 @@
         },
         "name": { "type": "string" },
         "existingSecret": { "type": "string" },
-        "existingSecretKey": { "type": "string" }
+        "existingSecretKey": { "type": "string" },
+        "egressIpBlock": { "type": "string" }
       }
     },
     "externalRedis": {
@@ -417,7 +416,8 @@
           "type": ["string", "null"]
         },
         "existingSecret": { "type": "string" },
-        "existingSecretKey": { "type": "string" }
+        "existingSecretKey": { "type": "string" },
+        "egressIpBlock": { "type": "string" }
       }
     },
     "postgresql": {
