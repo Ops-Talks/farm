@@ -6,8 +6,9 @@ metadata:
   labels:
     {{- include "farm.web.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.web.env }}
-  {{- if eq $key "API_INTERNAL_URL" }}
+  {{- range $key := (.Values.web.env | keys | sortAlpha) }}
+  {{- $value := get $.Values.web.env $key }}
+  {{- if and (eq $key "API_INTERNAL_URL") (not $value) }}
   {{ $key }}: {{ include "farm.apiInternalUrl" $ | quote }}
   {{- else }}
   {{ $key }}: {{ $value | quote }}

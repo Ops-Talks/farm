@@ -33,6 +33,6 @@
     "after:bump": [
       "npm --prefix ../../apps/web version ${version} --no-git-tag-version --allow-same-version"
     ],
-    "before:release": "git add ../../CHANGELOG.md ../../apps/web/package.json"
+    "before:release": "git add ../../CHANGELOG.md ../../apps/web/package.json ../../deploy/helm/farm/Chart.yaml"
   }
 }
