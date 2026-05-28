@@ -1,0 +1,15 @@
+Farm Observability stack deployed successfully.
+
+Components installed:
+  - kube-prometheus-stack (Prometheus, Grafana, Alertmanager)
+  - Loki (log aggregation)
+  - Tempo (distributed tracing)
+  - Alloy (telemetry collector)
+  - Pyroscope (continuous profiling)
+
+Access Grafana:
+  kubectl port-forward svc/{{ .Release.Name }}-grafana 3000:80 -n {{ .Release.Namespace }}
+  Open http://localhost:3000
+
+For full configuration reference see:
+  https://github.com/Ops-Talks/farm/tree/main/deploy/helm/observability
