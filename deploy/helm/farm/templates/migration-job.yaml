@@ -156,4 +156,9 @@ spec:
             - secretRef:
                 name: {{ include "farm.fullname" . }}-migration-secret
             {{- end }}
+          {{- $externalSecretEnv := include "farm.api.externalSecretEnv" . | trim }}
+          {{- if $externalSecretEnv }}
+          env:
+            {{- $externalSecretEnv | nindent 12 }}
+          {{- end }}
 {{- end }}
