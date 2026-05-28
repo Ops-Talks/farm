@@ -749,3 +749,75 @@ Ensure `values-dev.yaml` reflects the full local stack and the README documents 
 |----|-------|--------|
 | FARM-S573 | Update `values-dev.yaml` with all three integration blocks enabled, pointing to local in-cluster service URLs matching `docker-compose.observability.yml` (`tracing.endpoint: http://alloy:4318/v1/traces`, `pyroscope.url: http://pyroscope:4040`, `faro.url: http://alloy:12347/collect`). (OBS-F005) | `DONE` |
 | FARM-S574 | Update the README parameters table with the new `tracing`, `pyroscope`, and `faro` top-level blocks. Remove the stale `api.observability.*` entries. (OBS-F006) | `DONE` |
+
+---
+
+## Phase 53: Helm Chart Quality Remediation `TODO`
+
+Resolve all 40 problems identified in the post-release technical audit of `deploy/helm/`. Issues are classified into five areas: critical rendering bugs, credential and security hardening, production-safe defaults, template and schema correctness, and CI/CD pipeline hardening. Every item has a concrete, verifiable fix. No behavioral change to the application — only chart quality, safety, and operability improvements.
+
+### FARM-E143: Critical Rendering Fixes `TODO`
+
+Four bugs that cause incorrect Kubernetes manifests or silent security failures on every `helm install` / `helm upgrade` regardless of cluster or values file.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S575 | Pin dependency versions in `deploy/helm/farm/Chart.yaml` from floating ranges (`15.x.x`, `19.x.x`) to exact versions matching `Chart.lock` (`postgresql: "15.5.38"`, `redis: "19.6.4"`). Floating ranges allow `helm dependency update` to silently pull a different subchart version than what is in the lock file, breaking supply-chain reproducibility. | `TODO` |
+| FARM-S576 | Create `deploy/helm/farm/templates/_validate.tpl` with two guards: (1) `fail` when `api.secrets.JWT_SECRET` equals the default placeholder string; (2) `fail` when `len(api.secrets.JWT_SECRET) < 32`. Both checks are skipped when `api.existingSecret` is set. Add a corresponding `minLength: 32` constraint to the `api.secrets` section of `values.schema.json`. | `TODO` |
+| FARM-S577 | Wrap `spec.replicas` in both `templates/api/deployment.yaml` and `templates/web/deployment.yaml` with `{{- if not .Values.api.autoscaling.enabled }}` / `{{- end }}`. When HPA is active, `helm upgrade` currently resets replicas to the static value on every run, causing a scale-down spike before the HPA recovers. | `TODO` |
+| FARM-S578 | Fix the `farm.imagePullSecrets` helper in `templates/_helpers.tpl` to iterate with `{{ .name }}` instead of `{{ . }}`. The current implementation serializes the full map object (`map[name:xxx]`) when `imagePullSecrets` contains objects (the format validated by `values.schema.json`), producing invalid YAML that the kube-apiserver rejects. | `TODO` |
+
+### FARM-E144: Security and Credential Hardening `TODO`
+
+Credentials and access controls that are either hardcoded in committed files or default to insecure values that will reach production silently.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S579 | Remove `grafana.adminPassword: farm` from `deploy/helm/observability/values.yaml`. Replace with `grafana.admin.existingSecret: ""` and add a `fail` guard in `deploy/helm/observability/templates/NOTES.txt` (or a validate template) that aborts `helm install` if `adminPassword` is non-empty and `admin.existingSecret` is empty in a non-dev context. Update `values-dev.yaml` to keep the dev password override explicitly. | `TODO` |
+| FARM-S580 | Move `grafana.auth.anonymous.enabled: true` and `grafana.auth.anonymous.org_role: Viewer` from `deploy/helm/observability/values.yaml` to `values-dev.yaml` only. Set `auth.anonymous.enabled: false` as the production default. Anonymous read access to Grafana exposes all metrics, traces, and logs to anyone with network access to the cluster. | `TODO` |
+| FARM-S581 | Set `loki.loki.auth_enabled: true` in `deploy/helm/observability/values.yaml`. Without authentication, any pod in the cluster can write arbitrary log entries to Loki or read logs from any namespace. Document the required `tenant_id` configuration in the Alloy pipeline and Grafana datasource in `values-dev.yaml` and README. | `TODO` |
+| FARM-S582 | Replace `cors_allowed_origins = ["*"]` in the Alloy Faro receiver configuration in `deploy/helm/observability/values.yaml` with a configurable value defaulting to `[]`. Add a top-level `faro.corsAllowedOrigins` key in `values.yaml` and render it into the inline Alloy River config. Document the required domain in README. | `TODO` |
+| FARM-S583 | Change `externalDatabase.host` and `externalRedis.host` defaults in `deploy/helm/farm/values.yaml` from `"localhost"` to `""`. Add `fail` guards in `_validate.tpl`: abort if `postgresql.enabled: false` and `externalDatabase.host` is empty; abort if `redis.enabled: false` and `externalRedis.host` is empty. `localhost` is an invalid address in any Kubernetes pod network. | `TODO` |
+
+### FARM-E145: Production Defaults and High Availability `TODO`
+
+Values that default to configurations that cause downtime or silent monitoring gaps when the chart is deployed to production without explicit overrides.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S584 | Change `api.replicaCount` and `web.replicaCount` defaults in `deploy/helm/farm/values.yaml` from `1` to `2`. A single replica is a Single Point of Failure: any pod restart (OOM kill, liveness probe failure, node eviction) causes downtime. The `values-dev.yaml` override of `replicaCount: 1` remains correct for local KinD. | `TODO` |
+| FARM-S585 | Enable `podDisruptionBudget` by default (`enabled: true`, `minAvailable: 1`) for both `api` and `web` in `deploy/helm/farm/values.yaml`. Without a PDB, `kubectl drain` (cluster upgrades, node maintenance, spot instance interruptions) evicts all pods simultaneously. The current default of `enabled: false` makes the HA from `replicaCount: 2` (S584) ineffective during maintenance windows. | `TODO` |
+| FARM-S586 | Enable `serviceMonitor.enabled: true` and `prometheusRule.enabled: true` by default in `deploy/helm/farm/values.yaml`. A production deployment with defaults today has no metrics collection and no alerts — including `FarmApiDown`. Operators without Prometheus Operator must explicitly set both to `false`; this is the correct opt-out model. Add a note to `values.yaml` indicating the Prometheus Operator CRD requirement. | `TODO` |
+| FARM-S587 | Add a `fail` guard in `_validate.tpl` that aborts `helm install` when `prometheusRule.enabled: true` and the Alertmanager default receiver is `"null"`. This prevents silent alert black-holes in production. Add a commented-out routing template in `deploy/helm/observability/values.yaml` with instructions for configuring PagerDuty or Slack receivers. | `TODO` |
+| FARM-S588 | Document in `deploy/helm/observability/README.md` that Loki (`replication_factor: 1`, SingleBinary), Tempo (`backend: local`), and Pyroscope (`replication_factor: 1`) are configured for single-node operation and are not suitable for production HA without migrating to S3/GCS/Azure Blob object storage. Add a `WARNING` block to `values.yaml` comments for each component. | `TODO` |
+
+### FARM-E146: Template and Schema Correctness `TODO`
+
+Template logic bugs, missing validations, and schema gaps that cause silent misconfigurations, runtime failures, or manifest drift.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S589 | Replace the `egress: - {}` (allow-all) rule in `deploy/helm/farm/templates/web/networkpolicy.yaml` with structured egress rules: DNS (UDP/TCP 53), API service pod selector on `api.service.port`, and HTTPS (TCP 443). The current wildcard negates any security value of the NetworkPolicy and creates a false sense of confinement. | `TODO` |
+| FARM-S590 | Fix hardcoded `job="farm-api"` label in all PromQL expressions in `deploy/helm/farm/templates/prometheusrule.yaml` by replacing with `{{ include "farm.fullname" . }}-api`. Add a `relabelings` block to `templates/servicemonitor.yaml` that pins `targetLabel: job` to the same value. If the release name is not `farm`, all current PrometheusRules produce alerts that never fire. | `TODO` |
+| FARM-S591 | Add a `fail` guard in `deploy/helm/farm/templates/migration-job.yaml` for the case where `postgresql.enabled: false`, `externalDatabase.password` is empty, and `externalDatabase.existingSecret` is empty. The current fallback renders `DATABASE_PASSWORD: ""` in the migration Secret, which either causes a silent connection failure or, if the database has no password set, connects insecurely. | `TODO` |
+| FARM-S592 | Add `spec.ttlSecondsAfterFinished: 3600` to both `deploy/helm/farm/templates/migration-job.yaml` and `deploy/helm/farm/templates/pre-upgrade-check.yaml`. The current `hook-delete-policy: before-hook-creation,hook-succeeded` leaves failed Jobs in the namespace indefinitely, accumulating across repeated failed upgrade attempts. | `TODO` |
+| FARM-S593 | Extend `_validate.tpl` with cross-field HPA validation: `fail` when `api.autoscaling.maxReplicas < api.autoscaling.minReplicas` or `web.autoscaling.maxReplicas < web.autoscaling.minReplicas`. This configuration is accepted by `helm lint` but rejected by the kube-apiserver at apply time with a non-obvious error. | `TODO` |
+| FARM-S594 | Replace the hardcoded dashboard name list in `deploy/helm/farm/templates/grafana-dashboards.yaml` with `$.Files.Glob "dashboards/*.json"` iteration. The current list requires manual synchronization with the `dashboards/` directory — adding a new `.json` file without updating the list silently omits the dashboard from the ConfigMap. | `TODO` |
+| FARM-S595 | Migrate `deploy/helm/farm/templates/api/configmap.yaml` from per-field hardcoded key emission to `range $key := (.Values.api.env | keys | sortAlpha)` iteration, matching the pattern already used by the web ConfigMap. Any custom `api.env.*` key set by an operator today is silently ignored and never injected into the pod. Preserve the conditional blocks for tracing, pyroscope, and faro variables. | `TODO` |
+| FARM-S596 | Change `targetPort` in `deploy/helm/farm/templates/api/service.yaml` and `templates/web/service.yaml` from the hardcoded integer `3000` to the named port `http`. This creates a declarative binding to the container port by name and prevents silent routing failures if `containerPort` is ever changed. | `TODO` |
+| FARM-S597 | Add `extraVolumes` and `extraVolumeMounts` for `emptyDir` on `/tmp` and `/app/apps/web/.next/cache` to the web section of `deploy/helm/farm/values.yaml`. The web pod runs with `readOnlyRootFilesystem: true` (inherited from the base security context) but lacks writable volumes for Next.js runtime cache and temporary I/O, causing `EROFS: read-only file system` crashes. | `TODO` |
+| FARM-S598 | Add structured validation to `values.schema.json` for `podSecurityContext` and `containerSecurityContext`: enumerate required properties (`runAsNonRoot`, `runAsUser`, `allowPrivilegeEscalation`) with their expected types. Create `deploy/helm/observability/values.schema.json` with top-level type validation for `grafana`, `loki`, `tempo`, `alloy`, and `pyroscope` blocks. | `TODO` |
+| FARM-S599 | Pin the `migration.waitForDb.image` in `deploy/helm/farm/values.yaml` from `busybox:1.36` to `busybox:1.36@sha256:<digest>`. Resolve the current digest with `docker manifest inspect busybox:1.36`. Tag-only references violate the Base Image Digest Pin Policy (FARM-S538). | `TODO` |
+| FARM-S600 | Expand `deploy/helm/farm/.helmignore` and `deploy/helm/observability/.helmignore` to exclude `*.md` (except `README.md`), `ci/`, `tests/`, and `.github/` from `helm package` output. Fix `Chart.yaml`: set `home` to the project documentation URL and `sources` to the repository URL — currently both point to the same GitHub URL. Remove the dead `farm.selectorLabels` helper from `templates/_helpers.tpl` (defined but never referenced). | `TODO` |
+| FARM-S601 | Update `deploy/helm/farm/templates/NOTES.txt` to include Ingress configuration guidance (class annotation, TLS, host), LoadBalancer service option, and a reference to `values-production.yaml`. Add a datasource sidecar (`grafana.sidecar.datasources.enabled: true`) to `deploy/helm/observability/values.yaml` so datasources added or edited via the Grafana UI survive pod restarts. | `TODO` |
+
+### FARM-E147: CI/CD Pipeline Hardening `TODO`
+
+Non-deterministic builds, inconsistent security practices, and redundant logic across the two Helm CI workflows.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S602 | Pin kubeconform to a specific version in `.github/workflows/helm-lint.yml`. Replace `releases/latest/download` with `releases/download/v0.6.7` (or current stable). Every other tool and action in the Helm CI is version-pinned; kubeconform is the only exception, making the schema validation step non-deterministic across runs. | `TODO` |
+| FARM-S603 | Pin `actions/checkout` in the `helm` job of `.github/workflows/ci.yml` to a full commit SHA, matching the convention already used in `helm-lint.yml` (`@11bd71901bbe5b1630ceea73d27597364c9af683`). Tag references (`@v5`) are mutable and represent an inconsistent supply-chain security posture within the same repository. | `TODO` |
+| FARM-S604 | Fix `chart-dirs` in `deploy/helm/ct.yaml` to list the two chart directories explicitly (`deploy/helm/farm`, `deploy/helm/observability`) instead of the current `"."` placeholder that is silently overridden by the `--chart-dirs` CLI flag. Extract the shared Helm repo-add and dependency-build steps from both `ci.yml` and `helm-lint.yml` into a reusable composite action at `.github/actions/setup-helm-deps/action.yml` to eliminate the current duplication. | `TODO` |
+| FARM-S605 | Add SHA256 checksum verification to the `curl | bash` Helm install script in both `ci.yml` and `helm-lint.yml`. Download the `helm-v3.17.0-linux-amd64.tar.gz.sha256sum` alongside the archive and verify with `sha256sum --check` before executing. Alternatively, migrate both workflows to use `azure/setup-helm` action (pinned by SHA) to remove the need for manual verification. | `TODO` |

@@ -6,7 +6,9 @@ metadata:
   labels:
     {{- include "farm.web.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.web.autoscaling.enabled }}
   replicas: {{ .Values.web.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "farm.web.selectorLabels" . | nindent 6 }}
@@ -30,6 +32,7 @@ spec:
     spec:
       {{- include "farm.web.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ include "farm.web.serviceAccountName" . }}
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.web.podSecurityContext | nindent 8 }}
       containers:
@@ -75,9 +78,19 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.web.topologySpreadConstraints }}
+      {{- if .Values.web.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml .Values.web.topologySpreadConstraints | nindent 8 }}
+      {{- else if gt (int .Values.web.replicaCount) 1 }}
+      # Default hostname spread: distributes pods across nodes when replicaCount > 1.
+      # Override with web.topologySpreadConstraints to supply your own constraints.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "farm.web.selectorLabels" . | nindent 14 }}
       {{- end }}
       {{- with .Values.web.extraVolumes }}
       volumes:

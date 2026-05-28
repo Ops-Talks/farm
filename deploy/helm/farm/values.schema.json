@@ -147,6 +147,13 @@
         "secrets": {
           "description": "Sensitive environment variables rendered into a Kubernetes Secret. Only used when existingSecret is not set.",
           "type": "object",
+          "properties": {
+            "JWT_SECRET": {
+              "description": "HS256/HS512 signing secret. Must be at least 32 characters. Never use the placeholder default in production.",
+              "type": "string",
+              "minLength": 32
+            }
+          },
           "additionalProperties": {
             "type": ["string", "null"]
           }
@@ -457,6 +464,10 @@
         "additionalLabels": { "type": "object" },
         "runbookBaseUrl": {
           "description": "Base URL for alert runbook annotations. Appended with #alert-name-slug.",
+          "type": "string"
+        },
+        "alertmanagerReceiverName": {
+          "description": "Alertmanager receiver name for Farm alert routing. Required when enabled=true. Set to 'null' in non-production environments to use the built-in Alertmanager no-op receiver.",
           "type": "string"
         }
       }

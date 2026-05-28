@@ -1,4 +1,6 @@
 {{- if .Values.prometheusRule.enabled }}
+{{- $apiJob := printf "%s-api" (include "farm.fullname" .) -}}
+{{- $webJob := printf "%s-web" (include "farm.fullname" .) -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -16,9 +18,9 @@ spec:
       rules:
         - alert: FarmApiHighErrorRate
           expr: |
-            sum(rate(http_request_duration_seconds_count{status_code=~"5..",job="farm-api"}[5m]))
+            sum(rate(http_request_duration_seconds_count{status_code=~"5..",job="{{ $apiJob }}"}[5m]))
             /
-            sum(rate(http_request_duration_seconds_count{job="farm-api"}[5m])) > 0.05
+            sum(rate(http_request_duration_seconds_count{job="{{ $apiJob }}"}[5m])) > 0.05
           for: 2m
           labels:
             severity: critical
@@ -31,7 +33,7 @@ spec:
         - alert: FarmApiHighLatency
           expr: |
             histogram_quantile(0.99,
-              sum(rate(http_request_duration_seconds_bucket{job="farm-api"}[5m])) by (le)
+              sum(rate(http_request_duration_seconds_bucket{job="{{ $apiJob }}"}[5m])) by (le)
             ) > 2
           for: 5m
           labels:
@@ -44,9 +46,9 @@ spec:
 
         - alert: FarmApiNodeHeapHigh
           expr: |
-            nodejs_heap_size_used_bytes{job="farm-api"}
+            nodejs_heap_size_used_bytes{job="{{ $apiJob }}"}
             /
-            nodejs_heap_size_total_bytes{job="farm-api"} > 0.80
+            nodejs_heap_size_total_bytes{job="{{ $apiJob }}"} > 0.80
           for: 5m
           labels:
             severity: warning
@@ -57,7 +59,7 @@ spec:
             runbook_url: {{ printf "%s#farmapinodesheaphigh" .Values.prometheusRule.runbookBaseUrl | quote }}
 
         - alert: FarmApiDown
-          expr: up{job="farm-api"} == 0
+          expr: up{job="{{ $apiJob }}"} == 0
           for: 1m
           labels:
             severity: critical

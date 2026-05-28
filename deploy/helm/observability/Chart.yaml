@@ -5,12 +5,21 @@ description: |
   Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
   Install alongside the Farm chart: make observability-install
 type: application
-version: 0.1.0
-appVersion: "0.25.7"
+version: 0.2.0
+appVersion: "0.25.8"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
+keywords:
+  - farm
+  - observability
+  - monitoring
+  - prometheus
+  - grafana
+  - loki
+  - tempo
+  - pyroscope
 maintainers:
   - name: Ops-Talks
     url: https://github.com/Ops-Talks

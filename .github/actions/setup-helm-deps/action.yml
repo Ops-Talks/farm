@@ -1,0 +1,23 @@
+name: Setup Helm chart dependencies
+description: >
+  Adds required Helm repositories (bitnami, prometheus-community, grafana),
+  runs repo update, and builds chart dependencies for deploy/helm/farm and
+  deploy/helm/observability. Caller must have Helm installed and the repo
+  checked out before invoking this action.
+
+runs:
+  using: composite
+  steps:
+    - name: Add Helm repositories
+      shell: bash
+      run: |
+        helm repo add bitnami https://charts.bitnami.com/bitnami
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+        helm repo add grafana https://grafana.github.io/helm-charts
+        helm repo update
+
+    - name: Build chart dependencies
+      shell: bash
+      run: |
+        helm dependency build deploy/helm/farm
+        helm dependency build deploy/helm/observability

@@ -12,15 +12,29 @@ kube-prometheus-stack:
   # -- Grafana
   grafana:
     enabled: true
-    adminUser: farm
-    adminPassword: farm  # Override in production via --set or external secret
+
+    # FARM-S579: Admin credentials are sourced from an externally managed
+    # Kubernetes Secret. Never set adminPassword in values files.
+    #
+    # Create the Secret before installing/upgrading the chart:
+    #   kubectl create secret generic farm-observability-grafana-admin \
+    #     --namespace monitoring \
+    #     --from-literal=admin-user=admin \
+    #     --from-literal=admin-password=<strong-random-password>
+    #
+    # Prefer External Secrets Operator or Sealed Secrets for GitOps workflows.
+    admin:
+      existingSecret: "farm-observability-grafana-admin"
+      userKey: admin-user
+      passwordKey: admin-password
 
     grafana.ini:
       feature_toggles:
         enable: traceqlEditor traceToMetrics
+      # FARM-S580: Anonymous access is disabled in production.
+      # Enable it only in development by overriding in values-dev.yaml.
       auth.anonymous:
-        enabled: true
-        org_role: Viewer
+        enabled: false
       server:
         root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
         serve_from_sub_path: true
@@ -46,11 +60,18 @@ kube-prometheus-stack:
         url: http://farm-obs-loki:3100
         editable: false
         jsonData:
+          # FARM-S581: Required when loki.auth_enabled is true.
+          # Grafana adds X-Scope-OrgID: farm to every Loki query.
+          httpHeaderName1: "X-Scope-OrgID"
           derivedFields:
             - name: TraceID
               matcherRegex: '"trace_id":"(\w+)"'
               url: "$${__value.raw}"
               datasourceUid: tempo
+        secureJsonData:
+          # "farm" is a tenant identifier, not a sensitive credential.
+          # Grafana encrypts this value in its internal database on first load.
+          httpHeaderValue1: "farm"
 
       - name: Tempo
         type: tempo
@@ -147,7 +168,21 @@ loki:
   deploymentMode: SingleBinary
 
   loki:
-    auth_enabled: false
+    # FARM-S581: auth_enabled is true in production. Every push and query
+    # request must include the X-Scope-OrgID header with the tenant ID.
+    # For this single-tenant deployment the tenant ID is "farm".
+    #
+    # Consequences of auth_enabled: true:
+    #   - Alloy loki.write must set tenant_id = "farm" (see alloy config below).
+    #   - Grafana Loki datasource must send X-Scope-OrgID: farm header
+    #     (configured via jsonData.httpHeaderName1 / secureJsonData.httpHeaderValue1).
+    #   - Any other log-push client (Promtail, custom apps) must include the header.
+    #
+    # To disable in development, override in values-dev.yaml:
+    #   loki:
+    #     loki:
+    #       auth_enabled: false
+    auth_enabled: true
     commonConfig:
       replication_factor: 1
     storage:
@@ -275,9 +310,20 @@ alloy:
         // ─── Faro receiver (RUM) ────────────────────────────────────────────
         faro.receiver "default" {
           server {
-            listen_address       = "0.0.0.0"
-            listen_port          = 12347
-            cors_allowed_origins = ["*"]
+            listen_address = "0.0.0.0"
+            listen_port    = 12347
+            // FARM-S582: Restrict CORS to the Farm frontend origin(s).
+            // Replace the placeholder with your actual deployment URL.
+            // ["*"] must NOT be used in production — it exposes the Faro
+            // endpoint to any web page, enabling spam and telemetry poisoning.
+            //
+            // Example (production):
+            //   cors_allowed_origins = ["https://farm.your-domain.com"]
+            //
+            // For local dev, override the full alloy.alloy.configMap.content
+            // in values-dev.yaml and set:
+            //   cors_allowed_origins = ["http://localhost:3001", "http://localhost:3000"]
+            cors_allowed_origins = []
           }
           output {
             logs   = [loki.write.default.receiver]
@@ -327,6 +373,9 @@ alloy:
         loki.write "default" {
           endpoint {
             url = "http://farm-obs-loki:3100/loki/api/v1/push"
+            // FARM-S581: tenant_id is required when loki.auth_enabled is true.
+            // This value must match the X-Scope-OrgID header sent by all log clients.
+            tenant_id = "farm"
           }
         }
 

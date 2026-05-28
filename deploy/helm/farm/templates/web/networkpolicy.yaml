@@ -25,5 +25,21 @@ spec:
           port: 3001
     {{- end }}
   egress:
-    - {} # Allow all egress — tighten with explicit rules in production
+    # Allow DNS resolution
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Allow access to the API service
+    - ports:
+        - port: {{ .Values.api.service.port }}
+      to:
+        - podSelector:
+            matchLabels:
+              {{- include "farm.api.selectorLabels" . | nindent 14 }}
+    # Allow HTTPS egress (for external calls if any)
+    - ports:
+        - port: 443
+          protocol: TCP
 {{- end }}

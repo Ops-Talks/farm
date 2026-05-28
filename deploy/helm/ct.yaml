@@ -1,7 +1,11 @@
 remote: origin
 target-branch: main
+# chart-dirs is set to deploy/helm so that `ct lint --config deploy/helm/ct.yaml`
+# works without an extra --chart-dirs flag on the CLI. Both ci.yml and
+# helm-lint.yml invoke ct without --chart-dirs; the path is relative to the
+# repository root (the working directory when ct runs in CI).
 chart-dirs:
-  - .
+  - deploy/helm
 chart-repos:
   - bitnami=https://charts.bitnami.com/bitnami
   - prometheus-community=https://prometheus-community.github.io/helm-charts

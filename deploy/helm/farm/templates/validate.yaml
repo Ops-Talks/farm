@@ -1,0 +1,7 @@
+{{/*
+validate.yaml — Zero-output template whose sole purpose is to trigger
+farm.validateValues on every `helm template`, `helm install`, and
+`helm upgrade` invocation. The file intentionally renders no Kubernetes
+objects; it only runs the validation guards defined in _validate.tpl.
+*/}}
+{{- include "farm.validateValues" . -}}
