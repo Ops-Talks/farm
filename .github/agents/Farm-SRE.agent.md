@@ -116,13 +116,12 @@ The Farm Helm chart lives in `deploy/helm/farm/`. Key conventions:
 ### Values Hierarchy
 
 ```
-values.yaml          — schema with safe defaults (works out of the box locally)
-values-dev.yaml      — bundled postgres + redis, single replica, no TLS
-values-production.yaml — external managed services, 2 replicas, TLS, existingSecret
+values.yaml          — chart defaults; production-ready baseline (override what you need)
+values-dev.yaml      — bundled postgres + redis, single replica, dev env vars
 my-cluster.yaml      — operator's override file (never committed)
 ```
 
-Always invoke: `helm upgrade farm deploy/helm/farm -f values-production.yaml -f my-cluster.yaml`
+Always invoke: `helm upgrade farm deploy/helm/farm -f values.yaml -f my-cluster.yaml`
 
 ### Secret Management
 
@@ -299,7 +298,7 @@ Makefile             — Developer entrypoints (owned by SRE + Dev)
 
 - [ ] `helm lint deploy/helm/farm` passes with 0 failures
 - [ ] `helm template farm deploy/helm/farm -f values-dev.yaml` renders cleanly
-- [ ] `helm template farm deploy/helm/farm -f values-production.yaml` renders cleanly
+- [ ] `helm template farm deploy/helm/farm` renders cleanly with default values
 - [ ] All new values documented in `deploy/helm/farm/README.md` parameters table
 - [ ] Dashboard JSONs are in sync between `observability/grafana/provisioning/dashboards/` and `deploy/helm/farm/dashboards/`
 

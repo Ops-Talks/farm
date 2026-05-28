@@ -1,6 +1,8 @@
 apiVersion: v2
 name: farm
 description: Farm — open-source platform portal for managing software components, documentation, and team infrastructure.
+# autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
+kubeVersion: ">=1.26.0-0"
 type: application
 version: 0.1.0
 appVersion: "0.25.7"

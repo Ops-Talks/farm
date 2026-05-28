@@ -1,0 +1,42 @@
+apiVersion: v2
+name: farm-observability
+description: |
+  Observability platform for Farm clusters — kube-prometheus-stack, Loki, Tempo,
+  Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
+  Install alongside the Farm chart: make observability-install
+type: application
+version: 0.1.0
+appVersion: "0.25.7"
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/Ops-Talks/farm
+sources:
+  - https://github.com/Ops-Talks/farm
+maintainers:
+  - name: Ops-Talks
+    url: https://github.com/Ops-Talks
+
+dependencies:
+  # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics
+  - name: kube-prometheus-stack
+    version: "72.3.0"
+    repository: https://prometheus-community.github.io/helm-charts
+
+  # Log aggregation
+  - name: loki
+    version: "6.55.0"
+    repository: https://grafana.github.io/helm-charts
+
+  # Distributed tracing
+  - name: tempo
+    version: "1.24.4"
+    repository: https://grafana.github.io/helm-charts
+
+  # Telemetry collector (replaces Promtail; handles logs, traces, Faro RUM)
+  - name: alloy
+    version: "1.8.2"
+    repository: https://grafana.github.io/helm-charts
+
+  # Continuous profiling
+  - name: pyroscope
+    version: "1.21.0"
+    repository: https://grafana.github.io/helm-charts

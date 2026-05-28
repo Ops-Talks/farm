@@ -1,0 +1,76 @@
+# ─── Farm Observability Chart — values-dev.yaml ──────────────────────────────
+# Lightweight overrides for local Kubernetes (KinD) development.
+# No persistence, minimal resources, disabled heavy scrape targets.
+
+# ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
+kube-prometheus-stack:
+  grafana:
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+  prometheus:
+    prometheusSpec:
+      retention: 1d
+      storageSpec: {}
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+
+  alertmanager:
+    alertmanagerSpec:
+      storage: {}
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+
+  # These control-plane endpoints are not accessible in KinD.
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  kubeProxy:
+    enabled: false
+
+# ─── LOKI ────────────────────────────────────────────────────────────────────
+loki:
+  singleBinary:
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+# ─── TEMPO ───────────────────────────────────────────────────────────────────
+tempo:
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# ─── ALLOY ───────────────────────────────────────────────────────────────────
+alloy:
+  alloy:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+# ─── PYROSCOPE ───────────────────────────────────────────────────────────────
+pyroscope:
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi

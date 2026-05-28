@@ -1,0 +1,367 @@
+# ─── Farm Observability Chart — values.yaml ──────────────────────────────────
+#
+# Helm release name MUST be "farm-obs" (used in datasource URLs below).
+# Namespace: monitoring
+#
+# Install:   make observability-install
+# Upgrade:   make observability-upgrade
+# Uninstall: make observability-uninstall
+
+# ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
+kube-prometheus-stack:
+  # -- Grafana
+  grafana:
+    enabled: true
+    adminUser: farm
+    adminPassword: farm  # Override in production via --set or external secret
+
+    grafana.ini:
+      feature_toggles:
+        enable: traceqlEditor traceToMetrics
+      auth.anonymous:
+        enabled: true
+        org_role: Viewer
+      server:
+        root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana"
+        serve_from_sub_path: true
+
+    # Sidecar auto-discovers dashboard ConfigMaps labelled grafana_dashboard=1
+    # from ALL namespaces (including the farm namespace).
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL
+        label: grafana_dashboard
+        labelValue: "1"
+      datasources:
+        enabled: false
+
+    # Datasources — Prometheus is auto-configured by the chart (uid: prometheus).
+    # Loki, Tempo, Pyroscope, Alertmanager are added here.
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        uid: loki
+        access: proxy
+        url: http://farm-obs-loki:3100
+        editable: false
+        jsonData:
+          derivedFields:
+            - name: TraceID
+              matcherRegex: '"trace_id":"(\w+)"'
+              url: "$${__value.raw}"
+              datasourceUid: tempo
+
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        access: proxy
+        url: http://farm-obs-tempo:3200
+        editable: false
+        jsonData:
+          tracesToMetrics:
+            datasourceUid: prometheus
+            tags:
+              - key: service.name
+                value: service
+          tracesToLogs:
+            datasourceUid: loki
+            tags:
+              - key: service.name
+                value: container
+            filterByTraceID: true
+            filterBySpanID: false
+          serviceMap:
+            datasourceUid: prometheus
+
+      - name: Pyroscope
+        type: grafana-pyroscope-datasource
+        uid: pyroscope
+        access: proxy
+        url: http://farm-obs-pyroscope:4040
+        editable: false
+
+      - name: Alertmanager
+        type: alertmanager
+        uid: alertmanager
+        access: proxy
+        url: http://farm-obs-kube-prometheus-alertmanager:9093
+        editable: false
+        jsonData:
+          implementation: prometheus
+          handleGrafanaManagedAlerts: false
+
+    plugins:
+      - grafana-pyroscope-app
+
+    persistence:
+      enabled: true
+      size: 5Gi
+
+  # -- Prometheus
+  prometheus:
+    prometheusSpec:
+      # Discover ServiceMonitors and PodMonitors from all namespaces
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorNamespaceSelector: {}
+      podMonitorNamespaceSelector: {}
+      ruleNamespaceSelector: {}
+      # Enable remote write receiver so Tempo metrics_generator can push
+      enableRemoteWriteReceiver: true
+      retention: 15d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+
+  # -- Alertmanager
+  alertmanager:
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 2Gi
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ["alertname", "service"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+        receiver: "null"
+      receivers:
+        - name: "null"
+
+  # -- node-exporter and kube-state-metrics are enabled by default
+
+# ─── LOKI ────────────────────────────────────────────────────────────────────
+loki:
+  deploymentMode: SingleBinary
+
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+    schemaConfig:
+      configs:
+        - from: "2024-01-01"
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    limits_config:
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      ingestion_rate_mb: 16
+      ingestion_burst_size_mb: 32
+    ruler:
+      alertmanager_url: http://farm-obs-kube-prometheus-alertmanager:9093
+      enable_api: true
+      enable_alertmanager_v2: true
+
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      size: 20Gi
+
+  # Disable distributed components
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  backend:
+    replicas: 0
+
+  # Disable self-monitoring (requires Grafana Agent operator)
+  monitoring:
+    selfMonitoring:
+      enabled: false
+      grafanaAgent:
+        installOperator: false
+    lokiCanary:
+      enabled: false
+
+  test:
+    enabled: false
+
+  gateway:
+    enabled: false
+
+# ─── TEMPO ───────────────────────────────────────────────────────────────────
+tempo:
+  tempo:
+    reportingEnabled: false
+    metricsGenerator:
+      enabled: true
+      remoteWriteUrl: http://farm-obs-kube-prometheus-prometheus:9090/api/v1/write
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /var/tempo/traces
+        wal:
+          path: /var/tempo/wal
+
+  persistence:
+    enabled: true
+    size: 20Gi
+
+  serviceMonitor:
+    enabled: true
+
+# ─── ALLOY ───────────────────────────────────────────────────────────────────
+# Alloy replaces Promtail. Runs as a DaemonSet to collect pod logs from all
+# nodes and forward to Loki. Also receives OTLP traces and Faro RUM data.
+alloy:
+  alloy:
+    configMap:
+      create: true
+      content: |
+        // ─── OTLP receiver ─────────────────────────────────────────────────
+        otelcol.receiver.otlp "default" {
+          grpc { endpoint = "0.0.0.0:4317" }
+          http { endpoint = "0.0.0.0:4318" }
+          output {
+            traces = [otelcol.processor.tail_sampling.default.input]
+          }
+        }
+
+        // ─── Tail-based sampling ────────────────────────────────────────────
+        otelcol.processor.tail_sampling "default" {
+          decision_wait               = "10s"
+          num_traces                  = 50000
+          expected_new_traces_per_sec = 100
+          policy {
+            name = "keep-errors"
+            type = "status_code"
+            status_code { status_codes = ["ERROR"] }
+          }
+          policy {
+            name = "keep-slow"
+            type = "latency"
+            latency { threshold_ms = 1000 }
+          }
+          policy {
+            name = "probabilistic-healthy"
+            type = "probabilistic"
+            probabilistic { sampling_percentage = 10 }
+          }
+          output {
+            traces = [otelcol.exporter.otlphttp.tempo.input]
+          }
+        }
+
+        // ─── Export to Tempo ────────────────────────────────────────────────
+        otelcol.exporter.otlphttp "tempo" {
+          client {
+            endpoint = "http://farm-obs-tempo:4318"
+            tls { insecure = true }
+          }
+        }
+
+        // ─── Faro receiver (RUM) ────────────────────────────────────────────
+        faro.receiver "default" {
+          server {
+            listen_address       = "0.0.0.0"
+            listen_port          = 12347
+            cors_allowed_origins = ["*"]
+          }
+          output {
+            logs   = [loki.write.default.receiver]
+            traces = [otelcol.exporter.otlphttp.tempo.input]
+          }
+        }
+
+        // ─── Kubernetes pod log discovery ───────────────────────────────────
+        discovery.kubernetes "pods" {
+          role = "pod"
+        }
+
+        discovery.relabel "pod_logs" {
+          targets = discovery.kubernetes.pods.targets
+          rule {
+            source_labels = ["__meta_kubernetes_namespace"]
+            target_label  = "namespace"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_name"]
+            target_label  = "pod"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_container_name"]
+            target_label  = "container"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+            separator     = "/"
+            target_label  = "job"
+          }
+          rule {
+            source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+            separator     = "/"
+            action        = "replace"
+            replacement   = "/var/log/pods/*$1/*.log"
+            target_label  = "__path__"
+          }
+        }
+
+        loki.source.file "pod_logs" {
+          targets    = discovery.relabel.pod_logs.output
+          forward_to = [loki.write.default.receiver]
+        }
+
+        // ─── Loki writer ────────────────────────────────────────────────────
+        loki.write "default" {
+          endpoint {
+            url = "http://farm-obs-loki:3100/loki/api/v1/push"
+          }
+        }
+
+    extraPorts:
+      - name: grpc-otlp
+        port: 4317
+        targetPort: 4317
+        protocol: TCP
+      - name: http-otlp
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
+      - name: faro
+        port: 12347
+        targetPort: 12347
+        protocol: TCP
+
+    mounts:
+      varlog: true
+      dockercontainers: false
+
+  controller:
+    type: daemonset
+
+  rbac:
+    create: true
+
+  serviceAccount:
+    create: true
+
+# ─── PYROSCOPE ───────────────────────────────────────────────────────────────
+pyroscope:
+  pyroscope:
+    replication_factor: 1
+
+  persistence:
+    enabled: true
+    size: 10Gi

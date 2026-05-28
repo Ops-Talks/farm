@@ -117,11 +117,11 @@ kubectl create secret generic farm-api -n farm \
   --from-literal=REDIS_PASSWORD="<password>"
 ```
 
-2. Copy and edit the production values:
+2. Create a custom values file:
 
 ```bash
-cp values-production.yaml my-values.yaml
-# Edit: image tags, hostnames, existingSecret name, observability URLs
+cp values.yaml my-values.yaml
+# Edit: image tags, existingSecret name, external database/redis, observability URLs
 ```
 
 3. Install:
@@ -217,18 +217,76 @@ grafanaDashboards:
 Dashboards: `farm-api`, `farm-infra`, `farm-logs`, `farm-rum`, `farm-slo`,
 `farm-traces`.
 
-### OpenTelemetry and Pyroscope
+### OpenTelemetry, Pyroscope, and Faro
 
-Configure OTEL tracing and Pyroscope profiling via the `api.observability` block:
+Each observability integration is an independent feature flag (disabled by
+default). Activate only the components present in your cluster.
+
+**OpenTelemetry tracing** (requires Grafana Alloy or any OTLP collector):
 
 ```yaml
-api:
-  observability:
-    otelEnabled: true
-    otelExporterEndpoint: http://alloy.monitoring.svc.cluster.local:4318/v1/traces
-    pyroscopeEnabled: true
-    pyroscopeServerAddress: http://pyroscope.monitoring.svc.cluster.local:4040
+tracing:
+  enabled: true
+  endpoint: http://alloy.monitoring.svc.cluster.local:4318/v1/traces
+  serviceName: farm-api
 ```
+
+**Pyroscope continuous profiling** (requires Grafana Pyroscope or Grafana Cloud
+Profiles):
+
+```yaml
+pyroscope:
+  enabled: true
+  url: http://pyroscope.monitoring.svc.cluster.local:4040
+```
+
+When `pyroscope.enabled: true`, the chart automatically adds Pyroscope
+auto-discovery annotations to the API pod:
+
+```
+profiles.grafana.com/cpu.scrape: "true"
+profiles.grafana.com/memory.scrape: "true"
+profiles.grafana.com/service_name: <release>-api
+```
+
+These annotations are consumed by the Pyroscope Operator or by Grafana Alloy
+with a `pyroscope.scrape` component (Alloy v1.0+).
+
+**Grafana Faro RUM** (requires Grafana Alloy with `faro.receiver`, or Grafana
+Cloud Frontend Observability):
+
+```yaml
+faro:
+  enabled: true
+  url: http://alloy.monitoring.svc.cluster.local:12347/collect
+```
+
+`NEXT_PUBLIC_FARO_URL` is injected into the web pod ConfigMap and picked up by
+the `@grafana/faro-web-sdk` integration in the Next.js frontend.
+
+### Observability Integrations
+
+#### Tracing (OpenTelemetry)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `tracing.enabled` | Enable OTLP trace export from the API | `false` |
+| `tracing.endpoint` | OTLP HTTP collector endpoint | `""` |
+| `tracing.serviceName` | Service name reported in traces | `farm-api` |
+
+#### Pyroscope (Continuous Profiling)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `pyroscope.enabled` | Enable continuous profiling; also adds pod auto-discovery annotations | `false` |
+| `pyroscope.url` | Pyroscope server address | `""` |
+
+#### Faro (Real User Monitoring)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `faro.enabled` | Enable Faro RUM; injects `NEXT_PUBLIC_FARO_URL` into the web pod | `false` |
+| `faro.url` | Faro collector URL | `""` |
 
 ## Parameters
 
@@ -256,7 +314,6 @@ api:
 | `api.env.LOG_LEVEL` | Application log level | `"info"` |
 | `api.env.DATABASE_POOL_SIZE` | TypeORM connection pool size | `"10"` |
 | `api.secrets.*` | Sensitive env vars (only used if no existingSecret) | `""` |
-| `api.observability.*` | OTEL/Pyroscope/backend URL configuration | see values.yaml |
 | `api.resources` | CPU/memory requests and limits | see values.yaml |
 | `api.startupProbe` | Startup probe (httpGet /api/health, failureThreshold 20, periodSeconds 5) | see values.yaml |
 | `api.autoscaling.enabled` | Enable HPA | `false` |
@@ -293,35 +350,6 @@ api:
 |-----------|-------------|---------|
 | `prometheusRule.enabled` | Create PrometheusRule | `false` |
 | `prometheusRule.runbookBaseUrl` | Base URL for alert runbooks (appended with #alert-name-slug) | GitHub README anchor |
-
-### Ingress
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `ingress.enabled` | Enable Ingress | `false` |
-| `ingress.className` | Ingress class name | `""` |
-| `ingress.annotations` | Shared annotations applied to both API and web Ingress resources | `{}` |
-| `ingress.api.hostname` | Hostname for the API Ingress rule | `""` |
-| `ingress.api.annotations` | Per-resource annotations for the API Ingress (merged with ingress.annotations) | `{}` |
-| `ingress.web.hostname` | Hostname for the Web Ingress rule | `""` |
-| `ingress.web.annotations` | Per-resource annotations for the web Ingress (merged with ingress.annotations) | `{}` |
-| `ingress.tls` | TLS configuration array | `[]` |
-
-#### WebSocket support
-
-Farm uses WebSockets for real-time events (`NEXT_PUBLIC_WS_URL`). When running
-behind NGINX Ingress Controller, increase the proxy timeout annotations to
-prevent mid-session disconnects (NGINX defaults to 60 s for idle connections):
-
-```yaml
-ingress:
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-```
-
-These are pre-configured in `values-production.yaml`.
 
 ### External Database
 

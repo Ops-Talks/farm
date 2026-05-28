@@ -4,13 +4,7 @@ Thank you for installing {{ .Chart.Name }} v{{ .Chart.AppVersion }}.
   FARM — release: {{ .Release.Name }}   namespace: {{ .Release.Namespace }}
 ─────────────────────────────────────────────────────────────────────
 
-{{- if .Values.ingress.enabled }}
-Access the application at:
-
-  Web:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.web.hostname }}
-  API:  http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.api.hostname }}/api/docs
-{{- else }}
-No Ingress is enabled. To access the services locally, run:
+To access the services locally, run:
 
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "farm.fullname" . }}-api 3000:3000 &
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "farm.fullname" . }}-web 3001:3001 &
@@ -19,7 +13,6 @@ No Ingress is enabled. To access the services locally, run:
     http://localhost:3001          — Web UI
     http://localhost:3000/api/docs — Swagger UI
     http://localhost:3000/api/health — Health check
-{{- end }}
 
 {{- if .Values.migration.enabled }}
 

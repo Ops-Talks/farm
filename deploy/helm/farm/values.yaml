@@ -144,16 +144,9 @@ api:
     LOG_LEVEL: "info"
 
   # -- Observability configuration.
-  # Farm emits OpenTelemetry traces and Pyroscope profiles, and proxies queries
-  # to Grafana/Prometheus/Tempo/Loki through the API. All values are optional.
+  # Farm proxies queries to Grafana/Prometheus/Tempo/Loki through the API.
+  # All values are optional. Tracing and profiling are now in top-level blocks.
   observability:
-    # OpenTelemetry (OTLP traces)
-    otelEnabled: false
-    otelExporterEndpoint: ""    # e.g. http://alloy.monitoring.svc:4318/v1/traces
-    otelServiceName: farm-api
-    # Pyroscope continuous profiling
-    pyroscopeEnabled: false
-    pyroscopeServerAddress: ""  # e.g. http://pyroscope.monitoring.svc:4040
     # Backend proxy URLs (used by the API to forward observability queries)
     grafanaUrl: ""              # e.g. http://grafana.monitoring.svc:3000
     prometheusUrl: ""           # e.g. http://prometheus-operated.monitoring.svc:9090
@@ -378,40 +371,6 @@ web:
     ingressControllerNamespaceSelector: {}
     ingressControllerPodSelector: {}
 
-# ─── INGRESS ─────────────────────────────────────────────────────────────────
-
-ingress:
-  enabled: false
-  # -- Ingress class name (e.g., "nginx", "traefik", "alb").
-  className: ""
-  # -- Annotations for the Ingress resource.
-  # Examples:
-  #   nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-  #   cert-manager.io/cluster-issuer: "letsencrypt-prod"
-  annotations: {}
-  # -- Hostname and path for the api service.
-  api:
-    hostname: farm-api.example.com
-    path: /
-    pathType: Prefix
-    # -- Annotations specific to the API Ingress resource.
-    # Merged with (and overrides) ingress.annotations for the API Ingress.
-    annotations: {}
-  # -- Hostname and path for the web service.
-  web:
-    hostname: farm.example.com
-    path: /
-    pathType: Prefix
-    # -- Annotations specific to the web Ingress resource.
-    # Merged with (and overrides) ingress.annotations for the web Ingress.
-    annotations: {}
-  # -- TLS configuration.
-  tls: []
-  # - secretName: farm-tls
-  #   hosts:
-  #     - farm.example.com
-  #     - farm-api.example.com
-
 # ─── MIGRATION ───────────────────────────────────────────────────────────────
 
 migration:
@@ -536,4 +495,33 @@ grafanaDashboards:
   labelValue: "1"
   # -- Grafana folder to import dashboards into.
   folder: Farm
+
+# ─── TRACING ─────────────────────────────────────────────────────────────────
+# Requires an OpenTelemetry collector (Grafana Alloy, OpenTelemetry Collector, etc.)
+
+tracing:
+  # -- Enable OpenTelemetry trace export from the API.
+  enabled: false
+  # -- OTLP HTTP endpoint for the collector.
+  endpoint: ""    # e.g. http://alloy.monitoring.svc:4318/v1/traces
+  # -- Service name reported in traces.
+  serviceName: farm-api
+
+# ─── PYROSCOPE ───────────────────────────────────────────────────────────────
+# Requires Grafana Pyroscope or Grafana Cloud Profiles.
+
+pyroscope:
+  # -- Enable continuous profiling.
+  enabled: false
+  # -- Pyroscope server address.
+  url: ""    # e.g. http://pyroscope.monitoring.svc:4040
+
+# ─── FARO ────────────────────────────────────────────────────────────────────
+# Requires Grafana Alloy with a Faro receiver, or Grafana Cloud Frontend Observability.
+
+faro:
+  # -- Enable Grafana Faro real-user monitoring (RUM) for the web frontend.
+  enabled: false
+  # -- Faro collector URL (injected as NEXT_PUBLIC_FARO_URL into the web pod).
+  url: ""    # e.g. http://alloy.monitoring.svc:12347/collect
 

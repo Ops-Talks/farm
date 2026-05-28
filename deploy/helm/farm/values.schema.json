@@ -1,0 +1,495 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Farm Helm Chart Values",
+  "description": "JSON Schema validation for the Farm Helm chart values.yaml.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "description": "Override the chart name used in resource names.",
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "description": "Override the full release name used in resource names.",
+      "type": "string"
+    },
+    "global": {
+      "description": "Global image settings applied to all workloads.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "imageRegistry": {
+          "description": "Container registry prefix applied to both images when set.",
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "description": "Global image pull secrets applied to all pods.",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "api": {
+      "description": "Farm API workload configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "replicaCount": {
+          "description": "Number of API pod replicas.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "registry": { "type": "string" },
+            "repository": {
+              "description": "Image repository (required).",
+              "type": "string"
+            },
+            "tag": {
+              "description": "Image tag. Defaults to Chart.AppVersion when empty.",
+              "type": "string"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "enum": ["Always", "IfNotPresent", "Never"]
+            }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "serviceAccount": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create": { "type": "boolean" },
+            "annotations": { "type": "object" },
+            "name": { "type": "string" }
+          }
+        },
+        "podAnnotations": { "type": "object" },
+        "podLabels": { "type": "object" },
+        "podSecurityContext": {
+          "description": "Pod-level security context.",
+          "type": "object"
+        },
+        "containerSecurityContext": {
+          "description": "Container-level security context.",
+          "type": "object"
+        },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        },
+        "resources": {
+          "description": "CPU and memory resource requests and limits.",
+          "type": "object"
+        },
+        "livenessProbe": {
+          "description": "Liveness probe configuration.",
+          "type": "object"
+        },
+        "readinessProbe": {
+          "description": "Readiness probe configuration.",
+          "type": "object"
+        },
+        "startupProbe": {
+          "description": "Startup probe configuration.",
+          "type": "object"
+        },
+        "extraEnv": {
+          "description": "Extra environment variables injected directly into the container.",
+          "type": "array"
+        },
+        "extraVolumes": {
+          "description": "Extra volumes for the API pod.",
+          "type": "array"
+        },
+        "extraVolumeMounts": {
+          "description": "Extra volume mounts for the API container.",
+          "type": "array"
+        },
+        "env": {
+          "description": "Non-sensitive environment variables rendered into a ConfigMap.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "observability": {
+          "description": "Backend proxy URL configuration for the API observability proxy endpoints.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "grafanaUrl": { "type": "string" },
+            "prometheusUrl": { "type": "string" },
+            "tempoUrl": { "type": "string" },
+            "lokiUrl": { "type": "string" }
+          }
+        },
+        "secrets": {
+          "description": "Sensitive environment variables rendered into a Kubernetes Secret. Only used when existingSecret is not set.",
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "null"]
+          }
+        },
+        "existingSecret": {
+          "description": "Reference an existing Kubernetes Secret by name. When set, no Secret is created by the chart.",
+          "type": "string"
+        },
+        "autoscaling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "minReplicas": { "type": "integer", "minimum": 1 },
+            "maxReplicas": { "type": "integer", "minimum": 1 },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "targetMemoryUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "behavior": {
+              "description": "HPA scale behavior with stabilization windows.",
+              "type": "object"
+            }
+          }
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "minAvailable": {
+              "description": "Minimum available pods (integer count or percentage string).",
+              "type": ["integer", "string"]
+            }
+          }
+        },
+        "nodeSelector": { "type": "object" },
+        "tolerations": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "affinity": { "type": "object" },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "ingressControllerNamespaceSelector": { "type": "object" },
+            "ingressControllerPodSelector": { "type": "object" }
+          }
+        }
+      }
+    },
+    "web": {
+      "description": "Farm Web (Next.js) workload configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "registry": { "type": "string" },
+            "repository": { "type": "string" },
+            "tag": { "type": "string" },
+            "pullPolicy": {
+              "type": "string",
+              "enum": ["Always", "IfNotPresent", "Never"]
+            }
+          }
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "serviceAccount": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "create": { "type": "boolean" },
+            "annotations": { "type": "object" },
+            "name": { "type": "string" }
+          }
+        },
+        "podAnnotations": { "type": "object" },
+        "podLabels": { "type": "object" },
+        "podSecurityContext": { "type": "object" },
+        "containerSecurityContext": { "type": "object" },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        },
+        "resources": { "type": "object" },
+        "livenessProbe": { "type": "object" },
+        "readinessProbe": { "type": "object" },
+        "startupProbe": { "type": "object" },
+        "extraEnv": {
+          "type": "array"
+        },
+        "extraVolumes": {
+          "type": "array"
+        },
+        "extraVolumeMounts": {
+          "type": "array"
+        },
+        "env": {
+          "description": "Non-sensitive environment variables rendered into a ConfigMap.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "autoscaling": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "minReplicas": { "type": "integer", "minimum": 1 },
+            "maxReplicas": { "type": "integer", "minimum": 1 },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "targetMemoryUtilizationPercentage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "behavior": { "type": "object" }
+          }
+        },
+        "podDisruptionBudget": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "minAvailable": {
+              "type": ["integer", "string"]
+            }
+          }
+        },
+        "nodeSelector": { "type": "object" },
+        "tolerations": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "affinity": { "type": "object" },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "ingressControllerNamespaceSelector": { "type": "object" },
+            "ingressControllerPodSelector": { "type": "object" }
+          }
+        }
+      }
+    },
+    "migration": {
+      "description": "Pre-install/pre-upgrade database migration Job configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "restartPolicy": {
+          "type": "string",
+          "enum": ["Never", "OnFailure"]
+        },
+        "backoffLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activeDeadlineSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resources": { "type": "object" },
+        "podAnnotations": { "type": "object" }
+      }
+    },
+    "externalDatabase": {
+      "description": "External PostgreSQL connection details (used when postgresql.enabled is false).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "integer" },
+        "user": { "type": "string" },
+        "password": {
+          "description": "Database password. Prefer existingSecret over setting this directly.",
+          "type": ["string", "null"]
+        },
+        "name": { "type": "string" },
+        "existingSecret": { "type": "string" },
+        "existingSecretKey": { "type": "string" }
+      }
+    },
+    "externalRedis": {
+      "description": "External Redis connection details (used when redis.enabled is false).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "integer" },
+        "password": {
+          "description": "Redis password. Null means unauthenticated Redis. Prefer existingSecret.",
+          "type": ["string", "null"]
+        },
+        "existingSecret": { "type": "string" },
+        "existingSecretKey": { "type": "string" }
+      }
+    },
+    "postgresql": {
+      "description": "Bitnami PostgreSQL subchart passthrough values. Accepts any Bitnami postgresql chart value.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "redis": {
+      "description": "Bitnami Redis subchart passthrough values. Accepts any Bitnami redis chart value.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "serviceMonitor": {
+      "description": "Prometheus Operator ServiceMonitor configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "namespace": { "type": "string" },
+        "additionalLabels": { "type": "object" },
+        "interval": { "type": "string" },
+        "scrapeTimeout": { "type": "string" },
+        "path": { "type": "string" },
+        "scheme": {
+          "type": "string",
+          "enum": ["http", "https"]
+        }
+      }
+    },
+    "prometheusRule": {
+      "description": "Prometheus Operator PrometheusRule configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "namespace": { "type": "string" },
+        "additionalLabels": { "type": "object" },
+        "runbookBaseUrl": {
+          "description": "Base URL for alert runbook annotations. Appended with #alert-name-slug.",
+          "type": "string"
+        }
+      }
+    },
+    "grafanaDashboards": {
+      "description": "Grafana dashboard ConfigMap provisioning configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "namespace": { "type": "string" },
+        "labelKey": { "type": "string" },
+        "labelValue": { "type": "string" },
+        "folder": { "type": "string" }
+      }
+    },
+    "tracing": {
+      "description": "OpenTelemetry trace export configuration. Requires an OTLP-compatible collector.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable OpenTelemetry trace export from the API.",
+          "type": "boolean"
+        },
+        "endpoint": {
+          "description": "OTLP HTTP endpoint for the collector.",
+          "type": "string"
+        },
+        "serviceName": {
+          "description": "Service name reported in traces.",
+          "type": "string"
+        }
+      }
+    },
+    "pyroscope": {
+      "description": "Grafana Pyroscope continuous profiling configuration.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable continuous profiling via Pyroscope.",
+          "type": "boolean"
+        },
+        "url": {
+          "description": "Pyroscope server address.",
+          "type": "string"
+        }
+      }
+    },
+    "faro": {
+      "description": "Grafana Faro real-user monitoring (RUM) configuration for the web frontend.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable Grafana Faro RUM injection into the web pod.",
+          "type": "boolean"
+        },
+        "url": {
+          "description": "Faro collector URL injected as NEXT_PUBLIC_FARO_URL.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

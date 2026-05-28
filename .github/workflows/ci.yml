@@ -8,6 +8,7 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'deploy/helm/farm/**'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'deploy/helm/farm/**'
       - '.github/workflows/ci.yml'
 
 permissions:
@@ -235,12 +237,47 @@ jobs:
           DATABASE_SYNC: "false"
           JWT_SECRET: ${{ steps.secrets.outputs.jwt }}
           NODE_ENV: test
+
+  helm:
+    name: Helm chart lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.1.4
+
+      - name: Lint chart (strict)
+        # Subchart .tgz archives are committed to git (Chart.lock pinned to
+        # postgresql-15.5.38 / redis-19.6.4) so no `helm dependency update`
+        # call is needed — the charts/ directory is already populated.
+        run: |
+          helm lint deploy/helm/farm \
+            --strict \
+            --set api.image.repository=test \
+            --set web.image.repository=test
+
+      - name: Render templates (dev values)
+        run: |
+          helm template farm deploy/helm/farm \
+            -f deploy/helm/farm/values-dev.yaml \
+            --set api.image.repository=test \
+            --set web.image.repository=test \
+            > /dev/null
+
   # Roll-up job: single required check for branch protection rules.
   all-checks-passed:
     name: All checks passed (API CI)
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    needs: [api, migrations, openapi-snapshot]
+    needs: [api, migrations, openapi-snapshot, helm]
     if: always()
     steps:
       - name: Verify all required jobs succeeded
