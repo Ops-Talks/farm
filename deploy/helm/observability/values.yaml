@@ -323,7 +323,7 @@ alloy:
             // For local dev, override the full alloy.alloy.configMap.content
             // in values-dev.yaml and set:
             //   cors_allowed_origins = ["http://localhost:3001", "http://localhost:3000"]
-            cors_allowed_origins = ["https://farm.example.com"]
+            cors_allowed_origins = []
           }
           output {
             logs   = [loki.write.default.receiver]

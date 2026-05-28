@@ -231,7 +231,11 @@ Merged image pull secrets from global and workload-specific lists.
 {{- if $secrets }}
 imagePullSecrets:
 {{- range $secrets }}
+  {{- if kindIs "string" . }}
+  - name: {{ . }}
+  {{- else }}
   - name: {{ .name }}
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -241,7 +245,11 @@ imagePullSecrets:
 {{- if $secrets }}
 imagePullSecrets:
 {{- range $secrets }}
+  {{- if kindIs "string" . }}
+  - name: {{ . }}
+  {{- else }}
   - name: {{ .name }}
+  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
