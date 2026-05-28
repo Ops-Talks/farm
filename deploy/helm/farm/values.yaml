@@ -14,7 +14,7 @@ global:
   # -- Global image pull secrets applied to all pods.
   imagePullSecrets: []
 
-# ─── API ─────────────────────────────────────────────────────────────────────
+# ─── API ────────────────────────────────────────────────────────────[...]
 
 api:
   # -- Number of API replicas (overrides global replicaCount).
@@ -175,7 +175,7 @@ api:
   # Secrets Operator, Sealed Secrets, etc.).
   existingSecret: ""
 
-  # ─── HPA ──────────────────────────────────────────────────────────────────
+  # ─── HPA ───────────────────────────────────────────────────────────[...]
 
   autoscaling:
     enabled: false
@@ -198,7 +198,7 @@ api:
             value: 2
             periodSeconds: 60
 
-  # ─── PDB ──────────────────────────────────────────────────────────────────
+  # ─── PDB ───────────────────────────────────────────────────────────[...]
 
   podDisruptionBudget:
     enabled: false
@@ -243,7 +243,7 @@ api:
     # Example: [{ ports: [{ protocol: TCP, port: 587 }] }]
     additionalEgressRules: []
 
-# ─── WEB ─────────────────────────────────────────────────────────────────────
+# ─── WEB ───────────────────────────────────────────────────────────██[...]
 
 web:
   # -- Number of web replicas (overrides global replicaCount).
@@ -381,7 +381,7 @@ web:
     ingressControllerNamespaceSelector: {}
     ingressControllerPodSelector: {}
 
-# ─── MIGRATION ───────────────────────────────────────────────────────────────
+# ─── MIGRATION ─────────────────────────────────────────────────────────██[...]
 
 migration:
   # -- Enable the pre-upgrade/pre-install migration Job.
@@ -438,7 +438,7 @@ externalDatabase:
   # Example: "10.0.0.0/16". Leave empty to use externalDatabaseEgress (full peer spec).
   egressIpBlock: ""
 
-# ─── EXTERNAL REDIS ──────────────────────────────────────────────────────────
+# ─── EXTERNAL REDIS ────────────────────────────────────────────────────────[...]
 # Used when redis.enabled is false (production default).
 
 externalRedis:
@@ -512,7 +512,7 @@ prometheusRule:
   # -- Base URL for alert runbooks. Appended with #alert-name-slug.
   runbookBaseUrl: "https://github.com/Ops-Talks/farm/blob/main/docs/runbooks/alerts.md"
 
-# ─── GRAFANA DASHBOARDS ───────────────────────────────────────────────────────
+# ─── GRAFANA DASHBOARDS ──────────────────────────────────────────────────────██[...]
 # Packages the Farm Grafana dashboards as ConfigMaps with the grafana_dashboard: "1"
 # label for automatic discovery by the Grafana sidecar in kube-prometheus-stack.
 
@@ -529,7 +529,7 @@ grafanaDashboards:
   # -- Grafana folder to import dashboards into.
   folder: Farm
 
-# ─── TRACING ─────────────────────────────────────────────────────────────────
+# ─── TRACING ──────────────────────────────────────────────────────────█[...]
 # Requires an OpenTelemetry collector (Grafana Alloy, OpenTelemetry Collector, etc.)
 
 tracing:
@@ -540,7 +540,7 @@ tracing:
   # -- Service name reported in traces.
   serviceName: farm-api
 
-# ─── PYROSCOPE ───────────────────────────────────────────────────────────────
+# ─── PYROSCOPE ─────────────────────────────────────────────────────────██[...]
 # Requires Grafana Pyroscope or Grafana Cloud Profiles.
 
 pyroscope:
@@ -549,7 +549,7 @@ pyroscope:
   # -- Pyroscope server address.
   url: ""    # e.g. http://pyroscope.monitoring.svc:4040
 
-# ─── FARO ────────────────────────────────────────────────────────────────────
+# ─── FARO ───────────────────────────────────────────────────────────█[...]
 # Requires Grafana Alloy with a Faro receiver, or Grafana Cloud Frontend Observability.
 
 faro:
@@ -557,4 +557,3 @@ faro:
   enabled: false
   # -- Faro collector URL (injected as NEXT_PUBLIC_FARO_URL into the web pod).
   url: ""    # e.g. http://alloy.monitoring.svc:12347/collect
-
