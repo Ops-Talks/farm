@@ -142,7 +142,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 48: Platform Resilience | 3 | 10 | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
 | Phase 50: Docker & Container Hardening | 4 | 11 | `DONE` |
-| Phase 51: Helm Chart Hardening | 7 | 21 | `DONE` |
+| Phase 51: Helm Chart Hardening | 7 | 21 | `IN PROGRESS` |
 | Phase 52: Helm Observability Integration | 3 | 6 | `DONE` |
 | **Total** | **145** | **544** | |
 
@@ -685,7 +685,7 @@ Outcome of a deep audit of `deploy/helm/farm/` performed by the Farm SRE agent. 
 | FARM-S555 | Add a `behavior` block to both HPA templates. Expose `api.autoscaling.behavior` and `web.autoscaling.behavior` in `values.yaml` with safe defaults (scaleDown stabilizationWindowSeconds 300, scaleUp stabilizationWindowSeconds 60). Add to README parameters table (HELM-F005). | `DONE` |
 | FARM-S556 | Add `startupProbe` to the API and web Deployment templates. Expose `api.startupProbe` and `web.startupProbe` in `values.yaml` with defaults `httpGet /api/health`, `failureThreshold: 20`, `periodSeconds: 5`. Remove reliance on large `initialDelaySeconds` as the only startup guard (HELM-F006). | `DONE` |
 
-### FARM-E136: Observability Coverage `DONE`
+### FARM-E136: Observability Coverage `IN PROGRESS`
 
 | ID | Story | Status |
 |----|-------|--------|

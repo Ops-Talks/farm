@@ -9,6 +9,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'deploy/helm/farm/**'
+      - 'deploy/helm/observability/**'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'deploy/helm/farm/**'
+      - 'deploy/helm/observability/**'
       - '.github/workflows/ci.yml'
 
 permissions:
@@ -270,6 +272,19 @@ jobs:
             -f deploy/helm/farm/values-dev.yaml \
             --set api.image.repository=test \
             --set web.image.repository=test \
+            > /dev/null
+
+      - name: Lint observability chart (strict)
+        # Subchart .tgz archives are committed to git (Chart.lock) so no
+        # `helm dependency update` is needed — the charts/ directory is
+        # already populated.
+        run: |
+          helm lint deploy/helm/observability --strict
+
+      - name: Render observability templates (dev values)
+        run: |
+          helm template farm-obs deploy/helm/observability \
+            -f deploy/helm/observability/values-dev.yaml \
             > /dev/null
 
   # Roll-up job: single required check for branch protection rules.

@@ -335,6 +335,37 @@
         }
       }
     },
+    "ingress": {
+      "description": "Ingress configuration for API and web services.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "api": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hostname": { "type": "string" },
+            "path": { "type": "string" },
+            "pathType": { "type": "string", "enum": ["Prefix", "Exact", "ImplementationSpecific"] },
+            "annotations": { "type": "object" }
+          }
+        },
+        "web": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hostname": { "type": "string" },
+            "path": { "type": "string" },
+            "pathType": { "type": "string", "enum": ["Prefix", "Exact", "ImplementationSpecific"] },
+            "annotations": { "type": "object" }
+          }
+        },
+        "tls": { "type": "array" }
+      }
+    },
     "migration": {
       "description": "Pre-install/pre-upgrade database migration Job configuration.",
       "type": "object",

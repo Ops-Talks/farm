@@ -371,6 +371,42 @@ web:
     ingressControllerNamespaceSelector: {}
     ingressControllerPodSelector: {}
 
+# ─── INGRESS ─────────────────────────────────────────────────────────────────
+
+ingress:
+  enabled: false
+  # -- Ingress class name (e.g., "nginx", "traefik", "alb").
+  className: ""
+  # -- Shared annotations applied to both the API and web Ingress resources.
+  # Per-service annotations in ingress.api.annotations / ingress.web.annotations
+  # take precedence via merge when set.
+  # Examples (WebSocket / long-poll support — required for Farm's live updates):
+  #   nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  #   nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  annotations: {}
+  # -- Hostname and path for the API service.
+  api:
+    hostname: farm-api.example.com
+    path: /
+    pathType: Prefix
+    # -- Annotations specific to the API Ingress resource.
+    # Merged with (and overrides) ingress.annotations for the API Ingress.
+    annotations: {}
+  # -- Hostname and path for the web service.
+  web:
+    hostname: farm.example.com
+    path: /
+    pathType: Prefix
+    # -- Annotations specific to the web Ingress resource.
+    # Merged with (and overrides) ingress.annotations for the web Ingress.
+    annotations: {}
+  # -- TLS configuration.
+  tls: []
+  # - secretName: farm-tls
+  #   hosts:
+  #     - farm.example.com
+  #     - farm-api.example.com
+
 # ─── MIGRATION ───────────────────────────────────────────────────────────────
 
 migration:

@@ -387,6 +387,104 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 
 ## Upgrade Notes
 
+### Upgrading from < 0.26.0 — `values-production.yaml` removed
+
+The bundled `values-production.yaml` reference file has been removed. Create
+your own production override file using the following recommended settings as a
+starting point:
+
+```yaml
+api:
+  replicaCount: 2
+  existingSecret: farm-api   # K8s secret with JWT_SECRET, DATABASE_PASSWORD, etc.
+  env:
+    NODE_ENV: production
+    DATABASE_SYNC: "false"
+    THROTTLE_TTL: "60000"
+    THROTTLE_LIMIT: "100"
+    DATABASE_POOL_SIZE: "10"
+    LOG_LEVEL: "info"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: api
+
+web:
+  replicaCount: 2
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  api:
+    hostname: api.example.com
+  web:
+    hostname: app.example.com
+
+externalDatabase:
+  host: "<postgres-host>"
+  existingSecret: farm-api
+
+externalRedis:
+  host: "<redis-host>"
+  existingSecret: farm-api
+```
+
+### Upgrading from < 0.26.0 — Observability keys moved
+
+The flat `api.observability.*` keys have been lifted into independent top-level
+feature-flag blocks. Update your override values as follows:
+
+| Old key (< 0.26.0) | New key (≥ 0.26.0) |
+|--------------------------------------------|------------------------------------------|
+| `api.observability.otelEnabled: true` | `tracing.enabled: true` |
+| `api.observability.otelExporterEndpoint` | `tracing.endpoint` |
+| `api.observability.otelServiceName` | `tracing.serviceName` |
+| `api.observability.pyroscopeEnabled: true` | `pyroscope.enabled: true` |
+| `api.observability.pyroscopeServerAddress` | `pyroscope.url` |
+
+The schema's `additionalProperties: false` constraint will reject override
+files that still set the legacy keys, so update them before running
+`helm upgrade`.
+
+### Upgrading from < 0.26.0 — Ingress templates split
+
+`templates/ingress.yaml` has been replaced by two independent templates:
+`templates/ingress-api.yaml` and `templates/ingress-web.yaml`. The values
+structure is unchanged (`ingress.api.*` / `ingress.web.*` / `ingress.annotations`),
+so existing override files require no modification. Operators who were using the
+`ingress.annotations` block for WebSocket support should ensure they have the
+following annotations set (nginx example):
+
+```yaml
+ingress:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+```
+
 - Migrations run automatically on every `helm upgrade`. If you want to skip
   migrations for a specific upgrade, set `--set migration.enabled=false`.
 - The `checksum/config` and `checksum/secret` pod annotations force a rolling
