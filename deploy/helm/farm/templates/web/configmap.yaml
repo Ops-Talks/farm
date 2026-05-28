@@ -14,3 +14,7 @@ data:
   {{ $key }}: {{ $value | quote }}
   {{- end }}
   {{- end }}
+  # Observability — Faro RUM
+  {{- if .Values.faro.enabled }}
+  NEXT_PUBLIC_FARO_URL: {{ .Values.faro.url | quote }}
+  {{- end }}

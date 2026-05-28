@@ -1,4 +1,70 @@
 {{- if .Values.migration.enabled }}
+# ── Hook weight -10: ConfigMap with the minimal DB connection vars ────────────
+# Regular resources (postgresql subchart) are created before pre-install hooks
+# execute, so the database will be starting up when this ConfigMap is created.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "farm.fullname" . }}-migration-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  NODE_ENV: {{ .Values.api.env.NODE_ENV | quote }}
+  DATABASE_TYPE: "postgres"
+  DATABASE_HOST: {{ include "farm.databaseHost" . | quote }}
+  DATABASE_PORT: {{ include "farm.databasePort" . | quote }}
+  DATABASE_USER: {{ include "farm.databaseUser" . | quote }}
+  DATABASE_NAME: {{ include "farm.databaseName" . | quote }}
+  DATABASE_SYNC: "false"
+---
+# ── Hook weight -8: Secret with the DB password ──────────────────────────────
+# Only created when the chart manages the secret itself (no existingSecret set).
+{{- if and (not .Values.api.existingSecret) (not .Values.externalDatabase.existingSecret) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "farm.fullname" . }}-migration-secret
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-8"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+type: Opaque
+stringData:
+  {{- if .Values.postgresql.enabled }}
+  DATABASE_PASSWORD: {{ .Values.postgresql.auth.password | default "" | quote }}
+  {{- else if .Values.externalDatabase.password }}
+  DATABASE_PASSWORD: {{ .Values.externalDatabase.password | quote }}
+  {{- else }}
+  DATABASE_PASSWORD: ""
+  {{- end }}
+---
+{{- end }}
+# ── Hook weight -5: ServiceAccount ───────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "farm.fullname" . }}-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+automountServiceAccountToken: false
+---
+# ── Hook weight -1: Job ───────────────────────────────────────────────────────
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -25,33 +91,45 @@ spec:
       {{- end }}
     spec:
       restartPolicy: {{ .Values.migration.restartPolicy }}
-      serviceAccountName: {{ include "farm.api.serviceAccountName" . }}
+      serviceAccountName: {{ include "farm.fullname" . }}-migration
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- if .Values.migration.waitForDb.enabled }}
       initContainers:
         - name: wait-for-db
-          image: bitnami/postgresql:16
+          image: {{ .Values.migration.waitForDb.image }}
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
             - -c
             - |
-              until pg_isready -h ${DATABASE_HOST} -p ${DATABASE_PORT} -U ${DATABASE_USER}; do
-                echo "Waiting for database..."; sleep 2;
+              RETRIES={{ .Values.migration.waitForDb.retries | default 60 }}
+              INTERVAL={{ .Values.migration.waitForDb.intervalSeconds | default 2 }}
+              if ! command -v nc >/dev/null 2>&1; then
+                echo "ERROR: nc (netcat) not found in wait-for-db image. Aborting." >&2
+                exit 1
+              fi
+              for i in $(seq 1 "$RETRIES"); do
+                if nc -z "${DATABASE_HOST}" "${DATABASE_PORT:-5432}"; then
+                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432} (attempt ${i}/${RETRIES})"
+                  exit 0
+                fi
+                echo "Attempt ${i}/${RETRIES}: waiting for database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} (retry in ${INTERVAL}s)..."
+                sleep "$INTERVAL"
               done
+              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable after ${RETRIES} attempts. Aborting migration." >&2
+              exit 1
           envFrom:
             - configMapRef:
-                name: {{ include "farm.fullname" . }}-api
-            - secretRef:
-                name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
+                name: {{ include "farm.fullname" . }}-migration-config
           securityContext:
-            allowPrivilegeEscalation: false
-            runAsNonRoot: true
-            runAsUser: 1001
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
+      {{- end }}
       {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: migration
@@ -61,12 +139,23 @@ spec:
             {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.migration.resources | nindent 12 }}
-          command: ["npm", "run", "migration:run", "-w", "apps/api"]
+          command: ["node", "/app/node_modules/.bin/typeorm", "migration:run", "-d", "dist/config/typeorm-cli.config.js"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           envFrom:
             - configMapRef:
-                name: {{ include "farm.fullname" . }}-api
+                name: {{ include "farm.fullname" . }}-migration-config
+            {{- if .Values.api.existingSecret }}
             - secretRef:
-                name: {{ .Values.api.existingSecret | default (printf "%s-api" (include "farm.fullname" .)) }}
+                name: {{ .Values.api.existingSecret }}
+            {{- else if .Values.externalDatabase.existingSecret }}
+            - secretRef:
+                name: {{ .Values.externalDatabase.existingSecret }}
+            {{- else }}
+            - secretRef:
+                name: {{ include "farm.fullname" . }}-migration-secret
+            {{- end }}
           {{- $externalSecretEnv := include "farm.api.externalSecretEnv" . | trim }}
           {{- if $externalSecretEnv }}
           env:

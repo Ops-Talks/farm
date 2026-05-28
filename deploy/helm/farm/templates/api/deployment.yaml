@@ -26,6 +26,11 @@ spec:
         # Force pod restart when ConfigMap or Secret content changes.
         checksum/config: {{ include (print $.Template.BasePath "/api/configmap.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/api/secret.yaml") . | sha256sum }}
+        {{- if .Values.pyroscope.enabled }}
+        profiles.grafana.com/cpu.scrape: "true"
+        profiles.grafana.com/memory.scrape: "true"
+        profiles.grafana.com/service_name: {{ include "farm.fullname" . }}-api
+        {{- end }}
         {{- with .Values.api.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

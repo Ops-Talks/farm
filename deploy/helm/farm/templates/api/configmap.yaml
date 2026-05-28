@@ -42,16 +42,20 @@ data:
   LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | default "info" | quote }}
 
   # Observability — OpenTelemetry
-  OTEL_ENABLED: {{ .Values.api.observability.otelEnabled | toString | quote }}
-  OTEL_SERVICE_NAME: {{ .Values.api.observability.otelServiceName | quote }}
-  {{- if .Values.api.observability.otelExporterEndpoint }}
-  OTEL_EXPORTER_ENDPOINT: {{ .Values.api.observability.otelExporterEndpoint | quote }}
+  {{- if .Values.tracing.enabled }}
+  OTEL_ENABLED: "true"
+  OTEL_SERVICE_NAME: {{ .Values.tracing.serviceName | quote }}
+  {{- if .Values.tracing.endpoint }}
+  OTEL_EXPORTER_ENDPOINT: {{ .Values.tracing.endpoint | quote }}
+  {{- end }}
   {{- end }}
 
   # Observability — Pyroscope
-  PYROSCOPE_ENABLED: {{ .Values.api.observability.pyroscopeEnabled | toString | quote }}
-  {{- if .Values.api.observability.pyroscopeServerAddress }}
-  PYROSCOPE_URL: {{ .Values.api.observability.pyroscopeServerAddress | quote }}
+  {{- if .Values.pyroscope.enabled }}
+  PYROSCOPE_ENABLED: "true"
+  {{- if .Values.pyroscope.url }}
+  PYROSCOPE_URL: {{ .Values.pyroscope.url | quote }}
+  {{- end }}
   {{- end }}
 
   # Observability — Backend URLs (used by the API to proxy queries)

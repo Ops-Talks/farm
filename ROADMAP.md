@@ -142,7 +142,9 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 48: Platform Resilience | 3 | 10 | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
 | Phase 50: Docker & Container Hardening | 4 | 11 | `DONE` |
-| **Total** | **132** | **511** | |
+| Phase 51: Helm Chart Hardening | 7 | 21 | `IN PROGRESS` |
+| Phase 52: Helm Observability Integration | 3 | 6 | `DONE` |
+| **Total** | **145** | **544** | |
 
 ---
 
@@ -659,58 +661,91 @@ Full audit and learnings are captured in `.github/agents/Farm-SRE.agent.md` unde
 
 Outcome of a deep audit of `deploy/helm/farm/` performed by the Farm SRE agent. The chart is functionally correct for basic deployments but carries 27 findings across security, reliability, observability, configuration completeness, Helm best practices, migration safety, and ingress hygiene. Critical gaps: the migration Job silently ignores its resource limits (HELM-F022), runs as root (HELM-F023), and the web workload has no ConfigMap or config-change restart annotation (HELM-F013/F014). Full findings and recommendations are captured in the audit report in `.github/agents/Farm-SRE.agent.md`.
 
-### FARM-E133: Migration Job Hardening `TODO`
+### FARM-E133: Migration Job Hardening `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S548 | Fix critical resource omission: add `resources: {{- toYaml .Values.migration.resources \| nindent 12 }}` to the migration container spec in `templates/migration-job.yaml`. The `migration.resources` values block exists in `values.yaml` but is never rendered (HELM-F022). | `TODO` |
-| FARM-S549 | Add pod and container `securityContext` to the migration Job, re-using `.Values.api.podSecurityContext` and `.Values.api.containerSecurityContext` so the migration container runs as UID 1001 with `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, and `readOnlyRootFilesystem: true` (HELM-F023). | `TODO` |
-| FARM-S550 | Set `serviceAccountName: {{ include "farm.api.serviceAccountName" . }}` on the migration Job pod spec so it uses the pre-existing API ServiceAccount (which already has `automountServiceAccountToken: false`) instead of the namespace `default` SA (HELM-F024). | `TODO` |
-| FARM-S551 | Add a `pg_isready` initContainer to the migration Job that polls the database endpoint before the migration container starts. Set `migration.activeDeadlineSeconds` default to `300` in `values.yaml`. Document both in `NOTES.txt` (HELM-F025). | `TODO` |
+| FARM-S548 | Fix critical resource omission: add `resources: {{- toYaml .Values.migration.resources \| nindent 12 }}` to the migration container spec in `templates/migration-job.yaml`. The `migration.resources` values block exists in `values.yaml` but is never rendered (HELM-F022). | `DONE` |
+| FARM-S549 | Add pod and container `securityContext` to the migration Job, re-using `.Values.api.podSecurityContext` and `.Values.api.containerSecurityContext` so the migration container runs as UID 1001 with `runAsNonRoot: true`, `allowPrivilegeEscalation: false`, and `readOnlyRootFilesystem: true` (HELM-F023). | `DONE` |
+| FARM-S550 | Set `serviceAccountName: {{ include "farm.api.serviceAccountName" . }}` on the migration Job pod spec so it uses the pre-existing API ServiceAccount (which already has `automountServiceAccountToken: false`) instead of the namespace `default` SA (HELM-F024). | `DONE` |
+| FARM-S551 | Add a `pg_isready` initContainer to the migration Job that polls the database endpoint before the migration container starts. Set `migration.activeDeadlineSeconds` default to `300` in `values.yaml`. Document both in `NOTES.txt` (HELM-F025). | `DONE` |
 
-### FARM-E134: Security Hardening `TODO`
-
-| ID | Story | Status |
-|----|-------|--------|
-| FARM-S552 | Set `api.containerSecurityContext.readOnlyRootFilesystem: true` in `values.yaml`. Add `api.extraVolumeMounts` and `api.extraVolumes` to the Deployment template to support `emptyDir` mounts for `/tmp` and `PLUGINS_DIR` at runtime. Update `values-dev.yaml` and `values-production.yaml` with example tmpfs mounts (HELM-F001). | `TODO` |
-| FARM-S553 | Add `templates/api/networkpolicy.yaml` and `templates/web/networkpolicy.yaml`. Default policy: API ingress from Ingress controller + web pods only; web ingress from Ingress controller only; egress to DB, Redis, observability stack. Gate on `api.networkPolicy.enabled` / `web.networkPolicy.enabled` (default: `false`). Document in README (HELM-F002). | `TODO` |
-
-### FARM-E135: Reliability and High Availability `TODO`
+### FARM-E134: Security Hardening `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S554 | Guard both PDB templates with `{{- if ge .Values.*.replicaCount 2 }}` to prevent the single-replica-with-PDB node-drain deadlock. Add the guard for both API and web. Update README upgrade notes (HELM-F004). | `TODO` |
-| FARM-S555 | Add a `behavior` block to both HPA templates. Expose `api.autoscaling.behavior` and `web.autoscaling.behavior` in `values.yaml` with safe defaults (scaleDown stabilizationWindowSeconds 300, scaleUp stabilizationWindowSeconds 60). Add to README parameters table (HELM-F005). | `TODO` |
-| FARM-S556 | Add `startupProbe` to the API and web Deployment templates. Expose `api.startupProbe` and `web.startupProbe` in `values.yaml` with defaults `httpGet /api/health`, `failureThreshold: 20`, `periodSeconds: 5`. Remove reliance on large `initialDelaySeconds` as the only startup guard (HELM-F006). | `TODO` |
+| FARM-S552 | Set `api.containerSecurityContext.readOnlyRootFilesystem: true` in `values.yaml`. Add `api.extraVolumeMounts` and `api.extraVolumes` to the Deployment template to support `emptyDir` mounts for `/tmp` and `PLUGINS_DIR` at runtime. Update `values-dev.yaml` and `values-production.yaml` with example tmpfs mounts (HELM-F001). | `DONE` |
+| FARM-S553 | Add `templates/api/networkpolicy.yaml` and `templates/web/networkpolicy.yaml`. Default policy: API ingress from Ingress controller + web pods only; web ingress from Ingress controller only; egress to DB, Redis, observability stack. Gate on `api.networkPolicy.enabled` / `web.networkPolicy.enabled` (default: `false`). Document in README (HELM-F002). | `DONE` |
 
-### FARM-E136: Observability Coverage `TODO`
-
-| ID | Story | Status |
-|----|-------|--------|
-| FARM-S557 | Add `"farm-integrations"` to the dashboard list in `templates/grafana-dashboards.yaml`. Add a CI step that `diff`s `deploy/helm/farm/dashboards/` against `observability/grafana/provisioning/dashboards/` (excluding `dashboard.yml`) and fails on any missing file (HELM-F007). | `TODO` |
-| FARM-S558 | Add `runbook_url` annotations to all four alerts in `templates/prometheusrule.yaml`. Introduce a `prometheusRule.runbookBaseUrl` value (default: the GitHub README anchor) so operators can point to an internal runbook base URL (HELM-F008). | `TODO` |
-| FARM-S559 | Compile `observability/sloth-slos.yml` with `sloth generate` and embed the resulting multi-burn-rate alert groups into `templates/prometheusrule.yaml`. Add a `make sloth-generate` Makefile target and a CI diff check to detect drift between the Sloth source and the embedded rules (HELM-F009). | `TODO` |
-
-### FARM-E137: Configuration Completeness `TODO`
+### FARM-E135: Reliability and High Availability `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S560 | Introduce `web/configmap.yaml` rendering all `web.env` keys. Update the web Deployment to consume it via `envFrom.configMapRef`. This fixes `NEXT_TELEMETRY_DISABLED` not being injected (HELM-F013), provides the missing `checksum/config` restart annotation (HELM-F014), and makes `NEXT_PUBLIC_APP_URL` in `values-dev.yaml` actually apply. | `TODO` |
-| FARM-S561 | Add `THROTTLE_TTL: "60000"` and `THROTTLE_LIMIT: "10"` to `api.env` in `values.yaml` and emit them in `configmap.yaml`. Add override examples to `values-production.yaml`. Add to README parameters table (HELM-F012). | `TODO` |
-| FARM-S562 | Add `DATABASE_POOL_SIZE: "10"`, `LOG_LEVEL: "info"` to `api.env` in `values.yaml` and emit them in `configmap.yaml`. Add a comment in `values-production.yaml` warning that pool size should be reduced when HPA max replicas is high. Add to README parameters table (HELM-F015, HELM-F016, HELM-F011). | `TODO` |
-| FARM-S563 | Fix `tempoUrl` default in `values-production.yaml` from port `3100` to port `3200` (Grafana Tempo HTTP query frontend default). Update the matching example in `README.md` (HELM-F017). | `TODO` |
+| FARM-S554 | Guard both PDB templates with `{{- if ge .Values.*.replicaCount 2 }}` to prevent the single-replica-with-PDB node-drain deadlock. Add the guard for both API and web. Update README upgrade notes (HELM-F004). | `DONE` |
+| FARM-S555 | Add a `behavior` block to both HPA templates. Expose `api.autoscaling.behavior` and `web.autoscaling.behavior` in `values.yaml` with safe defaults (scaleDown stabilizationWindowSeconds 300, scaleUp stabilizationWindowSeconds 60). Add to README parameters table (HELM-F005). | `DONE` |
+| FARM-S556 | Add `startupProbe` to the API and web Deployment templates. Expose `api.startupProbe` and `web.startupProbe` in `values.yaml` with defaults `httpGet /api/health`, `failureThreshold: 20`, `periodSeconds: 5`. Remove reliance on large `initialDelaySeconds` as the only startup guard (HELM-F006). | `DONE` |
 
-### FARM-E138: Helm Best Practices `TODO`
-
-| ID | Story | Status |
-|----|-------|--------|
-| FARM-S564 | Remove the dead top-level `replicaCount: 1` key from `values.yaml`. Add `nameOverride: ""` and `fullnameOverride: ""` with documentation comments so all referenced values are explicitly declared (HELM-F018, HELM-F019). | `TODO` |
-| FARM-S565 | Bump `Chart.yaml appVersion` to `"0.25.7"`. Add an automated step to `.github/workflows/release.yml` that updates `Chart.yaml appVersion` to the pushed semver tag before packaging, preventing future stale-appVersion drift (HELM-F020). | `TODO` |
-| FARM-S566 | Extend the README parameters table with all missing keys: `api.topologySpreadConstraints`, `web.topologySpreadConstraints`, `api.autoscaling.behavior`, `api.startupProbe`, `web.startupProbe`, `api.env.THROTTLE_TTL`, `api.env.THROTTLE_LIMIT`, `api.env.LOG_LEVEL`, `api.env.DATABASE_POOL_SIZE`, `migration.activeDeadlineSeconds`. Evaluate adopting `helm-docs` to auto-generate the table from `values.yaml` comments (HELM-F021). | `TODO` |
-
-### FARM-E139: Ingress Improvements `TODO`
+### FARM-E136: Observability Coverage `IN PROGRESS`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S567 | Add `nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"` and `proxy-send-timeout: "3600"` to `values-production.yaml` under `ingress.annotations` (or introduce separate `ingress.api.annotations` / `ingress.web.annotations` keys). Document the WebSocket requirement in README (HELM-F026). | `TODO` |
-| FARM-S568 | Split `templates/ingress.yaml` into `templates/ingress-api.yaml` and `templates/ingress-web.yaml`. Introduce `ingress.api.annotations` and `ingress.web.annotations` value keys. Add a migration note to README for operators upgrading from the combined Ingress (HELM-F027). | `TODO` |
+| FARM-S557 | Add `"farm-integrations"` to the dashboard list in `templates/grafana-dashboards.yaml`. Add a CI step that `diff`s `deploy/helm/farm/dashboards/` against `observability/grafana/provisioning/dashboards/` (excluding `dashboard.yml`) and fails on any missing file (HELM-F007). | `DONE` |
+| FARM-S558 | Add `runbook_url` annotations to all four alerts in `templates/prometheusrule.yaml`. Introduce a `prometheusRule.runbookBaseUrl` value (default: the GitHub README anchor) so operators can point to an internal runbook base URL (HELM-F008). | `DONE` |
+| FARM-S559 | Compile `observability/sloth-slos.yml` with `sloth generate` and embed the resulting multi-burn-rate alert groups into `templates/prometheusrule.yaml`. Add a `make sloth-generate` Makefile target and a CI diff check to detect drift between the Sloth source and the embedded rules (HELM-F009). | `BLOCKED` — requires `sloth` binary; embed pending `make sloth-generate` output review. |
+
+### FARM-E137: Configuration Completeness `DONE`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S560 | Introduce `web/configmap.yaml` rendering all `web.env` keys. Update the web Deployment to consume it via `envFrom.configMapRef`. This fixes `NEXT_TELEMETRY_DISABLED` not being injected (HELM-F013), provides the missing `checksum/config` restart annotation (HELM-F014), and makes `NEXT_PUBLIC_APP_URL` in `values-dev.yaml` actually apply. | `DONE` |
+| FARM-S561 | Add `THROTTLE_TTL: "60000"` and `THROTTLE_LIMIT: "10"` to `api.env` in `values.yaml` and emit them in `configmap.yaml`. Add override examples to `values-production.yaml`. Add to README parameters table (HELM-F012). | `DONE` |
+| FARM-S562 | Add `DATABASE_POOL_SIZE: "10"`, `LOG_LEVEL: "info"` to `api.env` in `values.yaml` and emit them in `configmap.yaml`. Add a comment in `values-production.yaml` warning that pool size should be reduced when HPA max replicas is high. Add to README parameters table (HELM-F015, HELM-F016, HELM-F011). | `DONE` |
+| FARM-S563 | Fix `tempoUrl` default in `values-production.yaml` from port `3100` to port `3200` (Grafana Tempo HTTP query frontend default). Update the matching example in `README.md` (HELM-F017). | `DONE` |
+
+### FARM-E138: Helm Best Practices `DONE`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S564 | Remove the dead top-level `replicaCount: 1` key from `values.yaml`. Add `nameOverride: ""` and `fullnameOverride: ""` with documentation comments so all referenced values are explicitly declared (HELM-F018, HELM-F019). | `DONE` |
+| FARM-S565 | Bump `Chart.yaml appVersion` to `"0.25.7"`. Add an automated step to `.github/workflows/release.yml` that updates `Chart.yaml appVersion` to the pushed semver tag before packaging, preventing future stale-appVersion drift (HELM-F020). | `DONE` |
+| FARM-S566 | Extend the README parameters table with all missing keys: `api.topologySpreadConstraints`, `web.topologySpreadConstraints`, `api.autoscaling.behavior`, `api.startupProbe`, `web.startupProbe`, `api.env.THROTTLE_TTL`, `api.env.THROTTLE_LIMIT`, `api.env.LOG_LEVEL`, `api.env.DATABASE_POOL_SIZE`, `migration.activeDeadlineSeconds`. Evaluate adopting `helm-docs` to auto-generate the table from `values.yaml` comments (HELM-F021). | `DONE` |
+
+### FARM-E139: Ingress Improvements `DONE`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S567 | Add `nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"` and `proxy-send-timeout: "3600"` to `values-production.yaml` under `ingress.annotations` (or introduce separate `ingress.api.annotations` / `ingress.web.annotations` keys). Document the WebSocket requirement in README (HELM-F026). | `DONE` |
+| FARM-S568 | Split `templates/ingress.yaml` into `templates/ingress-api.yaml` and `templates/ingress-web.yaml`. Introduce `ingress.api.annotations` and `ingress.web.annotations` value keys. Add a migration note to README for operators upgrading from the combined Ingress (HELM-F027). | `DONE` |
+
+---
+
+## Phase 52: Helm Observability Integration `DONE`
+
+Refactor the observability configuration in the Helm chart so that each integration (tracing, profiling, RUM) is an independent feature flag (`enabled: false` by default). Operators activate only the components present in their cluster. Adds Pyroscope pod annotations for auto-discovery and Grafana Faro RUM support to the web deployment.
+
+### FARM-E140: Observability Feature Flags `DONE`
+
+Lift the flat `api.observability.*` keys into three independent top-level blocks, each guarded by `enabled: false`. Zero behavioral change when all flags are false.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S569 | Refactor `api.observability.otelEnabled`, `otelExporterEndpoint`, and `otelServiceName` into a top-level `tracing:` block (`enabled: false`, `endpoint: ""`, `serviceName: farm-api`). Update the API ConfigMap template to conditionally inject `OTEL_ENABLED`, `OTEL_EXPORTER_ENDPOINT`, and `OTEL_SERVICE_NAME` only when `tracing.enabled: true`. Update `values.schema.json`. (OBS-F001) | `DONE` |
+| FARM-S570 | Refactor `api.observability.pyroscopeEnabled` and `pyroscopeServerAddress` into a top-level `pyroscope:` block (`enabled: false`, `url: ""`). Update the API ConfigMap template to conditionally inject `PYROSCOPE_ENABLED` and `PYROSCOPE_URL` only when `pyroscope.enabled: true`. Update `values.schema.json`. (OBS-F002) | `DONE` |
+| FARM-S571 | Add a top-level `faro:` block (`enabled: false`, `url: ""`). When `faro.enabled: true`, inject `NEXT_PUBLIC_FARO_URL` into the web ConfigMap. Update `values.schema.json`. (OBS-F003) | `DONE` |
+
+### FARM-E141: Pyroscope Pod Annotations `DONE`
+
+When Pyroscope is enabled, the Pyroscope agent/operator discovers targets via pod annotations. Without these annotations, continuous profiling silently does nothing in Kubernetes even if the URL is set.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S572 | When `pyroscope.enabled: true`, add Pyroscope auto-discovery annotations to the API Deployment pod template: `profiles.grafana.com/cpu.scrape: "true"`, `profiles.grafana.com/memory.scrape: "true"`, `profiles.grafana.com/service_name: {{ .Release.Name }}-api`. Document required Pyroscope Operator or Alloy version in README. (OBS-F004) | `DONE` |
+
+### FARM-E142: Developer Experience `DONE`
+
+Ensure `values-dev.yaml` reflects the full local stack and the README documents all new parameters.
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S573 | Update `values-dev.yaml` with all three integration blocks enabled, pointing to local in-cluster service URLs matching `docker-compose.observability.yml` (`tracing.endpoint: http://alloy:4318/v1/traces`, `pyroscope.url: http://pyroscope:4040`, `faro.url: http://alloy:12347/collect`). (OBS-F005) | `DONE` |
+| FARM-S574 | Update the README parameters table with the new `tracing`, `pyroscope`, and `faro` top-level blocks. Remove the stale `api.observability.*` entries. (OBS-F006) | `DONE` |
