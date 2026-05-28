@@ -36,3 +36,6 @@ e2e/.auth/
 apps/web/e2e/.auth/
 GIT_COMMIT.md
 storybook-static/
+
+# Helm subchart archives — managed by helm dependency build, not committed to git
+deploy/helm/**/charts/*.tgz

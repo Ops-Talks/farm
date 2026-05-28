@@ -6,40 +6,24 @@ metadata:
   labels:
     {{- include "farm.api.labels" . | nindent 4 }}
 data:
-  # Application
-  NODE_ENV: {{ .Values.api.env.NODE_ENV | quote }}
-  DATABASE_SYNC: {{ .Values.api.env.DATABASE_SYNC | quote }}
-  CACHE_TTL: {{ .Values.api.env.CACHE_TTL | quote }}
-  ALLOWED_ORIGINS: {{ .Values.api.env.ALLOWED_ORIGINS | quote }}
-  PLUGINS_DIR: {{ .Values.api.env.PLUGINS_DIR | quote }}
+  # Non-sensitive application environment.
+  # All keys defined under api.env are included automatically — add custom
+  # keys there and they will be picked up without modifying this template.
+  {{- range $key := (.Values.api.env | keys | sortAlpha) }}
+  {{- $value := get $.Values.api.env $key }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
 
-  # Database
+  # Database connection details (computed from postgresql/externalDatabase config).
   DATABASE_TYPE: postgres
   DATABASE_HOST: {{ include "farm.databaseHost" . | quote }}
   DATABASE_PORT: {{ include "farm.databasePort" . | quote }}
   DATABASE_USER: {{ include "farm.databaseUser" . | quote }}
   DATABASE_NAME: {{ include "farm.databaseName" . | quote }}
 
-  # Redis
+  # Redis connection details (computed from redis/externalRedis config).
   REDIS_HOST: {{ include "farm.redisHost" . | quote }}
   REDIS_PORT: {{ include "farm.redisPort" . | quote }}
-
-  # Redis Sentinel (optional -- when set, takes precedence over REDIS_HOST)
-  {{- if .Values.api.env.REDIS_SENTINEL_HOSTS }}
-  REDIS_SENTINEL_HOSTS: {{ .Values.api.env.REDIS_SENTINEL_HOSTS | quote }}
-  REDIS_SENTINEL_NAME: {{ .Values.api.env.REDIS_SENTINEL_NAME | default "mymaster" | quote }}
-  {{- end }}
-
-  # Database connection pool timeouts
-  DATABASE_POOL_CONNECT_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_CONNECT_TIMEOUT | default "5000" | quote }}
-  DATABASE_STATEMENT_TIMEOUT: {{ .Values.api.env.DATABASE_STATEMENT_TIMEOUT | default "30000" | quote }}
-  DATABASE_POOL_IDLE_TIMEOUT: {{ .Values.api.env.DATABASE_POOL_IDLE_TIMEOUT | default "10000" | quote }}
-  DATABASE_POOL_SIZE: {{ .Values.api.env.DATABASE_POOL_SIZE | default "10" | quote }}
-
-  # Application behaviour
-  THROTTLE_TTL: {{ .Values.api.env.THROTTLE_TTL | default "60000" | quote }}
-  THROTTLE_LIMIT: {{ .Values.api.env.THROTTLE_LIMIT | default "10" | quote }}
-  LOG_LEVEL: {{ .Values.api.env.LOG_LEVEL | default "info" | quote }}
 
   # Observability — OpenTelemetry
   {{- if .Values.tracing.enabled }}

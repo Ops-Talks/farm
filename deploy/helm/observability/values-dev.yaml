@@ -5,6 +5,20 @@
 # ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
 kube-prometheus-stack:
   grafana:
+    # FARM-S579: In dev, skip the existingSecret requirement by providing
+    # inline credentials. Never replicate this pattern in production.
+    admin:
+      existingSecret: ""
+    adminUser: admin
+    adminPassword: admin
+
+    # FARM-S580: Enable anonymous access in development only.
+    # Production keeps auth.anonymous.enabled: false (see values.yaml).
+    grafana.ini:
+      auth.anonymous:
+        enabled: true
+        org_role: Viewer
+
     persistence:
       enabled: false
     resources:
@@ -41,6 +55,11 @@ kube-prometheus-stack:
 
 # ─── LOKI ────────────────────────────────────────────────────────────────────
 loki:
+  loki:
+    # FARM-S581: Disable auth in development to avoid needing X-Scope-OrgID
+    # headers on every push/query. Production keeps auth_enabled: true.
+    auth_enabled: false
+
   singleBinary:
     persistence:
       enabled: false

@@ -17,8 +17,11 @@ global:
 # ─── API ────────────────────────────────────────────────────────────[...]
 
 api:
-  # -- Number of API replicas (overrides global replicaCount).
-  replicaCount: 1
+  # -- Number of API replicas.
+  # Production default is 2 to eliminate the single-point-of-failure risk and
+  # to satisfy the PodDisruptionBudget (minAvailable: 1) during node drains.
+  # Override to 1 only in resource-constrained environments (e.g. values-dev.yaml).
+  replicaCount: 2
 
   image:
     # -- Container registry. Combined with repository: <registry>/<repository>:<tag>.
@@ -65,12 +68,17 @@ api:
     port: 3000
 
   # -- CPU and memory resource requests/limits.
+  # Sized per the Farm SRE resource table (see deploy/helm/farm/README.md).
+  # Adjust limits based on actual usage observed via Prometheus
+  # container_cpu_usage_seconds_total and container_memory_working_set_bytes.
+  # cpu request: 250m covers normal NestJS event-loop + DB query load.
+  # memory limit: 512Mi covers heap + external buffers; alert fires at 80% heap.
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 250m
+      memory: 512Mi
     limits:
-      cpu: 500m
+      cpu: 1000m
       memory: 512Mi
 
   # -- Liveness probe configuration.
@@ -199,9 +207,13 @@ api:
             periodSeconds: 60
 
   # ─── PDB ───────────────────────────────────────────────────────────[...]
+  # PDB is enabled by default to prevent node-drain operations from removing
+  # all API pods simultaneously. The template only creates the object when
+  # replicaCount > 1, so enabling it in single-replica environments (dev) is
+  # harmless — the PodDisruptionBudget resource will simply not be rendered.
 
   podDisruptionBudget:
-    enabled: false
+    enabled: true
     minAvailable: 1
 
   # -- Node selector for the API pod.
@@ -246,8 +258,10 @@ api:
 # ─── WEB ───────────────────────────────────────────────────────────██[...]
 
 web:
-  # -- Number of web replicas (overrides global replicaCount).
-  replicaCount: 1
+  # -- Number of web replicas.
+  # Production default is 2 — same HA rationale as api.replicaCount.
+  # Override to 1 in resource-constrained environments (e.g. values-dev.yaml).
+  replicaCount: 2
 
   image:
     registry: ""
@@ -281,14 +295,18 @@ web:
     type: ClusterIP
     port: 3001
 
+  # -- CPU and memory resource requests/limits for the web (Next.js) container.
+  # cpu request: 100m covers SSR + static serving at moderate traffic.
+  # memory limit: 256Mi covers Next.js runtime; raise if ISR cache grows large.
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 256Mi
 
+  # -- Liveness probe configuration.
   livenessProbe:
     httpGet:
       path: /api/health
@@ -358,7 +376,9 @@ web:
             periodSeconds: 60
 
   podDisruptionBudget:
-    enabled: false
+    # PDB is enabled by default — same HA rationale as api.podDisruptionBudget.
+    # Template is a no-op when web.replicaCount < 2.
+    enabled: true
     minAvailable: 1
 
   nodeSelector: {}
@@ -421,7 +441,11 @@ migration:
 # Used when postgresql.enabled is false (production default).
 
 externalDatabase:
-  host: "localhost"
+  # -- Hostname or IP of the external PostgreSQL instance.
+  # REQUIRED when postgresql.enabled=false. Leaving this empty causes the
+  # FARM-S583 guard to abort helm install/upgrade with a descriptive error.
+  # Example: "rds-farm.c3abc123.us-east-1.rds.amazonaws.com"
+  host: ""
   port: 5432
   user: "postgres"
   # -- Do NOT set this in values files. Provide via existingSecret or --set at
@@ -489,7 +513,9 @@ redis:
 
 serviceMonitor:
   # -- Create a Prometheus Operator ServiceMonitor to scrape the API /metrics endpoint.
-  enabled: false
+  # Enabled by default: observability is opt-out in production, not opt-in.
+  # Disable in environments that do not have prometheus-operator installed.
+  enabled: true
   # -- Namespace to create the ServiceMonitor in. Defaults to the release namespace.
   namespace: ""
   # -- Labels added to the ServiceMonitor (must match the Prometheus operator's serviceMonitorSelector).
@@ -504,13 +530,24 @@ serviceMonitor:
 
 prometheusRule:
   # -- Create a Prometheus Operator PrometheusRule with the Farm alert rules.
-  enabled: false
+  # Enabled by default: observability is opt-out in production, not opt-in.
+  # Disable in environments that do not have prometheus-operator installed.
+  enabled: true
   # -- Namespace to create the PrometheusRule in. Defaults to the release namespace.
   namespace: ""
   # -- Labels added to the PrometheusRule (must match the Prometheus operator's ruleNamespaceSelector/ruleSelector).
   additionalLabels: {}
   # -- Base URL for alert runbooks. Appended with #alert-name-slug.
   runbookBaseUrl: "https://github.com/Ops-Talks/farm/blob/main/docs/runbooks/alerts.md"
+  # -- Alertmanager receiver name used by the Farm alert routing rules.
+  # REQUIRED when prometheusRule.enabled=true (FARM-S587).
+  # Set to the name of a receiver defined in your Alertmanager configuration.
+  # In production this is typically "pagerduty" or "slack-farm-alerts".
+  # In dev/staging set to "null" (the built-in Alertmanager no-op receiver).
+  # Leaving this empty will cause `helm template` / `helm install` to fail
+  # deliberately — a null receiver silently swallows alerts, which is worse
+  # than a loud deploy-time error.
+  alertmanagerReceiverName: ""
 
 # ─── GRAFANA DASHBOARDS ──────────────────────────────────────────────────────██[...]
 # Packages the Farm Grafana dashboards as ConfigMaps with the grafana_dashboard: "1"

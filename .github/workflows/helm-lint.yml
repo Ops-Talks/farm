@@ -18,24 +18,28 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Helm
+        # Download the tarball and verify SHA256 before extracting.
+        # Fetching the checksum from get.helm.sh over TLS is sufficient to
+        # detect CDN tampering; it is the same trust domain as the tarball.
         run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
-            | DESIRED_VERSION=v3.17.0 bash
+          HELM_VERSION="v3.17.0"
+          HELM_ARCH="linux-amd64"
+          HELM_FILE="helm-${HELM_VERSION}-${HELM_ARCH}.tar.gz"
+          curl -fsSL "https://get.helm.sh/${HELM_FILE}" -o "/tmp/${HELM_FILE}"
+          EXPECTED_SHA=$(curl -fsSL "https://get.helm.sh/${HELM_FILE}.sha256sum" | awk '{print $1}')
+          ACTUAL_SHA=$(sha256sum "/tmp/${HELM_FILE}" | awk '{print $1}')
+          if [ "${EXPECTED_SHA}" != "${ACTUAL_SHA}" ]; then
+            echo "::error::SHA256 mismatch for ${HELM_FILE}: expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}" >&2
+            exit 1
+          fi
+          tar xz -C /tmp -f "/tmp/${HELM_FILE}"
+          sudo mv "/tmp/${HELM_ARCH}/helm" /usr/local/bin/helm
 
       - name: Set up chart-testing
         uses: helm/chart-testing-action@0d28d3144d3a25ea2cc349d6e59901c4ff469b3b # v2.7.0
 
-      - name: Add Helm repositories
-        run: |
-          helm repo add bitnami https://charts.bitnami.com/bitnami
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo add grafana https://grafana.github.io/helm-charts
-          helm repo update
-
-      - name: Helm dependency build
-        run: |
-          helm dependency build deploy/helm/farm
-          helm dependency build deploy/helm/observability
+      - name: Setup Helm chart dependencies
+        uses: ./.github/actions/setup-helm-deps
 
       # values-dev.yaml provides a non-default JWT_SECRET and a valid externalDatabase.host,
       # which prevents the validate.yaml template from calling `fail` during lint.
@@ -47,7 +51,8 @@ jobs:
 
       - name: Install kubeconform
         run: |
-          curl -sL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+          KUBECONFORM_VERSION="v0.7.0"
+          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
             | tar xz -C /usr/local/bin
 
       - name: Validate manifests with kubeconform
@@ -58,4 +63,4 @@ jobs:
             /tmp/manifests-dev.yaml
 
       - name: Chart testing lint
-        run: ct lint --config deploy/helm/ct.yaml --chart-dirs deploy/helm
+        run: ct lint --config deploy/helm/ct.yaml
