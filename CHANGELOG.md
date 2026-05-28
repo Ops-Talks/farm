@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.8] - 2026-05-28
+
+### Added
+- **helm**: Helm Hardening.
+
+### Fixed
+- **helm**: add missing newline at end of values.yaml.
+- **helm**: bump farm chart version to 0.2.0 to satisfy ct lint version check.
+- **helm**: remove trailing blank line in values.yaml.
+- **helm**: Fix version.
+- **helm**: Migration job.
+- **helm**: Migration job.
+- **helm**: Migration job.
+- **helm**: Migration job.
+- **helm**: Fix SHAs and actions.
+- **helm**: address all code review comments from PR #191.
+- **helm**: Several Fixes.
+- **helm**: address review comments on ingress, configmap, migration-job, and release config.
+
 ## [0.25.7] - 2026-05-25
 
 ### Added
