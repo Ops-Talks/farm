@@ -252,9 +252,9 @@ jobs:
           persist-credentials: false
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v4.1.4
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+            | DESIRED_VERSION=v3.17.0 bash
 
       - name: Lint chart (strict)
         # Subchart .tgz archives are committed to git (Chart.lock pinned to
