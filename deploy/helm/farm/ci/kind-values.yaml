@@ -1,0 +1,38 @@
+# CI-only values for ct install on a bare KinD cluster.
+# This file is automatically discovered by ct due to chart-values: [ci/kind-values.yaml] in ct.yaml.
+# api.image.tag and web.image.tag are updated by release.yml after each app release (FARM-S607).
+
+api:
+  replicaCount: 1
+  image:
+    tag: "0.25.9"       # pinned to latest released tag
+  secrets:
+    JWT_SECRET: "ci-test-secret-32-chars-minimum-x"
+
+web:
+  replicaCount: 1
+  image:
+    tag: "0.25.9"       # pinned to latest released tag
+
+postgresql:
+  enabled: true
+  auth:
+    username: farm
+    password: farmci
+    database: farm
+    postgresPassword: farmci
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+serviceMonitor:
+  enabled: false
+
+prometheusRule:
+  enabled: false
+
+# KinD has no default storage class beyond standard — keep persistence off
+# unless the chart already gates it (postgresql/redis subcharts default to
+# enabled persistence; we rely on their default ephemeral mode here).
