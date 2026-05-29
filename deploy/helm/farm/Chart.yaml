@@ -19,6 +19,41 @@ maintainers:
   - name: Ops-Talks
     url: https://github.com/Ops-Talks
 
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: integration-delivery
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/Ops-Talks/farm
+    - name: Support
+      url: https://github.com/Ops-Talks/farm/issues
+  artifacthub.io/images: |
+    - name: farm-api
+      image: ghcr.io/ops-talks/farm-api:0.25.8
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    - name: farm-web
+      image: ghcr.io/ops-talks/farm-web:0.25.8
+      platforms:
+        - linux/amd64
+        - linux/arm64
+  artifacthub.io/changes: |
+    - kind: added
+      description: OCI chart distribution via GHCR with cosign keyless signing
+    - kind: added
+      description: Ingress templates for API and web with optional TLS
+    - kind: fixed
+      description: NetworkPolicy web deny-all silencioso com ingressControllerNamespaceSelector vazio
+    - kind: fixed
+      description: Deployment pod template usa labels completos incluindo helm.sh/chart
+    - kind: fixed
+      description: PDB guard considera autoscaling.minReplicas quando HPA esta ativo
+    - kind: fixed
+      description: externalRedis.host default alterado de localhost para string vazia com guard de validacao
+    - kind: security
+      description: Release workflow com SHA-pin em todas as actions do GitHub
+
 dependencies:
   - name: postgresql
     version: "15.5.38"

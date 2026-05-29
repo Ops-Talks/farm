@@ -42,6 +42,18 @@ jobs:
       - name: Setup Helm chart dependencies
         uses: ./.github/actions/setup-helm-deps
 
+      - name: Install ah CLI
+        # Artifact Hub linter — verifies annotations, README, and schema.
+        # Binary install with SHA256 verification; no docker run.
+        # Version 0.19.0 does not exist; using current stable 1.22.0.
+        run: |
+          AH_VERSION="1.22.0"
+          AH_SHA256="c845307d19f822905b7c47b3f216712116dd74709802c7d1d4a9b6f999d6f92a"
+          curl -fsSL "https://github.com/artifacthub/hub/releases/download/v${AH_VERSION}/ah_${AH_VERSION}_linux_amd64.tar.gz" \
+            -o /tmp/ah.tar.gz
+          echo "${AH_SHA256}  /tmp/ah.tar.gz" | sha256sum --check --strict
+          sudo tar xz -C /usr/local/bin ah -f /tmp/ah.tar.gz
+
       # values-dev.yaml provides a non-default JWT_SECRET and a valid externalDatabase.host,
       # which prevents the validate.yaml template from calling `fail` during lint.
       - name: Helm lint
@@ -74,3 +86,8 @@ jobs:
 
       - name: Chart testing lint
         run: ct lint --config deploy/helm/ct.yaml
+
+      - name: Artifact Hub lint
+        run: |
+          ah lint --kind helm --path deploy/helm/farm
+          ah lint --kind helm --path deploy/helm/observability

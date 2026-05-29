@@ -1,0 +1,11 @@
+# artifacthub-repo.yml
+# Artifact Hub repository metadata.
+# repositoryID must be updated after registering the OCI repository on
+# https://artifacthub.io — Settings > Add repository > OCI.
+# Capture the UUID shown in the repository settings page and replace the
+# placeholder below. Run the oras push step once manually (or merge to main)
+# after updating the ID.
+repositoryID: "00000000-0000-0000-0000-000000000000"
+owners:
+  - name: Ops-Talks
+    email: ops-talks@users.noreply.github.com

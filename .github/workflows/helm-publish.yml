@@ -49,6 +49,17 @@ jobs:
           tar xz -C /tmp -f "/tmp/${HELM_FILE}"
           sudo mv "/tmp/${HELM_ARCH}/helm" /usr/local/bin/helm
 
+      - name: Install oras
+        # ORAS CLI for pushing Artifact Hub repository metadata as OCI artifact.
+        # SHA256 verified before extraction — same supply-chain pattern as Helm.
+        run: |
+          ORAS_VERSION="1.2.3"
+          ORAS_SHA256="b4efc97a91f471f323f193ea4b4d63d8ff443ca3aab514151a30751330852827"
+          curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" \
+            -o /tmp/oras.tar.gz
+          echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum --check --strict
+          sudo tar xz -C /usr/local/bin oras -f /tmp/oras.tar.gz
+
       - name: Setup Helm chart dependencies
         uses: ./.github/actions/setup-helm-deps
 
@@ -80,6 +91,13 @@ jobs:
         if: steps.check.outputs.skip == 'false'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Log in to GHCR (oras)
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io \
             --username "${{ github.actor }}" \
             --password-stdin
 
@@ -118,3 +136,12 @@ jobs:
           REF="${REGISTRY}/${{ matrix.chart.name }}@${{ steps.push.outputs.digest }}"
           echo "Signing ${REF}"
           cosign sign --yes "${REF}"
+
+      - name: Push Artifact Hub repository metadata
+        if: steps.check.outputs.skip == 'false'
+        env:
+          REGISTRY: ghcr.io/ops-talks/helm-charts
+        run: |
+          oras push "${REGISTRY}/${{ matrix.chart.name }}:artifacthub.io" \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+            deploy/helm/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
