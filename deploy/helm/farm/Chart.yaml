@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.1
+version: 0.3.2
 appVersion: "0.25.8"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,6 +39,10 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: fixed
+      description: Test hook pods use generic chart labels with test-specific component to avoid matching service selectors
+    - kind: fixed
+      description: Test hook delete policy includes before-hook-creation so failed test Jobs are cleaned up before retrying
     - kind: added
       description: OCI chart distribution via GHCR with cosign keyless signing
     - kind: added

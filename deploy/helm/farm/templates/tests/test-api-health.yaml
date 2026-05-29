@@ -4,16 +4,18 @@ metadata:
   name: {{ include "farm.fullname" . }}-test-api-health
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.api.labels" . | nindent 4 }}
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test-api-health
   annotations:
     "helm.sh/hook": test
-    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   backoffLimit: 0
   template:
     metadata:
       labels:
-        {{- include "farm.api.labels" . | nindent 8 }}
+        {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: test-api-health
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
