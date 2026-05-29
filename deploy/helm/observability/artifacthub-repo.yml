@@ -5,7 +5,7 @@
 # Capture the UUID shown in the repository settings page and replace the
 # placeholder below. Run the oras push step once manually (or merge to main)
 # after updating the ID.
-repositoryID: "00000000-0000-0000-0000-000000000000"
+repositoryID: "57d21e99-190e-4ef3-b7b1-e18452605d3c"
 owners:
   - name: Ops-Talks
     email: ops-talks@users.noreply.github.com
