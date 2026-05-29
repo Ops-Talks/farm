@@ -4,8 +4,8 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.2
-appVersion: "0.25.8"
+version: 0.3.3
+appVersion: "0.25.9"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
@@ -29,16 +29,18 @@ annotations:
       url: https://github.com/Ops-Talks/farm/issues
   artifacthub.io/images: |
     - name: farm-api
-      image: ghcr.io/ops-talks/farm-api:0.25.8
+      image: ghcr.io/ops-talks/farm-api:0.25.9
       platforms:
         - linux/amd64
         - linux/arm64
     - name: farm-web
-      image: ghcr.io/ops-talks/farm-web:0.25.8
+      image: ghcr.io/ops-talks/farm-web:0.25.9
       platforms:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: fixed
+      description: ct install builds images from the current branch and pre-loads into KinD; no released image required
     - kind: fixed
       description: Test hook pods use generic chart labels with test-specific component to avoid matching service selectors
     - kind: fixed

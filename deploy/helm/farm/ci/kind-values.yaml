@@ -1,18 +1,22 @@
 # CI-only values for ct install on a bare KinD cluster.
 # This file is automatically discovered by ct due to chart-values: [ci/kind-values.yaml] in ct.yaml.
-# api.image.tag and web.image.tag are updated by release.yml after each app release (FARM-S607).
+# Images are built from the current branch and pre-loaded into KinD by the ct-install job
+# in helm-lint.yml using `kind load docker-image`. pullPolicy: Never prevents Kubernetes
+# from attempting an external pull.
 
 api:
   replicaCount: 1
   image:
-    tag: "0.25.9"       # pinned to latest released tag
+    tag: "ci-local"
+    pullPolicy: Never
   secrets:
     JWT_SECRET: "ci-test-secret-32-chars-minimum-x"
 
 web:
   replicaCount: 1
   image:
-    tag: "0.25.9"       # pinned to latest released tag
+    tag: "ci-local"
+    pullPolicy: Never
 
 postgresql:
   enabled: true
