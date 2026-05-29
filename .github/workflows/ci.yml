@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           persist-credentials: false
 
@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           persist-credentials: false
 
@@ -211,7 +211,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           persist-credentials: false
 
@@ -242,59 +242,7 @@ jobs:
 
   helm:
     name: Helm chart lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: Install Helm
-        # Download the tarball and verify SHA256 before extracting.
-        # Fetching the checksum from get.helm.sh over TLS is sufficient to
-        # detect CDN tampering; it is the same trust domain as the tarball.
-        run: |
-          HELM_VERSION="v3.17.0"
-          HELM_ARCH="linux-amd64"
-          HELM_FILE="helm-${HELM_VERSION}-${HELM_ARCH}.tar.gz"
-          curl -fsSL "https://get.helm.sh/${HELM_FILE}" -o "/tmp/${HELM_FILE}"
-          EXPECTED_SHA=$(curl -fsSL "https://get.helm.sh/${HELM_FILE}.sha256sum" | awk '{print $1}')
-          ACTUAL_SHA=$(sha256sum "/tmp/${HELM_FILE}" | awk '{print $1}')
-          if [ "${EXPECTED_SHA}" != "${ACTUAL_SHA}" ]; then
-            echo "::error::SHA256 mismatch for ${HELM_FILE}: expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}" >&2
-            exit 1
-          fi
-          tar xz -C /tmp -f "/tmp/${HELM_FILE}"
-          sudo mv "/tmp/${HELM_ARCH}/helm" /usr/local/bin/helm
-
-      - name: Setup Helm chart dependencies
-        uses: ./.github/actions/setup-helm-deps
-
-      - name: Lint chart (strict)
-        run: |
-          helm lint deploy/helm/farm \
-            --strict \
-            --set api.image.repository=test \
-            --set web.image.repository=test
-
-      - name: Render templates (dev values)
-        run: |
-          helm template farm deploy/helm/farm \
-            -f deploy/helm/farm/values-dev.yaml \
-            --set api.image.repository=test \
-            --set web.image.repository=test \
-            > /dev/null
-
-      - name: Lint observability chart (strict)
-        run: helm lint deploy/helm/observability --strict
-
-      - name: Render observability templates (dev values)
-        run: |
-          helm template farm-obs deploy/helm/observability \
-            -f deploy/helm/observability/values-dev.yaml \
-            > /dev/null
+    uses: ./.github/workflows/helm-lint.yml
 
   # Roll-up job: single required check for branch protection rules.
   all-checks-passed:

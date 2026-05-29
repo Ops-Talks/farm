@@ -5,6 +5,7 @@ on:
     paths:
       - 'deploy/helm/**'
       - '.github/workflows/helm-lint.yml'
+  workflow_call: {}
 
 jobs:
   helm-lint:
@@ -44,16 +45,25 @@ jobs:
       # values-dev.yaml provides a non-default JWT_SECRET and a valid externalDatabase.host,
       # which prevents the validate.yaml template from calling `fail` during lint.
       - name: Helm lint
-        run: helm lint deploy/helm/farm -f deploy/helm/farm/values-dev.yaml
+        run: helm lint deploy/helm/farm --strict -f deploy/helm/farm/values-dev.yaml
 
       - name: Helm template (dev values)
         run: helm template farm deploy/helm/farm -f deploy/helm/farm/values-dev.yaml > /tmp/manifests-dev.yaml
 
+      - name: Helm lint (observability, strict)
+        run: helm lint deploy/helm/observability --strict -f deploy/helm/observability/values-dev.yaml
+
+      - name: Helm template (observability dev values)
+        run: helm template farm-obs deploy/helm/observability -f deploy/helm/observability/values-dev.yaml > /dev/null
+
       - name: Install kubeconform
         run: |
           KUBECONFORM_VERSION="v0.7.0"
-          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-            | tar xz -C /usr/local/bin
+          KUBECONFORM_SHA256="dd5273bdbf08531bf230f4eba8359984b7beec25a679424ff90911a2591b8b0d"
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            -o /tmp/kubeconform.tar.gz
+          echo "${KUBECONFORM_SHA256}  /tmp/kubeconform.tar.gz" | sha256sum --check --strict
+          tar xz -C /usr/local/bin -f /tmp/kubeconform.tar.gz
 
       - name: Validate manifests with kubeconform
         run: |

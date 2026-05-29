@@ -6,6 +6,25 @@ nameOverride: ""
 # -- Override the full release name used in resource names.
 fullnameOverride: ""
 
+ingress:
+  # -- Enable Ingress resources for API and web.
+  enabled: false
+  # -- IngressClass name. Use the name of your Ingress controller (e.g. "nginx", "traefik").
+  className: ""
+  # -- Additional annotations to add to both Ingress resources.
+  annotations: {}
+  # -- API Ingress hostname.
+  api:
+    hostname: "api.example.com"
+  # -- Web Ingress hostname.
+  web:
+    hostname: "app.example.com"
+  tls:
+    # -- Enable TLS on the Ingress resources.
+    enabled: false
+    # -- TLS secret name. Defaults to "<fullname>-api-tls" and "<fullname>-web-tls" if empty.
+    secretName: ""
+
 # -- Global image settings. Individual overrides are available under api.image and web.image.
 global:
   # -- Container registry prefix applied to both images when set.
@@ -466,7 +485,7 @@ externalDatabase:
 # Used when redis.enabled is false (production default).
 
 externalRedis:
-  host: "localhost"
+  host: ""
   port: 6379
   # -- Do NOT set this in values files. Provide via existingSecret or --set.
   # Null means Redis auth is not configured (unauthenticated Redis).
@@ -554,7 +573,7 @@ prometheusRule:
 # label for automatic discovery by the Grafana sidecar in kube-prometheus-stack.
 
 grafanaDashboards:
-  # -- Create ConfigMaps for all 6 Farm Grafana dashboards.
+  # -- Create ConfigMaps for all 7 Farm Grafana dashboards.
   enabled: false
   # -- Namespace to create the ConfigMaps in. Defaults to the release namespace.
   # Set to the namespace where Grafana is installed (e.g., monitoring) for auto-import.

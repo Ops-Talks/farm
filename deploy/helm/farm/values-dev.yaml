@@ -2,11 +2,19 @@
 # Local/dev profile: bundled PostgreSQL + Redis, single replica, no TLS.
 # Usage: helm install farm . -f values-dev.yaml
 
+ingress:
+  enabled: true
+  className: "nginx"
+  api:
+    hostname: "api.farm.local"
+  web:
+    hostname: "farm.local"
+
 api:
   replicaCount: 1
   image:
     repository: farm-api
-    tag: "latest"
+    tag: ""
     pullPolicy: IfNotPresent
   env:
     NODE_ENV: development
@@ -26,7 +34,7 @@ web:
   replicaCount: 1
   image:
     repository: farm-web
-    tag: "latest"
+    tag: ""
     pullPolicy: IfNotPresent
   env:
     NODE_ENV: development

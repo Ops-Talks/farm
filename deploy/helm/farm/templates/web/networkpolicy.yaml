@@ -14,16 +14,21 @@ spec:
     - Ingress
     - Egress
   ingress:
-    {{- if .Values.web.networkPolicy.ingressControllerNamespaceSelector }}
-    - from:
-        - namespaceSelector:
-            {{- toYaml .Values.web.networkPolicy.ingressControllerNamespaceSelector | nindent 12 }}
-          podSelector:
-            {{- toYaml .Values.web.networkPolicy.ingressControllerPodSelector | nindent 12 }}
-      ports:
+    # Allow inbound traffic to the web service port.
+    - ports:
         - protocol: TCP
           port: 3001
-    {{- end }}
+      {{- if or .Values.web.networkPolicy.ingressControllerNamespaceSelector .Values.web.networkPolicy.ingressControllerPodSelector }}
+      from:
+        {{- if .Values.web.networkPolicy.ingressControllerNamespaceSelector }}
+        - namespaceSelector:
+            {{- toYaml .Values.web.networkPolicy.ingressControllerNamespaceSelector | nindent 12 }}
+          {{- if .Values.web.networkPolicy.ingressControllerPodSelector }}
+          podSelector:
+            {{- toYaml .Values.web.networkPolicy.ingressControllerPodSelector | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
   egress:
     # Allow DNS resolution
     - ports:

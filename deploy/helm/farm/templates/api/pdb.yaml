@@ -1,4 +1,5 @@
-{{- if and .Values.api.podDisruptionBudget.enabled (gt (int .Values.api.replicaCount) 1) }}
+{{- $apiMinReplicas := ternary (int .Values.api.autoscaling.minReplicas) (int .Values.api.replicaCount) .Values.api.autoscaling.enabled }}
+{{- if and .Values.api.podDisruptionBudget.enabled (gt $apiMinReplicas 1) }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
