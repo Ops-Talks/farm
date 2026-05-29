@@ -78,7 +78,7 @@ jobs:
     needs: preflight
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
 
@@ -91,12 +91,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Update Helm chart appVersion
-        run: |
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^appVersion: .*/appVersion: \"${VERSION}\"/" deploy/helm/farm/Chart.yaml
 
       - name: Run Release
         run: npm run release -w apps/api -- --ci --increment=${{ github.event.inputs.increment || 'patch' }}
@@ -182,7 +176,7 @@ jobs:
       IMAGE_BASE: ghcr.io/ops-talks/${{ matrix.image.name }}
     steps:
       - name: Checkout released tag
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           ref: ${{ needs.release.outputs.tag }}
           persist-credentials: false

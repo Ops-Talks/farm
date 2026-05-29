@@ -5,6 +5,7 @@ on:
     paths:
       - 'deploy/helm/**'
       - '.github/workflows/helm-lint.yml'
+  workflow_call: {}
 
 jobs:
   helm-lint:
@@ -41,19 +42,40 @@ jobs:
       - name: Setup Helm chart dependencies
         uses: ./.github/actions/setup-helm-deps
 
+      - name: Install ah CLI
+        # Artifact Hub linter — verifies annotations, README, and schema.
+        # Binary install with SHA256 verification; no docker run.
+        # Version 0.19.0 does not exist; using current stable 1.22.0.
+        run: |
+          AH_VERSION="1.22.0"
+          AH_SHA256="c845307d19f822905b7c47b3f216712116dd74709802c7d1d4a9b6f999d6f92a"
+          curl -fsSL "https://github.com/artifacthub/hub/releases/download/v${AH_VERSION}/ah_${AH_VERSION}_linux_amd64.tar.gz" \
+            -o /tmp/ah.tar.gz
+          echo "${AH_SHA256}  /tmp/ah.tar.gz" | sha256sum --check --strict
+          sudo tar xz -C /usr/local/bin -f /tmp/ah.tar.gz ah
+
       # values-dev.yaml provides a non-default JWT_SECRET and a valid externalDatabase.host,
       # which prevents the validate.yaml template from calling `fail` during lint.
       - name: Helm lint
-        run: helm lint deploy/helm/farm -f deploy/helm/farm/values-dev.yaml
+        run: helm lint deploy/helm/farm --strict -f deploy/helm/farm/values-dev.yaml
 
       - name: Helm template (dev values)
         run: helm template farm deploy/helm/farm -f deploy/helm/farm/values-dev.yaml > /tmp/manifests-dev.yaml
 
+      - name: Helm lint (observability, strict)
+        run: helm lint deploy/helm/observability --strict -f deploy/helm/observability/values-dev.yaml
+
+      - name: Helm template (observability dev values)
+        run: helm template farm-obs deploy/helm/observability -f deploy/helm/observability/values-dev.yaml > /dev/null
+
       - name: Install kubeconform
         run: |
           KUBECONFORM_VERSION="v0.7.0"
-          curl -sL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-            | tar xz -C /usr/local/bin
+          KUBECONFORM_SHA256="c31518ddd122663b3f3aa874cfe8178cb0988de944f29c74a0b9260920d115d3"
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            -o /tmp/kubeconform.tar.gz
+          echo "${KUBECONFORM_SHA256}  /tmp/kubeconform.tar.gz" | sha256sum --check --strict
+          tar xz -C /usr/local/bin -f /tmp/kubeconform.tar.gz
 
       - name: Validate manifests with kubeconform
         run: |
@@ -64,3 +86,8 @@ jobs:
 
       - name: Chart testing lint
         run: ct lint --config deploy/helm/ct.yaml
+
+      - name: Artifact Hub lint
+        run: |
+          ah lint --kind helm --path deploy/helm/farm
+          ah lint --kind helm --path deploy/helm/observability

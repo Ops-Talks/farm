@@ -28,6 +28,9 @@ its contents.
 {{- if and (not .Values.postgresql.enabled) (not .Values.externalDatabase.host) -}}
   {{- fail "FARM-S583: When postgresql.enabled=false, externalDatabase.host must be set. Configure externalDatabase.host (or externalDatabase.existingSecret) to point to your production database, or set postgresql.enabled=true to use the bundled subchart (dev/staging only)." -}}
 {{- end -}}
+{{- if and (not .Values.redis.enabled) (empty .Values.externalRedis.host) }}
+{{- fail "externalRedis.host is required when redis.enabled is false. Set externalRedis.host to your Redis endpoint." }}
+{{- end }}
 {{- if and .Values.prometheusRule.enabled (eq (default "" .Values.prometheusRule.alertmanagerReceiverName) "") -}}
   {{- fail "FARM-S587: prometheusRule.alertmanagerReceiverName must be set when prometheusRule.enabled=true. Set it to a valid Alertmanager receiver name (e.g. \"pagerduty\", \"slack-farm-alerts\") or to \"null\" in non-production environments to use the built-in no-op receiver." -}}
 {{- end -}}

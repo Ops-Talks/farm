@@ -5,7 +5,7 @@ description: |
   Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
   Install alongside the Farm chart: make observability-install
 type: application
-version: 0.2.0
+version: 0.2.1
 appVersion: "0.25.8"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
@@ -23,6 +23,33 @@ keywords:
 maintainers:
   - name: Ops-Talks
     url: https://github.com/Ops-Talks
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/Ops-Talks/farm
+    - name: Support
+      url: https://github.com/Ops-Talks/farm/issues
+  artifacthub.io/images: |
+    - name: kube-prometheus-stack
+      image: quay.io/prometheus/prometheus:v3.4.0
+    - name: grafana
+      image: grafana/grafana:12.0.0
+    - name: loki
+      image: grafana/loki:3.5.0
+    - name: tempo
+      image: grafana/tempo:2.7.2
+    - name: alloy
+      image: grafana/alloy:v1.8.2
+    - name: pyroscope
+      image: grafana/pyroscope:1.13.4
+  artifacthub.io/changes: |
+    - kind: added
+      description: OCI chart distribution via GHCR with cosign keyless signing
+    - kind: changed
+      description: Alloy 1.8.2, kube-prometheus-stack 72.3.0, Loki 6.55.0, Tempo 1.24.4, Pyroscope 1.21.0
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics

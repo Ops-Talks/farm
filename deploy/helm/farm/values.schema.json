@@ -13,6 +13,37 @@
       "description": "Override the full release name used in resource names.",
       "type": "string"
     },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "api": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hostname": { "type": "string" }
+          }
+        },
+        "web": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hostname": { "type": "string" }
+          }
+        },
+        "tls": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "secretName": { "type": "string" }
+          }
+        }
+      }
+    },
     "global": {
       "description": "Global image settings applied to all workloads.",
       "type": "object",

@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "farm.web.selectorLabels" . | nindent 8 }}
+        {{- include "farm.web.labels" . | nindent 8 }}
         {{- with .Values.web.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

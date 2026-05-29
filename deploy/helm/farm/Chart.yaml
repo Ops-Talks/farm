@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.0
+version: 0.3.1
 appVersion: "0.25.8"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -18,6 +18,41 @@ keywords:
 maintainers:
   - name: Ops-Talks
     url: https://github.com/Ops-Talks
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/category: integration-delivery
+  artifacthub.io/links: |
+    - name: Source
+      url: https://github.com/Ops-Talks/farm
+    - name: Support
+      url: https://github.com/Ops-Talks/farm/issues
+  artifacthub.io/images: |
+    - name: farm-api
+      image: ghcr.io/ops-talks/farm-api:0.25.8
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    - name: farm-web
+      image: ghcr.io/ops-talks/farm-web:0.25.8
+      platforms:
+        - linux/amd64
+        - linux/arm64
+  artifacthub.io/changes: |
+    - kind: added
+      description: OCI chart distribution via GHCR with cosign keyless signing
+    - kind: added
+      description: Ingress templates for API and web with optional TLS
+    - kind: fixed
+      description: Web NetworkPolicy no longer silently denies all ingress when ingressControllerNamespaceSelector is empty; supports podSelector-only peers
+    - kind: fixed
+      description: Deployment pod template uses the full label set including helm.sh/chart
+    - kind: fixed
+      description: PDB guard accounts for autoscaling.minReplicas when HPA is enabled
+    - kind: fixed
+      description: externalRedis.host default changed from localhost to empty string with validation guard
+    - kind: security
+      description: Release workflow pins every GitHub Action by commit SHA
 
 dependencies:
   - name: postgresql

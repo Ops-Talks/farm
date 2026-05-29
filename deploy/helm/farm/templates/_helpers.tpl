@@ -42,7 +42,9 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Selector labels (used in matchLabels and Service selectors).
+Generic selector labels — used only as a building block inside farm.labels.
+Do NOT use this helper directly in selector.matchLabels or template.metadata.labels.
+Use farm.api.selectorLabels or farm.web.selectorLabels instead.
 */}}
 {{- define "farm.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "farm.name" . }}
@@ -85,6 +87,27 @@ Common labels for the Web workload.
 {{- define "farm.web.labels" -}}
 helm.sh/chart: {{ include "farm.chart" . }}
 {{ include "farm.web.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Migration-specific selector labels.
+*/}}
+{{- define "farm.migration.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "farm.name" . }}-migration
+app.kubernetes.io/instance: {{ .Release.Name }}
+app.kubernetes.io/component: migration
+{{- end }}
+
+{{/*
+Migration-specific labels (full set for pod templates).
+*/}}
+{{- define "farm.migration.labels" -}}
+helm.sh/chart: {{ include "farm.chart" . }}
+{{ include "farm.migration.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
