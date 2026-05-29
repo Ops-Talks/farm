@@ -1,0 +1,120 @@
+name: Helm Chart Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'deploy/helm/**'
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.chart.name }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - name: farm
+            path: deploy/helm/farm
+          - name: farm-observability
+            path: deploy/helm/observability
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install Helm
+        # Download the tarball and verify SHA256 before extracting.
+        # Fetching the checksum from get.helm.sh over TLS is sufficient to
+        # detect CDN tampering; it is the same trust domain as the tarball.
+        run: |
+          HELM_VERSION="v3.17.0"
+          HELM_ARCH="linux-amd64"
+          HELM_FILE="helm-${HELM_VERSION}-${HELM_ARCH}.tar.gz"
+          curl -fsSL "https://get.helm.sh/${HELM_FILE}" -o "/tmp/${HELM_FILE}"
+          EXPECTED_SHA=$(curl -fsSL "https://get.helm.sh/${HELM_FILE}.sha256sum" | awk '{print $1}')
+          ACTUAL_SHA=$(sha256sum "/tmp/${HELM_FILE}" | awk '{print $1}')
+          if [ "${EXPECTED_SHA}" != "${ACTUAL_SHA}" ]; then
+            echo "::error::SHA256 mismatch for ${HELM_FILE}: expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}" >&2
+            exit 1
+          fi
+          tar xz -C /tmp -f "/tmp/${HELM_FILE}"
+          sudo mv "/tmp/${HELM_ARCH}/helm" /usr/local/bin/helm
+
+      - name: Setup Helm chart dependencies
+        uses: ./.github/actions/setup-helm-deps
+
+      - name: Build chart dependencies
+        run: helm dependency build ${{ matrix.chart.path }}
+
+      - name: Read chart version
+        id: chart
+        run: |
+          VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check if version already published
+        id: check
+        env:
+          REGISTRY: ghcr.io/ops-talks/helm-charts
+        run: |
+          NAME="${{ matrix.chart.name }}"
+          VERSION="${{ steps.chart.outputs.version }}"
+          if helm show chart "oci://${REGISTRY}/${NAME}" --version "${VERSION}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Version ${VERSION} of ${NAME} already published — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${VERSION} of ${NAME} not yet published — will publish."
+          fi
+
+      - name: Log in to GHCR
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Package chart
+        if: steps.check.outputs.skip == 'false'
+        id: package
+        run: |
+          mkdir -p /tmp/helm-packages
+          helm package ${{ matrix.chart.path }} --destination /tmp/helm-packages/
+          TGZ=$(ls /tmp/helm-packages/*.tgz)
+          echo "tgz=${TGZ}" >> "$GITHUB_OUTPUT"
+
+      - name: Push chart to GHCR
+        if: steps.check.outputs.skip == 'false'
+        id: push
+        env:
+          REGISTRY: ghcr.io/ops-talks/helm-charts
+        run: |
+          OUTPUT=$(helm push "${{ steps.package.outputs.tgz }}" "oci://${REGISTRY}" 2>&1)
+          echo "${OUTPUT}"
+          DIGEST=$(echo "${OUTPUT}" | grep '^Digest:' | awk '{print $2}')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Install cosign
+        if: steps.check.outputs.skip == 'false'
+        # FARM-S546 / E148: keyless signing via Sigstore Fulcio + Rekor.
+        # id-token: write provides the OIDC token for the short-lived certificate.
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+      - name: Sign chart with cosign (keyless)
+        if: steps.check.outputs.skip == 'false'
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+          REGISTRY: ghcr.io/ops-talks/helm-charts
+        run: |
+          REF="${REGISTRY}/${{ matrix.chart.name }}@${{ steps.push.outputs.digest }}"
+          echo "Signing ${REF}"
+          cosign sign --yes "${REF}"

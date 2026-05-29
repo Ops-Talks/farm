@@ -2,6 +2,55 @@
 
 Deploy Farm (API + Web) on Kubernetes using Helm.
 
+## OCI Chart Distribution
+
+Farm publishes its Helm chart as an OCI artifact to GitHub Container Registry
+on every merge to `main` that bumps the chart `version:` field.
+
+### Quick Start
+
+```bash
+# Install the latest released version
+helm install farm oci://ghcr.io/ops-talks/helm-charts/farm \
+  --version <VERSION> \
+  --namespace farm \
+  --create-namespace \
+  -f values-production.yaml
+
+# Upgrade an existing release
+helm upgrade farm oci://ghcr.io/ops-talks/helm-charts/farm \
+  --version <VERSION> \
+  -f values-production.yaml
+```
+
+Replace `<VERSION>` with the desired chart version (e.g. `0.3.0`). Chart
+versions track application releases — see the
+[releases page](https://github.com/Ops-Talks/farm/releases) for the version
+history.
+
+### Chart Signing
+
+Every published chart is signed with
+[cosign](https://github.com/sigstore/cosign) using Sigstore keyless signing
+(Fulcio short-lived certificates + Rekor transparency log). Verify a chart
+before installing:
+
+```bash
+cosign verify \
+  ghcr.io/ops-talks/helm-charts/farm:<VERSION> \
+  --certificate-identity-regexp="https://github.com/Ops-Talks/farm/.github/workflows/helm-publish.yml@refs/heads/main" \
+  --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+```
+
+### Package Visibility
+
+After the first OCI push, the GHCR package must be set to **public** in the
+[Package Settings](https://github.com/orgs/Ops-Talks/packages) to allow
+unauthenticated `helm pull` and `helm install`. This is a one-time manual step
+per chart package.
+
+---
+
 ## Image Provenance and Signing
 
 Farm publishes signed, multi-arch container images to GitHub Container Registry
