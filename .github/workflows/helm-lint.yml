@@ -52,7 +52,7 @@ jobs:
           curl -fsSL "https://github.com/artifacthub/hub/releases/download/v${AH_VERSION}/ah_${AH_VERSION}_linux_amd64.tar.gz" \
             -o /tmp/ah.tar.gz
           echo "${AH_SHA256}  /tmp/ah.tar.gz" | sha256sum --check --strict
-          sudo tar xz -C /usr/local/bin ah -f /tmp/ah.tar.gz
+          sudo tar xz -C /usr/local/bin -f /tmp/ah.tar.gz ah
 
       # values-dev.yaml provides a non-default JWT_SECRET and a valid externalDatabase.host,
       # which prevents the validate.yaml template from calling `fail` during lint.

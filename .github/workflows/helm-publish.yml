@@ -58,7 +58,7 @@ jobs:
           curl -fsSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" \
             -o /tmp/oras.tar.gz
           echo "${ORAS_SHA256}  /tmp/oras.tar.gz" | sha256sum --check --strict
-          sudo tar xz -C /usr/local/bin oras -f /tmp/oras.tar.gz
+          sudo tar xz -C /usr/local/bin -f /tmp/oras.tar.gz oras
 
       - name: Setup Helm chart dependencies
         uses: ./.github/actions/setup-helm-deps

@@ -3,7 +3,7 @@
 Deploy the Farm observability stack on Kubernetes using Helm. This chart
 bundles kube-prometheus-stack, Loki, Tempo, Grafana Alloy, and Pyroscope as
 independent sub-chart dependencies with preconfigured scrape configs, dashboards,
-and recording rules optimised for Farm workloads.
+and recording rules optimized for Farm workloads.
 
 ## OCI Chart Distribution
 

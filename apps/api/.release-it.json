@@ -33,9 +33,7 @@
     "after:bump": [
       "npm --prefix ../../apps/web version ${version} --no-git-tag-version --allow-same-version",
       "sed -i \"s/^appVersion: .*/appVersion: \\\"${version}\\\"/\" ../../deploy/helm/farm/Chart.yaml",
-      "sed -i \"s/^appVersion: .*/appVersion: \\\"${version}\\\"/\" ../../deploy/helm/observability/Chart.yaml",
-      "sed -i \"s/^version: .*/version: ${version}/\" ../../deploy/helm/farm/Chart.yaml",
-      "sed -i \"s/^version: .*/version: ${version}/\" ../../deploy/helm/observability/Chart.yaml"
+      "sed -i \"s/^appVersion: .*/appVersion: \\\"${version}\\\"/\" ../../deploy/helm/observability/Chart.yaml"
     ],
     "before:release": "git add ../../CHANGELOG.md ../../apps/web/package.json ../../deploy/helm/farm/Chart.yaml ../../deploy/helm/observability/Chart.yaml"
   }

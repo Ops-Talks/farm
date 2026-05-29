@@ -23,10 +23,10 @@ helm upgrade farm oci://ghcr.io/ops-talks/helm-charts/farm \
   -f values-production.yaml
 ```
 
-Replace `<VERSION>` with the desired chart version (e.g. `0.3.0`). Chart
-versions track application releases — see the
-[releases page](https://github.com/Ops-Talks/farm/releases) for the version
-history.
+Replace `<VERSION>` with the desired chart version (e.g. `0.3.1`). Chart
+`version` follows SemVer independently from the application `appVersion`; see
+the [releases page](https://github.com/Ops-Talks/farm/releases) for the
+application release history and `Chart.yaml` for the current chart version.
 
 ### Chart Signing
 

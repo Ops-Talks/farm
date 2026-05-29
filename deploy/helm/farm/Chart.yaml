@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.0
+version: 0.3.1
 appVersion: "0.25.8"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -44,15 +44,15 @@ annotations:
     - kind: added
       description: Ingress templates for API and web with optional TLS
     - kind: fixed
-      description: NetworkPolicy web deny-all silencioso com ingressControllerNamespaceSelector vazio
+      description: Web NetworkPolicy no longer silently denies all ingress when ingressControllerNamespaceSelector is empty; supports podSelector-only peers
     - kind: fixed
-      description: Deployment pod template usa labels completos incluindo helm.sh/chart
+      description: Deployment pod template uses the full label set including helm.sh/chart
     - kind: fixed
-      description: PDB guard considera autoscaling.minReplicas quando HPA esta ativo
+      description: PDB guard accounts for autoscaling.minReplicas when HPA is enabled
     - kind: fixed
-      description: externalRedis.host default alterado de localhost para string vazia com guard de validacao
+      description: externalRedis.host default changed from localhost to empty string with validation guard
     - kind: security
-      description: Release workflow com SHA-pin em todas as actions do GitHub
+      description: Release workflow pins every GitHub Action by commit SHA
 
 dependencies:
   - name: postgresql

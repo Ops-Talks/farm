@@ -13,4 +13,4 @@ chart-repos:
 validate-chart-schema: true
 check-version-increment: true
 install-namespace: ct-test
-helm-extra-set-args: "--timeout 300s"
+helm-extra-args: "--timeout 300s"

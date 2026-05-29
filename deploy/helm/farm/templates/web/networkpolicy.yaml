@@ -20,14 +20,15 @@ spec:
           port: 3001
       {{- if or .Values.web.networkPolicy.ingressControllerNamespaceSelector .Values.web.networkPolicy.ingressControllerPodSelector }}
       from:
-        {{- if .Values.web.networkPolicy.ingressControllerNamespaceSelector }}
-        - namespaceSelector:
-            {{- toYaml .Values.web.networkPolicy.ingressControllerNamespaceSelector | nindent 12 }}
-          {{- if .Values.web.networkPolicy.ingressControllerPodSelector }}
-          podSelector:
-            {{- toYaml .Values.web.networkPolicy.ingressControllerPodSelector | nindent 12 }}
+        -
+          {{- with .Values.web.networkPolicy.ingressControllerNamespaceSelector }}
+          namespaceSelector:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- end }}
+          {{- with .Values.web.networkPolicy.ingressControllerPodSelector }}
+          podSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       {{- end }}
   egress:
     # Allow DNS resolution
