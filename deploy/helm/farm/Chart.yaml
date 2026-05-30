@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.7
+version: 0.3.8
 appVersion: "0.25.9"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -68,14 +68,16 @@ annotations:
     - kind: fixed
       description: "ci/kind-values.yaml: use api.image.registry and web.image.registry instead of global.imageRegistry; ghcr.io/bitnami/* requires Broadcom authentication, docker.io/bitnami/* is public"
     - kind: fixed
+      description: "Upgrade Bitnami subcharts: postgresql 15.5.38 -> 18.6.10, redis 19.6.4 -> 25.5.3; previous pinned versions used image tags removed from Docker Hub, causing ImagePullBackOff on ct install"
+    - kind: fixed
       description: "test-db-redis.yaml: add runAsUser: 65534 (nobody) to check-pass container; busybox has no USER set and conflicts with pod-level runAsNonRoot: true"
 
 dependencies:
   - name: postgresql
-    version: "15.5.38"
+    version: "18.6.10"
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled
   - name: redis
-    version: "19.6.4"
+    version: "25.5.3"
     repository: https://charts.bitnami.com/bitnami
     condition: redis.enabled
