@@ -136,6 +136,43 @@ api:
     failureThreshold: 20
     periodSeconds: 5
 
+  # -- Init container that waits for the database to accept TCP connections
+  # before starting the NestJS process.
+  #
+  # Why this is needed: TypeORM's default retry budget is 10 attempts x 3 s =
+  # 30 seconds. The Bitnami PostgreSQL subchart takes 30-90 s to become ready
+  # on a KinD cluster. Without this guard the API process crashes while the DB
+  # is still initialising, enters CrashLoopBackOff, and ct install times out.
+  #
+  # Auto-enable logic (see deployment template): the init container is active
+  # when THIS field is true OR when postgresql.enabled is true. Set enabled=true
+  # explicitly when using an external database that may be transiently
+  # unreachable at pod start time (e.g. RDS during a failover).
+  waitForDb:
+    # -- Enable the wait-for-db init container.
+    # Automatically activated by the deployment template when postgresql.enabled
+    # is true; set this to true to force-enable it for external databases.
+    enabled: false
+    # -- Image used for the TCP probe. Must ship nc (netcat via busybox).
+    # Pinned by digest to satisfy FARM-S538 (mutable tag prohibition).
+    # Refresh the digest via Renovate or manually when a CVE requires it.
+    image: "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
+    # -- Maximum number of TCP probe attempts before aborting startup.
+    # With intervalSeconds=2 and retries=60 the budget is approximately
+    # 2 minutes — enough for Bitnami PostgreSQL to initialise on KinD.
+    retries: 60
+    # -- Seconds between TCP probe attempts.
+    intervalSeconds: 2
+    # -- Resource requests/limits for the wait-for-db init container.
+    # Kept deliberately small: the container only runs nc in a loop.
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 32Mi
+
   # -- Extra environment variables injected directly into the container.
   # These supplement (and override) the values generated from api.env below.
   extraEnv: []

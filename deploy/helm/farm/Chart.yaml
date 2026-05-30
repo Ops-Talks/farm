@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.5
+version: 0.3.6
 appVersion: "0.25.9"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,6 +39,8 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: fixed
+      description: "Add wait-for-db init container to API deployment; prevents CrashLoopBackOff when postgresql.enabled=true and PostgreSQL subchart is slower to initialise than TypeORM retry budget (ct install fix)"
     - kind: fixed
       description: Remove DailyRotateFile transports from API logger; production logs go to stdout only (12-factor, readOnlyRootFilesystem compatible)
     - kind: fixed

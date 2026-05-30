@@ -18,6 +18,8 @@ spec:
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
       initContainers:
         - name: check-postgres
           # renovate: datasource=docker depName=postgres

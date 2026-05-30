@@ -42,6 +42,43 @@ spec:
       automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      {{- if or .Values.api.waitForDb.enabled .Values.postgresql.enabled }}
+      # wait-for-db init container: blocks NestJS startup until PostgreSQL
+      # accepts TCP connections, preventing TypeORM CrashLoopBackOff when the
+      # database pod is slower to become ready than the TypeORM retry budget.
+      # Active when api.waitForDb.enabled=true OR postgresql.enabled=true.
+      initContainers:
+        - name: wait-for-db
+          image: {{ .Values.api.waitForDb.image }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              RETRIES={{ .Values.api.waitForDb.retries | default 60 }}
+              INTERVAL={{ .Values.api.waitForDb.intervalSeconds | default 2 }}
+              if ! command -v nc >/dev/null 2>&1; then
+                echo "ERROR: nc (netcat) not found in wait-for-db image. Aborting." >&2
+                exit 1
+              fi
+              for i in $(seq 1 "$RETRIES"); do
+                if nc -z "${DATABASE_HOST}" "${DATABASE_PORT:-5432}"; then
+                  echo "Database reachable at ${DATABASE_HOST}:${DATABASE_PORT:-5432} (attempt ${i}/${RETRIES})"
+                  exit 0
+                fi
+                echo "Attempt ${i}/${RETRIES}: waiting for ${DATABASE_HOST}:${DATABASE_PORT:-5432} (retry in ${INTERVAL}s)..."
+                sleep "$INTERVAL"
+              done
+              echo "ERROR: database at ${DATABASE_HOST}:${DATABASE_PORT:-5432} unreachable after ${RETRIES} attempts. Aborting." >&2
+              exit 1
+          envFrom:
+            - configMapRef:
+                name: {{ include "farm.fullname" . }}-api
+          securityContext:
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.api.waitForDb.resources | nindent 12 }}
+      {{- end }}
       containers:
         - name: api
           image: {{ include "farm.api.image" . }}

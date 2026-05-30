@@ -15,6 +15,14 @@ api:
     pullPolicy: Never
   secrets:
     JWT_SECRET: "ci-test-secret-32-chars-minimum-x"
+  # wait-for-db is auto-enabled by the deployment template when postgresql.enabled
+  # is true (see deployment.yaml logic). We set it explicitly here so the intent
+  # is clear: NestJS must not start until PostgreSQL accepts TCP connections.
+  # Without this guard TypeORM exhausts its 30-second retry budget before the
+  # Bitnami PostgreSQL subchart finishes initialising on KinD, causing
+  # CrashLoopBackOff and a ct install timeout.
+  waitForDb:
+    enabled: true
   # readOnlyRootFilesystem: true requires a writable /tmp.
   # The catalog, documentation, and iac modules write temporary files to os.tmpdir().
   extraVolumes:

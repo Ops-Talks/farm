@@ -145,6 +145,35 @@
           "description": "Startup probe configuration.",
           "type": "object"
         },
+        "waitForDb": {
+          "description": "Init container that waits for the database to accept TCP connections before starting the API process.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "description": "Enable the wait-for-db init container. Auto-activated when postgresql.enabled=true.",
+              "type": "boolean"
+            },
+            "image": {
+              "description": "Image used for the TCP probe. Must ship nc (netcat via busybox).",
+              "type": "string"
+            },
+            "retries": {
+              "description": "Maximum number of TCP probe attempts before aborting.",
+              "type": "integer",
+              "minimum": 1
+            },
+            "intervalSeconds": {
+              "description": "Seconds between TCP probe attempts.",
+              "type": "integer",
+              "minimum": 1
+            },
+            "resources": {
+              "description": "Resource requests/limits for the wait-for-db init container.",
+              "type": "object"
+            }
+          }
+        },
         "extraEnv": {
           "description": "Extra environment variables injected directly into the container.",
           "type": "array"
