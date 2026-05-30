@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.6
+version: 0.3.7
 appVersion: "0.25.9"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -65,8 +65,10 @@ annotations:
       description: PDB guard accounts for autoscaling.minReplicas when HPA is enabled
     - kind: fixed
       description: externalRedis.host default changed from localhost to empty string with validation guard
-    - kind: security
-      description: Release workflow pins every GitHub Action by commit SHA
+    - kind: fixed
+      description: "ci/kind-values.yaml: use api.image.registry and web.image.registry instead of global.imageRegistry; ghcr.io/bitnami/* requires Broadcom authentication, docker.io/bitnami/* is public"
+    - kind: fixed
+      description: "test-db-redis.yaml: add runAsUser: 65534 (nobody) to check-pass container; busybox has no USER set and conflicts with pod-level runAsNonRoot: true"
 
 dependencies:
   - name: postgresql

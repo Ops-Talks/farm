@@ -4,13 +4,13 @@
 # in helm-lint.yml using `kind load docker-image`. pullPolicy: Never prevents Kubernetes
 # from attempting an external pull.
 
-global:
-  # Matches the registry prefix used in `kind load docker-image ghcr.io/ops-talks/...`
-  imageRegistry: ghcr.io
-
 api:
   replicaCount: 1
   image:
+    # Matches the registry prefix used in `kind load docker-image ghcr.io/ops-talks/...`
+    # Set here (not global.imageRegistry) so Bitnami subcharts keep their default docker.io
+    # registry. ghcr.io/bitnami/* requires Broadcom authentication; docker.io/bitnami/* is public.
+    registry: ghcr.io
     tag: "ci-local"
     pullPolicy: Never
   secrets:
@@ -35,6 +35,7 @@ api:
 web:
   replicaCount: 1
   image:
+    registry: ghcr.io
     tag: "ci-local"
     pullPolicy: Never
 

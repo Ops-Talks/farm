@@ -73,6 +73,7 @@ spec:
             - echo all-checks-passed
           securityContext:
             allowPrivilegeEscalation: false
+            runAsUser: 65534  # nobody — busybox has no USER set, explicit override required for runAsNonRoot
             capabilities:
               drop:
                 - ALL
