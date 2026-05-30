@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.4
+version: 0.3.5
 appVersion: "0.25.9"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,6 +39,10 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: fixed
+      description: Remove DailyRotateFile transports from API logger; production logs go to stdout only (12-factor, readOnlyRootFilesystem compatible)
+    - kind: fixed
+      description: Add /tmp emptyDir to default values.yaml; catalog, documentation, and iac modules write temporary files to os.tmpdir()
     - kind: fixed
       description: ci/kind-values.yaml disables migration and sets global.imageRegistry to fix ct install on KinD
     - kind: fixed

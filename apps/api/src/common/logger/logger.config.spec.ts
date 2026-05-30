@@ -14,8 +14,8 @@ describe("LoggerConfig", () => {
     const config = loggerConfigFactory("production", "info");
     expect(config).toBeDefined();
     expect(config.level).toBe("info");
-    // Should have console transport + 2 file transports
-    expect((config.transports as any[]).length).toBe(3);
+    // Only the Console transport — no file transports in containerized environments.
+    expect((config.transports as any[]).length).toBe(1);
   });
 });
 

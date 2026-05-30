@@ -142,15 +142,17 @@ api:
   # - name: SOME_VAR
   #   value: "some-value"
 
-  # -- Extra volumes for the API pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
-  extraVolumes: []
-  # - name: tmp
-  #   emptyDir: {}
+  # -- Extra volumes for the API pod.
+  # The catalog, documentation, and iac modules write temporary files to os.tmpdir().
+  # With readOnlyRootFilesystem: true (the default), /tmp must be a writable emptyDir.
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
 
   # -- Extra volume mounts for the API container.
-  extraVolumeMounts: []
-  # - name: tmp
-  #   mountPath: /tmp
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
   # -- Application environment configuration (non-sensitive).
   # All values end up in a ConfigMap and are injected via envFrom.
@@ -353,15 +355,18 @@ web:
 
   extraEnv: []
 
-  # -- Extra volumes for the web pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
-  extraVolumes: []
-  # - name: tmp
-  #   emptyDir: {}
+  # -- Extra volumes for the web pod.
+  # With readOnlyRootFilesystem: true (the default), /tmp must be a writable emptyDir.
+  # Next.js standalone server may write to /tmp for ISR cache, image optimization, or
+  # Node.js runtime operations.
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
 
   # -- Extra volume mounts for the web container.
-  extraVolumeMounts: []
-  # - name: tmp
-  #   mountPath: /tmp
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
   # -- Web application environment (non-sensitive).
   env:
