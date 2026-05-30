@@ -4,6 +4,10 @@
 # in helm-lint.yml using `kind load docker-image`. pullPolicy: Never prevents Kubernetes
 # from attempting an external pull.
 
+global:
+  # Matches the registry prefix used in `kind load docker-image ghcr.io/ops-talks/...`
+  imageRegistry: ghcr.io
+
 api:
   replicaCount: 1
   image:
@@ -17,6 +21,12 @@ web:
   image:
     tag: "ci-local"
     pullPolicy: Never
+
+# The migration pre-install hook runs before regular resources (postgresql subchart)
+# are created in Kubernetes. Disabling migration avoids a guaranteed DeadlineExceeded
+# on every fresh ct install. Schema correctness is validated in the API CI test suite.
+migration:
+  enabled: false
 
 postgresql:
   enabled: true
