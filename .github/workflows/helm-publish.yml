@@ -6,11 +6,20 @@ on:
       - main
     paths:
       - 'deploy/helm/**'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel in-progress publishes — mid-run cancellation can corrupt OCI artifacts.
+  cancel-in-progress: false
 
 jobs:
   publish:
     name: Publish ${{ matrix.chart.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -130,7 +139,6 @@ jobs:
       - name: Sign chart with cosign (keyless)
         if: steps.check.outputs.skip == 'false'
         env:
-          COSIGN_EXPERIMENTAL: '1'
           REGISTRY: ghcr.io/ops-talks/helm-charts
         run: |
           REF="${REGISTRY}/${{ matrix.chart.name }}@${{ steps.push.outputs.digest }}"

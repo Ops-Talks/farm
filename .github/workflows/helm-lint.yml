@@ -3,13 +3,20 @@ name: Helm Lint & Validate
 on:
   pull_request:
     paths:
-      - 'deploy/helm/**'
       - '.github/workflows/helm-lint.yml'
   workflow_call: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   helm-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Actions pinned by commit SHA for supply-chain security (not just tag).
       # Keep SHA current — use `gh api /repos/{owner}/{repo}/git/ref/tags/{tag}`
@@ -95,6 +102,7 @@ jobs:
   ct-install:
     name: Chart Testing Install (KinD)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: helm-lint
     # Only run ct install when chart files are changed (not on workflow_call from ci.yml).
     # This prevents unnecessary KinD spin-ups when only CI config changes triggered the workflow.

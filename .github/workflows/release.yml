@@ -81,6 +81,8 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           fetch-depth: 0
+          # persist-credentials defaults to true — intentional: release-it needs
+          # to push the version bump commit and tags back to the repository.
 
       - name: Setup monorepo
         uses: ./.github/actions/setup-monorepo
@@ -238,7 +240,6 @@ jobs:
 
       - name: Sign pushed image with cosign (keyless)
         env:
-          COSIGN_EXPERIMENTAL: '1'
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
