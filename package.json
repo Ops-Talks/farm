@@ -64,6 +64,14 @@
     "vite": "^8.0.0",
     "vitest": "4.1.7",
     "ws": "^8.20.1",
-    "qs": "6.15.2"
+    "qs": "6.15.2",
+    "@nestjs/common": "11.1.21",
+    "@nestjs/core": "11.1.21",
+    "@nestjs/platform-express": "11.1.21",
+    "@nestjs/platform-socket.io": "11.1.21",
+    "@nestjs/swagger": "11.4.3",
+    "@nestjs/testing": "11.1.21",
+    "@nestjs/websockets": "11.1.21",
+    "ts-jest": "29.4.10"
   }
 }
