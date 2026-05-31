@@ -142,6 +142,8 @@ HELM_VALUES ?= $(HELM_CHART)/values-dev.yaml
 
 helm-lint:
 	# Strict lint for both charts using only helm — no extra tooling required.
+	helm dependency build $(HELM_CHART)
+	helm dependency build $(OBS_CHART)
 	helm lint $(HELM_CHART) --strict -f $(HELM_VALUES)
 	helm lint $(OBS_CHART) --strict -f $(OBS_CHART)/values-dev.yaml
 
