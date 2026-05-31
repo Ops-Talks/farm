@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.10] - 2026-05-30
+
+### Added
+- **helm**: Fix EmptyDir.
+- **helm**: Fix EmptyDir.
+- **helm**: Fix EmptyDir.
+- **helm**: E150 and E151 done.
+- **helm**: E150 and E151 done.
+- **helm**: Create project at AH.
+- **helm**: E149 Artifact Hub Integration.
+- **helm**: - Matrix farm / farm-observability com fail-fast: false  - Idempotente — verifica se a version: já existe no GHCR antes de publicar  - Cosign keyless assinando o digest OCI do chart  - Todas as actions SHA-pinadas, Helm com SHA256 verificado.
+- **helm**: - helm lint --strict farm + observability: 0 falhas  - kubeconform: 38 resources válidos, 0 erros  - checkout@v5 sem SHA no ci.yml: 0 ocorrências  - Job helm: consolidado via workflow_call.
+
+### Fixed
+- **helm**: Fix helm chart bugs.
+- **coverage**: Fix code coverage.
+- **helm**: Seeds and bugs.
+- **helm**: Chart Versions.
+- disable migration and set imageRegistry in ci/kind-values.yaml.
+- correct Helm test hook labels and delete policy.
+- **helm**: address PR #193 review comments and helm-lint CI failure.
+- **helm**: SHA.
+
 ## [0.25.9] - 2026-05-28
 
 ### Fixed
