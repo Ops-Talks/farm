@@ -8,8 +8,9 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'deploy/helm/farm/**'
-      - 'deploy/helm/observability/**'
+      - 'deploy/helm/**'
+      - '.github/workflows/helm-lint.yml'
+      - '.github/actions/setup-helm-deps/**'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -18,8 +19,9 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'deploy/helm/farm/**'
-      - 'deploy/helm/observability/**'
+      - 'deploy/helm/**'
+      - '.github/workflows/helm-lint.yml'
+      - '.github/actions/setup-helm-deps/**'
       - '.github/workflows/ci.yml'
 
 permissions:
@@ -243,6 +245,8 @@ jobs:
   helm:
     name: Helm chart lint
     uses: ./.github/workflows/helm-lint.yml
+    with:
+      run_ct_install: ${{ github.event_name == 'pull_request' }}
 
   # Roll-up job: single required check for branch protection rules.
   all-checks-passed:
