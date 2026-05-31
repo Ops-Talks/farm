@@ -144,7 +144,7 @@ See [Environment Variables](../developer-guide/setup.md#environment-variables) f
 
 ## Deploying Farm on Kubernetes with Helm
 
-For complete deployment instructions, parameters reference, security configuration, and production-ready setup, see the [Farm Helm Chart Reference](../../deploy/helm/farm/README.md).
+For complete deployment instructions, parameters reference, security configuration, and production-ready setup, see the [Farm Helm Chart Reference](https://github.com/Ops-Talks/farm/blob/main/deploy/helm/farm/README.md).
 
 Key topics covered:
 

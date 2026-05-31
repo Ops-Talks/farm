@@ -9,8 +9,10 @@
 
 # ─── NAMESPACE ───────────────────────────────────────────────────────────────
 # When true, the chart creates the release namespace as a Namespace resource.
-# Set to false if the namespace is managed externally (GitOps, cluster admin).
-createNamespace: true
+# Set to false (default) when using helm install --create-namespace or when the
+# namespace is managed externally (GitOps, cluster admin). Enabling this while
+# also passing --create-namespace to helm will cause "already exists" failures.
+createNamespace: false
 
 # ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
 kube-prometheus-stack:

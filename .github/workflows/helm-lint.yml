@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/helm-lint.yml'
+      - 'deploy/helm/**'
   workflow_call: {}
 
 permissions:

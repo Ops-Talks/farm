@@ -11,7 +11,7 @@ The Farm Helm Chart:
 - **Artifact Hub**: Published as OCI artifact to GitHub Container Registry (`ghcr.io/ops-talks/helm-charts/farm`)
 - **Type**: Application chart
 - **Minimum Kubernetes**: 1.26+ (HPA autoscaling/v2 GA requirement)
-- **Current version**: 0.3.10 (chart version, independent from appVersion)
+- **Current version**: 0.3.11 (chart version, independent from appVersion)
 - **Current appVersion**: 0.25.10 (Farm application version)
 
 ## Chart Structure
@@ -79,21 +79,20 @@ deploy/helm/farm/
 The chart version is **independent** from the application version:
 
 ```yaml
-version: 0.3.10          # Chart version — SemVer for Helm releases
+version: 0.3.11          # Chart version — SemVer for Helm releases
 appVersion: "0.25.10"    # Farm application version
 ```
 
 **Versioning Policy**:
 
-- **Patch bump** (0.3.9 → 0.3.10) — Template fixes, bug fixes, non-breaking values changes
+- **Patch bump** (0.3.10 → 0.3.11) — Template fixes, bug fixes, non-breaking values changes
 - **Minor bump** (0.3.0 → 0.4.0) — New features, new values keys (backward compatible)
 - **Major bump** (0.3.0 → 1.0.0) — Breaking changes to values schema
 
 **Trigger bump on**:
 
-- Any modification to `templates/`, `values.yaml`, `values.schema.json`, or `ci/`
+- Any modification to `templates/`, `values.yaml`, `values.schema.json`, `README.md`, `Chart.yaml`, or `ci/`
 - Subchart dependency updates (`Chart.lock` changes)
-- Do NOT bump for `README.md` or documentation-only changes
 
 ### Chart Dependencies
 
@@ -341,12 +340,12 @@ Result: Chart published as `ghcr.io/ops-talks/helm-charts/farm:<VERSION>`
 helm registry login ghcr.io -u <USERNAME> -p <GH_PAT>
 helm dependency build deploy/helm/farm
 helm package deploy/helm/farm
-helm push farm-0.3.10.tgz oci://ghcr.io/ops-talks/helm-charts
+helm push farm-0.3.11.tgz oci://ghcr.io/ops-talks/helm-charts
 
 # Sign with cosign (requires COSIGN_EXPERIMENTAL=1)
 COSIGN_EXPERIMENTAL=1 cosign sign \
   --yes \
-  ghcr.io/ops-talks/helm-charts/farm:0.3.10
+  ghcr.io/ops-talks/helm-charts/farm:0.3.11
 ```
 
 ## Making Changes
@@ -531,5 +530,5 @@ securityContext:
 - [Helm Documentation](https://helm.sh/docs/)
 - [Chart Best Practices](https://helm.sh/docs/chart_best_practices/)
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
-- [Farm Helm Chart README](../../deploy/helm/farm/README.md)
+- [Farm Helm Chart README](https://github.com/Ops-Talks/farm/blob/main/deploy/helm/farm/README.md)
 - [Artifact Hub Metadata](https://artifacthub.io/docs/topics/metadata/)

@@ -415,7 +415,7 @@ export class CatalogController {
           type: "array",
           items: { $ref: "#/components/schemas/Pipeline" },
         },
-        total: { type: "number", example: 42 },
+        total: { type: "integer", example: 42 },
       },
     },
   })

@@ -175,10 +175,9 @@ OBS_VALUES ?= $(OBS_CHART)/values-dev.yaml
 
 observability-install:
 	helm dependency update $(OBS_CHART)
-	# --create-namespace is kept alongside the namespace.yaml template:
-	# Helm needs the namespace to exist before it can store the release secret.
-	# The template then applies proper labels and the helm.sh/resource-policy
-	# annotation that prevents the namespace from being deleted on uninstall.
+	# --create-namespace creates the namespace when it does not exist.
+	# createNamespace defaults to false so the chart does not manage the namespace
+	# as a Helm resource, avoiding conflicts with pre-existing namespaces.
 	helm upgrade --install $(OBS_RELEASE) $(OBS_CHART) -f $(OBS_VALUES) \
 		--namespace $(OBS_NAMESPACE) --create-namespace
 

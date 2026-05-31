@@ -47,7 +47,7 @@ annotations:
       image: grafana/pyroscope:1.13.4
   artifacthub.io/changes: |
     - kind: added
-      description: Namespace template with createNamespace toggle (default true)
+      description: Namespace template with createNamespace toggle (default false)
     - kind: added
       description: _helpers.tpl with common label helpers
     - kind: changed
