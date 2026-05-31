@@ -5,10 +5,6 @@ import { Writable } from 'stream';
 // Mocks — hoisted by Vitest before any module is imported.
 // ---------------------------------------------------------------------------
 
-// Side-effect import of winston-daily-rotate-file has no observable behavior
-// in tests, so suppress it with an empty module.
-vi.mock('winston-daily-rotate-file', () => ({}));
-
 const mockGetActiveSpan = vi.fn<() => null | {
   spanContext: () => { traceId: string; spanId: string };
 }>(() => null);

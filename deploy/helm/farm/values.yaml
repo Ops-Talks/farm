@@ -136,21 +136,60 @@ api:
     failureThreshold: 20
     periodSeconds: 5
 
+  # -- Init container that waits for the database to accept TCP connections
+  # before starting the NestJS process.
+  #
+  # Why this is needed: TypeORM's default retry budget is 10 attempts x 3 s =
+  # 30 seconds. The Bitnami PostgreSQL subchart takes 30-90 s to become ready
+  # on a KinD cluster. Without this guard the API process crashes while the DB
+  # is still initialising, enters CrashLoopBackOff, and ct install times out.
+  #
+  # Auto-enable logic (see deployment template): the init container is active
+  # when THIS field is true OR when postgresql.enabled is true. Set enabled=true
+  # explicitly when using an external database that may be transiently
+  # unreachable at pod start time (e.g. RDS during a failover).
+  waitForDb:
+    # -- Enable the wait-for-db init container.
+    # Automatically activated by the deployment template when postgresql.enabled
+    # is true; set this to true to force-enable it for external databases.
+    enabled: false
+    # -- Image used for the TCP probe. Must ship nc (netcat via busybox).
+    # Pinned by digest to satisfy FARM-S538 (mutable tag prohibition).
+    # Refresh the digest via Renovate or manually when a CVE requires it.
+    image: "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
+    # -- Maximum number of TCP probe attempts before aborting startup.
+    # With intervalSeconds=2 and retries=60 the budget is approximately
+    # 2 minutes — enough for Bitnami PostgreSQL to initialise on KinD.
+    retries: 60
+    # -- Seconds between TCP probe attempts.
+    intervalSeconds: 2
+    # -- Resource requests/limits for the wait-for-db init container.
+    # Kept deliberately small: the container only runs nc in a loop.
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 32Mi
+
   # -- Extra environment variables injected directly into the container.
   # These supplement (and override) the values generated from api.env below.
   extraEnv: []
   # - name: SOME_VAR
   #   value: "some-value"
 
-  # -- Extra volumes for the API pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
-  extraVolumes: []
-  # - name: tmp
-  #   emptyDir: {}
+  # -- Extra volumes for the API pod.
+  # The catalog, documentation, and iac modules write temporary files to os.tmpdir().
+  # With readOnlyRootFilesystem: true (the default), /tmp must be a writable emptyDir.
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
 
   # -- Extra volume mounts for the API container.
-  extraVolumeMounts: []
-  # - name: tmp
-  #   mountPath: /tmp
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
   # -- Application environment configuration (non-sensitive).
   # All values end up in a ConfigMap and are injected via envFrom.
@@ -159,6 +198,7 @@ api:
     DATABASE_SYNC: "false"
     CACHE_TTL: "30"
     ALLOWED_ORIGINS: ""
+    SWAGGER_USER: "farm"
     PLUGINS_DIR: ./plugins
     REDIS_SENTINEL_HOSTS: ""
     REDIS_SENTINEL_NAME: "mymaster"
@@ -353,15 +393,18 @@ web:
 
   extraEnv: []
 
-  # -- Extra volumes for the web pod (e.g., emptyDir for /tmp when readOnlyRootFilesystem is true).
-  extraVolumes: []
-  # - name: tmp
-  #   emptyDir: {}
+  # -- Extra volumes for the web pod.
+  # With readOnlyRootFilesystem: true (the default), /tmp must be a writable emptyDir.
+  # Next.js standalone server may write to /tmp for ISR cache, image optimization, or
+  # Node.js runtime operations.
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
 
   # -- Extra volume mounts for the web container.
-  extraVolumeMounts: []
-  # - name: tmp
-  #   mountPath: /tmp
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
 
   # -- Web application environment (non-sensitive).
   env:
@@ -445,8 +488,9 @@ migration:
   waitForDb:
     enabled: true
     # -- Image used for the TCP probe. Must have `nc` (netcat) available.
-    # Pin to a digest in production: busybox:1.36@sha256:<digest>
-    image: busybox:1.36
+    # Pinned by digest to satisfy the mutable tag prohibition (same as api.waitForDb.image).
+    # Refresh via Renovate or manually when a CVE requires it.
+    image: "busybox:1.36@sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
     # -- Maximum number of TCP probe attempts before giving up.
     # With intervalSeconds=2 and retries=60, the budget is ~2 minutes.
     retries: 60
@@ -455,6 +499,33 @@ migration:
   # -- Pre-upgrade DB reachability check Job (runs at hook weight -20, before migration).
   preUpgradeCheck:
     enabled: true
+
+# ─── SEED ────────────────────────────────────────────────────────────────────
+# Runs the initial seed after a successful install (post-install hook).
+# Disabled by default: seed data is for development/staging only.
+# Enable with seed.enabled=true in overlay values (e.g. values-dev.yaml).
+# The seed is idempotent — safe to re-run; existing records are skipped.
+
+seed:
+  # -- Enable the post-install seed Job.
+  # Never enable in production (real data would be mixed with demo records).
+  enabled: false
+  # -- Restart policy for the seed Job pod.
+  restartPolicy: OnFailure
+  # -- Backoff limit before the Job is considered failed.
+  backoffLimit: 3
+  # -- Maximum duration in seconds before the Job is terminated.
+  activeDeadlineSeconds: 300
+  # -- Resources for the seed Job pod.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # -- Additional annotations on the seed Job pod template.
+  podAnnotations: {}
 
 # ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
 # Used when postgresql.enabled is false (production default).

@@ -12,8 +12,6 @@
  */
 
 import winston, { format, transports } from 'winston';
-// Registers DailyRotateFile with the winston.transports registry.
-import 'winston-daily-rotate-file';
 import { trace } from '@opentelemetry/api';
 
 /**

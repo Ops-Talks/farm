@@ -1,0 +1,73 @@
+# CI-only values for ct install on a bare KinD cluster.
+# This file is automatically discovered by ct due to chart-values: [ci/kind-values.yaml] in ct.yaml.
+# Images are built from the current branch and pre-loaded into KinD by the ct-install job
+# in helm-lint.yml using `kind load docker-image`. pullPolicy: Never prevents Kubernetes
+# from attempting an external pull.
+
+api:
+  replicaCount: 1
+  image:
+    # Matches the registry prefix used in `kind load docker-image ghcr.io/ops-talks/...`
+    # Set here (not global.imageRegistry) so Bitnami subcharts keep their default docker.io
+    # registry. ghcr.io/bitnami/* requires Broadcom authentication; docker.io/bitnami/* is public.
+    registry: ghcr.io
+    tag: "ci-local"
+    pullPolicy: Never
+  secrets:
+    JWT_SECRET: "ci-test-secret-32-chars-minimum-x"
+    SWAGGER_PASSWORD: "farm"
+  # wait-for-db is auto-enabled by the deployment template when postgresql.enabled
+  # is true (see deployment.yaml logic). We set it explicitly here so the intent
+  # is clear: NestJS must not start until PostgreSQL accepts TCP connections.
+  # Without this guard TypeORM exhausts its 30-second retry budget before the
+  # Bitnami PostgreSQL subchart finishes initialising on KinD, causing
+  # CrashLoopBackOff and a ct install timeout.
+  waitForDb:
+    enabled: true
+  # readOnlyRootFilesystem: true requires a writable /tmp.
+  # The catalog, documentation, and iac modules write temporary files to os.tmpdir().
+  extraVolumes:
+    - name: tmp
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: tmp
+      mountPath: /tmp
+
+web:
+  replicaCount: 1
+  image:
+    registry: ghcr.io
+    tag: "ci-local"
+    pullPolicy: Never
+
+# The migration pre-install hook runs before regular resources (postgresql subchart)
+# are created in Kubernetes. Disabling migration avoids a guaranteed DeadlineExceeded
+# on every fresh ct install. Schema correctness is validated in the API CI test suite.
+migration:
+  enabled: false
+
+seed:
+  enabled: true
+
+postgresql:
+  enabled: true
+  auth:
+    username: farm
+    password: farmci
+    database: farm
+    postgresPassword: farmci
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+serviceMonitor:
+  enabled: false
+
+prometheusRule:
+  enabled: false
+
+# KinD has no default storage class beyond standard — keep persistence off
+# unless the chart already gates it (postgresql/redis subcharts default to
+# enabled persistence; we rely on their default ephemeral mode here).

@@ -3,15 +3,24 @@ import { runInitialSeed } from "./initial-seed";
 
 const ALLOWED_ENVIRONMENTS = ["development", "test", undefined];
 
-async function run(): Promise<void> {
+// Exported for unit testing. The require.main guard below prevents
+// auto-execution when this module is imported by Jest or other test runners.
+export async function run(): Promise<void> {
   const nodeEnv = process.env.NODE_ENV;
+  const seedForce = process.env.SEED_FORCE === "true";
 
-  if (!ALLOWED_ENVIRONMENTS.includes(nodeEnv)) {
+  if (!ALLOWED_ENVIRONMENTS.includes(nodeEnv) && !seedForce) {
     console.error(`ERROR: Seeding is not allowed in "${nodeEnv}" environment.`);
     console.error(
-      "Seeding is restricted to development and test environments.",
+      "Set SEED_FORCE=true to bypass this check (e.g. in a Kubernetes seed Job).",
     );
     process.exit(1);
+  }
+
+  if (seedForce && !ALLOWED_ENVIRONMENTS.includes(nodeEnv)) {
+    console.warn(
+      `WARNING: SEED_FORCE=true — bypassing environment guard (NODE_ENV=${nodeEnv}).`,
+    );
   }
 
   console.log(
@@ -38,4 +47,8 @@ async function run(): Promise<void> {
   }
 }
 
-void run();
+// Auto-execute only when this file is the Node.js entry point, not when
+// imported by tests or other modules.
+if (require.main === module) {
+  void run();
+}

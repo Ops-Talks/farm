@@ -195,7 +195,7 @@ export const validationSchema = Joi.object({
     otherwise: Joi.string().default("super-secret-key-change-me-in-production"),
   }),
   JWT_EXPIRATION: Joi.string().default("3600s"),
-  ALLOWED_ORIGINS: Joi.string().default("*"),
+  ALLOWED_ORIGINS: Joi.string().allow("").default("*"),
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(10),
   OTEL_ENABLED: Joi.boolean().default(false),

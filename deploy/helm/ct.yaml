@@ -13,4 +13,6 @@ chart-repos:
 validate-chart-schema: true
 check-version-increment: true
 install-namespace: ct-test
-helm-extra-args: "--timeout 300s"
+chart-values:
+  - ci/kind-values.yaml
+helm-extra-args: "--timeout 10m"

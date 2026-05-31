@@ -89,7 +89,7 @@ COPY --from=build --chown=farmapi:farmapi /app/apps/api/dist ./apps/api/dist
 # docker-compose, and any K8s exec probes. Pure Node, no dependencies.
 COPY --chown=farmapi:farmapi apps/api/scripts/healthcheck.js ./apps/api/scripts/healthcheck.js
 
-RUN mkdir -p apps/api/logs && chown -R farmapi:farmapi apps/api/logs /app
+RUN chown -R farmapi:farmapi /app
 
 WORKDIR /app/apps/api
 EXPOSE 3000
