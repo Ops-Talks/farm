@@ -391,19 +391,28 @@ COSIGN_EXPERIMENTAL=1 cosign sign \
 
 ### Updating Subcharts
 
-1. Update versions in `Chart.yaml` dependencies:
+`Chart.lock` stores a SHA-256 digest of the entire `dependencies:` block in `Chart.yaml`. **Any** modification to that block — including version bumps, adding a new dependency, adding `condition:`, `tags:`, or `alias:` to an existing one — invalidates the digest and requires regenerating the lock file. The CI `helm dependency build` step verifies this digest and fails with `the lock file (Chart.lock) is out of sync` if the lock is stale.
+
+**Rule: after every change to `dependencies:` in `Chart.yaml`, run `helm dependency update` and commit `Chart.lock`.**
+
+1. Modify `Chart.yaml` dependencies as needed:
    ```yaml
    dependencies:
      - name: postgresql
-       version: "18.6.10"   # <- new version
+       version: "18.6.10"      # version bump
+       condition: postgresql.enabled  # added condition
    ```
-2. Fetch and lock:
+2. Regenerate the lock file:
    ```bash
    helm dependency update deploy/helm/farm
+   # or for the observability chart:
+   helm dependency update deploy/helm/observability
    ```
-3. Commit updated `Chart.lock`
+3. Commit both `Chart.yaml` and `Chart.lock`
 4. Test with KinD
 5. Bump chart version
+
+> **Common mistake**: adding `condition:` or `alias:` fields to an existing dependency without running `helm dependency update` afterward. These fields change the digest even though the chart versions are unchanged, causing `helm dependency build` to fail in CI.
 
 ### Updating Chart Annotations
 
