@@ -33,6 +33,7 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
+            runAsUser: 100  # curl_user UID — required because runAsNonRoot rejects non-numeric usernames
             capabilities:
               drop:
                 - ALL

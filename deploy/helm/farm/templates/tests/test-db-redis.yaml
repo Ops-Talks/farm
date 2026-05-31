@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test-db-redis
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
@@ -15,6 +16,7 @@ spec:
     metadata:
       labels:
         {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: test-db-redis
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
@@ -33,6 +35,7 @@ spec:
             - {{ include "farm.databaseUser" . }}
           securityContext:
             allowPrivilegeEscalation: false
+            runAsUser: 70  # postgres UID on alpine — required because runAsNonRoot rejects non-numeric usernames
             capabilities:
               drop:
                 - ALL
@@ -53,6 +56,7 @@ spec:
             - ping
           securityContext:
             allowPrivilegeEscalation: false
+            runAsUser: 999  # redis UID — required because runAsNonRoot rejects non-numeric usernames
             capabilities:
               drop:
                 - ALL
