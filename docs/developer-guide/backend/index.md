@@ -80,7 +80,7 @@ make check-back
 Farm uses **TypeORM migrations** for schema management and **Kubernetes Job hooks** for data seeding:
 
 - **Migrations** (`src/migrations/`) run as a Kubernetes Job with `pre-install,pre-upgrade` hook weights (-1), ensuring the database schema is ready before the application starts.
-- **Seeds** (`src/database/seeds/`) populate demo or initial data via a post-install Job hook (weight 1) after deployments succeed. Seeds are idempotent and skipped on upgrades via `SEED_FORCE` environment variable.
+- **Seeds** (`src/database/seeds/`) populate demo or initial data via a post-install Job hook (weight 1) after deployments succeed. Seeds never run on upgrades because the Seed Job hook is `post-install` only.
 
 Production deployments use:
 
@@ -107,7 +107,7 @@ The Seed Job (`deploy/helm/farm/templates/seed-job.yaml`) is a post-install Helm
 Key patterns:
 
 - **Idempotency**: Seeds use `findOrCreate` patterns to avoid duplicate inserts on retries
-- **Bypass flag**: `SEED_FORCE=true` force-runs seeds even if already seeded (for Kubernetes Job retries)
+- **Bypass flag**: `SEED_FORCE=true` bypasses the seed-runner environment guard (allows seeding when `NODE_ENV` is not in the allowed list, e.g. in a controlled Kubernetes Job)
 - **Node environment**: Seeds set `NODE_ENV=production` when running in K8s
 - **Exclusivity**: Seeds never run during application startup (seed-runner has `require.main === module` guard)
 

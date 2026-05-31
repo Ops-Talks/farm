@@ -294,7 +294,6 @@ faro:
 ```
 
 `NEXT_PUBLIC_FARO_URL` is injected into the web pod ConfigMap and picked up by
-`NEXT_PUBLIC_FARO_URL` is injected into the web pod ConfigMap and picked up by
 the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 
 ### Observability Parameters

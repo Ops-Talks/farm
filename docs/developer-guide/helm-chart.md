@@ -62,7 +62,7 @@ deploy/helm/farm/
     observability.yaml        # Observability resources (OpenTelemetry, Pyroscope, Faro)
     NOTES.txt                 # Helm installation notes (printed to console)
   ci/
-    kind-values.yaml          # Values for KinD chart-testing (disables migrations, seeds)
+    kind-values.yaml          # Values for KinD chart-testing (disables migrations; seeding is enabled)
   dashboards/                 # Grafana dashboard JSON files
     farm-api.json
     farm-infra.json
