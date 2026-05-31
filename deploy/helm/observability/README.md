@@ -13,18 +13,14 @@ every merge to `main` that bumps the chart `version:` field.
 ### Quick Start
 
 ```bash
-# Install the observability stack
 helm install farm-observability oci://ghcr.io/ops-talks/helm-charts/farm-observability \
   --version <VERSION> \
   --namespace monitoring \
   --create-namespace \
   -f values-production.yaml
-
-# Upgrade an existing release
-helm upgrade farm-observability oci://ghcr.io/ops-talks/helm-charts/farm-observability \
-  --version <VERSION> \
-  -f values-production.yaml
 ```
+
+To upgrade an existing release, use `helm upgrade` with the same arguments.
 
 Replace `<VERSION>` with the desired chart version (e.g. `0.2.0`). See the
 [releases page](https://github.com/Ops-Talks/farm/releases) for the version

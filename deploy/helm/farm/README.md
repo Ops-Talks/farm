@@ -10,20 +10,16 @@ on every merge to `main` that bumps the chart `version:` field.
 ### Quick Start
 
 ```bash
-# Install the latest released version
 helm install farm oci://ghcr.io/ops-talks/helm-charts/farm \
   --version <VERSION> \
   --namespace farm \
   --create-namespace \
   -f values-production.yaml
-
-# Upgrade an existing release
-helm upgrade farm oci://ghcr.io/ops-talks/helm-charts/farm \
-  --version <VERSION> \
-  -f values-production.yaml
 ```
 
-Replace `<VERSION>` with the desired chart version (e.g. `0.3.1`). Chart
+To upgrade an existing release, use `helm upgrade` with the same arguments.
+
+Replace `<VERSION>` with the desired chart version (e.g. `0.3.10`). Chart
 `version` follows SemVer independently from the application `appVersion`; see
 the [releases page](https://github.com/Ops-Talks/farm/releases) for the
 application release history and `Chart.yaml` for the current chart version.
@@ -61,7 +57,9 @@ on every release:
 | API   | `ghcr.io/ops-talks/farm-api` | `linux/amd64`, `linux/arm64` |
 | Web   | `ghcr.io/ops-talks/farm-web` | `linux/amd64`, `linux/arm64` |
 
-Each pushed manifest is signed with [cosign](https://github.com/sigstore/cosign)
+### Verify Container Image Signatures
+
+Each published manifest is signed with [cosign](https://github.com/sigstore/cosign)
 using **Sigstore keyless** signing (Fulcio short-lived certificates + Rekor
 transparency log). There is no public key to distribute or rotate — verification
 is performed against the Sigstore public good trust root using the GitHub
@@ -77,7 +75,7 @@ In addition, every release build attaches:
   (`farm-api-sbom.spdx.json`, `farm-web-sbom.spdx.json`) for consumers without
   cosign/oras tooling.
 
-### Verify the cosign signature
+To verify a container image signature:
 
 ```bash
 COSIGN_EXPERIMENTAL=1 cosign verify \
@@ -86,15 +84,13 @@ COSIGN_EXPERIMENTAL=1 cosign verify \
   ghcr.io/ops-talks/farm-api:<TAG>
 ```
 
-Replace `<TAG>` with the semver version you are deploying (for example
-`1.2.3`). The same command works for `farm-web` — swap the image name.
+Replace `<TAG>` with the semver version you are deploying (for example `1.2.3`).
+The same command works for `farm-web` — swap the image name. A successful
+verification prints the signature certificate subject and Rekor transparency log
+index, and exits 0. Any tampering or signature produced by a different identity
+exits non-zero.
 
-A successful verification prints the signature certificate subject (the
-`release.yml` workflow ref) and the Rekor transparency log index, and exits 0.
-Any tampering with the manifest, or a signature produced by a different
-workflow/identity, exits non-zero.
-
-### Verify the SBOM attestation
+To verify the SBOM attestation:
 
 ```bash
 COSIGN_EXPERIMENTAL=1 cosign verify-attestation \
@@ -135,23 +131,19 @@ Install with bundled PostgreSQL and Redis (not production-safe):
 
 ```bash
 cd deploy/helm/farm
-
-# Fetch subchart dependencies
 helm dependency update
-
-# Install using the dev values profile
 helm install farm . -f values-dev.yaml --namespace farm --create-namespace
 ```
 
 Access the services:
 
 ```bash
-# API
-kubectl port-forward svc/farm-api 3000:3000 -n farm
-
-# Web
-kubectl port-forward svc/farm-web 3001:3001 -n farm
+kubectl port-forward svc/farm-api 3000:3000 -n farm &
+kubectl port-forward svc/farm-web 3001:3001 -n farm &
 ```
+
+Then open [http://localhost:3001](http://localhost:3001) for the web UI and
+[http://localhost:3000/api/docs](http://localhost:3000/api/docs) for the API docs.
 
 ## Quick Start — Production
 
@@ -176,6 +168,7 @@ cp values.yaml my-values.yaml
 3. Install:
 
 ```bash
+cd deploy/helm/farm
 helm dependency update
 helm install farm . -f my-values.yaml -n farm --create-namespace
 ```
@@ -229,8 +222,10 @@ Optional keys:
 
 ## Observability Integration
 
-Farm exposes Prometheus metrics at `/api/metrics`. The chart ships three
-optional Kubernetes-native resources for observability integration:
+Farm exposes Prometheus metrics at `/api/metrics`. The chart ships optional
+Kubernetes-native resources for observability integration. Each integration is
+an independent feature flag (disabled by default). Activate only the components
+present in your cluster.
 
 ### ServiceMonitor (Prometheus Operator)
 
@@ -255,7 +250,8 @@ prometheusRule:
 ### Grafana Dashboards
 
 Six dashboard ConfigMaps with the `grafana_dashboard: "1"` label for
-automatic sidecar import:
+automatic sidecar import. Available dashboards: `farm-api`, `farm-infra`,
+`farm-logs`, `farm-rum`, `farm-slo`, `farm-traces`.
 
 ```yaml
 grafanaDashboards:
@@ -263,15 +259,9 @@ grafanaDashboards:
   folder: Farm   # Grafana folder name
 ```
 
-Dashboards: `farm-api`, `farm-infra`, `farm-logs`, `farm-rum`, `farm-slo`,
-`farm-traces`.
+### OpenTelemetry Tracing
 
-### OpenTelemetry, Pyroscope, and Faro
-
-Each observability integration is an independent feature flag (disabled by
-default). Activate only the components present in your cluster.
-
-**OpenTelemetry tracing** (requires Grafana Alloy or any OTLP collector):
+Requires Grafana Alloy or any OTLP collector:
 
 ```yaml
 tracing:
@@ -280,8 +270,9 @@ tracing:
   serviceName: farm-api
 ```
 
-**Pyroscope continuous profiling** (requires Grafana Pyroscope or Grafana Cloud
-Profiles):
+### Pyroscope Continuous Profiling
+
+Requires Grafana Pyroscope or Grafana Cloud Profiles:
 
 ```yaml
 pyroscope:
@@ -289,20 +280,12 @@ pyroscope:
   url: http://pyroscope.monitoring.svc.cluster.local:4040
 ```
 
-When `pyroscope.enabled: true`, the chart automatically adds Pyroscope
-auto-discovery annotations to the API pod:
+When enabled, the chart automatically adds Pyroscope auto-discovery annotations
+to the API pod for CPU and memory profiling.
 
-```
-profiles.grafana.com/cpu.scrape: "true"
-profiles.grafana.com/memory.scrape: "true"
-profiles.grafana.com/service_name: <release>-api
-```
+### Grafana Faro Real User Monitoring
 
-These annotations are consumed by the Pyroscope Operator or by Grafana Alloy
-with a `pyroscope.scrape` component (Alloy v1.0+).
-
-**Grafana Faro RUM** (requires Grafana Alloy with `faro.receiver`, or Grafana
-Cloud Frontend Observability):
+Requires Grafana Alloy with `faro.receiver` or Grafana Cloud Frontend Observability:
 
 ```yaml
 faro:
@@ -311,31 +294,23 @@ faro:
 ```
 
 `NEXT_PUBLIC_FARO_URL` is injected into the web pod ConfigMap and picked up by
+`NEXT_PUBLIC_FARO_URL` is injected into the web pod ConfigMap and picked up by
 the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 
-### Observability Integrations
-
-#### Tracing (OpenTelemetry)
+### Observability Parameters
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `tracing.enabled` | Enable OTLP trace export from the API | `false` |
 | `tracing.endpoint` | OTLP HTTP collector endpoint | `""` |
 | `tracing.serviceName` | Service name reported in traces | `farm-api` |
-
-#### Pyroscope (Continuous Profiling)
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
 | `pyroscope.enabled` | Enable continuous profiling; also adds pod auto-discovery annotations | `false` |
 | `pyroscope.url` | Pyroscope server address | `""` |
-
-#### Faro (Real User Monitoring)
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
 | `faro.enabled` | Enable Faro RUM; injects `NEXT_PUBLIC_FARO_URL` into the web pod | `false` |
 | `faro.url` | Faro collector URL | `""` |
+| `serviceMonitor.enabled` | Create ServiceMonitor for Prometheus Operator | `false` |
+| `prometheusRule.enabled` | Create PrometheusRule | `false` |
+| `grafanaDashboards.enabled` | Create Grafana dashboards | `false` |
 
 ## Parameters
 

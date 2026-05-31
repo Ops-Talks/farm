@@ -11,7 +11,13 @@ import {
   Req,
 } from "@nestjs/common";
 import type { Request } from "express";
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiHeader,
+} from "@nestjs/swagger";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { FarmEvent } from "../../common/events/events.interfaces";
 import { createHmac, timingSafeEqual } from "crypto";
@@ -122,6 +128,15 @@ export class WebhookReceiverController {
   @Post("github-actions")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Receive GitHub Actions webhook" })
+  @ApiHeader({
+    name: "x-hub-signature-256",
+    required: false,
+    description:
+      "GitHub webhook signature for HMAC-SHA256 payload verification. " +
+      "Required when a webhook secret is configured on the GitHub side " +
+      "(GITHUB_WEBHOOK_SECRET environment variable). " +
+      "Format: sha256=<hex-digest>.",
+  })
   @ApiBody({
     schema: { type: "object", additionalProperties: true },
     description: "GitHub Actions webhook payload",

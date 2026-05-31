@@ -304,10 +304,7 @@ export class AuthController {
     await this.authService.changePassword(req.user.userId, dto);
   }
 
-  /**
-   * Initiates GitHub OAuth2 authorization flow.
-   * Redirects the client to GitHub for authentication.
-   */
+  /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
   @Get("github")
   @UseGuards(AuthGuard("github"))
   @SkipThrottle()
@@ -316,12 +313,7 @@ export class AuthController {
     // Guard handles the redirect to GitHub
   }
 
-  /**
-   * GitHub OAuth2 callback endpoint.
-   * Exchanges the authorization code for a JWT and refresh token.
-   * @param req - Express request containing the authenticated user
-   * @param res - Express response used to return the token payload
-   */
+  /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
   @Get("github/callback")
   @UseGuards(AuthGuard("github"))
   @SkipThrottle()
@@ -346,10 +338,7 @@ export class AuthController {
     });
   }
 
-  /**
-   * Initiates Google OAuth2 authorization flow.
-   * Redirects the client to Google for authentication.
-   */
+  /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
   @Get("google")
   @UseGuards(AuthGuard("google"))
   @SkipThrottle()
@@ -358,12 +347,7 @@ export class AuthController {
     // Guard handles the redirect to Google
   }
 
-  /**
-   * Google OAuth2 callback endpoint.
-   * Exchanges the authorization code for a JWT and refresh token.
-   * @param req - Express request containing the authenticated user
-   * @param res - Express response used to return the token payload
-   */
+  /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
   @Get("google/callback")
   @UseGuards(AuthGuard("google"))
   @SkipThrottle()
@@ -391,6 +375,8 @@ export class AuthController {
    * Initiates Keycloak OIDC authorization flow for the given organization.
    * Dynamically builds a strategy from the org's stored Keycloak credential.
    * Redirects to the frontend with an error query parameter when not configured.
+   *
+   * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
    *
    * @param orgId - UUID of the organization requesting Keycloak login
    * @param req - Express request object
@@ -435,6 +421,8 @@ export class AuthController {
   /**
    * Keycloak OIDC callback endpoint.
    * Completes authentication and returns a JWT to the caller.
+   *
+   * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
    *
    * @param req - Express request carrying the authenticated user
    * @param res - Express response object
@@ -482,6 +470,9 @@ export class AuthController {
    * Accepts username and password in the request body.
    * Returns JWT access and refresh tokens on success.
    * Returns 503 when LDAP is not configured.
+   *
+   * LDAP authentication — handled via passport-ldapauth, excluded from Swagger UI.
+   *
    * @param req - Express request carrying the validated LDAP user
    * @returns JWT tokens and user profile
    */

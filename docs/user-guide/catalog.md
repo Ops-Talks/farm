@@ -119,11 +119,7 @@ curl -X POST http://localhost:3000/api/v1/catalog/locations \
 
 This will trigger an asynchronous process to clone the repository and register all found components.
 
-### Creating a Component (REST)
-
-You can also create a component using a standard JSON payload:
-
-### Listing Components
+## Listing Components
 
 To retrieve all components:
 

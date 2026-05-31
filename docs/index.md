@@ -6,25 +6,21 @@
 
 ## What is Farm?
 
-Farm is an open-source full stack portal providing a centralized hub for managing software components, technical documentation, and team infrastructure.
+Farm is an open-source full-stack portal providing a centralized hub for managing software components, technical documentation, team infrastructure, and cloud-native operations.
 
-Farm enables engineering teams to:
+Farm helps engineering teams organize, discover, and manage their software ecosystem through:
 
-- **Track Software Components**: Maintain a unified catalog of all software components including services, libraries, APIs, and websites
-- **Manage Documentation**: Associate technical documentation with each component for easy discovery and maintenance
-- **Handle Authentication**: Manage user access with role-based authentication and multi-tenant organization support
-- **Observe Systems**: Monitor metrics, traces, and logs from a unified hub with native PromQL, Jaeger, and Loki integration
-- **Run Pipelines**: Define and execute multi-stage pipelines with real-time log streaming via WebSocket
-- **Manage Alerting**: Create and manage PromQL-based alerting rules linked to catalog components or environments
-- **Track SLOs**: Define Service Level Objectives with error budget tracking and automated burn-rate alerts
-- **Manage Incidents**: Coordinate incident response with timeline tracking, status transitions, and post-mortem workflows
-- **Build Dashboards**: Create custom dashboards with configurable widget grids for real-time operational visibility
-- **Scaffold Services**: Create new services from golden path templates with configurable variables and dry-run previews
-- **Self-Service Environments**: Request ephemeral or persistent deployment environments through an approval workflow with TTL management
-- **Manage Container Costs**: Track infrastructure spend per component and team via OpenCost integration with configurable budgets and automated sync
-- **Scan Container Images**: Browse supported container registries, inspect image manifests, and surface vulnerability scan results per catalog component
-- **Enforce Policies**: Evaluate Open Policy Agent policies on demand, persist results per component, and read Gatekeeper ConstraintTemplate violations from connected clusters
-- **Discover and Understand**: Provide visibility into the software ecosystem within your organization
+- **Component Catalog**: Unified registry of services, libraries, APIs, websites, and infrastructure resources
+- **Documentation**: Associate and discover technical documentation linked to each component
+- **Observability**: Monitor metrics, traces, and logs from Prometheus, Jaeger, and Loki
+- **Pipelines**: Define and execute multi-stage pipelines with real-time WebSocket log streaming
+- **Environments**: Track deployments and manage self-service environment provisioning
+- **Cost Management**: Monitor infrastructure spend per component and team via OpenCost integration
+- **SLOs and Alerting**: Define Service Level Objectives with error budget tracking and alert rules
+- **Cloud Discovery**: Import and manage resources from AWS, GCP, and Azure
+- **Security and Compliance**: Enforce tag policies, evaluate OPA policies, and track Kyverno violations
+
+For the complete feature list, see the [User Guide](user-guide/index.md).
 
 ## Who is this documentation for?
 
@@ -50,7 +46,7 @@ If you are a developer looking to contribute to Farm or deploy it in your enviro
 
 ## Technology Stack
 
-Farm is built with modern technologies:
+Farm is built with modern technologies. Versions listed are current as of **v0.25.10**:
 
 | Layer | Technology | Purpose |
 |---|---|---|

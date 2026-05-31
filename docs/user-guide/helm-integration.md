@@ -139,3 +139,21 @@ KUBECONFIG_PATH=/home/user/.kube/config
 ```
 
 See [Environment Variables](../developer-guide/setup.md#environment-variables) for the full list.
+
+---
+
+## Deploying Farm on Kubernetes with Helm
+
+For complete deployment instructions, parameters reference, security configuration, and production-ready setup, see the [Farm Helm Chart Reference](../../deploy/helm/farm/README.md).
+
+Key topics covered:
+
+- Quick Start (development and production)
+- OCI Chart Distribution and Chart Signing
+- Image Provenance and Container Security
+- Database Migrations and Seed Jobs
+- Secrets Management with External Secrets Operator
+- Observability Integration (Prometheus, Grafana, Tempo, Loki)
+- Complete Parameter Reference
+- Upgrade Notes and Breaking Changes
+- High-Availability Configuration (HPA, PDB, topology spread constraints)
