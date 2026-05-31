@@ -30,12 +30,21 @@ Create chart version string for use in labels.
 {{- end }}
 
 {{/*
+Selector labels — stable subset safe for use in selector.matchLabels.
+Never change these after the initial release: selector fields are immutable
+in Kubernetes once the resource is created.
+*/}}
+{{- define "farm-observability.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "farm-observability.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Common labels applied to all resources managed by this chart.
 */}}
 {{- define "farm-observability.labels" -}}
 helm.sh/chart: {{ include "farm-observability.chart" . }}
-app.kubernetes.io/name: {{ include "farm-observability.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{ include "farm-observability.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}

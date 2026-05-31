@@ -5,7 +5,7 @@ description: |
   Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
   Install alongside the Farm chart: make observability-install
 type: application
-version: 0.2.2
+version: 0.2.3
 appVersion: "0.25.10"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
@@ -49,34 +49,45 @@ annotations:
     - kind: added
       description: Namespace template with createNamespace toggle (default false)
     - kind: added
-      description: _helpers.tpl with common label helpers
+      description: _helpers.tpl with common label helpers and selectorLabels
+    - kind: added
+      description: values.schema.json for Helm values validation
+    - kind: added
+      description: ci/kind-values.yaml for ct install on KinD
     - kind: changed
       description: OCI chart distribution via GHCR with cosign keyless signing
     - kind: changed
       description: Alloy 1.8.2, kube-prometheus-stack 72.3.0, Loki 6.55.0, Tempo 1.24.4, Pyroscope 1.21.0
+    - kind: changed
+      description: Subchart conditions added for independent enable/disable per component
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics
   - name: kube-prometheus-stack
     version: "72.3.0"
     repository: https://prometheus-community.github.io/helm-charts
+    condition: kube-prometheus-stack.enabled
 
   # Log aggregation
   - name: loki
     version: "6.55.0"
     repository: https://grafana.github.io/helm-charts
+    condition: loki.enabled
 
   # Distributed tracing
   - name: tempo
     version: "1.24.4"
     repository: https://grafana.github.io/helm-charts
+    condition: tempo.enabled
 
   # Telemetry collector (replaces Promtail; handles logs, traces, Faro RUM)
   - name: alloy
     version: "1.8.2"
     repository: https://grafana.github.io/helm-charts
+    condition: alloy.enabled
 
   # Continuous profiling
   - name: pyroscope
     version: "1.21.0"
     repository: https://grafana.github.io/helm-charts
+    condition: pyroscope.enabled

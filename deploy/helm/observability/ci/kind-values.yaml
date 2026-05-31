@@ -1,0 +1,22 @@
+# CI-only values for ct install on a bare KinD cluster.
+# This file is automatically discovered by ct due to chart-values: [ci/kind-values.yaml] in ct.yaml.
+#
+# The observability stack (kube-prometheus-stack, Loki, Tempo, Alloy, Pyroscope) cannot
+# be installed on a resource-constrained KinD cluster within the 10-minute Helm timeout.
+# All subcharts are disabled here so ct install validates chart templating and
+# the Namespace resource only — subchart behavior is validated in dedicated
+# integration/staging environments.
+kube-prometheus-stack:
+  enabled: false
+
+loki:
+  enabled: false
+
+tempo:
+  enabled: false
+
+alloy:
+  enabled: false
+
+pyroscope:
+  enabled: false
