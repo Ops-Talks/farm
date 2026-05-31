@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.11] - 2026-05-31
+
+### Changed
+- **deps**: bump docker/setup-qemu-action from 3.7.0 to 4.0.0 (#190).
+- **deps**: bump docker/metadata-action from 5.10.0 to 6.1.0 (#189).
+- **deps**: bump docker/setup-buildx-action from 3.10.0 to 4.1.0 (#188).
+- **deps**: bump softprops/action-gh-release from 2.3.2 to 3.0.0 (#187).
+- Merge pull request #186 from Ops-Talks/dependabot/github_actions/docker/login-action-4.2.0.
+- Merge pull request #196 from Ops-Talks/fix/docs.
+
+### Fixed
+- **node**: Several improvements (#197).
+
 ## [0.25.10] - 2026-05-30
 
 ### Added
