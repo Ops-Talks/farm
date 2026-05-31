@@ -6,11 +6,20 @@ on:
       - main
     paths:
       - 'deploy/helm/**'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel in-progress publishes — mid-run cancellation can corrupt OCI artifacts.
+  cancel-in-progress: false
 
 jobs:
   publish:
     name: Publish ${{ matrix.chart.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -130,7 +139,6 @@ jobs:
       - name: Sign chart with cosign (keyless)
         if: steps.check.outputs.skip == 'false'
         env:
-          COSIGN_EXPERIMENTAL: '1'
           REGISTRY: ghcr.io/ops-talks/helm-charts
         run: |
           REF="${REGISTRY}/${{ matrix.chart.name }}@${{ steps.push.outputs.digest }}"
@@ -145,3 +153,26 @@ jobs:
           oras push "${REGISTRY}/${{ matrix.chart.name }}:artifacthub.io" \
             --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
             ${{ matrix.chart.path }}/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+
+      - name: Ensure GHCR package is public
+        # ArtifactHub.io performs anonymous pulls against GHCR. GitHub creates
+        # every new container package as private by default, which causes a 401
+        # on the first index attempt. This step idempotently sets the package
+        # visibility to public after every successful push so that ArtifactHub
+        # can reach it without credentials.
+        # || true: the first-ever push creates the package in the same run;
+        # the PATCH may race against package creation and return 404. A
+        # subsequent workflow run will succeed. This is acceptable because the
+        # chart is not yet indexed during its first publication.
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ENCODED_NAME=$(printf '%s' "helm-charts/${{ matrix.chart.name }}" | python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=''))")
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/ops-talks/packages/container/${ENCODED_NAME}" \
+            -f visibility=public \
+            --silent || true
+          echo "Package helm-charts/${{ matrix.chart.name }} visibility set to public."

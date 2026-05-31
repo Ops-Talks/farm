@@ -10,6 +10,17 @@ Farm is a full-stack application consisting of a **NestJS backend** (API, databa
 
 If you are new to Farm development, start with the [Development Setup](setup.md) guide to configure your environment.
 
+## What's New (Phase 51-54)
+
+Recent improvements to the development workflow and Kubernetes deployment:
+
+- **Database Seeding**: Seed Job pattern for post-install data population (Phase 51)
+- **Helm Test Hooks**: Automated health checks for API, Web, and database connectivity in KinD and production (Phase 52-53)
+- **Migration Improvements**: Refined pre-install hook weights and migration-config/secret handling (Phase 51-53)
+- **Security Context**: Fixed runAsUser numeric UIDs for container image compatibility (Phase 52-53)
+
+See the [Backend Developer Guide](backend/index.md#database-migrations-and-seeding) for implementation details.
+
 ## Backend
 
 The [Backend Developer Guide](backend/index.md) covers the NestJS API server:
@@ -23,6 +34,12 @@ The [Backend Developer Guide](backend/index.md) covers the NestJS API server:
 | [WebSockets](backend/websockets.md) | Real-time event streaming via Socket.IO |
 | [Queues](backend/queues.md) | Background job processing with BullMQ and Redis |
 | [Email](backend/email.md) | Transactional email with SMTP and Handlebars templates |
+
+## Infrastructure and Deployment
+
+| Topic | Description |
+|-------|-------------|
+| [Helm Chart Development](helm-chart.md) | Maintaining and developing the Farm Helm Chart for Kubernetes deployment |
 
 ## Frontend
 

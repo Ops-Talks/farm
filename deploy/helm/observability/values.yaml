@@ -7,8 +7,16 @@
 # Upgrade:   make observability-upgrade
 # Uninstall: make observability-uninstall
 
+# ─── NAMESPACE ───────────────────────────────────────────────────────────────
+# When true, the chart creates the release namespace as a Namespace resource.
+# Set to false (default) when using helm install --create-namespace or when the
+# namespace is managed externally (GitOps, cluster admin). Enabling this while
+# also passing --create-namespace to helm will cause "already exists" failures.
+createNamespace: false
+
 # ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
 kube-prometheus-stack:
+  enabled: true
   # -- Grafana
   grafana:
     enabled: true
@@ -165,6 +173,7 @@ kube-prometheus-stack:
 
 # ─── LOKI ────────────────────────────────────────────────────────────────────
 loki:
+  enabled: true
   deploymentMode: SingleBinary
 
   loki:
@@ -237,6 +246,7 @@ loki:
 
 # ─── TEMPO ───────────────────────────────────────────────────────────────────
 tempo:
+  enabled: true
   tempo:
     reportingEnabled: false
     metricsGenerator:
@@ -261,6 +271,7 @@ tempo:
 # Alloy replaces Promtail. Runs as a DaemonSet to collect pod logs from all
 # nodes and forward to Loki. Also receives OTLP traces and Faro RUM data.
 alloy:
+  enabled: true
   alloy:
     configMap:
       create: true
@@ -408,6 +419,7 @@ alloy:
 
 # ─── PYROSCOPE ───────────────────────────────────────────────────────────────
 pyroscope:
+  enabled: true
   pyroscope:
     replication_factor: 1
 

@@ -8,52 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.10] - 2026-05-30
 
 ### Added
-- **helm**: Fix EmptyDir.
-- **helm**: Fix EmptyDir.
-- **helm**: Fix EmptyDir.
-- **helm**: E150 and E151 done.
-- **helm**: E150 and E151 done.
-- **helm**: Create project at AH.
-- **helm**: E149 Artifact Hub Integration.
-- **helm**: - Matrix farm / farm-observability com fail-fast: false  - Idempotente — verifica se a version: já existe no GHCR antes de publicar  - Cosign keyless assinando o digest OCI do chart  - Todas as actions SHA-pinadas, Helm com SHA256 verificado.
-- **helm**: - helm lint --strict farm + observability: 0 falhas  - kubeconform: 38 resources válidos, 0 erros  - checkout@v5 sem SHA no ci.yml: 0 ocorrências  - Job helm: consolidado via workflow_call.
+- **helm**: Helm chart publishing to GHCR with OCI distribution and cosign keyless signing.
+- **helm**: Artifact Hub integration for chart discovery and documentation.
+- **helm**: Helm test hooks with health checks for API, web, database, and Redis connectivity.
 
 ### Fixed
-- **helm**: Fix helm chart bugs.
-- **coverage**: Fix code coverage.
-- **helm**: Seeds and bugs.
-- **helm**: Chart Versions.
-- disable migration and set imageRegistry in ci/kind-values.yaml.
-- correct Helm test hook labels and delete policy.
-- **helm**: address PR #193 review comments and helm-lint CI failure.
-- **helm**: SHA.
+- **helm**: Test hook containers now use explicit numeric UIDs to satisfy runAsNonRoot constraint (curl_user=100, postgres=70, redis=999).
+- **helm**: Test hook endpoint changed from `/` to `/api/health` for web service health check consistency with deployment probes.
+- **helm**: Test hook delete policy includes before-hook-creation to prevent stale job conflicts on retries.
+- **helm**: migration.waitForDb.image digest pinned (busybox:1.36@sha256:73aaf...) to enforce immutable tag policy.
+- **coverage**: Fix code coverage gaps in seed-runner.ts and middleware.ts with additional unit tests.
+- **helm**: Seed Job implemented as post-install hook with NODE_ENV override and SEED_FORCE bypass for production compatibility.
+- **helm**: ci/kind-values.yaml configured with migration.enabled=false and seed.enabled=true for KinD CI deployments.
+- **helm**: Chart version bumped to 0.3.10 to reflect security and test hook improvements.
 
 ## [0.25.9] - 2026-05-28
 
 ### Fixed
 - **helm**: fix networkpolicy API selector, imagePullSecrets compat, and cors_allowed_origins default.
-- **helm**: Several improvements.
-- **helm**: Several improvements.
-- **helm**: Several improvements.
+- **helm**: Chart values and deployment configuration improvements from PR review feedback.
 
 ## [0.25.8] - 2026-05-28
 
 ### Added
-- **helm**: Helm Hardening.
+- **helm**: Helm Chart Hardening with migration job and database connectivity management.
 
 ### Fixed
 - **helm**: add missing newline at end of values.yaml.
 - **helm**: bump farm chart version to 0.2.0 to satisfy ct lint version check.
 - **helm**: remove trailing blank line in values.yaml.
-- **helm**: Fix version.
-- **helm**: Migration job.
-- **helm**: Migration job.
-- **helm**: Migration job.
-- **helm**: Migration job.
-- **helm**: Fix SHAs and actions.
-- **helm**: address all code review comments from PR #191.
-- **helm**: Several Fixes.
-- **helm**: address review comments on ingress, configmap, migration-job, and release config.
+- **helm**: Migration Job implementation with pre-install hook and activeDeadlineSeconds timeout handling.
+- **helm**: fix SHAs and action pins for supply-chain security compliance.
+- **helm**: address all code review comments from PR #191 (ingress, configmap, migration-job, release config).
 
 ## [0.25.7] - 2026-05-25
 
@@ -75,7 +61,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Potential fix for pull request finding.
 - **roadmap**: mark Phase 49 DONE, update FARM-E128 stories.
 - **deps**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2, upgrade vite to 8.
-- **deps**: bump @bull-board/* from 6.21.3 to 7.1.5.
 - **deps-dev**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2.
 - **deps**: bump codecov/codecov-action from 5.5.3 to 6.0.1.
 - **deps**: bump the non-critical-updates group across 1 directory with 36 updates.
@@ -86,8 +71,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - resolve dual-vite conflict and web Docker Stage 2 build failure.
 - **docker**: copy workspace node_modules in web Stage 2 build.
-- **docker**: copy workspace node_modules in Stage 2 build.
-- **docker**: add workspace manifests to Stage 2 build context.
 - **docker**: copy workspace node_modules in Stage 2 build.
 - **docker**: add workspace manifests to Stage 2 build context.
 - **rbac**: address PR review feedback - dedupe role fetch, fix migration column names, remove RolesGuard from catalog, fix ROADMAP duplicate.
@@ -127,7 +110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - merge main into storybook/nextjs bump branch, resolve conflicts.
 - **ci**: align setup-monorepo action to Node 26 to match Dockerfiles.
 - **deps**: bump node from 25-alpine to 26-alpine in Dockerfiles.
-- **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
 - **deps**: bump the non-critical-updates group across 1 directory with 16 updates.
 - Chore/dependabot bumps (#154).
 - **deps-dev**: bump @storybook/nextjs from 9.1.20 to 10.3.6.
@@ -209,7 +191,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **docs**: address PR review feedback on ES index docs.
-- **docs**: Update project docs.
 - **deps**: update mkdocs-material requirement in /docs.
 
 ## [0.24.3] - 2026-04-30
@@ -233,7 +214,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Feat/phase 36 user roles (#120).
 - **deps-dev**: bump @types/supertest from 6.0.3 to 7.2.0 (#106).
-- **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
 - **deps-dev**: bump @types/node from 20.19.39 to 25.6.0.
 - **deps-dev**: bump jest-junit from 16.0.0 to 17.0.0.
 
@@ -255,7 +235,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **cves**: scope brace-expansion override to v1 consumers only.
-- **cves**: Lot of the CVEs.
 - **cves**: Lot of the CVEs.
 
 ## [0.22.0] - 2026-04-23
@@ -427,7 +406,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **sast**: Vulnerabilites.
-- **webci**: E2E pipeline.
 - **e2e**: use getAttribute() to avoid WebKit prefetch race before page.goto().
 - **e2e**: use page.goto() for WebKit-reliable catalog detail navigation.
 - **e2e**: fix WebKit Playwright failures in catalog and organizations tests.
@@ -437,11 +415,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.4] - 2026-04-06
 
 ### Changed
-- Update apps/web/Dockerfile.
-- Update apps/api/Dockerfile.
 
 ### Fixed
-- **sast**: Vulnerabilites.
 - **trivy**: use include-only matrix to ensure dockerfile is always defined.
 - **trivy**: Improvements.
 
@@ -539,7 +514,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.4] - 2026-03-24
 
 ### Changed
-- patch(eslint) - Improvements.
 - chore(ci.yaml) - Comparison.
 - **web**: add comprehensive api-client test coverage (S176).
 - **api**: improve branch coverage for critical modules (S173).
@@ -582,7 +556,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **web**: add branded Farm design system and visual redesign (FARM-E43).
 
 ### Changed
-- fix:(ci) - Fix CI test errors.
 - patch:(ui) - Little improvements.
 - fix:(ui) Copillot sugestions.
 - Update background.

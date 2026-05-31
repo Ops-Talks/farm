@@ -8,8 +8,9 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'deploy/helm/farm/**'
-      - 'deploy/helm/observability/**'
+      - 'deploy/helm/**'
+      - '.github/workflows/helm-lint.yml'
+      - '.github/actions/setup-helm-deps/**'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
@@ -18,8 +19,9 @@ on:
       - 'packages/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'deploy/helm/farm/**'
-      - 'deploy/helm/observability/**'
+      - 'deploy/helm/**'
+      - '.github/workflows/helm-lint.yml'
+      - '.github/actions/setup-helm-deps/**'
       - '.github/workflows/ci.yml'
 
 permissions:
@@ -62,7 +64,7 @@ jobs:
         run: npm run build -w apps/api
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/lcov.info
@@ -74,7 +76,7 @@ jobs:
           verbose: true
 
       - name: Upload unit test results to Codecov
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/junit.xml
@@ -84,7 +86,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload E2E test results to Codecov
-        uses: codecov/codecov-action@v6.0.1
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         if: ${{ !cancelled() }}
         with:
           files: ./apps/api/coverage/junit-e2e.xml
@@ -183,7 +185,7 @@ jobs:
           echo "OpenAPI spec downloaded ($(wc -c < openapi-snapshot.json) bytes)"
 
       - name: Upload OpenAPI spec artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: openapi-spec
           path: openapi-snapshot.json
@@ -243,6 +245,8 @@ jobs:
   helm:
     name: Helm chart lint
     uses: ./.github/workflows/helm-lint.yml
+    with:
+      run_ct_install: ${{ github.event_name == 'pull_request' }}
 
   # Roll-up job: single required check for branch protection rules.
   all-checks-passed:

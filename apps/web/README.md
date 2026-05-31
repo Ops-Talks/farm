@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Farm Web
 
-## Getting Started
+Next.js 16 frontend for Farm. Provides the UI for software component catalog,
+documentation, environments, teams, and CI/CD pipeline management.
 
-First, run the development server:
+## Quick Start
+
+Install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3001](http://localhost:3001) with your browser to access
+the web interface. The application automatically connects to the API at
+`http://localhost:3000/api` by default.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Changes to `app/` and `src/` are reflected immediately in the browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Build
 
-## Learn More
+Compile the Next.js application for production:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Testing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run the test suite:
 
-## Deploy on Vercel
+```bash
+npm run test
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Run Playwright integration tests:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run test:e2e
+```
+
+## Environment Variables
+
+The web application is configured via the following environment variables
+(see `.env.local` for development):
+
+- `NEXT_PUBLIC_API_URL` - Public API base URL (browser requests)
+- `API_INTERNAL_URL` - Internal API URL for server-side proxying (e.g.,
+  `http://farm-api:3000` in Kubernetes)
+
+In development, both default to `http://localhost:3000/api` if not set.
+
+## Deployment
+
+The web application is deployed as a Docker container and managed by the Farm
+Helm chart. See [`deploy/helm/farm/README.md`](../../deploy/helm/farm/README.md)
+for Kubernetes deployment instructions.

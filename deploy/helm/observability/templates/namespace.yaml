@@ -1,0 +1,14 @@
+{{- if .Values.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  annotations:
+    # Prevent helm uninstall from deleting this namespace and all its data.
+    # The monitoring namespace contains persistent data (Prometheus TSDB,
+    # Grafana dashboards). Operators must remove it manually when intentional.
+    helm.sh/resource-policy: keep
+  labels:
+    kubernetes.io/metadata.name: {{ .Release.Namespace }}
+    {{- include "farm-observability.labels" . | nindent 4 }}
+{{- end }}

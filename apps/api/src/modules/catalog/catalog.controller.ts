@@ -363,6 +363,7 @@ export class CatalogController {
   @ApiParam({ name: "id", description: "Component UUID" })
   @ApiOkResponse({
     description: "Latest cost estimate",
+    type: CostEstimateResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -407,6 +408,16 @@ export class CatalogController {
   @ApiResponse({
     status: 200,
     description: "List of pipelines with latest run status",
+    schema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          items: { $ref: "#/components/schemas/Pipeline" },
+        },
+        total: { type: "integer", example: 42 },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: "Component not found" })
   async findComponentPipelines(

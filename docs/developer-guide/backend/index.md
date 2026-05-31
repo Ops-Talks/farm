@@ -25,6 +25,8 @@ This section covers the NestJS backend of Farm, including its architecture, modu
 | [WebSockets](websockets.md) | Real-time event streaming via Socket.IO |
 | [Queues](queues.md) | Background job processing with BullMQ and Redis |
 | [Email](email.md) | Transactional email with SMTP and Handlebars templates |
+| [Migrations](index.md#database-migrations-and-seeding) | TypeORM migrations, Kubernetes migration Job, pre-install hooks |
+| [Database Seeding](index.md#database-seeding) | Seed Job architecture, post-install hook, idempotency patterns |
 
 ## Project Structure
 
@@ -72,3 +74,41 @@ make seed
 # Run backend checks
 make check-back
 ```
+
+## Database Migrations and Seeding
+
+Farm uses **TypeORM migrations** for schema management and **Kubernetes Job hooks** for data seeding:
+
+- **Migrations** (`src/migrations/`) run as a Kubernetes Job with `pre-install,pre-upgrade` hook weights (-1), ensuring the database schema is ready before the application starts.
+- **Seeds** (`src/database/seeds/`) populate demo or initial data via a post-install Job hook (weight 1) after deployments succeed. Seeds never run on upgrades because the Seed Job hook is `post-install` only.
+
+Production deployments use:
+
+```yaml
+migration:
+  enabled: true        # Run schema migrations
+seed:
+  enabled: false       # Disable seed data in production
+```
+
+For local development with `values-dev.yaml`:
+
+```yaml
+migration:
+  enabled: true
+seed:
+  enabled: true        # Populate demo data
+```
+
+## Database Seeding
+
+The Seed Job (`deploy/helm/farm/templates/seed-job.yaml`) is a post-install Helm hook that runs the seed-runner application after successful deployment. It populates demo organizations, teams, users, and sample catalog components.
+
+Key patterns:
+
+- **Idempotency**: Seeds use `findOrCreate` patterns to avoid duplicate inserts on retries
+- **Bypass flag**: `SEED_FORCE=true` bypasses the seed-runner environment guard (allows seeding when `NODE_ENV` is not in the allowed list, e.g. in a controlled Kubernetes Job)
+- **Node environment**: Seeds set `NODE_ENV=production` when running in K8s
+- **Exclusivity**: Seeds never run during application startup (seed-runner has `require.main === module` guard)
+
+See `src/database/seeds/seed-runner.ts` for implementation details and test coverage.

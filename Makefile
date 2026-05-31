@@ -111,7 +111,7 @@ check-front: web-lint web-build web-test web-e2e
 knip:
 	npm run knip
 
-check: check-back check-front knip
+check: check-back check-front knip helm-lint
 
 seed:
 	npm run seed -w apps/api
@@ -140,9 +140,11 @@ HELM_NAMESPACE := farm
 HELM_VALUES ?= $(HELM_CHART)/values-dev.yaml
 
 helm-lint:
-	helm dependency update $(HELM_CHART)
-	helm lint $(HELM_CHART) -f $(HELM_VALUES)
-	helm template $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) > /dev/null
+	# ct lint mirrors CI exactly: validates schema, checks version bump, and lints
+	# both charts (farm + farm-observability) against the target branch (main).
+	# Requires: ct (chart-testing) and helm to be installed locally.
+	# Install: https://github.com/helm/chart-testing#installation
+	ct lint --config deploy/helm/ct.yaml
 
 helm-template:
 	helm dependency update $(HELM_CHART)
@@ -173,6 +175,9 @@ OBS_VALUES ?= $(OBS_CHART)/values-dev.yaml
 
 observability-install:
 	helm dependency update $(OBS_CHART)
+	# --create-namespace creates the namespace when it does not exist.
+	# createNamespace defaults to false so the chart does not manage the namespace
+	# as a Helm resource, avoiding conflicts with pre-existing namespaces.
 	helm upgrade --install $(OBS_RELEASE) $(OBS_CHART) -f $(OBS_VALUES) \
 		--namespace $(OBS_NAMESPACE) --create-namespace
 

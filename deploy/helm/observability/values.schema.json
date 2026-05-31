@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Farm Observability Helm Chart Values",
+  "description": "JSON Schema validation for the farm-observability Helm chart values.yaml.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nameOverride": {
+      "description": "Override the chart name used in resource names.",
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "description": "Override the full release name used in resource names.",
+      "type": "string"
+    },
+    "createNamespace": {
+      "description": "When true, creates the release namespace as a Kubernetes Namespace resource. Set to false when using --create-namespace or when the namespace is managed externally.",
+      "type": "boolean",
+      "default": false
+    },
+    "kube-prometheus-stack": {
+      "description": "kube-prometheus-stack subchart configuration. See https://github.com/prometheus-community/helm-charts for all available values.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable or disable the kube-prometheus-stack subchart.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "loki": {
+      "description": "Loki subchart configuration. See https://github.com/grafana/helm-charts for all available values.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable or disable the Loki subchart.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "tempo": {
+      "description": "Tempo subchart configuration. See https://github.com/grafana/helm-charts for all available values.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable or disable the Tempo subchart.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "alloy": {
+      "description": "Grafana Alloy subchart configuration. See https://github.com/grafana/helm-charts for all available values.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable or disable the Alloy subchart.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "pyroscope": {
+      "description": "Pyroscope subchart configuration. See https://github.com/grafana/helm-charts for all available values.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Enable or disable the Pyroscope subchart.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
