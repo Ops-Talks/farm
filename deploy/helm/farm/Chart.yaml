@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.10
+version: 0.3.11
 appVersion: "0.25.10"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,16 +39,8 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "test-api-health, test-web-health: add runAsUser: 100 (curl_user UID) to curl containers; curlimages/curl uses a non-numeric username which conflicts with pod-level runAsNonRoot: true causing CreateContainerConfigError"
-    - kind: fixed
-      description: "test-web-health: change health check endpoint from / to /api/health to match the actual readiness probe used by the web deployment"
-    - kind: fixed
-      description: "test-db-redis: add runAsUser: 70 (postgres UID on alpine) and runAsUser: 999 (redis UID) to check-postgres and check-redis initContainers; non-numeric usernames conflict with pod-level runAsNonRoot: true"
-    - kind: fixed
-      description: "test-db-redis: add app.kubernetes.io/component: test-db-redis label to Job metadata and pod template for consistency with other test hooks"
-    - kind: fixed
-      description: "values.yaml: pin migration.waitForDb.image digest (busybox:1.36@sha256:73aaf...) to satisfy mutable tag prohibition; aligns with api.waitForDb.image policy"
+    - kind: changed
+      description: "README.md: remove duplicate installation examples and consolidate observability parameter sections"
     - kind: added
       description: Add wait-for-db init container to API deployment; prevents CrashLoopBackOff when postgresql.enabled=true and PostgreSQL subchart is slower to initialise than TypeORM retry budget (ct install fix)
     - kind: fixed

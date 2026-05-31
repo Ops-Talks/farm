@@ -351,6 +351,12 @@ COSIGN_EXPERIMENTAL=1 cosign sign \
 
 ## Making Changes
 
+> **Version bump is mandatory for every change to any file under `deploy/helm/farm/` or
+> `deploy/helm/observability/`, including `README.md`, `Chart.yaml` annotations, and
+> `ci/` files.** The CI pipeline runs `ct lint` with `check-version-increment: true`,
+> which compares against the `main` branch. Any diff without a version bump fails the
+> pipeline. Run `make helm-lint` locally before pushing to catch this immediately.
+
 ### Adding a New Template
 
 1. Create the file in `templates/` (e.g., `templates/api/custom-resource.yaml`)
