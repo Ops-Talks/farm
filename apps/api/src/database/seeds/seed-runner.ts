@@ -3,7 +3,9 @@ import { runInitialSeed } from "./initial-seed";
 
 const ALLOWED_ENVIRONMENTS = ["development", "test", undefined];
 
-async function run(): Promise<void> {
+// Exported for unit testing. The require.main guard below prevents
+// auto-execution when this module is imported by Jest or other test runners.
+export async function run(): Promise<void> {
   const nodeEnv = process.env.NODE_ENV;
   const seedForce = process.env.SEED_FORCE === "true";
 
@@ -45,4 +47,8 @@ async function run(): Promise<void> {
   }
 }
 
-void run();
+// Auto-execute only when this file is the Node.js entry point, not when
+// imported by tests or other modules.
+if (require.main === module) {
+  void run();
+}
