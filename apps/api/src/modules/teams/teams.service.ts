@@ -151,7 +151,7 @@ export class TeamsService {
   async addMember(teamId: string, userId: string): Promise<Team> {
     const team = await this.teamRepository.findOne({
       where: { id: teamId },
-      relations: ["members"],
+      relations: { members: true },
     });
     if (!team) {
       throw new NotFoundException(`Team with ID "${teamId}" not found`);
@@ -191,7 +191,7 @@ export class TeamsService {
   async removeMember(teamId: string, userId: string): Promise<Team> {
     const team = await this.teamRepository.findOne({
       where: { id: teamId },
-      relations: ["members"],
+      relations: { members: true },
     });
     if (!team) {
       throw new NotFoundException(`Team with ID "${teamId}" not found`);
@@ -212,7 +212,7 @@ export class TeamsService {
   async getMembers(teamId: string): Promise<User[]> {
     const team = await this.teamRepository.findOne({
       where: { id: teamId },
-      relations: ["members"],
+      relations: { members: true },
     });
     if (!team) {
       throw new NotFoundException(`Team with ID "${teamId}" not found`);

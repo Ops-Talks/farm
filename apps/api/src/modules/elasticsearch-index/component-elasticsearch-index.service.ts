@@ -83,7 +83,7 @@ export class ComponentElasticsearchIndexService {
 
     const records = await this.repository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
       order: { indexPattern: "ASC" },
     });
 

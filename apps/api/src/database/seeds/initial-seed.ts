@@ -289,7 +289,7 @@ export async function seedUsers(
       for (const teamSlug of persona.teamSlugs) {
         const team = await teamRepo.findOne({
           where: { name: teamSlug },
-          relations: ["members"],
+          relations: { members: true },
         });
         if (!team) continue;
         const members = Array.isArray(team.members) ? team.members : [];
@@ -867,7 +867,7 @@ export async function seedServiceTemplates(
           description: "Database backend to use",
           required: false,
           type: "enum" as const,
-          options: ["postgresql", "sqlite", "mysql"],
+          options: ["postgresql", "better-sqlite3", "mysql"],
           default: "postgresql",
         },
       ],

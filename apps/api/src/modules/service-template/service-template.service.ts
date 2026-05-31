@@ -184,10 +184,10 @@ export class ServiceTemplateService {
             key: "DATABASE_TYPE",
             label: "Database Type",
             description:
-              "Database engine to configure (postgres, mysql, sqlite)",
+              "Database engine to configure (postgres, mysql, better-sqlite3)",
             default: "postgres",
             required: false,
-            pattern: "^(postgres|mysql|sqlite)$",
+            pattern: "^(postgres|mysql|better-sqlite3)$",
           },
         ] as TemplateVariable[],
       },

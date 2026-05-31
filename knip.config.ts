@@ -35,6 +35,12 @@ const config: KnipConfig = {
         // coverage-v8 from root node_modules at runtime; there is no root
         // entry file that imports it directly.
         '@vitest/coverage-v8',
+        // eslint is declared at root to force npm to hoist it to root
+        // node_modules. @typescript-eslint/* packages (resolved from root)
+        // require eslint to be available via Node.js module resolution from
+        // the root, but the workspace-level copies are not visible upward.
+        // There is no root entry file that imports eslint directly.
+        'eslint',
       ],
       ignoreBinaries: [
         // tsc is invoked in .github/actions/setup-monorepo/action.yml to

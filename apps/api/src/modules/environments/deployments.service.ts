@@ -121,7 +121,7 @@ export class DeploymentsService {
 
     return await this.deploymentRepository.findAndCount({
       where,
-      relations: ["component", "environment"],
+      relations: { component: true, environment: true },
       order: { createdAt: "DESC" },
       skip,
       take,
@@ -137,7 +137,7 @@ export class DeploymentsService {
   async findOne(id: string): Promise<Deployment> {
     const deployment = await this.deploymentRepository.findOne({
       where: { id },
-      relations: ["component", "environment"],
+      relations: { component: true, environment: true },
     });
     if (!deployment) {
       throw new NotFoundException(`Deployment with ID "${id}" not found`);

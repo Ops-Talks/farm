@@ -68,7 +68,7 @@ export class DashboardService {
 
     return await this.dashboardRepository.findAndCount({
       where,
-      relations: ["widgets"],
+      relations: { widgets: true },
       order: { createdAt: "DESC" },
       skip,
       take,
@@ -89,7 +89,7 @@ export class DashboardService {
     if (orgId) where.organizationId = orgId;
     const dashboard = await this.dashboardRepository.findOne({
       where,
-      relations: ["widgets"],
+      relations: { widgets: true },
     });
     if (!dashboard) {
       throw new NotFoundException(`Dashboard with ID "${id}" not found`);

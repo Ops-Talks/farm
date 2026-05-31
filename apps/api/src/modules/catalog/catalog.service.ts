@@ -350,7 +350,7 @@ export class CatalogService {
           ...(organizationId ? { organizationId } : {}),
           ...(teamId ? { teamId } : {}),
         })),
-        relations: ["dependencies"],
+        relations: { dependencies: true },
         skip,
         take,
       });
@@ -361,7 +361,7 @@ export class CatalogService {
         ...(organizationId ? { organizationId } : {}),
         ...(teamId ? { teamId } : {}),
       },
-      relations: ["dependencies"],
+      relations: { dependencies: true },
       skip,
       take,
     });
@@ -379,7 +379,7 @@ export class CatalogService {
     if (organizationId) where.organizationId = organizationId;
     const component = await this.componentRepository.findOne({
       where,
-      relations: ["dependencies"],
+      relations: { dependencies: true },
     });
     if (!component) {
       throw new NotFoundException(`Component with ID "${id}" not found`);
@@ -509,7 +509,7 @@ export class CatalogService {
 
     return (await this.componentRepository.findOne({
       where: { id },
-      relations: ["dependencies"],
+      relations: { dependencies: true },
     })) as Component;
   }
 

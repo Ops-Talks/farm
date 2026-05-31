@@ -86,7 +86,7 @@ export class FluxBindingService {
 
     return this.bindingRepository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 
@@ -109,7 +109,7 @@ export class FluxBindingService {
 
     return this.bindingRepository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 

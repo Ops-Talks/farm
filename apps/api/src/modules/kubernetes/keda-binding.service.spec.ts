@@ -135,7 +135,7 @@ describe("KedaBindingService", () => {
           scaledObjectName: "my-app-scaler",
           scaledObjectNamespace: "production",
         },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -155,7 +155,7 @@ describe("KedaBindingService", () => {
           scaledObjectNamespace: "production",
           organizationId: "org-uuid-1",
         },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -173,7 +173,7 @@ describe("KedaBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { componentId: "comp-uuid-1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -185,7 +185,7 @@ describe("KedaBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { componentId: "comp-uuid-1", organizationId: "org-uuid-1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });

@@ -226,7 +226,7 @@ export class ApiSpecsService {
   async findConsumedApis(componentId: string): Promise<ApiSpec[]> {
     const consumers = await this.apiConsumerRepo.find({
       where: { consumerComponentId: componentId },
-      relations: ["apiSpec"],
+      relations: { apiSpec: true },
     });
 
     const seen = new Set<string>();

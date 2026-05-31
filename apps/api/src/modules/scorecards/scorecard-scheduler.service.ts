@@ -45,7 +45,7 @@ export class ScorecardSchedulerService {
     while (true) {
       const where = lastId ? { id: MoreThan(lastId) } : {};
       const batch = await this.componentRepo.find({
-        select: ["id", "organizationId"],
+        select: { id: true, organizationId: true },
         where,
         take: batchSize,
         order: { id: "ASC" },

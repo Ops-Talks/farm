@@ -301,7 +301,11 @@ describe("IncidentService", () => {
       expect(result).toEqual(mockIncident);
       expect(mockIncidentRepo.findOne).toHaveBeenCalledWith({
         where: { id: "incident-uuid-1" },
-        relations: ["affectedComponents", "affectedEnvironments", "updates"],
+        relations: {
+          affectedComponents: true,
+          affectedEnvironments: true,
+          updates: true,
+        },
       });
     });
 

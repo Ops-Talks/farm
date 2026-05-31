@@ -157,7 +157,7 @@ export class CostController {
     // Resolve component IDs via the teamId FK on Component.
     const components = await this.componentRepo.find({
       where: { teamId: id },
-      select: ["id"],
+      select: { id: true },
     });
     const componentIds = components.map((c) => c.id);
 

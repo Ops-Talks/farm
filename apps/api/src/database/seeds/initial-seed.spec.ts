@@ -359,7 +359,7 @@ describe("seedServiceTemplates", () => {
         expect.objectContaining({
           key: "databaseType",
           type: "enum",
-          options: ["postgresql", "sqlite", "mysql"],
+          options: ["postgresql", "better-sqlite3", "mysql"],
         }),
       ]),
     );

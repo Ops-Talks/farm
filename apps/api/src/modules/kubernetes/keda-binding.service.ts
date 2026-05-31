@@ -80,7 +80,7 @@ export class KedaBindingService {
 
     return this.bindingRepository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 
@@ -103,7 +103,7 @@ export class KedaBindingService {
 
     return this.bindingRepository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 
