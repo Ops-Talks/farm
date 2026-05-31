@@ -7,6 +7,11 @@
 # Upgrade:   make observability-upgrade
 # Uninstall: make observability-uninstall
 
+# ─── NAMESPACE ───────────────────────────────────────────────────────────────
+# When true, the chart creates the release namespace as a Namespace resource.
+# Set to false if the namespace is managed externally (GitOps, cluster admin).
+createNamespace: true
+
 # ─── KUBE-PROMETHEUS-STACK ───────────────────────────────────────────────────
 kube-prometheus-stack:
   # -- Grafana
