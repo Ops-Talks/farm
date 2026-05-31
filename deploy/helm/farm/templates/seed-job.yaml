@@ -1,0 +1,129 @@
+{{- if .Values.seed.enabled }}
+# ── Hook weight -10: ConfigMap with the minimal DB connection vars ─────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "farm.fullname" . }}-seed-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  NODE_ENV: {{ .Values.api.env.NODE_ENV | quote }}
+  SEED_FORCE: "true"
+  DATABASE_TYPE: "postgres"
+  DATABASE_HOST: {{ include "farm.databaseHost" . | quote }}
+  DATABASE_PORT: {{ include "farm.databasePort" . | quote }}
+  DATABASE_USER: {{ include "farm.databaseUser" . | quote }}
+  DATABASE_NAME: {{ include "farm.databaseName" . | quote }}
+  DATABASE_SYNC: "false"
+---
+# ── Hook weight -8: Secret with the DB password ───────────────────────────────
+{{- if and (not .Values.api.existingSecret) (not .Values.externalDatabase.existingSecret) }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "farm.fullname" . }}-seed-secret
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-8"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+type: Opaque
+stringData:
+  {{- if .Values.postgresql.enabled }}
+  DATABASE_PASSWORD: {{ .Values.postgresql.auth.password | default "" | quote }}
+  {{- else if .Values.externalDatabase.password }}
+  DATABASE_PASSWORD: {{ .Values.externalDatabase.password | quote }}
+  {{- else }}
+  DATABASE_PASSWORD: ""
+  {{- end }}
+---
+{{- end }}
+# ── Hook weight -5: ServiceAccount ────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "farm.fullname" . }}-seed
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+automountServiceAccountToken: false
+---
+# ── Hook weight 1: Job ────────────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "farm.fullname" . }}-seed
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: seed
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.seed.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.seed.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: seed
+      {{- with .Values.seed.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: {{ .Values.seed.restartPolicy }}
+      serviceAccountName: {{ include "farm.fullname" . }}-seed
+      securityContext:
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: seed
+          image: {{ include "farm.api.image" . }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.seed.resources | nindent 12 }}
+          command: ["node", "dist/database/seeds/seed-runner.js"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          envFrom:
+            - configMapRef:
+                name: {{ include "farm.fullname" . }}-seed-config
+            {{- if .Values.api.existingSecret }}
+            - secretRef:
+                name: {{ .Values.api.existingSecret }}
+            {{- else if .Values.externalDatabase.existingSecret }}
+            - secretRef:
+                name: {{ .Values.externalDatabase.existingSecret }}
+            {{- else }}
+            - secretRef:
+                name: {{ include "farm.fullname" . }}-seed-secret
+            {{- end }}
+          {{- $externalSecretEnv := include "farm.api.externalSecretEnv" . | trim }}
+          {{- if $externalSecretEnv }}
+          env:
+            {{- $externalSecretEnv | nindent 12 }}
+          {{- end }}
+{{- end }}

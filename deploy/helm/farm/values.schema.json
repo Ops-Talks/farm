@@ -453,6 +453,28 @@
         }
       }
     },
+    "seed": {
+      "description": "Post-install seed Job configuration. Populates demo data after a fresh install.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "restartPolicy": {
+          "type": "string",
+          "enum": ["Never", "OnFailure"]
+        },
+        "backoffLimit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activeDeadlineSeconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "resources": { "type": "object" },
+        "podAnnotations": { "type": "object" }
+      }
+    },
     "externalDatabase": {
       "description": "External PostgreSQL connection details (used when postgresql.enabled is false).",
       "type": "object",

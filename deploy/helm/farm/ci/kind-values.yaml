@@ -15,6 +15,7 @@ api:
     pullPolicy: Never
   secrets:
     JWT_SECRET: "ci-test-secret-32-chars-minimum-x"
+    SWAGGER_PASSWORD: "farm"
   # wait-for-db is auto-enabled by the deployment template when postgresql.enabled
   # is true (see deployment.yaml logic). We set it explicitly here so the intent
   # is clear: NestJS must not start until PostgreSQL accepts TCP connections.
@@ -44,6 +45,9 @@ web:
 # on every fresh ct install. Schema correctness is validated in the API CI test suite.
 migration:
   enabled: false
+
+seed:
+  enabled: true
 
 postgresql:
   enabled: true

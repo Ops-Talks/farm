@@ -198,6 +198,7 @@ api:
     DATABASE_SYNC: "false"
     CACHE_TTL: "30"
     ALLOWED_ORIGINS: ""
+    SWAGGER_USER: "farm"
     PLUGINS_DIR: ./plugins
     REDIS_SENTINEL_HOSTS: ""
     REDIS_SENTINEL_NAME: "mymaster"
@@ -497,6 +498,33 @@ migration:
   # -- Pre-upgrade DB reachability check Job (runs at hook weight -20, before migration).
   preUpgradeCheck:
     enabled: true
+
+# ─── SEED ────────────────────────────────────────────────────────────────────
+# Runs the initial seed after a successful install (post-install hook).
+# Disabled by default: seed data is for development/staging only.
+# Enable with seed.enabled=true in overlay values (e.g. values-dev.yaml).
+# The seed is idempotent — safe to re-run; existing records are skipped.
+
+seed:
+  # -- Enable the post-install seed Job.
+  # Never enable in production (real data would be mixed with demo records).
+  enabled: false
+  # -- Restart policy for the seed Job pod.
+  restartPolicy: OnFailure
+  # -- Backoff limit before the Job is considered failed.
+  backoffLimit: 3
+  # -- Maximum duration in seconds before the Job is terminated.
+  activeDeadlineSeconds: 300
+  # -- Resources for the seed Job pod.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # -- Additional annotations on the seed Job pod template.
+  podAnnotations: {}
 
 # ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
 # Used when postgresql.enabled is false (production default).
