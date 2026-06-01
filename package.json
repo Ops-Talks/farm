@@ -66,9 +66,6 @@
     "vitest": "4.1.7",
     "ws": "^8.20.1",
     "qs": "6.15.2",
-    "typeorm": "1.0.0",
-    "@nestjs/typeorm": {
-      "typeorm": "1.0.0"
-    }
+    "typeorm": "1.0.0"
   }
 }
