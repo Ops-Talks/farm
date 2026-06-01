@@ -47,7 +47,9 @@ annotations:
       image: grafana/pyroscope:1.13.4
   artifacthub.io/changes: |
     - kind: changed
-      description: "chart version field now mirrors appVersion — both are set to the application semver on every release, eliminating ArtifactHub publish skips caused by unchanged chart version"
+      description: "v0.25.13: chart version now mirrors appVersion so each application release publishes a fresh observability chart artifact"
+    - kind: changed
+      description: "v0.25.13: chart publication now follows the tagged release flow used for Farm application releases"
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics

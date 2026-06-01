@@ -40,7 +40,9 @@ annotations:
         - linux/arm64
   artifacthub.io/changes: |
     - kind: changed
-      description: "chart version field now mirrors appVersion — both are set to the application semver on every release, eliminating ArtifactHub publish skips caused by unchanged chart version"
+      description: "v0.25.13: chart version now mirrors appVersion so each application release publishes a fresh Farm chart artifact"
+    - kind: changed
+      description: "v0.25.13: release automation now updates the embedded farm-api and farm-web image tags in Chart.yaml during the version bump"
 
 dependencies:
   - name: postgresql
