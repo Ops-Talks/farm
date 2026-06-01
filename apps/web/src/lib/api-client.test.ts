@@ -1311,7 +1311,7 @@ describe("api-client", () => {
     });
 
     it("create sends POST to /v1/users and returns the new user", async () => {
-      const newUser = { id: "u-99", username: "newbie", email: "newbie@test.com", displayName: "Newbie", roles: ["user"], isSuspended: false };
+      const newUser = { id: "u-99", username: "newbie", email: "newbie@test.com", displayName: "Newbie", roles: ["user"], suspended: false };
       mockFetch.mockReturnValueOnce(jsonResponse(newUser));
       const result = await userManagement.create({
         username: "newbie",
@@ -1329,7 +1329,7 @@ describe("api-client", () => {
     });
 
     it("create returns tempPassword when server provides it", async () => {
-      const payload = { id: "u-100", username: "tmp", email: "tmp@test.com", displayName: "Tmp", roles: ["user"], isSuspended: false, tempPassword: "R@nd0m!" };
+      const payload = { id: "u-100", username: "tmp", email: "tmp@test.com", displayName: "Tmp", roles: ["user"], suspended: false, tempPassword: "R@nd0m!" };
       mockFetch.mockReturnValueOnce(jsonResponse(payload));
       const result = await userManagement.create({ username: "tmp", email: "tmp@test.com", displayName: "Tmp" });
       expect(result.tempPassword).toBe("R@nd0m!");

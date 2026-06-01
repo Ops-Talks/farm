@@ -708,7 +708,19 @@ describe("UserManagementService", () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it("(9) SMTP unavailable → tempPassword present in response", async () => {
+    it("(9) DB unique constraint race on save → 409 ConflictException", async () => {
+      users.save.mockRejectedValueOnce({
+        code: "23505",
+        message:
+          'duplicate key value violates unique constraint "UQ_user_email"',
+      });
+
+      await expect(
+        service.createUser(platformAdmin, newUserDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("(10) SMTP unavailable → tempPassword present in response", async () => {
       // Default ConfigService mock returns '' for smtp.host
       const result = await service.createUser(platformAdmin, newUserDto);
       expect(result.tempPassword).toBeDefined();
@@ -716,7 +728,7 @@ describe("UserManagementService", () => {
       expect(result.tempPassword!.length).toBeGreaterThan(0);
     });
 
-    it("(10) SMTP available + queue → tempPassword absent, notification enqueued", async () => {
+    it("(11) SMTP available + queue → tempPassword absent, notification enqueued", async () => {
       const mod2 = await Test.createTestingModule({
         providers: [
           UserManagementService,
@@ -753,7 +765,7 @@ describe("UserManagementService", () => {
       );
     });
 
-    it("(11) audit log USER_CREATED emitted", async () => {
+    it("(12) audit log USER_CREATED emitted", async () => {
       const auditSpy = jest.fn().mockResolvedValue(undefined);
       const mod2 = await Test.createTestingModule({
         providers: [

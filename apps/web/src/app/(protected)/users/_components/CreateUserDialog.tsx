@@ -36,7 +36,10 @@ interface CreateUserDialogProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
+export function CreateUserDialog({
+  open,
+  onOpenChange,
+}: CreateUserDialogProps) {
   const { hasRole } = useAuth();
   const { organizations: myOrgs } = useOrganization();
   const queryClient = useQueryClient();
@@ -48,7 +51,9 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [orgId, setOrgId] = useState("");
-  const [orgRole, setOrgRole] = useState<OrgRole>(OrgRole.MEMBER);
+  const [orgRole, setOrgRole] = useState<OrgRole>(OrgRole.VIEWER);
+  const effectiveOrgId =
+    !isPlatformAdmin && myOrgs.length > 0 && !orgId ? myOrgs[0].id : orgId;
   const [platformAdmin, setPlatformAdmin] = useState(false);
 
   // Result state (after successful creation)
@@ -62,7 +67,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
         email: email.trim(),
         displayName: displayName.trim(),
         ...(password ? { password } : {}),
-        ...(orgId ? { orgId, orgRole } : {}),
+        ...(effectiveOrgId ? { orgId: effectiveOrgId, orgRole } : {}),
         ...(isPlatformAdmin && platformAdmin ? { platformAdmin: true } : {}),
       };
       return userManagement.create(dto);
@@ -77,7 +82,9 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
       }
     },
     onError: (err: unknown) => {
-      setError(err instanceof ApiError ? err.message : "Failed to create user.");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to create user.",
+      );
     },
   });
 
@@ -87,7 +94,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
     setDisplayName("");
     setPassword("");
     setOrgId("");
-    setOrgRole(OrgRole.MEMBER);
+    setOrgRole(OrgRole.VIEWER);
     setPlatformAdmin(false);
     setTempPassword(null);
     setError(null);
@@ -99,7 +106,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : handleClose())}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => (v ? onOpenChange(v) : handleClose())}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create new user</DialogTitle>
@@ -132,6 +142,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               <Button
                 size="sm"
                 variant="outline"
+                aria-label="Copy temporary password"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(tempPassword);
@@ -153,7 +164,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="cu-username">
-                Username <span aria-hidden="true" className="text-destructive">*</span>
+                Username{" "}
+                <span aria-hidden="true" className="text-destructive">
+                  *
+                </span>
               </label>
               <Input
                 id="cu-username"
@@ -165,7 +179,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="cu-email">
-                Email <span aria-hidden="true" className="text-destructive">*</span>
+                Email{" "}
+                <span aria-hidden="true" className="text-destructive">
+                  *
+                </span>
               </label>
               <Input
                 id="cu-email"
@@ -178,7 +195,10 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="cu-display">
-                Display name <span aria-hidden="true" className="text-destructive">*</span>
+                Display name{" "}
+                <span aria-hidden="true" className="text-destructive">
+                  *
+                </span>
               </label>
               <Input
                 id="cu-display"
@@ -191,7 +211,9 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             <div className="space-y-1">
               <label className="text-sm font-medium" htmlFor="cu-password">
                 Password{" "}
-                <span className="text-muted-foreground font-normal">(optional — auto-generated if blank)</span>
+                <span className="text-muted-foreground font-normal">
+                  (optional — auto-generated if blank)
+                </span>
               </label>
               <Input
                 id="cu-password"
@@ -206,15 +228,19 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="cu-org">
                   Enroll in organization{" "}
-                  <span className="text-muted-foreground font-normal">(optional)</span>
+                  {isPlatformAdmin && (
+                    <span className="text-muted-foreground font-normal">
+                      (optional)
+                    </span>
+                  )}
                 </label>
                 <select
                   id="cu-org"
-                  value={orgId}
+                  value={effectiveOrgId}
                   onChange={(e) => setOrgId(e.target.value)}
                   className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                 >
-                  <option value="">None</option>
+                  {isPlatformAdmin && <option value="">None</option>}
                   {myOrgs.map((o) => (
                     <option key={o.id} value={o.id}>
                       {o.name}
@@ -224,7 +250,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               </div>
             )}
 
-            {orgId && (
+            {effectiveOrgId && (
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="cu-orgrole">
                   Organization role

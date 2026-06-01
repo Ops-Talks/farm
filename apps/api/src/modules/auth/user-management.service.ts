@@ -461,7 +461,14 @@ export class UserManagementService {
       password: hashedPassword,
       roles: dto.platformAdmin ? ["user", "admin"] : ["user"],
     });
-    await this.userRepository.save(user);
+    try {
+      await this.userRepository.save(user);
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException("Username or email already taken");
+      }
+      throw error;
+    }
 
     // 6. Org enrollment
     if (dto.orgId) {
@@ -532,6 +539,7 @@ export class UserManagementService {
     if (actor.userId === targetUserId) {
       throw new BadRequestException("You cannot delete your own account");
     }
+
     const user = await this.userRepository.findOne({
       where: { id: targetUserId },
     });
@@ -591,6 +599,31 @@ export class UserManagementService {
         payload: { orgId: orgId ?? null },
       })
       .catch(() => undefined);
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    if (!error || typeof error !== "object") {
+      return false;
+    }
+
+    const dbError = error as { code?: string; message?: string };
+    const code = dbError.code?.toUpperCase();
+    const message = dbError.message?.toLowerCase() ?? "";
+
+    if (code) {
+      return (
+        code === "23505" ||
+        code === "ER_DUP_ENTRY" ||
+        code === "SQLITE_CONSTRAINT" ||
+        code === "SQLITE_CONSTRAINT_UNIQUE"
+      );
+    }
+
+    return (
+      message.includes("unique constraint failed") ||
+      message.includes("duplicate key value") ||
+      message.includes("duplicate entry")
+    );
   }
 
   // ---------------------------------------------------------------------------
