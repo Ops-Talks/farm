@@ -17,6 +17,7 @@ import {
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -32,6 +33,7 @@ import {
 } from "./user-management.service";
 import { UpdateUserRoleDto } from "./dto/update-user-role.dto";
 import { SuspendUserDto } from "./dto/suspend-user.dto";
+import { AdminCreateUserDto } from "./dto/admin-create-user.dto";
 import { AuditLogService } from "../audit-log/audit-log.service";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
@@ -76,6 +78,26 @@ export class UserManagementController {
       page: page ? parseInt(page, 10) : undefined,
       pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
     });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: "Create a new user (admin)" })
+  @ApiBody({ type: AdminCreateUserDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "User created successfully.",
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: "Username or email already taken.",
+    type: ErrorResponseDto,
+  })
+  async create(
+    @Body() dto: AdminCreateUserDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<ManagedUserView & { tempPassword?: string }> {
+    return this.userMgmt.createUser(req.user, dto);
   }
 
   @Get(":id")

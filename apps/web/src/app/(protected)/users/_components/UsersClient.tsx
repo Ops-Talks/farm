@@ -26,6 +26,7 @@ import {
   Users as UsersIcon,
   Eye,
   Copy,
+  UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ import { ApiError, userManagement } from "@/lib/api-client";
 import { useAuth } from "@/contexts/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { OrgRole, type ManagedUser } from "@/types/api";
+import { CreateUserDialog } from "./CreateUserDialog";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -530,8 +532,12 @@ function DeleteUserDialog({
 
 export function UsersClient() {
   const { user: currentUser, hasRole } = useAuth();
-  const { organizations: myOrgs } = useOrganization();
+  const { organizations: myOrgs, orgRole } = useOrganization();
   const isPlatformAdmin = hasRole("admin");
+  const canCreateUser =
+    isPlatformAdmin ||
+    orgRole === OrgRole.ADMIN ||
+    orgRole === OrgRole.OWNER;
 
   // Org admin scope — orgs where the current user is ADMIN or OWNER.
   // We don't have role info from /v1/organizations, so we expose all orgs the
@@ -550,6 +556,7 @@ export function UsersClient() {
   const pageSize = 20;
 
   // Detail / action modal state
+  const [createOpen, setCreateOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<ManagedUser | null>(null);
   const [roleUser, setRoleUser] = useState<ManagedUser | null>(null);
   const [resetUser, setResetUser] = useState<ManagedUser | null>(null);
@@ -620,6 +627,16 @@ export function UsersClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {canCreateUser && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCreateOpen(true)}
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              New User
+            </Button>
+          )}
           <label htmlFor="scope" className="text-sm text-muted-foreground">
             Scope:
           </label>
@@ -903,6 +920,7 @@ export function UsersClient() {
         onOpenChange={(v) => !v && setRoleUser(null)}
         onSuccess={refresh}
       />
+      <CreateUserDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ResetPasswordDialog
         user={resetUser}
         open={!!resetUser}

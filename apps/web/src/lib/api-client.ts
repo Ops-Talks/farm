@@ -908,6 +908,7 @@ import type {
   InvitationPreview as P37InvitationPreview,
   UserListResponse as P37UserListResponse,
   ManagedUser as P37ManagedUser,
+  AdminCreateUserInput as P37AdminCreateUserInput,
 } from "@/types/api";
 import { OrgRole as P37OrgRole } from "@/types/api";
 
@@ -1061,6 +1062,15 @@ export const userManagement = {
     return request<RawAuditLog[]>(
       `/v1/users/${encodeURIComponent(id)}/audit-trail`,
     );
+  },
+
+  create(
+    dto: P37AdminCreateUserInput,
+  ): Promise<P37ManagedUser & { tempPassword?: string }> {
+    return request<P37ManagedUser & { tempPassword?: string }>("/v1/users", {
+      method: "POST",
+      body: JSON.stringify(dto),
+    });
   },
 };
 

@@ -34,6 +34,20 @@ export type {
   UserListResponse,
 } from "@farm/types";
 
+/**
+ * Payload for admin-initiated user creation (Phase 56).
+ * Mirrors AdminCreateUserDto on the API side.
+ */
+export interface AdminCreateUserInput {
+  username: string;
+  email: string;
+  displayName: string;
+  password?: string;
+  orgId?: string;
+  orgRole?: OrgRole;
+  platformAdmin?: boolean;
+}
+
 // -- Entities --
 
 interface ComponentLink {
