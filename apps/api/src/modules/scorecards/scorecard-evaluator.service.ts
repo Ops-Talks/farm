@@ -404,7 +404,7 @@ export class ScorecardEvaluatorService {
     try {
       const apiSpecs = await this.apiSpecRepository.find({
         where: { componentId: component.id },
-        select: ["id"],
+        select: { id: true },
       });
 
       if (apiSpecs.length === 0) {
@@ -442,7 +442,7 @@ export class ScorecardEvaluatorService {
     const latest = await this.containerVulnerabilityRepository.findOne({
       where: { componentId },
       order: { scannedAt: "DESC" },
-      select: ["tag"],
+      select: { tag: true },
     });
     return latest?.tag ?? null;
   }
@@ -575,7 +575,12 @@ export class ScorecardEvaluatorService {
         await this.opaResultRepository.find({
           where: { componentId: component.id },
           order: { evaluatedAt: "DESC" },
-          select: ["id", "policyPath", "allowed", "evaluatedAt"],
+          select: {
+            id: true,
+            policyPath: true,
+            allowed: true,
+            evaluatedAt: true,
+          },
         });
 
       const latestOpaByPath = new Map<string, OpaResultRecord>();

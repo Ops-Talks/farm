@@ -54,7 +54,7 @@ describe("ComponentElasticsearchIndexService.findAllGroupedByComponent", () => {
     expect(result).toEqual([]);
     expect(repo.find).toHaveBeenCalledWith({
       where: undefined,
-      relations: ["component"],
+      relations: { component: true },
       order: { indexPattern: "ASC" },
     });
   });
@@ -111,7 +111,7 @@ describe("ComponentElasticsearchIndexService.findAllGroupedByComponent", () => {
     await service.findAllGroupedByComponent("org-42");
     expect(repo.find).toHaveBeenCalledWith({
       where: { organizationId: "org-42" },
-      relations: ["component"],
+      relations: { component: true },
       order: { indexPattern: "ASC" },
     });
   });
@@ -121,7 +121,7 @@ describe("ComponentElasticsearchIndexService.findAllGroupedByComponent", () => {
     await service.findAllGroupedByComponent(null);
     expect(repo.find).toHaveBeenCalledWith({
       where: undefined,
-      relations: ["component"],
+      relations: { component: true },
       order: { indexPattern: "ASC" },
     });
   });

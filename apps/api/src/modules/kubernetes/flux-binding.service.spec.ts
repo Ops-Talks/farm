@@ -144,7 +144,7 @@ describe("FluxBindingService", () => {
           resourceNamespace: "flux-system",
           organizationId: "org-uuid-1",
         },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -164,7 +164,7 @@ describe("FluxBindingService", () => {
           resourceName: "nginx",
           resourceNamespace: "ingress",
         },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -182,7 +182,7 @@ describe("FluxBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { componentId: "comp-uuid-1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -194,7 +194,7 @@ describe("FluxBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { componentId: "comp-uuid-1", organizationId: "org-uuid-1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });

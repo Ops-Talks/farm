@@ -75,7 +75,7 @@ export class OperatorBindingService {
 
     return this.bindingRepository.find({
       where,
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 
@@ -88,7 +88,7 @@ export class OperatorBindingService {
   async findByComponent(componentId: string): Promise<OperatorBinding[]> {
     return this.bindingRepository.find({
       where: { componentId },
-      relations: ["component"],
+      relations: { component: true },
     });
   }
 

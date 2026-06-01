@@ -376,7 +376,7 @@ describe("ApiSpecsService", () => {
 
       expect(mockApiConsumerRepo.find).toHaveBeenCalledWith({
         where: { consumerComponentId: "comp-uuid-2" },
-        relations: ["apiSpec"],
+        relations: { apiSpec: true },
       });
       expect(result).toEqual([mockApiSpec]);
     });

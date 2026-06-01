@@ -73,7 +73,7 @@ export class PostMortemService {
   async findOne(id: string): Promise<PostMortem> {
     const postMortem = await this.postMortemRepository.findOne({
       where: { id },
-      relations: ["incident"],
+      relations: { incident: true },
     });
     if (!postMortem) {
       throw new NotFoundException(`Post-mortem with ID "${id}" not found`);
@@ -89,7 +89,7 @@ export class PostMortemService {
   async findByIncident(incidentId: string): Promise<PostMortem | null> {
     return await this.postMortemRepository.findOne({
       where: { incidentId },
-      relations: ["incident"],
+      relations: { incident: true },
     });
   }
 

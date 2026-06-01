@@ -157,7 +157,11 @@ export class IncidentService {
     if (orgId) where.organizationId = orgId;
     const incident = await this.incidentRepository.findOne({
       where,
-      relations: ["affectedComponents", "affectedEnvironments", "updates"],
+      relations: {
+        affectedComponents: true,
+        affectedEnvironments: true,
+        updates: true,
+      },
     });
     if (!incident) {
       throw new NotFoundException(`Incident with ID "${id}" not found`);

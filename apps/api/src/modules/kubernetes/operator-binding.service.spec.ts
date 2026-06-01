@@ -131,7 +131,7 @@ describe("OperatorBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { operatorName: "prometheus-operator.v0.65.1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -149,7 +149,7 @@ describe("OperatorBindingService", () => {
           operatorName: "prometheus-operator.v0.65.1",
           organizationId: "org-uuid-1",
         },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });
@@ -167,7 +167,7 @@ describe("OperatorBindingService", () => {
 
       expect(repo.find).toHaveBeenCalledWith({
         where: { componentId: "comp-uuid-1" },
-        relations: ["component"],
+        relations: { component: true },
       });
       expect(result).toEqual([mockBinding]);
     });

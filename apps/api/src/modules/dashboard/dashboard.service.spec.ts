@@ -1,7 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { getRepositoryToken } from "@nestjs/typeorm";
+import { getRepositoryToken, getDataSourceToken } from "@nestjs/typeorm";
 import { NotFoundException, BadRequestException } from "@nestjs/common";
-import { DataSource } from "typeorm";
 import { DashboardService } from "./dashboard.service";
 import { Dashboard, DashboardVisibility } from "./entities/dashboard.entity";
 import { DashboardWidget } from "./entities/dashboard-widget.entity";
@@ -59,7 +58,7 @@ describe("DashboardService", () => {
           useValue: mockWidgetRepository,
         },
         {
-          provide: DataSource,
+          provide: getDataSourceToken(),
           useValue: mockDataSource,
         },
       ],
@@ -126,7 +125,7 @@ describe("DashboardService", () => {
       expect(result).toEqual([dashboards, 1]);
       expect(mockDashboardRepository.findAndCount).toHaveBeenCalledWith({
         where: {},
-        relations: ["widgets"],
+        relations: { widgets: true },
         order: { createdAt: "DESC" },
         skip: 0,
         take: 20,
@@ -146,7 +145,7 @@ describe("DashboardService", () => {
       expect(result).toEqual([dashboards, 1]);
       expect(mockDashboardRepository.findAndCount).toHaveBeenCalledWith({
         where: { ownerId: "owner-uuid-1" },
-        relations: ["widgets"],
+        relations: { widgets: true },
         order: { createdAt: "DESC" },
         skip: 0,
         take: 20,
@@ -166,7 +165,7 @@ describe("DashboardService", () => {
       expect(result).toEqual([dashboards, 1]);
       expect(mockDashboardRepository.findAndCount).toHaveBeenCalledWith({
         where: { visibility: DashboardVisibility.WORKSPACE },
-        relations: ["widgets"],
+        relations: { widgets: true },
         order: { createdAt: "DESC" },
         skip: 0,
         take: 20,
@@ -187,7 +186,7 @@ describe("DashboardService", () => {
       expect(result.widgets).toEqual([]);
       expect(mockDashboardRepository.findOne).toHaveBeenCalledWith({
         where: { id: "dash-uuid-1" },
-        relations: ["widgets"],
+        relations: { widgets: true },
       });
     });
 
@@ -323,7 +322,7 @@ describe("DashboardService", () => {
 
       expect(mockDashboardRepository.findOne).toHaveBeenCalledWith({
         where: { id: "dash-uuid-1" },
-        relations: ["widgets"],
+        relations: { widgets: true },
       });
       expect(mockDashboardRepository.remove).toHaveBeenCalledWith(
         existingDashboard,

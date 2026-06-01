@@ -108,7 +108,7 @@ describe("configuration", () => {
     process.env.NODE_ENV = "production";
     process.env.PORT = "8080";
     process.env.LOG_LEVEL = "warn";
-    process.env.DATABASE_TYPE = "sqlite";
+    process.env.DATABASE_TYPE = "better-sqlite3";
     process.env.DATABASE_HOST = "db.example.com";
     process.env.DATABASE_PORT = "5433";
     process.env.DATABASE_USER = "myuser";
@@ -144,7 +144,7 @@ describe("configuration", () => {
       expect(config.env).toBe("production");
       expect(config.port).toBe(8080);
       expect(config.log.level).toBe("warn");
-      expect(config.database.type).toBe("sqlite");
+      expect(config.database.type).toBe("better-sqlite3");
       expect(config.database.host).toBe("db.example.com");
       expect(config.database.port).toBe(5433);
       expect(config.database.username).toBe("myuser");

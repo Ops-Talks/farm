@@ -414,7 +414,7 @@ export class PipelinesService {
   }> {
     const runs = await this.runRepository.find({
       where: { pipelineId },
-      select: ["status", "durationMs", "createdAt"],
+      select: { status: true, durationMs: true, createdAt: true },
       order: { createdAt: "DESC" },
     });
 

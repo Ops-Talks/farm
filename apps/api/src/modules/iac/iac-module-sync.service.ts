@@ -164,7 +164,7 @@ export class IacModuleSyncService {
 
     const existingVersions = await this.versionRepository.find({
       where: { moduleId: module.id },
-      select: ["version"],
+      select: { version: true },
     });
     const existingSet = new Set(existingVersions.map((v) => v.version));
 

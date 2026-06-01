@@ -211,7 +211,7 @@ export class KeycloakSyncService {
         // Find or create the Farm Team for this group.
         let team = await this.teamRepository.findOne({
           where: { organizationId: orgId, externalId: group.id },
-          relations: ["members"],
+          relations: { members: true },
         });
 
         if (!team) {
@@ -277,7 +277,7 @@ export class KeycloakSyncService {
   async scheduleAllOrgs(): Promise<void> {
     const credentials = await this.credentialRepository.find({
       where: { type: IntegrationType.KEYCLOAK },
-      select: ["orgId"],
+      select: { orgId: true },
     });
 
     // Deduplicate orgIds (an org may theoretically have multiple credentials).

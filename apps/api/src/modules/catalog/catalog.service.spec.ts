@@ -205,7 +205,7 @@ spec:
       expect(total).toBe(1);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: {},
-        relations: ["dependencies"],
+        relations: { dependencies: true },
         skip: 0,
         take: 20,
       });
@@ -275,7 +275,7 @@ spec:
       expect(data).toEqual([mockComponent]);
       expect(total).toBe(1);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith(
-        expect.objectContaining({ relations: ["dependencies"] }),
+        expect.objectContaining({ relations: { dependencies: true } }),
       );
     });
 
@@ -318,7 +318,7 @@ spec:
       await service.findAll(0, 20, undefined, "org-uuid-1");
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { organizationId: "org-uuid-1" },
-        relations: ["dependencies"],
+        relations: { dependencies: true },
         skip: 0,
         take: 20,
       });
@@ -329,7 +329,7 @@ spec:
       await service.findAll(0, 20, undefined, undefined, "team-uuid-1");
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { teamId: "team-uuid-1" },
-        relations: ["dependencies"],
+        relations: { dependencies: true },
         skip: 0,
         take: 20,
       });
@@ -340,7 +340,7 @@ spec:
       await service.findAll(0, 20, undefined, "org-uuid-1", "team-uuid-1");
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { organizationId: "org-uuid-1", teamId: "team-uuid-1" },
-        relations: ["dependencies"],
+        relations: { dependencies: true },
         skip: 0,
         take: 20,
       });

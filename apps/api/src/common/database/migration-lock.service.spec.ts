@@ -45,7 +45,7 @@ describe("MigrationLockService", () => {
 
   it("is a no-op when the database type is not postgres", async () => {
     const ds = buildMockDataSource({});
-    const svc = await build("sqlite", ds);
+    const svc = await build("better-sqlite3", ds);
     await svc.onModuleInit();
     expect(ds.query).not.toHaveBeenCalled();
     expect(ds.showMigrations).not.toHaveBeenCalled();

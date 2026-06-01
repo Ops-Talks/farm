@@ -76,7 +76,7 @@ describe("ScorecardSchedulerService", () => {
     await service.recomputeAll();
 
     expect(mockComponentRepo.find).toHaveBeenCalledWith({
-      select: ["id", "organizationId"],
+      select: { id: true, organizationId: true },
       where: {},
       take: 100,
       order: { id: "ASC" },
@@ -146,14 +146,14 @@ describe("ScorecardSchedulerService", () => {
     expect(mockComponentRepo.find).toHaveBeenCalledTimes(2);
     // First call: no cursor (empty where clause)
     expect(mockComponentRepo.find).toHaveBeenNthCalledWith(1, {
-      select: ["id", "organizationId"],
+      select: { id: true, organizationId: true },
       where: {},
       take: 100,
       order: { id: "ASC" },
     });
     // Second call: cursor set to last id of first batch
     expect(mockComponentRepo.find).toHaveBeenNthCalledWith(2, {
-      select: ["id", "organizationId"],
+      select: { id: true, organizationId: true },
       where: { id: expect.anything() as unknown },
       take: 100,
       order: { id: "ASC" },

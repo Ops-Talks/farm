@@ -363,7 +363,7 @@ export class OrganizationService {
 
     const targetMembership = await this.userOrganizationRepository.findOne({
       where: { organizationId: orgId, userId: targetUserId },
-      relations: ["user"],
+      relations: { user: true },
     });
     if (!targetMembership) {
       throw new NotFoundException(
@@ -722,7 +722,7 @@ export class OrganizationService {
   ): Promise<MemberResponseDto> {
     const membership = await this.userOrganizationRepository.findOne({
       where: { organizationId: orgId, userId },
-      relations: ["user"],
+      relations: { user: true },
     });
 
     if (!membership) {

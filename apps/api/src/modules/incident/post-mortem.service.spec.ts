@@ -137,7 +137,7 @@ describe("PostMortemService", () => {
       expect(result).toEqual(mockPostMortem);
       expect(mockPostMortemRepo.findOne).toHaveBeenCalledWith({
         where: { id: "pm-uuid-1" },
-        relations: ["incident"],
+        relations: { incident: true },
       });
     });
 
@@ -159,7 +159,7 @@ describe("PostMortemService", () => {
       expect(result).toEqual(mockPostMortem);
       expect(mockPostMortemRepo.findOne).toHaveBeenCalledWith({
         where: { incidentId: "incident-uuid-1" },
-        relations: ["incident"],
+        relations: { incident: true },
       });
     });
 
