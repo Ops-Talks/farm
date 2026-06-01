@@ -5,7 +5,7 @@ description: Farm — open-source platform portal for managing software componen
 kubeVersion: ">=1.26.0-0"
 type: application
 version: 0.3.12
-appVersion: "0.25.12"
+appVersion: "0.25.13"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
