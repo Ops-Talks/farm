@@ -43,7 +43,7 @@ export class Slo {
     example: "api-availability",
     description: "Unique name for the SLO",
   })
-  @Column({ unique: true })
+  @Column({ unique: true, length: 100 })
   name: string;
 
   @ApiProperty({

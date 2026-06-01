@@ -53,7 +53,10 @@ postgresql:
   enabled: true
   auth:
     username: farm
-    password: farm
+    # Keep in sync with the value used during `helm install`. Bitnami PostgreSQL
+    # does NOT rotate the password on upgrade — it reuses the existing Secret.
+    # If the cluster was re-created, use the same password here.
+    password: farmci
     database: farm
 
 redis:

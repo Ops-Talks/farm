@@ -296,7 +296,7 @@ describe("api-client", () => {
           {
             statusCode: 403,
             timestamp: "t",
-            path: "/v1/auth/register",
+            path: "/v1/auth/login",
             message: "Not a member of this organization",
             errorCode: "ORG_STALE_MEMBERSHIP",
           },
@@ -304,7 +304,7 @@ describe("api-client", () => {
         ),
       );
       try {
-        await auth.register({ username: "u", email: "u@t.com", password: "pass1234" });
+        await auth.login({ username: "u", password: "pass1234" });
       } catch {
         // expected to throw ApiError
       }
@@ -322,7 +322,7 @@ describe("api-client", () => {
           {
             statusCode: 403,
             timestamp: "t",
-            path: "/v1/auth/register",
+            path: "/v1/auth/login",
             message: "Not a member of this organization",
             errorCode: "ORG_STALE_MEMBERSHIP",
           },
@@ -330,7 +330,7 @@ describe("api-client", () => {
         ),
       );
       try {
-        await auth.register({ username: "u", email: "u@t.com", password: "pass1234" });
+        await auth.login({ username: "u", password: "pass1234" });
       } catch {
         // expected to throw ApiError
       }

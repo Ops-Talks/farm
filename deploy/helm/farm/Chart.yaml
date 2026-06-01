@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.11
+version: 0.3.12
 appVersion: "0.25.12"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,6 +39,10 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: fixed
+      description: "migration Job activeDeadlineSeconds increased from 300 to 480; pre-upgrade-check takes up to 60s before migration starts, so 300s left Helm context deadline and migration timeout racing"
+    - kind: fixed
+      description: "helm-install and helm-upgrade targets in Makefile now pass --timeout 10m0s; default 5-minute Helm context deadline was hit before migration Job could complete on slow cluster starts"
     - kind: changed
       description: "README.md: remove duplicate installation examples and consolidate observability parameter sections"
     - kind: added

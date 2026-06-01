@@ -73,7 +73,7 @@ describe("InvitationAcceptPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows preview with login + signup CTAs when not authenticated", async () => {
+  it("shows preview with login CTA when not authenticated", async () => {
     mockSearchParams = new URLSearchParams({ token: "abc" });
     mockGetByToken.mockResolvedValueOnce({
       orgName: "Acme",
@@ -91,10 +91,7 @@ describe("InvitationAcceptPage", () => {
       "href",
       expect.stringContaining("/login?redirect="),
     );
-    expect(screen.getByRole("link", { name: /Sign up first/i })).toHaveAttribute(
-      "href",
-      expect.stringContaining("/signup?invite=abc"),
-    );
+    expect(screen.queryByRole("link", { name: /Sign up first/i })).not.toBeInTheDocument();
   });
 
   it("when authenticated, accepts invitation and routes to /organizations on success", async () => {

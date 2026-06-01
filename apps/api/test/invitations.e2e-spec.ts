@@ -2,7 +2,10 @@ import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
 import { OrgRole } from "@farm/types";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import { User } from "../src/modules/auth/entities/user.entity";
 
 describe("Invitations (Phase 37) (e2e)", () => {
   let app: INestApplication<App>;
@@ -47,16 +50,17 @@ describe("Invitations (Phase 37) (e2e)", () => {
     expect(preview.role).toBeDefined();
     expect(preview.orgName).toBeDefined();
 
-    // Register the invitee user account first
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send({
+    // Create the invitee user account directly via repository
+    const inviteeRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await inviteeRepo.save(
+      inviteeRepo.create({
         username: "invitee",
         email: inviteeEmail,
         password: "Strongest1",
         displayName: "Invitee",
-      })
-      .expect(201);
+        roles: ["user"],
+      }),
+    );
 
     // Accept
     const acceptRes = await request(app.getHttpServer())

@@ -5,6 +5,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 import { UserOrganization } from "../src/modules/organization/entities/user-organization.entity";
+import { User } from "../src/modules/auth/entities/user.entity";
 import { OrgRole } from "@farm/types";
 
 /**
@@ -42,16 +43,17 @@ describe("RBAC enforcement (e2e)", () => {
       .expect(200);
     ownerId = (result.body as { id: string }).id;
 
-    // Register a viewer user
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send({
+    // Create a viewer user directly via repository
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await userRepo.save(
+      userRepo.create({
         username: "rbac-viewer",
         email: "rbac-viewer@e2e.test",
         password: "TestPassword1",
         displayName: "Viewer User",
-      })
-      .expect(201);
+        roles: ["user"],
+      }),
+    );
 
     const viewerLogin = await request(app.getHttpServer())
       .post("/api/v1/auth/login")

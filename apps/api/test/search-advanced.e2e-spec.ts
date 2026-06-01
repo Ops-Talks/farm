@@ -160,10 +160,10 @@ describe("Advanced Search (e2e)", () => {
       displayName: "Regular User",
     };
 
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(regular)
-      .expect(201);
+    const searchUserRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await searchUserRepo.save(
+      searchUserRepo.create({ ...regular, roles: ["user"] }),
+    );
 
     const loginRes = await request(app.getHttpServer())
       .post("/api/v1/auth/login")

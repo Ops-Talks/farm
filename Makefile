@@ -3,7 +3,7 @@ DOCS_SERVICE := docs
 TEST_IMAGE := farm:test
 APP_IMAGE := farm:prod
 
-.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint ct-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall observability-install observability-upgrade observability-uninstall sloth-generate
+.PHONY: help docs docs-up docs-down docs-build docs-logs test-docker up-docker down-docker down-docker-clean up-observability down-observability up-all down-all healthcheck test test-e2e test-cov lint fmt check-back check-front check knip api-build api-test release web-dev web-build web-lint web-test web-e2e helm-lint ct-lint helm-template helm-install helm-upgrade helm-diff helm-uninstall observability-install observability-upgrade observability-uninstall sloth-generate docker-build kind-load
 
 help:
 	@echo "Available Targets:"
@@ -41,6 +41,8 @@ help:
 	@echo "  make helm-upgrade      # Upgrade Farm release using Helm"
 	@echo "  make helm-diff         # Show diff of pending Helm upgrade (requires helm-diff plugin)"
 	@echo "  make helm-uninstall    # Uninstall the Farm Helm release"
+	@echo "  make docker-build      # Build API and web images tagged with appVersion (for local Helm deploy)"
+	@echo "  make kind-load         # Load built images into the active KinD cluster"
 
 docs: docs-up
 
@@ -139,6 +141,20 @@ HELM_CHART := deploy/helm/farm
 HELM_RELEASE := farm
 HELM_NAMESPACE := farm
 HELM_VALUES ?= $(HELM_CHART)/values-dev.yaml
+APP_VERSION := $(shell grep '^appVersion' $(HELM_CHART)/Chart.yaml | awk '{print $$2}' | tr -d '"')
+API_IMAGE := farm-api:$(APP_VERSION)
+WEB_IMAGE := farm-web:$(APP_VERSION)
+
+KIND_CLUSTER ?= $(shell kind get clusters 2>/dev/null | head -1)
+
+docker-build: ## Build API and web Docker images tagged with the current appVersion
+	docker build -t $(API_IMAGE) -f apps/api/Dockerfile .
+	docker build -t $(WEB_IMAGE) -f apps/web/Dockerfile .
+
+kind-load: ## Load API and web images into the active KinD cluster
+	@if [ -z "$(KIND_CLUSTER)" ]; then echo "ERROR: no KinD cluster found. Run 'kind create cluster' first."; exit 1; fi
+	kind load docker-image $(API_IMAGE) --name $(KIND_CLUSTER)
+	kind load docker-image $(WEB_IMAGE) --name $(KIND_CLUSTER)
 
 helm-lint:
 	# Strict lint for both charts using only helm — no extra tooling required.
@@ -160,12 +176,14 @@ helm-template:
 helm-install:
 	helm dependency update $(HELM_CHART)
 	helm install $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
-		--namespace $(HELM_NAMESPACE) --create-namespace
+		--namespace $(HELM_NAMESPACE) --create-namespace \
+		--timeout 10m0s
 
 helm-upgrade:
 	helm dependency update $(HELM_CHART)
 	helm upgrade $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
-		--namespace $(HELM_NAMESPACE)
+		--namespace $(HELM_NAMESPACE) \
+		--timeout 10m0s
 
 helm-diff:
 	helm dependency update $(HELM_CHART)

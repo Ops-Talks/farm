@@ -15,7 +15,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
-import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
 import { UpdateProfileDto, GenderEnum } from "../dto/update-profile.dto";
 import { ChangePasswordDto } from "../dto/change-password.dto";
@@ -60,30 +59,6 @@ describe("AuthService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
-  });
-
-  describe("register", () => {
-    it("should create and return a new user", async () => {
-      const dto: RegisterUserDto = {
-        username: "u",
-        email: "e",
-        password: "p",
-        displayName: "u",
-      };
-      repo.findOne.mockResolvedValue(undefined);
-      repo.create.mockReturnValue(dto);
-      repo.save.mockResolvedValue({ id: "1", ...dto, roles: ["user"] });
-      const result = await service.register(dto);
-      expect(result).toEqual({ id: "1", ...dto, roles: ["user"] });
-      expect(repo.save).toHaveBeenCalled();
-    });
-
-    it("should throw conflict when user exists", async () => {
-      repo.findOne.mockResolvedValue({ id: "1" });
-      await expect(
-        service.register({} as RegisterUserDto),
-      ).rejects.toBeInstanceOf(ConflictException);
-    });
   });
 
   describe("login", () => {

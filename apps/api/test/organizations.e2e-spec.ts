@@ -1,7 +1,10 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import { User } from "../src/modules/auth/entities/user.entity";
 
 interface InvitationResponse {
   id: string;
@@ -187,12 +190,16 @@ describe("Organization Invitations (e2e)", () => {
   describe("POST /invitations/:token/accept", () => {
     it("should return 404 for an invalid or unknown token", async () => {
       // Register a second user for acceptance
-      await request(app.getHttpServer()).post("/api/v1/auth/register").send({
-        username: "acceptor-user",
-        email: "acceptor@e2e-test.com",
-        password: "TestPassword1",
-        displayName: "Acceptor",
-      });
+      const orgUserRepo = app.get<Repository<User>>(getRepositoryToken(User));
+      await orgUserRepo.save(
+        orgUserRepo.create({
+          username: "acceptor-user",
+          email: "acceptor@e2e-test.com",
+          password: "TestPassword1",
+          displayName: "Acceptor",
+          roles: ["user"],
+        }),
+      );
 
       const loginRes = await request(app.getHttpServer())
         .post("/api/v1/auth/login")
