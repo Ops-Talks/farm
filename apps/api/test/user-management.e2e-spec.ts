@@ -90,4 +90,76 @@ describe("User Management (Phase 37) (e2e)", () => {
       .send({ suspended: true })
       .expect(400);
   });
+
+  describe("POST /api/v1/users (Phase 56 — admin user creation)", () => {
+    const validDto = {
+      username: "um_created",
+      email: "um_created@e2e.com",
+      displayName: "Created User",
+    };
+
+    it("creates a user as platform admin → 201 with id, username, email", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/api/v1/users")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(validDto)
+        .expect(201);
+      const body = res.body as { id: string; username: string; email: string };
+      expect(body.id).toBeDefined();
+      expect(body.username).toBe(validDto.username);
+      expect(body.email).toBe(validDto.email);
+    });
+
+    it("duplicate username → 409", async () => {
+      await request(app.getHttpServer())
+        .post("/api/v1/users")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send(validDto)
+        .expect(409);
+    });
+
+    it("duplicate email with different username → 409", async () => {
+      await request(app.getHttpServer())
+        .post("/api/v1/users")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ ...validDto, username: "um_created2" })
+        .expect(409);
+    });
+
+    it("no JWT → 401", async () => {
+      await request(app.getHttpServer())
+        .post("/api/v1/users")
+        .send(validDto)
+        .expect(401);
+    });
+
+    it("non-admin user → 403", async () => {
+      // Register a non-admin user and get their token
+      await request(app.getHttpServer())
+        .post("/api/v1/auth/register")
+        .send({
+          username: "um_nonadmin",
+          email: "um_nonadmin@e2e.com",
+          password: "Strongest1",
+          displayName: "Non Admin",
+        })
+        .expect(201);
+
+      const loginRes = await request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send({ username: "um_nonadmin", password: "Strongest1" })
+        .expect(200);
+      const nonAdminToken = (loginRes.body as { token: string }).token;
+
+      await request(app.getHttpServer())
+        .post("/api/v1/users")
+        .set("Authorization", `Bearer ${nonAdminToken}`)
+        .send({
+          username: "um_new99",
+          email: "new99@e2e.com",
+          displayName: "New",
+        })
+        .expect(403);
+    });
+  });
 });

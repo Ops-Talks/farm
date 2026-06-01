@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -21,6 +22,7 @@ import { UserOrganization } from "../organization/entities/user-organization.ent
 import { AuditLogService } from "../audit-log/audit-log.service";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { NotificationJobData } from "../../common/queues/notification.processor";
+import { AdminCreateUserDto } from "./dto/admin-create-user.dto";
 
 const TEMP_PASSWORD_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -404,6 +406,122 @@ export class UserManagementService {
       };
     }
     return { tempPasswordExpiresAt: expiresAt };
+  }
+
+  async createUser(
+    actor: AuthenticatedActor,
+    dto: AdminCreateUserDto,
+  ): Promise<ManagedUserView & { tempPassword?: string }> {
+    // 1. Authorization
+    if (dto.orgId) {
+      if (!this.isPlatformAdmin(actor)) {
+        await this.assertOrgAdmin(actor, dto.orgId);
+      }
+    } else if (!this.isPlatformAdmin(actor)) {
+      throw new ForbiddenException("Platform admin role required");
+    }
+    if (dto.platformAdmin && !this.isPlatformAdmin(actor)) {
+      throw new ForbiddenException(
+        "Only platform admins can grant the platform admin role",
+      );
+    }
+
+    // 2. Pre-validate uniqueness — consistent with auth.service register() pattern
+    const existing = await this.userRepository.findOne({
+      where: [{ username: dto.username }, { email: dto.email }],
+    });
+    if (existing) {
+      throw new ConflictException("Username or email already taken");
+    }
+
+    // 3. If orgId provided, verify the org exists before creating the user
+    if (dto.orgId) {
+      const org = await this.organizationRepository.findOne({
+        where: { id: dto.orgId },
+      });
+      if (!org) {
+        throw new NotFoundException("Organization not found");
+      }
+    }
+
+    // 4. Credentials — pre-hash so @BeforeInsert skips (guard: !startsWith("$2b$"))
+    let tempPassword: string | undefined;
+    const rawPassword =
+      dto.password ?? randomBytes(9).toString("base64").slice(0, 12);
+    if (!dto.password) {
+      tempPassword = rawPassword;
+    }
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+    // 5. Persist user
+    const user = this.userRepository.create({
+      username: dto.username,
+      email: dto.email,
+      displayName: dto.displayName,
+      password: hashedPassword,
+      roles: dto.platformAdmin ? ["user", "admin"] : ["user"],
+    });
+    await this.userRepository.save(user);
+
+    // 6. Org enrollment
+    if (dto.orgId) {
+      const membership = this.userOrganizationRepository.create({
+        userId: user.id,
+        organizationId: dto.orgId,
+        role: dto.orgRole ?? OrgRole.VIEWER,
+      });
+      await this.userOrganizationRepository.save(membership);
+    }
+
+    // 7. Welcome email — only attempt when both SMTP and queue are configured
+    const smtpConfigured = !!this.configService.get<string>("smtp.host");
+    let emailDelivered = false;
+    if (this.notificationsQueue && smtpConfigured) {
+      const appUrl =
+        this.configService.get<string>("app.url") ?? "http://localhost:3001";
+      try {
+        await this.notificationsQueue.add("send-welcome-email", {
+          type: "email",
+          recipient: user.email,
+          subject: "Welcome to Farm",
+          template: "welcome",
+          payload: {
+            username: user.username,
+            email: user.email,
+            tempPassword,
+            loginLink: `${appUrl}/login`,
+          },
+        });
+        emailDelivered = true;
+      } catch (err) {
+        this.logger.warn(
+          `Failed to enqueue welcome email: ${(err as Error).message}`,
+        );
+      }
+    }
+
+    // 8. Audit log
+    void this.auditLog
+      ?.log({
+        action: "USER_CREATED",
+        resourceType: "User",
+        resourceId: user.id,
+        actorId: actor.userId,
+        actorUsername: actor.username,
+        ...(dto.orgId ? { organizationId: dto.orgId } : {}),
+        payload: {
+          orgId: dto.orgId ?? null,
+          platformAdmin: dto.platformAdmin ?? false,
+        },
+      })
+      .catch(() => undefined);
+
+    // 9. Return view — expose tempPassword only when email was not delivered
+    const view = await this.toView(user, null);
+    if (tempPassword && !emailDelivered) {
+      return { ...view, tempPassword };
+    }
+    return view;
   }
 
   async deleteUser(

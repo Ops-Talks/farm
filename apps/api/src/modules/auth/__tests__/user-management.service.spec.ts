@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from "@nestjs/common";
@@ -573,6 +574,214 @@ describe("UserManagementService", () => {
       await expect(
         smtpService.resetPassword(platformAdmin, "x"),
       ).resolves.toBeDefined();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Phase 56 — createUser
+  // ---------------------------------------------------------------------------
+
+  describe("createUser", () => {
+    const newUserDto = {
+      username: "newuser",
+      email: "new@example.com",
+      displayName: "New User",
+    };
+
+    const savedUser = {
+      id: "new-u-1",
+      username: "newuser",
+      email: "new@example.com",
+      displayName: "New User",
+      roles: ["user"],
+      suspended: false,
+      lastLogin: null,
+      createdAt: new Date(),
+    };
+
+    beforeEach(() => {
+      // No existing user by default
+      users.findOne.mockResolvedValue(null);
+      // create() returns the input; save() returns savedUser
+      users.create.mockReturnValue(savedUser);
+      users.save.mockResolvedValue(savedUser);
+      // toView: userOrgs.find returns [], orgs.find returns []
+      userOrgs.find.mockResolvedValue([]);
+      orgs.find.mockResolvedValue([]);
+    });
+
+    it("(1) platform admin creates user globally → returns ManagedUserView", async () => {
+      const result = await service.createUser(platformAdmin, newUserDto);
+      expect(result.username).toBe("newuser");
+      expect(result.email).toBe("new@example.com");
+      expect(result.id).toBe("new-u-1");
+    });
+
+    it("(2) platform admin with platformAdmin:true → user.roles includes 'admin'", async () => {
+      users.create.mockReturnValue({ ...savedUser, roles: ["user", "admin"] });
+      users.save.mockResolvedValue({ ...savedUser, roles: ["user", "admin"] });
+
+      await service.createUser(platformAdmin, {
+        ...newUserDto,
+        platformAdmin: true,
+      });
+
+      const createCall = users.create.mock.calls[0][0] as { roles: string[] };
+      expect(createCall.roles).toContain("admin");
+    });
+
+    it("(3) org admin with matching orgId → success, UserOrganization saved", async () => {
+      // assertOrgAdmin: findOne returns membership for org admin
+      userOrgs.findOne.mockResolvedValueOnce({
+        userId: orgAdmin.userId,
+        organizationId: "org-1",
+        role: OrgRole.ADMIN,
+      });
+      // org existence check
+      orgs.findOne.mockResolvedValueOnce({ id: "org-1", name: "Acme" });
+
+      await service.createUser(orgAdmin, {
+        ...newUserDto,
+        orgId: "org-1",
+        orgRole: OrgRole.MEMBER,
+      });
+
+      expect(userOrgs.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "org-1",
+          role: OrgRole.MEMBER,
+        }),
+      );
+    });
+
+    it("(4) org admin with non-matching orgId → 403 ForbiddenException", async () => {
+      // assertOrgAdmin: findOne returns null (not a member)
+      userOrgs.findOne.mockResolvedValueOnce(null);
+
+      await expect(
+        service.createUser(orgAdmin, { ...newUserDto, orgId: "other-org" }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("(5) org admin with no orgId → 403 ForbiddenException", async () => {
+      await expect(service.createUser(orgAdmin, newUserDto)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it("(6) non-admin with platformAdmin:true → 403 ForbiddenException", async () => {
+      // orgAdmin passes assertOrgAdmin for their org...
+      userOrgs.findOne.mockResolvedValueOnce({
+        userId: orgAdmin.userId,
+        organizationId: "org-1",
+        role: OrgRole.ADMIN,
+      });
+
+      await expect(
+        service.createUser(orgAdmin, {
+          ...newUserDto,
+          orgId: "org-1",
+          platformAdmin: true,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it("(7) duplicate username → 409 ConflictException", async () => {
+      users.findOne.mockResolvedValueOnce({
+        id: "existing",
+        username: "newuser",
+      });
+
+      await expect(
+        service.createUser(platformAdmin, newUserDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("(8) duplicate email → 409 ConflictException", async () => {
+      users.findOne.mockResolvedValueOnce({
+        id: "existing",
+        email: "new@example.com",
+      });
+
+      await expect(
+        service.createUser(platformAdmin, newUserDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it("(9) SMTP unavailable → tempPassword present in response", async () => {
+      // Default ConfigService mock returns '' for smtp.host
+      const result = await service.createUser(platformAdmin, newUserDto);
+      expect(result.tempPassword).toBeDefined();
+      expect(typeof result.tempPassword).toBe("string");
+      expect(result.tempPassword!.length).toBeGreaterThan(0);
+    });
+
+    it("(10) SMTP available + queue → tempPassword absent, notification enqueued", async () => {
+      const mod2 = await Test.createTestingModule({
+        providers: [
+          UserManagementService,
+          { provide: getRepositoryToken(User), useValue: users },
+          { provide: getRepositoryToken(PasswordReset), useValue: resets },
+          { provide: getRepositoryToken(Organization), useValue: orgs },
+          { provide: getRepositoryToken(UserOrganization), useValue: userOrgs },
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn((k: string) =>
+                k === "smtp.host" ? "smtp.example.com" : "http://x",
+              ),
+            },
+          },
+          {
+            provide: AuditLogService,
+            useValue: { log: jest.fn().mockResolvedValue(undefined) },
+          },
+          { provide: "BullQueue_notifications", useValue: queue },
+        ],
+      }).compile();
+
+      const smtpService = mod2.get(UserManagementService);
+      const result = await smtpService.createUser(platformAdmin, newUserDto);
+
+      expect(result.tempPassword).toBeUndefined();
+      expect(queue.add).toHaveBeenCalledWith(
+        "send-welcome-email",
+        expect.objectContaining({
+          type: "email",
+          recipient: "new@example.com",
+        }),
+      );
+    });
+
+    it("(11) audit log USER_CREATED emitted", async () => {
+      const auditSpy = jest.fn().mockResolvedValue(undefined);
+      const mod2 = await Test.createTestingModule({
+        providers: [
+          UserManagementService,
+          { provide: getRepositoryToken(User), useValue: users },
+          { provide: getRepositoryToken(PasswordReset), useValue: resets },
+          { provide: getRepositoryToken(Organization), useValue: orgs },
+          { provide: getRepositoryToken(UserOrganization), useValue: userOrgs },
+          {
+            provide: ConfigService,
+            useValue: { get: jest.fn(() => "") },
+          },
+          {
+            provide: AuditLogService,
+            useValue: { log: auditSpy },
+          },
+          { provide: "BullQueue_notifications", useValue: queue },
+        ],
+      }).compile();
+
+      await mod2
+        .get(UserManagementService)
+        .createUser(platformAdmin, newUserDto);
+
+      await new Promise((r) => setTimeout(r, 10));
+      expect(auditSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ action: "USER_CREATED" }),
+      );
     });
   });
 });

@@ -17,6 +17,7 @@ const mockSuspend = vi.fn();
 const mockReset = vi.fn();
 const mockRemove = vi.fn();
 const mockAudit = vi.fn();
+const mockCreate = vi.fn();
 vi.mock("@/lib/api-client", () => ({
   ApiError: class ApiError extends Error {
     status: number;
@@ -33,6 +34,7 @@ vi.mock("@/lib/api-client", () => ({
     resetPassword: (...a: unknown[]) => mockReset(...a),
     remove: (...a: unknown[]) => mockRemove(...a),
     auditTrail: (...a: unknown[]) => mockAudit(...a),
+    create: (...a: unknown[]) => mockCreate(...a),
   },
 }));
 
@@ -44,9 +46,11 @@ vi.mock("@/contexts/auth-context", () => ({
   }),
 }));
 
+let mockOrgRole: string | null = null;
 vi.mock("@/contexts/organization-context", () => ({
   useOrganization: () => ({
     organizations: [{ id: "org_1", name: "Acme", slug: "acme" }],
+    orgRole: mockOrgRole,
   }),
 }));
 
@@ -98,6 +102,7 @@ describe("UsersClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHasRole = (r: string) => r === "admin";
+    mockOrgRole = null;
   });
 
   it("shows 'All users' option for platform admin", async () => {
@@ -606,5 +611,55 @@ describe("UsersClient", () => {
         expect.objectContaining({ page: 2 }),
       ),
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // New User button visibility (Phase 56 — FARM-S662)
+  // -------------------------------------------------------------------------
+
+  describe("New User button visibility", () => {
+    beforeEach(() => {
+      mockListUsers.mockResolvedValue({ users: [], total: 0, page: 1, pageSize: 20 });
+    });
+
+    it("shows New User button for platform admin", async () => {
+      mockHasRole = (r: string) => r === "admin";
+      mockOrgRole = null;
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+      expect(screen.getByRole("button", { name: /New User/i })).toBeInTheDocument();
+    });
+
+    it("shows New User button for org admin", async () => {
+      mockHasRole = () => false;
+      mockOrgRole = "admin";
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+      expect(screen.getByRole("button", { name: /New User/i })).toBeInTheDocument();
+    });
+
+    it("shows New User button for org owner", async () => {
+      mockHasRole = () => false;
+      mockOrgRole = "owner";
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+      expect(screen.getByRole("button", { name: /New User/i })).toBeInTheDocument();
+    });
+
+    it("hides New User button for org member", async () => {
+      mockHasRole = () => false;
+      mockOrgRole = "member";
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+      expect(screen.queryByRole("button", { name: /New User/i })).not.toBeInTheDocument();
+    });
+
+    it("hides New User button for unauthenticated viewer", async () => {
+      mockHasRole = () => false;
+      mockOrgRole = null;
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+      expect(screen.queryByRole("button", { name: /New User/i })).not.toBeInTheDocument();
+    });
   });
 });
