@@ -5,7 +5,7 @@
 // Reads ?token=... from the URL, fetches the public preview, and shows one of:
 //   • Loading skeleton
 //   • Error card (invalid / expired / revoked / already-accepted)
-//   • Preview card with login/signup CTAs (when not authenticated)
+//   • Preview card with login CTA (when not authenticated)
 //   • Preview card with "Accept" button (when authenticated)
 //
 // On accept it POSTs to /v1/invitations/by-token/:token/accept and redirects
@@ -194,7 +194,7 @@ export default function InvitationAcceptClient() {
               ) : (
                 <div className="flex flex-col gap-2">
                   <p className="text-center text-xs text-muted-foreground">
-                    Log in or create an account to accept this invitation.
+                    Log in to accept this invitation.
                   </p>
                   <Link
                     href={`/login?redirect=${encodeURIComponent(
@@ -203,14 +203,6 @@ export default function InvitationAcceptClient() {
                     className="block"
                   >
                     <Button className="w-full">Log in to accept</Button>
-                  </Link>
-                  <Link
-                    href={`/signup?invite=${encodeURIComponent(token)}`}
-                    className="block"
-                  >
-                    <Button variant="outline" className="w-full">
-                      Sign up first
-                    </Button>
                   </Link>
                 </div>
               )}

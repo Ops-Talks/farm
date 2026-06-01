@@ -11,11 +11,9 @@ import { AuthController } from "../auth.controller";
 import { AuthService } from "../auth.service";
 import { KeycloakOidcService } from "../keycloak-oidc.service";
 import { QUEUE_NAMES } from "../../../common/queues/queue-names";
-import { RegisterUserDto } from "../dto/register-user.dto";
 import { LoginDto } from "../dto/login.dto";
 
 const mockAuthService = {
-  register: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
   findAll: jest.fn(),
@@ -60,17 +58,6 @@ describe("AuthController", () => {
 
   it("should be defined", () => {
     expect(controller).toBeDefined();
-  });
-
-  it("register should return user", async () => {
-    const dto: RegisterUserDto = {
-      username: "u",
-      email: "e",
-      password: "p",
-      displayName: "u",
-    };
-    service.register.mockResolvedValue({ id: "1", ...dto });
-    expect(await controller.register(dto)).toEqual({ id: "1", ...dto });
   });
 
   it("login should return token and user", async () => {
@@ -421,7 +408,6 @@ describe("AuthController — LDAP and providers (with ConfigService)", () => {
     mockConfig = { get: jest.fn().mockReturnValue("") };
 
     localMockAuthService = {
-      register: jest.fn(),
       login: jest.fn(),
       refresh: jest.fn(),
       findAll: jest.fn(),

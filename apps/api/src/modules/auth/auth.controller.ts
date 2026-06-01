@@ -33,7 +33,6 @@ import { Queue } from "bullmq";
 import { ConfigService } from "@nestjs/config";
 import { AuthService } from "./auth.service";
 import { KeycloakOidcService } from "./keycloak-oidc.service";
-import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { LoginResponseDto } from "./dto/login-response.dto";
@@ -73,41 +72,6 @@ export class AuthController {
     @InjectQueue(QUEUE_NAMES.KEYCLOAK_SYNC)
     private readonly keycloakSyncQueue: Queue<KeycloakSyncJobData> | null,
   ) {}
-
-  /**
-   * Registers a new user account.
-   * Applies strict rate limiting: 5 requests per minute, bypasses the long-window global limit.
-   * @param registerUserDto - Registration data
-   * @returns The created user profile
-   */
-  @Post("register")
-  @HttpCode(HttpStatus.CREATED)
-  @SkipThrottle({ long: true })
-  @Throttle({ short: { ttl: 60000, limit: 5 } })
-  @ApiOperation({ summary: "Register a new user" })
-  @ApiHeader({
-    name: "X-RateLimit-Limit",
-    description: "Maximum 5 requests per minute",
-    required: false,
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The user has been successfully registered.",
-    type: User,
-  })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
-    description: "User already exists.",
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.TOO_MANY_REQUESTS,
-    description: "Too many requests. Rate limit: 5 per minute.",
-    type: ErrorResponseDto,
-  })
-  async register(@Body() registerUserDto: RegisterUserDto): Promise<User> {
-    return await this.authService.register(registerUserDto);
-  }
 
   /**
    * Authenticates a user and returns an access token with a refresh token.

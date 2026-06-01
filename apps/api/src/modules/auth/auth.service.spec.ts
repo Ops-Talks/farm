@@ -6,7 +6,7 @@ jest.mock("bcrypt", () => ({
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtService } from "@nestjs/jwt";
-import { ConflictException, UnauthorizedException } from "@nestjs/common";
+import { UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { AuthService } from "./auth.service";
 import { User } from "./entities/user.entity";
@@ -66,32 +66,6 @@ describe("AuthService", () => {
 
   it("should be defined", () => {
     expect(service).toBeDefined();
-  });
-
-  describe("register", () => {
-    it("should register a user", async () => {
-      mockRepository.findOne.mockResolvedValueOnce(null);
-      const dto = {
-        username: "new",
-        email: "new@ex.com",
-        password: "pw",
-        displayName: "New",
-      };
-      const result = await service.register(dto);
-      expect(result.username).toBe(dto.username);
-    });
-
-    it("should throw ConflictException if user exists", async () => {
-      mockRepository.findOne.mockResolvedValueOnce(mockUser);
-      await expect(
-        service.register({
-          username: "john",
-          email: "john@ex.com",
-          password: "pw",
-          displayName: "John",
-        }),
-      ).rejects.toThrow(ConflictException);
-    });
   });
 
   describe("login", () => {

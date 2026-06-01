@@ -509,23 +509,6 @@ export const auth = {
   },
 
   /**
-   * Self-serve user registration (Phase 37, FARM-S358).
-   * Creates a new local-account user with no org membership.
-   * Throws ApiError(409) on email/username conflict, ApiError(400) on validation.
-   */
-  register(data: {
-    username: string;
-    email: string;
-    password: string;
-    displayName?: string;
-  }): Promise<{ id: string; username: string; email: string }> {
-    return request('/v1/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
    * Authenticate with LDAP / Active Directory credentials.
    * Returns the same LoginResponse shape as the local login endpoint.
    */

@@ -11,7 +11,6 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { User } from "./entities/user.entity";
-import { RegisterUserDto } from "./dto/register-user.dto";
 import { LoginDto } from "./dto/login.dto";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
@@ -26,31 +25,6 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
   ) {}
-
-  /**
-   * Registers a new user.
-   * @param registerUserDto - Registration details
-   * @returns The newly created user
-   * @throws ConflictException if username or email already exists
-   */
-  async register(registerUserDto: RegisterUserDto): Promise<User> {
-    const { username, email } = registerUserDto;
-
-    const existingUser = await this.userRepository.findOne({
-      where: [{ username }, { email }],
-    });
-
-    if (existingUser) {
-      throw new ConflictException("Username or email already exists");
-    }
-
-    const user = this.userRepository.create({
-      ...registerUserDto,
-      roles: ["user"],
-    });
-
-    return await this.userRepository.save(user);
-  }
 
   /**
    * Authenticates a user and returns a JWT access token plus a refresh token.

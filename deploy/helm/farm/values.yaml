@@ -473,7 +473,10 @@ migration:
   # -- Backoff limit before the Job is considered failed.
   backoffLimit: 3
   # -- Maximum duration in seconds before the Job is terminated.
-  activeDeadlineSeconds: 300
+  # Budget: waitForDb (retries × intervalSeconds ≈ 120s) + migration execution
+  # (≈120s typical) + buffer. Set well below the helm-upgrade --timeout (10m)
+  # so Helm reports a clean Job failure instead of hitting its context deadline.
+  activeDeadlineSeconds: 480
   # -- Resources for the migration Job pod.
   resources:
     requests:

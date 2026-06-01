@@ -1,7 +1,10 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import { User } from "../src/modules/auth/entities/user.entity";
 
 interface ComponentResponse {
   id: string;
@@ -313,10 +316,9 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
       password: "TestPassword1",
       displayName: "Regular ES User",
     };
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(regular)
-      .expect(201);
+    // Create a regular user directly (no admin promotion)
+    const esUserRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await esUserRepo.save(esUserRepo.create({ ...regular, roles: ["user"] }));
     const loginRes = await request(app.getHttpServer())
       .post("/api/v1/auth/login")
       .send({ username: regular.username, password: regular.password })

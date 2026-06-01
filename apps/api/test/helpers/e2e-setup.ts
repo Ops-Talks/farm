@@ -72,13 +72,18 @@ export async function registerAndLogin(
     displayName: userData?.displayName || "E2E Admin",
   };
 
-  await request(app.getHttpServer())
-    .post("/api/v1/auth/register")
-    .send(user)
-    .expect(201);
+  // Create the user directly via the repository so no HTTP endpoint is required.
+  const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+  const newUser = userRepo.create({
+    username: user.username,
+    email: user.email,
+    password: user.password,
+    displayName: user.displayName,
+    roles: ["user"],
+  });
+  await userRepo.save(newUser);
 
   // Promote the user to admin role so guarded endpoints are accessible
-  const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
   await userRepo.update({ username: user.username }, { roles: ["admin"] });
 
   const loginRes = await request(app.getHttpServer())

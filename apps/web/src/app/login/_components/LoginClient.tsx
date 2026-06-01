@@ -39,10 +39,6 @@ export default function LoginClient() {
   const keycloakOrgIdParam = searchParams.get("keycloakOrgId") ?? "";
   const keycloakError = searchParams.get("error");
 
-  // Phase 37 (FARM-S358) — when redirected from /signup the URL contains
-  // ?registered=1 so we can show a confirmation banner above the form.
-  const justRegistered = searchParams.get("registered") === "1";
-
   // Local state for the org ID input shown when no query param is provided
   const [keycloakOrgId, setKeycloakOrgId] = useState(keycloakOrgIdParam);
   const [keycloakOrgIdError, setKeycloakOrgIdError] = useState("");
@@ -171,14 +167,6 @@ export default function LoginClient() {
             <CardDescription>Sign in to Farm — The Full Stack Platform</CardDescription>
           </CardHeader>
           <CardContent>
-            {justRegistered && (
-              <div
-                role="status"
-                className="mb-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
-              >
-                Account created. Please log in.
-              </div>
-            )}
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               {/* Root-level error from the API */}
               {errors.root?.message && (
@@ -358,16 +346,6 @@ export default function LoginClient() {
               </div>
             </div>
 
-            {/* Phase 37 — Sign up link */}
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/signup"
-                className="font-medium text-primary hover:underline"
-              >
-                Sign up
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </div>

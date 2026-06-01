@@ -1,7 +1,10 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
+import { User } from "../src/modules/auth/entities/user.entity";
 
 describe("User Management (Phase 37) (e2e)", () => {
   let app: INestApplication<App>;
@@ -16,15 +19,16 @@ describe("User Management (Phase 37) (e2e)", () => {
     });
     adminToken = ctx.token;
 
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send({
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await userRepo.save(
+      userRepo.create({
         username: "um_target",
         email: "um_target@e2e.com",
         password: "Strongest1",
         displayName: "Target",
-      })
-      .expect(201);
+        roles: ["user"],
+      }),
+    );
 
     const list = await request(app.getHttpServer())
       .get("/api/v1/users")
@@ -134,16 +138,16 @@ describe("User Management (Phase 37) (e2e)", () => {
     });
 
     it("non-admin user → 403", async () => {
-      // Register a non-admin user and get their token
-      await request(app.getHttpServer())
-        .post("/api/v1/auth/register")
-        .send({
+      const nonAdminRepo = app.get<Repository<User>>(getRepositoryToken(User));
+      await nonAdminRepo.save(
+        nonAdminRepo.create({
           username: "um_nonadmin",
           email: "um_nonadmin@e2e.com",
           password: "Strongest1",
           displayName: "Non Admin",
-        })
-        .expect(201);
+          roles: ["user"],
+        }),
+      );
 
       const loginRes = await request(app.getHttpServer())
         .post("/api/v1/auth/login")

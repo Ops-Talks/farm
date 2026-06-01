@@ -31,7 +31,7 @@ describe("Auth Lifecycle (e2e)", () => {
     await app.close();
   });
 
-  it("should complete the full auth lifecycle: register -> login -> JWT -> list users", async () => {
+  it("should complete the full auth lifecycle: login -> JWT -> list users", async () => {
     const userData = {
       username: "auth_e2e_user",
       email: "auth_e2e@test.com",
@@ -39,18 +39,16 @@ describe("Auth Lifecycle (e2e)", () => {
       displayName: "Auth E2E User",
     };
 
-    // Step 1: Register a new user
-    const registerRes = await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(userData)
-      .expect(201);
-
-    const registered = registerRes.body as UserResponse;
-    expect(registered.username).toBe(userData.username);
-    expect(registered.email).toBe(userData.email);
-    expect(registered.displayName).toBe(userData.displayName);
-    expect(registered).not.toHaveProperty("password");
-    expect(registered.id).toBeDefined();
+    // Step 1: Create user directly via repository (no public register endpoint)
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    const newUser = userRepo.create({
+      ...userData,
+      roles: ["user"],
+    });
+    const created = await userRepo.save(newUser);
+    expect(created.username).toBe(userData.username);
+    expect(created.email).toBe(userData.email);
+    expect(created.id).toBeDefined();
 
     // Step 2: Login with the registered user
     const loginRes = await request(app.getHttpServer())
@@ -68,7 +66,6 @@ describe("Auth Lifecycle (e2e)", () => {
     const token = loginBody.token;
 
     // Promote user to admin so GET /auth/users is accessible
-    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
     await userRepo.update(
       { username: userData.username },
       { roles: ["admin"] },
@@ -110,10 +107,9 @@ describe("Auth Lifecycle (e2e)", () => {
       displayName: "Refresh User",
     };
 
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(userData)
-      .expect(201);
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    const newUser = userRepo.create({ ...userData, roles: ["user"] });
+    await userRepo.save(newUser);
 
     const loginRes = await request(app.getHttpServer())
       .post("/api/v1/auth/login")
@@ -156,70 +152,11 @@ describe("Auth Lifecycle (e2e)", () => {
     expect((secondRefresh.body as { token: string }).token).toBeDefined();
   });
 
-  it("should reject registration with weak password", async () => {
-    const weakPasswords = [
-      { password: "short1A", reason: "too short" },
-      { password: "alllowercase1", reason: "no uppercase" },
-      { password: "ALLUPPERCASE1", reason: "no lowercase" },
-      { password: "NoDigitsHere", reason: "no number" },
-    ];
-
-    for (const { password } of weakPasswords) {
-      await request(app.getHttpServer())
-        .post("/api/v1/auth/register")
-        .send({
-          username: "weakuser",
-          email: "weak@test.com",
-          password,
-          displayName: "Weak User",
-        })
-        .expect(400);
-    }
-  });
-
-  it("should reject registration with too short username", async () => {
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send({
-        username: "a",
-        email: "short@test.com",
-        password: "ValidPass1",
-        displayName: "Short User",
-      })
-      .expect(400);
-  });
-
-  it("should reject registration with missing fields", async () => {
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send({ username: "incomplete" })
-      .expect(400);
-  });
-
   it("should reject login with invalid credentials", async () => {
     await request(app.getHttpServer())
       .post("/api/v1/auth/login")
       .send({ username: "nonexistent", password: "WrongPass1" })
       .expect(401);
-  });
-
-  it("should reject duplicate registration", async () => {
-    const userData = {
-      username: "dup_user",
-      email: "dup@test.com",
-      password: "DupPassword1",
-      displayName: "Dup User",
-    };
-
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(userData)
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(userData)
-      .expect(409);
   });
 
   it("should reject access to protected endpoints without token", async () => {
@@ -236,7 +173,6 @@ describe("Auth Lifecycle (e2e)", () => {
   });
 
   it("should reject non-admin users from admin-only endpoints", async () => {
-    // Register a regular user (not promoted to admin)
     const userData = {
       username: "regular_user",
       email: "regular@test.com",
@@ -244,10 +180,9 @@ describe("Auth Lifecycle (e2e)", () => {
       displayName: "Regular User",
     };
 
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(userData)
-      .expect(201);
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    const newUser = userRepo.create({ ...userData, roles: ["user"] });
+    await userRepo.save(newUser);
 
     const loginRes = await request(app.getHttpServer())
       .post("/api/v1/auth/login")
@@ -280,11 +215,9 @@ describe("User Profile Management (e2e)", () => {
   beforeAll(async () => {
     app = await createE2EApp();
 
-    // Register the test user
-    await request(app.getHttpServer())
-      .post("/api/v1/auth/register")
-      .send(profileUser)
-      .expect(201);
+    // Create the test user directly via repository
+    const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
+    await userRepo.save(userRepo.create({ ...profileUser, roles: ["user"] }));
 
     // Login to obtain a token
     const loginRes = await request(app.getHttpServer())
@@ -348,10 +281,10 @@ describe("User Profile Management (e2e)", () => {
         displayName: "Profile E2E User 2",
       };
 
-      await request(app.getHttpServer())
-        .post("/api/v1/auth/register")
-        .send(secondUser)
-        .expect(201);
+      const userRepo2 = app.get<Repository<User>>(getRepositoryToken(User));
+      await userRepo2.save(
+        userRepo2.create({ ...secondUser, roles: ["user"] }),
+      );
 
       await request(app.getHttpServer())
         .patch("/api/v1/auth/profile")
