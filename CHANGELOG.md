@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.12] - 2026-05-31
+
+### Changed
+- **deps**: bump typeorm from 0.3.29 to 1.0.0 (#184).
+- Merge pull request #195 from Ops-Talks/dependabot/npm_and_yarn/non-critical-updates-c0c2e78b52.
+
+### Fixed
+- **coverage**: Fix code coverage.
+
 ## [0.25.11] - 2026-05-31
 
 ### Changed
