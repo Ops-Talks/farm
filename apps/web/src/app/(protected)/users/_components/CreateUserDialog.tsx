@@ -53,7 +53,7 @@ export function CreateUserDialog({
   const [orgId, setOrgId] = useState("");
   const [orgRole, setOrgRole] = useState<OrgRole>(OrgRole.VIEWER);
   const effectiveOrgId =
-    !isPlatformAdmin && myOrgs.length > 0 && !orgId ? myOrgs[0].id : orgId;
+    !isPlatformAdmin && myOrgs.length > 0 && !orgId ? (myOrgs[0]?.id ?? "") : orgId;
   const [platformAdmin, setPlatformAdmin] = useState(false);
 
   // Result state (after successful creation)
