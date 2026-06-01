@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.3.12
+version: 0.25.13
 appVersion: "0.25.13"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -29,54 +29,18 @@ annotations:
       url: https://github.com/Ops-Talks/farm/issues
   artifacthub.io/images: |
     - name: farm-api
-      image: ghcr.io/ops-talks/farm-api:0.25.9
+      image: ghcr.io/ops-talks/farm-api:0.25.13
       platforms:
         - linux/amd64
         - linux/arm64
     - name: farm-web
-      image: ghcr.io/ops-talks/farm-web:0.25.9
+      image: ghcr.io/ops-talks/farm-web:0.25.13
       platforms:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "migration Job activeDeadlineSeconds increased from 300 to 480; pre-upgrade-check takes up to 60s before migration starts, so 300s left Helm context deadline and migration timeout racing"
-    - kind: fixed
-      description: "helm-install and helm-upgrade targets in Makefile now pass --timeout 10m0s; default 5-minute Helm context deadline was hit before migration Job could complete on slow cluster starts"
     - kind: changed
-      description: "README.md: remove duplicate installation examples and consolidate observability parameter sections"
-    - kind: added
-      description: Add wait-for-db init container to API deployment; prevents CrashLoopBackOff when postgresql.enabled=true and PostgreSQL subchart is slower to initialise than TypeORM retry budget (ct install fix)
-    - kind: fixed
-      description: Remove DailyRotateFile transports from API logger; production logs go to stdout only (12-factor, readOnlyRootFilesystem compatible)
-    - kind: fixed
-      description: Add /tmp emptyDir to default values.yaml; catalog, documentation, and iac modules write temporary files to os.tmpdir()
-    - kind: fixed
-      description: ci/kind-values.yaml disables migration and sets global.imageRegistry to fix ct install on KinD
-    - kind: fixed
-      description: ct install builds images from the current branch and pre-loads into KinD; no released image required
-    - kind: fixed
-      description: Test hook pods use generic chart labels with test-specific component to avoid matching service selectors
-    - kind: fixed
-      description: Test hook delete policy includes before-hook-creation so failed test Jobs are cleaned up before retrying
-    - kind: added
-      description: OCI chart distribution via GHCR with cosign keyless signing
-    - kind: added
-      description: Ingress templates for API and web with optional TLS
-    - kind: fixed
-      description: Web NetworkPolicy no longer silently denies all ingress when ingressControllerNamespaceSelector is empty; supports podSelector-only peers
-    - kind: fixed
-      description: Deployment pod template uses the full label set including helm.sh/chart
-    - kind: fixed
-      description: PDB guard accounts for autoscaling.minReplicas when HPA is enabled
-    - kind: fixed
-      description: externalRedis.host default changed from localhost to empty string with validation guard
-    - kind: fixed
-      description: "ci/kind-values.yaml: use api.image.registry and web.image.registry instead of global.imageRegistry; ghcr.io/bitnami/* requires Broadcom authentication, docker.io/bitnami/* is public"
-    - kind: fixed
-      description: "Upgrade Bitnami subcharts: postgresql 15.5.38 -> 18.6.10, redis 19.6.4 -> 25.5.3; previous pinned versions used image tags removed from Docker Hub, causing ImagePullBackOff on ct install"
-    - kind: fixed
-      description: "test-db-redis.yaml: add runAsUser: 65534 (nobody) to check-pass container; busybox has no USER set and conflicts with pod-level runAsNonRoot: true"
+      description: "chart version field now mirrors appVersion — both are set to the application semver on every release, eliminating ArtifactHub publish skips caused by unchanged chart version"
 
 dependencies:
   - name: postgresql

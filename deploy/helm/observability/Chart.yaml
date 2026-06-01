@@ -5,7 +5,7 @@ description: |
   Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
   Install alongside the Farm chart: make observability-install
 type: application
-version: 0.2.3
+version: 0.25.13
 appVersion: "0.25.13"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
@@ -46,20 +46,8 @@ annotations:
     - name: pyroscope
       image: grafana/pyroscope:1.13.4
   artifacthub.io/changes: |
-    - kind: added
-      description: Namespace template with createNamespace toggle (default false)
-    - kind: added
-      description: _helpers.tpl with common label helpers and selectorLabels
-    - kind: added
-      description: values.schema.json for Helm values validation
-    - kind: added
-      description: ci/kind-values.yaml for ct install on KinD
     - kind: changed
-      description: OCI chart distribution via GHCR with cosign keyless signing
-    - kind: changed
-      description: Alloy 1.8.2, kube-prometheus-stack 72.3.0, Loki 6.55.0, Tempo 1.24.4, Pyroscope 1.21.0
-    - kind: changed
-      description: Subchart conditions added for independent enable/disable per component
+      description: "chart version field now mirrors appVersion — both are set to the application semver on every release, eliminating ArtifactHub publish skips caused by unchanged chart version"
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics
