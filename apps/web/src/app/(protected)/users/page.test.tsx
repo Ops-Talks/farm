@@ -661,5 +661,23 @@ describe("UsersClient", () => {
       await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
       expect(screen.queryByRole("button", { name: /New User/i })).not.toBeInTheDocument();
     });
+
+    it("clicking New User button opens CreateUserDialog", async () => {
+      const user = userEvent.setup();
+      mockHasRole = (r: string) => r === "admin";
+      mockOrgRole = null;
+      renderClient();
+      await waitFor(() => expect(mockListUsers).toHaveBeenCalled());
+
+      await act(async () => {
+        await user.click(screen.getByRole("button", { name: /New User/i }));
+      });
+
+      // CreateUserDialog should now be open
+      expect(
+        await screen.findByRole("dialog"),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Create new user")).toBeInTheDocument();
+    });
   });
 });
