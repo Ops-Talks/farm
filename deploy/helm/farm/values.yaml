@@ -530,6 +530,46 @@ seed:
   # -- Additional annotations on the seed Job pod template.
   podAnnotations: {}
 
+# ─── BOOTSTRAP ───────────────────────────────────────────────────────────────
+# Creates the first admin user on a fresh install (post-install hook, weight 2).
+# Safe for production: only creates the user when it does not already exist.
+# Disabled by default. Enable by setting bootstrap.admin.enabled=true and
+# providing username, email, and password in overlay values or a Kubernetes
+# Secret referenced via api.existingSecret (add ADMIN_PASSWORD manually).
+#
+# The bootstrap Job runs AFTER migration (weight -1) and seed (weight 1),
+# so the users table is guaranteed to exist.
+
+bootstrap:
+  admin:
+    # -- Enable the post-install bootstrap Job. Set to true to create the first admin.
+    enabled: false
+    # -- Admin username (required when enabled).
+    username: ""
+    # -- Admin email (required when enabled).
+    email: ""
+    # -- Admin password in plain text (required when enabled; stored hashed in DB).
+    password: ""
+    # -- Organization name to create and enroll the admin as OWNER (optional).
+    # Leave empty to skip organization creation. Idempotent: skips if org already exists.
+    orgName: ""
+    # -- Restart policy for the bootstrap Job pod.
+    restartPolicy: OnFailure
+    # -- Backoff limit before the Job is considered failed.
+    backoffLimit: 3
+    # -- Maximum duration in seconds before the Job is terminated.
+    activeDeadlineSeconds: 180
+    # -- Resources for the bootstrap Job pod.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+    # -- Additional annotations on the bootstrap Job pod template.
+    podAnnotations: {}
+
 # ─── EXTERNAL DATABASE ───────────────────────────────────────────────────────
 # Used when postgresql.enabled is false (production default).
 

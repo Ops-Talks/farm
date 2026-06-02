@@ -11,8 +11,8 @@ The Farm Helm Chart:
 - **Artifact Hub**: Published as OCI artifact to GitHub Container Registry (`ghcr.io/ops-talks/helm-charts/farm`)
 - **Type**: Application chart
 - **Minimum Kubernetes**: 1.26+ (HPA autoscaling/v2 GA requirement)
-- **Current version**: 0.3.11 (chart version, independent from appVersion)
-- **Current appVersion**: 0.25.10 (Farm application version)
+- **Current version**: 0.25.15 (chart version, bumped independently from appVersion)
+- **Current appVersion**: 0.25.14 (Farm application version)
 
 ## Chart Structure
 
@@ -79,9 +79,21 @@ deploy/helm/farm/
 The chart version is **independent** from the application version:
 
 ```yaml
-version: 0.3.11          # Chart version — SemVer for Helm releases
-appVersion: "0.25.10"    # Farm application version
+version: 0.25.15         # Chart version — SemVer for Helm releases
+appVersion: "0.25.14"    # Farm application version
 ```
+
+**Automated chart version bumping**:
+
+Application releases (via `release-it`) call `scripts/bump-helm-chart-version.sh` in the `after:bump` hook. This script performs an independent **patch** increment of the chart version — it does not mirror `appVersion`. Minor and major chart version bumps must be performed manually before submitting a PR.
+
+```bash
+# Manual patch bump (same as the script does automatically):
+bash scripts/bump-helm-chart-version.sh deploy/helm/farm/Chart.yaml
+bash scripts/bump-helm-chart-version.sh deploy/helm/observability/Chart.yaml
+```
+
+The script validates that the current version matches `x.y.z` semver before proceeding. Pre-release or RC tags (e.g., `1.0.0-rc.1`) are not supported by the automated bump — perform those manually.
 
 **Versioning Policy**:
 
@@ -215,7 +227,8 @@ Use Helm hook weights for deterministic ordering:
   - migration-secret.yaml (weight: -8)
 - Regular resources (implicit weight: 0) — Deployment, Service, ConfigMap, Secret
 - `post-install` / `post-upgrade` (weight: 1+):
-  - seed-job.yaml (weight: 1) — runs after deployments succeed
+  - seed-job.yaml (weight: 1) — runs after deployments succeed (dev/staging only)
+  - bootstrap-job.yaml (weight: 2) — creates the first admin user (production-safe)
 - `test` (Helm test hook):
   - test-*.yaml — runs on `helm test` command
 
@@ -502,6 +515,36 @@ Frontend Playwright tests:
 cd apps/web
 npm run test:e2e
 ```
+
+## Admin Bootstrap
+
+On a fresh production installation, no users exist by default. The `bootstrap-job.yaml` hook creates the first admin user from Helm values. It runs as a `post-install` hook (weight: 2, after migration at -1) and is idempotent — if the username or email already exists, the job exits cleanly.
+
+### Enabling Bootstrap
+
+Set the following values in your overlay:
+
+```yaml
+bootstrap:
+  admin:
+    enabled: true
+    username: admin
+    email: admin@example.com
+    password: YourSecurePassword
+    # Optional: create an organization and enroll the admin as OWNER.
+    orgName: "Acme Corp"
+```
+
+The password is stored in a Kubernetes Secret and is hashed with bcrypt before being written to the database.
+
+When `orgName` is set, the bootstrap job also creates an organization with a URL-friendly slug derived from the name and adds the admin as OWNER. This prevents the admin from being trapped in the org-creation screen on first login. The operation is idempotent: if the org already exists (matched by name or slug), it is reused and only the membership is created if missing.
+
+### Production Notes
+
+- Bootstrap only runs on `helm install`, not on `helm upgrade`. If you delete the admin user, re-create it via the API or by running a bootstrap Job manually.
+- In production, prefer `api.existingSecret` to manage credentials outside the chart. In that case, add `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_ORG_NAME` to your external secret and enable bootstrap with values only for `enabled: true`.
+- The seed Job (`seed.enabled`) also creates an admin user (`admin/Admin1234`) with a "Farm Demo" organization and demo data — never enable the seed in production.
+- In dev (`values-dev.yaml`), both `seed.enabled: true` and `bootstrap.admin.orgName: "Farm Demo"` are set. The seed runs first (weight: 1) and creates everything; the bootstrap (weight: 2) detects the existing user and org and skips both.
 
 ## Common Issues
 
