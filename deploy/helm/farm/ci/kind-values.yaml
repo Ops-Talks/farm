@@ -40,9 +40,11 @@ web:
     tag: "ci-local"
     pullPolicy: Never
 
-# The migration pre-install hook runs before regular resources (postgresql subchart)
-# are created in Kubernetes. Disabling migration avoids a guaranteed DeadlineExceeded
-# on every fresh ct install. Schema correctness is validated in the API CI test suite.
+# The migration hook is post-install (fires after regular resources are created),
+# so PostgreSQL is being brought up concurrently. The pg_isready initContainer
+# handles readiness waiting, but adds latency on a cold KinD node. Keeping
+# migration disabled in CI keeps install time predictable; schema correctness is
+# validated by the API test suite (SQLite synchronize:true).
 migration:
   enabled: false
 

@@ -1,0 +1,121 @@
+{{- if .Values.bootstrap.admin.enabled }}
+{{- if empty .Values.bootstrap.admin.password }}
+  {{- fail "bootstrap.admin.password must not be empty when bootstrap.admin.enabled is true" }}
+{{- end }}
+# ── Hook weight -10: ConfigMap with the minimal DB connection vars ─────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "farm.fullname" . }}-bootstrap-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  NODE_ENV: {{ .Values.api.env.NODE_ENV | quote }}
+  DATABASE_TYPE: "postgres"
+  DATABASE_HOST: {{ include "farm.databaseHost" . | quote }}
+  DATABASE_PORT: {{ include "farm.databasePort" . | quote }}
+  DATABASE_USER: {{ include "farm.databaseUser" . | quote }}
+  DATABASE_NAME: {{ include "farm.databaseName" . | quote }}
+  DATABASE_SYNC: "false"
+  ADMIN_USERNAME: {{ .Values.bootstrap.admin.username | quote }}
+  ADMIN_EMAIL: {{ .Values.bootstrap.admin.email | quote }}
+  ADMIN_ORG_NAME: {{ .Values.bootstrap.admin.orgName | quote }}
+---
+# ── Hook weight -8: Secret with the DB password and admin credentials ─────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "farm.fullname" . }}-bootstrap-secret
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-8"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+type: Opaque
+stringData:
+  ADMIN_PASSWORD: {{ .Values.bootstrap.admin.password | quote }}
+  {{- if .Values.postgresql.enabled }}
+  DATABASE_PASSWORD: {{ .Values.postgresql.auth.password | default "" | quote }}
+  {{- else if .Values.externalDatabase.password }}
+  DATABASE_PASSWORD: {{ .Values.externalDatabase.password | quote }}
+  {{- else }}
+  DATABASE_PASSWORD: ""
+  {{- end }}
+---
+# ── Hook weight -5: ServiceAccount ────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "farm.fullname" . }}-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+automountServiceAccountToken: false
+---
+# ── Hook weight 2: Job ────────────────────────────────────────────────────────
+# Runs after migration (weight -1) and optional seed (weight 1).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "farm.fullname" . }}-bootstrap
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "farm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bootstrap
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.bootstrap.admin.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.bootstrap.admin.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "farm.labels" . | nindent 8 }}
+        app.kubernetes.io/component: bootstrap
+      {{- with .Values.bootstrap.admin.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      restartPolicy: {{ .Values.bootstrap.admin.restartPolicy }}
+      serviceAccountName: {{ include "farm.fullname" . }}-bootstrap
+      securityContext:
+        {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: bootstrap
+          image: {{ include "farm.api.image" . }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.bootstrap.admin.resources | nindent 12 }}
+          command: ["node", "dist/database/seeds/bootstrap-admin.js"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          envFrom:
+            - configMapRef:
+                name: {{ include "farm.fullname" . }}-bootstrap-config
+            - secretRef:
+                name: {{ include "farm.fullname" . }}-bootstrap-secret
+{{- end }}

@@ -34,21 +34,12 @@ Common labels applied to all resources.
 */}}
 {{- define "farm.labels" -}}
 helm.sh/chart: {{ include "farm.chart" . }}
-{{ include "farm.selectorLabels" . }}
+app.kubernetes.io/name: {{ include "farm.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
-
-{{/*
-Generic selector labels — used only as a building block inside farm.labels.
-Do NOT use this helper directly in selector.matchLabels or template.metadata.labels.
-Use farm.api.selectorLabels or farm.web.selectorLabels instead.
-*/}}
-{{- define "farm.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "farm.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*

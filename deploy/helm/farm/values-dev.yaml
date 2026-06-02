@@ -76,3 +76,14 @@ pyroscope:
 faro:
   enabled: true
   url: "http://alloy:12347/collect"
+
+bootstrap:
+  admin:
+    enabled: true
+    username: admin
+    email: admin@farm.dev
+    password: Admin1234
+    orgName: "Farm Demo"
+
+seed:
+  enabled: true

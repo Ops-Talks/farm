@@ -1,17 +1,18 @@
 {{- if .Values.migration.enabled }}
 # ── Hook weight -10: ConfigMap with the minimal DB connection vars ────────────
-# Regular resources (postgresql subchart) are created before pre-install hooks
-# execute, so the database will be starting up when this ConfigMap is created.
+# post-install: PostgreSQL subchart is fully up before this hook fires (regular
+# resources are created first on fresh installs).
+# pre-upgrade: the existing PostgreSQL pod is still running when this hook fires,
+# so wait-for-db succeeds and migrations run before the new app pods roll out.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "farm.fullname" . }}-migration-config
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.labels" . | nindent 4 }}
-    app.kubernetes.io/component: migration
+    {{- include "farm.migration.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-10"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 data:
@@ -32,10 +33,9 @@ metadata:
   name: {{ include "farm.fullname" . }}-migration-secret
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.labels" . | nindent 4 }}
-    app.kubernetes.io/component: migration
+    {{- include "farm.migration.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-8"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 type: Opaque
@@ -56,10 +56,9 @@ metadata:
   name: {{ include "farm.fullname" . }}-migration
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.labels" . | nindent 4 }}
-    app.kubernetes.io/component: migration
+    {{- include "farm.migration.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 automountServiceAccountToken: false
@@ -71,10 +70,9 @@ metadata:
   name: {{ include "farm.fullname" . }}-migration
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "farm.labels" . | nindent 4 }}
-    app.kubernetes.io/component: migration
+    {{- include "farm.migration.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": post-install,pre-upgrade
     "helm.sh/hook-weight": "-1"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:

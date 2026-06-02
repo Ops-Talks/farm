@@ -17,7 +17,7 @@ To access the services locally, run:
 {{- if .Values.migration.enabled }}
 
 DATABASE MIGRATIONS
-  A pre-install/pre-upgrade Job ran migrations before this release.
+  A post-install/pre-upgrade Job ran migrations before this release.
   Check its status with:
 
     kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=migration

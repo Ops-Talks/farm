@@ -4,7 +4,7 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.25.14
+version: 0.25.17
 appVersion: "0.25.14"
 home: https://github.com/Ops-Talks/farm
 sources:
@@ -39,10 +39,18 @@ annotations:
         - linux/amd64
         - linux/arm64
   artifacthub.io/changes: |
+    - kind: added
+      description: "bootstrap-job.yaml: post-install Job (weight 2) that creates the first admin user from ADMIN_USERNAME/ADMIN_EMAIL/ADMIN_PASSWORD; disabled by default (bootstrap.admin.enabled=false)"
+    - kind: added
+      description: "values.schema.json: added bootstrap.admin schema block"
+    - kind: fixed
+      description: "Migration hook changed from pre-install to post-install,pre-upgrade; pre-install fired before PostgreSQL subchart was ready, causing wait-for-db CrashLoopBackOff on fresh installs"
     - kind: changed
-      description: "v0.25.13: chart version now mirrors appVersion so each application release publishes a fresh Farm chart artifact"
+      description: "Phase 54: migration-job outer resources now use farm.migration.labels helper instead of farm.labels + inline component label"
     - kind: changed
-      description: "v0.25.13: release automation now updates the embedded farm-api and farm-web image tags in Chart.yaml during the version bump"
+      description: "Phase 54: removed dead farm.selectorLabels helper from _helpers.tpl; fields inlined directly into farm.labels"
+    - kind: changed
+      description: "Phase 54: release automation now bumps chart version independently via scripts/bump-helm-chart-version.sh (patch increment) instead of mirroring appVersion"
 
 dependencies:
   - name: postgresql
