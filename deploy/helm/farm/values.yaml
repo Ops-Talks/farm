@@ -549,7 +549,7 @@ bootstrap:
     # -- Admin email (required when enabled).
     email: ""
     # -- Admin password in plain text (required when enabled; stored hashed in DB).
-    password: ""
+    password: ""  # codeql[js/empty-password-in-configuration-file]
     # -- Organization name to create and enroll the admin as OWNER (optional).
     # Leave empty to skip organization creation. Idempotent: skips if org already exists.
     orgName: ""

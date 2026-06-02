@@ -1,4 +1,7 @@
 {{- if .Values.bootstrap.admin.enabled }}
+{{- if empty .Values.bootstrap.admin.password }}
+  {{- fail "bootstrap.admin.password must not be empty when bootstrap.admin.enabled is true" }}
+{{- end }}
 # ── Hook weight -10: ConfigMap with the minimal DB connection vars ─────────────
 apiVersion: v1
 kind: ConfigMap
