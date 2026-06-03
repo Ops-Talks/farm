@@ -46,10 +46,8 @@ annotations:
     - name: pyroscope
       image: grafana/pyroscope:1.13.4
   artifacthub.io/changes: |
-    - kind: changed
-      description: "v0.25.13: chart version now mirrors appVersion so each application release publishes a fresh observability chart artifact"
-    - kind: changed
-      description: "v0.25.13: chart publication now follows the tagged release flow used for Farm application releases"
+    - kind: fixed
+      description: "release: align Helm chart version with app version on every release; bump-helm-chart-version.sh direct +1 patch replaced by explicit assignment to prevent chart/app version drift"
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics

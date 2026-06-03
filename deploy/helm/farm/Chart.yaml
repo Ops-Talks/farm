@@ -32,19 +32,15 @@ annotations:
       image: ghcr.io/ops-talks/farm-api:0.25.16
       platforms:
         - linux/amd64
-        - linux/arm64
     - name: farm-web
       image: ghcr.io/ops-talks/farm-web:0.25.16
       platforms:
         - linux/amd64
-        - linux/arm64
   artifacthub.io/changes: |
     - kind: fixed
-      description: "values-dev.yaml: remove DATABASE_SYNC=true — MigrationLockService already runs pending migrations on startup via advisory lock; synchronize=true with PostgreSQL is unsafe outside test environments"
-    - kind: added
-      description: "api.kubernetes.inCluster: new opt-in flag (default false) — when true, automounts SA token and creates a read-only ClusterRole/ClusterRoleBinding for Kubernetes workload discovery (Argo Rollouts, Flux, KEDA, OLM, Helm releases)"
+      description: "build-images: switch to linux/amd64 only; linux/arm64 build was failing due to missing Tailwind CSS oxide native bindings, preventing farm-web from ever being published to GHCR"
     - kind: fixed
-      description: "KubernetesService: probe SA cert/token existence before loadFromCluster(); prevents recurring ERROR logs when automountServiceAccountToken=false; requires explicit KUBERNETES_IN_CLUSTER=true or KUBECONFIG_PATH to enable"
+      description: "release: align Helm chart version with app version on every release; bump-helm-chart-version.sh direct +1 patch replaced by explicit assignment to prevent chart/app version drift"
 
 dependencies:
   - name: postgresql
