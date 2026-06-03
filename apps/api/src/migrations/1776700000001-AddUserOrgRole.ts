@@ -6,20 +6,19 @@ import { MigrationInterface, QueryRunner } from "typeorm";
  * This migration handles two concerns:
  *
  * 1. VIEWER role support — the user_organizations.role column is already typed
- *    as varchar with no CHECK constraint (intentionally, for SQLite/better-sqlite3
- *    E2E compatibility), so no schema change is required to accept the new
+ *    as varchar, so no schema change is required to accept the new
  *    "viewer" value.
  *
  * 2. Data backfill — ensures every organization has exactly one owner by
  *    promoting the member with the earliest `createdAt` (i.e. the founder) to
- *    "owner" when no owner currently exists.  This is a safety guard for
+ *    "owner" when no owner currently exists. This is a safety guard for
  *    organizations that may have been created before the ownership concept was
  *    enforced at the application layer.
  */
 export class AddUserOrgRole1776700000001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Identify organizations that have no owner and promote the earliest member.
-    // Uses a self-join so the UPDATE is portable across SQLite and PostgreSQL.
+    // Uses a self-join to safely target the earliest member for each organization.
     await queryRunner.query(`
       UPDATE user_organizations
       SET role = 'owner'

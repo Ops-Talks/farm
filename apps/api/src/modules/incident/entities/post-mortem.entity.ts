@@ -53,7 +53,7 @@ export class PostMortem {
     required: false,
     nullable: true,
   })
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   contributingFactors: string[];
 
   @ApiProperty({
@@ -64,7 +64,7 @@ export class PostMortem {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   actionItems: PostMortemActionItem[];
 
   @ApiProperty({

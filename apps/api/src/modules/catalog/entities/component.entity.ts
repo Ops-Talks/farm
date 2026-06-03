@@ -213,7 +213,7 @@ export class Component {
     description: "Tags for categorization",
     required: false,
   })
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   tags: string[];
 
   @ApiProperty({
@@ -221,7 +221,7 @@ export class Component {
     description: "Related external links",
     required: false,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   links: ComponentLink[];
 
   @ApiProperty({
@@ -229,7 +229,7 @@ export class Component {
     description: "Additional metadata",
     required: false,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   metadata: Record<string, unknown>;
 
   @ApiProperty({
@@ -242,7 +242,7 @@ export class Component {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   helmChart: HelmChartMetadata | null;
 
   @ApiProperty({
@@ -259,7 +259,7 @@ export class Component {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   containerImage: ContainerImageMetadata | null;
 
   @ApiProperty({

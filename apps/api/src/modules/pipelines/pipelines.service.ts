@@ -293,7 +293,7 @@ export class PipelinesService {
     externalRunUrl: string | null,
   ): Promise<void> {
     // Find all runs with a stageResult matching this externalRunId.
-    // stageResults is simple-json, so we must load all running runs and filter in memory.
+    // Load running runs and filter stage results in memory.
     const runs = await this.runRepository.find({
       where: { status: PipelineRunStatus.RUNNING },
     });

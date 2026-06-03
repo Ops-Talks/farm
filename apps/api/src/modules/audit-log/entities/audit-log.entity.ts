@@ -62,7 +62,7 @@ export class AuditLog {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   payload: Record<string, unknown> | null;
 
   @ApiProperty({

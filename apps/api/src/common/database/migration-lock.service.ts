@@ -13,8 +13,8 @@ import { ConfigService } from "@nestjs/config";
  * to query tables that the migrations create. DatabaseModule is declared before
  * plugin modules in AppModule.imports, guaranteeing initialization order.
  *
- * In non-PostgreSQL environments (e.g. SQLite in tests) this service is a
- * no-op; TypeORM synchronize:true handles schema creation there.
+ * In test environments (synchronize:true + fresh in-memory schema) this
+ * service is a no-op; TypeORM synchronize handles schema creation there.
  *
  * The advisory lock key (4218428) is unique to this application and must not
  * be reused by other advisory lock users in the same database.
@@ -31,8 +31,11 @@ export class MigrationLockService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const dbType = this.configService.get<string>("database.type");
+    const synchronize = this.configService.get<boolean>("database.synchronize");
 
-    if (dbType !== "postgres") {
+    if (dbType !== "postgres" || synchronize) {
+      // In synchronize mode (test environment) TypeORM auto-creates the schema
+      // from entities; running migrations on top would conflict.
       return;
     }
 

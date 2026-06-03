@@ -110,7 +110,7 @@ export class Deployment {
     description: "Additional metadata",
     required: false,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   metadata: Record<string, unknown>;
 
   @ApiProperty({

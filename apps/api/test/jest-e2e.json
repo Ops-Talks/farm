@@ -3,7 +3,8 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
-  "setupFilesAfterEnv": ["<rootDir>/helpers/better-sqlite3-compat.ts"],
+  "globalSetup": "<rootDir>/helpers/global-setup.ts",
+  "globalTeardown": "<rootDir>/helpers/global-teardown.ts",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },

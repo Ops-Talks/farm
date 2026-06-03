@@ -10,7 +10,6 @@ import {
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { IacModule } from "./iac-module.entity";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /** Parsed variable declaration from variables.tf. */
 export interface IacModuleVariable {
@@ -69,7 +68,7 @@ export class IacModuleVersion {
     items: { type: "object" },
     nullable: true,
   })
-  @Column({ type: "simple-json", nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   variablesMeta: IacModuleVariable[] | null;
 
   @ApiProperty({
@@ -78,7 +77,7 @@ export class IacModuleVersion {
     items: { type: "object" },
     nullable: true,
   })
-  @Column({ type: "simple-json", nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   outputsMeta: IacModuleOutput[] | null;
 
   @ApiProperty({
@@ -86,7 +85,7 @@ export class IacModuleVersion {
     description: "Timestamp of the last successful HCL parse",
     nullable: true,
   })
-  @Column({ type: dateColumnType(), nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   syncedAt: Date | null;
 
   @ApiProperty({

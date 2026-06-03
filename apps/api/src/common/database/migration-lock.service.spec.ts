@@ -21,6 +21,7 @@ describe("MigrationLockService", () => {
   async function build(
     dbType: string,
     dataSource: ReturnType<typeof buildMockDataSource>,
+    synchronize = false,
   ) {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +35,7 @@ describe("MigrationLockService", () => {
           useValue: {
             get: jest.fn((key: string) => {
               if (key === "database.type") return dbType;
+              if (key === "database.synchronize") return synchronize;
               return undefined;
             }),
           },
@@ -45,7 +47,15 @@ describe("MigrationLockService", () => {
 
   it("is a no-op when the database type is not postgres", async () => {
     const ds = buildMockDataSource({});
-    const svc = await build("better-sqlite3", ds);
+    const svc = await build("other-db", ds);
+    await svc.onModuleInit();
+    expect(ds.query).not.toHaveBeenCalled();
+    expect(ds.showMigrations).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op when synchronize is true (test environment)", async () => {
+    const ds = buildMockDataSource({});
+    const svc = await build("postgres", ds, true);
     await svc.onModuleInit();
     expect(ds.query).not.toHaveBeenCalled();
     expect(ds.showMigrations).not.toHaveBeenCalled();

@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
+import { existsSync } from "fs";
 import * as k8s from "@kubernetes/client-node";
 import { CatalogService } from "../catalog/catalog.service";
 import { ComponentKind } from "../catalog/entities/component.entity";
@@ -530,6 +531,8 @@ export class KubernetesService {
     const kubeconfig = new k8s.KubeConfig();
     const kubeconfigPath =
       this.configService.get<string>("kubernetes.kubeconfigPath") || "";
+    const inCluster =
+      this.configService.get<boolean>("kubernetes.inCluster") ?? false;
 
     try {
       if (kubeconfigPath) {
@@ -537,9 +540,33 @@ export class KubernetesService {
         this.logger.log(
           `Kubernetes client initialized from file: ${kubeconfigPath}`,
         );
-      } else {
+      } else if (inCluster) {
+        // Verify ServiceAccount credentials are actually mounted before calling
+        // loadFromCluster(). loadFromCluster() only reads env vars and succeeds
+        // even when automountServiceAccountToken=false, deferring the ENOENT
+        // until the first API call. Probing both files here gives a clear,
+        // early diagnostic instead of a recurring runtime error.
+        const SA_BASE = "/var/run/secrets/kubernetes.io/serviceaccount";
+        const caCert = `${SA_BASE}/ca.crt`;
+        const token = `${SA_BASE}/token`;
+        if (!existsSync(caCert) || !existsSync(token)) {
+          this.logger.warn(
+            "KUBERNETES_IN_CLUSTER=true but ServiceAccount credentials are not " +
+              `mounted (expected ${SA_BASE}/ca.crt and token). ` +
+              "Verify automountServiceAccountToken is enabled in the Helm chart " +
+              "(api.kubernetes.inCluster: true) or disable in-cluster mode.",
+          );
+          return false;
+        }
         kubeconfig.loadFromCluster();
         this.logger.log("Kubernetes client initialized from in-cluster config");
+      } else {
+        // Neither KUBECONFIG_PATH nor KUBERNETES_IN_CLUSTER=true — disabled.
+        this.logger.debug(
+          "Kubernetes integration disabled. " +
+            "Set KUBECONFIG_PATH or KUBERNETES_IN_CLUSTER=true to enable.",
+        );
+        return false;
       }
 
       // Validate the server URL before creating API clients. loadFromCluster()

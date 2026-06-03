@@ -9,7 +9,6 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
 import { ApiSpec } from "./api-spec.entity";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a consumer relationship between a catalog component (or team)
@@ -49,6 +48,6 @@ export class ApiConsumer {
   consumerTeamId: string | null;
 
   @ApiProperty({ description: "Timestamp when the consumer was registered" })
-  @Column({ type: dateColumnType(), default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   addedAt: Date;
 }

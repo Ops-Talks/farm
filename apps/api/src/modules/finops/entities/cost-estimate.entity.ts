@@ -91,7 +91,7 @@ export class CostEstimate {
     description: "Detailed cost breakdown from infracost (JSON)",
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   breakdown: Record<string, unknown> | null;
 
   @ApiProperty({

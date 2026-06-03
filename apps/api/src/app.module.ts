@@ -107,33 +107,39 @@ if (typeof _promSetContentType === "function") {
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: configService.get<string>("database.type") as "postgres",
-        host: configService.get<string>("database.host"),
-        port: configService.get<number>("database.port"),
-        username: configService.get<string>("database.username"),
-        password: configService.get<string>("database.password"),
-        database: configService.get<string>("database.name"),
-        synchronize: configService.get<boolean>("database.synchronize"),
-        autoLoadEntities: true,
-        migrations: [__dirname + "/migrations/*.{ts,js}"],
-        migrationsRun: false,
-        extra:
-          configService.get<string>("database.type") === "postgres"
-            ? {
-                max: configService.get<number>("database.poolSize") ?? 10,
-                connectionTimeoutMillis:
-                  configService.get<number>("database.poolConnectTimeout") ??
-                  5000,
-                idleTimeoutMillis:
-                  configService.get<number>("database.poolIdleTimeout") ??
-                  10000,
-                statement_timeout:
-                  configService.get<number>("database.statementTimeout") ??
-                  30000,
-              }
-            : undefined,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const env = configService.get<string>("env");
+        const rawSync = configService.get<boolean>("database.synchronize");
+        if (rawSync && env !== "test") {
+          throw new Error(
+            "DATABASE_SYNC=true is only permitted when NODE_ENV=test. " +
+              "All schema changes in non-test environments must go through migrations.",
+          );
+        }
+        const synchronize = rawSync === true && env === "test";
+        return {
+          type: configService.get<string>("database.type") as "postgres",
+          host: configService.get<string>("database.host"),
+          port: configService.get<number>("database.port"),
+          username: configService.get<string>("database.username"),
+          password: configService.get<string>("database.password"),
+          database: configService.get<string>("database.name"),
+          synchronize,
+          dropSchema: synchronize,
+          autoLoadEntities: true,
+          migrations: [__dirname + "/migrations/*.{ts,js}"],
+          migrationsRun: false,
+          extra: {
+            max: configService.get<number>("database.poolSize") ?? 10,
+            connectionTimeoutMillis:
+              configService.get<number>("database.poolConnectTimeout") ?? 5000,
+            idleTimeoutMillis:
+              configService.get<number>("database.poolIdleTimeout") ?? 10000,
+            statement_timeout:
+              configService.get<number>("database.statementTimeout") ?? 30000,
+          },
+        };
+      },
     }),
     OrganizationModule,
     BusinessMetricsModule,

@@ -6,7 +6,6 @@ import {
   Index,
 } from "typeorm";
 import { dateTransformer } from "../../../common/transformers/date.transformer";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Records a temporary password reset issued by a platform admin.
@@ -29,11 +28,11 @@ export class PasswordReset {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: dateColumnType(), transformer: dateTransformer })
+  @Column({ type: "timestamp", transformer: dateTransformer })
   expiresAt: Date;
 
   @Column({
-    type: dateColumnType(),
+    type: "timestamp",
     nullable: true,
     transformer: dateTransformer,
   })

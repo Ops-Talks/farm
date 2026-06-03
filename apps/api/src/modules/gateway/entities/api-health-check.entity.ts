@@ -9,7 +9,6 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiSpec } from "../../api-specs/entities/api-spec.entity";
 import { HealthStatus } from "../enums/health-status.enum";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Stores the result of a health check performed against an API endpoint.
@@ -44,7 +43,7 @@ export class ApiHealthCheck {
   apiSpec: ApiSpec | null;
 
   @ApiProperty({ description: "Timestamp when the check was performed" })
-  @Column({ type: dateColumnType() })
+  @Column({ type: "timestamp" })
   checkedAt: Date;
 
   @ApiProperty({ description: "Creation timestamp" })

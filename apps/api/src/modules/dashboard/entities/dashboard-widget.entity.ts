@@ -99,7 +99,7 @@ export class DashboardWidget {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   config: Record<string, unknown>;
 
   @ApiProperty({

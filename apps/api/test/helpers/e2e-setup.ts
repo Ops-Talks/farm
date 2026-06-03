@@ -17,16 +17,15 @@ import request from "supertest";
 import { App } from "supertest/types";
 
 /**
- * Creates and initializes a NestJS application for E2E testing
- * with a better-sqlite3 in-memory database, global pipes, and serialization.
+ * Creates and initializes a NestJS application for E2E testing.
+ * Database connection env vars are injected by the Jest globalSetup hook
+ * (test/helpers/global-setup.ts), which starts a PostgreSQL 16 Testcontainer
+ * and sets DATABASE_HOST / PORT / USER / PASSWORD / NAME / SYNC before any
+ * test worker process is spawned.
  * Rate limiting uses high thresholds to avoid flaky test failures.
  */
 export async function createE2EApp(): Promise<INestApplication<App>> {
   process.env.NODE_ENV = "test";
-  process.env.DATABASE_TYPE = "better-sqlite3";
-  process.env.DATABASE_NAME = ":memory:";
-  process.env.DATABASE_SYNC = "true";
-  process.env.JWT_SECRET = "e2e-test-secret-that-is-at-least-32-characters";
 
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],

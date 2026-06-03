@@ -1,0 +1,170 @@
+name: Build and Publish Images
+
+# Builds, pushes, signs, and makes public the farm-api and farm-web container
+# images whenever a semver tag is pushed to the repository. This workflow runs
+# regardless of how the tag was created (release workflow, manual push, or
+# release-it automation), ensuring images are always available in GHCR after a
+# release — which is required for ArtifactHub's security scanner (Trivy) to
+# run and for downstream Helm deployments.
+#
+# The workflow is idempotent: if the target image tag already exists in GHCR,
+# the build and push steps are skipped. This prevents double-builds when the
+# release workflow (workflow_dispatch) is used in parallel.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Never cancel in-progress image publishes — mid-run cancellation can leave
+  # partially-pushed manifests in GHCR.
+  cancel-in-progress: false
+
+jobs:
+  build-image:
+    name: Build and publish — ${{ matrix.image.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: farm-api
+            dockerfile: apps/api/Dockerfile
+            target: production
+          - name: farm-web
+            dockerfile: apps/web/Dockerfile
+            target: runner
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_BASE: ghcr.io/ops-talks/${{ matrix.image.name }}
+
+    steps:
+      - name: Extract version from tag
+        id: tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR (check skip)
+        # Log in early so the skip check can query GHCR without extra steps.
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if image version already published
+        id: check
+        run: |
+          NAME="${{ matrix.image.name }}"
+          VERSION="${{ steps.tag.outputs.version }}"
+          if docker manifest inspect "${IMAGE_BASE}:${VERSION}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Image ${NAME}:${VERSION} already exists in GHCR — skipping build."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Image ${NAME}:${VERSION} not found in GHCR — will build and push."
+          fi
+
+      - name: Checkout tag
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          persist-credentials: false
+
+      - name: Set up QEMU (multi-arch emulation)
+        if: steps.check.outputs.skip == 'false'
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+
+      - name: Set up Docker Buildx
+        if: steps.check.outputs.skip == 'false'
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Extract image metadata (tags + OCI labels)
+        if: steps.check.outputs.skip == 'false'
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ${{ env.IMAGE_BASE }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.tag.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push ${{ matrix.image.name }} (multi-arch, SBOM + provenance)
+        if: steps.check.outputs.skip == 'false'
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          target: ${{ matrix.image.target }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image.name }}-release
+          cache-to: type=gha,scope=${{ matrix.image.name }}-release,mode=max
+          sbom: true
+          provenance: mode=max
+
+      - name: Install cosign
+        if: steps.check.outputs.skip == 'false'
+        uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+      - name: Sign pushed image with cosign (keyless)
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          REF="${IMAGE_BASE}@${{ steps.build.outputs.digest }}"
+          echo "Signing ${REF}"
+          cosign sign --yes "${REF}"
+
+      - name: Ensure GHCR image package is public
+        # ArtifactHub security scanner (Trivy) pulls images anonymously.
+        # GitHub creates every new container package as private by default,
+        # causing DENIED errors when ArtifactHub's Trivy tries to scan.
+        # This step idempotently sets the package visibility to public after
+        # every push so that ArtifactHub can reach the image without
+        # credentials. Runs even when skip=true to recover packages that were
+        # set private after a previous run.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ENCODED_NAME=$(printf '%s' "${{ matrix.image.name }}" | python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=''))")
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/ops-talks/packages/container/${ENCODED_NAME}" \
+            -f visibility=public \
+            --silent || true
+          echo "Package ${{ matrix.image.name }} visibility set to public."
+
+      - name: Generate SPDX SBOM for ${{ matrix.image.name }}
+        if: steps.check.outputs.skip == 'false'
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ env.IMAGE_BASE }}@${{ steps.build.outputs.digest }}
+          artifact-name: ${{ matrix.image.name }}-sbom.spdx.json
+          format: spdx-json
+          output-file: ${{ matrix.image.name }}-sbom.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
+
+      - name: Attach SBOM to GitHub Release ${{ steps.tag.outputs.tag }}
+        if: steps.check.outputs.skip == 'false'
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: ${{ matrix.image.name }}-sbom.spdx.json
+          fail_on_unmatched_files: true

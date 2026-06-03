@@ -1,0 +1,46 @@
+{{- if and .Values.api.serviceAccount.create .Values.api.kubernetes.inCluster }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "farm.fullname" . }}-api-reader
+  labels:
+    {{- include "farm.api.labels" . | nindent 4 }}
+rules:
+  # Core workloads and namespaces
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "nodes", "services", "configmaps", "events"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list"]
+  # Custom Resource Definitions (for feature detection)
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list"]
+  # OLM — Operator Lifecycle Manager
+  - apiGroups: ["operators.coreos.com"]
+    resources: ["clusterserviceversions", "subscriptions", "installplans"]
+    verbs: ["get", "list"]
+  # Argo Rollouts
+  - apiGroups: ["argoproj.io"]
+    resources: ["rollouts", "analysisruns", "analysistemplates", "experiments"]
+    verbs: ["get", "list"]
+  # Flux CD
+  - apiGroups:
+      - "kustomize.toolkit.fluxcd.io"
+      - "helm.toolkit.fluxcd.io"
+      - "source.toolkit.fluxcd.io"
+    resources: ["*"]
+    verbs: ["get", "list"]
+  # KEDA
+  - apiGroups: ["keda.sh"]
+    resources: ["scaledobjects", "scaledjobs", "triggerauthentications"]
+    verbs: ["get", "list"]
+  # Helm releases (Helm stores releases as Secrets)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+{{- end }}

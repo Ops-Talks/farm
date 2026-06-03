@@ -78,13 +78,13 @@ export class PluginInstance {
   @ApiPropertyOptional({
     description: "Plugin-specific configuration settings",
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   config: Record<string, unknown> | null;
 
   @ApiPropertyOptional({
     description: "Snapshot of the manifest at install time",
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   manifest: Record<string, unknown> | null;
 
   @ApiProperty({ description: "Timestamp when the plugin was installed" })

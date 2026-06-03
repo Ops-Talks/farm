@@ -10,7 +10,6 @@ import {
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 import { IacStack } from "./iac-stack.entity";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Allowed run types for an IaC operation.
@@ -107,7 +106,7 @@ export class IacRun {
     description: "Summary of resource changes (add/change/destroy)",
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   resourceChanges: ResourceChanges | null;
 
   @ApiProperty({
@@ -131,7 +130,7 @@ export class IacRun {
     description: "Timestamp when the run started",
     nullable: true,
   })
-  @Column({ type: dateColumnType(), nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   startedAt: Date | null;
 
   @ApiProperty({
@@ -139,7 +138,7 @@ export class IacRun {
     description: "Timestamp when the run finished",
     nullable: true,
   })
-  @Column({ type: dateColumnType(), nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   finishedAt: Date | null;
 
   @ApiProperty({

@@ -39,7 +39,7 @@ export class TagPolicy {
     description: "Tag keys that must be present on every matching resource",
     type: [String],
   })
-  @Column("simple-array")
+  @Column({ type: "text", array: true })
   requiredKeys: string[];
 
   /**
