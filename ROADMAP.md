@@ -142,7 +142,7 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 48: Platform Resilience | 3 | 10 | `DONE` |
 | Phase 49: Dependency Modernization | 1 | 3 | `DONE` |
 | Phase 50: Docker & Container Hardening | 4 | 11 | `DONE` |
-| Phase 51: Helm Chart Hardening | 7 | 21 | `IN PROGRESS` |
+| Phase 51: Helm Chart Hardening | 7 | 21 | `DONE` |
 | Phase 52: Helm Observability Integration | 3 | 6 | `DONE` |
 | Phase 53: Helm Chart Quality Remediation | 6 | 31 | `DONE` |
 | Phase 54: Helm Chart Quality, Correctness & Publishing | 7 | 32 | `DONE` |
@@ -688,13 +688,13 @@ Outcome of a deep audit of `deploy/helm/farm/` performed by the Farm SRE agent. 
 | FARM-S555 | Add a `behavior` block to both HPA templates. Expose `api.autoscaling.behavior` and `web.autoscaling.behavior` in `values.yaml` with safe defaults (scaleDown stabilizationWindowSeconds 300, scaleUp stabilizationWindowSeconds 60). Add to README parameters table (HELM-F005). | `DONE` |
 | FARM-S556 | Add `startupProbe` to the API and web Deployment templates. Expose `api.startupProbe` and `web.startupProbe` in `values.yaml` with defaults `httpGet /api/health`, `failureThreshold: 20`, `periodSeconds: 5`. Remove reliance on large `initialDelaySeconds` as the only startup guard (HELM-F006). | `DONE` |
 
-### FARM-E136: Observability Coverage `IN PROGRESS`
+### FARM-E136: Observability Coverage `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
 | FARM-S557 | Add `"farm-integrations"` to the dashboard list in `templates/grafana-dashboards.yaml`. Add a CI step that `diff`s `deploy/helm/farm/dashboards/` against `observability/grafana/provisioning/dashboards/` (excluding `dashboard.yml`) and fails on any missing file (HELM-F007). | `DONE` |
 | FARM-S558 | Add `runbook_url` annotations to all four alerts in `templates/prometheusrule.yaml`. Introduce a `prometheusRule.runbookBaseUrl` value (default: the GitHub README anchor) so operators can point to an internal runbook base URL (HELM-F008). | `DONE` |
-| FARM-S559 | Compile `observability/sloth-slos.yml` with `sloth generate` and embed the resulting multi-burn-rate alert groups into `templates/prometheusrule.yaml`. Add a `make sloth-generate` Makefile target and a CI diff check to detect drift between the Sloth source and the embedded rules (HELM-F009). | `BLOCKED` — requires `sloth` binary; embed pending `make sloth-generate` output review. |
+| FARM-S559 | Compile `observability/sloth-slos.yml` with `sloth generate` and embed the resulting multi-burn-rate alert groups into `templates/prometheusrule.yaml`. Add a `make sloth-generate` Makefile target and a CI diff check to detect drift between the Sloth source and the embedded rules (HELM-F009). | `DONE` |
 
 ### FARM-E137: Configuration Completeness `DONE`
 
