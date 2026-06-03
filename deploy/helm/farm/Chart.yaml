@@ -5,7 +5,7 @@ description: Farm — open-source platform portal for managing software componen
 kubeVersion: ">=1.26.0-0"
 type: application
 version: 0.25.24
-appVersion: "0.25.23"
+appVersion: "0.25.24"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
@@ -29,11 +29,11 @@ annotations:
       url: https://github.com/Ops-Talks/farm/issues
   artifacthub.io/images: |
     - name: farm-api
-      image: ghcr.io/ops-talks/farm-api:0.25.23
+      image: ghcr.io/ops-talks/farm-api:0.25.24
       platforms:
         - linux/amd64
     - name: farm-web
-      image: ghcr.io/ops-talks/farm-web:0.25.23
+      image: ghcr.io/ops-talks/farm-web:0.25.24
       platforms:
         - linux/amd64
   artifacthub.io/changes: |
