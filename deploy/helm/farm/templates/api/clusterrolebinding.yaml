@@ -1,0 +1,16 @@
+{{- if and .Values.api.serviceAccount.create .Values.api.kubernetes.inCluster }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "farm.fullname" . }}-api-reader
+  labels:
+    {{- include "farm.api.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "farm.fullname" . }}-api-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "farm.api.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

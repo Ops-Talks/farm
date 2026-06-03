@@ -60,6 +60,17 @@ api:
     # -- Override the generated ServiceAccount name.
     name: ""
 
+  kubernetes:
+    # -- Enable in-cluster Kubernetes API access for workload discovery.
+    # When true: automountServiceAccountToken is enabled on the API pod, and a
+    # ClusterRole with read-only (get, list) access to cluster resources is
+    # created and bound to the API ServiceAccount. This allows Farm to discover
+    # Deployments, Pods, CRDs, and custom resources (Argo Rollouts, Flux,
+    # KEDA, etc.) from inside the cluster.
+    # Set false (default) to disable in-cluster access. The Kubernetes
+    # integration can still be used via KUBECONFIG_PATH for external clusters.
+    inCluster: false
+
   # -- Annotations added to the API Deployment pod template.
   podAnnotations: {}
 

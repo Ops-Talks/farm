@@ -86,7 +86,7 @@ export class Team {
     description: "Additional metadata",
     required: false,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   metadata: Record<string, unknown>;
 
   @ManyToMany(() => User, { eager: false })

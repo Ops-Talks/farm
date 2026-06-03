@@ -48,7 +48,7 @@ export class PluginRegistryEntry {
   @ApiProperty({
     description: "Full manifest snapshot at latest published version",
   })
-  @Column("simple-json")
+  @Column({ type: "jsonb" })
   manifest: Record<string, unknown>;
 
   @ApiProperty({

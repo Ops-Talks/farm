@@ -32,7 +32,7 @@ export interface TemplateVariableDependsOn {
 /**
  * Represents a variable that can be provided when scaffolding
  * a new service from a template.
- * Stored as simple-json — extending this interface requires no DB migration.
+ * Stored as jsonb — extending this interface requires no DB migration.
  */
 export interface TemplateVariable {
   key: string;
@@ -99,7 +99,7 @@ export class ServiceTemplate {
     required: false,
     nullable: true,
   })
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   tags: string[] | null;
 
   @ApiProperty({
@@ -114,7 +114,7 @@ export class ServiceTemplate {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   variables: TemplateVariable[] | null;
 
   @ApiProperty({

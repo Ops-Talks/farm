@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Records a tagging violation detected for a cloud or Kubernetes resource.
@@ -48,7 +47,7 @@ export class ResourceViolation {
     description: "Tag keys absent from the resource but required by policy",
     type: [String],
   })
-  @Column("simple-array")
+  @Column({ type: "text", array: true })
   missingKeys: string[];
 
   /** Optional reference to the catalog component that owns this resource. */
@@ -64,7 +63,7 @@ export class ResourceViolation {
   @ApiProperty({
     description: "Timestamp when this violation was first detected",
   })
-  @Column({ type: dateColumnType() })
+  @Column({ type: "timestamp" })
   detectedAt: Date;
 
   /**
@@ -77,6 +76,6 @@ export class ResourceViolation {
     nullable: true,
     required: false,
   })
-  @Column({ type: dateColumnType(), nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   resolvedAt?: Date;
 }

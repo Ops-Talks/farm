@@ -55,3 +55,6 @@ data:
   {{- if .Values.api.observability.lokiUrl }}
   LOKI_URL: {{ .Values.api.observability.lokiUrl | quote }}
   {{- end }}
+
+  # Kubernetes in-cluster integration
+  KUBERNETES_IN_CLUSTER: {{ .Values.api.kubernetes.inCluster | quote }}

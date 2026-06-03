@@ -111,6 +111,7 @@ export const configuration = () => ({
   },
   kubernetes: {
     kubeconfigPath: process.env.KUBECONFIG_PATH || "",
+    inCluster: process.env.KUBERNETES_IN_CLUSTER === "true",
   },
   plugins: {
     dir: process.env.PLUGINS_DIR || "./plugins",
@@ -173,9 +174,7 @@ export const validationSchema = Joi.object({
     .valid("development", "production", "test", "provision")
     .default("development"),
   PORT: Joi.number().default(3000),
-  DATABASE_TYPE: Joi.string()
-    .valid("postgres", "sqlite", "better-sqlite3")
-    .default("postgres"),
+  DATABASE_TYPE: Joi.string().valid("postgres").default("postgres"),
   DATABASE_HOST: Joi.string().default("localhost"),
   DATABASE_PORT: Joi.number().default(5432),
   DATABASE_USER: Joi.string().default("postgres"),
@@ -237,6 +236,7 @@ export const validationSchema = Joi.object({
   TEAMS_WEBHOOK_URL: Joi.string().allow("").default(""),
   // Kubernetes (optional)
   KUBECONFIG_PATH: Joi.string().allow("").default(""),
+  KUBERNETES_IN_CLUSTER: Joi.boolean().default(false),
   // Plugin directory
   PLUGINS_DIR: Joi.string().default("./plugins"),
   // Swagger Basic Auth

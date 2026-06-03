@@ -40,6 +40,15 @@ jest.mock("@kubernetes/client-node", () => {
     CustomObjectsApi: class CustomObjectsApi {},
   };
 });
+
+// Mock fs.existsSync so tests can control SA credential file presence without
+// touching the filesystem.
+let mockExistsSync: jest.Mock;
+jest.mock("fs", () => ({
+  ...jest.requireActual<typeof import("fs")>("fs"),
+  existsSync: (...args: Parameters<typeof import("fs").existsSync>): boolean =>
+    mockExistsSync(...args) as boolean,
+}));
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -164,6 +173,7 @@ describe("KubernetesService", () => {
 
   beforeEach(async () => {
     // Reset all mock functions.
+    mockExistsSync = jest.fn().mockReturnValue(true);
     mockListDeployments = jest.fn();
     mockListSecrets = jest.fn().mockResolvedValue({ items: [] });
     mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
@@ -653,13 +663,16 @@ describe("KubernetesService", () => {
   // -------------------------------------------------------------------------
 
   describe("initClient — loadFromCluster path", () => {
-    it("should initialize from in-cluster config when kubeconfigPath is empty", async () => {
-      // Make loadFromCluster succeed (not throw).
+    it("should initialize from in-cluster config when KUBERNETES_IN_CLUSTER=true and SA files present", async () => {
       mockLoadFromCluster = jest.fn();
+      mockExistsSync = jest.fn().mockReturnValue(true);
 
       const inClusterConfig = {
-        get: (key: string) =>
-          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+        get: (key: string) => {
+          if (key === "kubernetes.kubeconfigPath") return "";
+          if (key === "kubernetes.inCluster") return true;
+          return undefined;
+        },
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -675,17 +688,71 @@ describe("KubernetesService", () => {
       expect(inClusterService.isEnabled()).toBe(true);
     });
 
+    it("should disable service when KUBERNETES_IN_CLUSTER=true but SA files are missing", async () => {
+      mockLoadFromCluster = jest.fn();
+      mockExistsSync = jest.fn().mockReturnValue(false);
+
+      const inClusterConfig = {
+        get: (key: string) => {
+          if (key === "kubernetes.kubeconfigPath") return "";
+          if (key === "kubernetes.inCluster") return true;
+          return undefined;
+        },
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: inClusterConfig },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const disabledService = module.get<KubernetesService>(KubernetesService);
+      expect(disabledService.isEnabled()).toBe(false);
+      // loadFromCluster should not have been called
+      expect(mockLoadFromCluster).not.toHaveBeenCalled();
+    });
+
+    it("should disable service when neither kubeconfigPath nor inCluster is set", async () => {
+      const noConfigService = {
+        get: (key: string) => {
+          if (key === "kubernetes.kubeconfigPath") return "";
+          if (key === "kubernetes.inCluster") return false;
+          return undefined;
+        },
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KubernetesService,
+          { provide: ConfigService, useValue: noConfigService },
+          { provide: CatalogService, useValue: mockCatalogService },
+          { provide: EventsGateway, useValue: mockEventsGateway },
+        ],
+      }).compile();
+
+      const disabledService = module.get<KubernetesService>(KubernetesService);
+      expect(disabledService.isEnabled()).toBe(false);
+      expect(mockLoadFromCluster).not.toHaveBeenCalled();
+    });
+
     it("should disable service when kubeconfig produces an invalid server URL", async () => {
       // loadFromCluster succeeds but the cluster server URL is not a valid URL,
       // which happens when KUBERNETES_SERVICE_HOST/PORT env vars are unset.
       mockLoadFromCluster = jest.fn();
+      mockExistsSync = jest.fn().mockReturnValue(true);
       mockGetCurrentCluster = jest
         .fn()
         .mockReturnValue({ server: "https://undefined:undefined" });
 
       const inClusterConfig = {
-        get: (key: string) =>
-          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+        get: (key: string) => {
+          if (key === "kubernetes.kubeconfigPath") return "";
+          if (key === "kubernetes.inCluster") return true;
+          return undefined;
+        },
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -703,11 +770,15 @@ describe("KubernetesService", () => {
 
     it("should disable service when getCurrentCluster returns null", async () => {
       mockLoadFromCluster = jest.fn();
+      mockExistsSync = jest.fn().mockReturnValue(true);
       mockGetCurrentCluster = jest.fn().mockReturnValue(null);
 
       const inClusterConfig = {
-        get: (key: string) =>
-          key === "kubernetes.kubeconfigPath" ? "" : undefined,
+        get: (key: string) => {
+          if (key === "kubernetes.kubeconfigPath") return "";
+          if (key === "kubernetes.inCluster") return true;
+          return undefined;
+        },
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -2660,6 +2731,17 @@ describe("KubernetesService — additional branch coverage", () => {
     mockListNodes = jest.fn().mockResolvedValue({ items: [] });
     mockListClusterCustomObjectCSV = jest.fn().mockResolvedValue({ items: [] });
 
+    // initClient helpers — must be reset here because this describe is a
+    // separate top-level block and does not inherit the parent beforeEach.
+    mockExistsSync = jest.fn().mockReturnValue(true);
+    mockLoadFromFile = jest.fn();
+    mockLoadFromCluster = jest.fn().mockImplementation(() => {
+      throw new Error("not in cluster");
+    });
+    mockGetCurrentCluster = jest
+      .fn()
+      .mockReturnValue({ server: "https://kubernetes.default.svc" });
+
     mockCatalogService = {
       findAll: jest.fn().mockResolvedValue([[], 0]),
       create: jest.fn().mockResolvedValue({ id: "new-comp", name: "test" }),
@@ -2670,7 +2752,7 @@ describe("KubernetesService — additional branch coverage", () => {
 
     mockConfigService = {
       get: jest.fn().mockImplementation((key: string) => {
-        if (key === "kubernetes.kubeconfigPath") return "";
+        if (key === "kubernetes.kubeconfigPath") return "/fake/kubeconfig";
         return undefined;
       }),
     };

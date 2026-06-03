@@ -238,7 +238,7 @@ export class DeploymentsService {
       .innerJoin(
         "(" + subQuery.getQuery() + ")",
         "latest",
-        "d.environmentId = latest.environmentId AND d.createdAt = latest.maxCreatedAt",
+        'd.environmentId = latest."environmentId" AND d.createdAt = latest."maxCreatedAt"',
       )
       .setParameters(subQuery.getParameters())
       .leftJoinAndSelect("d.component", "component")

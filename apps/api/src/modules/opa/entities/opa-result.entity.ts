@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Persisted result of a single OPA policy evaluation.
@@ -43,14 +42,14 @@ export class OpaResult {
     type: [String],
     nullable: true,
   })
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   violations: string[];
 
   /** Timestamp when the policy evaluation was performed */
   @ApiProperty({
     description: "Timestamp when the policy evaluation was performed",
   })
-  @Column({ type: dateColumnType(), default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   evaluatedAt: Date;
 
   /** Row creation timestamp managed by TypeORM */

@@ -62,7 +62,7 @@ export class Organization {
   })
   userOrganizations: UserOrganization[];
 
-  @Column({ type: "simple-json", nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   settings: Record<string, unknown> | null;
 
   @ApiProperty({

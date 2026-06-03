@@ -11,7 +11,6 @@ import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
 import * as bcrypt from "bcrypt";
 import { dateTransformer } from "../../../common/transformers/date.transformer";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a user in the Farm system.
@@ -66,7 +65,7 @@ export class User {
   }
 
   @ApiProperty({ example: ["admin", "user"], description: "The user roles" })
-  @Column("simple-array", { nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   roles: string[];
 
   @Exclude()
@@ -103,7 +102,7 @@ export class User {
     nullable: true,
   })
   @Column({
-    type: dateColumnType(),
+    type: "timestamp",
     nullable: true,
     transformer: dateTransformer,
   })

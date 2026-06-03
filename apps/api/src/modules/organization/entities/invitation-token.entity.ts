@@ -8,7 +8,6 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { OrgRole } from "@farm/types";
 import { dateTransformer } from "../../../common/transformers/date.transformer";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Status of an invitation token.
@@ -92,7 +91,7 @@ export class InvitationToken {
   createdAt: Date;
 
   @ApiProperty({ description: "Timestamp when the invitation expires" })
-  @Column({ type: dateColumnType(), transformer: dateTransformer })
+  @Column({ type: "timestamp", transformer: dateTransformer })
   expiresAt: Date;
 
   @ApiProperty({
@@ -100,7 +99,7 @@ export class InvitationToken {
     nullable: true,
   })
   @Column({
-    type: dateColumnType(),
+    type: "timestamp",
     nullable: true,
     transformer: dateTransformer,
   })

@@ -11,7 +11,6 @@ import {
 import { ApiProperty } from "@nestjs/swagger";
 import { Component } from "../../catalog/entities/component.entity";
 import { GatewayType } from "../enums/gateway-type.enum";
-import { dateColumnType } from "../../../common/utils/column-type.util";
 
 /**
  * Represents a route entry synchronized from an API gateway (Kong or AWS API Gateway).
@@ -34,14 +33,14 @@ export class GatewayRoute {
     description: "URL paths matched by this route",
     type: [String],
   })
-  @Column("simple-array", { default: "" })
+  @Column({ type: "text", array: true, default: () => "'{}'" })
   paths: string[];
 
   @ApiProperty({
     description: "HTTP methods matched by this route",
     type: [String],
   })
-  @Column("simple-array", { default: "" })
+  @Column({ type: "text", array: true, default: () => "'{}'" })
   methods: string[];
 
   @ApiProperty({
@@ -49,7 +48,7 @@ export class GatewayRoute {
     type: [String],
     nullable: true,
   })
-  @Column("simple-array", { default: "", nullable: true })
+  @Column({ type: "text", array: true, nullable: true })
   tags: string[];
 
   @ApiProperty({ enum: GatewayType, description: "Gateway provider type" })
@@ -71,7 +70,7 @@ export class GatewayRoute {
     description: "Timestamp of last successful sync",
     nullable: true,
   })
-  @Column({ type: dateColumnType(), nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   syncedAt: Date | null;
 
   @ApiProperty({

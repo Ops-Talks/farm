@@ -75,7 +75,7 @@ export class IntegrationCredential {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   metadata: Record<string, unknown> | null;
 
   @ApiProperty({

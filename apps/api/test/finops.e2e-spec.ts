@@ -179,7 +179,9 @@ describe("FinOps (e2e)", () => {
 
     it("returns 404 when the component does not exist", async () => {
       await request(app.getHttpServer())
-        .get("/api/v1/cost/components/non-existent-uuid/actual")
+        .get(
+          "/api/v1/cost/components/00000000-0000-0000-0000-000000000000/actual",
+        )
         .set("Authorization", `Bearer ${token}`)
         .set("X-Organization-Id", organizationId)
         .expect(404);
@@ -284,7 +286,7 @@ describe("FinOps (e2e)", () => {
 
     it("returns 404 when the team does not exist", async () => {
       await request(app.getHttpServer())
-        .get("/api/v1/cost/teams/non-existent-team/summary")
+        .get("/api/v1/cost/teams/00000000-0000-0000-0000-000000000001/summary")
         .set("Authorization", `Bearer ${token}`)
         .set("X-Organization-Id", organizationId)
         .expect(404);

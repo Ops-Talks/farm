@@ -39,7 +39,7 @@ spec:
     spec:
       {{- include "farm.api.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ include "farm.api.serviceAccountName" . }}
-      automountServiceAccountToken: false
+      automountServiceAccountToken: {{ .Values.api.kubernetes.inCluster }}
       securityContext:
         {{- toYaml .Values.api.podSecurityContext | nindent 8 }}
       {{- if or .Values.api.waitForDb.enabled .Values.postgresql.enabled }}

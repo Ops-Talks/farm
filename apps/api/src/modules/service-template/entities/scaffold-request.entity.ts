@@ -59,7 +59,7 @@ export class ScaffoldRequest {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   variables: Record<string, string> | null;
 
   @ApiProperty({
@@ -101,7 +101,7 @@ export class ScaffoldRequest {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   renderedFiles: string[] | null;
 
   @ApiProperty({

@@ -96,7 +96,7 @@ export class AlertingRule {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   labels: Record<string, string>;
 
   @ApiProperty({
@@ -105,7 +105,7 @@ export class AlertingRule {
     required: false,
     nullable: true,
   })
-  @Column("simple-json", { nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   annotations: Record<string, string>;
 
   @ApiProperty({

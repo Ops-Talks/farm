@@ -108,7 +108,7 @@ describe("configuration", () => {
     process.env.NODE_ENV = "production";
     process.env.PORT = "8080";
     process.env.LOG_LEVEL = "warn";
-    process.env.DATABASE_TYPE = "better-sqlite3";
+    process.env.DATABASE_TYPE = "postgres";
     process.env.DATABASE_HOST = "db.example.com";
     process.env.DATABASE_PORT = "5433";
     process.env.DATABASE_USER = "myuser";
@@ -144,7 +144,7 @@ describe("configuration", () => {
       expect(config.env).toBe("production");
       expect(config.port).toBe(8080);
       expect(config.log.level).toBe("warn");
-      expect(config.database.type).toBe("better-sqlite3");
+      expect(config.database.type).toBe("postgres");
       expect(config.database.host).toBe("db.example.com");
       expect(config.database.port).toBe(5433);
       expect(config.database.username).toBe("myuser");
@@ -238,6 +238,22 @@ describe("validationSchema", () => {
         require("./configuration") as typeof import("./configuration");
       const { error } = validationSchema.validate({ NODE_ENV: "unknown" });
       expect(error).toBeDefined();
+    });
+  });
+
+  it("rejects DATABASE_TYPE values other than postgres", () => {
+    jest.isolateModules(() => {
+      const { validationSchema } =
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require("./configuration") as typeof import("./configuration");
+      const { error: e1 } = validationSchema.validate({
+        DATABASE_TYPE: "sqlite",
+      });
+      expect(e1).toBeDefined();
+      const { error: e2 } = validationSchema.validate({
+        DATABASE_TYPE: "better-sqlite3",
+      });
+      expect(e2).toBeDefined();
     });
   });
 

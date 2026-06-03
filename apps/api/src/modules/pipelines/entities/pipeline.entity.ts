@@ -136,7 +136,7 @@ export class Pipeline {
       required: ["id", "name", "type", "config", "order"],
     },
   })
-  @Column("simple-json", { default: "[]" })
+  @Column({ type: "jsonb", default: () => "'[]'::jsonb" })
   stages: PipelineStage[];
 
   @ApiProperty({
