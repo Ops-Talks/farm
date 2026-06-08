@@ -4,6 +4,8 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
@@ -26,15 +28,12 @@ interface GitHubActionsCredentialPayload {
   repo?: string;
 }
 
-/**
- * Service for interacting with the GitHub Actions API.
- * Credentials are stored as encrypted IntegrationCredential records.
- */
 @Injectable()
 export class GitHubActionsService {
   private readonly logger = new Logger(GitHubActionsService.name);
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly credentialService: IntegrationCredentialService,
     private readonly cb: CircuitBreakerService,
   ) {}
@@ -54,34 +53,32 @@ export class GitHubActionsService {
     ) as GitHubActionsCredentialPayload;
   }
 
-  /**
-   * Lists recent GitHub Actions workflow runs for the configured owner/repo.
-   *
-   * @param orgId - Organization UUID
-   */
   async listWorkflowRuns(orgId: string): Promise<GitHubActionsWorkflowRun[]> {
     const { token, owner, repo } = await this.resolveCredential(orgId);
     const url = repo
       ? `https://api.github.com/repos/${owner}/${repo}/actions/runs`
       : `https://api.github.com/orgs/${owner}/actions/runs`;
-    let res: Response;
+    let data: { workflow_runs?: unknown[] };
     try {
-      res = await this.cb.fire("github-actions", () =>
-        globalThis.fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "User-Agent": "Farm-Portal/1.0",
-          },
-        }),
+      const res = await this.cb.fire("github-actions", () =>
+        firstValueFrom(
+          this.httpService.get<{ workflow_runs?: unknown[] }>(url, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "User-Agent": "Farm-Portal/1.0",
+            },
+            validateStatus: () => true,
+          }),
+        ),
       );
+      if (res.status >= 400) {
+        this.logger.warn(`GitHub Actions API returned ${res.status}`);
+        return [];
+      }
+      data = res.data;
     } catch (err) {
       this.translateHttpError(err, "GitHubActionsService.listWorkflowRuns");
     }
-    if (!res.ok) {
-      this.logger.warn(`GitHub Actions API returned ${res.status}`);
-      return [];
-    }
-    const data = (await res.json()) as { workflow_runs?: unknown[] };
     const runs = data.workflow_runs ?? [];
     return (runs as Record<string, unknown>[]).map((r) => ({
       id: r.id as number,
@@ -99,15 +96,6 @@ export class GitHubActionsService {
     return translateHttpError(err, operation, this.logger);
   }
 
-  /**
-   * Triggers a GitHub Actions workflow via workflow_dispatch and polls
-   * for the newly created run ID (up to 10 seconds).
-   *
-   * @param orgId - Organization UUID
-   * @param workflowId - Workflow file name or numeric ID (e.g. "deploy.yml")
-   * @param ref - Git ref (branch, tag, SHA) to trigger
-   * @returns The triggered workflow run or null if the run could not be found within the poll window
-   */
   async triggerWorkflow(
     orgId: string,
     workflowId: string,
@@ -128,34 +116,43 @@ export class GitHubActionsService {
     };
 
     const dispatchRes = await this.cb.fire("github-actions", () =>
-      globalThis.fetch(dispatchUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ ref }),
-      }),
+      firstValueFrom(
+        this.httpService.post(
+          dispatchUrl,
+          { ref },
+          { headers, validateStatus: () => true },
+        ),
+      ),
     );
 
-    if (!dispatchRes.ok) {
-      const text = await dispatchRes.text().catch(() => "");
+    if (dispatchRes.status >= 400) {
+      const text =
+        typeof dispatchRes.data === "string"
+          ? dispatchRes.data
+          : JSON.stringify(dispatchRes.data ?? "");
       throw new BadRequestException(
         `GitHub Actions dispatch failed: ${dispatchRes.status} ${text}`,
       );
     }
 
-    // Poll up to 10 seconds (5 x 2s) for the new run to appear.
     const runsUrl = `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=5&branch=${encodeURIComponent(ref)}&event=workflow_dispatch`;
     const before = new Date();
 
     for (let attempt = 0; attempt < 5; attempt++) {
       await new Promise<void>((r) => setTimeout(r, 2000));
       const runsRes = await this.cb.fire("github-actions", () =>
-        globalThis.fetch(runsUrl, { headers }),
+        firstValueFrom(
+          this.httpService.get<{ workflow_runs?: Record<string, unknown>[] }>(
+            runsUrl,
+            {
+              headers,
+              validateStatus: () => true,
+            },
+          ),
+        ),
       );
-      if (!runsRes.ok) continue;
-      const data = (await runsRes.json()) as {
-        workflow_runs?: Record<string, unknown>[];
-      };
-      const run = (data.workflow_runs ?? []).find(
+      if (runsRes.status >= 400) continue;
+      const run = (runsRes.data.workflow_runs ?? []).find(
         (r) => new Date(r["created_at"] as string) >= before,
       );
       if (run) {

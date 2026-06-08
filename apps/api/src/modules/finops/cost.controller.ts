@@ -17,6 +17,8 @@ import {
   ApiQuery,
   ApiHeader,
 } from "@nestjs/swagger";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -67,6 +69,7 @@ import { Team } from "../teams/entities/team.entity";
 @Controller("cost")
 export class CostController {
   constructor(
+    private readonly httpService: HttpService,
     private readonly openCostService: OpenCostService,
     private readonly configService: ConfigService,
     @InjectRepository(Component)
@@ -284,11 +287,13 @@ export class CostController {
       "http://localhost:9090",
     );
     try {
-      const res = await globalThis.fetch(`${url}/healthz`, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(3000),
-      });
-      if (res.ok) return { available: true };
+      const res = await firstValueFrom(
+        this.httpService.head(`${url}/healthz`, {
+          timeout: 3000,
+          validateStatus: () => true,
+        }),
+      );
+      if (res.status >= 200 && res.status < 400) return { available: true };
       return {
         available: false,
         reason: `OpenCost returned status ${res.status} at ${url}`,

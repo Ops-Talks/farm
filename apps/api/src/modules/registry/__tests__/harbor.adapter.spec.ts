@@ -1,11 +1,63 @@
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 import { HarborAdapter } from "../adapters/harbor.adapter";
 import { RegistryType } from "../enums/registry-type.enum";
+
+function mockHttpService(): HttpService {
+  return {
+    get: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    post: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    put: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    delete: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    patch: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+  } as unknown as HttpService;
+}
 
 describe("HarborAdapter", () => {
   let adapter: HarborAdapter;
   let configService: ConfigService;
-  let originalFetch: typeof globalThis.fetch;
+  let httpService: HttpService;
 
   const mockCredentials = JSON.stringify({
     username: "admin",
@@ -14,8 +66,7 @@ describe("HarborAdapter", () => {
   const mockBaseUrl = "https://harbor.example.com";
 
   beforeEach(() => {
-    originalFetch = globalThis.fetch;
-
+    httpService = mockHttpService();
     configService = {
       get: jest.fn((key: string) => {
         if (key === "registry.credentials") return mockCredentials;
@@ -24,31 +75,12 @@ describe("HarborAdapter", () => {
       }),
     } as unknown as ConfigService;
 
-    adapter = new HarborAdapter(configService);
+    adapter = new HarborAdapter(httpService, configService);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
-
-  /**
-   * Helper to build a successful mock fetch response.
-   */
-  function okResponse(data: unknown): object {
-    return {
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve(data),
-    };
-  }
-
-  /**
-   * Helper to build a failed mock fetch response.
-   */
-  function errResponse(status = 500): object {
-    return { ok: false, status };
-  }
 
   it("should have type HARBOR", () => {
     expect(adapter.type).toBe(RegistryType.HARBOR);
@@ -60,22 +92,34 @@ describe("HarborAdapter", () => {
 
   describe("listRepositories()", () => {
     it("should list projects then repos and return mapped RepositoryDto array", async () => {
-      const fetchMock = jest
-        .fn()
+      (httpService.get as jest.Mock)
         // projects
-        .mockResolvedValueOnce(okResponse([{ name: "library", project_id: 1 }]))
+        .mockReturnValueOnce(
+          of({
+            data: [{ name: "library", project_id: 1 }],
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        )
         // repos for library
-        .mockResolvedValueOnce(
-          okResponse([
-            { name: "library/nginx", description: "Nginx image" },
-            { name: "library/redis" },
-          ]),
+        .mockReturnValueOnce(
+          of({
+            data: [
+              { name: "library/nginx", description: "Nginx image" },
+              { name: "library/redis" },
+            ],
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         );
-      globalThis.fetch = fetchMock;
 
       const result = await adapter.listRepositories();
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(httpService.get).toHaveBeenCalledTimes(2);
       expect(result).toEqual([
         {
           name: "library/nginx",
@@ -91,7 +135,15 @@ describe("HarborAdapter", () => {
     });
 
     it("should propagate fetch error from projects endpoint", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(errResponse(403));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 403,
+          statusText: "Forbidden",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await expect(adapter.listRepositories()).rejects.toThrow(
         "Harbor request failed: HTTP 403",
@@ -106,15 +158,21 @@ describe("HarborAdapter", () => {
   describe("listTags()", () => {
     it("should split project/repo and return tags from artifacts", async () => {
       const pushTime = "2024-06-01T12:00:00Z";
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse([
-          {
-            digest: "sha256:abcdef",
-            size: 4096,
-            push_time: pushTime,
-            tags: [{ name: "latest" }, { name: "v1.0" }],
-          },
-        ]),
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: [
+            {
+              digest: "sha256:abcdef",
+              size: 4096,
+              push_time: pushTime,
+              tags: [{ name: "latest" }, { name: "v1.0" }],
+            },
+          ],
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
       );
 
       const result = await adapter.listTags("library/nginx");
@@ -130,13 +188,19 @@ describe("HarborAdapter", () => {
     });
 
     it("should fall back to digest-based tag when artifact has no tags", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse([
-          {
-            digest: "sha256:deadbeef1234",
-            // no tags array
-          },
-        ]),
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: [
+            {
+              digest: "sha256:deadbeef1234",
+              // no tags array
+            },
+          ],
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
       );
 
       const result = await adapter.listTags("library/nginx");
@@ -155,13 +219,19 @@ describe("HarborAdapter", () => {
   describe("getManifest()", () => {
     it("should return ManifestDto from artifact response", async () => {
       const pushTime = "2024-07-15T08:30:00Z";
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          digest: "sha256:cafebabe",
-          media_type: "application/vnd.oci.image.manifest.v1+json",
-          size: 8192,
-          push_time: pushTime,
-          tags: [{ name: "stable" }],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            digest: "sha256:cafebabe",
+            media_type: "application/vnd.oci.image.manifest.v1+json",
+            size: 8192,
+            push_time: pushTime,
+            tags: [{ name: "stable" }],
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -177,10 +247,16 @@ describe("HarborAdapter", () => {
     });
 
     it("should use default media type when media_type is absent", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          digest: "sha256:00112233",
-          tags: [],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            digest: "sha256:00112233",
+            tags: [],
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -227,7 +303,15 @@ describe("HarborAdapter", () => {
           },
       };
 
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(okResponse(report));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: report,
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getScanResults("library/nginx", "latest");
 
@@ -246,13 +330,19 @@ describe("HarborAdapter", () => {
     });
 
     it("should return PENDING when vulnerabilities key is absent", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          "application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0":
-            {
-              scan_status: "Running",
-              // no vulnerabilities key
-            },
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            "application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0":
+              {
+                scan_status: "Running",
+                // no vulnerabilities key
+              },
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -262,7 +352,15 @@ describe("HarborAdapter", () => {
     });
 
     it("should return FAILED on fetch error", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(errResponse(404));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 404,
+          statusText: "Not Found",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getScanResults("library/nginx", "missing");
 
@@ -276,39 +374,50 @@ describe("HarborAdapter", () => {
 
   describe("listReplicationPolicies()", () => {
     it("should return mapped policies with last execution status", async () => {
-      const fetchMock = jest
-        .fn()
+      (httpService.get as jest.Mock)
         // policies
-        .mockResolvedValueOnce(
-          okResponse([
-            {
-              id: 1,
-              name: "push-to-ecr",
-              src_registry: {
-                name: "local-harbor",
-                url: "https://harbor.example.com",
+        .mockReturnValueOnce(
+          of({
+            data: [
+              {
+                id: 1,
+                name: "push-to-ecr",
+                src_registry: {
+                  name: "local-harbor",
+                  url: "https://harbor.example.com",
+                },
+                dest_registry: {
+                  name: "ecr-prod",
+                  url: "https://ecr.example.com",
+                },
+                filters: [
+                  { type: "name", value: "library/**" },
+                  { type: "tag", value: "latest" },
+                ],
+                trigger: { type: "scheduled" },
+                enabled: true,
               },
-              dest_registry: {
-                name: "ecr-prod",
-                url: "https://ecr.example.com",
-              },
-              filters: [
-                { type: "name", value: "library/**" },
-                { type: "tag", value: "latest" },
-              ],
-              trigger: { type: "scheduled" },
-              enabled: true,
-            },
-          ]),
+            ],
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
         // executions for policy 1
-        .mockResolvedValueOnce(okResponse([{ status: "succeed" }]));
-
-      globalThis.fetch = fetchMock;
+        .mockReturnValueOnce(
+          of({
+            data: [{ status: "succeed" }],
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        );
 
       const result = await adapter.listReplicationPolicies();
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(httpService.get).toHaveBeenCalledTimes(2);
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         id: 1,
@@ -323,26 +432,37 @@ describe("HarborAdapter", () => {
     });
 
     it("should handle missing execution history gracefully and set lastExecutionStatus to null", async () => {
-      const fetchMock = jest
-        .fn()
+      (httpService.get as jest.Mock)
         // policies
-        .mockResolvedValueOnce(
-          okResponse([
-            {
-              id: 2,
-              name: "backup-policy",
-              src_registry: null,
-              dest_registry: { url: "https://backup.example.com" },
-              filters: [],
-              trigger: null,
-              enabled: false,
-            },
-          ]),
+        .mockReturnValueOnce(
+          of({
+            data: [
+              {
+                id: 2,
+                name: "backup-policy",
+                src_registry: null,
+                dest_registry: { url: "https://backup.example.com" },
+                filters: [],
+                trigger: null,
+                enabled: false,
+              },
+            ],
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
         // executions endpoint fails
-        .mockResolvedValueOnce(errResponse(500));
-
-      globalThis.fetch = fetchMock;
+        .mockReturnValueOnce(
+          of({
+            data: {},
+            status: 500,
+            statusText: "Internal Server Error",
+            headers: {},
+            config: {},
+          }),
+        );
 
       const result = await adapter.listReplicationPolicies();
 
@@ -366,13 +486,19 @@ describe("HarborAdapter", () => {
 
   describe("mapSeverity edge cases", () => {
     it("should map NEGLIGIBLE to INFORMATIONAL", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          "report/v1": {
-            vulnerabilities: [
-              { id: "CVE-X", severity: "NEGLIGIBLE", package: "pkg" },
-            ],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            "report/v1": {
+              vulnerabilities: [
+                { id: "CVE-X", severity: "NEGLIGIBLE", package: "pkg" },
+              ],
+            },
           },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -382,13 +508,19 @@ describe("HarborAdapter", () => {
     });
 
     it("should map unknown severity to UNDEFINED", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          "report/v1": {
-            vulnerabilities: [
-              { id: "CVE-Y", severity: "EXOTIC", package: "pkg" },
-            ],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            "report/v1": {
+              vulnerabilities: [
+                { id: "CVE-Y", severity: "EXOTIC", package: "pkg" },
+              ],
+            },
           },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -398,13 +530,19 @@ describe("HarborAdapter", () => {
     });
 
     it("should map MEDIUM severity correctly", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          "report/v1": {
-            vulnerabilities: [
-              { id: "CVE-M", severity: "Medium", package: "pkg" },
-            ],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            "report/v1": {
+              vulnerabilities: [
+                { id: "CVE-M", severity: "Medium", package: "pkg" },
+              ],
+            },
           },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -414,11 +552,19 @@ describe("HarborAdapter", () => {
     });
 
     it("should map LOW severity correctly", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce(
-        okResponse({
-          "report/v1": {
-            vulnerabilities: [{ id: "CVE-L", severity: "low", package: "pkg" }],
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            "report/v1": {
+              vulnerabilities: [
+                { id: "CVE-L", severity: "low", package: "pkg" },
+              ],
+            },
           },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -439,7 +585,7 @@ describe("HarborAdapter", () => {
       } as unknown as import("@nestjs/config").ConfigService;
 
       // Should not throw; adapter initializes with empty credentials
-      const badAdapter = new HarborAdapter(badConfigService);
+      const badAdapter = new HarborAdapter(mockHttpService(), badConfigService);
       expect(badAdapter.type).toBe(RegistryType.HARBOR);
     });
   });

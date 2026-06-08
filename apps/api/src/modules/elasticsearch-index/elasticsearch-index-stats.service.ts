@@ -1,4 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
@@ -58,6 +60,7 @@ export class ElasticsearchIndexStatsService {
   private readonly logger = new Logger(ElasticsearchIndexStatsService.name);
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly cb: CircuitBreakerService,
   ) {}
@@ -267,40 +270,42 @@ export class ElasticsearchIndexStatsService {
       pattern,
     )}?format=json&h=index,health,status,docs.count,store.size`;
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
     try {
       const response = await this.cb.fire("elasticsearch-index", () =>
-        globalThis.fetch(url, {
-          method: "GET",
-          headers,
-          signal: controller.signal,
-        }),
+        firstValueFrom(
+          this.httpService.get<CatIndicesEntry[]>(url, {
+            headers,
+            timeout: REQUEST_TIMEOUT_MS,
+            validateStatus: () => true,
+          }),
+        ),
       );
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          // A 404 for an index pattern commonly means the cluster is reachable
-          // but the pattern matched no indices. Return an empty array so the
-          // caller can surface a "missing" placeholder row instead of marking
-          // the whole cluster as unreachable.
-          this.logger.debug(
-            `Elasticsearch returned 404 for pattern "${pattern}"`,
-          );
-          return [];
-        }
+      if (response.status === 404) {
+        // A 404 for an index pattern commonly means the cluster is reachable
+        // but the pattern matched no indices. Return an empty array so the
+        // caller can surface a "missing" placeholder row instead of marking
+        // the whole cluster as unreachable.
+        this.logger.debug(
+          `Elasticsearch returned 404 for pattern "${pattern}"`,
+        );
+        return [];
+      }
+
+      if (response.status >= 400) {
         this.logger.warn(
           `Elasticsearch responded with HTTP ${response.status} for pattern "${pattern}"`,
         );
         return null;
       }
 
-      const body = (await response.json()) as CatIndicesEntry[];
+      const body = response.data;
       return Array.isArray(body) ? body : [];
     } catch (error) {
-      const name = (error as Error)?.name;
-      if (name === "AbortError") {
+      if (
+        (error as Error)?.name === "AxiosError" &&
+        (error as { code?: string }).code === "ECONNABORTED"
+      ) {
         this.logger.warn(
           `Elasticsearch request for pattern "${pattern}" timed out after ${REQUEST_TIMEOUT_MS}ms`,
         );
@@ -311,8 +316,6 @@ export class ElasticsearchIndexStatsService {
         );
       }
       return null;
-    } finally {
-      clearTimeout(timer);
     }
   }
 

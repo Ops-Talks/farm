@@ -37,8 +37,8 @@ export function translateHttpError(
   }
 
   // Native fetch() raises TypeError for network-level failures (DNS, connection
-  // refused, etc.).  Handle before the Axios check so callers that use fetch()
-  // instead of HttpService also receive accurate 503 responses.
+  // refused, etc.).  Kept for the documented fetch() exception (opa.service.ts).
+  // All other services have been converged to @nestjs/axios HttpService.
   if (err instanceof TypeError) {
     logger.error(`${operation}: service unreachable`, {
       message: err.message,

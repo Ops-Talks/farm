@@ -4,7 +4,6 @@ import { PassportModule } from "@nestjs/passport";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
-import { HttpModule } from "@nestjs/axios";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -45,7 +44,6 @@ const isTest = process.env.NODE_ENV === "test";
       Team,
     ]),
     PassportModule,
-    HttpModule,
     ScheduleModule.forRoot(),
     AuditLogModule,
     JwtModule.registerAsync({

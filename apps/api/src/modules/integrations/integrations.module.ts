@@ -1,5 +1,4 @@
 import { forwardRef, Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { WebhookService } from "./webhook.service";
 import { IntegrationsListenerService } from "./integrations-listener.service";
@@ -28,7 +27,6 @@ import { PipelinesModule } from "../pipelines/pipelines.module";
  */
 @Module({
   imports: [
-    HttpModule,
     TypeOrmModule.forFeature([IntegrationCredential]),
     forwardRef(() => PipelinesModule),
   ],

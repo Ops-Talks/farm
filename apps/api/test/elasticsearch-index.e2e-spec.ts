@@ -5,6 +5,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { createE2EApp, registerAndLogin } from "./helpers/e2e-setup";
 import { User } from "../src/modules/auth/entities/user.entity";
+import { HttpService } from "@nestjs/axios";
 
 interface ComponentResponse {
   id: string;
@@ -143,20 +144,7 @@ describe("ElasticsearchIndex (e2e)", () => {
 
   // FARM-T403 — Stats endpoint
   describe("GET /elasticsearch-indices/stats", () => {
-    let originalFetch: typeof globalThis.fetch;
-
-    beforeEach(() => {
-      originalFetch = globalThis.fetch;
-    });
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-    });
-
     it("returns reachable: false for each linked record when ES is unreachable", async () => {
-      // Ensure no fetch is even called when no URL is configured.
-      globalThis.fetch = jest.fn();
-
       const res = await request(app.getHttpServer())
         .get(`/api/v1/components/${componentId}/elasticsearch-indices/stats`)
         .set("Authorization", `Bearer ${token}`)
@@ -182,50 +170,73 @@ describe("ElasticsearchIndex (e2e)", () => {
     });
 
     it("returns reachable: true with mapped stats when fetch succeeds", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve([
-            {
-              index: "logs-app-2026.04.27",
-              health: "green",
-              status: "open",
-              "docs.count": "999",
-              "store.size": "5mb",
-            },
-          ]),
-      });
+      const httpService = app.get(HttpService);
+      const interceptorId = httpService.axiosRef.interceptors.response.use(
+        (response) => response,
 
-      const res = await request(app.getHttpServer())
-        .get(`/api/v1/components/${componentId}/elasticsearch-indices/stats`)
-        .set("Authorization", `Bearer ${token}`)
-        .set("X-Organization-Id", organizationId)
-        .expect(200);
+        (error: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const url: string = error.config?.url ?? "";
+          if (
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") &&
+            url.includes("es.example.com")
+          ) {
+            return Promise.resolve({
+              data: [
+                {
+                  index: "logs-app-2026.04.27",
+                  health: "green",
+                  status: "open",
+                  "docs.count": "999",
+                  "store.size": "5mb",
+                },
+              ],
+              status: 200,
+              statusText: "OK",
+              headers: {},
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              config: error.config,
+            });
+          }
+          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+          return Promise.reject(error);
+        },
+      );
 
-      const body = res.body as Array<{
-        indexId: string;
-        indexPattern: string;
-        esUrl: string | null;
-        reachable: boolean;
-        stats?: {
-          pattern: string;
-          index: string;
-          health: string;
-          status: string;
-          docsCount: number;
-          storeSize: string;
-        };
-      }>;
+      try {
+        const res = await request(app.getHttpServer())
+          .get(`/api/v1/components/${componentId}/elasticsearch-indices/stats`)
+          .set("Authorization", `Bearer ${token}`)
+          .set("X-Organization-Id", organizationId)
+          .expect(200);
 
-      expect(body.length).toBeGreaterThan(0);
-      const reachable = body.find((entry) => entry.reachable);
-      expect(reachable).toBeDefined();
-      expect(reachable?.stats).toBeDefined();
-      expect(reachable?.stats?.index).toBe("logs-app-2026.04.27");
-      expect(reachable?.stats?.health).toBe("green");
-      expect(reachable?.stats?.docsCount).toBe(999);
-      expect(reachable?.stats?.storeSize).toBe("5mb");
+        const body = res.body as Array<{
+          indexId: string;
+          indexPattern: string;
+          esUrl: string | null;
+          reachable: boolean;
+          stats?: {
+            pattern: string;
+            index: string;
+            health: string;
+            status: string;
+            docsCount: number;
+            storeSize: string;
+          };
+        }>;
+
+        expect(body.length).toBeGreaterThan(0);
+        const reachable = body.find((entry) => entry.reachable);
+        expect(reachable).toBeDefined();
+        expect(reachable?.stats).toBeDefined();
+        expect(reachable?.stats?.index).toBe("logs-app-2026.04.27");
+        expect(reachable?.stats?.health).toBe("green");
+        expect(reachable?.stats?.docsCount).toBe(999);
+        expect(reachable?.stats?.storeSize).toBe("5mb");
+      } finally {
+        httpService.axiosRef.interceptors.response.eject(interceptorId);
+      }
     });
 
     it("returns 401 when unauthenticated", async () => {
@@ -332,8 +343,6 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
   });
 
   describe("with seeded components", () => {
-    let originalFetch: typeof globalThis.fetch;
-
     beforeAll(async () => {
       // Two components with two index patterns each, sorted out of order
       // on purpose to verify deterministic alphabetical ordering.
@@ -347,19 +356,9 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
       ]);
     });
 
-    beforeEach(() => {
-      originalFetch = globalThis.fetch;
-    });
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-    });
-
     it("returns 2 sorted groups with reachable: false when ES is unreachable", async () => {
       // No ES URL configured, no per-record override -> stats service
       // short-circuits to { reachable: false } without ever calling fetch.
-      globalThis.fetch = jest.fn();
-
       const res = await request(app.getHttpServer())
         .get("/api/v1/elasticsearch/indices")
         .set("Authorization", `Bearer ${adminToken}`)
@@ -397,30 +396,43 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
     });
 
     it("returns reachable: true with mapped stats when fetch succeeds", async () => {
-      const fetchMock = jest.fn().mockImplementation((url: string) => {
-        // Echo back one healthy index per requested pattern. The stats
-        // service URL embeds the pattern in the path, so derive it back.
-        const match = /\/_cat\/indices\/([^?]+)/.exec(url);
-        const pattern = match ? decodeURIComponent(match[1]) : "unknown";
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve([
-              {
-                index: `${pattern}-2026.04.27`,
-                health: "green",
-                status: "open",
-                "docs.count": "42",
-                "store.size": "3mb",
-              },
-            ]),
-        });
-      });
       // Set the global ES URL so the stats service has a base URL to hit.
       process.env.ELASTICSEARCH_URL = "http://es-overview.test";
-      globalThis.fetch = fetchMock;
+      const httpService = app.get(HttpService);
+      const interceptorId = httpService.axiosRef.interceptors.response.use(
+        (response) => response,
 
+        (error: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          const url: string = error.config?.url ?? "";
+          if (
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") &&
+            url.includes("es-overview.test")
+          ) {
+            const match = /\/_cat\/indices\/([^?]+)/.exec(url);
+            const pattern = match ? decodeURIComponent(match[1]) : "unknown";
+            return Promise.resolve({
+              data: [
+                {
+                  index: `${pattern}-2026.04.27`,
+                  health: "green",
+                  status: "open",
+                  "docs.count": "42",
+                  "store.size": "3mb",
+                },
+              ],
+              status: 200,
+              statusText: "OK",
+              headers: {},
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              config: error.config,
+            });
+          }
+          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+          return Promise.reject(error);
+        },
+      );
       try {
         const res = await request(app.getHttpServer())
           .get("/api/v1/elasticsearch/indices")
@@ -453,6 +465,7 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
           }
         }
       } finally {
+        httpService.axiosRef.interceptors.response.eject(interceptorId);
         delete process.env.ELASTICSEARCH_URL;
       }
     });

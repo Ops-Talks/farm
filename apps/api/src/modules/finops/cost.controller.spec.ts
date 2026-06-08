@@ -1,6 +1,8 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { NotFoundException } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { of, throwError } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CostController } from "./cost.controller";
 import { OpenCostService } from "./open-cost.service";
@@ -28,6 +30,8 @@ describe("CostController", () => {
   const mockTeamRepo = {
     findOne: jest.fn(),
   };
+  let mockHttpService: { head: jest.Mock };
+
   const mockOpenCostService = {
     getAllocation: jest.fn(),
   };
@@ -38,6 +42,17 @@ describe("CostController", () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CostController],
       providers: [
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+            head: jest.fn(),
+          },
+        },
         { provide: OpenCostService, useValue: mockOpenCostService },
         {
           provide: ConfigService,
@@ -56,6 +71,7 @@ describe("CostController", () => {
       .compile();
 
     controller = module.get<CostController>(CostController);
+    mockHttpService = module.get(HttpService);
   });
 
   // -------------------------------------------------------------------------
@@ -274,37 +290,39 @@ describe("CostController", () => {
   });
 
   describe("getAvailability()", () => {
-    let originalFetch: typeof globalThis.fetch;
-
-    beforeEach(() => {
-      originalFetch = globalThis.fetch;
-    });
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-    });
-
     it("returns available: true when OpenCost health check succeeds", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-      });
+      mockHttpService.head.mockReturnValue(
+        of({
+          data: null,
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
       const result = await controller.getAvailability();
       expect(result).toEqual({ available: true });
     });
 
     it("returns available: false with reason when OpenCost returns non-ok status", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-      });
+      mockHttpService.head.mockReturnValue(
+        of({
+          data: null,
+          status: 503,
+          statusText: "Service Unavailable",
+          headers: {},
+          config: {},
+        }),
+      );
       const result = await controller.getAvailability();
       expect(result.available).toBe(false);
       expect(result.reason).toContain("503");
     });
 
     it("returns available: false with reason when OpenCost is unreachable", async () => {
-      globalThis.fetch = jest.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+      mockHttpService.head.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
       const result = await controller.getAvailability();
       expect(result.available).toBe(false);
       expect(result.reason).toContain("unreachable");

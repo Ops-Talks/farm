@@ -4,14 +4,66 @@ jest.mock("google-auth-library", () => ({
   })),
 }));
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 import { GoogleAuth } from "google-auth-library";
 import { GcrAdapter } from "../adapters/gcr.adapter";
 import { RegistryType } from "../enums/registry-type.enum";
 
+function mockHttpService(): HttpService {
+  return {
+    get: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    post: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    put: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    delete: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    patch: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+  } as unknown as HttpService;
+}
+
 describe("GcrAdapter", () => {
   let adapter: GcrAdapter;
   let configService: ConfigService;
-  let originalFetch: typeof globalThis.fetch;
+  let httpService: HttpService;
 
   const mockCredentials = JSON.stringify({
     project_id: "my-project",
@@ -21,8 +73,7 @@ describe("GcrAdapter", () => {
   });
 
   beforeEach(() => {
-    originalFetch = globalThis.fetch;
-
+    httpService = mockHttpService();
     configService = {
       get: jest.fn((key: string) => {
         if (key === "registry.credentials") return mockCredentials;
@@ -31,11 +82,10 @@ describe("GcrAdapter", () => {
       }),
     } as unknown as ConfigService;
 
-    adapter = new GcrAdapter(configService);
+    adapter = new GcrAdapter(httpService, configService);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
 
@@ -54,7 +104,7 @@ describe("GcrAdapter", () => {
         }),
       } as unknown as ConfigService;
 
-      expect(() => new GcrAdapter(cs)).not.toThrow();
+      expect(() => new GcrAdapter(mockHttpService(), cs)).not.toThrow();
     });
 
     it("should use empty projectId when credentials JSON has no project_id field", () => {
@@ -68,7 +118,7 @@ describe("GcrAdapter", () => {
         }),
       } as unknown as ConfigService;
 
-      expect(() => new GcrAdapter(cs)).not.toThrow();
+      expect(() => new GcrAdapter(mockHttpService(), cs)).not.toThrow();
     });
 
     it("should log error and continue when credentials JSON is invalid", () => {
@@ -81,24 +131,28 @@ describe("GcrAdapter", () => {
         }),
       } as unknown as ConfigService;
 
-      expect(() => new GcrAdapter(cs)).not.toThrow();
+      expect(() => new GcrAdapter(mockHttpService(), cs)).not.toThrow();
     });
   });
 
   describe("listRepositories()", () => {
     it("should return repositories from Artifact Registry", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             repositories: [
               {
                 name: "projects/my-project/locations/us-central1/repositories/my-repo",
                 format: "DOCKER",
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -112,10 +166,15 @@ describe("GcrAdapter", () => {
     });
 
     it("should return empty array when no repositories exist", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ repositories: [] }),
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { repositories: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -123,20 +182,30 @@ describe("GcrAdapter", () => {
     });
 
     it("should throw on HTTP error", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 403,
+          statusText: "Forbidden",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await expect(adapter.listRepositories()).rejects.toThrow();
     });
 
     it("should handle missing repositories field in API response", async () => {
       // Covers: L135 (data.repositories ?? [])
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -145,10 +214,9 @@ describe("GcrAdapter", () => {
 
     it("should use empty string description when repository description is undefined", async () => {
       // Covers: L139 (r.description ?? undefined)
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             repositories: [
               {
                 name: "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -156,8 +224,13 @@ describe("GcrAdapter", () => {
                 description: undefined,
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -170,10 +243,15 @@ describe("GcrAdapter", () => {
         getAccessToken: jest.fn().mockResolvedValueOnce(null),
       }));
 
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ repositories: [] }),
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { repositories: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -183,18 +261,22 @@ describe("GcrAdapter", () => {
 
   describe("listTags()", () => {
     it("should return tags for a repository", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             tags: [
               {
                 name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/tags/latest",
                 version: "sha256:abc",
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -206,10 +288,15 @@ describe("GcrAdapter", () => {
     });
 
     it("should return empty array when no tags exist", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ tags: [] }),
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { tags: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -220,10 +307,15 @@ describe("GcrAdapter", () => {
 
     it("should handle missing tags field in API response", async () => {
       // Covers: L154 (data.tags ?? [])
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -234,18 +326,22 @@ describe("GcrAdapter", () => {
 
     it("should return undefined digest when version field is absent", async () => {
       // Covers: L156 (t.version ?? undefined)
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             tags: [
               {
                 name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/tags/v1.0",
                 version: null,
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -257,14 +353,18 @@ describe("GcrAdapter", () => {
 
   describe("getManifest()", () => {
     it("should return manifest for a specific version", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: "2024-01-01T00:00:00Z",
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -279,14 +379,18 @@ describe("GcrAdapter", () => {
 
     it("should return undefined pushedAt when createTime is absent", async () => {
       // Covers: L172 (createTime falsy → undefined)
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: null,
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",
@@ -298,17 +402,21 @@ describe("GcrAdapter", () => {
 
     it("should use explicit mediaType when metadata provides one", async () => {
       // Covers: L170 left side (data.metadata?.mediaType is defined)
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "projects/my-project/locations/us-central1/repositories/my-repo/packages/my-app/versions/sha256:abc",
             createTime: "2024-01-01T00:00:00Z",
             metadata: {
               mediaType: "application/vnd.docker.distribution.manifest.v2+json",
             },
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest(
         "projects/my-project/locations/us-central1/repositories/my-repo",

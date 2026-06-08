@@ -90,7 +90,11 @@ test:
 	npm test
 
 test-e2e:
-	npm run api:test:e2e
+	@if docker ps >/dev/null 2>&1; then \
+		npm run api:test:e2e; \
+	else \
+		echo "Skipping e2e tests — Docker daemon not available"; \
+	fi
 
 test-cov:
 	npm run test:cov -w apps/api
@@ -178,6 +182,20 @@ helm-install:
 	helm install $(HELM_RELEASE) $(HELM_CHART) -f $(HELM_VALUES) \
 		--namespace $(HELM_NAMESPACE) --create-namespace \
 		--timeout 10m0s
+	# Wait for post-install hooks (seed, bootstrap) so the admin user exists
+	# when the command returns instead of starting a race with the API pod.
+	@for job in seed bootstrap; do \
+		name="$(HELM_RELEASE)-$$job"; \
+		for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do \
+			if kubectl get job "$$name" -n "$(HELM_NAMESPACE)" >/dev/null 2>&1; then \
+				kubectl wait --for=condition=complete "job/$$name" -n "$(HELM_NAMESPACE)" --timeout=300s >/dev/null && \
+					echo "  $$job job completed."; \
+				break; \
+			fi; \
+			sleep 1; \
+		done; \
+	done
+	@printf '  done (jobs may have been skipped if disabled).\n'
 
 helm-upgrade:
 	helm dependency update $(HELM_CHART)

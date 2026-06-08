@@ -7,6 +7,8 @@ import {
   Res,
   Logger,
 } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ApiTags, ApiOperation, ApiOkResponse } from "@nestjs/swagger";
 import type { Request, Response } from "express";
 
@@ -34,6 +36,8 @@ import type { Request, Response } from "express";
 @Controller("traces")
 export class TracesIngestController {
   private readonly logger = new Logger(TracesIngestController.name);
+
+  constructor(private readonly httpService: HttpService) {}
 
   /**
    * Receives an OTLP/JSON trace payload from the browser OTel SDK and proxies
@@ -64,20 +68,18 @@ export class TracesIngestController {
     }
 
     try {
-      const upstream = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            (req.headers["content-type"] as string) ?? "application/json",
-        },
-        // req.body has already been parsed by NestJS's JSON middleware, so we
-        // re-serialise it here.  For binary OTLP/protobuf payloads the content
-        // type would be `application/x-protobuf` and body would be a Buffer.
-        body: JSON.stringify(req.body),
-      });
+      const upstream = await firstValueFrom(
+        this.httpService.post(endpoint, req.body, {
+          headers: {
+            "Content-Type":
+              (req.headers["content-type"] as string) ?? "application/json",
+          },
+          responseType: "text",
+          validateStatus: () => true,
+        }),
+      );
 
-      const text = await upstream.text();
-      res.status(upstream.status).send(text);
+      res.status(upstream.status).send(upstream.data);
     } catch (err) {
       // Log at WARN so that operators running the observability stack can
       // detect collector unavailability via Alertmanager WARN-rate rules.

@@ -4,10 +4,12 @@ import { AzureDevOpsService } from "./azure-devops.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 
 describe("AzureDevOpsService", () => {
   let service: AzureDevOpsService;
-  let originalFetch: typeof globalThis.fetch;
+  let httpService: { get: jest.Mock; post: jest.Mock };
 
   const mockCredentialService = {
     findByType: jest.fn(),
@@ -26,7 +28,6 @@ describe("AzureDevOpsService", () => {
   };
 
   beforeEach(async () => {
-    originalFetch = globalThis.fetch;
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -40,14 +41,21 @@ describe("AzureDevOpsService", () => {
           provide: CircuitBreakerService,
           useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<AzureDevOpsService>(AzureDevOpsService);
-  });
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
+    httpService = module.get(HttpService);
   });
 
   it("should be defined", () => {
@@ -88,10 +96,15 @@ describe("AzureDevOpsService", () => {
         definition: { id: 5, name: "Build Pipeline" },
       };
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ value: [mockRun] }),
-      });
+      httpService.get.mockReturnValue(
+        of({
+          data: { value: [mockRun] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listPipelines("org-1");
 
@@ -115,10 +128,15 @@ describe("AzureDevOpsService", () => {
         }),
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-      });
+      httpService.get.mockReturnValue(
+        of({
+          data: {},
+          status: 401,
+          statusText: "Unauthorized",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listPipelines("org-1");
 
@@ -135,15 +153,20 @@ describe("AzureDevOpsService", () => {
         }),
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ value: [] }),
-      });
+      httpService.get.mockReturnValue(
+        of({
+          data: { value: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await service.listPipelines("org-1");
 
       const expectedAuth = "Basic " + Buffer.from(":my-pat").toString("base64");
-      expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect(httpService.get).toHaveBeenCalledWith(
         expect.stringContaining(
           "dev.azure.com/my-org/my-project/_apis/build/builds",
         ),
@@ -166,10 +189,15 @@ describe("AzureDevOpsService", () => {
       );
 
       // Response with no value field — exercises the `data.value ?? []` right branch.
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({}),
-      });
+      httpService.get.mockReturnValue(
+        of({
+          data: {},
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listPipelines("org-1");
       expect(result).toEqual([]);
@@ -188,10 +216,15 @@ describe("AzureDevOpsService", () => {
       // Build entry with missing fields to exercise fallback branches.
       const sparseRun = { id: 5 };
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ value: [sparseRun] }),
-      });
+      httpService.get.mockReturnValue(
+        of({
+          data: { value: [sparseRun] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listPipelines("org-1");
 

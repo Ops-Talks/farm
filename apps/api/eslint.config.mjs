@@ -70,6 +70,59 @@ const localPlugin = {
         };
       },
     },
+    /**
+     * Flags native fetch() / globalThis.fetch() calls in production source
+     * files. The project standard is @nestjs/axios HttpService.
+     *
+     * Exceptions (documented in code):
+     *   - opa.service.ts — uses fetch() for test interception
+     */
+    'no-native-fetch': {
+      meta: {
+        type: 'suggestion',
+        docs: {
+          description:
+            'Prefer @nestjs/axios HttpService over native fetch() for external HTTP calls. See FARM-S644.',
+        },
+        messages: {
+          noNativeFetch:
+            'Use HttpService from @nestjs/axios instead of native fetch(). ' +
+            'See ROADMAP.md Phase 55 FARM-S644.',
+        },
+        schema: [],
+      },
+      create(context) {
+        const filename = context.filename ?? context.getFilename();
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            let isFetchCall = false;
+
+            if (
+              callee.type === 'Identifier' &&
+              callee.name === 'fetch'
+            ) {
+              isFetchCall = true;
+            } else if (
+              callee.type === 'MemberExpression' &&
+              callee.property.type === 'Identifier' &&
+              callee.property.name === 'fetch' &&
+              callee.object.type === 'Identifier' &&
+              (callee.object.name === 'globalThis' || callee.object.name === 'global')
+            ) {
+              isFetchCall = true;
+            }
+
+            if (isFetchCall) {
+              context.report({
+                node,
+                messageId: 'noNativeFetch',
+              });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -107,6 +160,14 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/unbound-method': 'off',
       'local/no-global-fetch-assignment': 'warn',
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/opa.service.ts'],
+    plugins: { local: localPlugin },
+    rules: {
+      'local/no-native-fetch': 'warn',
     },
   },
 );

@@ -79,7 +79,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-weight": "2"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   backoffLimit: {{ .Values.bootstrap.admin.backoffLimit }}
   activeDeadlineSeconds: {{ .Values.bootstrap.admin.activeDeadlineSeconds }}

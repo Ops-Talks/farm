@@ -1,4 +1,6 @@
 import { Injectable, Logger, Optional } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
@@ -87,6 +89,7 @@ export class KeycloakSyncService {
   private readonly encryptionKey: Buffer;
 
   constructor(
+    private readonly httpService: HttpService,
     @InjectRepository(IntegrationCredential)
     private readonly credentialRepository: Repository<IntegrationCredential>,
     @InjectRepository(Team)
@@ -317,20 +320,20 @@ export class KeycloakSyncService {
       client_secret: clientSecret,
     });
 
-    const response = await fetch(tokenUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
+    const response = await firstValueFrom(
+      this.httpService.post<TokenResponse>(tokenUrl, body.toString(), {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        validateStatus: () => true,
+      }),
+    );
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Keycloak token request failed: ${response.status} ${response.statusText}`,
       );
     }
 
-    const data = (await response.json()) as TokenResponse;
-    return data.access_token;
+    return response.data.access_token;
   }
 
   /**
@@ -342,21 +345,23 @@ export class KeycloakSyncService {
    * @returns Parsed JSON body cast to type T
    */
   async fetchJson<T>(url: string, token: string): Promise<T> {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await firstValueFrom(
+      this.httpService.get<T>(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        validateStatus: () => true,
+      }),
+    );
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Keycloak Admin API request failed: ${response.status} ${response.statusText} — ${url}`,
       );
     }
 
-    return (await response.json()) as T;
+    return response.data;
   }
 
   /**

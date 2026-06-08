@@ -1,4 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { SloService } from "./slo.service";
 import { Slo, SloMetricType, SloWindow } from "./entities/slo.entity";
@@ -27,6 +29,7 @@ export class SloCalculatorService {
   private readonly prometheusUrl: string | undefined;
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly sloService: SloService,
     private readonly configService: ConfigService,
     private readonly cb: CircuitBreakerService,
@@ -121,17 +124,21 @@ export class SloCalculatorService {
       this.logger.debug(`Querying Prometheus: ${url}`);
 
       const response = await this.cb.fire("slo-calculator", () =>
-        globalThis.fetch(url),
+        firstValueFrom(
+          this.httpService.get<PrometheusQueryRangeResponse>(url, {
+            validateStatus: () => true,
+          }),
+        ),
       );
 
-      if (!response.ok) {
+      if (response.status >= 400) {
         this.logger.error(
           `Prometheus query failed with status ${response.status}`,
         );
         return this.simulateMetric(slo);
       }
 
-      const body = (await response.json()) as PrometheusQueryRangeResponse;
+      const body = response.data;
 
       if (
         body.status !== "success" ||

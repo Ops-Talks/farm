@@ -164,6 +164,10 @@ export const configuration = () => ({
   app: {
     url: process.env.APP_URL || "http://localhost:3001",
   },
+  http: {
+    timeout: parseInt(process.env.HTTP_TIMEOUT ?? "10000", 10) || 10000,
+    maxRedirects: parseInt(process.env.HTTP_MAX_REDIRECTS ?? "5", 10) || 5,
+  },
 });
 
 /**
@@ -257,10 +261,10 @@ export const validationSchema = Joi.object({
     .default(""),
   REGISTRY_URL: Joi.string().allow("").default(""),
   REGISTRY_CREDENTIALS: Joi.string().allow("").default(""),
-  // OpenCost integration (optional)
-  OPENCOST_URL: Joi.string().uri().default("http://localhost:9090"),
-  // OPA integration (optional)
-  OPA_URL: Joi.string().uri().default("http://localhost:8181"),
+  // OpenCost integration (optional — defaults to localhost in dev/test)
+  OPENCOST_URL: Joi.string().uri().optional().default("http://localhost:9090"),
+  // OPA integration (optional — defaults to localhost in dev/test)
+  OPA_URL: Joi.string().uri().optional().default("http://localhost:8181"),
   // IaC ingest token (optional — required when using Cultivator/Agronomist integration)
   IAC_INGEST_TOKEN: Joi.string().allow("").default(""),
   // Docs webhook HMAC secret (optional — when set, incoming webhook payloads are verified)
@@ -273,4 +277,6 @@ export const validationSchema = Joi.object({
   ELASTICSEARCH_USERNAME: Joi.string().allow("").optional(),
   ELASTICSEARCH_PASSWORD: Joi.string().allow("").optional(),
   APP_URL: Joi.string().uri().default("http://localhost:3001"),
+  HTTP_TIMEOUT: Joi.number().integer().min(100).default(10000),
+  HTTP_MAX_REDIRECTS: Joi.number().integer().min(0).max(20).default(5),
 });

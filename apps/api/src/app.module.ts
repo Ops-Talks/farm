@@ -22,6 +22,7 @@ import { BusinessMetricsModule } from "./common/metrics/business-metrics.module"
 import { DatabaseMetricsModule } from "./common/metrics/database-metrics.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { CircuitBreakerModule } from "./common/circuit-breaker/circuit-breaker.module";
+import { HttpModule } from "./common/http/http.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PluginManagerModule } from "./modules/plugin-manager/plugin-manager.module";
@@ -144,6 +145,7 @@ if (typeof _promSetContentType === "function") {
     OrganizationModule,
     BusinessMetricsModule,
     CircuitBreakerModule,
+    HttpModule,
     DatabaseMetricsModule,
     DatabaseModule,
     HealthModule,

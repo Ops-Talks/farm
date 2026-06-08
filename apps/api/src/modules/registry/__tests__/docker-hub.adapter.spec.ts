@@ -1,11 +1,63 @@
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 import { DockerHubAdapter } from "../adapters/docker-hub.adapter";
 import { RegistryType } from "../enums/registry-type.enum";
+
+function mockHttpService(): HttpService {
+  return {
+    get: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    post: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    put: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    delete: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    patch: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+  } as unknown as HttpService;
+}
 
 describe("DockerHubAdapter", () => {
   let adapter: DockerHubAdapter;
   let configService: ConfigService;
-  let originalFetch: typeof globalThis.fetch;
+  let httpService: HttpService;
 
   const mockCredentials = JSON.stringify({
     username: "testuser",
@@ -13,8 +65,7 @@ describe("DockerHubAdapter", () => {
   });
 
   beforeEach(() => {
-    originalFetch = globalThis.fetch;
-
+    httpService = mockHttpService();
     configService = {
       get: jest.fn((key: string) => {
         if (key === "registry.credentials") return mockCredentials;
@@ -23,29 +74,12 @@ describe("DockerHubAdapter", () => {
       }),
     } as unknown as ConfigService;
 
-    adapter = new DockerHubAdapter(configService);
+    adapter = new DockerHubAdapter(httpService, configService);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
-
-  /**
-   * Helper that mocks fetch to first respond with the login token, then
-   * with subsequent response(s).
-   */
-  function mockFetchWithLogin(...responses: object[]): void {
-    const loginResponse = {
-      ok: true,
-      json: () => Promise.resolve({ token: "mock-token" }),
-    };
-    const mocked = jest.fn().mockResolvedValueOnce(loginResponse);
-    for (const r of responses) {
-      mocked.mockResolvedValueOnce(r);
-    }
-    globalThis.fetch = mocked;
-  }
 
   it("should have type DOCKER_HUB", () => {
     expect(adapter.type).toBe(RegistryType.DOCKER_HUB);
@@ -62,7 +96,7 @@ describe("DockerHubAdapter", () => {
         }),
       } as unknown as ConfigService;
 
-      const newAdapter = new DockerHubAdapter(cs);
+      const newAdapter = new DockerHubAdapter(mockHttpService(), cs);
 
       expect(newAdapter.type).toBe(RegistryType.DOCKER_HUB);
     });
@@ -77,7 +111,7 @@ describe("DockerHubAdapter", () => {
         }),
       } as unknown as ConfigService;
 
-      const newAdapter = new DockerHubAdapter(cs);
+      const newAdapter = new DockerHubAdapter(mockHttpService(), cs);
 
       expect(newAdapter.type).toBe(RegistryType.DOCKER_HUB);
     });
@@ -85,10 +119,18 @@ describe("DockerHubAdapter", () => {
 
   describe("listRepositories()", () => {
     it("should authenticate and return repositories", async () => {
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             results: [
               {
                 name: "my-app",
@@ -96,8 +138,13 @@ describe("DockerHubAdapter", () => {
                 description: "My application",
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -111,10 +158,24 @@ describe("DockerHubAdapter", () => {
     });
 
     it("should return empty array when no repositories exist", async () => {
-      mockFetchWithLogin({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { results: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -122,68 +183,105 @@ describe("DockerHubAdapter", () => {
     });
 
     it("should cache the auth token and not re-authenticate on subsequent calls", async () => {
-      const fetchMock = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: "mock-token" }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ results: [] }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ results: [] }),
-        });
-
-      globalThis.fetch = fetchMock;
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { results: [] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        )
+        .mockReturnValueOnce(
+          of({
+            data: { results: [] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        );
 
       await adapter.listRepositories();
       await adapter.listRepositories();
 
-      // Login should only be called once (first call)
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      // Login should only be called once (first call), GET twice
+      expect(httpService.post).toHaveBeenCalledTimes(1);
+      expect(httpService.get).toHaveBeenCalledTimes(2);
     });
 
     it("should refresh token on 401 and retry", async () => {
-      const fetchMock = jest
-        .fn()
+      (httpService.post as jest.Mock)
         // First login
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: "old-token" }),
-        })
-        // First request returns 401
-        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockReturnValueOnce(
+          of({
+            data: { token: "old-token" },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        )
         // Re-authentication
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: "new-token" }),
-        })
+        .mockReturnValueOnce(
+          of({
+            data: { token: "new-token" },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        );
+      (httpService.get as jest.Mock)
+        // First request returns 401
+        .mockReturnValueOnce(
+          of({
+            data: {},
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+            config: {},
+          }),
+        )
         // Retry request succeeds
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              results: [{ name: "my-app", namespace: "testuser" }],
-            }),
-        });
-
-      globalThis.fetch = fetchMock;
+        .mockReturnValueOnce(
+          of({
+            data: { results: [{ name: "my-app", namespace: "testuser" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
+        );
 
       const result = await adapter.listRepositories();
 
       expect(result).toHaveLength(1);
-      expect(fetchMock).toHaveBeenCalledTimes(4);
+      expect(httpService.post).toHaveBeenCalledTimes(2);
+      expect(httpService.get).toHaveBeenCalledTimes(2);
     });
 
     it("should throw when Docker Hub authentication fails", async () => {
       // Covers: L120 (if (!response.ok) true branch in authenticate())
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: false,
-        status: 403,
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 403,
+          statusText: "Forbidden",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await expect(adapter.listRepositories()).rejects.toThrow(
         "Docker Hub authentication failed: HTTP 403",
@@ -192,10 +290,24 @@ describe("DockerHubAdapter", () => {
 
     it("should throw when API request fails with non-401 status", async () => {
       // Covers: L158 (if (!response.ok) true branch in fetchJson())
-      mockFetchWithLogin({
-        ok: false,
-        status: 500,
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 500,
+          statusText: "Internal Server Error",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await expect(adapter.listRepositories()).rejects.toThrow(
         "Docker Hub request failed: HTTP 500",
@@ -204,18 +316,24 @@ describe("DockerHubAdapter", () => {
 
     it("should use empty Authorization header when token is null after login", async () => {
       // Covers: L135 (this.authToken ?? "")
-      globalThis.fetch = jest
-        .fn()
-        // Login returns null token
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: null }),
-        })
-        // Subsequent API call succeeds
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ results: [] }),
-        });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: null },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { results: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -224,10 +342,24 @@ describe("DockerHubAdapter", () => {
 
     it("should handle null results field in repositories response", async () => {
       // Covers: L174 (data.results ?? [])
-      mockFetchWithLogin({
-        ok: true,
-        json: () => Promise.resolve({ results: null }),
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { results: null },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listRepositories();
 
@@ -238,10 +370,18 @@ describe("DockerHubAdapter", () => {
   describe("listTags()", () => {
     it("should return tags for a repository", async () => {
       const pushedAt = "2024-01-01T00:00:00Z";
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             results: [
               {
                 name: "latest",
@@ -250,8 +390,13 @@ describe("DockerHubAdapter", () => {
                 full_size: 1024,
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags("testuser/my-app");
 
@@ -265,10 +410,24 @@ describe("DockerHubAdapter", () => {
     });
 
     it("should return empty array when no tags exist", async () => {
-      mockFetchWithLogin({
-        ok: true,
-        json: () => Promise.resolve({ results: [] }),
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { results: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags("testuser/my-app");
 
@@ -277,10 +436,24 @@ describe("DockerHubAdapter", () => {
 
     it("should handle null results field in tags response", async () => {
       // Covers: L193 (data.results ?? [])
-      mockFetchWithLogin({
-        ok: true,
-        json: () => Promise.resolve({ results: null }),
-      });
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { results: null },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags("testuser/my-app");
 
@@ -290,10 +463,18 @@ describe("DockerHubAdapter", () => {
     it("should use undefined fallbacks when tag fields are null", async () => {
       // Covers: L195 (t.digest ?? undefined), L196 (last_pushed falsy → undefined),
       //         L197 (t.full_size ?? undefined)
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             results: [
               {
                 name: "latest",
@@ -302,8 +483,13 @@ describe("DockerHubAdapter", () => {
                 full_size: null,
               },
             ],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.listTags("testuser/my-app");
 
@@ -319,16 +505,29 @@ describe("DockerHubAdapter", () => {
   describe("getManifest()", () => {
     it("should return manifest for a specific tag", async () => {
       const pushedAt = "2024-01-01T00:00:00Z";
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "v1.0",
             digest: "sha256:abc",
             last_pushed: pushedAt,
             full_size: 2048,
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest("testuser/my-app", "v1.0");
 
@@ -342,17 +541,30 @@ describe("DockerHubAdapter", () => {
 
     it("should fall back to images[0].digest when top-level digest is null", async () => {
       // Covers: L209 second branch (data.images?.[0]?.digest)
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "v1.0",
             digest: null,
             last_pushed: "2024-01-01T00:00:00Z",
             full_size: 1024,
             images: [{ digest: "sha256:fallback", os: "linux" }],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest("testuser/my-app", "v1.0");
 
@@ -362,17 +574,30 @@ describe("DockerHubAdapter", () => {
     it("should use empty string digest when both digest and images are unavailable", async () => {
       // Covers: L209 third branch ("" fallback), L211 (full_size ?? undefined),
       //         L212 (last_pushed falsy → undefined)
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "v1.0",
             digest: null,
             last_pushed: null,
             full_size: null,
             images: [],
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest("testuser/my-app", "v1.0");
 
@@ -383,15 +608,28 @@ describe("DockerHubAdapter", () => {
 
     it("should use empty string digest when digest is null and images field is absent", async () => {
       // Covers: L209 — images is undefined so ?.[0] is undefined
-      mockFetchWithLogin({
-        ok: true,
-        json: () =>
-          Promise.resolve({
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { token: "mock-token" },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
             name: "v1.0",
             digest: null,
             images: undefined,
-          }),
-      });
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await adapter.getManifest("testuser/my-app", "v1.0");
 
