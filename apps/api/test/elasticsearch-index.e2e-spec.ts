@@ -177,10 +177,16 @@ describe("ElasticsearchIndex (e2e)", () => {
         (error: any) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           const url: string = error.config?.url ?? "";
+          let hostname = "";
+          try {
+            hostname = new URL(url).hostname;
+          } catch {
+            hostname = "";
+          }
           if (
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") &&
-            url.includes("es.example.com")
+            hostname === "es.example.com"
           ) {
             return Promise.resolve({
               data: [
