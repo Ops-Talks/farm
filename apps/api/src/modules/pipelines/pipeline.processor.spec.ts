@@ -21,6 +21,8 @@ import {
   IntegrationType,
 } from "../integrations/entities/integration-credential.entity";
 import { GitHubActionsService } from "../integrations/github-actions.service";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 import * as crypto from "crypto";
 
 /**
@@ -137,6 +139,14 @@ describe("PipelineProcessor", () => {
         {
           provide: EventsGateway,
           useValue: mockEventsGateway,
+        },
+        {
+          provide: HttpService,
+          useValue: {
+            post: jest
+              .fn()
+              .mockReturnValue(of({ status: 200, statusText: "OK", data: {} })),
+          },
         },
       ],
     }).compile();
@@ -609,6 +619,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: HelmDeployExecutor, useValue: mockHelmDeployExecutor },
         ],
       }).compile();
@@ -696,6 +716,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -762,6 +792,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsEcsExecutor, useValue: mockAwsEcsExecutor },
           { provide: CloudSecretsService, useValue: mockSecretsService },
         ],
@@ -799,6 +839,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsEcsExecutor, useValue: mockAwsEcsExecutor },
         ],
       }).compile();
@@ -852,6 +902,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsLambdaExecutor, useValue: mockAwsLambdaExecutor },
         ],
       }).compile();
@@ -903,6 +963,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
         ],
       }).compile();
@@ -955,6 +1025,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
         ],
       }).compile();
@@ -999,6 +1079,12 @@ describe("PipelineProcessor", () => {
 
     const JWT_SECRET = "super-secret-key-change-me-in-production";
 
+    const mockHttpService = {
+      post: jest
+        .fn()
+        .mockReturnValue(of({ status: 200, statusText: "OK", data: {} })),
+    };
+
     const mockKeycloakPayload = {
       keycloakUrl: "https://keycloak.example.com",
       realm: "myrealm",
@@ -1020,6 +1106,7 @@ describe("PipelineProcessor", () => {
       void moduleRef;
 
       return new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1047,12 +1134,13 @@ describe("PipelineProcessor", () => {
 
       const proc = buildProcessorWithCredRepo(mockCredRepo);
 
-      const mockFetch = jest.fn().mockResolvedValue({
-        ok: true,
-        // eslint-disable-next-line @typescript-eslint/require-await
-        json: async () => ({ access_token: "token-abc", expires_in: 300 }),
-      });
-      globalThis.fetch = mockFetch as typeof fetch;
+      mockHttpService.post.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: "token-abc", expires_in: 300 },
+        }),
+      );
 
       const token = await proc.resolveKeycloakSecret(
         "keycloak://myrealm/farm-client",
@@ -1060,7 +1148,7 @@ describe("PipelineProcessor", () => {
       );
 
       expect(token).toBe("token-abc");
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockHttpService.post).toHaveBeenCalledTimes(1);
     });
 
     it("uses cached token on second call without hitting the network", async () => {
@@ -1075,16 +1163,13 @@ describe("PipelineProcessor", () => {
 
       const proc = buildProcessorWithCredRepo(mockCredRepo);
 
-      let fetchCallCount = 0;
-      // eslint-disable-next-line @typescript-eslint/require-await
-      globalThis.fetch = jest.fn().mockImplementation(async () => {
-        fetchCallCount++;
-        return {
-          ok: true,
-          // eslint-disable-next-line @typescript-eslint/require-await
-          json: async () => ({ access_token: "token-cached", expires_in: 300 }),
-        };
-      }) as typeof fetch;
+      mockHttpService.post.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: "token-cached", expires_in: 300 },
+        }),
+      );
 
       const first = await proc.resolveKeycloakSecret(
         "keycloak://myrealm/farm-client",
@@ -1098,11 +1183,12 @@ describe("PipelineProcessor", () => {
       expect(first).toBe("token-cached");
       expect(second).toBe("token-cached");
       // Token endpoint should have been called only once.
-      expect(fetchCallCount).toBe(1);
+      expect(mockHttpService.post).toHaveBeenCalledTimes(1);
     });
 
     it("resolveKeycloakSecrets replaces all keycloak:// values in the config", async () => {
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1143,6 +1229,16 @@ describe("PipelineProcessor", () => {
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           {
             provide: getRepositoryToken(IntegrationCredential),
             useValue: credRepo,
@@ -1219,18 +1315,21 @@ describe("PipelineProcessor", () => {
       const cryptoModule = require("crypto") as typeof crypto;
       const cryptoSpy = jest.spyOn(cryptoModule, "createHash");
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          // eslint-disable-next-line @typescript-eslint/require-await
-          json: async () => ({ access_token: "token-org1", expires_in: 300 }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          // eslint-disable-next-line @typescript-eslint/require-await
-          json: async () => ({ access_token: "token-org2", expires_in: 300 }),
-        }) as typeof fetch;
+      mockHttpService.post
+        .mockReturnValueOnce(
+          of({
+            status: 200,
+            statusText: "OK",
+            data: { access_token: "token-org1", expires_in: 300 },
+          }),
+        )
+        .mockReturnValueOnce(
+          of({
+            status: 200,
+            statusText: "OK",
+            data: { access_token: "token-org2", expires_in: 300 },
+          }),
+        );
 
       const t1 = await proc.resolveKeycloakSecret(
         "keycloak://myrealm/farm-client",
@@ -1271,6 +1370,11 @@ describe("PipelineProcessor — additional branches", () => {
   let mockRunRepo: Record<string, jest.Mock>;
   let mockPipelineRepo: Record<string, jest.Mock>;
   let mockEventsGateway: { server: { emit: jest.Mock } };
+  const mockHttpService = {
+    post: jest
+      .fn()
+      .mockReturnValue(of({ status: 200, statusText: "OK", data: {} })),
+  };
 
   const scriptStage: PipelineStage = {
     id: "stage-script-1",
@@ -1302,6 +1406,7 @@ describe("PipelineProcessor — additional branches", () => {
         { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
         { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
         { provide: EventsGateway, useValue: mockEventsGateway },
+        { provide: HttpService, useValue: mockHttpService },
       ],
     }).compile();
 
@@ -1337,6 +1442,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: HelmDeployExecutor, useValue: mockHelmExecutor },
         ],
       }).compile();
@@ -1392,6 +1507,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsEcsExecutor, useValue: mockEcsExecutor },
           { provide: CloudSecretsService, useValue: mockSecretsService },
         ],
@@ -1444,6 +1569,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
         ],
       }).compile();
@@ -1495,6 +1630,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
         ],
       }).compile();
@@ -1546,6 +1691,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
         ],
       }).compile();
@@ -1605,6 +1760,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: BuildStageExecutor, useValue: mockBuildExecutor },
         ],
       }).compile();
@@ -1649,6 +1814,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: BuildStageExecutor, useValue: mockBuildExecutor },
         ],
       }).compile();
@@ -1709,6 +1884,7 @@ describe("PipelineProcessor — additional branches", () => {
   describe("resolveKeycloakSecret — no credentialRepository", () => {
     it("should throw when credentialRepository is not available", async () => {
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1730,6 +1906,7 @@ describe("PipelineProcessor — additional branches", () => {
     it("should throw when no Keycloak credential exists for the org", async () => {
       const credRepo = { findOne: jest.fn().mockResolvedValue(null) };
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1805,6 +1982,7 @@ describe("PipelineProcessor — additional branches", () => {
       };
 
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1817,14 +1995,12 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         credRepo as never,
+        undefined,
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-        json: () => ({}),
-      }) as typeof fetch;
+      mockHttpService.post.mockReturnValue(
+        of({ status: 401, statusText: "Unauthorized", data: {} }),
+      );
 
       await expect(
         proc.resolveKeycloakSecret("keycloak://myrealm/farm-client", "org-1"),
@@ -1842,6 +2018,7 @@ describe("PipelineProcessor — additional branches", () => {
       };
 
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1854,18 +2031,18 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         credRepo as never,
+        undefined,
       );
 
       let capturedBody: string | undefined;
-      globalThis.fetch = jest
-        .fn()
-        .mockImplementation((_url: unknown, init: { body: string }) => {
-          capturedBody = init.body;
-          return {
-            ok: true,
-            json: () => ({ access_token: "tok", expires_in: 300 }),
-          };
-        }) as typeof fetch;
+      mockHttpService.post.mockImplementation((_url: unknown, body: string) => {
+        capturedBody = body;
+        return of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: "tok", expires_in: 300 },
+        });
+      });
 
       // URI without a slash — realm = "myrealm", clientId = ""
       const token = await proc.resolveKeycloakSecret(
@@ -1898,6 +2075,7 @@ describe("PipelineProcessor — additional branches", () => {
       };
 
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1910,15 +2088,16 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         credRepo as never,
+        undefined,
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          access_token: "default-key-token",
-          expires_in: 60,
+      mockHttpService.post.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: "default-key-token", expires_in: 60 },
         }),
-      }) as typeof fetch;
+      );
 
       const token = await proc.resolveKeycloakSecret(
         "keycloak://myrealm/farm-client",
@@ -1940,6 +2119,7 @@ describe("PipelineProcessor — additional branches", () => {
       };
 
       const proc = new PipelineProcessor(
+        mockHttpService as never,
         mockRunRepo as never,
         mockPipelineRepo as never,
         mockEventsGateway as never,
@@ -1952,19 +2132,18 @@ describe("PipelineProcessor — additional branches", () => {
         undefined,
         undefined,
         credRepo as never,
+        undefined,
       );
 
-      let fetchCallCount = 0;
-      globalThis.fetch = jest.fn().mockImplementation(() => {
-        fetchCallCount++;
-        return {
-          ok: true,
-          json: () => ({
-            access_token: `token-${fetchCallCount}`,
-            expires_in: 300,
-          }),
-        };
-      }) as typeof fetch;
+      let httpCallCount = 0;
+      mockHttpService.post.mockImplementation(() => {
+        httpCallCount++;
+        return of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: `token-${httpCallCount}`, expires_in: 300 },
+        });
+      });
 
       // First call — decryptCredential derives the key (encryptionKey is null).
       const t1 = await proc.resolveKeycloakSecret(
@@ -2014,6 +2193,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
           { provide: CloudSecretsService, useValue: mockSecretsService },
         ],
@@ -2062,6 +2251,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
           { provide: CloudSecretsService, useValue: mockSecretsService },
         ],
@@ -2109,6 +2308,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
           { provide: CloudSecretsService, useValue: mockSecretsService },
         ],
@@ -2174,6 +2383,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: HelmDeployExecutor, useValue: mockHelmExec },
         ],
       }).compile();
@@ -2223,6 +2442,16 @@ describe("PipelineProcessor — additional branches", () => {
             useValue: mockPipelineRepo,
           },
           { provide: EventsGateway, useValue: nullServerGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -2306,6 +2535,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -2345,6 +2584,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsEcsExecutor, useValue: mockEcsExecutor },
           // No CloudSecretsService
         ],
@@ -2391,6 +2640,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AwsLambdaExecutor, useValue: mockLambdaExecutor },
           // No CloudSecretsService
         ],
@@ -2441,6 +2700,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GcpCloudRunExecutor, useValue: mockGcpExecutor },
           // No CloudSecretsService
         ],
@@ -2490,6 +2759,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: AzureContainerAppsExecutor, useValue: mockAzureExecutor },
           // No CloudSecretsService
         ],
@@ -2533,6 +2812,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -2592,6 +2881,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: HelmDeployExecutor, useValue: mockHelmExecutor },
         ],
       }).compile();
@@ -2634,6 +2933,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -2674,6 +2983,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: InfracostStageExecutor, useValue: mockInfracostExecutor },
         ],
       }).compile();
@@ -2716,6 +3035,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: InfracostStageExecutor, useValue: mockInfracostExecutor },
         ],
       }).compile();
@@ -2784,6 +3113,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GitHubActionsService, useValue: mockGHService },
         ],
       }).compile();
@@ -2828,6 +3167,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GitHubActionsService, useValue: mockGHService },
         ],
       }).compile();
@@ -2865,6 +3214,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GitHubActionsService, useValue: mockGHService },
         ],
       }).compile();
@@ -2906,6 +3265,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GitHubActionsService, useValue: mockGHService },
         ],
       }).compile();
@@ -2942,6 +3311,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 
@@ -3012,6 +3391,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
           { provide: GitHubActionsService, useValue: mockGHService },
         ],
       }).compile();
@@ -3044,6 +3433,16 @@ describe("PipelineProcessor — executor branches without CloudSecretsService", 
           { provide: getRepositoryToken(PipelineRun), useValue: mockRunRepo },
           { provide: getRepositoryToken(Pipeline), useValue: mockPipelineRepo },
           { provide: EventsGateway, useValue: mockEventsGateway },
+          {
+            provide: HttpService,
+            useValue: {
+              post: jest
+                .fn()
+                .mockReturnValue(
+                  of({ status: 200, statusText: "OK", data: {} }),
+                ),
+            },
+          },
         ],
       }).compile();
 

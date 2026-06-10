@@ -1,4 +1,6 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
@@ -29,6 +31,7 @@ export class AzureDevOpsService {
   private readonly logger = new Logger(AzureDevOpsService.name);
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly credentialService: IntegrationCredentialService,
     private readonly cb: CircuitBreakerService,
   ) {}
@@ -58,26 +61,27 @@ export class AzureDevOpsService {
       await this.resolveCredential(orgId);
     const basicAuth = Buffer.from(`:${token}`).toString("base64");
     const url = `https://dev.azure.com/${organization}/${project}/_apis/build/builds?api-version=7.1`;
-    let res: Response;
+    let data: { value?: Record<string, unknown>[] };
     try {
-      res = await this.cb.fire("azure-devops", () =>
-        globalThis.fetch(url, {
-          headers: {
-            Authorization: `Basic ${basicAuth}`,
-            "Content-Type": "application/json",
-          },
-        }),
+      const res = await this.cb.fire("azure-devops", () =>
+        firstValueFrom(
+          this.httpService.get<{ value?: Record<string, unknown>[] }>(url, {
+            headers: {
+              Authorization: `Basic ${basicAuth}`,
+              "Content-Type": "application/json",
+            },
+            validateStatus: () => true,
+          }),
+        ),
       );
+      if (res.status >= 400) {
+        this.logger.warn(`Azure DevOps API returned ${res.status}`);
+        return [];
+      }
+      data = res.data;
     } catch (err) {
       this.translateHttpError(err, "AzureDevOpsService.listPipelines");
     }
-    if (!res.ok) {
-      this.logger.warn(`Azure DevOps API returned ${res.status}`);
-      return [];
-    }
-    const data = (await res.json()) as {
-      value?: Record<string, unknown>[];
-    };
     const runs = data.value ?? [];
     return runs.map((r) => {
       const def = (r.definition ?? {}) as Record<string, unknown>;

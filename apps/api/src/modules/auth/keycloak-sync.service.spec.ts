@@ -1,5 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
+import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { getQueueToken } from "@nestjs/bullmq";
 import {
@@ -14,6 +15,7 @@ import { Team } from "../teams/entities/team.entity";
 import { User } from "./entities/user.entity";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import * as crypto from "crypto";
+import { of } from "rxjs";
 
 /**
  * Builds an AES-256-GCM encrypted payload matching IntegrationCredentialService.
@@ -96,6 +98,16 @@ describe("KeycloakSyncService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KeycloakSyncService,
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
         {
           provide: getRepositoryToken(IntegrationCredential),
           useValue: mockCredentialRepo,
@@ -286,6 +298,7 @@ describe("KeycloakSyncService — additional branches", () => {
   let mockUserRepo: Record<string, jest.Mock>;
   let mockCredentialRepo: Record<string, jest.Mock>;
   let mockQueue: { add: jest.Mock };
+  let mockHttpService: Record<string, jest.Mock>;
 
   const encryptedValue2 = buildEncryptedCredential(
     mockCredentialPayload,
@@ -301,6 +314,16 @@ describe("KeycloakSyncService — additional branches", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KeycloakSyncService,
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
         { provide: getRepositoryToken(Team), useValue: mockTeamRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         {
@@ -319,26 +342,20 @@ describe("KeycloakSyncService — additional branches", () => {
     }).compile();
 
     service = module.get<KeycloakSyncService>(KeycloakSyncService);
+    mockHttpService = module.get(HttpService);
   });
 
   afterEach(() => jest.clearAllMocks());
 
   describe("fetchAdminToken", () => {
-    let originalFetch: typeof globalThis.fetch;
-
-    beforeEach(() => {
-      originalFetch = globalThis.fetch;
-    });
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-    });
-
     it("should return access_token on successful response", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ access_token: "test-token-123" }),
-      });
+      mockHttpService.post.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { access_token: "test-token-123" },
+        }),
+      );
 
       const token = await service.fetchAdminToken(
         "https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
@@ -350,11 +367,9 @@ describe("KeycloakSyncService — additional branches", () => {
     });
 
     it("should throw when the response is not ok", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 401,
-        statusText: "Unauthorized",
-      });
+      mockHttpService.post.mockReturnValue(
+        of({ status: 401, statusText: "Unauthorized" }),
+      );
 
       await expect(
         service.fetchAdminToken(
@@ -367,22 +382,11 @@ describe("KeycloakSyncService — additional branches", () => {
   });
 
   describe("fetchJson", () => {
-    let originalFetch: typeof globalThis.fetch;
-
-    beforeEach(() => {
-      originalFetch = globalThis.fetch;
-    });
-
-    afterEach(() => {
-      globalThis.fetch = originalFetch;
-    });
-
     it("should return parsed JSON on successful response", async () => {
       const mockData = [{ id: "g1", name: "admins" }];
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue(mockData),
-      });
+      mockHttpService.get.mockReturnValue(
+        of({ status: 200, statusText: "OK", data: mockData }),
+      );
 
       const result = await service.fetchJson<typeof mockData>(
         "https://keycloak.example.com/admin/realms/myrealm/groups",
@@ -393,11 +397,9 @@ describe("KeycloakSyncService — additional branches", () => {
     });
 
     it("should throw when the response is not ok", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-        statusText: "Forbidden",
-      });
+      mockHttpService.get.mockReturnValue(
+        of({ status: 403, statusText: "Forbidden" }),
+      );
 
       await expect(
         service.fetchJson(

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
+import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { FeaturesService } from "./features.service";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
@@ -6,6 +7,16 @@ import { RegistryService } from "../registry/registry.service";
 import { IstioService } from "../istio/istio.service";
 import { LinkerdService } from "../linkerd/linkerd.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { of, throwError } from "rxjs";
+
+const mockHttpService = {
+  get: jest.fn(),
+  post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
+  patch: jest.fn(),
+  head: jest.fn(),
+};
 
 describe("FeaturesService", () => {
   let service: FeaturesService;
@@ -18,15 +29,16 @@ describe("FeaturesService", () => {
     get: jest.fn().mockReturnValue("http://localhost:9090"),
   };
 
-  let originalFetch: typeof globalThis.fetch;
-
   beforeEach(async () => {
-    originalFetch = globalThis.fetch;
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FeaturesService,
+        {
+          provide: HttpService,
+          useValue: mockHttpService,
+        },
         { provide: KubernetesService, useValue: mockKubernetesService },
         { provide: RegistryService, useValue: mockRegistryService },
         { provide: IstioService, useValue: mockIstioService },
@@ -42,10 +54,6 @@ describe("FeaturesService", () => {
     service = module.get<FeaturesService>(FeaturesService);
   });
 
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-  });
-
   it("should be defined", () => {
     expect(service).toBeDefined();
   });
@@ -56,7 +64,9 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = "ecr";
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(true);
-      globalThis.fetch = jest.fn().mockResolvedValue({ ok: true });
+      mockHttpService.head.mockReturnValue(
+        of({ status: 200, statusText: "OK" }),
+      );
 
       const result = await service.getAvailability();
 
@@ -73,7 +83,9 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+      mockHttpService.head.mockReturnValue(
+        throwError(() => new Error("ECONNREFUSED")),
+      );
 
       const result = await service.getAvailability();
 
@@ -90,7 +102,9 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest.fn().mockRejectedValue(new Error("timeout"));
+      mockHttpService.head.mockReturnValue(
+        throwError(() => new Error("timeout")),
+      );
 
       const result = await service.getAvailability();
 
@@ -103,10 +117,9 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = "ecr";
       mockIstioService.isIstioEnabled.mockResolvedValue(true);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-      });
+      mockHttpService.head.mockReturnValue(
+        of({ status: 503, statusText: "Service Unavailable" }),
+      );
 
       const result = await service.getAvailability();
 
@@ -118,7 +131,9 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest.fn().mockRejectedValue(new Error("error"));
+      mockHttpService.head.mockReturnValue(
+        throwError(() => new Error("error")),
+      );
 
       const result = await service.getAvailability();
 
@@ -131,11 +146,13 @@ describe("FeaturesService", () => {
       mockRegistryService.adapterType = null;
       mockIstioService.isIstioEnabled.mockResolvedValue(false);
       mockLinkerdService.isLinkerdEnabled.mockResolvedValue(false);
-      globalThis.fetch = jest.fn().mockResolvedValue({ ok: true });
+      mockHttpService.head.mockReturnValue(
+        of({ status: 200, statusText: "OK" }),
+      );
 
       const result = await service.getAvailability();
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect(mockHttpService.head).toHaveBeenCalledWith(
         expect.stringContaining("custom-opencost"),
         expect.any(Object),
       );

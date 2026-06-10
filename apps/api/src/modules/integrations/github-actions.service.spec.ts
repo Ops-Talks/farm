@@ -4,14 +4,22 @@ import { GitHubActionsService } from "./github-actions.service";
 import { IntegrationCredentialService } from "./integration-credential.service";
 import { IntegrationType } from "./entities/integration-credential.entity";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { HttpService } from "@nestjs/axios";
+import { of, throwError } from "rxjs";
 
 describe("GitHubActionsService", () => {
   let service: GitHubActionsService;
-  let originalFetch: typeof globalThis.fetch;
-
   const mockCredentialService = {
     findByType: jest.fn(),
     decrypt: jest.fn(),
+  };
+
+  const mockHttpService = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    patch: jest.fn(),
   };
 
   const encryptedCredential = {
@@ -26,7 +34,6 @@ describe("GitHubActionsService", () => {
   };
 
   beforeEach(async () => {
-    originalFetch = globalThis.fetch;
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -40,14 +47,14 @@ describe("GitHubActionsService", () => {
           provide: CircuitBreakerService,
           useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
+        {
+          provide: HttpService,
+          useValue: mockHttpService,
+        },
       ],
     }).compile();
 
     service = module.get<GitHubActionsService>(GitHubActionsService);
-  });
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
   });
 
   it("should be defined", () => {
@@ -84,10 +91,15 @@ describe("GitHubActionsService", () => {
         html_url: "https://github.com/acme/my-app/actions/runs/123",
       };
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ workflow_runs: [mockRun] }),
-      });
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { workflow_runs: [mockRun] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listWorkflowRuns("org-1");
 
@@ -110,10 +122,15 @@ describe("GitHubActionsService", () => {
         JSON.stringify({ token: "gh-token", owner: "acme", repo: "my-app" }),
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 403,
-      });
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: null,
+          status: 403,
+          statusText: "Forbidden",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listWorkflowRuns("org-1");
 
@@ -126,14 +143,19 @@ describe("GitHubActionsService", () => {
         JSON.stringify({ token: "gh-token", owner: "acme" }),
       );
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
-      });
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { workflow_runs: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await service.listWorkflowRuns("org-1");
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect(mockHttpService.get).toHaveBeenCalledWith(
         "https://api.github.com/orgs/acme/actions/runs",
         expect.any(Object),
       );
@@ -146,10 +168,15 @@ describe("GitHubActionsService", () => {
       );
 
       // Response with no workflow_runs field — exercises `data.workflow_runs ?? []` right branch.
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({}),
-      });
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: {},
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listWorkflowRuns("org-1");
       expect(result).toEqual([]);
@@ -173,12 +200,15 @@ describe("GitHubActionsService", () => {
         html_url: "https://github.com/acme/my-app/actions/runs/99",
       };
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: jest
-          .fn()
-          .mockResolvedValue({ workflow_runs: [runWithNullConclusion] }),
-      });
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { workflow_runs: [runWithNullConclusion] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const result = await service.listWorkflowRuns("org-1");
 
@@ -192,9 +222,9 @@ describe("GitHubActionsService", () => {
         JSON.stringify({ token: "gh-token", owner: "acme", repo: "my-app" }),
       );
 
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new TypeError("Failed to fetch"));
+      mockHttpService.get.mockReturnValue(
+        throwError(() => new TypeError("Failed to fetch")),
+      );
 
       await expect(service.listWorkflowRuns("org-1")).rejects.toThrow(
         ServiceUnavailableException,
@@ -244,15 +274,24 @@ describe("GitHubActionsService", () => {
         html_url: "https://github.com/acme/my-app/actions/runs/42",
       };
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({ ok: true, status: 204 }) // dispatch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: jest
-            .fn()
-            .mockResolvedValue({ workflow_runs: [mockWorkflowRun] }),
-        }) as typeof fetch;
+      mockHttpService.post.mockReturnValueOnce(
+        of({
+          data: null,
+          status: 204,
+          statusText: "No Content",
+          headers: {},
+          config: {},
+        }),
+      );
+      mockHttpService.get.mockReturnValueOnce(
+        of({
+          data: { workflow_runs: [mockWorkflowRun] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const resultPromise = service.triggerWorkflow(
         "org-1",
@@ -271,11 +310,15 @@ describe("GitHubActionsService", () => {
     });
 
     it("throws BadRequestException when dispatch returns a non-2xx status", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 422,
-        text: jest.fn().mockResolvedValue("Unprocessable Entity"),
-      }) as typeof fetch;
+      mockHttpService.post.mockReturnValue(
+        of({
+          data: "Unprocessable Entity",
+          status: 422,
+          statusText: "Unprocessable Entity",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await expect(
         service.triggerWorkflow("org-1", "deploy.yml", "main"),
@@ -293,13 +336,24 @@ describe("GitHubActionsService", () => {
     });
 
     it("returns null when no matching run is found after all polling attempts", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({ ok: true, status: 204 }) // dispatch
-        .mockResolvedValue({
-          ok: true,
-          json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
-        }) as typeof fetch;
+      mockHttpService.post.mockReturnValueOnce(
+        of({
+          data: null,
+          status: 204,
+          statusText: "No Content",
+          headers: {},
+          config: {},
+        }),
+      );
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { workflow_runs: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const resultPromise = service.triggerWorkflow(
         "org-1",
@@ -313,13 +367,24 @@ describe("GitHubActionsService", () => {
     });
 
     it("sends the provided ref in the dispatch body", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({ ok: true, status: 204 })
-        .mockResolvedValue({
-          ok: true,
-          json: jest.fn().mockResolvedValue({ workflow_runs: [] }),
-        }) as typeof fetch;
+      mockHttpService.post.mockReturnValueOnce(
+        of({
+          data: null,
+          status: 204,
+          statusText: "No Content",
+          headers: {},
+          config: {},
+        }),
+      );
+      mockHttpService.get.mockReturnValue(
+        of({
+          data: { workflow_runs: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const resultPromise = service.triggerWorkflow(
         "org-1",
@@ -329,13 +394,11 @@ describe("GitHubActionsService", () => {
       await jest.runAllTimersAsync();
       await resultPromise;
 
-      const dispatchCall = (globalThis.fetch as jest.Mock).mock.calls[0] as [
+      const dispatchCall = mockHttpService.post.mock.calls[0] as [
         string,
-        RequestInit,
+        unknown,
       ];
-      const body = JSON.parse(dispatchCall[1].body as string) as {
-        ref: string;
-      };
+      const body = dispatchCall[1] as { ref: string };
       expect(body.ref).toBe("main");
     });
   });

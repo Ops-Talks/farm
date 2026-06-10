@@ -1,26 +1,33 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { Test, TestingModule } from "@nestjs/testing";
+import { HttpService } from "@nestjs/axios";
+import { of, throwError } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { ElasticsearchIndexStatsService } from "./elasticsearch-index-stats.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
-/**
- * Unit tests for ElasticsearchIndexStatsService (FARM-T402).
- *
- * Uses the capture-and-restore globalThis.fetch pattern.
- */
 describe("ElasticsearchIndexStatsService", () => {
   let service: ElasticsearchIndexStatsService;
   let configValues: Record<string, string | undefined>;
-
-  let originalFetch: typeof globalThis.fetch;
+  let mockHttpService: { get: jest.Mock };
 
   beforeEach(async () => {
-    originalFetch = globalThis.fetch;
     configValues = {};
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ElasticsearchIndexStatsService,
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
         {
           provide: ConfigService,
           useValue: {
@@ -35,20 +42,23 @@ describe("ElasticsearchIndexStatsService", () => {
     }).compile();
 
     service = module.get(ElasticsearchIndexStatsService);
+    mockHttpService = module.get(HttpService);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
 
-  /** Helper to mock a single ok JSON response from globalThis.fetch. */
   const mockFetchOk = (body: unknown) => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve(body),
-    });
+    mockHttpService.get.mockReturnValue(
+      of({
+        data: body,
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    );
   };
 
   // FARM-ST412
@@ -79,17 +89,18 @@ describe("ElasticsearchIndexStatsService", () => {
       ],
     });
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const calledUrl = calls[0][0] as string;
-    expect(calledUrl).toBe(
+    expect(mockHttpService.get).toHaveBeenCalledTimes(1);
+    const url = mockHttpService.get.mock.calls[0][0] as string;
+    expect(url).toBe(
       "http://es.test/_cat/indices/logs-*?format=json&h=index,health,status,docs.count,store.size",
     );
   });
 
   // FARM-ST413
   it("returns { reachable: false } and does not throw when fetch rejects", async () => {
-    globalThis.fetch = jest.fn().mockRejectedValue(new Error("network down"));
+    mockHttpService.get.mockReturnValue(
+      throwError(() => new Error("network down")),
+    );
 
     const result = await service.getIndexStats(["logs-*"], "http://es.test");
 
@@ -97,23 +108,17 @@ describe("ElasticsearchIndexStatsService", () => {
   });
 
   it("returns { reachable: false } and never calls fetch when no URL is configured", async () => {
-    const fetchMock = jest.fn();
-    globalThis.fetch = fetchMock;
-
     const result = await service.getIndexStats(["logs-*"]);
 
     expect(result).toEqual({ reachable: false });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockHttpService.get).not.toHaveBeenCalled();
   });
 
   it("merges results across multiple patterns preserving order", async () => {
-    const fetchMock = jest
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve([
+    mockHttpService.get
+      .mockReturnValueOnce(
+        of({
+          data: [
             {
               index: "logs-a-001",
               health: "green",
@@ -121,13 +126,16 @@ describe("ElasticsearchIndexStatsService", () => {
               "docs.count": "10",
               "store.size": "1kb",
             },
-          ]),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () =>
-          Promise.resolve([
+          ],
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          data: [
             {
               index: "logs-b-001",
               health: "yellow",
@@ -135,9 +143,13 @@ describe("ElasticsearchIndexStatsService", () => {
               "docs.count": "20",
               "store.size": "2kb",
             },
-          ]),
-      });
-    globalThis.fetch = fetchMock;
+          ],
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
     const result = await service.getIndexStats(
       ["logs-a-*", "logs-b-*"],
@@ -206,20 +218,23 @@ describe("ElasticsearchIndexStatsService", () => {
 
     await service.getIndexStats(["logs-*"]);
 
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const calledUrl = calls[0][0] as string;
-    expect(
-      calledUrl.startsWith("http://configured-es:9200/_cat/indices/"),
-    ).toBe(true);
+    expect(mockHttpService.get).toHaveBeenCalledTimes(1);
+    const url = mockHttpService.get.mock.calls[0][0] as string;
+    expect(url.startsWith("http://configured-es:9200/_cat/indices/")).toBe(
+      true,
+    );
   });
 
   it("returns { reachable: false } on a non-2xx HTTP response", async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({}),
-    });
+    mockHttpService.get.mockReturnValue(
+      of({
+        data: {},
+        status: 500,
+        statusText: "Internal Server Error",
+        headers: {},
+        config: {},
+      }),
+    );
 
     const result = await service.getIndexStats(["logs-*"], "http://es.test");
     expect(result).toEqual({ reachable: false });
@@ -233,9 +248,11 @@ describe("ElasticsearchIndexStatsService", () => {
 
     await service.getIndexStats(["logs-*"], "http://es.test");
 
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const init = calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
+    const options = mockHttpService.get.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    const headers = options.headers as Record<string, string>;
     const expected = `Basic ${Buffer.from("elastic:changeme").toString("base64")}`;
     expect(headers.Authorization).toBe(expected);
   });
@@ -251,49 +268,49 @@ describe("ElasticsearchIndexStatsService", () => {
 
     await service.getIndexStats(["logs-*"], "http://other-host.test");
 
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const init = calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
+    const options = mockHttpService.get.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    const headers = options.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
   });
 
   // Security: SSRF guard rejects private/loopback override hosts before
   // any outbound request is issued.
   it("returns { reachable: false } and never calls fetch when esUrl override points to a private host", async () => {
-    const fetchMock = jest.fn();
-    globalThis.fetch = fetchMock;
-
     const result = await service.getIndexStats(
       ["logs-*"],
       "http://192.168.0.10:9200",
     );
 
     expect(result).toEqual({ reachable: false });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockHttpService.get).not.toHaveBeenCalled();
   });
 
   // Security: SSRF guard rejects non-http(s) schemes.
   it("returns { reachable: false } and never calls fetch when esUrl override uses a non-http(s) scheme", async () => {
-    const fetchMock = jest.fn();
-    globalThis.fetch = fetchMock;
-
     const result = await service.getIndexStats(
       ["logs-*"],
       "file:///etc/passwd",
     );
 
     expect(result).toEqual({ reachable: false });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockHttpService.get).not.toHaveBeenCalled();
   });
 
   // Behavior change: a 404 from ES means the pattern matched no indices on
   // a reachable cluster, not that the cluster is unreachable.
   it("treats HTTP 404 as 'reachable but missing' and synthesizes a placeholder row", async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 404,
-      json: () => Promise.resolve({}),
-    });
+    mockHttpService.get.mockReturnValue(
+      of({
+        data: {},
+        status: 404,
+        statusText: "Not Found",
+        headers: {},
+        config: {},
+      }),
+    );
 
     const result = await service.getIndexStats(
       ["logs-missing-*"],
@@ -324,9 +341,11 @@ describe("ElasticsearchIndexStatsService", () => {
 
     await service.getIndexStats(["logs-*"], "http://override.test");
 
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const init = calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
+    const options = mockHttpService.get.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    const headers = options.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
   });
 
@@ -340,22 +359,21 @@ describe("ElasticsearchIndexStatsService", () => {
 
     await service.getIndexStats(["logs-*"], "http://override.test");
 
-    const calls = (globalThis.fetch as jest.Mock).mock.calls as unknown[][];
-    const init = calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
+    const options = mockHttpService.get.mock.calls[0][1] as Record<
+      string,
+      unknown
+    >;
+    const headers = options.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
   });
 
   // Coverage: SSRF guard treats unparseable override URLs as unsafe and
   // refuses to issue any outbound request.
   it("returns { reachable: false } and never calls fetch when esUrl override is not a valid URL", async () => {
-    const fetchMock = jest.fn();
-    globalThis.fetch = fetchMock;
-
     const result = await service.getIndexStats(["logs-*"], "::not a url::");
 
     expect(result).toEqual({ reachable: false });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockHttpService.get).not.toHaveBeenCalled();
   });
 
   // Coverage: opt-in escape hatch ELASTICSEARCH_ALLOW_PRIVATE_HOSTS=true
@@ -370,15 +388,16 @@ describe("ElasticsearchIndexStatsService", () => {
     );
 
     expect(result.reachable).toBe(true);
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(mockHttpService.get).toHaveBeenCalledTimes(1);
   });
 
   // Coverage: AbortError from a timed-out request should not throw and
   // should mark the cluster as unreachable.
   it("returns { reachable: false } when the fetch is aborted (timeout)", async () => {
-    const abortErr = new Error("aborted");
-    abortErr.name = "AbortError";
-    globalThis.fetch = jest.fn().mockRejectedValue(abortErr);
+    const err = new Error("timeout");
+    err.name = "AxiosError";
+    (err as { code?: string }).code = "ECONNABORTED";
+    mockHttpService.get.mockReturnValue(throwError(() => err));
 
     const result = await service.getIndexStats(["logs-*"], "http://es.test");
 

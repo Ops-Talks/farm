@@ -1,4 +1,6 @@
 import { Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { GatewayType } from "../enums/gateway-type.enum";
@@ -59,6 +61,7 @@ export class KongAdapter implements IGatewayAdapter {
   private readonly apiKey: string;
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly cb?: CircuitBreakerService,
   ) {
@@ -67,14 +70,22 @@ export class KongAdapter implements IGatewayAdapter {
   }
 
   /**
-   * Issues a fetch request, routing through the circuit breaker when one is
-   * configured.
+   * Issues an HTTP GET, routing through the circuit breaker when one is
+   * configured. Returns { data, status } for callers that handle non-2xx
+   * status codes manually.
    */
-  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+  private async _get<T>(
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<{ data: T; status: number }> {
+    const request = () =>
+      firstValueFrom(
+        this.httpService.get<T>(url, { headers, validateStatus: () => true }),
+      );
     if (this.cb) {
-      return this.cb.fire("kong", () => globalThis.fetch(url, init));
+      return this.cb.fire("kong", request);
     }
-    return globalThis.fetch(url, init);
+    return request();
   }
 
   /**
@@ -99,16 +110,19 @@ export class KongAdapter implements IGatewayAdapter {
     let url: string | null = `${this.baseUrl}/routes?size=1000`;
 
     while (url) {
-      const response = await this._fetch(url, {
-        headers: this.buildHeaders(),
-      });
+      const kongResponse = await this._get<KongRoutesPage>(
+        url,
+        this.buildHeaders(),
+      );
 
-      if (!response.ok) {
-        this.logger.error(`Kong routes fetch failed: HTTP ${response.status}`);
+      if (kongResponse.status >= 400) {
+        this.logger.error(
+          `Kong routes fetch failed: HTTP ${kongResponse.status}`,
+        );
         break;
       }
 
-      const page = (await response.json()) as KongRoutesPage;
+      const page: KongRoutesPage = kongResponse.data;
 
       for (const route of page.data) {
         routes.push({
@@ -136,27 +150,28 @@ export class KongAdapter implements IGatewayAdapter {
   async getHealth(): Promise<GatewayHealthDto[]> {
     const healthChecks: GatewayHealthDto[] = [];
 
-    const upstreamsResponse = await this._fetch(`${this.baseUrl}/upstreams`, {
-      headers: this.buildHeaders(),
-    });
+    const upstreamsResponse = await this._get<KongUpstreamsPage>(
+      `${this.baseUrl}/upstreams`,
+      this.buildHeaders(),
+    );
 
-    if (!upstreamsResponse.ok) {
+    if (upstreamsResponse.status >= 400) {
       this.logger.error(
         `Kong upstreams fetch failed: HTTP ${upstreamsResponse.status}`,
       );
       return healthChecks;
     }
 
-    const upstreams = (await upstreamsResponse.json()) as KongUpstreamsPage;
+    const upstreams = upstreamsResponse.data;
 
     for (const upstream of upstreams.data) {
       try {
-        const healthResponse = await this._fetch(
+        const healthResponse = await this._get<KongTargetHealth>(
           `${this.baseUrl}/upstreams/${upstream.name}/health`,
-          { headers: this.buildHeaders() },
+          this.buildHeaders(),
         );
 
-        if (!healthResponse.ok) {
+        if (healthResponse.status >= 400) {
           healthChecks.push({
             url: `${this.baseUrl}/upstreams/${upstream.name}`,
             status: HealthStatus.DOWN,
@@ -165,7 +180,7 @@ export class KongAdapter implements IGatewayAdapter {
           continue;
         }
 
-        const healthData = (await healthResponse.json()) as KongTargetHealth;
+        const healthData = healthResponse.data;
 
         const hasUnhealthy = healthData.data.some(
           (t) => t.health === "UNHEALTHY" || t.health === "DNS_ERROR",

@@ -108,6 +108,64 @@ jobs:
             --username "${{ github.actor }}" \
             --password-stdin
 
+      - name: Authenticate Docker to GHCR (image existence check)
+        if: steps.check.outputs.skip == 'false' && matrix.chart.name == 'farm'
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for container images to be available
+        # ArtifactHub indexes the chart and tries to scan every image listed in
+        # artifacthub.io/images. If the chart is published before build-images.yml
+        # finishes, those images don't exist yet and ArtifactHub reports "image
+        # not found". This step polls GHCR until all referenced images are
+        # available, or fails after 10 minutes.
+        if: steps.check.outputs.skip == 'false' && matrix.chart.name == 'farm'
+        run: |
+          set -euo pipefail
+          TIMEOUT=600
+          INTERVAL=30
+          ELAPSED=0
+
+          echo "Checking container images referenced in Chart.yaml..."
+          # The artifacthub.io/images annotation is a YAML literal block scalar (|),
+          # so yq returns the raw string content. Pipe to a second yq to parse it.
+          RAW=$(yq '.annotations."artifacthub.io/images"' "${{ matrix.chart.path }}/Chart.yaml" 2>/dev/null || true)
+
+          if [ -z "$RAW" ]; then
+            echo "No artifacthub.io/images annotation — skipping wait."
+            exit 0
+          fi
+
+          IMAGES=$(echo "$RAW" | yq '.[].image' 2>/dev/null || true)
+
+          if [ -z "$IMAGES" ]; then
+            echo "No image references found in annotation — skipping wait."
+            exit 0
+          fi
+
+          echo "Required images:"
+          echo "$IMAGES"
+
+          for IMAGE in $IMAGES; do
+            echo "Waiting for ${IMAGE} ..."
+            while ! docker manifest inspect "${IMAGE}" > /dev/null 2>&1; do
+              if [ $ELAPSED -ge $TIMEOUT ]; then
+                echo "::error::Image ${IMAGE} not found after ${TIMEOUT}s. Aborting chart publish."
+                echo "The chart would be published with a reference to a non-existent image,"
+                echo "causing ArtifactHub scan errors. Ensure build-images.yml completed successfully."
+                exit 1
+              fi
+              echo "Image not yet available. Waiting ${INTERVAL}s... (${ELAPSED}s elapsed)"
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+            echo "Image ${IMAGE} is available."
+          done
+          echo "All container images are available. Proceeding with chart publish."
+
       - name: Package chart
         if: steps.check.outputs.skip == 'false'
         id: package

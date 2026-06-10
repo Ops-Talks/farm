@@ -3,6 +3,8 @@ import { ConfigService } from "@nestjs/config";
 import { ThanosService } from "./thanos.service";
 import { KubernetesService } from "./kubernetes.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 
 // ---------------------------------------------------------------------------
 // Shared mock objects
@@ -104,14 +106,10 @@ function fakePod(overrides: {
 
 describe("ThanosService", () => {
   let service: ThanosService;
-
-  // Capture and restore globalThis.fetch around every test so fetch mocks
-  // do not leak across test boundaries.
-  let originalFetch: typeof globalThis.fetch;
+  let httpService: { get: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    originalFetch = globalThis.fetch;
 
     // Default: Kubernetes API is not available
     mockKubernetesService.getCustomObjectsApi.mockReturnValue(null);
@@ -128,15 +126,21 @@ describe("ThanosService", () => {
           provide: CircuitBreakerService,
           useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<ThanosService>(ThanosService);
-  });
-
-  afterEach(() => {
-    globalThis.fetch = originalFetch;
-    jest.restoreAllMocks();
+    httpService = module.get(HttpService);
   });
 
   // -------------------------------------------------------------------------
@@ -473,12 +477,13 @@ describe("ThanosService", () => {
     it("FARM-ST394: X-Thanos-* header present → returns { type: 'thanos', multiCluster: true }", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      const mockHeaders = new Headers({ "x-thanos-trace-id": "abc123" });
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        headers: mockHeaders,
-        text: jest.fn().mockResolvedValue(""),
-      }) as typeof fetch;
+      httpService.get.mockReturnValueOnce(
+        of({
+          status: 200,
+          headers: { "x-thanos-trace-id": "abc123" },
+          data: "",
+        }),
+      );
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "thanos",
@@ -489,19 +494,11 @@ describe("ThanosService", () => {
     it("FARM-ST395: no Thanos headers, /ready returns plain Prometheus body → { type: 'prometheus' }", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue("Prometheus Server is Ready."),
-        }) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockReturnValueOnce(
+          of({ status: 200, headers: {}, data: "Prometheus Server is Ready." }),
+        );
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "prometheus",
@@ -511,19 +508,15 @@ describe("ThanosService", () => {
     it("detects Mimir backend when /ready body contains 'Grafana Mimir'", async () => {
       mockConfigService.get.mockReturnValue("http://mimir:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue("Grafana Mimir, have a great day."),
-        }) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockReturnValueOnce(
+          of({
+            status: 200,
+            headers: {},
+            data: "Grafana Mimir, have a great day.",
+          }),
+        );
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "mimir",
@@ -533,19 +526,11 @@ describe("ThanosService", () => {
     it("detects Cortex backend when /ready body contains 'Cortex'", async () => {
       mockConfigService.get.mockReturnValue("http://cortex:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue("Cortex is ready."),
-        }) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockReturnValueOnce(
+          of({ status: 200, headers: {}, data: "Cortex is ready." }),
+        );
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "cortex",
@@ -555,9 +540,9 @@ describe("ThanosService", () => {
     it("returns { type: 'unknown' } when the fetch to /api/v1/labels throws", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValueOnce(new Error("ECONNREFUSED")) as typeof fetch;
+      httpService.get.mockImplementation(() => {
+        throw new Error("ECONNREFUSED");
+      });
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "unknown",
@@ -567,14 +552,11 @@ describe("ThanosService", () => {
     it("returns { type: 'unknown' } when the fetch to /ready throws", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockRejectedValueOnce(new Error("timeout")) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockImplementationOnce(() => {
+          throw new Error("timeout");
+        });
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "unknown",
@@ -584,18 +566,9 @@ describe("ThanosService", () => {
     it("returns { type: 'unknown' } when /ready returns a non-ok response", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockResolvedValueOnce({
-          ok: false,
-          text: jest.fn().mockResolvedValue(""),
-        }) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockReturnValueOnce(of({ status: 500, data: "" }));
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "unknown",
@@ -605,15 +578,11 @@ describe("ThanosService", () => {
     it("returns { type: 'unknown' } when /ready fetch throws after a clean labels response", async () => {
       mockConfigService.get.mockReturnValue("http://prometheus:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockRejectedValueOnce(new Error("ECONNREFUSED")) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockImplementationOnce(() => {
+          throw new Error("ECONNREFUSED");
+        });
 
       await expect(service.detectMetricsBackend()).resolves.toMatchObject({
         type: "unknown",
@@ -660,12 +629,9 @@ describe("ThanosService", () => {
       mockKubernetesService.getCoreV1Api.mockReturnValue(null);
       mockConfigService.get.mockReturnValue("http://thanos:9090");
 
-      const mockHeaders = new Headers({ "x-thanos-trace-id": "xyz" });
-      globalThis.fetch = jest.fn().mockResolvedValueOnce({
-        ok: true,
-        headers: mockHeaders,
-        text: jest.fn().mockResolvedValue(""),
-      }) as typeof fetch;
+      httpService.get.mockReturnValueOnce(
+        of({ status: 200, headers: { "x-thanos-trace-id": "xyz" }, data: "" }),
+      );
 
       const result = await service.getAll();
 
@@ -679,19 +645,11 @@ describe("ThanosService", () => {
       mockKubernetesService.getCoreV1Api.mockReturnValue(null);
       mockConfigService.get.mockReturnValue("http://mimir:9090");
 
-      const emptyHeaders = new Headers();
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue(""),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          headers: emptyHeaders,
-          text: jest.fn().mockResolvedValue("Grafana Mimir"),
-        }) as typeof fetch;
+      httpService.get
+        .mockReturnValueOnce(of({ status: 200, headers: {}, data: "" }))
+        .mockReturnValueOnce(
+          of({ status: 200, headers: {}, data: "Grafana Mimir" }),
+        );
 
       const result = await service.getAll();
 
@@ -716,9 +674,9 @@ describe("ThanosService", () => {
       mockAppsV1Api.listStatefulSetForAllNamespaces.mockRejectedValue(
         new Error("cluster down"),
       );
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("ECONNREFUSED")) as typeof fetch;
+      httpService.get.mockImplementation(() => {
+        throw new Error("ECONNREFUSED");
+      });
 
       const result = await service.getAll();
 

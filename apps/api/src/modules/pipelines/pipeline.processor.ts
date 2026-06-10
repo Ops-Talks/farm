@@ -1,5 +1,7 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Logger, Optional } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Job } from "bullmq";
@@ -114,6 +116,7 @@ export class PipelineProcessor extends WorkerHost {
   private encryptionKey: Buffer | null = null;
 
   constructor(
+    private readonly httpService: HttpService,
     @InjectRepository(PipelineRun)
     private readonly runRepository: Repository<PipelineRun>,
     @InjectRepository(Pipeline)
@@ -654,20 +657,21 @@ export class PipelineProcessor extends WorkerHost {
       client_secret: payload.clientSecret,
     });
 
-    const response = await fetch(tokenUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
+    const response = await firstValueFrom(
+      this.httpService.post<TokenResponse>(tokenUrl, body.toString(), {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        validateStatus: () => true,
+      }),
+    );
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Keycloak token request failed for ${uri}: ` +
           `${response.status} ${response.statusText}`,
       );
     }
 
-    const data = (await response.json()) as TokenResponse;
+    const data = response.data;
     const expiresInMs = (data.expires_in - 30) * 1000;
 
     this.keycloakTokenCache.set(cacheKey, {

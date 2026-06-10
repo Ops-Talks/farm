@@ -1,4 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "./kubernetes.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
@@ -147,6 +149,7 @@ export class ThanosService {
   ];
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly kubernetesService: KubernetesService,
     private readonly configService: ConfigService,
     private readonly cb: CircuitBreakerService,
@@ -446,17 +449,19 @@ export class ThanosService {
     try {
       // Probe /api/v1/labels to check for Thanos query-layer response headers.
       const labelsResponse = await this.cb.fire("thanos", () =>
-        globalThis.fetch(`${url}/api/v1/labels`, {
-          method: "GET",
-          signal: AbortSignal.timeout(3000),
-        }),
+        firstValueFrom(
+          this.httpService.get(`${url}/api/v1/labels`, {
+            timeout: 3000,
+            validateStatus: () => true,
+          }),
+        ),
       );
 
-      if (!labelsResponse.ok) {
+      if (labelsResponse.status >= 400) {
         return { type: "unknown" };
       }
 
-      const hasThanosHeader = [...labelsResponse.headers.keys()].some((key) =>
+      const hasThanosHeader = Object.keys(labelsResponse.headers).some((key) =>
         key.toLowerCase().startsWith("x-thanos-"),
       );
 
@@ -472,17 +477,20 @@ export class ThanosService {
     // No Thanos headers — probe /ready to distinguish Mimir, Cortex, Prometheus.
     try {
       const readyResponse = await this.cb.fire("thanos", () =>
-        globalThis.fetch(`${url}/ready`, {
-          method: "GET",
-          signal: AbortSignal.timeout(3000),
-        }),
+        firstValueFrom(
+          this.httpService.get(`${url}/ready`, {
+            timeout: 3000,
+            responseType: "text",
+            validateStatus: () => true,
+          }),
+        ),
       );
 
-      if (!readyResponse.ok) {
+      if (readyResponse.status >= 400) {
         return { type: "unknown" };
       }
 
-      const body = await readyResponse.text();
+      const body = readyResponse.data as string;
 
       if (body.includes("Grafana Mimir")) {
         return { type: "mimir" };

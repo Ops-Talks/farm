@@ -1,8 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
 import { ElasticStackService } from "./elastic-stack.service";
 import { KubernetesService } from "./kubernetes.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { of } from "rxjs";
 
 // ---------------------------------------------------------------------------
 // Shared mock objects
@@ -142,14 +144,18 @@ function fakeDeployment(overrides: {
 
 describe("ElasticStackService", () => {
   let service: ElasticStackService;
-
-  // Capture and restore globalThis.fetch around every test so fetch mocks
-  // do not leak across test boundaries.
-  let originalFetch: typeof globalThis.fetch;
+  let mockHttpService: { get: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    originalFetch = globalThis.fetch;
+
+    mockHttpService = {
+      get: jest
+        .fn()
+        .mockReturnValue(
+          of({ status: 200, statusText: "OK", data: {}, headers: {} }),
+        ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -160,6 +166,10 @@ describe("ElasticStackService", () => {
           provide: CircuitBreakerService,
           useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
+        {
+          provide: HttpService,
+          useValue: mockHttpService,
+        },
       ],
     }).compile();
 
@@ -167,7 +177,6 @@ describe("ElasticStackService", () => {
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.restoreAllMocks();
   });
 
@@ -1132,10 +1141,14 @@ describe("ElasticStackService", () => {
 
     it("FARM-ST391: returns { reachable: true, clusterHealth: 'yellow' } when cluster health responds with status=yellow", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ status: "yellow" }),
-      }) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { status: "yellow" },
+          headers: {},
+        }),
+      );
 
       const result = await service.getExternalElasticsearch();
 
@@ -1144,46 +1157,41 @@ describe("ElasticStackService", () => {
 
     it("returns { reachable: true, clusterHealth: 'green' } when cluster health responds with status=green", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ status: "green" }),
-      }) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { status: "green" },
+          headers: {},
+        }),
+      );
 
       const result = await service.getExternalElasticsearch();
 
       expect(result).toEqual({ reachable: true, clusterHealth: "green" });
     });
 
-    it("returns { reachable: false } when fetch throws a network error", async () => {
+    it("returns { reachable: false } when httpService.get throws a network error", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("network timeout")) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 503,
+          statusText: "Service Unavailable",
+          data: {},
+          headers: {},
+        }),
+      );
 
       await expect(service.getExternalElasticsearch()).resolves.toEqual({
         reachable: false,
       });
     });
 
-    it("returns { reachable: false } when the response status is not ok (503)", async () => {
+    it("returns { reachable: false } when httpService throws", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-      }) as typeof fetch;
-
-      await expect(service.getExternalElasticsearch()).resolves.toEqual({
-        reachable: false,
+      mockHttpService.get.mockImplementation(() => {
+        throw new Error("network timeout");
       });
-    });
-
-    it("returns { reachable: false } when the request is aborted by AbortSignal", async () => {
-      mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(
-          new DOMException("The operation was aborted.", "AbortError"),
-        ) as typeof fetch;
 
       await expect(service.getExternalElasticsearch()).resolves.toEqual({
         reachable: false,
@@ -1192,10 +1200,14 @@ describe("ElasticStackService", () => {
 
     it("returns { reachable: true, clusterHealth: 'red' } when cluster health responds with status=red", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ status: "red" }),
-      }) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { status: "red" },
+          headers: {},
+        }),
+      );
 
       const result = await service.getExternalElasticsearch();
 
@@ -1204,10 +1216,14 @@ describe("ElasticStackService", () => {
 
     it("returns { reachable: true, clusterHealth: undefined } when status is an unrecognised value", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ status: "initializing" }),
-      }) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({
+          status: 200,
+          statusText: "OK",
+          data: { status: "initializing" },
+          headers: {},
+        }),
+      );
 
       const result = await service.getExternalElasticsearch();
 
@@ -1216,10 +1232,9 @@ describe("ElasticStackService", () => {
 
     it("returns { reachable: true, clusterHealth: undefined } when the response body has no status field", async () => {
       mockConfigService.get.mockReturnValue("http://es:9200");
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({}),
-      }) as typeof fetch;
+      mockHttpService.get.mockReturnValue(
+        of({ status: 200, statusText: "OK", data: {}, headers: {} }),
+      );
 
       const result = await service.getExternalElasticsearch();
 

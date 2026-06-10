@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { KubernetesModule } from "../kubernetes/kubernetes.module";
 import { LinkerdController } from "./linkerd.controller";
 import { LinkerdService } from "./linkerd.service";
@@ -19,7 +18,7 @@ import { LinkerdMetricsService } from "./linkerd-metrics.service";
  * (isLinkerdEnabled returns false; list methods return empty arrays).
  */
 @Module({
-  imports: [KubernetesModule, HttpModule],
+  imports: [KubernetesModule],
   controllers: [LinkerdController],
   providers: [LinkerdService, LinkerdMetricsService],
   exports: [LinkerdService, LinkerdMetricsService],

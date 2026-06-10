@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { HttpModule } from "@nestjs/axios";
 import { KubernetesModule } from "../kubernetes/kubernetes.module";
 import { IstioController } from "./istio.controller";
 import { IstioService } from "./istio.service";
@@ -19,7 +18,7 @@ import { IstioMetricsService } from "./istio-metrics.service";
  * target cluster (isIstioEnabled returns false; list methods return empty arrays).
  */
 @Module({
-  imports: [KubernetesModule, HttpModule],
+  imports: [KubernetesModule],
   controllers: [IstioController],
   providers: [IstioService, IstioMetricsService],
   exports: [IstioService, IstioMetricsService],

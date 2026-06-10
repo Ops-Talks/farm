@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { BullModule } from "@nestjs/bullmq";
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
 import { RegistryController } from "./registry.controller";
 import { RegistryService } from "./registry.service";
 import { VulnerabilityService } from "./vulnerability.service";
@@ -32,6 +33,7 @@ const isTest = process.env.NODE_ENV === "test";
  */
 export function registryAdapterFactory(
   config: ConfigService,
+  httpService: HttpService,
   cb: CircuitBreakerService,
 ): IRegistryAdapter | null {
   const type = config.get<string>("registry.type") ?? "";
@@ -40,11 +42,11 @@ export function registryAdapterFactory(
     case "ecr":
       return new EcrAdapter(config);
     case "gcr":
-      return new GcrAdapter(config, cb);
+      return new GcrAdapter(httpService, config, cb);
     case "dockerhub":
-      return new DockerHubAdapter(config, cb);
+      return new DockerHubAdapter(httpService, config, cb);
     case "harbor":
-      return new HarborAdapter(config, cb);
+      return new HarborAdapter(httpService, config, cb);
     default:
       return null;
   }
@@ -70,7 +72,7 @@ export function registryAdapterFactory(
     VulnerabilityService,
     {
       provide: REGISTRY_ADAPTER,
-      inject: [ConfigService, CircuitBreakerService],
+      inject: [ConfigService, HttpService, CircuitBreakerService],
       useFactory: registryAdapterFactory,
     },
     ...(isTest ? [] : [VulnerabilitySyncProcessor, VulnerabilitySyncScheduler]),

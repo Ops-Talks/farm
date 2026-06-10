@@ -1,4 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
 
@@ -24,6 +26,7 @@ export class OpenCostService {
   private readonly baseUrl: string;
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly cb: CircuitBreakerService,
   ) {
@@ -48,17 +51,19 @@ export class OpenCostService {
     try {
       const url = `${this.baseUrl}/model/allocation?window=${encodeURIComponent(window)}&aggregate=label:app&filterLabels=app:${encodeURIComponent(labelSelector)}`;
       const response = await this.cb.fire("open-cost", () =>
-        globalThis.fetch(url),
+        firstValueFrom(
+          this.httpService.get<{ data?: Record<string, unknown> }>(url, {
+            validateStatus: () => true,
+          }),
+        ),
       );
-      if (!response.ok) {
+      if (response.status >= 400) {
         this.logger.warn(
           `OpenCost allocation request failed: ${response.status}`,
         );
         return null;
       }
-      const data = (await response.json()) as {
-        data?: Record<string, unknown>;
-      };
+      const data = response.data;
       const allocations = data?.data;
       if (!allocations) return null;
       const entry = Object.values(allocations)[0] as

@@ -1,4 +1,6 @@
 import { Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { GoogleAuth } from "google-auth-library";
 import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
@@ -78,6 +80,7 @@ export class GcrAdapter implements IRegistryAdapter {
   private readonly baseUrl = "https://artifactregistry.googleapis.com/v1";
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly cb?: CircuitBreakerService,
   ) {
@@ -97,14 +100,20 @@ export class GcrAdapter implements IRegistryAdapter {
   }
 
   /**
-   * Issues a fetch request, routing through the circuit breaker when one is
-   * configured.
+   * Issues an HTTP GET through the circuit breaker when one is configured.
    */
-  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+  private async _get<T>(
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<{ data: T; status: number }> {
+    const request = () =>
+      firstValueFrom(
+        this.httpService.get<T>(url, { headers, validateStatus: () => true }),
+      );
     if (this.cb) {
-      return this.cb.fire("gcr", () => globalThis.fetch(url, init));
+      return this.cb.fire("gcr", request);
     }
-    return globalThis.fetch(url, init);
+    return request();
   }
 
   /**
@@ -124,20 +133,18 @@ export class GcrAdapter implements IRegistryAdapter {
    */
   private async fetchJson<T>(url: string): Promise<T> {
     const token = await this.getAccessToken();
-    const response = await this._fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+    const response = await this._get<T>(url, {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     });
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Artifact Registry request failed: HTTP ${response.status} ${url}`,
       );
     }
 
-    return response.json() as Promise<T>;
+    return response.data;
   }
 
   /**

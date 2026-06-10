@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
 import { GatewayRoute } from "./entities/gateway-route.entity";
 import { ApiHealthCheck } from "./entities/api-health-check.entity";
 import { GatewayService } from "./gateway.service";
@@ -20,11 +21,12 @@ export { GATEWAY_ADAPTERS } from "./gateway.constants";
  */
 export function gatewayAdaptersFactory(
   config: ConfigService,
+  httpService: HttpService,
   cb: CircuitBreakerService,
 ): IGatewayAdapter[] {
   const adapters: IGatewayAdapter[] = [];
   if (config.get<boolean>("gateway.kong.enabled")) {
-    adapters.push(new KongAdapter(config, cb));
+    adapters.push(new KongAdapter(httpService, config, cb));
   }
   if (config.get<boolean>("gateway.aws.enabled")) {
     adapters.push(new AwsApiGatewayAdapter(config));
@@ -48,7 +50,7 @@ export function gatewayAdaptersFactory(
     GatewayScheduler,
     {
       provide: GATEWAY_ADAPTERS,
-      inject: [ConfigService, CircuitBreakerService],
+      inject: [ConfigService, HttpService, CircuitBreakerService],
       useFactory: gatewayAdaptersFactory,
     },
   ],

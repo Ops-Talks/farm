@@ -1,4 +1,6 @@
 import { Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CircuitBreakerService } from "../../../common/circuit-breaker/circuit-breaker.service";
 import { RegistryType } from "../enums/registry-type.enum";
@@ -92,6 +94,7 @@ export class DockerHubAdapter implements IRegistryAdapter {
   private authToken: string | null = null;
 
   constructor(
+    private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly cb?: CircuitBreakerService,
   ) {
@@ -108,14 +111,41 @@ export class DockerHubAdapter implements IRegistryAdapter {
   }
 
   /**
-   * Issues a fetch request, routing through the circuit breaker when one is
-   * configured.
+   * Issues an HTTP GET through the circuit breaker when one is configured.
    */
-  private _fetch(url: string, init?: RequestInit): Promise<Response> {
+  private async _get<T>(
+    url: string,
+    headers?: Record<string, string>,
+  ): Promise<{ data: T; status: number }> {
+    const request = () =>
+      firstValueFrom(
+        this.httpService.get<T>(url, { headers, validateStatus: () => true }),
+      );
     if (this.cb) {
-      return this.cb.fire("docker-hub", () => globalThis.fetch(url, init));
+      return this.cb.fire("docker-hub", request);
     }
-    return globalThis.fetch(url, init);
+    return request();
+  }
+
+  /**
+   * Issues an HTTP POST through the circuit breaker when one is configured.
+   */
+  private async _post<T>(
+    url: string,
+    body: unknown,
+    headers?: Record<string, string>,
+  ): Promise<{ data: T; status: number }> {
+    const request = () =>
+      firstValueFrom(
+        this.httpService.post<T>(url, body, {
+          headers,
+          validateStatus: () => true,
+        }),
+      );
+    if (this.cb) {
+      return this.cb.fire("docker-hub", request);
+    }
+    return request();
   }
 
   /**
@@ -123,23 +153,19 @@ export class DockerHubAdapter implements IRegistryAdapter {
    */
   private async authenticate(): Promise<void> {
     const loginUrl = `${this.baseUrl.replace(/\/+$/, "")}/v2/users/login`;
-    const response = await this._fetch(loginUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: this.username,
-        password: this.password,
-      }),
-    });
+    const response = await this._post<DockerHubLoginResponse>(
+      loginUrl,
+      { username: this.username, password: this.password },
+      { "Content-Type": "application/json" },
+    );
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Docker Hub authentication failed: HTTP ${response.status}`,
       );
     }
 
-    const data = (await response.json()) as DockerHubLoginResponse;
-    this.authToken = data.token;
+    this.authToken = response.data.token;
   }
 
   /**
@@ -160,23 +186,21 @@ export class DockerHubAdapter implements IRegistryAdapter {
       await this.authenticate();
     }
 
-    let response = await this._fetch(url, {
-      headers: this.buildHeaders(),
-    });
+    let response = await this._get<T>(url, this.buildHeaders());
 
     if (response.status === 401) {
       this.authToken = null;
       await this.authenticate();
-      response = await this._fetch(url, { headers: this.buildHeaders() });
+      response = await this._get<T>(url, this.buildHeaders());
     }
 
-    if (!response.ok) {
+    if (response.status >= 400) {
       throw new Error(
         `Docker Hub request failed: HTTP ${response.status} ${url}`,
       );
     }
 
-    return response.json() as Promise<T>;
+    return response.data;
   }
 
   /**

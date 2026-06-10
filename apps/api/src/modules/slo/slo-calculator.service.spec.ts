@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { SloCalculatorService } from "./slo-calculator.service";
@@ -5,14 +6,13 @@ import { SloService } from "./slo.service";
 import { Slo, SloMetricType, SloWindow } from "./entities/slo.entity";
 import { SloBudgetStatus } from "./dto/slo-budget-response.dto";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { HttpService } from "@nestjs/axios";
+import { of } from "rxjs";
 
 describe("SloCalculatorService", () => {
   let calculator: SloCalculatorService;
   let sloService: { findOne: jest.Mock };
   let configGet: jest.Mock;
-
-  let originalFetch: typeof globalThis.fetch;
-
   /**
    * Builds a mock Slo entity with sensible defaults. Individual fields
    * can be overridden via the `overrides` parameter.
@@ -33,8 +33,6 @@ describe("SloCalculatorService", () => {
   });
 
   beforeEach(async () => {
-    originalFetch = globalThis.fetch;
-
     sloService = { findOne: jest.fn() };
     configGet = jest.fn().mockReturnValue(undefined);
 
@@ -47,6 +45,16 @@ describe("SloCalculatorService", () => {
           provide: CircuitBreakerService,
           useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
         },
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
+            post: jest.fn(),
+            put: jest.fn(),
+            delete: jest.fn(),
+            patch: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -54,7 +62,6 @@ describe("SloCalculatorService", () => {
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
 
@@ -94,30 +101,43 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // target = 99.0, totalBudget = 1.0
       // currentPercent = 99.99 -> consumed = 0.01 -> remaining = (1.0-0.01)/1.0*100 = 99 -> HEALTHY
       const slo = buildSlo({ targetPercent: 99.0 });
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.9999"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.9999"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -149,9 +169,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // target = 99.0, totalBudget = 1.0
       // If currentPercent = 99.6 -> consumed = 0.4 -> remaining = (1.0-0.4)/1.0*100 = 60 -> HEALTHY
@@ -161,21 +192,23 @@ describe("SloCalculatorService", () => {
       sloService.findOne.mockResolvedValue(slo);
 
       // Prometheus returns availability values of 0.995 (= 99.5%)
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.995"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.995"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -196,30 +229,43 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // target = 99.0, totalBudget = 1.0
       // currentPercent = 99.05 -> consumed = 0.95 -> remaining = (1.0-0.95)/1.0*100 = 5 -> CRITICAL
       const slo = buildSlo({ targetPercent: 99.0 });
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.9905"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.9905"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -240,9 +286,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // target = 99.9, totalBudget = 0.1
       // currentPercent = 99.0 -> consumed = 1.0 -> exceeds totalBudget
@@ -250,21 +307,23 @@ describe("SloCalculatorService", () => {
       const slo = buildSlo({ targetPercent: 99.9 });
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.99"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.99"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -286,17 +345,28 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
 
       // Simulate a network error
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("Connection refused"));
+      httpService.get.mockImplementation(() => {
+        throw new Error("Connection refused");
+      });
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -319,17 +389,27 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: false,
-        status: 503,
-      });
+      httpService.get.mockReturnValue(
+        of({ status: 503, data: { status: "error" } }),
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -349,9 +429,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // Latency SLO: low latency = high compliance percentage
       // extractPercentage for LATENCY: Math.min(100, Math.max(0, (1 - avg / 0.5) * 100))
@@ -363,21 +454,23 @@ describe("SloCalculatorService", () => {
       });
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.1"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.1"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -385,8 +478,7 @@ describe("SloCalculatorService", () => {
       expect(result.currentPercent).toBe(80);
       expect(typeof result.budgetRemaining).toBe("number");
       // Verify fetch was called with the latency PromQL and 1h step (SEVEN_DAYS)
-      const mockFn = globalThis.fetch as jest.Mock;
-      const fetchUrl = String((mockFn.mock.calls as string[][])[0][0]);
+      const fetchUrl = String((httpService.get.mock.calls as string[][])[0][0]);
       expect(fetchUrl).toContain("histogram_quantile");
       expect(fetchUrl).toContain("step=1h");
     });
@@ -403,9 +495,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       // Error rate SLO: low error rate = high success percentage
       // extractPercentage for ERROR_RATE: (1 - avg) * 100
@@ -417,21 +520,23 @@ describe("SloCalculatorService", () => {
       });
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
           data: {
-            resultType: "matrix",
-            result: [
-              {
-                metric: {},
-                values: [[1704067200, "0.05"]],
-              },
-            ],
+            status: "success",
+            data: {
+              resultType: "matrix",
+              result: [
+                {
+                  metric: {},
+                  values: [[1704067200, "0.05"]],
+                },
+              ],
+            },
           },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -439,8 +544,7 @@ describe("SloCalculatorService", () => {
       expect(result.currentPercent).toBe(95);
       expect(typeof result.budgetRemaining).toBe("number");
       // Verify fetch was called with the error rate PromQL and 1d step (NINETY_DAYS)
-      const mockFn2 = globalThis.fetch as jest.Mock;
-      const fetchUrl = String((mockFn2.mock.calls as string[][])[0][0]);
+      const fetchUrl = String((httpService.get.mock.calls as string[][])[0][0]);
       expect(fetchUrl).toContain("http_requests_total");
       expect(fetchUrl).toContain("step=1d");
     });
@@ -457,20 +561,33 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
 
-      globalThis.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => ({
-          status: "success",
-          data: { resultType: "matrix", result: [] },
+      httpService.get.mockReturnValue(
+        of({
+          status: 200,
+          data: {
+            status: "success",
+            data: { resultType: "matrix", result: [] },
+          },
         }),
-      });
+      );
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -490,9 +607,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
@@ -501,7 +629,9 @@ describe("SloCalculatorService", () => {
       // `cause instanceof Error ? cause.message : String(cause)` truthy branch.
       const cause = new Error("DNS resolution failed");
       const networkError = Object.assign(new Error("fetch failed"), { cause });
-      globalThis.fetch = jest.fn().mockRejectedValue(networkError);
+      httpService.get.mockImplementation(() => {
+        throw networkError;
+      });
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -521,9 +651,20 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
@@ -532,7 +673,9 @@ describe("SloCalculatorService", () => {
       const networkError = Object.assign(new Error("fetch failed"), {
         cause: "timeout",
       });
-      globalThis.fetch = jest.fn().mockRejectedValue(networkError);
+      httpService.get.mockImplementation(() => {
+        throw networkError;
+      });
 
       const result = await calc.calculateBudget("slo-uuid-1");
 
@@ -552,16 +695,29 @@ describe("SloCalculatorService", () => {
             provide: CircuitBreakerService,
             useValue: { fire: jest.fn((_, fn: () => unknown) => fn()) },
           },
+          {
+            provide: HttpService,
+            useValue: {
+              get: jest.fn(),
+              post: jest.fn(),
+              put: jest.fn(),
+              delete: jest.fn(),
+              patch: jest.fn(),
+            },
+          },
         ],
       }).compile();
       const calc = module.get<SloCalculatorService>(SloCalculatorService);
+      const httpService = module.get(HttpService);
 
       const slo = buildSlo();
       sloService.findOne.mockResolvedValue(slo);
 
       // Throw a plain string — exercises the `String(error)` branch inside the
       // error log template literal.
-      globalThis.fetch = jest.fn().mockRejectedValue("network unavailable");
+      httpService.get.mockImplementation(() => {
+        throw new Error("network unavailable");
+      });
 
       const result = await calc.calculateBudget("slo-uuid-1");
 

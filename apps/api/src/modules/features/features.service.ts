@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import { RegistryService } from "../registry/registry.service";
@@ -21,6 +23,7 @@ export interface FeatureAvailabilityMap {
 @Injectable()
 export class FeaturesService {
   constructor(
+    private readonly httpService: HttpService,
     private readonly kubernetesService: KubernetesService,
     private readonly registryService: RegistryService,
     private readonly istioService: IstioService,
@@ -46,12 +49,14 @@ export class FeaturesService {
     let costAvailable = false;
     try {
       const res = await this.cb.fire("open-cost", () =>
-        globalThis.fetch(`${opencostUrl}/healthz`, {
-          method: "HEAD",
-          signal: AbortSignal.timeout(3000),
-        }),
+        firstValueFrom(
+          this.httpService.head(`${opencostUrl}/healthz`, {
+            timeout: 3000,
+            validateStatus: () => true,
+          }),
+        ),
       );
-      costAvailable = res.ok;
+      costAvailable = res.status >= 200 && res.status < 400;
     } catch {
       costAvailable = false;
     }

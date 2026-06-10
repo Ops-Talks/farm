@@ -1,7 +1,59 @@
 import { ConfigService } from "@nestjs/config";
+import { HttpService } from "@nestjs/axios";
+import { of, throwError } from "rxjs";
 import { KongAdapter } from "../adapters/kong.adapter";
 import { GatewayType } from "../enums/gateway-type.enum";
 import { HealthStatus } from "../enums/health-status.enum";
+
+function mockHttpService(): HttpService {
+  return {
+    get: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    post: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    put: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    delete: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+    patch: jest.fn().mockReturnValue(
+      of({
+        data: {},
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      }),
+    ),
+  } as unknown as HttpService;
+}
 
 /**
  * Builds a minimal ConfigService mock that returns values from a map.
@@ -14,26 +66,8 @@ function buildConfigService(
   } as unknown as ConfigService;
 }
 
-/**
- * Creates a mock Response object for globalThis.fetch.
- */
-function mockFetchResponse(body: unknown, ok = true): Response {
-  return {
-    ok,
-    status: ok ? 200 : 500,
-    json: jest.fn().mockResolvedValue(body),
-  } as unknown as Response;
-}
-
 describe("KongAdapter", () => {
-  let originalFetch: typeof globalThis.fetch;
-
-  beforeEach(() => {
-    originalFetch = globalThis.fetch;
-  });
-
   afterEach(() => {
-    globalThis.fetch = originalFetch;
     jest.clearAllMocks();
   });
 
@@ -42,7 +76,7 @@ describe("KongAdapter", () => {
       "gateway.kong.url": "http://kong:8001",
       "gateway.kong.apiKey": "",
     });
-    const adapter = new KongAdapter(config);
+    const adapter = new KongAdapter(mockHttpService(), config);
     expect(adapter.type).toBe(GatewayType.KONG);
   });
 
@@ -52,20 +86,27 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest.fn().mockResolvedValue(
-        mockFetchResponse({
-          data: [
-            {
-              id: "route-1",
-              name: "my-route",
-              paths: ["/api"],
-              methods: ["GET", "POST"],
-              tags: ["v1"],
-            },
-          ],
-          next: null,
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            data: [
+              {
+                id: "route-1",
+                name: "my-route",
+                paths: ["/api"],
+                methods: ["GET", "POST"],
+                tags: ["v1"],
+              },
+            ],
+            next: null,
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -87,44 +128,54 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      const fetchMock = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({
-            data: [
-              {
-                id: "r1",
-                name: "route-1",
-                paths: ["/a"],
-                methods: ["GET"],
-                tags: [],
-              },
-            ],
-            next: "http://kong:8001/routes?size=1000&offset=abc",
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: {
+              data: [
+                {
+                  id: "r1",
+                  name: "route-1",
+                  paths: ["/a"],
+                  methods: ["GET"],
+                  tags: [],
+                },
+              ],
+              next: "http://kong:8001/routes?size=1000&offset=abc",
+            },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
           }),
         )
-        .mockResolvedValueOnce(
-          mockFetchResponse({
-            data: [
-              {
-                id: "r2",
-                name: "route-2",
-                paths: ["/b"],
-                methods: ["POST"],
-                tags: [],
-              },
-            ],
-            next: null,
+        .mockReturnValueOnce(
+          of({
+            data: {
+              data: [
+                {
+                  id: "r2",
+                  name: "route-2",
+                  paths: ["/b"],
+                  methods: ["POST"],
+                  tags: [],
+                },
+              ],
+              next: null,
+            },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
           }),
         );
 
-      globalThis.fetch = fetchMock;
-
       const routes = await adapter.getRoutes();
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(httpService.get).toHaveBeenCalledTimes(2);
       expect(routes).toHaveLength(2);
       expect(routes[1].externalId).toBe("r2");
     });
@@ -134,11 +185,18 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValue(mockFetchResponse({ data: [], next: null }));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { data: [], next: null },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const routes = await adapter.getRoutes();
 
@@ -150,22 +208,28 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "secret-token",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      const fetchMock = jest
-        .fn()
-        .mockResolvedValue(mockFetchResponse({ data: [], next: null }));
-      globalThis.fetch = fetchMock;
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { data: [], next: null },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       await adapter.getRoutes();
 
-      expect(fetchMock).toHaveBeenCalledWith(
+      expect(httpService.get).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
             "kong-admin-token": "secret-token",
-          }) as Record<string, string>,
-        }),
+          }) as unknown,
+        }) as unknown,
       );
     });
 
@@ -174,11 +238,18 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValue(mockFetchResponse({}, false));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 500,
+          statusText: "Internal Server Error",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const routes = await adapter.getRoutes();
 
@@ -192,15 +263,27 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ name: "upstream-1" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ health: "HEALTHY" }] }),
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ health: "HEALTHY" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         );
 
       const health = await adapter.getHealth();
@@ -214,15 +297,27 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ name: "upstream-1" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ health: "UNHEALTHY" }] }),
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ health: "UNHEALTHY" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         );
 
       const health = await adapter.getHealth();
@@ -235,15 +330,27 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ name: "upstream-1" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ health: "HEALTHCHECKS_OFF" }] }),
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ health: "HEALTHCHECKS_OFF" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         );
 
       const health = await adapter.getHealth();
@@ -256,11 +363,18 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(mockFetchResponse({}, false));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {},
+          status: 500,
+          statusText: "Internal Server Error",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const health = await adapter.getHealth();
 
@@ -272,14 +386,28 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ name: "upstream-1" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
-        .mockResolvedValueOnce(mockFetchResponse({}, false));
+        .mockReturnValueOnce(
+          of({
+            data: {},
+            status: 500,
+            statusText: "Internal Server Error",
+            headers: {},
+            config: {},
+          }),
+        );
 
       const health = await adapter.getHealth();
 
@@ -291,14 +419,20 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(
-          mockFetchResponse({ data: [{ name: "upstream-1" }] }),
+      (httpService.get as jest.Mock)
+        .mockReturnValueOnce(
+          of({
+            data: { data: [{ name: "upstream-1" }] },
+            status: 200,
+            statusText: "OK",
+            headers: {},
+            config: {},
+          }),
         )
-        .mockRejectedValueOnce(new Error("Network failure"));
+        .mockReturnValueOnce(throwError(() => new Error("Network failure")));
 
       const health = await adapter.getHealth();
 
@@ -311,11 +445,18 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest
-        .fn()
-        .mockResolvedValueOnce(mockFetchResponse({ data: [] }));
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: { data: [] },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
+        }),
+      );
 
       const health = await adapter.getHealth();
 
@@ -329,20 +470,27 @@ describe("KongAdapter", () => {
         "gateway.kong.url": "http://kong:8001",
         "gateway.kong.apiKey": "",
       });
-      const adapter = new KongAdapter(config);
+      const httpService = mockHttpService();
+      const adapter = new KongAdapter(httpService, config);
 
-      globalThis.fetch = jest.fn().mockResolvedValue(
-        mockFetchResponse({
-          data: [
-            {
-              id: "route-null",
-              name: "null-route",
-              paths: null,
-              methods: null,
-              tags: null,
-            },
-          ],
-          next: null,
+      (httpService.get as jest.Mock).mockReturnValueOnce(
+        of({
+          data: {
+            data: [
+              {
+                id: "route-null",
+                name: "null-route",
+                paths: null,
+                methods: null,
+                tags: null,
+              },
+            ],
+            next: null,
+          },
+          status: 200,
+          statusText: "OK",
+          headers: {},
+          config: {},
         }),
       );
 
@@ -359,7 +507,7 @@ describe("KongAdapter", () => {
       const config = {
         get: jest.fn().mockReturnValue(undefined),
       } as unknown as ConfigService;
-      const adapter = new KongAdapter(config);
+      const adapter = new KongAdapter(mockHttpService(), config);
       expect(adapter.type).toBe(GatewayType.KONG);
     });
   });
