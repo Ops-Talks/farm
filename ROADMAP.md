@@ -147,8 +147,8 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 53: Helm Chart Quality Remediation | 6 | 31 | `DONE` |
 | Phase 54: Helm Chart Quality, Correctness & Publishing | 7 | 32 | `DONE` |
 | Phase 56: Admin User Registration | 2 | 9 | `DONE` |
-| Phase 57: Development Guidelines Compliance | 1 | 8 | `TODO` |
-| **Total** | **164** | **630** | |
+| Phase 57: Development Guidelines Compliance | 1 | 8 | `DONE` |
+| **Total** | **165** | **638** | |
 
 ---
 
@@ -1018,43 +1018,43 @@ Remediates all failures and warnings reported by `make check` — the comprehens
 
 Root cause analysis revealed three categories: (1) adapter tests passing wrong constructor arguments after a refactor from `fetch` to `@nestjs/axios` `HttpService`, (2) missing NestJS providers in test modules, and (3) accumulated lint warnings in both API and web workspaces.
 
-### FARM-E162: HTTP Service Mock Fixes `TODO`
+### FARM-E162: HTTP Service Mock Fixes `DONE`
 
 Three adapter test suites construct the adapter with a single argument (`ConfigService`) but the constructor expects two required parameters (`HttpService`, `ConfigService`). This causes `TypeError: Cannot read properties of undefined (reading 'get')` on every test. Additionally, tests mock `globalThis.fetch` which is never used by the adapters — they use `this.httpService.get/post()` via `@nestjs/axios`.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S664 | **DockerHubAdapter**: Add `HttpService` mock as first constructor argument (`new DockerHubAdapter(mockHttpService, configService)`). Replace all `globalThis.fetch` mocks with `httpService.get/post` mocks using RxJS `of()`/`from()`. Each test must verify the mock was called with expected URL/headers. Reference pattern: `pipeline.processor.spec.ts` provides `{ provide: HttpService, useValue: { post: jest.fn().mockReturnValue(of({...})) } }`. | `TODO` |
-| FARM-S665 | **HarborAdapter**: Same fix as FARM-S664 — add `HttpService` mock, replace `globalThis.fetch` with `httpService` mocks. Constructor currently receives `new HarborAdapter(configService)` (single arg); must become `new HarborAdapter(mockHttpService, configService)`. | `TODO` |
-| FARM-S666 | **KongAdapter**: Same fix as FARM-S664 — update all inline `new KongAdapter(config)` calls to `new KongAdapter(mockHttpService, config)`. Replace all `globalThis.fetch` assignments with `httpService.get` mocks. Remove the stale class comment claiming the adapter "Uses globalThis.fetch" — it uses `@nestjs/axios` `HttpService`. | `TODO` |
+| FARM-S664 | **DockerHubAdapter**: Add `HttpService` mock as first constructor argument (`new DockerHubAdapter(mockHttpService, configService)`). Replace all `globalThis.fetch` mocks with `httpService.get/post` mocks using RxJS `of()`/`from()`. Each test must verify the mock was called with expected URL/headers. Reference pattern: `pipeline.processor.spec.ts` provides `{ provide: HttpService, useValue: { post: jest.fn().mockReturnValue(of({...})) } }`. | `DONE` |
+| FARM-S665 | **HarborAdapter**: Same fix as FARM-S664 — add `HttpService` mock, replace `globalThis.fetch` with `httpService` mocks. Constructor currently receives `new HarborAdapter(configService)` (single arg); must become `new HarborAdapter(mockHttpService, configService)`. | `DONE` |
+| FARM-S666 | **KongAdapter**: Same fix as FARM-S664 — update all inline `new KongAdapter(config)` calls to `new KongAdapter(mockHttpService, config)`. Replace all `globalThis.fetch` assignments with `httpService.get` mocks. Remove the stale class comment claiming the adapter "Uses globalThis.fetch" — it uses `@nestjs/axios` `HttpService`. | `DONE` |
 
-### FARM-E163: Missing NestJS Provider in ElasticStackService Tests `TODO`
+### FARM-E163: Missing NestJS Provider in ElasticStackService Tests `DONE`
 
 `ElasticStackService` depends on four constructor parameters: `HttpService`, `KubernetesService`, `ConfigService`, and `CircuitBreakerService`. The NestJS `Test.createTestingModule` in `elastic-stack.service.spec.ts` provides the last three but omits `HttpService`, causing `Nest can't resolve dependencies` at module compile time.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S667 | Add `{ provide: HttpService, useValue: { get: jest.fn().mockReturnValue(of({...})) } }` to the `providers` array in the `beforeEach` module compilation. Replace the `globalThis.fetch` mocks in `getExternalElasticsearch` tests with `httpService.get` mocks returning RxJS `of()` responses. Follow the capture-and-restore pattern from `.github/copilot-instructions.md` line 185-193 for any remaining `globalThis.fetch` usage. | `TODO` |
+| FARM-S667 | Add `{ provide: HttpService, useValue: { get: jest.fn().mockReturnValue(of({...})) } }` to the `providers` array in the `beforeEach` module compilation. Replace the `globalThis.fetch` mocks in `getExternalElasticsearch` tests with `httpService.get` mocks returning RxJS `of()` responses. Follow the capture-and-restore pattern from `.github/copilot-instructions.md` line 185-193 for any remaining `globalThis.fetch` usage. | `DONE` |
 
-### FARM-E164: Pipeline Processor Keycloak Test Coverage `TODO`
+### FARM-E164: Pipeline Processor Keycloak Test Coverage `DONE`
 
 The `resolveKeycloakSecret` test section in `pipeline.processor.spec.ts` tests a method that requires `credentialRepository` (TypeORM `IntegrationCredential` repository, `@Optional()` injected). The base test module does not provide it, so all tests in this section throw `"IntegrationCredential repository not available in PipelineProcessor"`.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S668 | Add `{ provide: getRepositoryToken(IntegrationCredential), useValue: { findOne: jest.fn(), find: jest.fn() } }` to the `providers` array in the `resolveKeycloakSecret` nested `describe` block. Ensure `IntegrationCredential` entity is imported at the top of the spec file. All three tests in the section should pass after this fix. | `TODO` |
+| FARM-S668 | Add `{ provide: getRepositoryToken(IntegrationCredential), useValue: { findOne: jest.fn(), find: jest.fn() } }` to the `providers` array in the `resolveKeycloakSecret` nested `describe` block. Ensure `IntegrationCredential` entity is imported at the top of the spec file. All three tests in the section should pass after this fix. | `DONE` |
 
-### FARM-E165: Lint Warning Cleanup `TODO`
+### FARM-E165: Lint Warning Cleanup `DONE`
 
 Remediates 45 accumulated lint warnings (33 API + 12 Web) that violate the `.github/copilot-instructions.md` mandate: "Run lint as part of make check before every PR."
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S669 | Fix 33 API warnings: replace unsafe `as any` casts in `user-management.controller.spec.ts` (4 warnings) with proper typed mocks; add `beforeEach`/`afterEach` capture-and-restore guards to `keycloak-sync.service.spec.ts` and other spec files with direct `globalThis.fetch` assignments (29 warnings). Follow the pattern documented in `.github/copilot-instructions.md` line 185-193: `let originalFetch; beforeEach(() => { originalFetch = globalThis.fetch; }); afterEach(() => { globalThis.fetch = originalFetch; })`. | `TODO` |
-| FARM-S670 | Fix 12 Web warnings: remove 3 unused eslint-disable directives in `ApiSpecsTab.tsx`; remove 2 unused variables in `VersionSelector.test.tsx`; remove 1 unused variable in `PipelineDetailClient.test.tsx`; remove 2 unused variables in `CreateUserDialog.test.tsx`; remove 1 unused import (`Link`) in `LoginClient.tsx`; remove 1 unused variable in `activity-feed.tsx`; remove 1 unused import (`waitFor`) in `TemplatePreviewPanel.test.tsx`; remove 1 unused variable in `confirm-dialog.test.tsx`. | `TODO` |
+| FARM-S669 | Fix 33 API warnings: replace unsafe `as any` casts in `user-management.controller.spec.ts` (4 warnings) with proper typed mocks; add `beforeEach`/`afterEach` capture-and-restore guards to `keycloak-sync.service.spec.ts` and other spec files with direct `globalThis.fetch` assignments (29 warnings). Follow the pattern documented in `.github/copilot-instructions.md` line 185-193: `let originalFetch; beforeEach(() => { originalFetch = globalThis.fetch; }); afterEach(() => { globalThis.fetch = originalFetch; })`. | `DONE` |
+| FARM-S670 | Fix 12 Web warnings: remove 3 unused eslint-disable directives in `ApiSpecsTab.tsx`; remove 2 unused variables in `VersionSelector.test.tsx`; remove 1 unused variable in `PipelineDetailClient.test.tsx`; remove 2 unused variables in `CreateUserDialog.test.tsx`; remove 1 unused import (`Link`) in `LoginClient.tsx`; remove 1 unused variable in `activity-feed.tsx`; remove 1 unused import (`waitFor`) in `TemplatePreviewPanel.test.tsx`; remove 1 unused variable in `confirm-dialog.test.tsx`. | `DONE` |
 
-### FARM-E166: Summary Table Update `TODO`
+### FARM-E166: Summary Table Update `DONE`
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S671 | Update the ROADMAP.md Summary table with Phase 57 totals. Current total: 164 epics, 630 stories. Phase 57 adds 1 epic, 8 stories. Verify `make check` exits 0 after all fixes. | `TODO` |
+| FARM-S671 | Update the ROADMAP.md Summary table with Phase 57 totals. Current total: 164 epics, 630 stories. Phase 57 adds 1 epic, 8 stories. Verify `make check` exits 0 after all fixes. | `DONE` |

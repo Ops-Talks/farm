@@ -1,0 +1,86 @@
+name: Cleanup Broken Chart Versions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install Helm
+        run: |
+          curl -fsSL https://get.helm.sh/helm-v3.17.0-linux-amd64.tar.gz -o /tmp/helm.tar.gz
+          sudo tar xz -C /usr/local/bin -f /tmp/helm.tar.gz linux-amd64/helm
+          sudo mv /usr/local/bin/linux-amd64/helm /usr/local/bin/helm
+          sudo rm -rf /usr/local/bin/linux-amd64
+
+      - name: Identify and delete broken chart versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ORG="ops-talks"
+          PACKAGE="helm-charts%2Ffarm"
+          REGISTRY="ghcr.io/${ORG}/helm-charts"
+          DELETED=0
+
+          echo "Fetching published versions of ${PACKAGE} ..."
+          VERSIONS_JSON=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${ORG}/packages/container/${PACKAGE}/versions?per_page=100")
+
+          echo ""
+          echo "All published versions:"
+          echo "$VERSIONS_JSON" | jq -r '
+            .[] |
+            "  ID=\(.id)  tags=[\(.metadata.container.tags // [] | join(", "))]"
+          '
+
+          echo ""
+          echo "Checking each version for drift (chart version != appVersion) ..."
+
+          for TAG in $(echo "$VERSIONS_JSON" | jq -r '.[].metadata.container.tags[]' | sort -V); do
+            if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              continue
+            fi
+
+            CHART_META=$(helm show chart "oci://${REGISTRY}/farm" --version "$TAG" 2>/dev/null || true)
+            if [ -z "$CHART_META" ]; then
+              continue
+            fi
+
+            CHART_VER=$(echo "$CHART_META" | grep '^version:' | awk '{print $2}')
+            APP_VER=$(echo "$CHART_META" | grep '^appVersion:' | awk '{print $2}' | tr -d '"')
+
+            if [ "$CHART_VER" != "$APP_VER" ]; then
+              VERSION_ID=$(echo "$VERSIONS_JSON" | jq -r --arg tag "$TAG" '
+                .[] | select(.metadata.container.tags | index($tag)) | .id
+              ')
+              echo "  BROKEN: tag=${TAG} chart=${CHART_VER} app=${APP_VER} id=${VERSION_ID} — deleting..."
+              gh api \
+                --method DELETE \
+                -H "Accept: application/vnd.github+json" \
+                "/orgs/${ORG}/packages/container/${PACKAGE}/versions/${VERSION_ID}" \
+                --silent
+              echo "    Deleted."
+              DELETED=$((DELETED + 1))
+            fi
+          done
+
+          if [ "$DELETED" -eq 0 ]; then
+            echo "No broken versions found. All chart versions have consistent references."
+          else
+            echo ""
+            echo "Cleanup complete. Deleted ${DELETED} broken version(s)."
+          fi
