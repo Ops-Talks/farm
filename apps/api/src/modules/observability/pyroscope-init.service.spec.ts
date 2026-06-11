@@ -73,9 +73,9 @@ describe("PyroscopeInitService", () => {
     });
   });
 
-  it("does not throw when @pyroscope/nodejs require fails", () => {
-    jest.doMock("@pyroscope/nodejs", () => {
-      throw new Error("module not found");
+  it("does not throw when pyroscope init throws", () => {
+    mockPyroscope.init.mockImplementation(() => {
+      throw new Error("native module error");
     });
 
     configService = createConfig({ "pyroscope.enabled": "true" });
