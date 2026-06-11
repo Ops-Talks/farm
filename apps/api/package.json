@@ -44,6 +44,7 @@
     "@bull-board/nestjs": "^7.1.5",
     "@elastic/elasticsearch": "^9.4.2",
     "@farm/types": "*",
+    "@grpc/grpc-js": "^1.14.4",
     "@keyv/redis": "^5.1.6",
     "@kubernetes/client-node": "^1.4.0",
     "@nestjs/axios": "^4.0.1",
