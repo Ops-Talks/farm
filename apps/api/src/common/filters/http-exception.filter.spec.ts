@@ -1,4 +1,5 @@
 import { ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { QueryFailedError } from "typeorm";
 import { AllExceptionsFilter } from "./http-exception.filter";
 
@@ -23,8 +24,19 @@ describe("AllExceptionsFilter", () => {
   let mockRequest: Record<string, unknown>;
   let mockHost: ArgumentsHost;
 
+  const createConfigService = (env: string, expose: string) =>
+    ({
+      get: (key: string) => {
+        if (key === "env") return env;
+        if (key === "exposeCorrelationIds") return expose;
+        return undefined;
+      },
+    }) as unknown as ConfigService;
+
   beforeEach(() => {
-    filter = new AllExceptionsFilter();
+    filter = new AllExceptionsFilter(
+      createConfigService("development", "false"),
+    );
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -160,21 +172,10 @@ describe("AllExceptionsFilter", () => {
   });
 
   describe("correlation ID exposure", () => {
-    const originalEnv = process.env.NODE_ENV;
-    const originalExpose = process.env.EXPOSE_CORRELATION_IDS;
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
-      if (originalExpose === undefined) {
-        delete process.env.EXPOSE_CORRELATION_IDS;
-      } else {
-        process.env.EXPOSE_CORRELATION_IDS = originalExpose;
-      }
-    });
-
     it("omits requestId in production by default", () => {
-      process.env.NODE_ENV = "production";
-      delete process.env.EXPOSE_CORRELATION_IDS;
+      filter = new AllExceptionsFilter(
+        createConfigService("production", "false"),
+      );
 
       mockRequest["requestId"] = "req-123";
       filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
@@ -188,8 +189,9 @@ describe("AllExceptionsFilter", () => {
     });
 
     it("includes requestId in non-production by default", () => {
-      process.env.NODE_ENV = "development";
-      delete process.env.EXPOSE_CORRELATION_IDS;
+      filter = new AllExceptionsFilter(
+        createConfigService("development", "false"),
+      );
 
       mockRequest["requestId"] = "req-abc";
       filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);
@@ -202,9 +204,10 @@ describe("AllExceptionsFilter", () => {
       expect(body["requestId"]).toBe("req-abc");
     });
 
-    it("includes requestId in production when EXPOSE_CORRELATION_IDS=true", () => {
-      process.env.NODE_ENV = "production";
-      process.env.EXPOSE_CORRELATION_IDS = "true";
+    it("includes requestId in production when exposeCorrelationIds=true", () => {
+      filter = new AllExceptionsFilter(
+        createConfigService("production", "true"),
+      );
 
       mockRequest["requestId"] = "req-xyz";
       filter.catch(new HttpException("err", HttpStatus.BAD_REQUEST), mockHost);

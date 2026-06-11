@@ -1,12 +1,10 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { JwtService } from "@nestjs/jwt";
 import { Socket } from "socket.io";
 import { EventsGateway } from "./events.gateway";
 import { FarmEvent } from "./events.interfaces";
 
 describe("EventsGateway", () => {
   let gateway: EventsGateway;
-  let jwtService: JwtService;
 
   const mockServer = {
     emit: jest.fn(),
@@ -14,20 +12,10 @@ describe("EventsGateway", () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        EventsGateway,
-        {
-          provide: JwtService,
-          useValue: {
-            verify: jest.fn(),
-          },
-        },
-      ],
+      providers: [EventsGateway],
     }).compile();
 
     gateway = module.get<EventsGateway>(EventsGateway);
-    jwtService = module.get<JwtService>(JwtService);
-    // Assign mock server directly to the gateway's WebSocket server property
     Object.defineProperty(gateway, "server", { value: mockServer });
   });
 
@@ -40,69 +28,40 @@ describe("EventsGateway", () => {
   });
 
   describe("handleConnection", () => {
-    it("should accept a client with a valid token", () => {
-      const payload = { sub: "user-1", username: "admin", roles: ["admin"] };
-      (jwtService.verify as jest.Mock).mockReturnValue(payload);
+    it("should log when a client connects", () => {
+      const loggerSpy = jest
+        .spyOn(gateway["logger"], "log")
+        .mockImplementation();
 
       const client = {
         id: "socket-1",
-        handshake: { auth: { token: "valid-jwt" }, query: {} },
         data: {},
-        disconnect: jest.fn(),
       } as unknown as Socket;
 
       gateway.handleConnection(client);
 
-      expect(jwtService.verify).toHaveBeenCalledWith("valid-jwt");
-      expect((client.data as Record<string, unknown>).user).toEqual(payload);
-      expect(client.disconnect).not.toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Client connected: socket-1"),
+      );
+      loggerSpy.mockRestore();
     });
 
-    it("should reject a client with no token", () => {
+    it("should log with username when user data is present", () => {
+      const loggerSpy = jest
+        .spyOn(gateway["logger"], "log")
+        .mockImplementation();
+
       const client = {
         id: "socket-2",
-        handshake: { auth: {}, query: {} },
-        data: {},
-        disconnect: jest.fn(),
+        data: { user: { username: "admin" } },
       } as unknown as Socket;
 
       gateway.handleConnection(client);
 
-      expect(client.disconnect).toHaveBeenCalled();
-    });
-
-    it("should reject a client with an invalid token", () => {
-      (jwtService.verify as jest.Mock).mockImplementation(() => {
-        throw new Error("invalid token");
-      });
-
-      const client = {
-        id: "socket-3",
-        handshake: { auth: { token: "bad-jwt" }, query: {} },
-        data: {},
-        disconnect: jest.fn(),
-      } as unknown as Socket;
-
-      gateway.handleConnection(client);
-
-      expect(client.disconnect).toHaveBeenCalled();
-    });
-
-    it("should accept a token from query string", () => {
-      const payload = { sub: "user-2", username: "dev", roles: ["user"] };
-      (jwtService.verify as jest.Mock).mockReturnValue(payload);
-
-      const client = {
-        id: "socket-4",
-        handshake: { auth: {}, query: { token: "query-jwt" } },
-        data: {},
-        disconnect: jest.fn(),
-      } as unknown as Socket;
-
-      gateway.handleConnection(client);
-
-      expect(jwtService.verify).toHaveBeenCalledWith("query-jwt");
-      expect((client.data as Record<string, unknown>).user).toEqual(payload);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining("(user: admin)"),
+      );
+      loggerSpy.mockRestore();
     });
   });
 
@@ -376,31 +335,6 @@ describe("EventsGateway", () => {
         FarmEvent.COST_ACTUAL_BUDGET_EXCEEDED,
         payload,
       );
-    });
-  });
-
-  describe("without jwtService (optional dependency)", () => {
-    let gatewayNoJwt: EventsGateway;
-
-    beforeEach(async () => {
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [EventsGateway],
-      }).compile();
-
-      gatewayNoJwt = module.get<EventsGateway>(EventsGateway);
-    });
-
-    it("should handle connection when jwtService is undefined (verify returns undefined)", () => {
-      const client = {
-        id: "socket-nojwt",
-        handshake: { auth: { token: "some-token" }, query: {} },
-        data: {},
-        disconnect: jest.fn(),
-      } as unknown as Socket;
-
-      // When jwtService is undefined, jwtService?.verify returns undefined
-      // which means payload is undefined, and client.data.user is set to undefined
-      expect(() => gatewayNoJwt.handleConnection(client)).not.toThrow();
     });
   });
 

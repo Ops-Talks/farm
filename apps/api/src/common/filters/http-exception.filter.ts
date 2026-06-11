@@ -7,9 +7,11 @@ import {
   Logger,
   ConflictException,
   BadRequestException,
+  Optional,
 } from "@nestjs/common";
 import { Request, Response } from "express";
 import { trace, context as otelContext } from "@opentelemetry/api";
+import { ConfigService } from "@nestjs/config";
 import { QueryFailedError } from "typeorm";
 
 const PG_UNIQUE_VIOLATION = "23505";
@@ -30,6 +32,14 @@ const PG_NOT_NULL_VIOLATION = "23502";
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly exposeCorrelationIds: boolean;
+
+  constructor(@Optional() private readonly configService?: ConfigService) {
+    const env = this.configService?.get<string>("env");
+    const expose =
+      this.configService?.get<string>("exposeCorrelationIds") ?? "false";
+    this.exposeCorrelationIds = env !== "production" || expose === "true";
+  }
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -93,11 +103,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const requestId = (request as Request & { requestId?: string }).requestId;
 
     // Correlation fields (requestId, traceId, spanId) are omitted in production
-    // unless EXPOSE_CORRELATION_IDS=true is explicitly set, to limit information
+    // unless exposeCorrelationIds is explicitly set to true, to limit information
     // disclosure to unauthenticated callers on public-facing deployments.
-    const exposeCorrelation =
-      process.env.NODE_ENV !== "production" ||
-      process.env.EXPOSE_CORRELATION_IDS === "true";
 
     response.status(status).json({
       statusCode: status,
@@ -105,10 +112,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       path: request.url,
       message,
       ...(errorCode !== undefined ? { errorCode } : {}),
-      ...(exposeCorrelation && requestId && { requestId }),
-      ...(exposeCorrelation &&
+      ...(this.exposeCorrelationIds && requestId && { requestId }),
+      ...(this.exposeCorrelationIds &&
         spanContext?.traceId && { traceId: spanContext.traceId }),
-      ...(exposeCorrelation &&
+      ...(this.exposeCorrelationIds &&
         spanContext?.spanId && { spanId: spanContext.spanId }),
     });
   }

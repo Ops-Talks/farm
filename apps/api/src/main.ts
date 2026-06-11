@@ -16,6 +16,7 @@ import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { ApiVersionInterceptor } from "./common/interceptors/api-version.interceptor";
 import { loggerConfigFactory } from "./common/logger/logger.config";
 import { initTracing, shutdownTracing } from "./common/telemetry/tracing";
+import { WsAuthAdapter } from "./common/adapters/ws-auth.adapter";
 
 // Initialize OpenTelemetry before NestJS bootstraps so auto-instrumentations
 // can patch HTTP, Express, and TypeORM modules at import time.
@@ -41,28 +42,6 @@ process.on("uncaughtException", (error: Error) => {
   });
   void shutdownTracing().finally(() => process.exit(1));
 });
-
-// Initialize Pyroscope continuous profiling when enabled via environment variable.
-if (process.env.PYROSCOPE_ENABLED === "true") {
-  try {
-    // Dynamic import so that the package is only loaded when profiling is active.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
-    const Pyroscope = require("@pyroscope/nodejs");
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    Pyroscope.init({
-      serverAddress: process.env.PYROSCOPE_URL ?? "http://pyroscope:4040",
-      appName: "farm-api",
-      tags: { environment: process.env.NODE_ENV ?? "development" },
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    Pyroscope.start();
-  } catch (err) {
-    console.warn(
-      "Pyroscope profiling could not be initialized (native dependency may be missing):",
-      (err as Error).message,
-    );
-  }
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -115,6 +94,7 @@ async function bootstrap() {
   const logger = WinstonModule.createLogger(loggerConfigFactory(env, logLevel));
   app.useLogger(logger);
 
+  app.useWebSocketAdapter(new WsAuthAdapter(app));
   app.use(helmet());
   app.enableShutdownHooks();
 
@@ -133,7 +113,7 @@ async function bootstrap() {
     new ClassSerializerInterceptor(app.get(Reflector)),
     new ApiVersionInterceptor(),
   );
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter(configService));
 
   const allowedOrigins =
     configService.get<string>("cors.allowedOrigins") || "*";
