@@ -22,6 +22,8 @@ import { GithubStrategy } from "./strategies/github.strategy";
 import { GoogleStrategy } from "./strategies/google.strategy";
 import { LdapAuthStrategy } from "./strategies/ldap.strategy";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
+import { KeycloakDynamicGuard } from "./guards/keycloak-auth.guard";
+import { KeycloakCallbackGuard } from "./guards/keycloak-callback.guard";
 import { IntegrationCredential } from "../integrations/entities/integration-credential.entity";
 import { Team } from "../teams/entities/team.entity";
 import { AuditLogModule } from "../audit-log/audit-log.module";
@@ -76,6 +78,8 @@ const isTest = process.env.NODE_ENV === "test";
     GoogleStrategy,
     LdapAuthStrategy,
     LdapAuthGuard,
+    KeycloakDynamicGuard,
+    KeycloakCallbackGuard,
     KeycloakOidcService,
     KeycloakSyncService,
     ...(isTest ? [] : [KeycloakSyncProcessor]),

@@ -7,11 +7,9 @@ import {
   Req,
   Res,
   Param,
-  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
-  Next,
   Optional,
 } from "@nestjs/common";
 import {
@@ -25,9 +23,8 @@ import {
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { AuthGuard } from "@nestjs/passport";
-import type { Request, NextFunction } from "express";
+import type { Request } from "express";
 import type { Response } from "express";
-import * as passport from "passport";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { ConfigService } from "@nestjs/config";
@@ -47,6 +44,8 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { KeycloakSyncJobData } from "./keycloak-sync.service";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
+import { KeycloakDynamicGuard } from "./guards/keycloak-auth.guard";
+import { KeycloakCallbackGuard } from "./guards/keycloak-callback.guard";
 
 /**
  * Controller for authentication and user management operations.
@@ -337,97 +336,31 @@ export class AuthController {
 
   /**
    * Initiates Keycloak OIDC authorization flow for the given organization.
-   * Dynamically builds a strategy from the org's stored Keycloak credential.
-   * Redirects to the frontend with an error query parameter when not configured.
+   * Uses KeycloakDynamicGuard to build and run a per-request strategy without
+   * mutating the global Passport registry. The strategy is registered with a
+   * unique name (scoped to the orgId) and cleaned up after the redirect.
    *
    * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
-   *
-   * @param orgId - UUID of the organization requesting Keycloak login
-   * @param req - Express request object
-   * @param res - Express response object
-   * @param next - Express next function
    */
   @Get("keycloak")
+  @UseGuards(KeycloakDynamicGuard)
   @SkipThrottle()
   @ApiExcludeEndpoint()
-  async keycloakAuth(
-    @Query("orgId") orgId: string,
-    @Req() req: Request,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ): Promise<void> {
-    if (!orgId) {
-      res.redirect("/?error=keycloak_not_configured");
-      return;
-    }
-
-    const strategy = await this.keycloakOidcService.getStrategyForOrg(orgId);
-
-    if (!strategy) {
-      res.redirect("/?error=keycloak_not_configured");
-      return;
-    }
-
-    // Store orgId in the session so the callback can retrieve it.
-    (req as Request & { session: Record<string, unknown> }).session[
-      "keycloakOrgId"
-    ] = orgId;
-
-    passport.use("keycloak-dynamic", strategy);
-
-    (
-      passport.authenticate("keycloak-dynamic", {
-        scope: ["openid", "email", "profile"],
-      }) as (req: Request, res: Response, next: NextFunction) => void
-    )(req, res, next);
-  }
+  keycloakAuth(): void {}
 
   /**
    * Keycloak OIDC callback endpoint.
-   * Completes authentication and returns a JWT to the caller.
+   * Uses KeycloakCallbackGuard to complete authentication and return a JWT.
+   * The guard rebuilds the strategy from the session-stored orgId, runs it
+   * without registering globally, and on success calls findOrCreateOAuthUser.
    *
    * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
-   *
-   * @param req - Express request carrying the authenticated user
-   * @param res - Express response object
-   * @param next - Express next function
    */
   @Get("keycloak/callback")
+  @UseGuards(KeycloakCallbackGuard)
   @SkipThrottle()
   @ApiExcludeEndpoint()
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async keycloakCallback(
-    @Req() req: Request & { user?: User },
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ): Promise<void> {
-    (
-      passport.authenticate(
-        "keycloak-dynamic",
-        { session: false },
-        (err: unknown, user: User | false | undefined) => {
-          if (err || !user) {
-            res.redirect("/?error=keycloak_auth_failed");
-            return;
-          }
-
-          this.authService
-            .findOrCreateOAuthUser("keycloak", user.oauthProviderId as string, {
-              email: user.email,
-              displayName: user.displayName,
-            })
-            .then((result) => {
-              res.json({
-                user: result.user,
-                token: result.token,
-                refreshToken: result.refreshToken,
-              });
-            })
-            .catch(next);
-        },
-      ) as (req: Request, res: Response, next: NextFunction) => void
-    )(req, res, next);
-  }
+  keycloakCallback(): void {}
 
   /**
    * Authenticates a user via LDAP / Active Directory.

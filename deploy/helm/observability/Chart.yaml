@@ -5,7 +5,7 @@ description: |
   Alloy, and Pyroscope deployed as independent services in the monitoring namespace.
   Install alongside the Farm chart: make observability-install
 type: application
-version: 0.25.25
+version: 0.25.26
 appVersion: "0.25.25"
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/Ops-Talks/farm
@@ -34,31 +34,37 @@ annotations:
       url: https://github.com/Ops-Talks/farm/issues
   artifacthub.io/images: |
     - name: kube-prometheus-stack
-      image: quay.io/prometheus/prometheus:v3.4.0
+      image: quay.io/prometheus/prometheus:v3.12.0-distroless
     - name: grafana
-      image: grafana/grafana:12.0.0
+      image: docker.io/grafana/grafana:13.0.1-security-01
     - name: loki
-      image: grafana/loki:3.5.0
+      image: docker.io/grafana/loki:3.6.7
     - name: tempo
-      image: grafana/tempo:2.7.2
+      image: docker.io/grafana/tempo:2.9.0
     - name: alloy
-      image: grafana/alloy:v1.8.2
+      image: docker.io/grafana/alloy:v1.16.3
     - name: pyroscope
-      image: grafana/pyroscope:1.13.4
+      image: docker.io/grafana/pyroscope:2.0.3
   artifacthub.io/changes: |
-    - kind: fixed
-      description: "release: align Helm chart version with app version on every release; bump-helm-chart-version.sh direct +1 patch replaced by explicit assignment to prevent chart/app version drift"
+    - kind: changed
+      description: "bump kube-prometheus-stack to 86.2.2 (prometheus v3.12.0-distroless, grafana 13.0.1-security-01)"
+    - kind: changed
+      description: "bump loki to 7.0.0 (loki 3.6.7)"
+    - kind: changed
+      description: "bump alloy to 1.9.0 (alloy v1.16.3)"
+    - kind: changed
+      description: "bump pyroscope to 2.0.3 (pyroscope 2.0.3)"
 
 dependencies:
   # Prometheus + Grafana + Alertmanager + node-exporter + kube-state-metrics
   - name: kube-prometheus-stack
-    version: "72.3.0"
+    version: "86.2.2"
     repository: https://prometheus-community.github.io/helm-charts
     condition: kube-prometheus-stack.enabled
 
   # Log aggregation
   - name: loki
-    version: "6.55.0"
+    version: "7.0.0"
     repository: https://grafana.github.io/helm-charts
     condition: loki.enabled
 
@@ -70,12 +76,12 @@ dependencies:
 
   # Telemetry collector (replaces Promtail; handles logs, traces, Faro RUM)
   - name: alloy
-    version: "1.8.2"
+    version: "1.9.0"
     repository: https://grafana.github.io/helm-charts
     condition: alloy.enabled
 
   # Continuous profiling
   - name: pyroscope
-    version: "1.21.0"
+    version: "2.0.3"
     repository: https://grafana.github.io/helm-charts
     condition: pyroscope.enabled

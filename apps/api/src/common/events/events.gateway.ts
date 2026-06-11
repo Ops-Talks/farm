@@ -4,8 +4,7 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from "@nestjs/websockets";
-import { Logger, Injectable, Optional } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { Logger, Injectable } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import {
   FarmEvent,
@@ -24,7 +23,8 @@ import {
 
 /**
  * WebSocket gateway for broadcasting real-time events to connected clients.
- * Authenticates connections via JWT token passed in the handshake.
+ * Connection authentication is handled by WsAuthAdapter middleware (IoAdapter),
+ * which verifies the JWT before handleConnection is called.
  *
  * Clients connect with: io("ws://host:port/events", { auth: { token: "jwt" } })
  */
@@ -39,29 +39,12 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
-  constructor(@Optional() private readonly jwtService?: JwtService) {}
-
   handleConnection(client: Socket): void {
-    const token =
-      (client.handshake.auth?.token as string | undefined) ||
-      (client.handshake.query?.token as string | undefined);
-
-    if (!token) {
-      this.logger.warn(`Client ${client.id} rejected: no token provided`);
-      client.disconnect();
-      return;
-    }
-
-    try {
-      const payload = this.jwtService?.verify(token) as Record<string, unknown>;
-      (client.data as Record<string, unknown>).user = payload;
-      this.logger.log(
-        `Client connected: ${client.id} (user: ${payload?.username as string})`,
-      );
-    } catch {
-      this.logger.warn(`Client ${client.id} rejected: invalid token`);
-      client.disconnect();
-    }
+    const user = (client.data as { user?: { username?: string; sub?: string } })
+      ?.user;
+    this.logger.log(
+      `Client connected: ${client.id}${user?.username ? ` (user: ${user.username})` : ""}`,
+    );
   }
 
   handleDisconnect(client: Socket): void {

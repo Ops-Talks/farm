@@ -161,6 +161,11 @@ export const configuration = () => ({
     username: process.env.ELASTICSEARCH_USERNAME || "",
     password: process.env.ELASTICSEARCH_PASSWORD || "",
   },
+  pyroscope: {
+    enabled: process.env.PYROSCOPE_ENABLED || "false",
+    url: process.env.PYROSCOPE_URL || "http://pyroscope:4040",
+  },
+  exposeCorrelationIds: process.env.EXPOSE_CORRELATION_IDS || "false",
   app: {
     url: process.env.APP_URL || "http://localhost:3001",
   },
@@ -279,4 +284,9 @@ export const validationSchema = Joi.object({
   APP_URL: Joi.string().uri().default("http://localhost:3001"),
   HTTP_TIMEOUT: Joi.number().integer().min(100).default(10000),
   HTTP_MAX_REDIRECTS: Joi.number().integer().min(0).max(20).default(5),
+  PYROSCOPE_ENABLED: Joi.string().valid("true", "false").default("false"),
+  PYROSCOPE_URL: Joi.string()
+    .uri({ allowRelative: true })
+    .default("http://pyroscope:4040"),
+  EXPOSE_CORRELATION_IDS: Joi.string().valid("true", "false").default("false"),
 });
