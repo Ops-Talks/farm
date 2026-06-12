@@ -63,10 +63,6 @@ const config: KnipConfig = {
         // Standalone seed runner — executed as a Node script, not imported.
         'src/database/seeds/seed-runner.ts',
 
-        // Jest helper loaded by jest.config.js setupFilesAfterFramework, not
-        // imported by any spec file.
-        'src/jest-helper-patch.js',
-
         // ── NestJS DI-registered file patterns ──────────────────────────────
         // These files are registered in @Module() decorator arrays and wired
         // by the NestJS runtime. Knip cannot statically trace decorator

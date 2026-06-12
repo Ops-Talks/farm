@@ -962,13 +962,13 @@ A small number of features fight the NestJS/Passport request lifecycle instead o
 | FARM-S650 | Move Socket.IO connection authentication out of the hand-written handshake logic. `common/events/events.gateway.ts` verifies the JWT by hand inside `handleConnection`. Best practice: a NestJS `CanActivate` WS guard protects message handlers but does not cover the Socket.IO connection handshake, so connection-time auth should be implemented as Socket.IO server middleware (`io.use(...)`) via a custom `IoAdapter`, or a `@nestjs/passport` WS strategy — making connection auth declarative, testable, and consistent with the HTTP guard chain. Choose the adapter/middleware approach for handshake auth and a WS guard for per-message authorization. | `TODO` |
 | FARM-S651 | Route the remaining direct `process.env` reads in the application runtime through `ConfigService`. The Pyroscope bootstrap block in `main.ts` (`PYROSCOPE_ENABLED`, `PYROSCOPE_URL`, `NODE_ENV`) and the correlation-ID exposure decision in `common/filters/http-exception.filter.ts` read `process.env` directly, bypassing the validated config layer. Best practice: inject `ConfigService` (the filter is a provider and can take it via constructor; the Pyroscope init can move into an `OnModuleInit` provider that reads config). Explicitly out of scope and deliberately excluded: the `configuration.ts` factory and `typeorm-cli.config.ts` (reading `process.env` is their defined role) and the module-load-time reads in `common/telemetry/tracing.ts`, which must run before the DI container exists and therefore cannot use `ConfigService`. | `TODO` |
 
-### FARM-E158: Test & Build Tooling Honesty `TODO`
+### FARM-E158: Test & Build Tooling Honesty `DONE`
 
 Remove tooling that games a quality metric rather than reflecting reality.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S652 | Remove the `src/jest-helper-patch.js` custom Jest transformer. It wraps `ts-jest` and rewrites compiled output to inject `/* istanbul ignore next */` before every TypeScript-emitted `emitDecoratorMetadata` type-guard ternary, excluding them from branch coverage. While the intent (the `Object` fallback branch is unreachable) is defensible, monkey-patching the transpiler output to manipulate coverage is a gambiarra that masks the real coverage surface and is fragile against TypeScript/ts-jest version changes. Best practice: configure coverage exclusions through documented Jest/Istanbul mechanisms — `coveragePathIgnorePatterns`, per-file `/* istanbul ignore */` only where a human reviewer adds it, or `babel-plugin-istanbul` ignore options — and adjust `coverageThreshold` to reflect the true number. Delete the transformer, restore the standard `ts-jest` transform in `jest.config.js`, and remove the `jest-helper-patch.js` entry from `knip.config.ts`. | `TODO` |
+| FARM-S652 | Remove the `src/jest-helper-patch.js` custom Jest transformer. | `DONE` |
 
 ### FARM-E159: OpenAPI Contract Artifact Integrity `TODO`
 
