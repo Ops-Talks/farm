@@ -266,10 +266,10 @@ export const validationSchema = Joi.object({
     .default(""),
   REGISTRY_URL: Joi.string().allow("").default(""),
   REGISTRY_CREDENTIALS: Joi.string().allow("").default(""),
-  // OpenCost integration (optional — defaults to localhost in dev/test)
-  OPENCOST_URL: Joi.string().uri().optional().default("http://localhost:9090"),
-  // OPA integration (optional — defaults to localhost in dev/test)
-  OPA_URL: Joi.string().uri().optional().default("http://localhost:8181"),
+  // OpenCost integration (optional — no default; fails cleanly when absent)
+  OPENCOST_URL: Joi.string().uri().optional(),
+  // OPA integration (optional — no default; fails cleanly when absent)
+  OPA_URL: Joi.string().uri().optional(),
   // IaC ingest token (optional — required when using Cultivator/Agronomist integration)
   IAC_INGEST_TOKEN: Joi.string().allow("").default(""),
   // Docs webhook HMAC secret (optional — when set, incoming webhook payloads are verified)

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
-import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
+import { HttpCircuitBreakerService } from "../../common/http/http-circuit-breaker.service";
 import { getQueueToken } from "@nestjs/bullmq";
 import {
   KeycloakSyncService,
@@ -99,7 +99,7 @@ describe("KeycloakSyncService", () => {
       providers: [
         KeycloakSyncService,
         {
-          provide: HttpService,
+          provide: HttpCircuitBreakerService,
           useValue: {
             get: jest.fn(),
             post: jest.fn(),
@@ -315,7 +315,7 @@ describe("KeycloakSyncService — additional branches", () => {
       providers: [
         KeycloakSyncService,
         {
-          provide: HttpService,
+          provide: HttpCircuitBreakerService,
           useValue: {
             get: jest.fn(),
             post: jest.fn(),
@@ -342,7 +342,7 @@ describe("KeycloakSyncService — additional branches", () => {
     }).compile();
 
     service = module.get<KeycloakSyncService>(KeycloakSyncService);
-    mockHttpService = module.get(HttpService);
+    mockHttpService = module.get(HttpCircuitBreakerService);
   });
 
   afterEach(() => jest.clearAllMocks());

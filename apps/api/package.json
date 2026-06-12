@@ -22,8 +22,9 @@
     "changelog:sync": "node ./scripts/sync-changelog.mjs",
     "typeorm": "npm run build && npx typeorm -d dist/config/typeorm-cli.config.js",
     "migration:generate": "npm run typeorm -- migration:generate src/migrations/initial",
-    "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
+    "migration:run": "npm run typeorm -- migration:run",
+    "openapi:generate": "NODE_ENV=test ts-node --project tsconfig.scripts.json -r tsconfig-paths/register scripts/generate-openapi.ts",
     "seed": "npm run build && node dist/database/seeds/seed-runner.js"
   },
   "dependencies": {

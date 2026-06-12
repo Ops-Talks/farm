@@ -1,9 +1,9 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { WebhookService } from "./webhook.service";
 import { ConfigService } from "@nestjs/config";
-import { HttpService } from "@nestjs/axios";
 import { of, throwError } from "rxjs";
 import { AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import { HttpCircuitBreakerService } from "../../common/http/http-circuit-breaker.service";
 
 const mockAxiosResponse = (data: unknown): AxiosResponse => ({
   data,
@@ -34,7 +34,7 @@ async function buildModule(
           },
         },
       },
-      { provide: HttpService, useValue: { post: httpPost } },
+      { provide: HttpCircuitBreakerService, useValue: { post: httpPost } },
     ],
   }).compile();
 
@@ -74,17 +74,18 @@ describe("WebhookService", () => {
         string,
         Record<string, unknown>,
       ];
-      expect(slackCall[0]).toBe(SLACK_URL);
-      expect(slackCall[1]).toEqual({
+      expect(slackCall[1]).toBe(SLACK_URL);
+      expect(slackCall[2]).toEqual({
         text: "Deployment user-service changed to failed on production",
       });
 
       const teamsCall = httpPost.mock.calls[1] as [
         string,
+        string,
         Record<string, unknown>,
       ];
-      expect(teamsCall[0]).toBe(TEAMS_URL);
-      expect(teamsCall[1]).toMatchObject({
+      expect(teamsCall[1]).toBe(TEAMS_URL);
+      expect(teamsCall[2]).toMatchObject({
         "@type": "MessageCard",
         text: "Deployment user-service changed to failed on production",
       });
@@ -102,9 +103,10 @@ describe("WebhookService", () => {
       expect(httpPost).toHaveBeenCalledTimes(2);
       const slackCall = httpPost.mock.calls[0] as [
         string,
+        string,
         Record<string, unknown>,
       ];
-      expect(slackCall[1]).toEqual({
+      expect(slackCall[2]).toEqual({
         text: "Audit: admin performed DELETE on component/abc-123",
       });
     });
@@ -120,9 +122,10 @@ describe("WebhookService", () => {
       expect(httpPost).toHaveBeenCalledTimes(2);
       const slackCall = httpPost.mock.calls[0] as [
         string,
+        string,
         Record<string, unknown>,
       ];
-      expect(slackCall[1]).toEqual({
+      expect(slackCall[2]).toEqual({
         text: "New component registered: payment-service (service)",
       });
     });
@@ -163,7 +166,9 @@ describe("WebhookService", () => {
 
       // Only Teams should be called
       expect(post).toHaveBeenCalledTimes(1);
-      expect((post.mock.calls[0] as [string, unknown])[0]).toBe(TEAMS_URL);
+      expect((post.mock.calls[0] as [string, string, unknown])[1]).toBe(
+        TEAMS_URL,
+      );
     });
 
     it("should skip Teams when teamsUrl is empty", async () => {
@@ -174,7 +179,9 @@ describe("WebhookService", () => {
 
       // Only Slack should be called
       expect(post).toHaveBeenCalledTimes(1);
-      expect((post.mock.calls[0] as [string, unknown])[0]).toBe(SLACK_URL);
+      expect((post.mock.calls[0] as [string, string, unknown])[1]).toBe(
+        SLACK_URL,
+      );
     });
 
     it("should make no HTTP calls when both URLs are empty", async () => {
@@ -217,7 +224,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
       status: "succeeded",
       environment: "prod",
     });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -228,7 +235,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
       name: "svc",
       environment: "prod",
     });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -239,7 +246,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
       name: "svc",
       status: "succeeded",
     });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -250,7 +257,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
       action: "create",
       resource: "Component/svc",
     });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -261,7 +268,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
       actor: "admin",
       resource: "Component/svc",
     });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -269,7 +276,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
 
   it("should use 'unknown' for audit resource when payload.resource is missing", async () => {
     await svc.notify("audit.log.created", { actor: "admin", action: "create" });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -277,7 +284,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
 
   it("should use 'unknown' for component name when payload.name is missing", async () => {
     await svc.notify("component.created", { kind: "service" });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -285,7 +292,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
 
   it("should use 'unknown' for component kind when payload.kind is missing", async () => {
     await svc.notify("component.created", { name: "my-svc" });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("unknown");
@@ -293,7 +300,7 @@ describe("WebhookService — formatMessage fallback branches", () => {
 
   it("should produce a generic Event message for unrecognised event types", async () => {
     await svc.notify("some.unknown.event", { foo: "bar" });
-    const callArg = (mockPost.mock.calls[0] as unknown[])[1] as {
+    const callArg = (mockPost.mock.calls[0] as unknown[])[2] as {
       text: string;
     };
     expect(callArg.text).toContain("Event: some.unknown.event");

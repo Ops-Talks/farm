@@ -167,7 +167,7 @@ export default tseslint.config(
     ignores: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/opa.service.ts'],
     plugins: { local: localPlugin },
     rules: {
-      'local/no-native-fetch': 'warn',
+      'local/no-native-fetch': 'error',
     },
   },
 );

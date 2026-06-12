@@ -1,5 +1,4 @@
 import { Injectable, Logger, Optional } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -15,6 +14,7 @@ import {
 import { Team } from "../teams/entities/team.entity";
 import { User } from "./entities/user.entity";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { HttpCircuitBreakerService } from "../../common/http/http-circuit-breaker.service";
 
 /**
  * Shape of the decrypted Keycloak credential JSON payload.
@@ -89,7 +89,7 @@ export class KeycloakSyncService {
   private readonly encryptionKey: Buffer;
 
   constructor(
-    private readonly httpService: HttpService,
+    private readonly httpCircuitBreaker: HttpCircuitBreakerService,
     @InjectRepository(IntegrationCredential)
     private readonly credentialRepository: Repository<IntegrationCredential>,
     @InjectRepository(Team)
@@ -321,10 +321,15 @@ export class KeycloakSyncService {
     });
 
     const response = await firstValueFrom(
-      this.httpService.post<TokenResponse>(tokenUrl, body.toString(), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        validateStatus: () => true,
-      }),
+      this.httpCircuitBreaker.post<TokenResponse>(
+        "keycloak",
+        tokenUrl,
+        body.toString(),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          validateStatus: () => true,
+        },
+      ),
     );
 
     if (response.status >= 400) {
@@ -346,7 +351,7 @@ export class KeycloakSyncService {
    */
   async fetchJson<T>(url: string, token: string): Promise<T> {
     const response = await firstValueFrom(
-      this.httpService.get<T>(url, {
+      this.httpCircuitBreaker.get<T>("keycloak", url, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

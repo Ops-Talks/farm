@@ -300,7 +300,13 @@ export class ElasticsearchIndexStatsService {
       }
 
       const body = response.data;
-      return Array.isArray(body) ? body : [];
+      if (!Array.isArray(body)) {
+        this.logger.error(
+          `ElasticsearchIndexStatsService.fetchPattern: _cat/indices response body is not an array`,
+        );
+        return [];
+      }
+      return body;
     } catch (error) {
       if (
         (error as Error)?.name === "AxiosError" &&
