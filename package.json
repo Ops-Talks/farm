@@ -68,5 +68,8 @@
     "qs": "6.15.2",
     "typeorm": "1.0.0",
     "@grpc/grpc-js": "1.14.4"
+  },
+  "knip": {
+    "ignoreBinaries": ["jq"]
   }
 }

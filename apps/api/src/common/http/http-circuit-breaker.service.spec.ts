@@ -8,7 +8,13 @@ import { of, throwError, firstValueFrom } from "rxjs";
 const CIRCUIT_STATE_TOKEN = "PROM_METRIC_INTEGRATION_CIRCUIT_STATE";
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  return { data, status, statusText: "OK", headers: {}, config: {} as any };
+  return {
+    data,
+    status,
+    statusText: "OK",
+    headers: {},
+    config: {} as Record<string, never>,
+  };
 }
 
 describe("HttpCircuitBreakerService", () => {

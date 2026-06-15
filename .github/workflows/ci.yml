@@ -128,8 +128,13 @@ jobs:
         id: secrets
         run: echo "jwt=$(openssl rand -hex 32)" >> $GITHUB_OUTPUT
 
-      - name: Generate OpenAPI spec
-        run: npm run openapi:generate -w apps/api
+      - name: Check for contract drift
+        run: |
+          cp apps/api/openapi.json /tmp/committed.json
+          npm run openapi:generate -w apps/api
+          npx jq -S . /tmp/committed.json > /tmp/committed-normalized.json
+          npx jq -S . apps/api/openapi.json > /tmp/generated-normalized.json
+          diff -u /tmp/committed-normalized.json /tmp/generated-normalized.json
         env:
           DATABASE_TYPE: postgres
           DATABASE_HOST: localhost
@@ -139,9 +144,6 @@ jobs:
           DATABASE_NAME: farm
           JWT_SECRET: ${{ steps.secrets.outputs.jwt }}
           NODE_ENV: test
-
-      - name: Check for contract drift
-        run: git diff --exit-code apps/api/openapi.json
 
       - name: Upload OpenAPI spec as artifact
         if: success()

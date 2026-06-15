@@ -20,7 +20,7 @@
     "test:e2e": "NODE_OPTIONS=--max-old-space-size=4096 jest --config ./test/jest-e2e.json --runInBand",
     "release": "release-it",
     "changelog:sync": "node ./scripts/sync-changelog.mjs",
-    "typeorm": "npm run build && npx typeorm -d dist/config/typeorm-cli.config.js",
+    "typeorm": "npm run build && npx typeorm -d dist/src/config/typeorm-cli.config.js",
     "migration:generate": "npm run typeorm -- migration:generate src/migrations/initial",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:run": "npm run typeorm -- migration:run",
