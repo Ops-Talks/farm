@@ -182,7 +182,7 @@ jobs:
       - name: Setup monorepo
         uses: ./.github/actions/setup-monorepo
         with:
-          compile-types: 'false'
+          compile-types: 'true'
 
       - name: Build API
         run: npm run build -w apps/api

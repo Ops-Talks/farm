@@ -118,7 +118,7 @@
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.1.24",
     "@release-it/keep-a-changelog": "^7.1.0",
-    "@testcontainers/postgresql": "^12.0.1",
+    "@testcontainers/postgresql": "^12.0.2",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",

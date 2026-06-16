@@ -20,6 +20,11 @@ import { exit } from "node:process";
 const UPSTREAM_UNFIXABLE = new Set([
   "GHSA-j3q9-mxjg-w52f",
   "GHSA-27v5-c462-wpq7",
+  "GHSA-96hv-2xvq-fx4p", // ws: Memory exhaustion DoS — upstream via socket.io/engine.io (ws@8.21+ not yet in chain)
+  "GHSA-hmw2-7cc7-3qxx", // form-data: CRLF injection — upstream via @kubernetes/client-node, axios, supertest
+  "GHSA-f38q-mgvj-vph7", // protobufjs: Schema-derived names shadowing — upstream via @grpc/grpc-js, @kubernetes/client-node
+  "GHSA-wcpc-wj8m-hjx6", // protobufjs: DoS via unbounded Any expansion — upstream via @grpc/grpc-js, @kubernetes/client-node
+  "GHSA-8988-4f7v-96qf", // @opentelemetry/core: Unbounded memory in W3C Baggage — moderate severity, requires major upgrade (0.x -> 2.x) with breaking changes
 ]);
 
 const workspace = process.argv[2];
