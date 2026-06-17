@@ -520,8 +520,6 @@ describe("sanitizeInput", () => {
   });
 
   it("should preserve newlines and spaces", () => {
-    expect(sanitizeInput("line1\nline2  spaced")).toBe(
-      "line1\nline2  spaced",
-    );
+    expect(sanitizeInput("line1\nline2  spaced")).toBe("line1\nline2  spaced");
   });
 });

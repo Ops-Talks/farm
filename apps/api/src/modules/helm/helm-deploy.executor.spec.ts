@@ -174,7 +174,8 @@ describe("HelmDeployExecutor", () => {
             _file: string,
             _args: string[],
             cb: (err: null, result: { stdout: string; stderr: string }) => void,
-          ) => cb(null, { stdout: "Release deployed successfully", stderr: "" }),
+          ) =>
+            cb(null, { stdout: "Release deployed successfully", stderr: "" }),
         );
 
       const logs: string[] = [];

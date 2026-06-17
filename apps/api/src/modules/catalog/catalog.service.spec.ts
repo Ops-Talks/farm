@@ -567,15 +567,15 @@ spec:
     });
 
     it("should throw BadRequestException for an SSH-style URL with a semicolon in the path", () => {
-      expect(() =>
-        validateGitUrl("git@github.com:org/repo;rm -rf /"),
-      ).toThrow(BadRequestException);
+      expect(() => validateGitUrl("git@github.com:org/repo;rm -rf /")).toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException for an SSH-style URL with backticks in the path", () => {
-      expect(() =>
-        validateGitUrl("git@github.com:org/repo`id`"),
-      ).toThrow(BadRequestException);
+      expect(() => validateGitUrl("git@github.com:org/repo`id`")).toThrow(
+        BadRequestException,
+      );
     });
 
     it("should throw BadRequestException for an SSH-style URL with $() in the path", () => {

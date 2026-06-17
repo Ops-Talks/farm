@@ -25,7 +25,6 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "eslint": "^10.5.0",
-    "fast-xml-parser": "5.9.2",
     "knip": "^6.17.1"
   },
   "optionalDependencies": {
@@ -67,6 +66,7 @@
     "vite": "8.0.16",
     "vitest": "4.1.9",
     "ws": "^8.21.0",
+    "multer": "2.2.0",
     "nodemailer": "^9.0.1",
     "hono": "4.12.25",
     "qs": "6.15.2",

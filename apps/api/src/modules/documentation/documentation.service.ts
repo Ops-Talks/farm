@@ -32,7 +32,7 @@ const MAX_SANITIZE_ITERATIONS = 20;
  * Protects against injection via filenames, search queries, and title fields.
  */
 export function sanitizeInput(input: string): string {
-  return input.replace(/[^a-zA-Z0-9\s\-_.,:;!?@#%&()\/]/g, "");
+  return input.replace(/[^a-zA-Z0-9\s\-_.,:;!?@#%&()/]/g, "");
 }
 
 /**

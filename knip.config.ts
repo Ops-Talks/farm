@@ -114,6 +114,11 @@ const config: KnipConfig = {
         'src/**/*.spec.ts',
         'test/**',
       ],
+      ignoreBinaries: [
+        // mkdocs is invoked as a shell command in mkdocs.builder.ts to build
+        // TechDocs documentation — it is an external CLI tool, not an npm dep.
+        'mkdocs',
+      ],
       ignoreDependencies: [
         // @nestjs/swagger re-exports PartialType and related helpers from
         // @nestjs/mapped-types internally. @nestjs/mapped-types is a required

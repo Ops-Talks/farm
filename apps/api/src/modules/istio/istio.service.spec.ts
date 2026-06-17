@@ -198,9 +198,9 @@ describe("IstioService", () => {
     });
 
     it("throws BadRequestException for array kubeconfig with empty string first element", async () => {
-      await expect(
-        service.isIstioEnabled([""]),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.isIstioEnabled([""])).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it("throws BadRequestException for non-string kubeconfig", async () => {

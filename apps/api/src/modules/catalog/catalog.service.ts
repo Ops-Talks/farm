@@ -164,7 +164,7 @@ export class CatalogService {
 
     // Allow common SSH-style Git remotes, e.g. git@github.com:org/repo.git
     // Restrict the path portion to safe characters to prevent git protocol abuse.
-    const sshPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:[a-zA-Z0-9._\/~-]+$/;
+    const sshPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:[a-zA-Z0-9._/~-]+$/;
     if (sshPattern.test(trimmed)) {
       return;
     }

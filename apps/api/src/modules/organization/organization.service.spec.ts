@@ -118,9 +118,9 @@ describe("OrganizationService", () => {
 
     it("should throw BadRequestException when name exceeds max length", async () => {
       const longName = "a".repeat(256);
-      await expect(
-        service.create({ name: longName }, ownerId),
-      ).rejects.toThrow("Organization name too long");
+      await expect(service.create({ name: longName }, ownerId)).rejects.toThrow(
+        "Organization name too long",
+      );
     });
 
     it("should throw ConflictException when name already exists", async () => {
