@@ -28,6 +28,14 @@ import {
 const MAX_SANITIZE_ITERATIONS = 20;
 
 /**
+ * Strips characters that are not in the strict allowlist.
+ * Protects against injection via filenames, search queries, and title fields.
+ */
+export function sanitizeInput(input: string): string {
+  return input.replace(/[^a-zA-Z0-9\s\-_.,:;!?@#%&()\/]/g, "");
+}
+
+/**
  * Strips dangerous HTML elements and attributes from rendered content.
  * Removes script/iframe/object/embed tags and event handler attributes.
  */
@@ -96,8 +104,14 @@ export class DocumentationService {
     createDocumentationDto: CreateDocumentationDto,
     organizationId?: string,
   ): Promise<Documentation> {
-    const documentation = this.documentationRepository.create({
+    const sanitized = {
       ...createDocumentationDto,
+      title: sanitizeInput(createDocumentationDto.title),
+      author: sanitizeInput(createDocumentationDto.author),
+      version: sanitizeInput(createDocumentationDto.version),
+    };
+    const documentation = this.documentationRepository.create({
+      ...sanitized,
       ...(organizationId ? { organizationId } : {}),
     });
     return await this.documentationRepository.save(documentation);
@@ -254,7 +268,7 @@ export class DocumentationService {
    * @returns Array of search results with relevance scores
    */
   async search(query: string, componentId?: string): Promise<SearchResult[]> {
-    const queryLower = query.toLowerCase();
+    const queryLower = sanitizeInput(query).toLowerCase();
     const where: Record<string, unknown> = {};
     if (componentId) {
       where.componentId = componentId;
@@ -292,10 +306,14 @@ export class DocumentationService {
     updateDocumentationDto: UpdateDocumentationDto,
     orgId?: string,
   ): Promise<Documentation> {
+    const sanitized = { ...updateDocumentationDto };
+    if (sanitized.title) sanitized.title = sanitizeInput(sanitized.title);
+    if (sanitized.author) sanitized.author = sanitizeInput(sanitized.author);
+    if (sanitized.version) sanitized.version = sanitizeInput(sanitized.version);
     const documentation = await this.findOne(id, orgId);
     const updated = this.documentationRepository.merge(
       documentation,
-      updateDocumentationDto,
+      sanitized,
     );
     return await this.documentationRepository.save(updated);
   }
