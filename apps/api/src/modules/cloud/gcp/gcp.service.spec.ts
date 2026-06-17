@@ -222,6 +222,19 @@ describe("GcpService", () => {
       expect(result.success).toBe(false);
       expect(result.output).toContain("Service not found");
     });
+
+    it("should return failure when region creates disallowed GCP domain", async () => {
+      const result = await service.deployToCloudRun(ORG_ID, {
+        service: "svc",
+        region: "evil.com?",
+        image: "img:latest",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.output).toContain("GCP domain not allowed");
+      expect(result.output).toContain("evil.com");
+      expect(mockAxiosPatch).not.toHaveBeenCalled();
+    });
   });
 
   // ---------------------------------------------------------------------------
