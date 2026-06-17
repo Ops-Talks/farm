@@ -1,8 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { exec, execFile } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 /**
@@ -118,7 +117,7 @@ export class HelmDeployExecutor {
    */
   async isHelmAvailable(): Promise<boolean> {
     try {
-      await execAsync("helm version --short");
+      await execFileAsync("helm", ["version", "--short"]);
       return true;
     } catch {
       return false;
