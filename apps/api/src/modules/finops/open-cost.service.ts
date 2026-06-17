@@ -3,6 +3,8 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { validateResponse } from "../../common/http/validate-response";
+import { OpenCostAllocationResponse } from "../../common/http/external-response.dto";
 
 /**
  * Aggregated cost allocation returned by OpenCost for a single label selector.
@@ -30,10 +32,7 @@ export class OpenCostService {
     private readonly configService: ConfigService,
     private readonly cb: CircuitBreakerService,
   ) {
-    this.baseUrl = this.configService.get<string>(
-      "OPENCOST_URL",
-      "http://localhost:9090",
-    );
+    this.baseUrl = this.configService.get<string>("OPENCOST_URL") ?? "";
   }
 
   /**
@@ -63,7 +62,12 @@ export class OpenCostService {
         );
         return null;
       }
-      const data = response.data;
+      const data = validateResponse(
+        OpenCostAllocationResponse,
+        response.data,
+        "OpenCostService.getAllocation",
+        this.logger,
+      );
       const allocations = data?.data;
       if (!allocations) return null;
       const entry = Object.values(allocations)[0] as

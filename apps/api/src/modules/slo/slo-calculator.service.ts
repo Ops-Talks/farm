@@ -9,6 +9,8 @@ import {
   SloBudgetStatus,
 } from "./dto/slo-budget-response.dto";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { validateResponse } from "../../common/http/validate-response";
+import { PrometheusApiResponse } from "../../common/http/external-response.dto";
 
 /**
  * Maps SLO window enum values to their duration in days.
@@ -138,7 +140,14 @@ export class SloCalculatorService {
         return this.simulateMetric(slo);
       }
 
-      const body = response.data;
+      const validated = validateResponse(
+        PrometheusApiResponse,
+        response.data,
+        "SloCalculatorService.queryMetric",
+        this.logger,
+      );
+
+      const body = validated as unknown as PrometheusQueryRangeResponse;
 
       if (
         body.status !== "success" ||

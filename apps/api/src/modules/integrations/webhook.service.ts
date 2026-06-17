@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { translateHttpError } from "./http-error";
+import { HttpCircuitBreakerService } from "../../common/http/http-circuit-breaker.service";
 
 /**
  * Service responsible for sending HTTP POST payloads to configured webhook URLs.
@@ -16,7 +16,7 @@ export class WebhookService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly httpService: HttpService,
+    private readonly httpCircuitBreaker: HttpCircuitBreakerService,
   ) {
     this.slackUrl =
       this.configService.get<string>("integrations.slackWebhookUrl") || "";
@@ -51,7 +51,8 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(
+        this.httpCircuitBreaker.post(
+          "slack",
           this.slackUrl,
           { text: message },
           { timeout: 5000 },
@@ -72,7 +73,8 @@ export class WebhookService {
 
     try {
       await firstValueFrom(
-        this.httpService.post(
+        this.httpCircuitBreaker.post(
+          "teams",
           this.teamsUrl,
           {
             "@type": "MessageCard",

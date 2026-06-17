@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { HttpModule as NestHttpModule } from "@nestjs/axios";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { HttpCircuitBreakerService } from "./http-circuit-breaker.service";
 
 @Global()
 @Module({
@@ -14,6 +15,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
       }),
     }),
   ],
-  exports: [NestHttpModule],
+  providers: [HttpCircuitBreakerService],
+  exports: [NestHttpModule, HttpCircuitBreakerService],
 })
 export class HttpModule {}

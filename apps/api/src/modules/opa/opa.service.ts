@@ -4,6 +4,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { OpaResult } from "./entities/opa-result.entity";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { validateResponse } from "../../common/http/validate-response";
+import { OpaDataResponseDto } from "../../common/http/external-response.dto";
 
 /**
  * Shape of the raw response body returned by the OPA /v1/data/:path endpoint.
@@ -36,8 +38,12 @@ export class OpaService {
     private readonly opaResultRepository: Repository<OpaResult>,
     private readonly cb: CircuitBreakerService,
   ) {
-    this.opaUrl =
-      this.configService.get<string>("opa.url") ?? "http://localhost:8181";
+    this.opaUrl = this.configService.get<string>("opa.url") ?? "";
+    if (!this.opaUrl) {
+      this.logger.warn(
+        "OPA_URL is not configured — OPA policy evaluation is disabled",
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -105,15 +111,22 @@ export class OpaService {
       throw new BadRequestException(errorMessage);
     }
 
-    let body: OpaDataResponse;
+    let parsed: Record<string, unknown>;
 
     try {
-      body = JSON.parse(responseText) as OpaDataResponse;
+      parsed = JSON.parse(responseText) as Record<string, unknown>;
     } catch {
       throw new BadRequestException(
         `OPA policy evaluation returned invalid JSON with status ${response.status}`,
       );
     }
+
+    const body = validateResponse(
+      OpaDataResponseDto,
+      parsed,
+      "OpaService.evaluate",
+      this.logger,
+    ) as OpaDataResponse;
 
     const result = body.result;
 

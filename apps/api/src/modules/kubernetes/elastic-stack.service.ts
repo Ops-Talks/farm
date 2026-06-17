@@ -4,6 +4,8 @@ import { firstValueFrom } from "rxjs";
 import { ConfigService } from "@nestjs/config";
 import { KubernetesService } from "./kubernetes.service";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { validateResponse } from "../../common/http/validate-response";
+import { ElasticsearchClusterHealth } from "../../common/http/external-response.dto";
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -693,7 +695,7 @@ export class ElasticStackService {
     try {
       const response = await this.cb.fire("elastic-stack", () =>
         firstValueFrom(
-          this.httpService.get<{ status?: string }>(`${url}/_cluster/health`, {
+          this.httpService.get(`${url}/_cluster/health`, {
             timeout: 3000,
             validateStatus: () => true,
           }),
@@ -707,7 +709,13 @@ export class ElasticStackService {
         return { reachable: false };
       }
 
-      const body = response.data;
+      const body = validateResponse(
+        ElasticsearchClusterHealth,
+        response.data,
+        "ElasticStackService.getExternalElasticsearch",
+        this.logger,
+      );
+
       const rawStatus = (body.status ?? "").toLowerCase();
       const clusterHealth: ExternalElasticsearch["clusterHealth"] =
         rawStatus === "green" || rawStatus === "yellow" || rawStatus === "red"

@@ -50,8 +50,7 @@ interface KongUpstreamsPage {
  * Adapter that communicates with the Kong Admin API to retrieve routes and
  * health information.
  *
- * Uses globalThis.fetch so it is easily mockable in unit tests without
- * introducing an HTTP client dependency.
+ * Uses @nestjs/axios HttpService with optional circuit breaker protection.
  */
 export class KongAdapter implements IGatewayAdapter {
   readonly type = GatewayType.KONG;
