@@ -45,7 +45,7 @@ jobs:
       - name: Setup monorepo
         uses: ./.github/actions/setup-monorepo
         with:
-          compile-types: 'false'
+          compile-types: 'true'
 
       - name: Run lint
         run: npm run lint -w apps/api
@@ -122,7 +122,7 @@ jobs:
 
       - uses: ./.github/actions/setup-monorepo
         with:
-          compile-types: 'false'
+          compile-types: 'true'
 
       - name: Generate ephemeral JWT secret
         id: secrets
@@ -132,8 +132,8 @@ jobs:
         run: |
           cp apps/api/openapi.json /tmp/committed.json
           npm run openapi:generate -w apps/api
-          npx jq -S . /tmp/committed.json > /tmp/committed-normalized.json
-          npx jq -S . apps/api/openapi.json > /tmp/generated-normalized.json
+          jq -S . /tmp/committed.json > /tmp/committed-normalized.json
+          jq -S . apps/api/openapi.json > /tmp/generated-normalized.json
           diff -u /tmp/committed-normalized.json /tmp/generated-normalized.json
         env:
           DATABASE_TYPE: postgres

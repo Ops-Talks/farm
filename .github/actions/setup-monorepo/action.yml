@@ -28,4 +28,6 @@ runs:
     - name: Compile packages/types
       if: inputs.compile-types == 'true'
       shell: bash
-      run: cd packages/types && npx tsc
+      run: |
+        cd packages/types && npx tsc && npm link
+        npm link @farm/types

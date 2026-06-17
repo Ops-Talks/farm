@@ -148,7 +148,8 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 54: Helm Chart Quality, Correctness & Publishing | 7 | 32 | `DONE` |
 | Phase 56: Admin User Registration | 2 | 9 | `DONE` |
 | Phase 57: Development Guidelines Compliance | 1 | 8 | `DONE` |
-| **Total** | **165** | **638** | |
+| Phase 58: CI/CD Pipeline Fixes | 1 | 3 | `TODO` |
+| **Total** | **166** | **641** | |
 
 ---
 
@@ -1058,3 +1059,33 @@ Remediates 45 accumulated lint warnings (33 API + 12 Web) that violate the `.git
 | ID | Story | Status |
 |----|-------|--------|
 | FARM-S671 | Update the ROADMAP.md Summary table with Phase 57 totals. Current total: 164 epics, 630 stories. Phase 57 adds 1 epic, 8 stories. Verify `make check` exits 0 after all fixes. | `DONE` |
+
+---
+
+## Phase 58: CI/CD Pipeline Fixes `TODO`
+
+Fixes three CI pipeline failures in PR #223 that prevent Phase 55 from being merged to main. Each fix is independent and was identified from the CI run logs.
+
+### FARM-E167: openapi-diff CI Job Fix `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S672 | Replace `npx jq` with system `jq` in the `openapi-diff` job. GitHub `ubuntu-latest` runners have `jq` pre-installed at `/usr/bin/jq`; `npx jq` resolves to a community wrapper that fails. | `TODO` |
+
+### FARM-E168: start:prod Script Fix `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S673 | Fix `start:prod` script from `node dist/main` to `node dist/main.js`. Node.js ESM lookup requires explicit `.js` extension. | `TODO` |
+
+### FARM-E169: Migration Job @farm/types Resolution Fix `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S674 | Fix `@farm/types` module resolution in the migrations job. Add `"include": ["src/**/*.ts"]` to `tsconfig.build.json` to fix the build output structure (was `dist/src/main.js`, now `dist/main.js`), correct the `typeorm` CLI config path from `dist/src/config` back to `dist/config`, and `npm link @farm/types` in `setup-monorepo` action so the compiled shared types are resolvable at runtime. | `TODO` |
+
+### FARM-E170: Summary Table Update `TODO`
+
+| ID | Story | Status |
+|----|-------|--------|
+| FARM-S675 | Update the ROADMAP.md Summary table with Phase 58 totals. Current total: 166 epics, 641 stories. Phase 58 adds 1 epic, 3 stories. | `TODO` |
