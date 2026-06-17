@@ -57,6 +57,10 @@ export class OrganizationService {
    * @returns A lowercase hyphenated slug
    */
   private toSlug(name: string): string {
+    if (name.length > 255) {
+      throw new BadRequestException("Organization name too long");
+    }
+
     return (
       name
         .toLowerCase()
