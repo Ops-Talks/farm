@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import * as k8s from "@kubernetes/client-node";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
 import {
@@ -63,7 +63,14 @@ export class IstioService {
       this.logger.warn(
         "Received array value for kubeconfig parameter; using first element",
       );
-      return kubeconfig[0];
+      const first = kubeconfig[0];
+      if (typeof first !== "string" || first.length === 0) {
+        throw new BadRequestException("Invalid kubeconfig parameter");
+      }
+      return first;
+    }
+    if (typeof kubeconfig !== "string") {
+      throw new BadRequestException("Invalid kubeconfig parameter");
     }
     return kubeconfig;
   }
