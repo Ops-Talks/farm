@@ -151,9 +151,9 @@ WEB_IMAGE := farm-web:$(APP_VERSION)
 
 KIND_CLUSTER ?= $(shell kind get clusters 2>/dev/null | head -1)
 
-docker-build: ## Build API and web Docker images tagged with the current appVersion
-	docker build -t $(API_IMAGE) -f apps/api/Dockerfile .
-	docker build -t $(WEB_IMAGE) -f apps/web/Dockerfile .
+docker-build: ## Build API and web Docker images tagged with the current appVersion (no cache)
+	docker build --no-cache -t $(API_IMAGE) -f apps/api/Dockerfile .
+	docker build --no-cache -t $(WEB_IMAGE) -f apps/web/Dockerfile .
 
 kind-load: ## Load API and web images into the active KinD cluster
 	@if [ -z "$(KIND_CLUSTER)" ]; then echo "ERROR: no KinD cluster found. Run 'kind create cluster' first."; exit 1; fi
