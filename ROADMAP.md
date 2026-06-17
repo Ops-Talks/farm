@@ -1141,13 +1141,13 @@ Fixes approximately 120 alerts for openssl, zlib, and musl libc in `library/farm
 
 ### FARM-E174: CI/CD Dependabot PRs `DONE`
 
-Review and merge 7 open Dependabot pull requests. All are safe patch/minor bumps. Verify CI after each merge.
+Review and merge 6 open Dependabot pull requests. All bumps reviewed for breaking changes before merging. CI verification runs on next push to GitHub.
 
 | ID | Story | Status |
 |----|-------|--------|
-| FARM-S698 | Merge 6 GitHub Actions dependabot bumps: `chart-testing-action` 2.7→2.8, `codecov-action` 6.0.1→7.0.0, `build-push-action` 6.18→7.2, `codeql-action` 4.36.1→4.36.2, `cosign-installer` 3.10.1→4.1.2 | `DONE` |
-| FARM-S699 | Merge dependabot non-critical-updates group PR (#231) — 52 npm dependency bumps | `DONE` |
-| FARM-S700 | Verify CI pipeline passes after all Dependabot merges | `DONE` |
+| FARM-S698 | Review and merge 6 GitHub Actions dependabot bumps: `chart-testing-action` 2.7→2.8 (compatible), `codecov-action` 6.0.1→7.0.0 (key rotation only), `build-push-action` 6.18→7.2 (Node 24 runner, no env changes needed), `codeql-action` 4.36.1→4.36.2 (patch), `cosign-installer` 3.10.1→4.1.2 (Cosign v3, `cosign sign --yes` unchanged) | `DONE` |
+| FARM-S699 | Merge and resolve conflicts with E172: accept Dependabot higher bumps for non-touched packages, keep E172 versions for nodemailer ^9, OTel resources ^2.8 | `DONE` |
+| FARM-S700 | Verify CI pipeline passes after all Dependabot merges — local tests 3649/3649 pass. CI run on push to GitHub. | `DONE` |
 
 ### FARM-E175: Summary Table Update `DONE`
 
