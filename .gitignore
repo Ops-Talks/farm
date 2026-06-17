@@ -29,6 +29,9 @@ lerna-debug.log*
 *NEXT_STEPS.md
 *INIT_COPILOT.md
 
+# Superpowers skill-generated planning artifacts
+docs/superpowers/
+
 # Playwright E2E test outputs
 test-results/
 playwright-report/

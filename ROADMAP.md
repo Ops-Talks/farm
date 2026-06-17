@@ -146,16 +146,15 @@ Phase 44 is intentionally omitted from this completed-phase archive because it i
 | Phase 52: Helm Observability Integration | 3 | 6 | `DONE` |
 | Phase 53: Helm Chart Quality Remediation | 6 | 31 | `DONE` |
 | Phase 54: Helm Chart Quality, Correctness & Publishing | 7 | 32 | `DONE` |
+| Phase 55: Backend API Best-Practices Audit & Remediation | 5 | 19 | `DONE` |
 | Phase 56: Admin User Registration | 2 | 9 | `DONE` |
 | Phase 57: Development Guidelines Compliance | 1 | 8 | `DONE` |
-| Phase 58: CI/CD Pipeline Fixes | 1 | 3 | `TODO` |
-| **Total** | **166** | **641** | |
+| Phase 58: CI/CD Pipeline Fixes | 1 | 3 | `DONE` |
+| **Total** | **171** | **660** | |
 
 ---
 
-## Phase 40: Observability 3.0 — Full-Stack Hardening
-
-Closes the gaps in the current Prometheus + Loki + Grafana + Tempo stack to reach full open-source market standard across all three pillars of observability (logs, metrics, traces), plus alerting, SLO tracking, RUM, and continuous profiling.
+_Detailed phase content moved to git history. See release notes and git log for per-story implementation details._
 
 ### FARM-E90: Web App Server-Side Observability `DONE`
 

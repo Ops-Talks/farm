@@ -5,10 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.26] - 2026-06-17
+
+### Changed
+- **api**: Phase 55 CI fixes — `start:prod` path, tsconfig.build.json include, typeorm script path, setup-monorepo npm link, ci.yml jq usage (#223).
+- **deps**: bump hadolint/hadolint-action from 3.1.0 to 3.3.0 (#216).
+- **deps**: bump actions/upload-artifact from 4.6.2 to 7.0.1 (#212).
+- **deps**: bump actions/checkout from 4.2.2 to 6.0.3 (#215).
+- **gitignore**: Clean project artifacts (#222).
+
+### Fixed
+- **api**: Keycloak adapter, WebSocket auth adapter, Pyroscope init service improvements.
+
 ## [0.25.25] - 2026-06-10
 
 ### Changed
-- Patch/phase 55 api e156 (#218).
+- **api**: Phase 55 HTTP Client Consistency (E-156) — HttpCircuitBreakerService, response validation, OpenCost/OPA URL defaults removal, Keycloak/webhook migration (#218).
 - **deps**: bump actions/download-artifact from 5.0.0 to 8.0.1 (#214).
 - **deps**: bump github/codeql-action from 4.36.0 to 4.36.1 (#213).
 
@@ -26,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.16] - 2026-06-03
 
 ### Changed
-- **api**: Make improvements (#207).
+- **api**: General improvements and fixes (#207).
 
 ## [0.25.15] - 2026-06-02
 
@@ -36,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.14] - 2026-06-01
 
 ### Changed
-- **release**: Patch the verioning and release way (#202).
+- **release**: Patch the versioning and release way (#202).
 
 ## [0.25.13] - 2026-06-01
 
@@ -45,13 +57,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **user**: Remove user signup (#201).
-- **user**: Remove user signup (#200).
 
 ## [0.25.12] - 2026-05-31
 
 ### Changed
 - **deps**: bump typeorm from 0.3.29 to 1.0.0 (#184).
-- Merge pull request #195 from Ops-Talks/dependabot/npm_and_yarn/non-critical-updates-c0c2e78b52.
 
 ### Fixed
 - **coverage**: Fix code coverage.
@@ -63,8 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deps**: bump docker/metadata-action from 5.10.0 to 6.1.0 (#189).
 - **deps**: bump docker/setup-buildx-action from 3.10.0 to 4.1.0 (#188).
 - **deps**: bump softprops/action-gh-release from 2.3.2 to 3.0.0 (#187).
-- Merge pull request #186 from Ops-Talks/dependabot/github_actions/docker/login-action-4.2.0.
-- Merge pull request #196 from Ops-Talks/fix/docs.
+<blank>
 
 ### Fixed
 - **node**: Several improvements (#197).
@@ -111,25 +120,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **reliability**: Several improvements (#180).
 
 ### Changed
-- Feat/phase 50 (#181).
+- **api**: Phase 50 (#181).
 
 ## [0.25.6] - 2026-05-20
 
 ### Changed
-- Merge pull request #179 from Ops-Talks/feat/phase-47-api.
+- **api**: Phase 47 API improvements.
 
 ## [0.25.5] - 2026-05-20
 
 ### Changed
 - **deps**: bump @bull-board/* from 6.21.3 to 7.1.5.
-- Potential fix for pull request finding.
 - **roadmap**: mark Phase 49 DONE, update FARM-E128 stories.
 - **deps**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2, upgrade vite to 8.
 - **deps-dev**: bump @vitejs/plugin-react from 5.2.0 to 6.0.2.
 - **deps**: bump codecov/codecov-action from 5.5.3 to 6.0.1.
 - **deps**: bump the non-critical-updates group across 1 directory with 36 updates.
 - Patch/project docs (#173).
-- **rbac**: Increasing matury and hardening at RBAC.
+- **rbac**: Increasing maturity and hardening at RBAC.
 - **deps-dev**: bump release-it from 19.2.4 to 20.0.1.
 
 ### Fixed
@@ -170,12 +178,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.1] - 2026-05-13
 
 ### Changed
-- **sweagger**: Update Sweagger endpoints.
+- **swagger**: Update Sweagger endpoints.
 - merge main into storybook/nextjs bump branch, resolve conflicts.
 - **ci**: align setup-monorepo action to Node 26 to match Dockerfiles.
 - **deps**: bump node from 25-alpine to 26-alpine in Dockerfiles.
 - **deps**: bump the non-critical-updates group across 1 directory with 16 updates.
-- Chore/dependabot bumps (#154).
+- **deps**: Dependabot bumps (#154).
 - **deps-dev**: bump @storybook/nextjs from 9.1.20 to 10.3.6.
 - **deps-dev**: bump eslint from 9.39.4 to 10.3.0.
 
@@ -189,7 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **deploy**: Create the Helm Chart v0 (#149).
 
 ### Changed
-- Merge pull request #148 from Ops-Talks/path/errorHandling.
+
 
 ## [0.24.10] - 2026-05-08
 
@@ -265,8 +273,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.2] - 2026-04-29
 
 ### Changed
-- Address PR review feedback: forwardRef Input, ref dedup, a11y, undoable hook, confirm dialog async, beforeunload listener.
-- Phase 33.
+- **ui**: Address PR review feedback — forwardRef Input, ref dedup, a11y, undoable hook, confirm dialog async, beforeunload listener.
+- **api**: Phase 33.
 
 ## [0.24.1] - 2026-04-29
 
@@ -276,7 +284,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.24.0] - 2026-04-28
 
 ### Changed
-- Feat/phase 36 user roles (#120).
+- **api**: Phase 36 user roles (#120).
 - **deps-dev**: bump @types/supertest from 6.0.3 to 7.2.0 (#106).
 - **deps-dev**: bump @types/node from 20.19.39 to 25.6.0.
 - **deps-dev**: bump jest-junit from 16.0.0 to 17.0.0.
@@ -313,11 +321,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - implement Phase 30 Plugin Ecosystem (FARM-S327, FARM-S328, FARM-S329).
 
 ### Changed
-- Merge pull request #73 from Ops-Talks/copilot/fix-roadmap-summary-inconsistency.
-- Initial plan.
-- **changelog**: remove 50 duplicated lines from CHANGELOG.md.
-- Add comprehensive tests for API modules with low coverage.
-- Initial analysis of test coverage gaps.
+- **roadmap**: Fix summary table inconsistency.
+- **changelog**: Remove duplicated lines.
+- **tests**: Add comprehensive tests for API modules with low coverage.
 
 ### Fixed
 - **pipelines**: Make a deep refactoring in the project workflows (#74).
@@ -352,9 +358,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **phase-23**: IaC Catalog (#66).
 
 ### Changed
-- **Grafana**: Widget Dashboards enhacement.
-- fix(CVES).
-- revert CHANGELOG.md to pre-PR state — feature docs do not belong in a CVE fix PR.
+- **Grafana**: Widget Dashboards enhancement.
+- **cves**: Fix CVEs.
 - Update package.json.
 
 ### Fixed
@@ -374,7 +379,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - extract startedAt fallback and normalizeUrl helper for readability.
 - update ROADMAP.
-- feat(seeds) - Update mocking new examples.
+- **seeds**: Update mocking examples.
 
 ### Fixed
 - **iac**: address PR review feedback — query perf, validation, entity types, a11y, docs.
@@ -383,23 +388,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.4] - 2026-04-13
 
 ### Changed
-- apply all remaining PR review corrections across api-reference and user-guide docs.
-- Update docs/user-guide/container-registry.md.
-- Update docs/user-guide/opa-integration.md.
-- **linkerd**: fix API reference response examples to match actual backend shapes.
-- Update docs/developer-guide/backend/architecture.md.
-- Update docs/developer-guide/setup.md.
-- Update docs/index.md.
-- Update docs/api-reference/linkerd.md.
-- patch(mkdocs) Revision and overall docs update.
-- fix(CVES) Picomath.
-- Update ROADMAP.
+- **docs**: Apply PR review corrections across api-reference and user-guide docs; update container-registry, opa-integration, architecture, setup, index, and linkerd docs.
+- **linkerd**: Fix API reference response examples to match actual backend shapes.
+- **docs**: Revision and overall docs update.
+- **cves**: Picomath.
+- **roadmap**: Update ROADMAP.
 
 ## [0.17.3] - 2026-04-12
 
 ### Changed
-- Update apps/api/Dockerfile.
-- Update apps/web/Dockerfile.
+- **docker**: Update API and web Dockerfiles.
 
 ### Fixed
 - pin npm to 11.12.1 instead of @latest for reproducible Docker builds.
@@ -408,9 +406,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.2] - 2026-04-12
 
 ### Changed
-- feat(phase-21) New Features (#59).
-- feat(phase-28) New Features.
-- feat(phase-20) New Features.
+- **phase-21**: New Features (#59).
+- **phase-28**: New Features.
+- **phase-20**: New Features.
 
 ### Fixed
 - **vulnerabilities**: NPM (#60).
@@ -419,15 +417,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.1] - 2026-04-11
 
 ### Changed
-- feat(phase-25) New Features (#56).
+- **phase-25**: New Features (#56).
 
 ## [0.17.0] - 2026-04-09
 
 ### Changed
-- feat(phase-19) New Features.
-- fix(phase-18) Bugs and Coverage.
+- **phase-19**: New Features.
+- **phase-18**: Bugs and Coverage.
 - **kubernetes**: add missing branch coverage for listFluxBindingsByComponent and listKedaBindingsByComponent.
-- feat(phase-18) New Features.
+- **phase-18**: New Features.
 
 ### Fixed
 - **finops**: address PR review feedback - numeric transformers, query optimizations, FinOpsService integration.
@@ -438,7 +436,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.0] - 2026-04-08
 
 ### Added
-- **container-resgistries**: Add Container Registries support.
+- **container-registries**: Add Container Registries support.
 
 ### Fixed
 - **lint**: resolve all 16 ESLint errors in SAST pipeline.
@@ -469,7 +467,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.5] - 2026-04-07
 
 ### Fixed
-- **sast**: Vulnerabilites.
+- **sast**: Vulnerabilities.
 - **e2e**: use getAttribute() to avoid WebKit prefetch race before page.goto().
 - **e2e**: use page.goto() for WebKit-reliable catalog detail navigation.
 - **e2e**: fix WebKit Playwright failures in catalog and organizations tests.
@@ -477,8 +475,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **cves**: override lodash 4.18.1 / lodash-es 4.18.1, upgrade zlib in web Dockerfile.
 
 ## [0.14.4] - 2026-04-06
-
-### Changed
 
 ### Fixed
 - **trivy**: use include-only matrix to ensure dockerfile is always defined.
@@ -498,7 +494,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.1] - 2026-03-31
 
 ### Changed
-- Feature/phase 16 (#42).
+- **api**: Phase 16 (#42).
 
 ## [0.14.0] - 2026-03-30
 
@@ -518,13 +514,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **org**: complete org scoping for Phase 11 entities (FARM-E49).
 
 ### Changed
-- Feature/phase 13 (#39).
+- **api**: Phase 13 (#39).
 - **roadmap**: mark FARM-E49 DONE, Phase 12 IN PROGRESS.
-- Feature/farm e50 (#38).
-- feat(roadmap) - Update.
-- Update apps/api/src/modules/documentation/documentation.controller.ts.
-- Update apps/api/src/modules/gateway/gateway.controller.ts.
-- fix(tests) - Gateway Controller.
+- **api**: FARM-E50 (#38).
+- **roadmap**: Update.
+- **api**: Update documentation and gateway controllers.
+- **tests**: Fix Gateway Controller tests.
 - mark Phase 11 as DONE in ROADMAP; ignore GIT_COMMIT.md.
 
 ### Fixed
@@ -533,8 +528,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.0] - 2026-03-28
 
 ### Changed
-- Feature/farm e48 (#34).
-- Feature/farm e48 (#33).
+- **api**: FARM-E48 (#34).
+- **api**: FARM-E48 (#33).
 
 ## [0.12.3] - 2026-03-27
 
@@ -553,37 +548,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.2] - 2026-03-27
 
 ### Changed
-- Feature/performances (#24).
+- **api**: Performance improvements (#24).
 - Phase-7 (#23).
-- feat:(docs) - Update docs and improvements.
+- **docs**: Update docs and improvements.
 
 ## [0.12.1] - 2026-03-25
 
 ### Changed
-- fix(web-ci) - The fix was straightforward: .prose appeared immediately with empty renderedHtml when selectedId changed, before the async fetch ran. The waitFor was resolving too early. Changing it to wait for the actual content (toContain('object content')) ensures it waits for the fetch to complete.
+- **web-ci**: Fix E2E test race condition — wait for async content before resolving waitFor.
 
 ## [0.12.0] - 2026-03-25
 
 ### Changed
-- Feature/phase 10 (#20).
+- **api**: Phase 10 (#20).
 
 ## [0.11.5] - 2026-03-25
 
 ### Changed
-- fix:(security) - Fix CVE's (#19).
-- fix:(security) - Fix CVE's (#18).
-- fix:(security) - Fix CVE's.
-- patch(eslint) - Improvements.
+- **security**: Fix CVEs (#19).
+- **security**: Fix CVEs (#18).
+- **security**: Fix CVEs.
+- **eslint**: Improvements.
 
 ## [0.11.4] - 2026-03-24
 
 ### Changed
-- chore(ci.yaml) - Comparison.
+- **ci.yaml**: Comparison.
 - **web**: add comprehensive api-client test coverage (S176).
 - **api**: improve branch coverage for critical modules (S173).
 - add Phase 10 test coverage hardening to ROADMAP (FARM-E45).
-- Fix/several stuffs (#14).
-- Potential fix for code scanning alert no. 12: Type confusion through parameter tampering (#11).
+- **api**: Several fixes (#14).
+- **security**: Fix code scanning alert — type confusion through parameter tampering (#11).
 - add web coverage and test results upload to Codecov.
 
 ### Fixed
@@ -597,22 +592,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.2] - 2026-03-21
 
 ### Changed
-- Potential fix for code scanning alert no. 11: Server-side request forgery (#12).
-- Feature/farm e38 (#13).
-- chore:(fonts) - Update project font (#10).
-- update gitleaks.
-- chore:(web) - Improvements.
+- **security**: Fix code scanning alert — server-side request forgery (#12).
+- **api**: FARM-E38 (#13).
+- **fonts**: Update project font (#10).
+- **security**: Update gitleaks.
+- **web**: Improvements.
 
 ## [0.11.1] - 2026-03-20
 
 ### Changed
-- feat:(security) - New Securiy tests implemented (#9).
-- Update README with new make commands.
-- Updates.
-- fix:(dast) - Include fix.
-- feat:(dast) - New CI.
-- fix:(ci) - Fix NPM Audit.
-- fix:(ci) - Fix CI test errors.
+- **security**: New security tests implemented (#9).
+- **docs**: Update README with new make commands.
+
+- **dast**: Include fix.
+- **dast**: New CI.
+- **ci**: Fix NPM audit.
+- **ci**: Fix CI test errors.
 
 ## [0.11.0] - 2026-03-20
 
@@ -620,17 +615,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **web**: add branded Farm design system and visual redesign (FARM-E43).
 
 ### Changed
-- patch:(ui) - Little improvements.
-- fix:(ui) Copillot sugestions.
-- Update background.
-- feat:(css) - Update colors.
+- **ui**: Improvements.
+- **ui**: Copilot suggestions.
+- **ui**: Update background.
+- **css**: Update colors.
 
 ## [0.10.11] - 2026-03-19
 
 ### Changed
-- Update Istio implementation.
+- **istio**: Update implementation.
 - add Istio service mesh integration documentation (FARM-E42).
-- Update Codecov.
+- **ci**: Update Codecov.
 
 ## [0.10.10] - 2026-03-19
 
@@ -689,35 +684,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.6] - 2026-03-18
 
 ### Changed
-- DOC-3: add Helm and Kubernetes rows to docs/api-reference/index.md    DOC-4: add 13 missing env vars to docs/developer-guide/setup.md           (observability, OAuth, integrations, plugins)    DOC-5: add observability, OAuth, integrations, and plugin sections           to .env.example    DOC-6: fix docs/api-reference/teams.md endpoint table to use full           paths (/api/v1/teams/...) consistent with all other API docs    DOC-7: add Helm Integration and Kubernetes Operator to           docs/user-guide/index.md Core Features and Quick Links.
+- **docs**: Add Helm/Kubernetes rows to API reference, missing env vars to setup guide, observability/OAuth/integrations/plugins to .env.example, fix teams endpoint paths, add Helm Integration and Kubernetes Operator to user guide.
 - DOC-2: create docs/api-reference/audit-log.md, helm.md, kubernetes.md.
 - DOC-1: add Helm Integration, Kubernetes Operator to User Guide nav and Audit Log, Helm, Kubernetes APIs to API Reference nav in mkdocs.yml.
 
 ## [0.10.5] - 2026-03-18
 
 ### Changed
-- feat:(helm+k8s) FARM-E36 and FARM-E37 complete.
-- Update README.
+- **helm+k8s**: FARM-E36 and FARM-E37 complete.
+- **docs**: Update README.
 
 ## [0.10.4] - 2026-03-18
 
 ### Changed
-- fix:(E2E) solved tests failed.
+- **e2e**: Fix test failures.
 
 ## [0.10.3] - 2026-03-18
 
 ### Changed
-- fix:(coverage) reports back to generates.
+- **coverage**: Fix coverage report generation.
 
 ## [0.10.2] - 2026-03-18
 
 ### Changed
-- - GET /api/v1/auth/users now requires JWT + admin role (was unauthenticated)    - POST /api/v1/traces/ingest now requires JWT (was unauthenticated)    - /api/docs protected with HTTP Basic Auth middleware; credentials      configurable via SWAGGER_USER / SWAGGER_PASSWORD (default: farm/farm)    - Add swagger.user and swagger.password to configuration.ts and Joi schema    - Document SWAGGER_USER and SWAGGER_PASSWORD in .env.example.
+- **auth**: Require JWT + admin role for GET /api/v1/auth/users.
+- **auth**: Require JWT for POST /api/v1/traces/ingest.
+- **docs**: Protect /api/docs with HTTP Basic Auth (SWAGGER_USER / SWAGGER_PASSWORD).
+- **config**: Add swagger.user and swagger.password to configuration.ts and Joi schema.
 
 ## [0.10.1] - 2026-03-18
 
 ### Changed
-- feat:(web) FARM-E29 done.
+- **web**: FARM-E29 done.
 
 ## [0.10.0] - 2026-03-17
 
@@ -754,7 +752,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.12] - 2026-03-17
 
 ### Changed
-- feat:(members)  FARM-S85 — Member Management (Backend).
+- **members**: FARM-S85 — Member Management (Backend).
 
 ## [0.9.11] - 2026-03-17
 
@@ -789,7 +787,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1] - 2026-03-16
 
 ### Changed
-- Update index docs.
+- **docs**: Update index docs.
 
 ## [0.9.0] - 2026-03-16
 
