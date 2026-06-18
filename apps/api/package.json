@@ -1,6 +1,6 @@
 {
   "name": "farm",
-  "version": "0.25.25",
+  "version": "0.25.26",
   "description": "Farm - An open-source full stack portal",
   "author": "Ops-Talks",
   "private": true,
@@ -148,7 +148,6 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.61.1"
   },
-
   "jest": {
     "moduleFileExtensions": [
       "js",

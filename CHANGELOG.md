@@ -8,14 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.25.26] - 2026-06-17
 
 ### Changed
-- **api**: Phase 55 CI fixes — `start:prod` path, tsconfig.build.json include, typeorm script path, setup-monorepo npm link, ci.yml jq usage (#223).
+- Feat/phase 59 (#232).
+- **deps**: bump web-vitals from 3.5.2 to 5.3.0 (#205).
+- **deps**: bump docker/build-push-action from 6.18.0 to 7.2.0 (#227).
+- **deps**: bump codecov/codecov-action from 6.0.1 to 7.0.0 (#228).
+- **deps**: bump github/codeql-action from 4.36.1 to 4.36.2.
+- **deps**: bump sigstore/cosign-installer from 3.10.1 to 4.1.2.
+- **deps**: bump the non-critical-updates group across 1 directory with 52 updates.
+- **deps**: bump helm/chart-testing-action from 2.7.0 to 2.8.0.
+- Patch/phase 55 api e158 (#223).
+- Patch/phase 55 api e158 (#222).
 - **deps**: bump hadolint/hadolint-action from 3.1.0 to 3.3.0 (#216).
 - **deps**: bump actions/upload-artifact from 4.6.2 to 7.0.1 (#212).
 - **deps**: bump actions/checkout from 4.2.2 to 6.0.3 (#215).
-- **gitignore**: Clean project artifacts (#222).
+- fix(api) Improvements in Keycloack, WsAuthAdapter, PyroscopeInitService (#220).
 
 ### Fixed
-- **api**: Keycloak adapter, WebSocket auth adapter, Pyroscope init service improvements.
+- **gitignore**: Cleaning project (#230).
 
 ## [0.25.25] - 2026-06-10
 
