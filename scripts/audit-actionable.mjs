@@ -17,6 +17,12 @@
 import { spawnSync } from "node:child_process";
 import { exit } from "node:process";
 
+// Moderate-severity advisories with no upstream fix without breaking changes.
+// Not gated by the audit script (only high/critical are checked), but tracked
+// here for documentation:
+//   - GHSA-qx2v-qp2m-jg93  postcss XSS — bundled via Next.js 16 minor
+//   - GHSA-848j-6mx2-7j84  elliptic risky crypto — via storybook/webpack
+//   - GHSA-g7r4-m6w7-qqqr  esbuild arbitrary file read — Windows-only dev server
 const UPSTREAM_UNFIXABLE = new Set([
   "GHSA-j3q9-mxjg-w52f",
   "GHSA-27v5-c462-wpq7",

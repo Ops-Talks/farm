@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Runtime proxy for API and admin paths. Using Next.js Middleware instead of
-// next.config.ts rewrites so that API_INTERNAL_URL is read at request time
-// from the container environment — not baked at image build time.
+// Runtime proxy for API and admin paths. Using Next.js Proxy (previously
+// Middleware convention — renamed in v16) instead of next.config.ts rewrites
+// so that API_INTERNAL_URL is read at request time from the container
+// environment — not baked at image build time.
 const UPSTREAM_BASE = (() => {
   const apiInternal =
     process.env.API_INTERNAL_URL ?? "http://localhost:3000/api";
