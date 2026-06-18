@@ -4,7 +4,7 @@
 # `RUN --mount=type=cache` used in the deps stage (FARM-S543).
 
 # Stage 1: Install dependencies
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS deps
 LABEL org.opencontainers.image.title="farm-api" \
       org.opencontainers.image.description="Farm portal — NestJS API service" \
       org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
@@ -27,7 +27,7 @@ COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
 RUN npm run build --workspace=@farm/types
 
 # Stage 2: Build NestJS app
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS build
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules           ./node_modules
@@ -48,7 +48,7 @@ WORKDIR /app/apps/api
 RUN npm run build
 
 # Stage 3: Production image
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS production
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -57,7 +57,7 @@ ENV NODE_ENV=production
 # they have broken CI repeatedly when Alpine repushed patched versions under
 # different version strings. CVE coverage is enforced by the Trivy gate in
 # .github/workflows/trivy.yml and base-image digest bumps via Dependabot.
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache openssl zlib musl
 
 # Copy root manifests for npm ci --omit=dev
 COPY package.json package-lock.json ./

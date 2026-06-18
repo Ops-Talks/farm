@@ -24,7 +24,11 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 import axios from "axios";
-import { DocumentationService, sanitizeHtml } from "./documentation.service";
+import {
+  DocumentationService,
+  sanitizeHtml,
+  sanitizeInput,
+} from "./documentation.service";
 import { Documentation } from "./entities/documentation.entity";
 import { CreateDocumentationDto } from "./dto/create-documentation.dto";
 
@@ -474,5 +478,48 @@ describe("sanitizeHtml", () => {
     const result = sanitizeHtml(html);
     expect(result).not.toContain("<script");
     expect(typeof result).toBe("string");
+  });
+});
+
+describe("sanitizeInput", () => {
+  it("should allow safe alphanumeric characters", () => {
+    expect(sanitizeInput("Hello World 123")).toBe("Hello World 123");
+  });
+
+  it("should allow safe punctuation", () => {
+    const safe = "test-_,.:;!?@#%&()/";
+    expect(sanitizeInput(safe)).toBe(safe);
+  });
+
+  it("should strip <script> tags", () => {
+    expect(sanitizeInput("<script>alert(1)</script>")).not.toContain("<");
+  });
+
+  it("should strip angle brackets", () => {
+    expect(sanitizeInput("foo <> bar")).toBe("foo  bar");
+  });
+
+  it("should strip backticks", () => {
+    expect(sanitizeInput("`code`")).toBe("code");
+  });
+
+  it("should strip dollar signs", () => {
+    expect(sanitizeInput("$100")).toBe("100");
+  });
+
+  it("should strip curly braces", () => {
+    expect(sanitizeInput("{key: value}")).toBe("key: value");
+  });
+
+  it("should strip pipes", () => {
+    expect(sanitizeInput("a | b")).toBe("a  b");
+  });
+
+  it("should return empty string for entirely dangerous input", () => {
+    expect(sanitizeInput("<>{}`$|")).toBe("");
+  });
+
+  it("should preserve newlines and spaces", () => {
+    expect(sanitizeInput("line1\nline2  spaced")).toBe("line1\nline2  spaced");
   });
 });

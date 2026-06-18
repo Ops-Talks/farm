@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // Mock child_process so no real shell is ever invoked.
-// exec  → used only by isHelmAvailable (hardcoded "helm version --short").
-// execFile → used by execute() for the actual helm upgrade --install call.
+// Both isHelmAvailable and execute use execFile internally. Tests chain
+// mockImplementationOnce when multiple invocations are expected (version
+// check + upgrade command).
 // ---------------------------------------------------------------------------
 const mockExecImpl = jest.fn();
 const mockExecFileImpl = jest.fn();
@@ -112,9 +113,10 @@ describe("HelmDeployExecutor", () => {
   // -------------------------------------------------------------------------
   describe("isHelmAvailable", () => {
     it("should return true when helm version --short exits with code 0", async () => {
-      mockExecImpl.mockImplementation(
+      mockExecFileImpl.mockImplementation(
         (
-          _cmd: string,
+          _file: string,
+          _args: string[],
           cb: (err: null, result: { stdout: string; stderr: string }) => void,
         ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
       );
@@ -123,8 +125,8 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should return false when helm binary is not found", async () => {
-      mockExecImpl.mockImplementation(
-        (_cmd: string, cb: (err: Error) => void) =>
+      mockExecFileImpl.mockImplementation(
+        (_file: string, _args: string[], cb: (err: Error) => void) =>
           cb(new Error("command not found: helm")),
       );
       const available = await executor.isHelmAvailable();
@@ -138,8 +140,8 @@ describe("HelmDeployExecutor", () => {
   describe("execute", () => {
     it("should return success=false with descriptive message when helm is not available", async () => {
       // helm version (isHelmAvailable) fails → not available.
-      mockExecImpl.mockImplementation(
-        (_cmd: string, cb: (err: Error) => void) =>
+      mockExecFileImpl.mockImplementation(
+        (_file: string, _args: string[], cb: (err: Error) => void) =>
           cb(new Error("command not found")),
       );
 
@@ -151,26 +153,30 @@ describe("HelmDeployExecutor", () => {
       expect(result.success).toBe(false);
       expect(result.output).toContain("helm executor not available");
       expect(logs.some((l) => l.includes("not available"))).toBe(true);
-      // execFile must never be reached when helm is unavailable.
-      expect(mockExecFileImpl).not.toHaveBeenCalled();
+      // mockExecFileImpl was called for isHelmAvailable check but the upgrade
+      // command must not be reached — verify exactly 1 call (version only).
+      expect(mockExecFileImpl).toHaveBeenCalledTimes(1);
     });
 
     it("should return success=true and captured output on successful deployment", async () => {
-      // isHelmAvailable (exec) succeeds.
-      mockExecImpl.mockImplementation(
-        (
-          _cmd: string,
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
-      );
-      // helm upgrade --install (execFile) succeeds.
-      mockExecFileImpl.mockImplementation(
-        (
-          _file: string,
-          _args: string[],
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => cb(null, { stdout: "Release deployed successfully", stderr: "" }),
-      );
+      // Call 1: isHelmAvailable (helm version --short) succeeds.
+      // Call 2: helm upgrade --install succeeds.
+      mockExecFileImpl
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+        )
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) =>
+            cb(null, { stdout: "Release deployed successfully", stderr: "" }),
+        );
 
       const logs: string[] = [];
       const result = await executor.execute(baseConfig, (msg) =>
@@ -182,27 +188,29 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should return success=false and captured stderr when helm command fails", async () => {
-      // isHelmAvailable (exec) succeeds.
-      mockExecImpl.mockImplementation(
-        (
-          _cmd: string,
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
-      );
-      // helm upgrade --install (execFile) fails.
-      mockExecFileImpl.mockImplementation(
-        (
-          _file: string,
-          _args: string[],
-          cb: (err: Error & { stdout?: string; stderr?: string }) => void,
-        ) => {
-          const helmError = Object.assign(new Error("helm error"), {
-            stdout: "",
-            stderr: "Error: chart not found",
-          });
-          cb(helmError);
-        },
-      );
+      // Call 1: isHelmAvailable (helm version --short) succeeds.
+      // Call 2: helm upgrade --install fails.
+      mockExecFileImpl
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+        )
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: Error & { stdout?: string; stderr?: string }) => void,
+          ) => {
+            const helmError = Object.assign(new Error("helm error"), {
+              stdout: "",
+              stderr: "Error: chart not found",
+            });
+            cb(helmError);
+          },
+        );
 
       const logs: string[] = [];
       const result = await executor.execute(baseConfig, (msg) =>
@@ -214,26 +222,28 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should include all set overrides in the executed command", async () => {
-      // isHelmAvailable (exec) succeeds.
-      mockExecImpl.mockImplementation(
-        (
-          _cmd: string,
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
-      );
+      // Call 1: isHelmAvailable (helm version --short) succeeds.
       let capturedFile = "";
       let capturedArgs: string[] = [];
-      mockExecFileImpl.mockImplementation(
-        (
-          file: string,
-          args: string[],
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => {
-          capturedFile = file;
-          capturedArgs = args;
-          cb(null, { stdout: "", stderr: "" });
-        },
-      );
+      mockExecFileImpl
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+        )
+        .mockImplementationOnce(
+          (
+            file: string,
+            args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => {
+            capturedFile = file;
+            capturedArgs = args;
+            cb(null, { stdout: "", stderr: "" });
+          },
+        );
 
       const configWithSet: HelmDeployConfig = {
         ...baseConfig,
@@ -248,26 +258,28 @@ describe("HelmDeployExecutor", () => {
     });
 
     it("should pass shell-metacharacter values as literal arguments without shell interpretation", async () => {
-      // isHelmAvailable (exec) succeeds.
-      mockExecImpl.mockImplementation(
-        (
-          _cmd: string,
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
-      );
+      // Call 1: isHelmAvailable (helm version --short) succeeds.
       let capturedFile = "";
       let capturedArgs: string[] = [];
-      mockExecFileImpl.mockImplementation(
-        (
-          file: string,
-          args: string[],
-          cb: (err: null, result: { stdout: string; stderr: string }) => void,
-        ) => {
-          capturedFile = file;
-          capturedArgs = args;
-          cb(null, { stdout: "", stderr: "" });
-        },
-      );
+      mockExecFileImpl
+        .mockImplementationOnce(
+          (
+            _file: string,
+            _args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => cb(null, { stdout: "v3.12.0", stderr: "" }),
+        )
+        .mockImplementationOnce(
+          (
+            file: string,
+            args: string[],
+            cb: (err: null, result: { stdout: string; stderr: string }) => void,
+          ) => {
+            capturedFile = file;
+            capturedArgs = args;
+            cb(null, { stdout: "", stderr: "" });
+          },
+        );
 
       // Simulate a user-supplied config value that contains shell metacharacters.
       const maliciousConfig: HelmDeployConfig = {

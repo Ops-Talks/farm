@@ -64,6 +64,11 @@ describe("CloudSecretsService", () => {
       expect(service.isSecretRef("just-a-value")).toBe(false);
       expect(service.isSecretRef("https://example.com")).toBe(false);
     });
+
+    it("should return false for strings exceeding max length", () => {
+      const longRef = "arn:aws:secretsmanager:" + "a".repeat(1000);
+      expect(service.isSecretRef(longRef)).toBe(false);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -136,6 +141,13 @@ describe("CloudSecretsService", () => {
       await expect(
         service.resolve("http://not-a-secret-ref.com", ORG_ID),
       ).rejects.toThrow("Unsupported secret ref format");
+    });
+
+    it("should throw BadRequestException for refs exceeding max length", async () => {
+      const longRef = "arn:aws:secretsmanager:" + "a".repeat(1000);
+      await expect(service.resolve(longRef, ORG_ID)).rejects.toThrow(
+        "Secret ref too long",
+      );
     });
 
     it("should throw when AWS service is unavailable", async () => {

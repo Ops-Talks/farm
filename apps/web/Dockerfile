@@ -3,7 +3,7 @@
 # Context is the monorepo root so that workspace packages (packages/*) are accessible.
 # The `# syntax=` directive above enables BuildKit features such as
 # `RUN --mount=type=cache` used in the deps and builder stages (FARM-S543).
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS deps
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS deps
 LABEL org.opencontainers.image.title="farm-web" \
       org.opencontainers.image.description="Farm portal — Next.js web application" \
       org.opencontainers.image.source="https://github.com/Ops-Talks/farm"
@@ -26,7 +26,7 @@ COPY packages/types/tsconfig.json ./packages/types/tsconfig.json
 RUN npm run build --workspace=@farm/types
 
 # Stage 2: Build Next.js app
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS builder
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS builder
 WORKDIR /app
 
 # node_modules includes the symlink node_modules/@farm/types -> ../../packages/types
@@ -53,7 +53,7 @@ RUN --mount=type=cache,target=/app/apps/web/.next/cache,sharing=locked \
     npm run build
 
 # Stage 3: Production
-FROM node:26-alpine@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8 AS runner
+FROM node:26-alpine@sha256:9c0e1e52125d6b67d505cf75b4880fcf1290ccea5c480849910e1d57b2cf72b5 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -63,7 +63,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # they have broken CI repeatedly when Alpine repushed patched versions under
 # different version strings. CVE coverage is enforced by the Trivy gate in
 # .github/workflows/trivy.yml and base-image digest bumps via Dependabot.
-RUN apk upgrade --no-cache \
+RUN apk upgrade --no-cache openssl zlib musl \
  && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 RUN addgroup --system --gid 1001 nodejs && \

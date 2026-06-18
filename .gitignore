@@ -42,3 +42,6 @@ storybook-static/
 
 # Helm subchart archives — managed by helm dependency build, not committed to git
 deploy/helm/**/charts/*.tgz
+
+# Knip dead-code analysis report — regenerated on each run
+knip-report.json

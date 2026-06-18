@@ -82,6 +82,15 @@ function deploymentStatusVariant(
   }
 }
 
+function isValidUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
 /** Detect repository provider from URL for labelling the link button */
 function detectProvider(url: string): { label: string; icon: React.ReactNode } {
   let hostname: string | null = null;
@@ -123,6 +132,7 @@ interface RepositoryCardProps {
 
 const RepositoryCard = memo(function RepositoryCard({ repositoryUrl }: RepositoryCardProps) {
   const { label, icon } = useMemo(() => detectProvider(repositoryUrl), [repositoryUrl]);
+  const safeHref = isValidUrl(repositoryUrl) ? repositoryUrl : "#";
 
   return (
     <Card>
@@ -138,7 +148,7 @@ const RepositoryCard = memo(function RepositoryCard({ repositoryUrl }: Repositor
             Source
           </span>
           <a
-            href={repositoryUrl}
+            href={safeHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-primary hover:underline break-all"
@@ -149,7 +159,7 @@ const RepositoryCard = memo(function RepositoryCard({ repositoryUrl }: Repositor
         </div>
 
         {/* Provider-aware action button */}
-        <a href={repositoryUrl} target="_blank" rel="noopener noreferrer">
+        <a href={safeHref} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="w-full gap-2">
             {icon}
             {label}
@@ -442,7 +452,7 @@ export function ComponentDetailClient() {
                     <div className="pt-4 border-t">
                       <span className="text-xs text-muted-foreground uppercase font-semibold">External Links</span>
                       <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        {component.links.map((link) => (
+                        {component.links.filter((l) => isValidUrl(l.url)).map((link) => (
                           <a
                             key={link.url}
                             href={link.url}

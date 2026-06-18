@@ -1,4 +1,9 @@
-import { Injectable, Logger, Optional } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  Optional,
+  BadRequestException,
+} from "@nestjs/common";
 import { AwsService } from "./aws/aws.service";
 import { GcpService } from "./gcp/gcp.service";
 import { AzureService } from "./azure/azure.service";
@@ -22,6 +27,9 @@ export class CloudSecretsService {
   /** Regex that matches GCP Secret Manager paths */
   static readonly GCP_SECRET_PATTERN =
     /^gcp:projects\/[^/]+\/secrets\/[^/]+\/versions\/[^/]+$/;
+
+  /** Maximum allowed length for a secret ref string */
+  static readonly MAX_REF_LENGTH = 1000;
 
   /** Regex that matches Azure Key Vault references (azure:{vaultUrl}:{secretName})
    *
@@ -49,6 +57,10 @@ export class CloudSecretsService {
    * @throws Error if the ref format is not recognized or the provider is unavailable
    */
   async resolve(ref: string, orgId: string): Promise<string> {
+    if (ref.length > CloudSecretsService.MAX_REF_LENGTH) {
+      throw new BadRequestException("Secret ref too long");
+    }
+
     if (CloudSecretsService.AWS_SECRET_PATTERN.test(ref)) {
       if (!this.awsService) {
         throw new Error("AWS service not available");
@@ -88,6 +100,10 @@ export class CloudSecretsService {
    * @returns true if the value matches any supported secret ref pattern
    */
   isSecretRef(value: string): boolean {
+    if (value.length > CloudSecretsService.MAX_REF_LENGTH) {
+      return false;
+    }
+
     return (
       CloudSecretsService.AWS_SECRET_PATTERN.test(value) ||
       CloudSecretsService.GCP_SECRET_PATTERN.test(value) ||

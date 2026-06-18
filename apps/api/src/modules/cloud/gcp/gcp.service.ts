@@ -1,10 +1,30 @@
-import { Injectable, Logger, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { GoogleAuth } from "google-auth-library";
 import axios from "axios";
 import { IntegrationCredentialService } from "../../integrations/integration-credential.service";
 import { IntegrationType } from "../../integrations/entities/integration-credential.entity";
 import { CloudResource } from "../interfaces/cloud-resource.interface";
 import { CloudCostEntry } from "../dto/cloud-cost.dto";
+
+const ALLOWED_GCP_DOMAINS = [
+  "cloudasset.googleapis.com",
+  "cloudbilling.googleapis.com",
+  "run.googleapis.com",
+  "secretmanager.googleapis.com",
+];
+
+function validateGcpUrl(urlString: string): URL {
+  const url = new URL(urlString);
+  if (!ALLOWED_GCP_DOMAINS.some((domain) => url.hostname.endsWith(domain))) {
+    throw new ForbiddenException(`GCP domain not allowed: ${url.hostname}`);
+  }
+  return url;
+}
 
 /**
  * Decrypted payload stored for GCP credentials.
@@ -235,7 +255,9 @@ export class GcpService {
 
     try {
       const accessToken = await auth.getAccessToken();
-      const url = `https://${config.region}-run.googleapis.com/v2/projects/${project}/locations/${config.region}/services/${config.service}`;
+      const url = validateGcpUrl(
+        `https://${config.region}-run.googleapis.com/v2/projects/${project}/locations/${config.region}/services/${config.service}`,
+      ).toString();
 
       // PATCH the Cloud Run service to update the container image.
       const patchBody = {
@@ -332,7 +354,9 @@ export class GcpService {
     }
 
     const accessToken = await auth.getAccessToken();
-    const url = `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/${secretName}/versions/${version}:access`;
+    const url = validateGcpUrl(
+      `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/${secretName}/versions/${version}:access`,
+    ).toString();
 
     const response = await axios.get<{
       payload?: { data?: string };

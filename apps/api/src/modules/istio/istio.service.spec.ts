@@ -26,6 +26,7 @@ jest.mock("@kubernetes/client-node", () => {
     CustomObjectsApi: class CustomObjectsApi {},
   };
 });
+import { BadRequestException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { IstioService } from "./istio.service";
 import { KubernetesService } from "../kubernetes/kubernetes.service";
@@ -188,6 +189,24 @@ describe("IstioService", () => {
 
       expect(mockLoadFromFile).toHaveBeenCalledWith("/path/to/kubeconfig");
       expect(mockLoadFromFile).not.toHaveBeenCalledWith("/path/to/other");
+    });
+
+    it("throws BadRequestException for array kubeconfig with non-string first element", async () => {
+      await expect(
+        service.isIstioEnabled([123 as unknown as string]),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it("throws BadRequestException for array kubeconfig with empty string first element", async () => {
+      await expect(service.isIstioEnabled([""])).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it("throws BadRequestException for non-string kubeconfig", async () => {
+      await expect(
+        service.isIstioEnabled(123 as unknown as string),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
