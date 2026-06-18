@@ -36,6 +36,7 @@
   },
   "overrides": {
     "@angular-devkit/core": "19.2.23",
+    "@opentelemetry/core": "2.8.0",
     "@nestjs/core": {
       "path-to-regexp": "8.4.0"
     },
