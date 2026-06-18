@@ -9,7 +9,7 @@ const UPSTREAM_BASE = (() => {
   return apiInternal.replace(/\/api\/?$/, "");
 })();
 
-export function middleware(req: NextRequest): NextResponse {
+export function proxy(req: NextRequest): NextResponse {
   const { pathname, search } = req.nextUrl;
   const upstreamUrl = `${UPSTREAM_BASE}${pathname}${search}`;
   return NextResponse.rewrite(new URL(upstreamUrl));

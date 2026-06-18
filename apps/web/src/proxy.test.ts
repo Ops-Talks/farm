@@ -1,5 +1,5 @@
 /**
- * Tests for src/middleware.ts.
+ * Tests for src/proxy.ts.
  *
  * Covers: URL rewriting for /api/v1/* and /admin/* paths, search-string
  * preservation, and the exported config.matcher array.
@@ -22,7 +22,7 @@ vi.mock("next/server", () => ({
   NextResponse: { rewrite: rewriteMock },
 }));
 
-import { middleware, config } from "./middleware";
+import { proxy, config } from "./proxy";
 
 // Derive the expected upstream base the same way the module does at load time,
 // so the test remains correct regardless of the CI environment.
@@ -34,14 +34,14 @@ function makeReq(pathname: string, search = ""): NextRequest {
   return { nextUrl: { pathname, search } } as unknown as NextRequest;
 }
 
-describe("middleware", () => {
+describe("proxy", () => {
   beforeEach(() => {
     rewriteMock.mockClear();
   });
 
   describe("URL rewriting", () => {
     it("rewrites /api/v1/users to the upstream API", () => {
-      middleware(makeReq("/api/v1/users"));
+      proxy(makeReq("/api/v1/users"));
 
       expect(rewriteMock).toHaveBeenCalledTimes(1);
       const url: URL = rewriteMock.mock.calls[0][0];
@@ -49,14 +49,14 @@ describe("middleware", () => {
     });
 
     it("rewrites /api/v1/auth/login to the upstream API", () => {
-      middleware(makeReq("/api/v1/auth/login"));
+      proxy(makeReq("/api/v1/auth/login"));
 
       const url: URL = rewriteMock.mock.calls[0][0];
       expect(url.toString()).toBe(`${EXPECTED_BASE}/api/v1/auth/login`);
     });
 
     it("preserves query string parameters", () => {
-      middleware(makeReq("/api/v1/catalog/components", "?limit=20&page=2"));
+      proxy(makeReq("/api/v1/catalog/components", "?limit=20&page=2"));
 
       const url: URL = rewriteMock.mock.calls[0][0];
       expect(url.toString()).toBe(
@@ -65,14 +65,14 @@ describe("middleware", () => {
     });
 
     it("rewrites /admin/queues to the upstream admin path", () => {
-      middleware(makeReq("/admin/queues"));
+      proxy(makeReq("/admin/queues"));
 
       const url: URL = rewriteMock.mock.calls[0][0];
       expect(url.toString()).toBe(`${EXPECTED_BASE}/admin/queues`);
     });
 
     it("passes an empty search string when there are no query params", () => {
-      middleware(makeReq("/api/v1/health", ""));
+      proxy(makeReq("/api/v1/health", ""));
 
       const url: URL = rewriteMock.mock.calls[0][0];
       expect(url.search).toBe("");
