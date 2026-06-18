@@ -52,6 +52,7 @@
     "axios": "1.18.0",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
+    "undici": "7.28.0",
     "release-it": {
       "undici": "6.24.1"
     },
