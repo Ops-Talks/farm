@@ -5,10 +5,6 @@
          <lastmod>2026-06-18</lastmod>
     </url>
     <url>
-         <loc>https://ops-talks.github.io/farm/iac-integration/</loc>
-         <lastmod>2026-06-18</lastmod>
-    </url>
-    <url>
          <loc>https://ops-talks.github.io/farm/api-reference/</loc>
          <lastmod>2026-06-18</lastmod>
     </url>
@@ -302,6 +298,10 @@
     </url>
     <url>
          <loc>https://ops-talks.github.io/farm/user-guide/helm-integration/</loc>
+         <lastmod>2026-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://ops-talks.github.io/farm/user-guide/iac-integration/</loc>
          <lastmod>2026-06-18</lastmod>
     </url>
     <url>
