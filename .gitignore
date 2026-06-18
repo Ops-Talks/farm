@@ -45,3 +45,6 @@ deploy/helm/**/charts/*.tgz
 
 # Knip dead-code analysis report — regenerated on each run
 knip-report.json
+
+#customs
+/docs/2026*.md
