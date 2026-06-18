@@ -46,27 +46,39 @@ Never use emojis.
 
 ## Project Structure Best Practices
 
-### **Recommended Directory Structure**
+### **Farm's Actual Directory Structure**
+
+This overrides the generic NestJS default. Feature modules live at `apps/api/src/modules/` (22 common subdirectories, 36 modules):
+
 ```
-src/
+apps/api/src/
 ├── app.module.ts
 ├── main.ts
 ├── common/
-│   ├── decorators/
-│   ├── filters/
-│   ├── guards/
-│   ├── interceptors/
-│   ├── pipes/
-│   └── interfaces/
+│   ├── adapters/          (kong.adapter.ts, etc.)
+│   ├── circuit-breaker/   (opossum circuit breaker service)
+│   ├── database/          (TypeORM datasource, seeds)
+│   ├── decorators/        (custom decorators)
+│   ├── filters/           (global exception filters)
+│   ├── guards/            (JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+│   ├── http/              (HttpService, HttpCircuitBreakerService)
+│   ├── interceptors/      (logging, transform, etc.)
+│   ├── pipes/             (validation pipes)
+│   └── ... (22 subdirs total)
 ├── config/
-├── modules/
-│   ├── auth/
-│   ├── users/
-│   └── products/
-└── shared/
-    ├── services/
-    └── constants/
-```
+│   └── configuration.ts   (Joi-validated env config)
+├── database/
+│   └── seeds/
+├── migrations/            (TypeORM migration files)
+└── modules/               (36 feature modules)
+    ├── auth/              (Passport JWT + OAuth + LDAP + Keycloak)
+    ├── catalog/
+    ├── integrations/
+    ├── finops/
+    ├── iac/
+    ├── kubernetes/
+    ├── opa/
+    └── ...
 
 ### **File Naming Conventions**
 
@@ -163,10 +175,11 @@ export class CreateUserDto {
 
 ### **TypeORM Integration**
 
-- Use TypeORM as the primary ORM for database operations
-- Define entities with proper decorators and relationships
-- Implement repository pattern for data access
-- Use migrations for database schema changes
+- TypeORM is the primary ORM (^1.0.0) with PostgreSQL
+- `autoLoadEntities: true` in the module config — entities are auto-discovered from feature modules
+- Migration files live in `apps/api/src/migrations/` and are generated with `typeorm migration:generate`
+- Use `@PrimaryGeneratedColumn('uuid')` for all ID columns
+- Column naming: pre-Phase 12 tables use camelCase (`"organizationId"`); new entities may use snake_case with `name: "organization_id"` override
 
 ```typescript
 @Entity('users')
@@ -371,25 +384,26 @@ export class AuthController {
 
 ### **Environment Configuration**
 
-- Use @nestjs/config for configuration management
-- Validate configuration at startup
-- Use different configs for different environments
+- Use `@nestjs/config` with a **Joi validation schema** in `apps/api/src/config/configuration.ts`
+- All env vars are validated at startup via `Joi.object({ ... }).required()` — the app crashes on missing required vars
+- No default values for URLs in production-grade services (e.g., `OPA_URL`, `OPENCOST_URL`)
+- Access via `ConfigService` from `@nestjs/config` directly (no wrapper)
 
 ```typescript
-@Injectable()
-export class ConfigService {
-  constructor(
-    @Inject(CONFIGURATION_TOKEN)
-    private readonly config: Configuration,
-  ) {}
+// config/configuration.ts — Joi validation schema
+export const validationSchema = Joi.object({
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  DATABASE_HOST: Joi.string().required(),
+  DATABASE_PASSWORD: Joi.string().required(),
+  JWT_SECRET: Joi.string().min(32).required(),
+  OPA_URL: Joi.string().optional(),
+  OPENCOST_URL: Joi.string().optional(),
+  // ...
+});
 
-  get databaseUrl(): string {
-    return this.config.database.url;
-  }
-
-  get jwtSecret(): string {
-    return this.config.jwt.secret;
-  }
+// Usage in services — direct injection
+constructor(private readonly configService: ConfigService) {
+  const dbUrl = this.configService.get<string>('DATABASE_HOST');
 }
 ```
 
@@ -407,21 +421,25 @@ export class ConfigService {
 
 ### **Development Setup**
 
-1. Use NestJS CLI for scaffolding: `nest generate module users`
-2. Follow consistent file organization
-3. Use TypeScript strict mode
-4. Implement comprehensive linting with ESLint
-5. Use Prettier for code formatting
+1. Run `npm install` from monorepo root (npm workspaces — never use pnpm or yarn)
+2. Follow the existing module structure: new feature modules go in `apps/api/src/modules/<name>/`
+3. TypeScript strict mode enabled via `tsconfig.base.json` (`strict: true`)
+4. ESLint via flat config (`eslint.config.mjs`) with custom `no-native-fetch` rule
+5. Always run `make check` before opening a PR (format, lint, unit tests, e2e, Playwright)
 
 ### **Code Review Checklist**
 - [ ] Proper use of decorators and dependency injection
 - [ ] Input validation with DTOs and class-validator
+- [ ] Swagger decorators updated (`@ApiOperation`, `@ApiResponse`, `@ApiBearerAuth`, `@ApiHeader`)
+- [ ] Guard chain correct — `JwtAuthGuard, OrgRequiredGuard, PermissionGuard` for org-scoped; `RolesGuard` only for global admin
+- [ ] No native `fetch()` calls (flagged by ESLint `no-native-fetch` rule)
+- [ ] External HTTP calls use `HttpCircuitBreakerService` with integration scope name
 - [ ] Appropriate error handling and exception filters
 - [ ] Consistent naming conventions
 - [ ] Proper module organization and imports
 - [ ] Security considerations (authentication, authorization, input sanitization)
 - [ ] Performance considerations (caching, database optimization)
-- [ ] Comprehensive testing coverage
+- [ ] Comprehensive testing coverage (80% threshold)
 
 ## Conclusion
 
@@ -478,6 +496,67 @@ All API routes resolve as `/api/v1/{resource}` (URI versioning, default version 
 ### TeamType Enum
 
 Valid values: `"dev"`, `"infra"`, `"security"`, `"data"`, `"platform"`, `"other"`. The value `"stream_aligned"` does not exist in this codebase.
+
+### ESLint — `no-native-fetch` Rule
+
+The custom `no-native-fetch` ESLint rule is **enabled as error** for all `apps/api/src/` files. Use `HttpCircuitBreakerService` (which wraps `HttpService` with circuit breaker) for all external HTTP calls instead of `fetch()`:
+
+```typescript
+// CORRECT
+this.http.get("integration-name", url, config);
+
+// WRONG — flagged by ESLint
+fetch(url);
+```
+
+The only exception is `opa.service.ts` which uses native `fetch()` for test interception — documented and allowed.
+
+### HttpCircuitBreakerService
+
+`HttpCircuitBreakerService` extends `HttpService` with circuit breaker (via `opossum`). Available from `@common/http` (module is `@Global()`). First argument is the integration scope name:
+
+```typescript
+this.http.get("kong-admin", url, config);
+this.http.post("slack-webhook", url, data, config);
+this.http.put("open-cost", url, data, config);
+this.http.patch("keycloak", url, data, config);
+this.http.delete("pyroscope", url, config);
+```
+
+### External Response Validation
+
+Use `validateResponse()` from `@common/http/validate-response` to validate external API responses at runtime:
+
+```typescript
+import { validateResponse } from "@common/http/validate-response";
+import { ExternalComponentDto } from "@common/http/external-response.dto";
+
+const data = validateResponse(ExternalComponentDto, raw.body);
+```
+
+### Background Jobs — BullMQ
+
+BullMQ processes background jobs via `@nestjs/bullmq`. Queue names are defined as constants; each queue has a consumer service decorated with `@Processor(queueName)`. Always add `@BullWorkerHost` for proper DI scoping.
+
+### WebSockets
+
+Socket.IO is used via `@nestjs/platform-socket.io` with `@WebSocketGateway()`. Auth is handled via a custom `WsAuthGuard` that validates JWT from the handshake/auth header.
+
+### Global ValidationPipe
+
+The `main.ts` configures a global `ValidationPipe` with:
+- `whitelist: true` — strips unknown properties
+- `forbidNonWhitelisted: true` — rejects requests with unknown properties
+- `transform: true` — auto-transforms payloads to DTO instances
+
+Always use `class-validator` decorators on DTOs for input validation. Never validate manually in service methods.
+
+### Testing Patterns
+
+- **Unit tests**: `*.spec.ts` co-located with source files. Use `Test.createTestingModule` with mocks for all dependencies.
+- **E2E tests**: `test/*.e2e-spec.ts` using `supertest`. The test app boots a full NestJS `TestingModule` with `postgresql-test-container`.
+- Coverage threshold: **80%** across branches, functions, lines, statements.
+- 5 pre-existing infrastructure-dependent test suites are known to time out (0 actual failures) — these are not regressions.
 
 ---
 
