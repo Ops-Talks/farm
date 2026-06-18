@@ -7,14 +7,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Capture the callback that initWebVitals() passes to each observer so tests
 // can invoke it directly to simulate a metric being reported.
 const mockOnCLS = vi.fn();
-const mockOnFID = vi.fn();
 const mockOnLCP = vi.fn();
 const mockOnTTFB = vi.fn();
 const mockOnINP = vi.fn();
 
 vi.mock('web-vitals', () => ({
   onCLS: (...args: unknown[]) => mockOnCLS(...args),
-  onFID: (...args: unknown[]) => mockOnFID(...args),
   onLCP: (...args: unknown[]) => mockOnLCP(...args),
   onTTFB: (...args: unknown[]) => mockOnTTFB(...args),
   onINP: (...args: unknown[]) => mockOnINP(...args),
@@ -67,11 +65,10 @@ describe('initWebVitals', () => {
     Object.defineProperty(global, 'window', { value: {}, writable: true });
   });
 
-  it('registers all five Web Vitals observers on mount', () => {
+  it('registers all four Web Vitals observers on mount', () => {
     initWebVitals();
 
     expect(mockOnCLS).toHaveBeenCalledOnce();
-    expect(mockOnFID).toHaveBeenCalledOnce();
     expect(mockOnLCP).toHaveBeenCalledOnce();
     expect(mockOnTTFB).toHaveBeenCalledOnce();
     expect(mockOnINP).toHaveBeenCalledOnce();
@@ -86,7 +83,6 @@ describe('initWebVitals', () => {
     initWebVitals();
 
     expect(mockOnCLS).not.toHaveBeenCalled();
-    expect(mockOnFID).not.toHaveBeenCalled();
     expect(mockOnLCP).not.toHaveBeenCalled();
     expect(mockOnTTFB).not.toHaveBeenCalled();
     expect(mockOnINP).not.toHaveBeenCalled();
@@ -148,21 +144,6 @@ describe('initWebVitals', () => {
     expect(mockSpan.setAttributes).toHaveBeenCalledWith({
       'web_vital.name': 'TTFB',
       'web_vital.value': 300,
-      'web_vital.rating': 'good',
-    });
-    expect(mockSpan.end).toHaveBeenCalledOnce();
-  });
-
-  it('creates a span with correct attributes when a FID metric fires', () => {
-    initWebVitals();
-
-    const fidCallback = mockOnFID.mock.calls[0]?.[0] as (m: unknown) => void;
-    fidCallback(fakeMetric('FID', 45, 'good'));
-
-    expect(mockTracer.startSpan).toHaveBeenCalledWith('web_vitals.fid');
-    expect(mockSpan.setAttributes).toHaveBeenCalledWith({
-      'web_vital.name': 'FID',
-      'web_vital.value': 45,
       'web_vital.rating': 'good',
     });
     expect(mockSpan.end).toHaveBeenCalledOnce();

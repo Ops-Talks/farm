@@ -14,7 +14,7 @@
  */
 
 import { trace } from '@opentelemetry/api';
-import { onCLS, onFID, onLCP, onTTFB, onINP } from 'web-vitals';
+import { onCLS, onLCP, onTTFB, onINP } from 'web-vitals';
 import type { Metric } from 'web-vitals';
 
 const TRACER_NAME = 'farm-web';
@@ -37,7 +37,7 @@ function reportMetric(metric: Metric): void {
 }
 
 /**
- * Registers all five Core Web Vitals observers and wires them up to OTel.
+ * Registers all four Core Web Vitals observers and wires them up to OTel.
  *
  * Safe to call multiple times — the `web-vitals` library itself de-dupes
  * observers, so only the first registration per metric takes effect.
@@ -48,7 +48,6 @@ export function initWebVitals(): void {
   if (typeof window === 'undefined') return;
 
   onCLS(reportMetric);
-  onFID(reportMetric);
   onLCP(reportMetric);
   onTTFB(reportMetric);
   onINP(reportMetric);
