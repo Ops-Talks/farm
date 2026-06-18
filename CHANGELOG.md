@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.25.27] - 2026-06-17
 
-### Changed
-- No release notes could be derived automatically from commits since v0.25.26.
+### Fixed
+- **ci**: Fix versions (#233).
 
 ## [0.25.26] - 2026-06-17
 
