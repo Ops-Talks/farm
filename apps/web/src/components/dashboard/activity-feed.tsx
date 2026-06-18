@@ -138,12 +138,12 @@ export function ActivityFeed() {
                 key={item.id}
                 className="flex items-start justify-between gap-2 text-sm"
               >
-                <div className="flex flex-col gap-0.5">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <Badge variant={eventVariant(item.event)} className="text-xs">
+                    <Badge variant={eventVariant(item.event)} className="shrink-0 text-xs">
                       {item.label}
                     </Badge>
-                    <span className="font-medium">{item.resource}</span>
+                    <span className="truncate font-medium">{item.resource}</span>
                   </div>
                 </div>
                 <span className="shrink-0 text-xs text-muted-foreground">

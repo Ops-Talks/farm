@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
       {/* Quick stats */}
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
           Overview
         </h2>
         <QuickStats />
@@ -30,13 +30,13 @@ export default function DashboardPage() {
       {/* System health and integration health side by side */}
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             System Health
           </h2>
           <HealthPanel />
         </section>
         <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Integrations
           </h2>
           <IntegrationHealthCard />
@@ -46,13 +46,13 @@ export default function DashboardPage() {
       {/* Activity feed and queue panel side by side */}
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Live Activity
           </h2>
           <ActivityFeed />
         </section>
         <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Queues
           </h2>
           <QueuePanel />
@@ -61,7 +61,7 @@ export default function DashboardPage() {
 
       {/* Recent pipelines widget */}
       <section>
-        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
           Pipelines
         </h2>
         <RecentPipelinesWidget />

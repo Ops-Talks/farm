@@ -32,7 +32,7 @@ export function IntegrationHealthCard() {
                   <XCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 )}
                 <span className={`text-sm ${configured ? "text-foreground" : "text-muted-foreground"}`}>
-                  {label}
+                  {label} <span className="sr-only">{configured ? "— configured" : "— not configured"}</span>
                 </span>
               </div>
             );

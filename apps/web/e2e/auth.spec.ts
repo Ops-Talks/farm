@@ -39,6 +39,15 @@ test("user can log in with valid credentials and is redirected to dashboard", as
     }),
   );
 
+  // QueuePanel calls queues.list() which expects an array, not { data, total }.
+  await page.route("**/api/v1/queues", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    }),
+  );
+
   // Stub endpoints that require a specific shape to avoid render crashes.
   await page.route("**/api/v1/setup/checklist", (route) =>
     route.fulfill({
