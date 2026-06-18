@@ -1,29 +1,64 @@
+# Farm Monorepo — Agent Instructions
 
-## 2026-06-11 21:48 — E-156 HTTP Client Consistency (Phase 55)
+## Build & Test
 
-### Completed (in this session)
-- **S644**: Created `HttpCircuitBreakerService` wrapping `HttpService` with `CircuitBreakerService.fire()`. Promoted `no-native-fetch` ESLint rule from `warn` to `error` (with `opa.service.ts` exception documented). Added `HttpCircuitBreakerService` as provider+export in `http.module.ts`.
-- **S645**: All 17 native-fetch services already converged (checked each). Fixed stale comment in `kong.adapter.ts`. Only `opa.service.ts` remains as documented `fetch()` exception.
-- **S646**: Created `validate-response.ts` (plainToInstance + validateSync), `external-response.dto.ts` (4 DTOs), `validate-response.spec.ts` (5 tests). Applied response validation in `slo-calculator.service.ts`, `open-cost.service.ts`, `elastic-stack.service.ts`, `opa.service.ts`.
-- **S647**: Removed `?? "http://localhost:8181"` from `opa.service.ts` and `"http://localhost:9090"` default from `open-cost.service.ts`. Changed `OPENCOST_URL`/`OPA_URL` Joi validation from `.optional().default("http://localhost:9...")` to `.optional()` (no default). Fixed pre-existing constructor-brace syntax error in `opa.service.ts:46`.
-- **S648**: Migrated `keycloak-sync.service.ts` and `webhook.service.ts` from `HttpService` to `HttpCircuitBreakerService`. Updated both spec files. Confirmed 3 other services (istio-metrics, linkerd-metrics, pyroscope-init) are internal-only and don't need circuit breaker. All 3477 tests pass.
-- **ROADMAP.md**: Updated E-156 from `TODO` to `DONE`.
+- Install: `npm install` (npm workspaces — never pnpm or yarn)
+- Dev API: `npm run start:dev --workspace=apps/api`
+- Dev Web: `npm run dev --workspace=apps/web`
+- Full check: `make check` — runs format, lint, unit tests, e2e, Playwright
+- API lint: `npm run lint --workspace=apps/api`
+- Web lint: `npm run lint --workspace=apps/web`
+- API unit: `npm run test --workspace=apps/api` (`.spec.ts`)
+- API e2e: `npm run test:e2e --workspace=apps/api` (`.e2e-spec.ts`)
+- Web unit: `npm run test --workspace=apps/web` (Vitest, `*.test.tsx`)
+- Web e2e: `npm run test:e2e --workspace=apps/web` (Playwright)
+- Helm lint: `make helm-lint`
+- Coverage threshold: 80% (branches, functions, lines, statements)
 
-### Key files changed
-- `apps/api/src/common/http/http-circuit-breaker.service.ts` — new wrapper service
-- `apps/api/src/common/http/http.module.ts` — exports HttpCircuitBreakerService
-- `apps/api/src/common/http/validate-response.ts` — new response validation utility
-- `apps/api/src/common/http/external-response.dto.ts` — 4 response DTOs
-- `apps/api/src/config/configuration.ts` — removed OPA/OpenCost URL defaults
-- `apps/api/src/modules/opa/opa.service.ts` — removed fallback URL, fixed syntax error
-- `apps/api/src/modules/finops/open-cost.service.ts` — removed fallback URL
-- `apps/api/src/modules/auth/keycloak-sync.service.ts` — migrated to HttpCircuitBreakerService
-- `apps/api/src/modules/integrations/webhook.service.ts` — migrated to HttpCircuitBreakerService
-- `apps/api/eslint.config.mjs` — no-native-fetch promoted to error
-- `ROADMAP.md` — E-156 done
+## Monorepo Structure
 
-### Key context
-- `HttpCircuitBreakerService` requires `integration: string` scope as first arg: `get("integration", url, config)`, `post("integration", url, data, config)`, etc.
-- `HttpModule` is `@Global()` — imported once in `app.module.ts:25`, available everywhere.
-- `opa.service.ts` is the only documented `fetch()` exception (needs native fetch for test interception).
-- 5 pre-existing infrastructure-dependent test suite timeouts (0 actual failures).
+```
+apps/api/     — NestJS 11 (ES2023, Node 26)
+apps/web/     — Next.js 16 App Router (Tailwind v4 + shadcn/ui)
+packages/types/ — @farm/types (shared enums)
+```
+
+API modules at `apps/api/src/modules/` (22 common subdirs, 36 modules).
+Web components at `apps/web/src/` (app/, components/, hooks/, lib/).
+
+## Key Conventions
+
+- **Guard chain**: `@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)` + `@RequiresPermission(Permission.X)`.
+  `RolesGuard` only for global admin ops, never with `PermissionGuard`.
+- **External HTTP**: Use `HttpCircuitBreakerService` (first arg = integration scope name).
+  Native `fetch()` is flagged by ESLint `no-native-fetch` rule (error in src/).
+  Exception: `opa.service.ts` (test interception, documented).
+- **Response validation**: `validateResponse(ExternalDto, raw)` from `@common/http/validate-response`.
+- **API routes**: `/api/v1/{resource}` (URI versioning v1, prefix `api`).
+- **Swagger**: Mandatory on every controller change — `@ApiOperation`, `@ApiResponse`, `@ApiBearerAuth`, `@ApiHeader`.
+- **DB**: TypeORM + PostgreSQL. `@PrimaryGeneratedColumn('uuid')`. Mix of camelCase (old) and snake_case (new) column naming.
+- **Validation**: Global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`). Use `class-validator` on DTOs.
+- **Config**: Joi schema in `apps/api/src/config/configuration.ts`. No fallback URLs for external services.
+- **Forms (web)**: `react-hook-form` + `zodResolver`. Server state via `@tanstack/react-query` (`api-client.ts`).
+- **RBAC (web)**: `usePermission(Permission.X)` from `@/hooks/use-permission`. Import enums from `@farm/types`.
+- **BullMQ**: `@nestjs/bullmq` with `@BullWorkerHost` decorator for worker DI scoping.
+
+## Documentation Standards
+
+Review and maintain these doc types with the checks listed:
+
+- **MkDocs** (`docs/`): Every `.md` in nav must exist; no orphaned files outside nav; no broken internal links; mkdocs.yml nav entries use correct paths.
+- **Swagger/OpenAPI**: Every controller needs `@ApiOperation`, `@ApiResponse(200/401/403)`, `@ApiBearerAuth` (if JWT), `@ApiHeader('x-organization-id')` (if org-scoped). DTOs need `@ApiProperty` with `enum:` for enum fields.
+- **Helm docs**: `deploy/helm/*/README.md` parameters table must match `values.yaml`. `values.schema.json` must be in sync.
+- **Code comments**: Remove stale/outdated comments. TODOs must have an owner or issue reference. Public APIs should have JSDoc.
+- **READMEs**: Root and per-app READMEs must have accurate install/build instructions, badges, and version references.
+- **CHANGELOG / ROADMAP**: New features/breaking changes must have entries; format follows keep-a-changelog convention.
+
+Use `scripts/docs-lint/` tools when available for automated checks.
+
+## Git & PRs
+
+- Branch from `main`, PR to `main`
+- Run `make check` before every PR
+- Commit messages: conventional commits preferred
+- AGENTS.md is for agent instructions — not a session log. Update as conventions change.

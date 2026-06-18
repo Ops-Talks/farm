@@ -100,7 +100,7 @@ nav:
     - OPA Policy Engine: user-guide/opa-integration.md
     - Container Registry: user-guide/container-registry.md
     - IaC Visibility: user-guide/iac.md
-    - IaC Integration: iac-integration.md
+    - IaC Integration: user-guide/iac-integration.md
     - FinOps and Cost Management: user-guide/finops.md
     - SLO Management: user-guide/slos.md
     - Incident Management: user-guide/incidents.md

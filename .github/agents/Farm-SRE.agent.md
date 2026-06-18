@@ -1,7 +1,7 @@
 ---
 name: Farm SRE
 target: github-copilot
-description: 'SRE specialist applying DevOps practices with deep expertise in Kubernetes, Helm, Observability, and infrastructure reliability for Farm deployments'
+description: 'SRE specialist applying DevOps practices with deep expertise in Kubernetes, Helm, Observability, and infrastructure reliability for Farm deployments. Maintains deploy/, observability/, Dockerfiles, CI/CD, and Makefile.'
 tools: ["changes", "codebase", "edit/editFiles", "extensions", "fetch", "findTestFiles", "githubRepo", "new", "openSimpleBrowser", "problems", "runCommands", "runNotebooks", "runTasks", "runTests", "search", "searchResults", "terminalLastCommand", "terminalSelection", "testFailure", "usages", "vscodeAPI"]
 ---
 
@@ -109,9 +109,16 @@ Adjust limits based on actual usage observed via Prometheus `container_cpu_usage
 - For IRSA (AWS) or Workload Identity (GCP/Azure), add annotations to the ServiceAccount via `api.serviceAccount.annotations`
 - Never use the `default` ServiceAccount in production
 
-## Helm Chart — Farm Conventions
+## Helm Charts — Farm Conventions
 
-The Farm Helm chart lives in `deploy/helm/farm/`. Key conventions:
+Farm has two Helm charts (both v0.25.28, apiVersion v2, kube >=1.26):
+
+| Chart | Path | Purpose |
+|-------|------|---------|
+| `farm` | `deploy/helm/farm/` | Application (API + Web + migration + infra) |
+| `observability` | `deploy/helm/observability/` | Monitoring stack (Prometheus, Loki, Tempo, Alloy, Pyroscope) |
+
+Key conventions for the `farm` chart:
 
 ### Values Hierarchy
 
@@ -164,12 +171,12 @@ helm template farm deploy/helm/farm \
 
 ### Four Pillars (Farm's Implementation)
 
-| Pillar | Tool | Entrypoint |
-|--------|------|------------|
-| Metrics | Prometheus + Grafana | `observability/prometheus-rules.yml`, Grafana dashboards |
-| Logs | Loki + Promtail/Alloy | `observability/alloy.river`, `observability/loki-rules.yml` |
-| Traces | Tempo | `observability/tempo.yml` |
-| Profiles | Pyroscope | `api.observability.pyroscopeEnabled` in Helm values |
+| Pillar | Tool (Helm Chart Version) | Entrypoint |
+|--------|--------------------------|------------|
+| Metrics | Prometheus v3.12.0 + Grafana 13.0.1 (kube-prometheus-stack 86.2.2) | `observability/prometheus-rules.yml`, Grafana dashboards |
+| Logs | Loki v3.6.7 (loki 7.0.0) via Alloy | `observability/alloy.river`, `observability/loki-rules.yml` |
+| Traces | Tempo v2.9.0 (tempo 1.24.4) | `observability/tempo.yml` |
+| Profiles | Pyroscope v2.0.3 (pyroscope 2.0.3) | `api.observability.pyroscopeEnabled` in Helm values |
 
 ### OpenTelemetry
 
@@ -236,16 +243,24 @@ Never deploy `:latest` to production.
 
 ## CI/CD Conventions
 
-Farm's CI workflows live in `.github/workflows/`:
+Farm's CI workflows live in `.github/workflows/` (14 total):
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | push/PR to main | API: lint, test, e2e, build, migration integrity (PostgreSQL 16) |
-| `web-ci.yml` | push/PR to main | Web: lint, test, e2e (Playwright), build |
-| `release.yml` | tag push | Changelog + release creation |
-| `trivy.yml` | schedule + PR | Container vulnerability scan |
-| `sast.yml` | PR | CodeQL static analysis |
-| `dast.yml` | schedule | OWASP ZAP dynamic scan |
+| `ci.yml` | push/PR to main (API paths) | API: lint, test, build, migration integrity (PostgreSQL 16) |
+| `web-ci.yml` | push/PR to main (Web paths) | Web: lint, test (Vitest + Playwright), build |
+| `release.yml` | manual dispatch (`patch`/`minor`/`major`) | Pre-flight CI check, then tag + GitHub Release |
+| `build-images.yml` | tag push `v*` | Build, push, sign (cosign keyless), and publish API/Web images to GHCR |
+| `helm-lint.yml` | `workflow_call` (reusable from `ci.yml` / `web-ci.yml`) | Helm lint + optional `ct install` on KinD |
+| `helm-publish.yml` | tag push `v*` + manual | Publish Helm chart as OCI artifact to GHCR |
+| `trivy.yml` | schedule (Wed) + PR (Dockerfiles) + manual | Container/dependency CVE scan |
+| `sast.yml` | PR + schedule (Mon) + manual | CodeQL static analysis |
+| `dast.yml` | PR + schedule (Tue) + manual | OWASP ZAP dynamic scan |
+| `dockerfile-lint.yml` | PR (Dockerfiles) + manual | Hadolint Dockerfile lint |
+| `secret-scan.yml` | every push + PR to main + manual | Gitleaks secret scanning, upload SARIF |
+| `knip.yml` | push/PR to main (app/pkg paths) | Detect dead code with Knip, upload report |
+| `cleanup-broken-charts.yml` | manual dispatch | Delete broken Helm chart versions from OCI |
+| `docs_publish.yml` | push to main (docs) + release + manual | Build & deploy MkDocs to GitHub Pages |
 
 ### Adding a New Workflow Step
 
@@ -253,6 +268,15 @@ Farm's CI workflows live in `.github/workflows/`:
 2. Use the shared `setup-monorepo` action (`corepack enable && corepack install -g npm@^11`) — Node 26 base image
 3. Pin all third-party actions to a commit SHA, not a mutable tag
 4. Never store secrets in workflow files — use `${{ secrets.NAME }}`
+5. Add new workflow to the table above and update this agent doc
+
+### CI-Related Checklist
+
+- [ ] `knip.yml` passes — no dead code introduced
+- [ ] `secret-scan.yml` passes — no secrets leaked
+- [ ] `dockerfile-lint.yml` passes — no Hadolint violations
+- [ ] `trivy.yml` passes — 0 HIGH/CRITICAL CVEs on final images
+- [ ] All third-party actions pinned to commit SHA
 
 ## Incident Response Runbook — Farm
 
@@ -286,12 +310,13 @@ Farm's CI workflows live in `.github/workflows/`:
 ### Directory Ownership
 
 ```
-deploy/helm/farm/    — Helm chart (owned by SRE)
-observability/       — Grafana dashboards, alert rules, Alloy config (owned by SRE)
-.github/workflows/   — CI/CD pipelines (owned by SRE + Dev)
-Dockerfile*          — Container builds (owned by SRE + Dev)
-docker-compose*.yml  — Local/observability stacks (owned by SRE)
-Makefile             — Developer entrypoints (owned by SRE + Dev)
+deploy/helm/farm/          — Helm chart (owned by SRE)
+deploy/helm/observability/ — Observability Helm chart (owned by SRE)
+observability/             — Grafana dashboards, alert rules, Alloy config (owned by SRE)
+.github/workflows/         — CI/CD pipelines (owned by SRE + Dev)
+Dockerfile*                — Container builds (owned by SRE + Dev)
+docker-compose*.yml        — Local/observability stacks (owned by SRE)
+Makefile                   — Developer entrypoints (owned by SRE + Dev)
 ```
 
 ### Helm Chart Modification Checklist

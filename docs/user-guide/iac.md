@@ -2,7 +2,7 @@
 
 Farm's IaC section gives platform engineers and DevOps teams a single place to track the state of every Terraform, OpenTofu, and Pulumi stack in the organization. Rather than switching between Terraform Cloud workspaces, Atlantis logs, and pull-request comments to understand what changed and when, you can see run outcomes, resource change counts, module version drift, and the full dependency graph of your infrastructure from the Farm portal.
 
-The IaC section is populated by two companion tools — **Cultivator**, which reports plan and apply outcomes from CI, and **Agronomist**, which scans module version pins and reports drift. Data arrives via authenticated ingest endpoints; no polling or cloud-provider credentials are required on the Farm server side. See [IaC Integration: Cultivator and Agronomist](../iac-integration.md) for setup instructions.
+The IaC section is populated by two companion tools — **Cultivator**, which reports plan and apply outcomes from CI, and **Agronomist**, which scans module version pins and reports drift. Data arrives via authenticated ingest endpoints; no polling or cloud-provider credentials are required on the Farm server side. See [IaC Integration: Cultivator and Agronomist](iac-integration.md) for setup instructions.
 
 ## Navigation
 
@@ -143,7 +143,7 @@ Linking stacks and modules to catalog components is the primary way to give your
 
 The dashboard and detail pages described above are only as current as the data that has been pushed into Farm. To populate them, you need to configure Cultivator (for run reporting and stack discovery) and optionally Agronomist (for module drift). Both tools authenticate to Farm using a shared `IAC_INGEST_TOKEN` and post to dedicated ingest endpoints.
 
-Full setup instructions, including GitHub Actions workflow examples and request payload references, are in the [IaC Integration: Cultivator and Agronomist](../iac-integration.md) guide.
+Full setup instructions, including GitHub Actions workflow examples and request payload references, are in the [IaC Integration: Cultivator and Agronomist](iac-integration.md) guide.
 
 !!! tip "Related features"
     For tracking the deployment health of the services that these stacks provision, see [Observability](observability.md). For coordinating the human response when a failed run causes an incident, see [Incident Management](incidents.md).
