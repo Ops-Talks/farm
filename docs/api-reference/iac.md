@@ -27,7 +27,7 @@ The IaC API uses two distinct authentication mechanisms depending on the caller.
 
 All `GET` endpoints require a JWT issued by the Farm auth service. Pass the token in the `Authorization` header:
 
-```
+```yaml
 Authorization: Bearer <jwt>
 ```
 
@@ -35,7 +35,7 @@ Authorization: Bearer <jwt>
 
 Ingest endpoints are called by automated tooling (Cultivator, Agronomist, CI pipelines) and do not use JwtAuthGuard. Instead they validate a static bearer token configured on the API server via the `IAC_INGEST_TOKEN` environment variable.
 
-```
+```yaml
 Authorization: Bearer <iac-ingest-token>
 ```
 
@@ -327,3 +327,6 @@ Returns `404` if no stack with the given ID exists.
 | `401` | `Authorization` header is missing or the token does not match `IAC_INGEST_TOKEN` (ingest endpoints only) |
 | `404` | The requested stack UUID does not exist |
 | `500` | Unexpected server error |
+
+
+

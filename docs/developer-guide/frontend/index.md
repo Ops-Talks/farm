@@ -21,7 +21,7 @@ This section covers the Next.js frontend of Farm, including its architecture, co
 
 ## Project Structure
 
-```
+```text
 web/
   src/
     app/                   # Next.js App Router pages
@@ -70,3 +70,5 @@ make web-dev
 # Run frontend checks
 make check-front
 ```
+
+

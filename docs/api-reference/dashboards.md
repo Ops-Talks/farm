@@ -4,7 +4,7 @@ The Dashboard API provides endpoints for creating custom dashboards with configu
 
 ## Base URL
 
-```
+```text
 /api/v1/dashboards
 ```
 
@@ -175,3 +175,5 @@ Returns data appropriate for the widget type (mock data in development).
 | `alert_summary`    | Active alerting rules summary      |
 | `team_activity`    | Team activity feed                 |
 | `uptime_chart`     | Uptime percentage chart            |
+
+

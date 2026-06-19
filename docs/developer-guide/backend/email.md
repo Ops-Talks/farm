@@ -162,3 +162,5 @@ The email service is designed to never break the application:
 - **NotificationProcessor without EmailService**: Logs a warning, skips the job.
 
 Use `emailService.isEnabled()` to check if email sending is operational.
+
+

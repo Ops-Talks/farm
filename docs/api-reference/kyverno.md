@@ -10,7 +10,7 @@ These endpoints expose Kyverno PolicyReport data from the connected Kubernetes c
 
 ### List Namespace PolicyReports
 
-```
+```http
 GET /kubernetes/policy-reports?namespace={namespace}
 ```
 
@@ -47,7 +47,7 @@ Lists all `PolicyReport` resources in the specified namespace.
 
 ### List ClusterPolicyReports
 
-```
+```http
 GET /kubernetes/cluster-policy-reports
 ```
 
@@ -92,3 +92,5 @@ All endpoints follow the standard Farm error format:
 ```
 
 If Kyverno CRDs are not installed (HTTP 404 from cluster), the API returns an empty array instead of an error.
+
+

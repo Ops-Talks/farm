@@ -12,7 +12,7 @@ Base path: `/api/v1`
 
 ### List indices linked to a component
 
-```
+```http
 GET /components/:id/elasticsearch-indices
 ```
 
@@ -46,7 +46,7 @@ Returns all Elasticsearch index links registered for the given catalog component
 
 ### Live stats for all indices linked to a component
 
-```
+```http
 GET /components/:id/elasticsearch-indices/stats
 ```
 
@@ -83,7 +83,7 @@ Returns live statistics fetched directly from the Elasticsearch cluster for each
 
 ### Link an index to a component
 
-```
+```http
 POST /components/:id/elasticsearch-indices
 ```
 
@@ -117,7 +117,7 @@ Links an Elasticsearch index pattern to a catalog component.
 
 ### Remove an index link
 
-```
+```http
 DELETE /components/:id/elasticsearch-indices/:indexId
 ```
 
@@ -136,7 +136,7 @@ Removes an Elasticsearch index link from a catalog component. Does not modify th
 
 ## Admin cross-component overview
 
-```
+```http
 GET /elasticsearch/indices
 ```
 
@@ -200,3 +200,5 @@ All endpoints return errors in the standard Farm error envelope:
 | `401` | Missing or invalid JWT token |
 | `403` | Insufficient role (admin-only endpoint accessed by non-admin) |
 | `404` | Component or index link not found |
+
+

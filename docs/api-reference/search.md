@@ -77,3 +77,5 @@ Returns an array of `QuickSearchResult` objects ordered by relevance.
 | Status | Cause |
 |--------|-------|
 | 401 | Missing or invalid JWT token |
+
+

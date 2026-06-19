@@ -100,3 +100,6 @@ curl -X DELETE http://localhost:3000/api/v1/docs/{id} \
 ```
 
 Returns `204 No Content` on success.
+
+
+

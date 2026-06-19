@@ -4,7 +4,7 @@ This document describes the architecture of the `CloudModule` for contributors a
 
 ## Module Location
 
-```
+```text
 apps/api/src/modules/cloud/
   aws/
     aws.service.ts            — AWS SDK interactions (discovery, cost, ECS, Lambda, Secrets Manager)
@@ -39,7 +39,7 @@ apps/api/src/modules/cloud/
 
 ## Architecture
 
-```
+```text
 CloudResourceController
   ├─ GET  /api/v1/cloud/resources       → CloudResourceService.discoverAll / discoverByProvider
   ├─ GET  /api/v1/cloud/cost            → CloudCostService.getAggregatedCost
@@ -167,3 +167,5 @@ Unit tests use `jest.fn()` mock factories for all SDK clients. The pattern mirro
 4. `jest.clearAllMocks()` in `beforeEach` and `afterEach`.
 
 All provider services are designed to return empty results (not throw) when credentials are missing — verify this behavior with explicit test cases.
+
+

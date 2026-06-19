@@ -39,7 +39,7 @@ Only one Keycloak credential per organization is supported.
 
 Once configured, users can log in via Keycloak SSO from the login page. Share this deep-link with your team:
 
-```
+```text
 https://your-farm-instance.com/login?keycloakOrgId={orgId}
 ```
 
@@ -59,7 +59,7 @@ Farm syncs Keycloak Groups to Farm Teams automatically every hour. Groups withou
 
 To trigger a manual sync, click **Sync Now** on the Keycloak integration page (admin only), or call:
 
-```
+```http
 POST /api/v1/auth/keycloak/sync/:orgId
 ```
 
@@ -82,3 +82,5 @@ At execution time, Farm fetches a `client_credentials` grant for `my-service-cli
 No additional server-side environment variables are required — Keycloak config is stored per-organization in the database (encrypted via AES-256-GCM).
 
 The frontend login button is always visible. To pre-fill the org ID in the deep-link, append `?keycloakOrgId={orgId}` to the login URL.
+
+

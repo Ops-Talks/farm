@@ -157,3 +157,5 @@ Refer to the setup guide for the complete list of adapter-specific environment v
 
 - [Container Registry API Reference](../api-reference/registry.md)
 - [Catalog](catalog.md)
+
+

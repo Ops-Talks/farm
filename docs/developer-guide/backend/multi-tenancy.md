@@ -12,11 +12,47 @@ Farm uses a multi-tenant model where a single deployment serves multiple isolate
 
 The `organizationId` foreign key on `Component`, `Team`, `Environment`, `AuditLog`, `Documentation`, `ApiSpec`, and `GatewayRoute` is **nullable and indexed**. A `null` value means the resource is not scoped to any organization.
 
+```mermaid
+erDiagram
+    User ||--o{ UserOrganization : belongs
+    UserOrganization }|--|| Organization : belongs
+
+    Organization ||--o{ Component : owns
+    Organization ||--o{ Team : owns
+    Organization ||--o{ Environment : owns
+    Organization ||--o{ Documentation : owns
+    Organization ||--o{ ApiSpec : owns
+    Organization ||--o{ GatewayRoute : owns
+    Organization ||--o{ AuditLog : owns
+
+    User {
+        uuid id PK
+        string username
+        string email
+    }
+
+    Organization {
+        uuid id PK
+        string slug
+    }
+
+    UserOrganization {
+        uuid userId FK
+        uuid orgId FK
+        enum role
+    }
+```
+
 ## Organization Lifecycle
 
-```
-Create organization  -->  Invite members  -->  Assign roles  -->  Scope resources
-(POST /api/v1/organizations)                  (OrgRole enum)     (X-Organization-Id header)
+```mermaid
+flowchart LR
+    A["POST /api/v1/organizations<br/>Create org"] --> B["Invite members"]
+    B --> C["Assign roles<br/>(OrgRole enum)"]
+    C --> D["Scope resources<br/>(X-Organization-Id header)"]
+
+    style A fill:#e1f5fe
+    style D fill:#e8f5e9
 ```
 
 1. A user creates an organization. The creator is automatically assigned the `OWNER` role.
@@ -42,6 +78,36 @@ Example:
 @Roles('admin')
 @Delete(':id')
 remove(@Param('id') id: string) { ... }
+```
+
+```mermaid
+flowchart TD
+    subgraph "Tier 1: Global Roles"
+        SA["Super Admin<br/>Full platform access"]
+        Admin["Admin<br/>Platform management"]
+        User["User<br/>Basic access"]
+    end
+
+    subgraph "Tier 2: Org Roles"
+        Owner["Owner<br/>Org management"]
+        Admin2["Admin<br/>Org administration"]
+        Member["Member<br/>Standard access"]
+        Viewer["Viewer<br/>Read-only access"]
+    end
+
+    subgraph "Tier 3: Permissions"
+        P1["Permission.CATALOG_READ"]
+        P2["Permission.CATALOG_CREATE"]
+        P3["Permission.DEPLOYMENT_CREATE"]
+        P4["Permission.TEAM_MANAGE"]
+        P5["... (36 permissions total)"]
+    end
+
+    SA -.-> Admin
+    Admin -.-> User
+    Owner --> Admin2
+    Admin2 --> Member
+    Member --> Viewer
 ```
 
 ### Tier 2 - Org Roles
@@ -328,3 +394,5 @@ The `OrgSwitcher` dropdown in the sidebar lets users switch between their organi
 | `PermissionGuard` | `@RequiresPermission(Permission.X)` | Fine-grained permission checks on resource endpoints (Phase 46) |
 
 **Never** combine `RolesGuard` and `PermissionGuard` on the same endpoint — they serve different concerns.
+
+

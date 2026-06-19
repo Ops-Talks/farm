@@ -165,7 +165,7 @@ Downloads an analytics report as a CSV file.
 
 ### Response Headers
 
-```
+```text
 Content-Type: text/csv
 Content-Disposition: attachment; filename="farm-catalog-2026-03-18.csv"
 ```
@@ -205,3 +205,5 @@ Top Components,payment-api,31
 Action Breakdown,UPDATE,180
 Action Breakdown,CREATE,120
 ```
+
+

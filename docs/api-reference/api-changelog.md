@@ -17,13 +17,13 @@ response header.
 
 Update your base URL from:
 
-```
+```text
 https://your-farm-host/api
 ```
 
 to:
 
-```
+```text
 https://your-farm-host/api/v1
 ```
 
@@ -31,3 +31,5 @@ https://your-farm-host/api/v1
 
 All resource endpoints follow the pattern `GET|POST|PATCH|DELETE /api/v1/{resource}`.
 See the full OpenAPI specification at `/api/docs` or `apps/api/openapi.json`.
+
+

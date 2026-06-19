@@ -161,7 +161,7 @@ npm run lint
 
 New features should follow the existing module structure:
 
-```
+```text
 apps/api/src/modules/
   new-feature/
     new-feature.module.ts
@@ -241,3 +241,5 @@ Include the following:
 ## License
 
 By contributing to Farm, you agree that your contributions will be licensed under the AGPL-3.0 license.
+
+

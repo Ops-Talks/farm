@@ -48,6 +48,47 @@ The frontend lives in `apps/web/` within the monorepo alongside the NestJS backe
 
 ## Application Architecture
 
+```mermaid
+graph TB
+    subgraph "Next.js 16 App Router"
+        Layout["Root Layout<br/>(Sidebar, Auth, Org Context)"]
+
+        subgraph "Pages"
+            Login["/login"]
+            Dashboard["/dashboard"]
+            Catalog["/catalog"]
+            Pipelines["/pipelines"]
+            More["/observability, /deployments, ..."]
+        end
+
+        subgraph "Components"
+            UI["shadcn/ui Components<br/>Buttons, Cards, Forms, Tables"]
+            DashboardComp["Dashboard Widgets<br/>HealthPanel, QuickStats, QueuePanel"]
+        end
+
+        subgraph "State & Data"
+            ReactQuery["@tanstack/react-query<br/>Server state"]
+            AuthCtx["AuthContext<br/>User & JWT"]
+            OrgCtx["OrganizationContext<br/>Org switching"]
+        end
+    end
+
+    Client["Browser"] --> Layout
+    Layout --> Login
+    Layout --> Dashboard
+    Layout --> Catalog
+    Layout --> Pipelines
+    Layout --> More
+
+    Dashboard --> DashboardComp
+    DashboardComp --> UI
+    DashboardComp --> ReactQuery
+    DashboardComp --> AuthCtx
+    DashboardComp --> OrgCtx
+
+    ReactQuery -->|"api-client.ts"| API["NestJS API<br/>REST + WebSocket"]
+```
+
 ### Routing
 
 Farm uses the Next.js App Router with route groups:
@@ -82,7 +123,7 @@ All Playwright tests using `setupOrgMock` must also mock `GET **/api/v1/organiza
 
 ### Authentication Flow
 
-```
+```text
 Login Page
     |
     v
@@ -182,3 +223,5 @@ Farm uses `next-themes` with three modes: light, dark, and system. The theme tog
 - **Positive**: No disruption to the existing backend build pipeline or Docker setup.
 - **Negative**: Two separate `package.json` files (root for backend, `web/` for frontend) require independent dependency management.
 - **Negative**: All pages are client-rendered; future optimization to leverage Server Components for data-fetching pages is possible.
+
+

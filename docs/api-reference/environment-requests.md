@@ -4,7 +4,7 @@ The Environment Requests API provides endpoints for self-service environment pro
 
 ## Base URL
 
-```
+```text
 /api/v1/environment-requests
 ```
 
@@ -197,7 +197,7 @@ POST /api/v1/environment-requests/:id/expire
 
 Environment requests follow a defined state machine:
 
-```
+```text
 pending --> approved --> provisioning --> active --> expired
   |
   +--> rejected
@@ -238,3 +238,5 @@ pending --> approved --> provisioning --> active --> expired
 | `small`  | Minimal resources for lightweight testing          |
 | `medium` | Standard resources for integration testing         |
 | `large`  | Full resources for performance and load testing    |
+
+

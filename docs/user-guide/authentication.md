@@ -13,6 +13,32 @@ The authentication system in Farm supports:
 - LDAP / Active Directory login
 - User listing for administration
 
+```mermaid
+sequenceDiagram
+    participant Client as HTTP Client
+    participant API as Farm API
+    participant DB as PostgreSQL
+    participant Cache as Redis
+
+    Client->>API: POST /api/v1/auth/login<br/>(username, password)
+    API->>DB: Verify credentials
+    DB-->>API: User found
+    API->>API: Generate JWT + Refresh Token
+    API->>Cache: Store refresh token
+    API-->>Client: { accessToken, refreshToken, user }
+
+    Note over Client,API: Subsequent requests
+    Client->>API: GET /api/v1/resource<br/>(Authorization: Bearer token)
+    API->>API: Validate JWT signature
+    API-->>Client: 200 OK + data
+
+    Note over Client,API: Token refresh
+    Client->>API: POST /api/v1/auth/refresh<br/>(refreshToken)
+    API->>Cache: Validate refresh token
+    Cache-->>API: Valid
+    API-->>Client: { accessToken, refreshToken }
+```
+
 ## User Properties
 
 Each user in Farm has the following properties:
@@ -106,7 +132,7 @@ Response:
 
 Use the `token` value in the `Authorization` header for subsequent requests:
 
-```
+```yaml
 Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 ```
 
@@ -200,3 +226,6 @@ Authentication endpoints are rate-limited to prevent brute force attacks:
 - Set a strong `JWT_SECRET` environment variable (minimum 32 characters, enforced in production)
 - Configure `ALLOWED_ORIGINS` for CORS instead of using the wildcard default
 - Regularly audit user accounts and access
+
+
+

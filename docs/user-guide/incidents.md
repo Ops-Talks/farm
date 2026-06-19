@@ -33,8 +33,16 @@ After an incident is resolved, a post-mortem documents the root cause, contribut
 
 Incidents progress through the following statuses:
 
-```
-open → investigating → identified → resolved
+```mermaid
+stateDiagram-v2
+    [*] --> open
+    open --> investigating
+    open --> identified
+    open --> resolved
+    investigating --> identified
+    investigating --> resolved
+    identified --> resolved
+    resolved --> [*]
 ```
 
 | Status | Description |
@@ -150,3 +158,4 @@ These events appear as toast notifications in the web UI for all connected users
 - [Incident API Reference](../api-reference/incidents.md) for endpoint details and response schemas.
 - [SLO Management](slos.md) for tracking reliability targets that may trigger incidents.
 - [Observability](observability.md) for metrics, traces, and alerting rules.
+

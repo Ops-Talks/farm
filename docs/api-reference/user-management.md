@@ -79,3 +79,5 @@ are blocked.
 
 Returns up to 200 audit log entries with `resourceType="User"` and
 `resourceId=:id`. Subject to the same authorization check as `GET /:id`.
+
+

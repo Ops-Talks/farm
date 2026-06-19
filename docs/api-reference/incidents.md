@@ -4,7 +4,7 @@ The Incident API provides endpoints for tracking production incidents, managing 
 
 ## Base URL
 
-```
+```text
 /api/v1/incidents
 /api/v1/post-mortems
 ```
@@ -232,3 +232,5 @@ The following events are emitted via the WebSocket gateway when incidents are cr
 | `investigating` | Team is investigating           |
 | `identified`    | Root cause identified           |
 | `resolved`      | Incident resolved               |
+
+

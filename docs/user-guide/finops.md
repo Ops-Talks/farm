@@ -125,3 +125,5 @@ No manual action is needed. The sync runs on the configured cron schedule as lon
 
 - [FinOps API Reference](../api-reference/finops.md)
 - [Catalog](catalog.md)
+
+

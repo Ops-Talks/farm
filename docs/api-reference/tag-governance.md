@@ -8,7 +8,7 @@ All endpoints require authentication via `Authorization: Bearer {token}`.
 
 ### List Tag Policies
 
-```
+```http
 GET /tag-policies?orgId={orgId}
 ```
 
@@ -31,7 +31,7 @@ Returns all tag policies for the organization.
 
 ### Create Tag Policy
 
-```
+```http
 POST /tag-policies
 ```
 
@@ -49,7 +49,7 @@ Requires admin role.
 
 ### Update Tag Policy
 
-```
+```http
 PATCH /tag-policies/:id
 ```
 
@@ -57,7 +57,7 @@ Requires admin role. Partial update — only provided fields are changed.
 
 ### Delete Tag Policy
 
-```
+```http
 DELETE /tag-policies/:id
 ```
 
@@ -65,7 +65,7 @@ Requires admin role.
 
 ### Export as Kyverno ClusterPolicy
 
-```
+```http
 GET /tag-policies/:id/export/kyverno
 ```
 
@@ -83,7 +83,7 @@ Requires admin role.
 
 ### List Violations
 
-```
+```http
 GET /tag-policies/violations?orgId={orgId}&provider={provider}&resourceType={resourceType}&resolved={true|false}&skip={n}&take={n}
 ```
 
@@ -122,7 +122,7 @@ GET /tag-policies/violations?orgId={orgId}&provider={provider}&resourceType={res
 
 ### Resolve Violation
 
-```
+```http
 PATCH /tag-policies/violations/:id/resolve
 ```
 
@@ -132,7 +132,7 @@ Marks a violation as resolved by setting `resolvedAt` to the current timestamp.
 
 ### Get Compliance Summary
 
-```
+```http
 GET /tag-policies/compliance/summary?orgId={orgId}
 ```
 
@@ -156,7 +156,7 @@ GET /tag-policies/compliance/summary?orgId={orgId}
 
 ## Trigger Compliance Audit
 
-```
+```http
 POST /tag-policies/audit/trigger
 ```
 
@@ -168,3 +168,5 @@ Requires admin role. Enqueues an immediate compliance audit job for the organiza
 ```
 
 **Response:** `{ "queued": true }`
+
+

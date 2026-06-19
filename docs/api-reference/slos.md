@@ -4,7 +4,7 @@ The SLO (Service Level Objectives) API provides endpoints for defining reliabili
 
 ## Base URL
 
-```
+```text
 /api/v1/slos
 ```
 
@@ -167,3 +167,5 @@ Returns the current error budget status for an SLO based on Prometheus metrics (
 | `7d`  | 7-day rolling window  |
 | `30d` | 30-day rolling window |
 | `90d` | 90-day rolling window |
+
+

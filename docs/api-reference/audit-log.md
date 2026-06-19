@@ -77,3 +77,5 @@ When the `X-Organization-Id` request header is provided, results are automatical
 ## Real-Time Events
 
 New audit log entries are broadcast in real time over WebSocket as `audit_log.created` events. Frontend clients subscribed to the Farm WebSocket gateway receive these notifications automatically.
+
+

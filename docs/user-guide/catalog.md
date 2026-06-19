@@ -195,3 +195,6 @@ curl -X DELETE http://localhost:3000/api/v1/catalog/components/{component-id}
 - Use consistent tag names across components
 - Store useful metadata like repository URLs, documentation links, and contact information
 - Avoid storing sensitive information in metadata
+
+
+

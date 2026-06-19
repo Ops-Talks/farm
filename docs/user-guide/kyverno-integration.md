@@ -42,7 +42,7 @@ A summary header shows the total count of failing results and warnings.
 
 ### API Endpoints
 
-```
+```http
 GET /api/v1/kubernetes/policy-reports?namespace={namespace}
 GET /api/v1/kubernetes/cluster-policy-reports
 ```
@@ -107,7 +107,7 @@ spec:
 
 ### API Endpoint
 
-```
+```http
 GET /api/v1/tag-policies/:id/export/kyverno
 ```
 
@@ -119,3 +119,5 @@ If Kyverno is not installed in the cluster:
 - The Kyverno tab on component detail shows an empty state (no errors)
 - The PolicyReport endpoints return empty arrays
 - All other Farm features continue to work normally
+
+

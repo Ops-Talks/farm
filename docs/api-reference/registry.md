@@ -299,3 +299,5 @@ Refer to the setup guide for the full list of environment variables.
 | 401 | Missing or invalid JWT token |
 | 404 | Repository, tag, or component not found |
 | 503 | Registry API unreachable or adapter not configured |
+
+

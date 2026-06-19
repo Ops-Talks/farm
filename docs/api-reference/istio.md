@@ -298,3 +298,5 @@ Returns the service dependency graph derived from Istio VirtualService routes.
 | 401 | Missing or invalid JWT token |
 | 403 | Admin role required (weight patch endpoint) |
 | 503 | Kubernetes cluster or Prometheus unreachable |
+
+

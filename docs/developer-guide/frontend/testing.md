@@ -10,7 +10,7 @@ Farm uses **Vitest** as the test runner with **React Testing Library** for compo
 
 Tests are co-located with the source files they cover under `apps/web/src/`:
 
-```
+```text
 apps/web/
   src/
     app/
@@ -255,7 +255,7 @@ Farm uses **Playwright** for browser-level E2E tests that validate full user jou
 
 ### Location
 
-```
+```text
 apps/web/
   e2e/
     helpers/
@@ -350,3 +350,5 @@ test.describe("Page — unauthenticated access", () => {
 | `pipelines.spec.ts` | 10 | List, create, detail, runs tab, trigger |
 | `docs.spec.ts` | 9 | Tree navigation, content rendering, search, create form |
 | **Total** | **56** | |
+
+

@@ -171,3 +171,5 @@ Kubernetes Gatekeeper ConstraintTemplates and constraint violations are readable
 | 401 | Missing or invalid JWT token |
 | 404 | Component not found (when `componentId` is provided) |
 | 503 | OPA server unreachable |
+
+

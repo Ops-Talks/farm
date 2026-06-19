@@ -307,8 +307,8 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 | `pyroscope.url` | Pyroscope server address | `""` |
 | `faro.enabled` | Enable Faro RUM; injects `NEXT_PUBLIC_FARO_URL` into the web pod | `false` |
 | `faro.url` | Faro collector URL | `""` |
-| `serviceMonitor.enabled` | Create ServiceMonitor for Prometheus Operator | `false` |
-| `prometheusRule.enabled` | Create PrometheusRule | `false` |
+| `serviceMonitor.enabled` | Create ServiceMonitor for Prometheus Operator | `true` |
+| `prometheusRule.enabled` | Create PrometheusRule | `true` |
 | `grafanaDashboards.enabled` | Create Grafana dashboards | `false` |
 
 ## Parameters
@@ -326,7 +326,7 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `api.replicaCount` | Desired pod replicas | `1` |
+| `api.replicaCount` | Desired pod replicas | `2` |
 | `api.image.repository` | Image repository | `ops-talks/farm-api` |
 | `api.image.tag` | Image tag (defaults to Chart.AppVersion) | `""` |
 | `api.image.pullPolicy` | Image pull policy | `IfNotPresent` |
@@ -341,7 +341,7 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 | `api.startupProbe` | Startup probe (httpGet /api/health, failureThreshold 20, periodSeconds 5) | see values.yaml |
 | `api.autoscaling.enabled` | Enable HPA | `false` |
 | `api.autoscaling.behavior` | HPA scale behavior (scale-down 300s / scale-up 60s) | see values.yaml |
-| `api.podDisruptionBudget.enabled` | Enable PDB (only meaningful with replicaCount >= 2) | `false` |
+| `api.podDisruptionBudget.enabled` | Enable PDB (only meaningful with replicaCount >= 2) | `true` |
 | `api.topologySpreadConstraints` | Pod topology spread constraints (e.g. zone distribution) | `[]` |
 | `api.networkPolicy.enabled` | Enable NetworkPolicy for the API pod | `false` |
 
@@ -349,7 +349,7 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `web.replicaCount` | Desired pod replicas | `1` |
+| `web.replicaCount` | Desired pod replicas | `2` |
 | `web.image.repository` | Image repository | `ops-talks/farm-web` |
 | `web.env.NEXT_PUBLIC_API_URL` | Public API base URL | `""` |
 | `web.env.NEXT_PUBLIC_WS_URL` | WebSocket URL for the browser | `""` |
@@ -364,14 +364,14 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `migration.enabled` | Run migration Job as pre-install/pre-upgrade hook | `true` |
-| `migration.activeDeadlineSeconds` | Maximum Job duration before termination | `300` |
+| `migration.activeDeadlineSeconds` | Maximum Job duration before termination | `480` |
 | `migration.backoffLimit` | Job retry limit before failure | `3` |
 
 ### PrometheusRule
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `prometheusRule.enabled` | Create PrometheusRule | `false` |
+| `prometheusRule.enabled` | Create PrometheusRule | `true` |
 | `prometheusRule.runbookBaseUrl` | Base URL for alert runbooks (appended with #alert-name-slug) | GitHub README anchor |
 
 ### External Database
@@ -380,7 +380,7 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 |-----------|-------------|---------|
 | `externalDatabase.host` | PostgreSQL host | `""` |
 | `externalDatabase.port` | PostgreSQL port | `5432` |
-| `externalDatabase.user` | PostgreSQL user | `farm` |
+| `externalDatabase.user` | PostgreSQL user | `postgres` |
 | `externalDatabase.name` | PostgreSQL database name | `farm` |
 | `externalDatabase.password` | Password (prefer existingSecret) | `""` |
 
@@ -397,7 +397,7 @@ the `@grafana/faro-web-sdk` integration in the Next.js frontend.
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `postgresql.enabled` | Deploy bundled PostgreSQL | `false` |
-| `postgresql.auth.username` | Database user | `farm` |
+| `postgresql.auth.username` | Database user | `postgres` |
 | `postgresql.auth.password` | Database password | `""` |
 | `postgresql.auth.database` | Database name | `farm` |
 

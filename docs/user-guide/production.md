@@ -16,6 +16,33 @@ This guide covers everything required to run Farm in a production environment. A
 - [ ] Set `NEXT_PUBLIC_API_URL` on the frontend to the public API URL
 - [ ] Run `GET /api/health` after deploy and confirm all indicators are `up`
 
+### Reference Architecture
+
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster"
+        subgraph "farm Namespace"
+            API_POD["farm-api<br/>NestJS · :3000"]
+            WEB_POD["farm-web<br/>Next.js · :3000"]
+            MIGRATION["migration-job<br/>pre-install hook"]
+        end
+
+        subgraph "monitoring Namespace (optional)"
+            PROM["Prometheus"]
+            GRAFANA["Grafana"]
+            LOKI["Loki"]
+        end
+    end
+
+    LB["Load Balancer"] --> WEB_POD
+    LB --> API_POD
+
+    API_POD --> PG[("Managed PostgreSQL<br/>RDS, Cloud SQL, etc.")]
+    API_POD --> REDIS[("Managed Redis<br/>ElastiCache, Memorystore, etc.")]
+
+    PROM -.->|scrape| API_POD
+```
+
 ---
 
 ## Environment Variables
@@ -250,3 +277,6 @@ All subsequent role management can be done through the API using an admin JWT.
 - **Secrets management**: Use your platform's secret store (AWS Secrets Manager, HashiCorp Vault, Kubernetes Secrets) instead of plain `.env` files.
 - **Database**: Use a dedicated PostgreSQL user with only the permissions required (`SELECT`, `INSERT`, `UPDATE`, `DELETE` on the `farm` database — no superuser).
 - **Redis**: Enable authentication (`requirepass`) and restrict network access to the API container only.
+
+
+

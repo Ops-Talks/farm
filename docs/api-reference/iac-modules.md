@@ -424,3 +424,6 @@ All error responses follow the standard `ErrorResponseDto` envelope.
   "path": "/api/v1/iac-modules/00000000-0000-0000-0000-000000000000"
 }
 ```
+
+
+

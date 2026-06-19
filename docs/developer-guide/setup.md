@@ -125,7 +125,7 @@ make docs-logs      # Follow container logs
 
 ## Project Structure
 
-```
+```text
 farm/
   apps/
     api/                   # NestJS backend
@@ -508,3 +508,5 @@ The default port mapping is:
 | farm-redis | 6379 |
 
 If a port is already in use, stop the conflicting process or adjust the port mapping in `docker-compose.yml` or `docker-compose.observability.yml`.
+
+

@@ -18,9 +18,47 @@ Farm uses [BullMQ](https://docs.bullmq.io/) with Redis for asynchronous backgrou
 
 When a user calls `POST /api/v1/catalog/locations` to discover components from a git repository, the request is enqueued as a BullMQ job rather than processed synchronously. The `CatalogDiscoveryProcessor` picks up the job in the background, clones the repository, finds `catalog-info.yaml` files, and registers them.
 
+```mermaid
+flowchart LR
+    Client["HTTP Client"] -->|"POST /api/v1/catalog/locations"| API
+
+    subgraph Farm API
+        API["CatalogController"] -->|enqueue| Redis{Redis Available?}
+        Redis -->|Yes| Queue["BullMQ Queue<br/>(catalog-discovery)"]
+        Redis -->|No| Sync["Synchronous Processing<br/>(fallback)"]
+        Queue --> Processor["CatalogDiscoveryProcessor"]
+        Processor --> Result["Return Result"]
+        Sync --> Result
+    end
+
+    Result --> Client
+
+    style Queue fill:#fff3e0
+    style Sync fill:#e8f5e9
+```
+
 Module-specific queues (`cost-sync`, `vulnerability-sync`) are registered by their own feature module and follow the same pattern — their processors run independently of `QueuesModule`.
 
 If Redis is unavailable, the system falls back to synchronous processing automatically.
+
+```mermaid
+flowchart TD
+    subgraph "QueuesModule"
+        Q1["catalog-discovery"] --> P1["CatalogDiscoveryProcessor"]
+        Q2["notifications"] --> P2["NotificationProcessor"]
+        Q3["pipeline-execution"] --> P3["PipelineExecutionProcessor"]
+        Q4["compliance-audit"] --> P4["ComplianceAuditProcessor"]
+        Q5["keycloak-sync"] --> P5["KeycloakSyncProcessor"]
+    end
+
+    subgraph "FinopsModule"
+        Q6["cost-sync"] --> P6["ActualCostSyncProcessor"]
+    end
+
+    subgraph "RegistryModule"
+        Q7["vulnerability-sync"] --> P7["VulnerabilitySyncProcessor"]
+    end
+```
 
 ## Configuration
 
@@ -102,12 +140,12 @@ async enqueueWork(data: MyJobData): Promise<void> {
 
 ## Architecture
 
-```
-HTTP Request --> Controller --> Queue.add(job)
-                                    |
-                          Redis (BullMQ broker)
-                                    |
-                              Processor.process(job) --> Service logic
+```mermaid
+flowchart LR
+    HTTP["HTTP Request"] --> Controller["Controller"]
+    Controller -->|Queue.add| Q[("Redis<br/>(BullMQ broker)")]
+    Q --> P["Processor.process(job)"]
+    P --> S["Service Logic"]
 ```
 
 The queue acts as a buffer between the HTTP layer and the processing logic. This provides:
@@ -116,3 +154,5 @@ The queue acts as a buffer between the HTTP layer and the processing logic. This
 - **Retry logic**: Failed jobs can be retried automatically
 - **Concurrency control**: Limit how many jobs run in parallel
 - **Visibility**: Bull Board shows job status and errors
+
+
