@@ -4,8 +4,8 @@ description: Farm — open-source platform portal for managing software componen
 # autoscaling/v2 HPA is GA in Kubernetes 1.26; this is the highest GA requirement of any resource the chart ships.
 kubeVersion: ">=1.26.0-0"
 type: application
-version: 0.26.0
-appVersion: "0.26.0"
+version: 0.26.1
+appVersion: "0.26.1"
 home: https://github.com/Ops-Talks/farm
 sources:
   - https://github.com/Ops-Talks/farm
@@ -29,11 +29,11 @@ annotations:
       url: https://github.com/Ops-Talks/farm/issues
   artifacthub.io/images: |
     - name: farm-api
-      image: ghcr.io/ops-talks/farm-api:0.26.0
+      image: ghcr.io/ops-talks/farm-api:0.26.1
       platforms:
         - linux/amd64
     - name: farm-web
-      image: ghcr.io/ops-talks/farm-web:0.26.0
+      image: ghcr.io/ops-talks/farm-web:0.26.1
       platforms:
         - linux/amd64
   artifacthub.io/changes: |

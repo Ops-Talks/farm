@@ -40,8 +40,14 @@ import { SpecDiffResult } from "./spec-diff.service";
 @ApiTags("API Specs")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized — missing or invalid JWT." })
-@ApiResponse({ status: HttpStatus.FORBIDDEN, description: "Forbidden — insufficient permissions." })
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient permissions.",
+})
 @Controller("catalog/components/:componentId/api-specs")
 export class ApiSpecsComponentController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}
@@ -72,8 +78,14 @@ export class ApiSpecsComponentController {
 @ApiTags("API Specs")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized — missing or invalid JWT." })
-@ApiResponse({ status: HttpStatus.FORBIDDEN, description: "Forbidden — insufficient permissions." })
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient permissions.",
+})
 @Controller("catalog/components/:componentId/consumed-apis")
 export class ConsumedApisController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}
@@ -96,8 +108,14 @@ export class ConsumedApisController {
 @ApiTags("API Specs")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized — missing or invalid JWT." })
-@ApiResponse({ status: HttpStatus.FORBIDDEN, description: "Forbidden — insufficient permissions." })
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: "Unauthorized — missing or invalid JWT.",
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: "Forbidden — insufficient permissions.",
+})
 @Controller("api-specs")
 export class ApiSpecsController {
   constructor(private readonly apiSpecsService: ApiSpecsService) {}

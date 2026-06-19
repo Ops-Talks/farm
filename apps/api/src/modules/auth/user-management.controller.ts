@@ -155,7 +155,9 @@ export class UserManagementController {
   @ApiOperation({
     summary: "Reset a user's password and email a temporary password",
   })
-  @ApiOkResponse({ description: "Password reset, temporary password returned." })
+  @ApiOkResponse({
+    description: "Password reset, temporary password returned.",
+  })
   async resetPassword(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
