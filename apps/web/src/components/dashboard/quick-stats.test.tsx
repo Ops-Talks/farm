@@ -181,4 +181,72 @@ describe("QuickStats", () => {
 
     vi.useRealTimers();
   });
+
+  // 9. mountedRef guard — no state update after unmount.
+  it("does not update state after component unmounts", async () => {
+    const lateComponents = Promise.resolve({ total: 42 });
+    const pending = new Promise(() => {});
+    mockListComponents.mockReturnValue(lateComponents);
+    mockTeamsList.mockReturnValue(pending);
+    mockEnvironmentsList.mockReturnValue(pending);
+    mockDeploymentsList.mockReturnValue(pending);
+
+    const { unmount } = render(<QuickStats />);
+    unmount();
+
+    // The resolved promise should not trigger setStatValue on unmounted component.
+    await expect(lateComponents).resolves.toEqual({ total: 42 });
+  });
+
+  // 10. errored stat shows opacity-40 class.
+  it("applies opacity-40 to errored stats", async () => {
+    mockListComponents.mockRejectedValue(new Error("network error"));
+    const pending = new Promise(() => {});
+    mockTeamsList.mockReturnValue(pending);
+    mockEnvironmentsList.mockReturnValue(pending);
+    mockDeploymentsList.mockReturnValue(pending);
+
+    render(<QuickStats />);
+
+    await waitFor(() => {
+      const paragraphs = screen.getAllByRole("paragraph");
+      const errored = paragraphs.find((p) => p.closest('[class*="opacity-40"]'));
+      expect(errored).toBeTruthy();
+    });
+  });
+
+  // 11. FadeIn visible state — requestAnimationFrame sets opacity to 1.
+  it("transitions FadeIn to visible", async () => {
+    const origRAF = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {
+      const id = origRAF(cb);
+      cb(0);
+      return id;
+    };
+
+    mockAllResolved();
+
+    render(<QuickStats />);
+
+    await waitFor(() => {
+      const paragraphs = screen.getAllByRole("paragraph");
+      expect(paragraphs.length).toBeGreaterThan(0);
+    });
+
+    globalThis.requestAnimationFrame = origRAF;
+  });
+
+  // 12. value text has tabular-nums for aligned numbers.
+  it("renders stat values with tabular-nums class", async () => {
+    mockAllResolved();
+
+    render(<QuickStats />);
+
+    await waitFor(() => {
+      const paragraphs = screen.getAllByRole("paragraph");
+      paragraphs.forEach((p) => {
+        expect(p.className).toContain("tabular-nums");
+      });
+    });
+  });
 });

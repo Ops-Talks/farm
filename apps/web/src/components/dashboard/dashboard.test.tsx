@@ -7,6 +7,7 @@ const mockListTeams = vi.fn();
 const mockListEnvironments = vi.fn();
 const mockListDeployments = vi.fn();
 const mockHealthCheck = vi.fn();
+const mockListQueues = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   catalog: { listComponents: (...args: unknown[]) => mockListComponents(...args) },
@@ -14,6 +15,7 @@ vi.mock("@/lib/api-client", () => ({
   environments: { list: () => mockListEnvironments() },
   deployments: { list: (...args: unknown[]) => mockListDeployments(...args) },
   health: { check: () => mockHealthCheck() },
+  queues: { list: () => mockListQueues() },
 }));
 
 vi.mock("@/lib/ws-client", () => ({
@@ -121,10 +123,32 @@ describe("ActivityFeed", () => {
 });
 
 describe("QueuePanel", () => {
-  it("should render queue names and descriptions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should render queue names and job counts", async () => {
+    mockListQueues.mockResolvedValue([
+      {
+        name: "catalog-discovery",
+        isPaused: false,
+        jobCounts: { waiting: 3, active: 1, completed: 45, failed: 2, delayed: 0, paused: 0, prioritized: 0 },
+      },
+      {
+        name: "notifications",
+        isPaused: false,
+        jobCounts: { waiting: 0, active: 0, completed: 120, failed: 0, delayed: 0, paused: 0, prioritized: 0 },
+      },
+    ]);
+
     render(<QueuePanel />);
-    expect(screen.getByText("catalog-discovery")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText("catalog-discovery")).toBeInTheDocument();
+    });
     expect(screen.getByText("notifications")).toBeInTheDocument();
     expect(screen.getByText(/Open Bull Board/)).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument(); // waiting jobs
+    expect(screen.getByText("1")).toBeInTheDocument(); // active jobs
   });
 });

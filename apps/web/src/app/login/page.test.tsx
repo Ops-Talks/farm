@@ -84,7 +84,7 @@ describe("LoginPage", () => {
     expect(screen.getByLabelText("Username")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
-    expect(screen.getByText("Farm")).toBeInTheDocument();
+    expect(screen.getAllByText("Farm").length).toBeGreaterThanOrEqual(1);
   });
 
   it("should submit form with credentials", async () => {

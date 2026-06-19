@@ -9,7 +9,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError, auth, setTokens } from "@/lib/api-client";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, LoaderCircle } from "lucide-react";
 import { GitHubIcon } from "@/components/integrations/brand-icons";
 import { startSpan } from "@/lib/otel-spans";
 
@@ -158,7 +157,16 @@ export default function LoginClient() {
       </div>
 
       {/* ── Right form panel ────────────────────────────────────────────────── */}
-      <div className="flex w-full md:w-1/2 items-center justify-center bg-background px-4 py-12">
+      <div className="flex w-full md:w-1/2 flex-col items-center justify-center bg-background px-4 py-12">
+        {/* Brand mark on mobile — visible only when left panel is hidden */}
+        <div className="md:hidden mb-8 text-center">
+          <div className="text-2xl font-bold tracking-tight text-foreground">
+            Farm
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            The Full Stack Platform
+          </p>
+        </div>
         <Card className="w-full max-w-sm shadow-sm">
           <CardHeader className="text-center">
             {/* CardTitle shows "Sign in". The "Farm" brand is in the left panel on desktop.
@@ -182,8 +190,8 @@ export default function LoginClient() {
                   id="username"
                   type="text"
                   placeholder="Enter your username"
+                  autoComplete="username"
                   autoFocus
-                  className="focus-visible:ring-2 focus-visible:ring-ring"
                   aria-invalid={!!errors.username}
                   aria-describedby={errors.username ? "username-error" : undefined}
                   {...register("username")}
@@ -200,7 +208,7 @@ export default function LoginClient() {
                   id="password"
                   type="password"
                   placeholder="Enter your password"
-                  className="focus-visible:ring-2 focus-visible:ring-ring"
+                  autoComplete="current-password"
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? "password-error" : undefined}
                   {...register("password")}
@@ -211,7 +219,11 @@ export default function LoginClient() {
               </div>
               {/* isSubmitting drives both disabled state and button label */}
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Signing in..." : "Sign In"}
+                {isSubmitting ? (
+                  <><LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Signing in...</>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
@@ -326,7 +338,6 @@ export default function LoginClient() {
                         setKeycloakOrgIdError("");
                       }}
                       aria-label="Organisation ID"
-                      className="focus-visible:ring-2 focus-visible:ring-ring"
                     />
                     {keycloakOrgIdError && (
                       <p className="text-xs text-destructive">{keycloakOrgIdError}</p>

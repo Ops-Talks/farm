@@ -46,5 +46,9 @@ deploy/helm/**/charts/*.tgz
 # Knip dead-code analysis report — regenerated on each run
 knip-report.json
 
+# AI skill toolchain — deve tooling, não código do projeto
+.github/skills/
+.impeccable/
+
 #customs
 /docs/2026*.md

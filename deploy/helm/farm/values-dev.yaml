@@ -43,7 +43,11 @@ web:
 migration:
   enabled: true
 
+serviceMonitor:
+  enabled: false
+
 prometheusRule:
+  enabled: false
   # "null" is the built-in Alertmanager no-op receiver that discards all alerts.
   # This satisfies the FARM-S587 fail guard without routing alerts in dev.
   alertmanagerReceiverName: "null"

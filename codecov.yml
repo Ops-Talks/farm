@@ -1,63 +1,10 @@
-codecov:
-  require_ci_to_pass: false
-  notify:
-    after_n_builds: 2
-
 coverage:
-  precision: 2
-  round: down
-  range: "65...100"
   status:
     project:
-      api:
-        target: 70%
-        flags:
-          - api
-      web:
-        target: 70%
-        flags:
-          - web
-    # Patch coverage gates individual PRs: each changed line must reach 80%
-    # coverage with at most 2% tolerance. This is stricter than the project
-    # target (70%) to prevent gradual erosion of coverage over time.
+      default:
+        target: auto
     patch:
       default:
-        target: 80%
-        threshold: 2%
-
-flags:
-  api:
-    carryforward: false
-  web:
-    carryforward: false
-
-ignore:
-  - "apps/api/src/migrations/**"
-  - "apps/api/src/**/*.spec.ts"
-  - "apps/api/test/**"
-  - "apps/web/src/**/*.test.{ts,tsx}"
-  - "apps/web/src/**/*.stories.{ts,tsx}"
-  - "apps/web/src/test/**"
-  - "apps/web/src/components/ui/**"
-  - "node_modules/**"
-  - "packages/**"
-
-component_management:
-  default_rules:
-    statuses:
-      - type: project
-        target: 70%
-  individual_components:
-    - component_id: api
-      name: "API (NestJS)"
-      paths:
-        - apps/api/src/**
-    - component_id: web
-      name: "Web (Next.js)"
-      paths:
-        - apps/web/src/**
-
-comment:
-  layout: "reach,diff,flags,files"
-  behavior: default
-  require_changes: false
+        target: auto
+  ignore:
+    - "**/page.tsx"

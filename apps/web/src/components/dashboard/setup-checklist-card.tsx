@@ -27,7 +27,7 @@ function ChecklistItemRow({
         <Circle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
       )}
       <span
-        className={`flex-1 text-sm ${item.completed ? "text-muted-foreground line-through" : "text-foreground"}`}
+        className={`min-w-0 flex-1 truncate text-sm ${item.completed ? "text-muted-foreground line-through" : "text-foreground"}`}
       >
         {item.title}
       </span>
