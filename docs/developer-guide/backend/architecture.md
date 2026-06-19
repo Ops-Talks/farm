@@ -8,40 +8,27 @@ Farm follows a modular architecture based on NestJS, a progressive Node.js frame
 
 ## High-Level Architecture
 
-```
-                    +------------------+
-                    |   HTTP Client    |
-                    +--------+---------+
-                             |
-                             v
-                    +------------------+
-                    |   NestJS App     |
-                    |  (Express/HTTP)  |
-                    +--------+---------+
-                             |
-     +----------+-------+--------+-------+----------+--------+---------+
-     |          |       |        |       |          |        |         |
-     v          v       v        v       v          v        v         v
-  +------+ +-------+ +------+ +-----+ +--------+ +------+ +-----+ +--------+
-  | Auth | |Catalog| | Docs | | Env | |Pipeline| | SLOs | | K8s | |  ...   |
-  +------+ +-------+ +------+ +-----+ +--------+ +------+ +-----+ +--------+
-                             |
-                             v
-                    +------------------+
-                    |  Common Layer    |
-                    | (Filters/Pipes/  |
-                    |  Guards/Logger)  |
-                    +------------------+
-                             |
-                             v
-              +--------------+--------------+
-              |                             |
-     +--------+--------+        +----------+---------+
-     |   PostgreSQL 16  |        |    Redis Cache      |
-     | (TypeORM, UUID   |        |  (BullMQ queues,    |
-     |  primary keys,   |        |   response cache)   |
-     |  migrations)     |        +--------------------+
-     +------------------+
+```mermaid
+graph TB
+    Client["HTTP Client"]
+
+    subgraph "NestJS App (Express)"
+        direction TB
+        Middleware["Middleware Layer<br/>(Auth, Logging, Org)"]
+        Modules["Feature Modules<br/>Auth · Catalog · Docs · Envs<br/>Pipelines · SLOs · K8s · ..."]
+        Common["Common Layer<br/>Filters · Pipes · Guards · Logger"]
+    end
+
+    subgraph "Data Layer"
+        PG[("PostgreSQL 16<br/>TypeORM, UUID PKs,<br/>migrations")]
+        Redis[("Redis Cache<br/>BullMQ queues,<br/>response cache")]
+    end
+
+    Client --> Middleware
+    Middleware --> Modules
+    Modules --> Common
+    Common --> PG
+    Common --> Redis
 ```
 
 ## Module Structure
@@ -444,3 +431,5 @@ Farm includes integrated observability with Prometheus metrics and OpenTelemetry
 
 - **API key support**: Service-to-service communication without user JWTs.
 - **Horizontal scaling**: Load balancer + session-agnostic Redis state for multi-instance deployments.
+
+

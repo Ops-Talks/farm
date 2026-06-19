@@ -27,30 +27,57 @@ Farm is an open-source full stack portal providing a centralized hub for managin
 
 ### High-Level Overview
 
-```
-+-----------------------------------------------------------------------+
-|                            Clients                                     |
-|   (Next.js Web App, CLI Tools, Scripts, CI/CD Pipelines, Webhooks)    |
-+--------------------------------------+--------------------------------+
-                                       |
-                              HTTP/REST + WebSocket
-                                       v
-+-----------------------------------------------------------------------+
-|                         Farm API Server (NestJS)                       |
-|                                                                        |
-|  Core        : Auth, Catalog, Documentation, Environments, Teams       |
-|  Observability: Analytics, Alerting, Dashboard, SLO, Incident         |
-|  Operations  : Pipelines, ServiceTemplate, EnvRequest, Helm           |
-|  Platform    : Kubernetes, Istio, Integrations, Cloud, Gateway        |
-|  Governance  : Organization, AuditLog, TagPolicy, ApiSpecs            |
-|  Infrastructure: PluginManager                                         |
-|                                                                        |
-|  +---------------+  +-------------------+  +-----------------------+  |
-|  |  PostgreSQL   |  |   Redis (cache/   |  |  External Services    |  |
-|  |   (primary    |  |   BullMQ queues)  |  |  (GitHub, ArgoCD,     |  |
-|  |   datastore)  |  |                   |  |   CircleCI, AWS, etc.)|  |
-|  +---------------+  +-------------------+  +-----------------------+  |
-+-----------------------------------------------------------------------+
+```mermaid
+graph TB
+    subgraph "Clients"
+        WEB["Next.js Web App"]
+        CLI["CLI Tools"]
+        SCRIPT["Scripts"]
+        CI["CI/CD Pipelines"]
+        WH["Webhooks"]
+    end
+
+    subgraph "Farm API Server (NestJS)"
+        direction TB
+        Core["Core<br/>Auth · Catalog · Docs<br/>Environments · Teams"]
+        Observability["Observability<br/>Analytics · Alerting<br/>Dashboard · SLO · Incident"]
+        Operations["Operations<br/>Pipelines · ServiceTemplate<br/>EnvRequest · Helm"]
+        Platform["Platform<br/>Kubernetes · Istio<br/>Integrations · Cloud · Gateway"]
+        Governance["Governance<br/>Organization · AuditLog<br/>TagPolicy · ApiSpecs"]
+        Infra["Infrastructure<br/>PluginManager"]
+    end
+
+    subgraph "Data"
+        PG[("PostgreSQL<br/>(primary datastore)")]
+        Redis[("Redis<br/>(cache, BullMQ queues)")]
+    end
+
+    subgraph "External Services"
+        GH["GitHub"]
+        ARGO["ArgoCD"]
+        CI2["CircleCI"]
+        AWS["AWS"]
+    end
+
+    WEB -->|HTTP/REST + WebSocket| API["Farm API<br/>HTTP Layer"]
+    CLI --> API
+    SCRIPT --> API
+    CI --> API
+    WH --> API
+
+    API --> Core
+    API --> Observability
+    API --> Operations
+    API --> Platform
+    API --> Governance
+    API --> Infra
+
+    Core --> PG
+    Core --> Redis
+    Platform --> GH
+    Platform --> ARGO
+    Platform --> CI2
+    Platform --> AWS
 ```
 
 ## Module Design
@@ -86,7 +113,7 @@ For the full module-by-module reference including responsibilities, see [Backend
 
 **Data Flow**:
 
-```
+```yaml
 Registration:
 Client -> AuthController.register() -> AuthService.register() -> TypeORM Repository
 
@@ -121,7 +148,7 @@ Client -> AuthController.findAll() -> AuthService.findAll() -> TypeORM Repositor
 
 **Data Flow**:
 
-```
+```text
 Create Component:
 Client -> CatalogController.create() -> CatalogService.create() -> TypeORM Repository
 
@@ -148,7 +175,7 @@ Client -> CatalogController.discover(url) -> CatalogService.discoverFromLocation
 
 **Data Flow**:
 
-```
+```text
 Create Documentation:
 Client -> DocController.create() -> DocService.create() -> TypeORM Repository
 
@@ -177,7 +204,7 @@ Client -> DocController.findAll(componentId) -> DocService.findByComponent() -> 
 
 **Data Flow**:
 
-```
+```text
 Record Deployment:
 Client -> DeploymentsController.create() -> DeploymentsService.create() -> TypeORM Repository
 
@@ -374,7 +401,7 @@ Standard HTTP status codes are used for error responses:
 
 ### Development
 
-```
+```text
 Developer Machine
        |
        v
@@ -387,7 +414,7 @@ Developer Machine
 
 ### Production (Future)
 
-```
+```text
                     +------------------+
                     |  Load Balancer   |
                     +--------+---------+
@@ -416,3 +443,5 @@ Developer Machine
 ## Conclusion
 
 Farm is designed as a modular, pluggable internal developer portal built on NestJS and Next.js. The platform's 33 feature modules cover the full lifecycle of software components — from catalog and documentation through observability, operations, platform integrations, and governance — with a clear path for continued expansion.
+
+

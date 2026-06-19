@@ -98,3 +98,6 @@ The following GET endpoints use automatic response caching:
 | `GET /api/v1/catalog/components/:id` | Yes | Configured via `CACHE_TTL` env var (default: 30s) |
 
 Cache is automatically invalidated when components are created, updated, deleted, or registered via YAML. No manual cache management is required.
+
+
+

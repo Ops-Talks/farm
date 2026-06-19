@@ -16,7 +16,7 @@ The Farm Helm Chart:
 
 ## Chart Structure
 
-```
+```text
 deploy/helm/farm/
   Chart.yaml                  # Chart metadata, dependencies, version, changelog
   Chart.lock                  # Locked subchart versions (auto-generated)
@@ -70,6 +70,25 @@ deploy/helm/farm/
     farm-rum.json
     farm-slo.json
     farm-traces.json
+```
+
+```mermaid
+graph TD
+    Chart["deploy/helm/farm/"] --> ChartFile["Chart.yaml<br/>version, appVersion, kubeVersion"]
+    Chart --> Values["values.yaml<br/>Production defaults"]
+    Chart --> Templates["templates/<br/>Kubernetes manifests"]
+    Chart --> Dashboards["dashboards/<br/>Grafana JSON"]
+    Chart --> CI["ci/<br/>CI test values"]
+
+    Templates --> API["api-deployment.yaml"]
+    Templates --> Web["web-deployment.yaml"]
+    Templates --> Migration["migration-job.yaml"]
+    Templates --> HPA["hpa.yaml"]
+    Templates --> PDB["pdb.yaml"]
+    Templates --> Network["network-policy.yaml"]
+    Templates --> SMonitor["servicemonitor.yaml"]
+    Templates --> PRule["prometheusrule.yaml"]
+    Templates --> DashboardsCM["grafana-dashboards.yaml"]
 ```
 
 ## Chart Metadata
@@ -584,3 +603,6 @@ securityContext:
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
 - [Farm Helm Chart README](https://github.com/Ops-Talks/farm/blob/main/deploy/helm/farm/README.md)
 - [Artifact Hub Metadata](https://artifacthub.io/docs/topics/metadata/)
+
+
+

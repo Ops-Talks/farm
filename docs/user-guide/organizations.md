@@ -151,3 +151,6 @@ Resources without an `organizationId` are considered global and may appear regar
 
 - [Organizations API Reference](../api-reference/organizations.md) — full endpoint documentation
 - [Multi-Tenancy and RBAC](../developer-guide/backend/multi-tenancy.md) — developer guide for the multi-tenant implementation
+
+
+

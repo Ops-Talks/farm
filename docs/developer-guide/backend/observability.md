@@ -402,3 +402,5 @@ All three discovery sub-calls are run concurrently with `Promise.allSettled`. In
 Inject `EventsGateway` with `@Optional()` and call `this.eventsGateway?.server?.emit(FarmEvent.EVENT_NAME, payload)`.
 
 The `FarmEvent` enum must be kept in sync between `packages/types/src/index.ts` and `apps/api/src/common/events/events.interfaces.ts`.
+
+

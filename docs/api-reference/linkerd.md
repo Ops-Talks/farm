@@ -300,3 +300,5 @@ When Linkerd is not installed:
 | 400 | Missing required query parameters |
 | 401 | Missing or invalid JWT token |
 | 503 | Kubernetes cluster or Prometheus unreachable |
+
+

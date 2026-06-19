@@ -115,6 +115,7 @@ nav:
     - Contributing: developer-guide/contributing.md
     - Test Users: developer-guide/test-users.md
     - System Design: developer-guide/system-design.md
+    - Helm Chart: developer-guide/helm-chart.md
     - Backend:
       - developer-guide/backend/index.md
       - Architecture: developer-guide/backend/architecture.md

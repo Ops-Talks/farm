@@ -260,3 +260,5 @@ Each stage type accepts specific `config` fields:
 |-------|------|-------------|
 | `channel` | string | Notification channel (e.g., `#slack-channel`) |
 | `message` | string | Message content |
+
+

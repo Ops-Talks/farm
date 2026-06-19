@@ -79,9 +79,11 @@ socket.on("deployment.updated", (data) => {
 
 The `EventsGateway` is a global NestJS provider. When services (CatalogService, DeploymentsService) perform write operations, they emit events through the gateway to all connected clients. The gateway uses its own JwtModule instance for token verification during the handshake.
 
-```
+```text
 Client (Socket.IO) --[JWT handshake]--> EventsGateway (/events namespace)
                                             ^
 CatalogService.create()  ---- emits -------+
 DeploymentsService.update() -- emits ------+
 ```
+
+

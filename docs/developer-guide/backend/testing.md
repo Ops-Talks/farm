@@ -11,7 +11,7 @@ Farm uses Jest as its testing framework. The test suite includes:
 
 ## Test Structure
 
-```
+```text
 farm/
   apps/
     api/
@@ -84,7 +84,7 @@ npm run test:debug
 
 Unit test files should be named with the `.spec.ts` suffix and located alongside the source file:
 
-```
+```text
 catalog.service.ts
 catalog.service.spec.ts
 ```
@@ -306,3 +306,5 @@ make check
 ```
 
 This command runs formatting, linting (API + web), unit tests, E2E tests (API), and Playwright end-to-end tests (web). It is mandatory before opening any PR.
+
+

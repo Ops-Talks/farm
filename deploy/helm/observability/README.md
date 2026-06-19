@@ -17,7 +17,7 @@ helm install farm-observability oci://ghcr.io/ops-talks/helm-charts/farm-observa
   --version <VERSION> \
   --namespace monitoring \
   --create-namespace \
-  -f values-production.yaml
+  -f values.yaml
 ```
 
 To upgrade an existing release, use `helm upgrade` with the same arguments.
@@ -48,7 +48,7 @@ After the first OCI push, the GHCR package must be set to **public** in the
 
 ## Prerequisites
 
-- Kubernetes 1.26+
+- Kubernetes 1.27+
 - Helm 3.10+
 - A running Farm application release (the `farm` chart)
 - Persistent volumes for Loki, Tempo, and Prometheus (or configure object
@@ -58,11 +58,11 @@ After the first OCI push, the GHCR package must be set to **public** in the
 
 | Chart | Version | Repository |
 |-------|---------|------------|
-| kube-prometheus-stack | `>= 70.0.0` | prometheus-community |
-| loki | `>= 6.0.0` | grafana |
-| tempo | `>= 1.15.0` | grafana |
-| alloy | `>= 0.9.0` | grafana |
-| pyroscope | `>= 1.10.0` | grafana |
+| kube-prometheus-stack | `86.2.2` | prometheus-community |
+| loki | `7.0.0` | grafana |
+| tempo | `1.24.4` | grafana |
+| alloy | `1.9.0` | grafana |
+| pyroscope | `2.0.3` | grafana |
 
 ## Values
 

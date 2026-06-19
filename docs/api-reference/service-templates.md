@@ -4,7 +4,7 @@ The Service Templates API provides endpoints for managing golden path templates,
 
 ## Base URL
 
-```
+```text
 /api/v1/service-templates
 ```
 
@@ -269,3 +269,5 @@ Farm ships with four built-in templates covering common service archetypes:
 | `in_progress` | Template is being rendered and files written |
 | `completed`   | Scaffold operation finished successfully     |
 | `failed`      | Scaffold operation encountered an error      |
+
+

@@ -76,3 +76,5 @@ Emitted with `resourceType="Invitation"`:
 - `INVITATION_SENT`
 - `INVITATION_ACCEPTED`
 - `INVITATION_REVOKED`
+
+

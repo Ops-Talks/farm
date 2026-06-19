@@ -30,7 +30,7 @@ This section covers the NestJS backend of Farm, including its architecture, modu
 
 ## Project Structure
 
-```
+```text
 apps/api/src/
   app.module.ts          # Root application module
   main.ts                # Application entry point
@@ -112,3 +112,5 @@ Key patterns:
 - **Exclusivity**: Seeds never run during application startup (seed-runner has `require.main === module` guard)
 
 See `src/database/seeds/seed-runner.ts` for implementation details and test coverage.
+
+

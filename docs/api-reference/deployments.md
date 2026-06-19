@@ -29,12 +29,19 @@ For interactive documentation, including all available endpoints, data models, a
 
 Deployment status follows a state machine with the following valid transitions:
 
-```
-pending -> in_progress, failed
-in_progress -> succeeded, failed
-succeeded -> rolled_back
-failed -> pending (retry)
-rolled_back -> pending (retry)
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> in_progress
+    pending --> failed
+    in_progress --> succeeded
+    in_progress --> failed
+    succeeded --> rolled_back
+    failed --> pending : retry
+    rolled_back --> pending : retry
+    succeeded --> [*]
+    failed --> [*]
+    rolled_back --> [*]
 ```
 
 Invalid transitions will return a `400 Bad Request` error.
@@ -140,3 +147,6 @@ curl -X PATCH http://localhost:3000/api/v1/deployments/{id} \
     "finishedAt": "2023-06-15T10:35:00Z"
   }'
 ```
+
+
+

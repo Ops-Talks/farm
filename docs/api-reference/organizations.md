@@ -269,3 +269,6 @@ curl -X DELETE http://localhost:3000/api/v1/organizations/<org-id>/members/<user
 **Error** `403 Forbidden` — caller is an `admin` trying to remove another `admin`, or trying to remove the `owner`.
 
 **Error** `404 Not Found` — user is not a member of this organization.
+
+
+

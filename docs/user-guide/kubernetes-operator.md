@@ -89,7 +89,7 @@ Farm polls `argoproj.io/v1alpha1` Rollout resources every 30 seconds and streams
 
 ### API Endpoint
 
-```
+```http
 GET /api/v1/kubernetes/rollouts?namespace=production&componentId=<uuid>
 ```
 
@@ -148,3 +148,5 @@ KUBECONFIG_PATH=/home/user/.kube/config
 ```
 
 See [Environment Variables](../developer-guide/setup.md#environment-variables) for the full list.
+
+

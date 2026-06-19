@@ -8,7 +8,7 @@ Farm exposes a REST API for managing the portal. All endpoints are prefixed with
 
 ## Base URL
 
-```
+```text
 http://localhost:3000/api
 ```
 
@@ -24,7 +24,7 @@ Access requires HTTP Basic Auth credentials. The defaults for local development 
 
 All endpoints are protected with JWT-based authentication. Include a Bearer token in the `Authorization` header:
 
-```
+```yaml
 Authorization: Bearer <your-jwt-token>
 ```
 
@@ -112,4 +112,6 @@ The full machine-readable OpenAPI 3.0 specification is available at:
 - **Repository snapshot:** `apps/api/openapi.json` (a static placeholder; CI uploads an `openapi-spec` artifact on every merge to `main` but does not commit updates to this file)
 
 The spec is also browsable via Swagger UI at `/api/docs` (HTTP Basic Auth protected; default credentials `farm`/`farm` are for **local/dev use only** — set `SWAGGER_USER` and `SWAGGER_PASSWORD` env vars to override in production).
+
+
 

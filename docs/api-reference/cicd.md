@@ -331,3 +331,5 @@ Farm pipelines support an OCI image `build` stage type that runs `docker`, `buil
 | `{{commitSha}}` | 7-character short Git commit SHA |
 
 The build engine binary must be available in the Farm API server's `PATH`. The stage fails gracefully with a descriptive error message when the engine is not found.
+
+

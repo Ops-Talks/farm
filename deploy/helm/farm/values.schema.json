@@ -619,6 +619,10 @@
             "intervalSeconds": {
               "type": "integer",
               "minimum": 1
+            },
+            "resources": {
+              "description": "Resource requests/limits for the wait-for-db init container.",
+              "type": "object"
             }
           }
         },

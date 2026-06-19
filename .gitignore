@@ -24,8 +24,8 @@ lerna-debug.log*
 .temp
 .tmp
 
-# MkDocs build output
-/site
+# MkDocs build output (may be root-owned from sudo builds)
+site/
 *NEXT_STEPS.md
 *INIT_COPILOT.md
 

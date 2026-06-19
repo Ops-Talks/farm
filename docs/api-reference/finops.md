@@ -206,3 +206,5 @@ When OpenCost is unreachable:
 | 401 | Missing or invalid JWT token |
 | 404 | Component or team not found |
 | 503 | OpenCost unreachable |
+
+

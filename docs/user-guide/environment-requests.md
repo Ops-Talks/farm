@@ -55,7 +55,7 @@ Click **Submit Request**. The request enters `pending` status and is visible to 
 
 Environment requests follow a defined state machine:
 
-```
+```text
 pending --> approved --> provisioning --> active --> expired
   |
   +--> rejected
@@ -118,3 +118,4 @@ While a request is still in `pending` status, you can update the name, descripti
 - [Environment Requests API Reference](../api-reference/environment-requests.md) for endpoint details and response schemas.
 - [Service Templates](service-templates.md) for scaffolding services to deploy into requested environments.
 - [Catalog](catalog.md) for managing the components linked to environment requests.
+

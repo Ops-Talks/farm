@@ -124,3 +124,6 @@ curl -X POST http://localhost:3000/api/v1/catalog/components \
 - Learn more about the [Catalog](catalog.md) to manage your software components
 - Explore [Documentation Management](documentation.md) to organize technical docs
 - Read about [Authentication](authentication.md) for user management
+
+
+

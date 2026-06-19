@@ -179,3 +179,5 @@ Authorization: Bearer <token>
 ```
 
 When a team is deleted, the `teamId` on associated components is set to `NULL` (components are not deleted).
+
+

@@ -4,7 +4,7 @@ This document describes the internal design of the Farm pipeline system for cont
 
 ## Module Location
 
-```
+```text
 apps/api/src/modules/pipelines/
   entities/
     pipeline.entity.ts          — Pipeline definition
@@ -24,7 +24,7 @@ apps/api/src/modules/pipelines/
 
 ## Execution Flow
 
-```
+```http
 POST /api/v1/pipelines/:id/trigger
         │
         ▼
@@ -150,3 +150,5 @@ All executors are injected as `@Optional()` dependencies in `PipelineProcessor`.
 - `PipelinesService` is tested with mock TypeORM repositories and a mock BullMQ queue (`{ add: jest.fn() }`)
 - `PipelineProcessor` receives a mock `EventsGateway` and mock repository
 - The queue is excluded in test environments (`NODE_ENV=test`) via the existing `QueuesModule.register()` guard
+
+

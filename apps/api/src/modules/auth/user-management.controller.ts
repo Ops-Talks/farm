@@ -18,6 +18,8 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiNoContentResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -63,6 +65,7 @@ export class UserManagementController {
 
   @Get()
   @ApiOperation({ summary: "List users (platform-wide or org-scoped)" })
+  @ApiOkResponse({ description: "Paginated user list." })
   async list(
     @Request() req: AuthenticatedRequest,
     @Query("orgId") orgId?: string,
@@ -103,6 +106,7 @@ export class UserManagementController {
   @Get(":id")
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Get a single managed user" })
+  @ApiOkResponse({ description: "Managed user details." })
   async getOne(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
@@ -113,6 +117,7 @@ export class UserManagementController {
   @Patch(":id/role")
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Change a user's org role" })
+  @ApiOkResponse({ description: "Role updated." })
   async updateRole(
     @Param("id") id: string,
     @Body() dto: UpdateUserRoleDto,
@@ -134,6 +139,7 @@ export class UserManagementController {
   @Patch(":id/suspend")
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Suspend or unsuspend a user (platform admin)" })
+  @ApiOkResponse({ description: "User suspension status updated." })
   async suspend(
     @Param("id") id: string,
     @Body() dto: SuspendUserDto,
@@ -149,6 +155,7 @@ export class UserManagementController {
   @ApiOperation({
     summary: "Reset a user's password and email a temporary password",
   })
+  @ApiOkResponse({ description: "Password reset, temporary password returned." })
   async resetPassword(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
@@ -164,6 +171,7 @@ export class UserManagementController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Remove user from org or delete globally" })
+  @ApiNoContentResponse({ description: "User removed." })
   async remove(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,
@@ -175,6 +183,7 @@ export class UserManagementController {
   @Get(":id/audit-trail")
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Audit trail for a managed user" })
+  @ApiOkResponse({ description: "Audit trail entries." })
   async auditTrail(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,

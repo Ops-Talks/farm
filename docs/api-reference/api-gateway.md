@@ -315,3 +315,5 @@ Once linked, the route appears under the component's Gateway Routes tab and its 
 ### Future auto-mapping
 
 Automatic matching based on route tags, service names, or component annotations is planned. See [ROADMAP.md](https://github.com/Ops-Talks/farm/blob/main/ROADMAP.md) for the current status.
+
+

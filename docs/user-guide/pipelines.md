@@ -19,6 +19,16 @@ A stage is a single step within a pipeline. Each stage has a type that determine
 | `deploy` | Triggers a deployment of a catalog component to an environment |
 | `notify` | Sends a notification (Slack, email, or webhook) |
 
+```mermaid
+flowchart LR
+    Start(["Pipeline Triggered"]) --> Stage1["Stage 1<br/>script"]
+    Stage1 --> Stage2{"Stage 2<br/>approval"}
+    Stage2 -->|Approved| Stage3["Stage 3<br/>deploy"]
+    Stage2 -->|Rejected| Fail(["Run Failed"])
+    Stage3 --> Stage4["Stage 4<br/>notify"]
+    Stage4 --> Success(["Run Succeeded"])
+```
+
 ### Pipeline Run
 
 Every time a pipeline is triggered, Farm creates a **Pipeline Run** — a record of that specific execution. Each run tracks its status, the result of every stage, accumulated logs, start time, finish time, and total duration.
@@ -33,6 +43,21 @@ Every time a pipeline is triggered, Farm creates a **Pipeline Run** — a record
 | `succeeded` | All stages completed successfully |
 | `failed` | One or more stages encountered an error, or approval was rejected |
 | `cancelled` | Run was cancelled before completion |
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued
+    queued --> running
+    running --> waiting_approval
+    waiting_approval --> running
+    waiting_approval --> cancelled
+    running --> succeeded
+    running --> failed
+    running --> cancelled
+    succeeded --> [*]
+    failed --> [*]
+    cancelled --> [*]
+```
 
 ## Managing Pipelines
 
@@ -230,3 +255,6 @@ Pipelines work best when linked to catalog components. Use the `deploy` stage `c
 ### Multi-Tenant Scoping
 
 Set `organizationId` on your pipelines to scope them to a specific organization. Users can then filter pipelines by organization when listing.
+
+
+

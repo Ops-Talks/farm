@@ -10,7 +10,7 @@ Base path: `/api/v1`
 
 ### Instant query
 
-```
+```http
 GET /metrics/query
 ```
 
@@ -38,7 +38,7 @@ Proxies to `GET {PROMETHEUS_URL}/api/v1/query`.
 
 ### Range query
 
-```
+```http
 GET /metrics/query-range
 ```
 
@@ -57,7 +57,7 @@ Proxies to `GET {PROMETHEUS_URL}/api/v1/query_range`.
 
 ### Labels
 
-```
+```http
 GET /metrics/labels
 ```
 
@@ -69,7 +69,7 @@ Proxies to `GET {PROMETHEUS_URL}/api/v1/labels`. Returns all available metric la
 
 ### List traces
 
-```
+```http
 GET /traces
 ```
 
@@ -86,7 +86,7 @@ GET /traces
 
 ### List services
 
-```
+```http
 GET /traces/services
 ```
 
@@ -96,7 +96,7 @@ Returns all service names known to Jaeger.
 
 ### Get trace by ID
 
-```
+```http
 GET /traces/:traceId
 ```
 
@@ -108,7 +108,7 @@ Returns the full trace with all spans for the given trace ID.
 
 ### Query logs
 
-```
+```http
 GET /logs
 ```
 
@@ -126,7 +126,7 @@ GET /logs
 
 ### List labels
 
-```
+```http
 GET /logs/labels
 ```
 
@@ -136,7 +136,7 @@ Returns all label names available in Loki.
 
 ### List label values
 
-```
+```http
 GET /logs/label/:name/values
 ```
 
@@ -148,7 +148,7 @@ Returns all values for the given label name.
 
 ### List rules
 
-```
+```http
 GET /alerting-rules
 ```
 
@@ -179,7 +179,7 @@ GET /alerting-rules
 
 ### Create rule
 
-```
+```http
 POST /alerting-rules
 ```
 
@@ -205,7 +205,7 @@ Returns `201 Created` with the created rule. Returns `409 Conflict` if a rule wi
 
 ### Get rule
 
-```
+```http
 GET /alerting-rules/:id
 ```
 
@@ -215,7 +215,7 @@ Returns `404 Not Found` if the rule does not exist.
 
 ### Update rule
 
-```
+```http
 PATCH /alerting-rules/:id
 ```
 
@@ -225,7 +225,7 @@ All fields are optional. Returns the updated rule.
 
 ### Delete rule
 
-```
+```http
 DELETE /alerting-rules/:id
 ```
 
@@ -243,3 +243,5 @@ Connect to `ws://<host>/events` with a valid JWT in the handshake `auth.token` f
 | `deployment.updated` | `Deployment` object | Emitted after every deployment status change |
 | `pipeline-run.updated` | `PipelineRun` object | Emitted after every pipeline run state change |
 | `pipeline.log` | `{ runId, line }` | Streaming log line from a running pipeline stage |
+
+

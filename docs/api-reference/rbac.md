@@ -91,3 +91,5 @@ Returns `404` if the user is not a member of the organization.
 - [Organizations API Reference](organizations.md) — org and member management endpoints
 - [Multi-Tenancy and RBAC Developer Guide](../developer-guide/backend/multi-tenancy.md) — implementation details
 - [User Guide: Organizations](../user-guide/organizations.md) — usage guide
+
+

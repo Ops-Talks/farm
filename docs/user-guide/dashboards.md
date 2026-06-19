@@ -88,7 +88,7 @@ Click the close icon on any widget to remove it from the dashboard.
 
 ### Operations Overview (12-column grid)
 
-```
+```text
 ┌────────────────────────┬────────────────────────┐
 │   Component Health     │   SLO Gauge            │
 │   (gridW: 6, gridH: 4)│   (gridW: 6, gridH: 4)│
@@ -103,7 +103,7 @@ Click the close icon on any widget to remove it from the dashboard.
 
 ### Team Dashboard
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │              Team Activity (full width)            │
 │              (gridW: 12, gridH: 3)                │
@@ -129,3 +129,5 @@ Click the close icon on any widget to remove it from the dashboard.
 - [Dashboard API Reference](../api-reference/dashboards.md) for endpoint details and response schemas.
 - [SLO Management](slos.md) for creating SLOs that feed the SLO Gauge widget.
 - [Observability](observability.md) for metrics and alerting that feed dashboard widgets.
+
+

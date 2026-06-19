@@ -705,3 +705,5 @@ Authorization: Bearer <token>
 ```
 
 Returns `{ "available": false }` when `KUBECONFIG_PATH` is not configured or the cluster is unreachable.
+
+

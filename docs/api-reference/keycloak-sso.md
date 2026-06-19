@@ -8,7 +8,7 @@ All endpoints require authentication via `Authorization: Bearer {token}` unless 
 
 ### Initiate Keycloak Login
 
-```
+```http
 GET /auth/keycloak?orgId={orgId}
 ```
 
@@ -18,7 +18,7 @@ If the organization has no Keycloak credential configured, redirects to `/?error
 
 ### Keycloak Callback
 
-```
+```http
 GET /auth/keycloak/callback
 ```
 
@@ -41,7 +41,7 @@ Handles the OIDC redirect from Keycloak. On success, returns:
 
 ### Trigger Manual Sync
 
-```
+```http
 POST /auth/keycloak/sync/:orgId
 ```
 
@@ -63,13 +63,13 @@ Keycloak credentials are managed through the standard Integration Credentials AP
 
 ### List Keycloak Credentials
 
-```
+```http
 GET /integrations/credentials?orgId={orgId}&type=keycloak
 ```
 
 ### Create Keycloak Credential
 
-```
+```http
 POST /integrations/credentials
 ```
 
@@ -87,7 +87,7 @@ The `encryptedValue` field is a JSON string containing the Keycloak connection d
 
 ### Delete Keycloak Credential
 
-```
+```http
 DELETE /integrations/credentials/:id
 ```
 
@@ -97,7 +97,7 @@ Requires admin role.
 
 Pipeline stage configs may reference Keycloak client credentials using the `keycloak://` URI scheme:
 
-```
+```text
 keycloak://{realm}/{clientId}
 ```
 
@@ -113,3 +113,5 @@ At pipeline execution time, Farm:
   "MY_SERVICE_TOKEN": "keycloak://farm-prod/my-service-client"
 }
 ```
+
+
