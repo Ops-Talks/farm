@@ -43,7 +43,7 @@ jest.mock("@kubernetes/client-node", () => {
 
 // Mock fs.existsSync so tests can control SA credential file presence without
 // touching the filesystem.
-let mockExistsSync: jest.Mock;
+const mockExistsSync = jest.fn().mockReturnValue(true);
 jest.mock("fs", () => ({
   ...jest.requireActual<typeof import("fs")>("fs"),
   existsSync: (...args: Parameters<typeof import("fs").existsSync>): boolean =>
@@ -173,7 +173,7 @@ describe("KubernetesService", () => {
 
   beforeEach(async () => {
     // Reset all mock functions.
-    mockExistsSync = jest.fn().mockReturnValue(true);
+    mockExistsSync.mockReturnValue(true);
     mockListDeployments = jest.fn();
     mockListSecrets = jest.fn().mockResolvedValue({ items: [] });
     mockListCRDs = jest.fn().mockResolvedValue({ items: [] });
@@ -665,7 +665,7 @@ describe("KubernetesService", () => {
   describe("initClient — loadFromCluster path", () => {
     it("should initialize from in-cluster config when KUBERNETES_IN_CLUSTER=true and SA files present", async () => {
       mockLoadFromCluster = jest.fn();
-      mockExistsSync = jest.fn().mockReturnValue(true);
+      mockExistsSync.mockReturnValue(true);
 
       const inClusterConfig = {
         get: (key: string) => {
@@ -690,7 +690,7 @@ describe("KubernetesService", () => {
 
     it("should disable service when KUBERNETES_IN_CLUSTER=true but SA files are missing", async () => {
       mockLoadFromCluster = jest.fn();
-      mockExistsSync = jest.fn().mockReturnValue(false);
+      mockExistsSync.mockReturnValue(false);
 
       const inClusterConfig = {
         get: (key: string) => {
@@ -742,7 +742,7 @@ describe("KubernetesService", () => {
       // loadFromCluster succeeds but the cluster server URL is not a valid URL,
       // which happens when KUBERNETES_SERVICE_HOST/PORT env vars are unset.
       mockLoadFromCluster = jest.fn();
-      mockExistsSync = jest.fn().mockReturnValue(true);
+      mockExistsSync.mockReturnValue(true);
       mockGetCurrentCluster = jest
         .fn()
         .mockReturnValue({ server: "https://undefined:undefined" });
@@ -770,7 +770,7 @@ describe("KubernetesService", () => {
 
     it("should disable service when getCurrentCluster returns null", async () => {
       mockLoadFromCluster = jest.fn();
-      mockExistsSync = jest.fn().mockReturnValue(true);
+      mockExistsSync.mockReturnValue(true);
       mockGetCurrentCluster = jest.fn().mockReturnValue(null);
 
       const inClusterConfig = {
@@ -2733,7 +2733,7 @@ describe("KubernetesService — additional branch coverage", () => {
 
     // initClient helpers — must be reset here because this describe is a
     // separate top-level block and does not inherit the parent beforeEach.
-    mockExistsSync = jest.fn().mockReturnValue(true);
+    mockExistsSync.mockReturnValue(true);
     mockLoadFromFile = jest.fn();
     mockLoadFromCluster = jest.fn().mockImplementation(() => {
       throw new Error("not in cluster");
