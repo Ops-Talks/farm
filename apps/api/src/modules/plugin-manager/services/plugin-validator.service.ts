@@ -2,6 +2,11 @@ import { Injectable } from "@nestjs/common";
 import * as semver from "semver";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 
 /**
