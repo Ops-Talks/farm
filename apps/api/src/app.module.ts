@@ -73,10 +73,6 @@ import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 import KeyvRedis from "@keyv/redis";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Switch the default Prometheus registry to OpenMetrics content type so that
 // histograms with enableExemplars=true can attach OpenTelemetry exemplars.
@@ -132,7 +128,7 @@ if (typeof _promSetContentType === "function") {
           synchronize,
           dropSchema: synchronize,
           autoLoadEntities: true,
-          migrations: [join(__dirname, "migrations", "*.{ts,js}")],
+          migrations: [__dirname + "/migrations/*.{ts,js}"],
           migrationsRun: false,
           extra: {
             max: configService.get<number>("database.poolSize") ?? 10,

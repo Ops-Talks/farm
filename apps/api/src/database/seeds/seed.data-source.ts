@@ -1,10 +1,6 @@
 import path from "path";
 import { DataSource } from "typeorm";
 import { config } from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Compiled output lives at apps/api/dist/database/seeds/.
 // Search for .env in apps/api/ first, then monorepo root as fallback.
