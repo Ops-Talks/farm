@@ -51,7 +51,7 @@ describe("CatalogService — container image methods", () => {
   };
 
   function buildModule(withRegistry: boolean): Promise<TestingModule> {
-    const providers: any[] = [
+    const providers = [
       CatalogService,
       {
         provide: getRepositoryToken(Component),

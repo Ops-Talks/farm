@@ -50,11 +50,7 @@ describe("DocumentationService", () => {
   };
 
   const mockRepository = {
-    create: jest
-      .fn()
-      .mockImplementation(
-        (dto: CreateDocumentationDto) => dto as Documentation,
-      ),
+    create: jest.fn().mockImplementation((dto: Record<string, unknown>) => dto),
     save: jest
       .fn()
       .mockImplementation((doc: Documentation) =>
@@ -64,13 +60,14 @@ describe("DocumentationService", () => {
     findAndCount: jest.fn().mockResolvedValue([[mockDoc], 1]),
     findOne: jest.fn().mockResolvedValue(mockDoc),
     findOneBy: jest.fn().mockResolvedValue(mockDoc),
-    merge: jest.fn().mockImplementation(
-      (entity: Documentation, dto: any) =>
-        ({
+    merge: jest
+      .fn()
+      .mockImplementation(
+        (entity: Documentation, dto: Record<string, unknown>) => ({
           ...entity,
           ...dto,
-        }) as Documentation,
-    ),
+        }),
+      ),
     remove: jest.fn().mockResolvedValue(mockDoc),
   };
 

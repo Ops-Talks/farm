@@ -874,11 +874,10 @@ describe("IacService", () => {
       // reachable through listStacks because listStacks returns [] before
       // calling fetchLastRunMap when stacks is empty. Access it directly to
       // guarantee the defensive branch is covered.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      const result = (await (service as any).fetchLastRunMap([])) as Map<
-        string,
-        IacRun
-      >;
+      const serviceWithInternals = service as unknown as {
+        fetchLastRunMap: (stackIds: string[]) => Promise<Map<string, IacRun>>;
+      };
+      const result = await serviceWithInternals.fetchLastRunMap([]);
 
       expect(result).toBeInstanceOf(Map);
       expect(result.size).toBe(0);

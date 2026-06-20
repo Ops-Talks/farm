@@ -182,8 +182,7 @@ describe("KeycloakOidcService", () => {
 
     // Extract the verify callback by casting to access the internal property.
     // passport-openidconnect stores the callback as _verify.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const verify = (strategy as any)._verify as (
+    const verify = (strategy as unknown as Record<string, unknown>)._verify as (
       issuer: string,
       profile: Record<string, unknown>,
       done: (err: Error | null, user?: unknown) => void,
@@ -240,8 +239,7 @@ describe("KeycloakOidcService", () => {
     const strategy = await service.getStrategyForOrg("org-uuid-5");
     expect(strategy).not.toBeNull();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const verify = (strategy as any)._verify as (
+    const verify = (strategy as unknown as Record<string, unknown>)._verify as (
       issuer: string,
       profile: Record<string, unknown>,
       done: (err: Error | null, user?: unknown) => void,

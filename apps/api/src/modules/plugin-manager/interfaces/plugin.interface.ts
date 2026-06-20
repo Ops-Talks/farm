@@ -116,5 +116,9 @@ export class PluginManifest {
  */
 export interface FarmPlugin {
   metadata: PluginMetadata;
-  module: Type<unknown> | DynamicModule | Promise<DynamicModule> | ForwardReference;
+  module:
+    | Type<unknown>
+    | DynamicModule
+    | Promise<DynamicModule>
+    | ForwardReference;
 }

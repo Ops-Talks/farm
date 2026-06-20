@@ -104,7 +104,7 @@ describe("ServiceTemplateController", () => {
       };
       templateService.create.mockResolvedValue(mockTemplate);
 
-      const result = await controller.create(mockRequest as any, dto);
+      const result = await controller.create(mockRequest as never, dto);
 
       expect(result).toEqual(mockTemplate);
       expect(templateService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
@@ -190,7 +190,7 @@ describe("ServiceTemplateController", () => {
       };
       const result = await controller.scaffold(
         "tpl-uuid-1",
-        mockRequest as any,
+        mockRequest as never,
         dto,
       );
 
@@ -219,7 +219,7 @@ describe("ServiceTemplateController", () => {
       };
       const result = await controller.scaffoldDryRun(
         "tpl-uuid-1",
-        mockRequest as any,
+        mockRequest as never,
         dto,
       );
 
