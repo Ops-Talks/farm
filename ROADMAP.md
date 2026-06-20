@@ -90,12 +90,18 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 | Phase 57: Development Guidelines Compliance | 1 | 8 | `DONE` |
 | Phase 58: CI/CD Pipeline Fixes | 1 | 3 | `DONE` |
 | Phase 59: Security Vulnerability Remediation | 4 | 25 | `DONE` |
-| **Total** | **175** | **685** | |
+| Phase 60: Dev Experience & Build | 2 | 6 | `TODO` |
+| Phase 61: NestJS Code Quality | 3 | 12 | `TODO` |
+| Phase 62: API Docs & DB Hygiene | 2 | 7 | `TODO` |
+| Phase 63: Security & Validation Hardening | 2 | 11 | `TODO` |
+| **Total** | **184** | **721** | |
 
 ---
 
 ## Future
 
-All current phases are complete. New phases should be added following the existing hierarchy and added to the Summary table above.
+Phases 60-63 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md).
+
+New phases should be added following the existing hierarchy and added to the Summary table above.
 
 _See git log and release notes for per-story implementation details._
