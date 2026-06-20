@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ScorecardLevel } from "./entities/scorecard-result.entity";
 import { ScorecardsService } from "./scorecards.service";
 import {

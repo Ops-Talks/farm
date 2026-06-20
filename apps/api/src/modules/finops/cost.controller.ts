@@ -26,7 +26,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
-import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { Component } from "../catalog/entities/component.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
 import { OpenCostService } from "./open-cost.service";
