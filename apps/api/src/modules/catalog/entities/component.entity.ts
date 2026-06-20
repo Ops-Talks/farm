@@ -12,6 +12,7 @@ import {
 } from "typeorm";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { numericTransformer } from "../../../common/transformers/numeric.transformer";
+import { Team } from "../../teams/entities/team.entity";
 
 /**
  * Represents the kind of a catalog entity.
@@ -196,9 +197,9 @@ export class Component {
   @Column({ nullable: true })
   teamId: string;
 
-  @ManyToOne("Team", { nullable: true, onDelete: "SET NULL" })
+  @ManyToOne(() => Team, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "teamId" })
-  team: any;
+  team: Team;
 
   @ApiProperty({
     enum: ComponentLifecycle,
