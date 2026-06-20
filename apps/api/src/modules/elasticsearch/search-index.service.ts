@@ -127,7 +127,7 @@ export class SearchIndexService {
       return (entity as Documentation).title;
     }
 
-    return (entity as Component | Team | Environment | Pipeline).name;
+    return (entity as { name: string }).name;
   }
 
   /**
