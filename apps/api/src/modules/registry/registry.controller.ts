@@ -31,7 +31,7 @@ import { Repository } from "typeorm";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
-import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
+import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { RegistryService } from "./registry.service";
 import {
   RepositoryDto,
