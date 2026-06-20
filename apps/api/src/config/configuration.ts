@@ -1,8 +1,6 @@
-import { createRequire } from "module";
 import * as Joi from "joi";
-
-const _require = createRequire(import.meta.url);
-const { version: pkgVersion } = _require("../../package.json") as {
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { version: pkgVersion } = require("../../package.json") as {
   version: string;
 };
 

@@ -1,14 +1,13 @@
-import { createRequire } from "module";
 import { DocumentBuilder, OpenAPIObject } from "@nestjs/swagger";
 
-const _require = createRequire(import.meta.url);
-const { version } = _require("../../../package.json") as { version: string };
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
+const { version } = require("../../../package.json");
 
 export function createSwaggerConfig(): Omit<OpenAPIObject, "paths"> {
   return new DocumentBuilder()
     .setTitle("Farm API")
     .setDescription("The Farm platform API documentation")
-    .setVersion(version)
+    .setVersion(version as string)
     .addServer("/api/v1", "Versioned API (current)")
     .addServer("/api", "Deprecated alias (redirects to /api/v1)")
     .addBearerAuth()
