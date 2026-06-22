@@ -123,7 +123,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/nodemailer": "^8.0.0",
     "@types/nunjucks": "^3.2.6",
     "@types/opossum": "^8.1.9",
