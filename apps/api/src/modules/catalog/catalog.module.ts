@@ -16,6 +16,7 @@ import { ContainerImageSyncScheduler } from "./processors/container-image-sync.s
 import { RegistryModule } from "../registry/registry.module";
 import { FinOpsModule } from "../finops/finops.module";
 import { PipelinesModule } from "../pipelines/pipelines.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -49,4 +50,10 @@ const isTest = process.env.NODE_ENV === "test";
   ],
   exports: [CatalogService],
 })
-export class CatalogModule {}
+export class CatalogModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-catalog",
+    version: "1.0.0",
+    description: "Software catalog management",
+  };
+}

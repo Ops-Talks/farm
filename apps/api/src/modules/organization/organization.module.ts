@@ -15,6 +15,7 @@ import { OrgRolesGuard } from "../../common/guards/org-roles.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 import { AuditLogModule } from "../audit-log/audit-log.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -54,4 +55,10 @@ const isTest = process.env.NODE_ENV === "test";
     TypeOrmModule,
   ],
 })
-export class OrganizationModule {}
+export class OrganizationModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-organization",
+    version: "1.0.0",
+    description: "Organization and multi-tenant management",
+  };
+}

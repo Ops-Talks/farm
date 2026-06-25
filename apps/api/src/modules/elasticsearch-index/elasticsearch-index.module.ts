@@ -6,6 +6,7 @@ import { ComponentElasticsearchIndexController } from "./component-elasticsearch
 import { ElasticsearchIndicesOverviewController } from "./elasticsearch-indices-overview.controller";
 import { ElasticsearchIndexStatsService } from "./elasticsearch-index-stats.service";
 import { CatalogModule } from "../catalog/catalog.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for Elasticsearch Index Visibility (FARM-S351 / FARM-S352).
@@ -29,4 +30,10 @@ import { CatalogModule } from "../catalog/catalog.module";
   ],
   exports: [ComponentElasticsearchIndexService, ElasticsearchIndexStatsService],
 })
-export class ElasticsearchIndexModule {}
+export class ElasticsearchIndexModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-elasticsearch-index",
+    version: "1.0.0",
+    description: "Link Elasticsearch index patterns to catalog components",
+  };
+}

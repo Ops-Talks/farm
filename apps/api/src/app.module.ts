@@ -95,297 +95,41 @@ if (typeof _promSetContentType === "function") {
     HealthModule,
     EventsModule,
     EmailModule,
-    PluginManagerModule.forRoot([
-      {
-        metadata: {
-          name: "core-catalog",
-          version: "1.0.0",
-          description: "Software catalog management",
-        },
-        module: CatalogModule,
-      },
-      {
-        metadata: {
-          name: "core-documentation",
-          version: "1.0.0",
-          description: "Technical documentation management",
-        },
-        module: DocumentationModule,
-      },
-      {
-        metadata: {
-          name: "core-auth",
-          version: "1.0.0",
-          description: "Authentication and authorization",
-        },
-        module: AuthModule,
-      },
-      {
-        metadata: {
-          name: "core-environments",
-          version: "1.0.0",
-          description: "Environment and deployment management",
-        },
-        module: EnvironmentsModule,
-      },
-      {
-        metadata: {
-          name: "core-teams",
-          version: "1.0.0",
-          description: "Team and ownership management",
-        },
-        module: TeamsModule,
-      },
-      {
-        metadata: {
-          name: "core-audit-log",
-          version: "1.0.0",
-          description: "Immutable audit log trail for system actions",
-        },
-        module: AuditLogModule,
-      },
-      {
-        metadata: {
-          name: "core-organization",
-          version: "1.0.0",
-          description: "Organization and multi-tenant management",
-        },
-        module: OrganizationModule,
-      },
-      {
-        metadata: {
-          name: "core-pipelines",
-          version: "1.0.0",
-          description: "Pipeline definition and execution",
-        },
-        module: PipelinesModule,
-      },
-      {
-        metadata: {
-          name: "core-alerting",
-          version: "1.0.0",
-          description: "Alerting rules management",
-        },
-        module: AlertingModule,
-      },
-      {
-        metadata: {
-          name: "core-integrations",
-          version: "1.0.0",
-          description: "Slack and Teams webhook integrations",
-        },
-        module: IntegrationsModule,
-      },
-      {
-        metadata: {
-          name: "core-kubernetes",
-          version: "1.0.0",
-          description: "Kubernetes cluster discovery",
-        },
-        module: KubernetesModule,
-      },
-      {
-        metadata: {
-          name: "core-analytics",
-          version: "1.0.0",
-          description: "Catalog analytics, DORA metrics, and usage reports",
-        },
-        module: AnalyticsModule,
-      },
-      {
-        metadata: {
-          name: "core-helm",
-          version: "1.0.0",
-          description: "Helm chart integration and release discovery",
-        },
-        module: HelmModule,
-      },
-      {
-        metadata: {
-          name: "cloud",
-          version: "1.0.0",
-          description: "Cloud provider integrations (AWS, GCP, Azure)",
-        },
-        module: CloudModule,
-      },
-      {
-        metadata: {
-          name: "core-tag-governance",
-          version: "1.0.0",
-          description:
-            "Resource tagging governance, compliance audit, and violation tracking",
-        },
-        module: TagPolicyModule,
-      },
-      {
-        metadata: {
-          name: "core-istio",
-          version: "1.0.0",
-          description:
-            "Istio service mesh integration: traffic metrics, topology, security posture, and canary traffic control",
-        },
-        module: IstioModule,
-      },
-      {
-        metadata: {
-          name: "core-linkerd",
-          version: "1.0.0",
-          description:
-            "Linkerd 2.x service mesh integration: traffic metrics, topology, mTLS posture, and ServiceProfile route management",
-        },
-        module: LinkerdModule,
-      },
-      {
-        metadata: {
-          name: "core-api-specs",
-          version: "1.0.0",
-          description:
-            "API catalog and lifecycle management: spec versioning, consumer tracking, and structural diff",
-        },
-        module: ApiSpecsModule,
-      },
-      {
-        metadata: {
-          name: "core-gateway",
-          version: "1.0.0",
-          description: "API Gateway integration (Kong, AWS)",
-        },
-        module: GatewayModule,
-      },
-      {
-        metadata: {
-          name: "core-registry",
-          version: "1.0.0",
-          description:
-            "Container registry integration (ECR, GCP Artifact Registry, Docker Hub, Harbor)",
-        },
-        module: RegistryModule,
-      },
-      {
-        metadata: {
-          name: "core-slo",
-          version: "1.0.0",
-          description:
-            "SLO management, error budget calculation, and burn rate monitoring",
-        },
-        module: SloModule,
-      },
-      {
-        metadata: {
-          name: "core-incidents",
-          version: "1.0.0",
-          description:
-            "Incident lifecycle management with timeline and post-mortems",
-        },
-        module: IncidentModule,
-      },
-      {
-        metadata: {
-          name: "core-dashboards",
-          version: "1.0.0",
-          description: "Custom dashboard builder with configurable widget grid",
-        },
-        module: DashboardModule,
-      },
-      {
-        metadata: {
-          name: "core-service-templates",
-          version: "1.0.0",
-          description:
-            "Service templates and golden paths for developer self-service scaffolding",
-        },
-        module: ServiceTemplateModule,
-      },
-      {
-        metadata: {
-          name: "core-environment-requests",
-          version: "1.0.0",
-          description:
-            "Self-service environment provisioning with approval workflows",
-        },
-        module: EnvironmentRequestModule,
-      },
-      {
-        metadata: {
-          name: "core-finops",
-          version: "1.0.0",
-          description:
-            "FinOps: Infracost pipeline integration and OpenCost component cost visibility",
-        },
-        module: FinOpsModule,
-      },
-      {
-        metadata: {
-          name: "core-features",
-          version: "1.0.0",
-          description:
-            "Bulk feature availability endpoint for all optional platform integrations",
-        },
-        module: FeaturesModule,
-      },
-      {
-        metadata: {
-          name: "core-search",
-          version: "1.0.0",
-          description:
-            "Quick search across catalog, teams, documentation, environments, and pipelines",
-        },
-        module: SearchModule,
-      },
-      {
-        metadata: {
-          name: "core-setup",
-          version: "1.0.0",
-          description:
-            "Admin setup checklist with real-time completion status and dismissal support",
-        },
-        module: SetupModule,
-      },
-      {
-        metadata: {
-          name: "core-opa",
-          version: "1.0.0",
-          description:
-            "Open Policy Agent (OPA) integration for on-demand policy evaluation",
-        },
-        module: OpaModule,
-      },
-      {
-        metadata: {
-          name: "core-iac",
-          version: "1.0.0",
-          description:
-            "IaC stack management, run ingestion (Cultivator), and module drift tracking (Agronomist)",
-        },
-        module: IacModule,
-      },
-      {
-        metadata: {
-          name: "core-elasticsearch",
-          version: "1.0.0",
-          description:
-            "Elasticsearch search indexing and advanced search backend",
-        },
-        module: ElasticsearchModule,
-      },
-      {
-        metadata: {
-          name: "core-elasticsearch-index",
-          version: "1.0.0",
-          description:
-            "Link Elasticsearch index patterns to catalog components",
-        },
-        module: ElasticsearchIndexModule,
-      },
-      {
-        metadata: {
-          name: "core-scorecards",
-          version: "1.0.0",
-          description:
-            "Component scorecard evaluation, maturity levels, and criterion tracking",
-        },
-        module: ScorecardsModule,
-      },
+    PluginManagerModule.forRootModules([
+      CatalogModule,
+      DocumentationModule,
+      AuthModule,
+      EnvironmentsModule,
+      TeamsModule,
+      AuditLogModule,
+      OrganizationModule,
+      PipelinesModule,
+      AlertingModule,
+      IntegrationsModule,
+      KubernetesModule,
+      AnalyticsModule,
+      HelmModule,
+      CloudModule,
+      TagPolicyModule,
+      IstioModule,
+      LinkerdModule,
+      ApiSpecsModule,
+      GatewayModule,
+      RegistryModule,
+      SloModule,
+      IncidentModule,
+      DashboardModule,
+      ServiceTemplateModule,
+      EnvironmentRequestModule,
+      FinOpsModule,
+      FeaturesModule,
+      SearchModule,
+      SetupModule,
+      OpaModule,
+      IacModule,
+      ElasticsearchModule,
+      ElasticsearchIndexModule,
+      ScorecardsModule,
     ]),
   ],
   controllers: [AppController],

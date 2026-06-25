@@ -28,6 +28,7 @@ import { IntegrationCredential } from "../integrations/entities/integration-cred
 import { Team } from "../teams/entities/team.entity";
 import { AuditLogModule } from "../audit-log/audit-log.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -86,4 +87,10 @@ const isTest = process.env.NODE_ENV === "test";
   ],
   exports: [AuthService, UserManagementService, JwtModule],
 })
-export class AuthModule {}
+export class AuthModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-auth",
+    version: "1.0.0",
+    description: "Authentication and authorization",
+  };
+}

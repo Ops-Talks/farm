@@ -1,14 +1,18 @@
-import { DynamicModule, Module, Global, Provider } from "@nestjs/common";
+import { DynamicModule, Module, Global, Provider, Type } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { PluginManagerService } from "./plugin-manager.service";
-import { FarmPlugin } from "./interfaces/plugin.interface";
+import { FarmPlugin, PluginMetadata } from "./interfaces/plugin.interface";
 import { PluginManagerController } from "./plugin-manager.controller";
 import { PluginInstance } from "./entities/plugin-instance.entity";
 import { PluginRegistryEntry } from "./entities/plugin-registry-entry.entity";
 import { PluginValidatorService } from "./services/plugin-validator.service";
 import { PluginInstanceService } from "./services/plugin-instance.service";
 import { PluginRegistryService } from "./services/plugin-registry.service";
+
+type ModuleWithPluginMetadata = Type<unknown> & {
+  PLUGIN_METADATA?: PluginMetadata;
+};
 
 @Global()
 @Module({
@@ -54,5 +58,17 @@ export class PluginManagerModule {
       imports: [...pluginModules],
       providers: [...pluginProviders],
     };
+  }
+
+  static forRootModules(modules: ModuleWithPluginMetadata[]): DynamicModule {
+    const plugins: FarmPlugin[] = modules.map((mod) => ({
+      metadata: mod.PLUGIN_METADATA ?? {
+        name: "unknown",
+        version: "0.0.0",
+        description: "No metadata defined",
+      },
+      module: mod,
+    }));
+    return this.forRoot(plugins);
   }
 }

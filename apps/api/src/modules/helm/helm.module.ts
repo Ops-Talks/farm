@@ -6,6 +6,7 @@ import { Component } from "../catalog/entities/component.entity";
 import { Environment } from "../environments/entities/environment.entity";
 import { HelmService } from "./helm.service";
 import { HelmController } from "./helm.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for Helm chart integration.
@@ -21,4 +22,10 @@ import { HelmController } from "./helm.controller";
   providers: [HelmService],
   exports: [HelmService],
 })
-export class HelmModule {}
+export class HelmModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-helm",
+    version: "1.0.0",
+    description: "Helm chart integration and release discovery",
+  };
+}

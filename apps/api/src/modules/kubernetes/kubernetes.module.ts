@@ -14,6 +14,7 @@ import { KedaBinding } from "./entities/keda-binding.entity";
 import { ElasticStackService } from "./elastic-stack.service";
 import { ThanosService } from "./thanos.service";
 import { CatalogModule } from "../catalog/catalog.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Module for Kubernetes cluster discovery.
@@ -50,4 +51,10 @@ import { CatalogModule } from "../catalog/catalog.module";
     ThanosService,
   ],
 })
-export class KubernetesModule {}
+export class KubernetesModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-kubernetes",
+    version: "1.0.0",
+    description: "Kubernetes cluster discovery",
+  };
+}

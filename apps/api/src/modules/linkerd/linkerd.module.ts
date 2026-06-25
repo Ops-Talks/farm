@@ -3,6 +3,7 @@ import { KubernetesModule } from "../kubernetes/kubernetes.module";
 import { LinkerdController } from "./linkerd.controller";
 import { LinkerdService } from "./linkerd.service";
 import { LinkerdMetricsService } from "./linkerd-metrics.service";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for Linkerd 2.x service mesh integration.
@@ -23,4 +24,11 @@ import { LinkerdMetricsService } from "./linkerd-metrics.service";
   providers: [LinkerdService, LinkerdMetricsService],
   exports: [LinkerdService, LinkerdMetricsService],
 })
-export class LinkerdModule {}
+export class LinkerdModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-linkerd",
+    version: "1.0.0",
+    description:
+      "Linkerd 2.x service mesh integration: traffic metrics, topology, mTLS posture, and ServiceProfile route management",
+  };
+}

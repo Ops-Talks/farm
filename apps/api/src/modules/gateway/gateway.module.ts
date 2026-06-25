@@ -12,6 +12,7 @@ import { AwsApiGatewayAdapter } from "./adapters/aws-api-gateway.adapter";
 import { IGatewayAdapter } from "./interfaces/gateway-adapter.interface";
 import { GATEWAY_ADAPTERS } from "./gateway.constants";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 export { GATEWAY_ADAPTERS } from "./gateway.constants";
 
@@ -56,4 +57,10 @@ export function gatewayAdaptersFactory(
   ],
   exports: [GatewayService],
 })
-export class GatewayModule {}
+export class GatewayModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-gateway",
+    version: "1.0.0",
+    description: "API Gateway integration (Kong, AWS)",
+  };
+}

@@ -20,6 +20,7 @@ import {
 } from "./processors/vulnerability-sync.processor";
 import { VulnerabilitySyncScheduler } from "./processors/vulnerability-sync.scheduler";
 import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-breaker.service";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 export { REGISTRY_ADAPTER } from "./registry.constants";
 
@@ -79,4 +80,11 @@ export function registryAdapterFactory(
   ],
   exports: [RegistryService, VulnerabilityService],
 })
-export class RegistryModule {}
+export class RegistryModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-registry",
+    version: "1.0.0",
+    description:
+      "Container registry integration (ECR, GCP Artifact Registry, Docker Hub, Harbor)",
+  };
+}

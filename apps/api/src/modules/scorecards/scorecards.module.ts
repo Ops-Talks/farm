@@ -19,6 +19,7 @@ import { IacModule } from "../iac/entities/iac-module.entity";
 import { IacStack } from "../iac/entities/iac-stack.entity";
 import { FluxBinding } from "../kubernetes/entities/flux-binding.entity";
 import { ActualCost } from "../finops/entities/actual-cost.entity";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for component scorecards.
@@ -55,4 +56,11 @@ import { ActualCost } from "../finops/entities/actual-cost.entity";
   ],
   exports: [ScorecardsService, ScorecardEvaluatorService],
 })
-export class ScorecardsModule {}
+export class ScorecardsModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-scorecards",
+    version: "1.0.0",
+    description:
+      "Component scorecard evaluation, maturity levels, and criterion tracking",
+  };
+}

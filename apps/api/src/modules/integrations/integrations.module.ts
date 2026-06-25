@@ -19,6 +19,7 @@ import { GitHubActionsController } from "./github-actions.controller";
 import { AzureDevOpsService } from "./azure-devops.service";
 import { AzureDevOpsController } from "./azure-devops.controller";
 import { PipelinesModule } from "../pipelines/pipelines.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Module that registers webhook notification services, domain event listeners,
@@ -62,4 +63,10 @@ import { PipelinesModule } from "../pipelines/pipelines.module";
     AzureDevOpsService,
   ],
 })
-export class IntegrationsModule {}
+export class IntegrationsModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-integrations",
+    version: "1.0.0",
+    description: "Slack and Teams webhook integrations",
+  };
+}

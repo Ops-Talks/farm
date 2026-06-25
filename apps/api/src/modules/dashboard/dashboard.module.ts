@@ -5,6 +5,7 @@ import { WidgetService } from "./widget.service";
 import { DashboardController } from "./dashboard.controller";
 import { Dashboard } from "./entities/dashboard.entity";
 import { DashboardWidget } from "./entities/dashboard-widget.entity";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Module for managing custom dashboards and their widgets.
@@ -15,4 +16,10 @@ import { DashboardWidget } from "./entities/dashboard-widget.entity";
   providers: [DashboardService, WidgetService],
   exports: [DashboardService],
 })
-export class DashboardModule {}
+export class DashboardModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-dashboards",
+    version: "1.0.0",
+    description: "Custom dashboard builder with configurable widget grid",
+  };
+}

@@ -3,6 +3,7 @@ import { KubernetesModule } from "../kubernetes/kubernetes.module";
 import { IstioController } from "./istio.controller";
 import { IstioService } from "./istio.service";
 import { IstioMetricsService } from "./istio-metrics.service";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for Istio service mesh integration.
@@ -23,4 +24,11 @@ import { IstioMetricsService } from "./istio-metrics.service";
   providers: [IstioService, IstioMetricsService],
   exports: [IstioService, IstioMetricsService],
 })
-export class IstioModule {}
+export class IstioModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-istio",
+    version: "1.0.0",
+    description:
+      "Istio service mesh integration: traffic metrics, topology, security posture, and canary traffic control",
+  };
+}

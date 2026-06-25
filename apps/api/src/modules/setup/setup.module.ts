@@ -8,6 +8,7 @@ import { IntegrationCredential } from "../integrations/entities/integration-cred
 import { Organization } from "../organization/entities/organization.entity";
 import { SetupService } from "./setup.service";
 import { SetupController } from "./setup.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module providing the admin setup checklist.
@@ -29,4 +30,11 @@ import { SetupController } from "./setup.controller";
   providers: [SetupService],
   exports: [SetupService],
 })
-export class SetupModule {}
+export class SetupModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-setup",
+    version: "1.0.0",
+    description:
+      "Admin setup checklist with real-time completion status and dismissal support",
+  };
+}

@@ -9,6 +9,7 @@ import { ElasticsearchService } from "./elasticsearch.service";
 import { SearchIndexService } from "./search-index.service";
 import { SearchSubscriber } from "./search.subscriber";
 import { SearchReindexController } from "./search-reindex.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module that provides Elasticsearch indexing and advanced search
@@ -34,4 +35,10 @@ import { SearchReindexController } from "./search-reindex.controller";
   providers: [ElasticsearchService, SearchIndexService, SearchSubscriber],
   exports: [ElasticsearchService, SearchIndexService],
 })
-export class ElasticsearchModule {}
+export class ElasticsearchModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-elasticsearch",
+    version: "1.0.0",
+    description: "Elasticsearch search indexing and advanced search backend",
+  };
+}
