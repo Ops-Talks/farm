@@ -13,13 +13,7 @@ import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
-import {
-  PrometheusModule,
-  makeCounterProvider,
-  makeHistogramProvider,
-} from "@willsoto/nestjs-prometheus";
-import { BusinessMetricsModule } from "./common/metrics/business-metrics.module";
-import { DatabaseMetricsModule } from "./common/metrics/database-metrics.module";
+import { ObservabilityInfraModule } from "./infra/observability/observability-infra.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { CircuitBreakerModule } from "./common/circuit-breaker/circuit-breaker.module";
 import { HttpModule } from "./common/http/http.module";
@@ -63,13 +57,12 @@ import { ElasticsearchIndexModule } from "./modules/elasticsearch-index/elastics
 import { ScorecardsModule } from "./modules/scorecards/scorecards.module";
 import { HealthModule } from "./common/health/health.module";
 import { QueuesModule } from "./common/queues/queues.module";
-import { ObservabilityModule } from "./common/observability/observability.module";
 import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
-import { MetricsInterceptor } from "./common/interceptors/metrics.interceptor";
+
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 import KeyvRedis from "@keyv/redis";
@@ -101,10 +94,7 @@ if (typeof _promSetContentType === "function") {
       ignoreErrors: false,
     }),
     ScheduleModule.forRoot(),
-    PrometheusModule.register({
-      path: "/metrics",
-      defaultMetrics: { enabled: true },
-    }),
+    ObservabilityInfraModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -143,13 +133,10 @@ if (typeof _promSetContentType === "function") {
       },
     }),
     OrganizationModule,
-    BusinessMetricsModule,
     CircuitBreakerModule,
     HttpModule,
-    DatabaseMetricsModule,
     DatabaseModule,
     HealthModule,
-    ObservabilityModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -514,22 +501,6 @@ if (typeof _promSetContentType === "function") {
     {
       provide: APP_GUARD,
       useClass: PerUserThrottlerGuard,
-    },
-    makeCounterProvider({
-      name: "http_requests_total",
-      help: "Total number of HTTP requests",
-      labelNames: ["method", "route", "status_code"],
-    }),
-    makeHistogramProvider({
-      name: "http_request_duration_seconds",
-      help: "HTTP request duration in seconds",
-      labelNames: ["method", "route", "status_code"],
-      buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-      enableExemplars: true,
-    }),
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: MetricsInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,
