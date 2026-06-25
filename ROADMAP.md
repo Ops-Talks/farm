@@ -101,7 +101,7 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 
 ## Future
 
-Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. Phase 60 completed (ESLint strict mode, 2 stories). Phase 64 (ESM Build) extracted from deferred portions of Phase 60. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md).
+Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. Phase 60 completed (ESLint strict mode, 2 stories). Phase 64 (ESM Build) extracted from deferred portions of Phase 60. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md). [Phase 61 implementation plan](docs/superpowers/plans/2026-06-25-phase61-nestjs-code-quality.md).
 
 New phases should be added following the existing hierarchy and added to the Summary table above.
 
