@@ -12,7 +12,7 @@ export class HttpCircuitBreakerService {
     private readonly circuitBreaker: CircuitBreakerService,
   ) {}
 
-  get<T = any>(
+  get<T = unknown>(
     integration: string,
     url: string,
     config?: AxiosRequestConfig,
@@ -24,10 +24,10 @@ export class HttpCircuitBreakerService {
     );
   }
 
-  post<T = any>(
+  post<T = unknown>(
     integration: string,
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Observable<AxiosResponse<T>> {
     return from(
@@ -37,10 +37,10 @@ export class HttpCircuitBreakerService {
     );
   }
 
-  put<T = any>(
+  put<T = unknown>(
     integration: string,
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Observable<AxiosResponse<T>> {
     return from(
@@ -50,10 +50,10 @@ export class HttpCircuitBreakerService {
     );
   }
 
-  patch<T = any>(
+  patch<T = unknown>(
     integration: string,
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig,
   ): Observable<AxiosResponse<T>> {
     return from(
@@ -63,7 +63,7 @@ export class HttpCircuitBreakerService {
     );
   }
 
-  delete<T = any>(
+  delete<T = unknown>(
     integration: string,
     url: string,
     config?: AxiosRequestConfig,

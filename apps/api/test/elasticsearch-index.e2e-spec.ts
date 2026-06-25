@@ -174,9 +174,9 @@ describe("ElasticsearchIndex (e2e)", () => {
       const interceptorId = httpService.axiosRef.interceptors.response.use(
         (response) => response,
 
-        (error: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const url: string = error.config?.url ?? "";
+        (error: unknown) => {
+          const err = error as { config?: { url?: string }; code?: string };
+          const url: string = err.config?.url ?? "";
           let hostname = "";
           try {
             hostname = new URL(url).hostname;
@@ -184,8 +184,7 @@ describe("ElasticsearchIndex (e2e)", () => {
             hostname = "";
           }
           if (
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") &&
+            (err.code === "ECONNREFUSED" || err.code === "ENOTFOUND") &&
             hostname === "es.example.com"
           ) {
             return Promise.resolve({
@@ -201,12 +200,11 @@ describe("ElasticsearchIndex (e2e)", () => {
               status: 200,
               statusText: "OK",
               headers: {},
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              config: error.config,
+              config: err.config,
             });
           }
           // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-          return Promise.reject(error);
+          return Promise.reject(err);
         },
       );
 
@@ -408,12 +406,11 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
       const interceptorId = httpService.axiosRef.interceptors.response.use(
         (response) => response,
 
-        (error: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const url: string = error.config?.url ?? "";
+        (error: unknown) => {
+          const err = error as { config?: { url?: string }; code?: string };
+          const url: string = err.config?.url ?? "";
           if (
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") &&
+            (err.code === "ECONNREFUSED" || err.code === "ENOTFOUND") &&
             url.includes("es-overview.test")
           ) {
             const match = /\/_cat\/indices\/([^?]+)/.exec(url);
@@ -431,12 +428,11 @@ describe("GET /elasticsearch/indices (admin overview)", () => {
               status: 200,
               statusText: "OK",
               headers: {},
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-              config: error.config,
+              config: err.config,
             });
           }
           // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-          return Promise.reject(error);
+          return Promise.reject(err);
         },
       );
       try {

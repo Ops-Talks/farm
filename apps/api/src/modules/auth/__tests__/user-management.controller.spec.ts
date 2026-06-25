@@ -154,7 +154,7 @@ describe("UserManagementController", () => {
         userId: "u-1",
         organizationId: "org-1",
         role: OrgRole.ADMIN,
-      } as any);
+      } as never);
 
       const out = await controller.updateRole(
         "u-1",
@@ -176,7 +176,10 @@ describe("UserManagementController", () => {
 
   describe("suspend", () => {
     it("suspends a user and returns id + suspended", async () => {
-      svc.setSuspended.mockResolvedValue({ id: "u-1", suspended: true } as any);
+      svc.setSuspended.mockResolvedValue({
+        id: "u-1",
+        suspended: true,
+      } as never);
 
       const out = await controller.suspend("u-1", { suspended: true }, mockReq);
 
@@ -188,7 +191,7 @@ describe("UserManagementController", () => {
       svc.setSuspended.mockResolvedValue({
         id: "u-1",
         suspended: false,
-      } as any);
+      } as never);
 
       const out = await controller.suspend(
         "u-1",
@@ -268,7 +271,7 @@ describe("UserManagementController", () => {
     it("returns entries from audit log when available", async () => {
       const entries = [{ id: "e1" }];
       svc.getUser.mockResolvedValue(makeView());
-      auditLog.findAll.mockResolvedValue(entries as any);
+      auditLog.findAll.mockResolvedValue(entries as never);
 
       const out = await controller.auditTrail("u-1", mockReq);
 

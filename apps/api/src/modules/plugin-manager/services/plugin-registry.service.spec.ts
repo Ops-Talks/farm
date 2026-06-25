@@ -49,7 +49,10 @@ describe("PluginRegistryService", () => {
     };
     validator = { validate: jest.fn() };
 
-    service = new PluginRegistryService(registryRepo as any, validator as any);
+    service = new PluginRegistryService(
+      registryRepo as never,
+      validator as never,
+    );
   });
 
   afterEach(() => {

@@ -91,7 +91,7 @@ describe("IncidentController", () => {
       organizationId: "org-uuid-1",
     };
 
-    const result = await controller.create(req as any, dto);
+    const result = await controller.create(req as never, dto);
 
     expect(result).toEqual(mockIncident);
     expect(incidentService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
@@ -140,7 +140,7 @@ describe("IncidentController", () => {
     const req = { user: { userId: "user-uuid-1" } };
 
     const result = await controller.updateStatus(
-      req as any,
+      req as never,
       "incident-uuid-1",
       dto,
     );
@@ -168,7 +168,7 @@ describe("IncidentController", () => {
     const req = { user: { userId: "user-uuid-1" } };
 
     const result = await controller.createUpdate(
-      req as any,
+      req as never,
       "incident-uuid-1",
       dto,
     );

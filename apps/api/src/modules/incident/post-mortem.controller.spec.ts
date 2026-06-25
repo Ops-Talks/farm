@@ -65,7 +65,7 @@ describe("PostMortemController", () => {
       organizationId: "org-uuid-1",
     };
 
-    const result = await controller.create(req as any, dto);
+    const result = await controller.create(req as never, dto);
 
     expect(result).toEqual(mockPostMortem);
     expect(postMortemService.create).toHaveBeenCalledWith(dto, "org-uuid-1");
@@ -107,7 +107,7 @@ describe("PostMortemController", () => {
   it("should approve a post-mortem with user context", async () => {
     const req = { user: { userId: "user-uuid-1" } };
 
-    const result = await controller.approve(req as any, "pm-uuid-1");
+    const result = await controller.approve(req as never, "pm-uuid-1");
 
     expect(result.approvedBy).toBe("user-uuid-1");
     expect(result.approvedAt).toBeDefined();

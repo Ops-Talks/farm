@@ -1,3 +1,5 @@
+jest.mock("bcrypt");
+
 import { DataSource, Repository } from "typeorm";
 import {
   seedDeployments,

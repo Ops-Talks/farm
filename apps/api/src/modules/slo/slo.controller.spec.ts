@@ -81,7 +81,7 @@ describe("SloController", () => {
       organizationId: "org-uuid-1",
     };
 
-    const result = await controller.create(req as any, dto);
+    const result = await controller.create(req as never, dto);
 
     expect(result).toEqual({ id: "slo-uuid-1", ...dto });
     expect(sloService.create).toHaveBeenCalledWith(dto, "org-uuid-1");

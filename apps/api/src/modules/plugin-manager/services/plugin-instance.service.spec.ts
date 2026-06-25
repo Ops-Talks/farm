@@ -71,10 +71,10 @@ describe("PluginInstanceService", () => {
     pluginManagerService = { getPlugins: jest.fn() };
 
     service = new PluginInstanceService(
-      instanceRepo as any,
-      registryRepo as any,
-      validator as any,
-      pluginManagerService as any,
+      instanceRepo as never,
+      registryRepo as never,
+      validator as never,
+      pluginManagerService as never,
     );
   });
 

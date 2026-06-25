@@ -50,7 +50,7 @@ describe("CatalogService", () => {
   };
 
   const mockRepository = {
-    create: jest.fn().mockImplementation((dto: any) => dto as Component),
+    create: jest.fn().mockImplementation((dto: Record<string, unknown>) => dto),
     save: jest.fn().mockImplementation((component: Component) =>
       Promise.resolve({
         ...component,
@@ -64,13 +64,14 @@ describe("CatalogService", () => {
     findBy: jest.fn().mockResolvedValue([mockComponent]),
     findOne: jest.fn().mockResolvedValue(mockComponent),
     findOneBy: jest.fn().mockResolvedValue(mockComponent),
-    merge: jest.fn().mockImplementation(
-      (entity: Component, dto: any) =>
-        ({
+    merge: jest
+      .fn()
+      .mockImplementation(
+        (entity: Component, dto: Record<string, unknown>) => ({
           ...entity,
           ...dto,
-        }) as Component,
-    ),
+        }),
+      ),
     remove: jest.fn().mockResolvedValue(mockComponent),
   };
 
@@ -110,10 +111,13 @@ describe("CatalogService", () => {
   describe("discoverFromLocation", () => {
     it("should discover and register a component", async () => {
       jest
-        .spyOn(service as any, "gitClone")
+        .spyOn(service as unknown as { gitClone: jest.Mock }, "gitClone")
         .mockImplementation(() => Promise.resolve());
       jest
-        .spyOn(service as any, "findYamlFiles")
+        .spyOn(
+          service as unknown as { findYamlFiles: jest.Mock },
+          "findYamlFiles",
+        )
         .mockImplementation(() =>
           Promise.resolve(["/tmp/fake/catalog-info.yaml"]),
         );
@@ -622,7 +626,7 @@ spec:
 
     it("should throw BadRequestException when gitClone fails", async () => {
       jest
-        .spyOn(service as any, "gitClone")
+        .spyOn(service as unknown as { gitClone: jest.Mock }, "gitClone")
         .mockRejectedValue(new Error("git clone failed with code 128"));
 
       await expect(
@@ -632,7 +636,7 @@ spec:
 
     it("should wrap a non-Error thrown by gitClone in a BadRequestException using String()", async () => {
       jest
-        .spyOn(service as any, "gitClone")
+        .spyOn(service as unknown as { gitClone: jest.Mock }, "gitClone")
         .mockRejectedValue("non-error plain string");
 
       await expect(
@@ -641,9 +645,14 @@ spec:
     });
 
     it("should log error and skip a file that fails to register with a non-Error, counting only successes", async () => {
-      jest.spyOn(service as any, "gitClone").mockResolvedValue(undefined);
       jest
-        .spyOn(service as any, "findYamlFiles")
+        .spyOn(service as unknown as { gitClone: jest.Mock }, "gitClone")
+        .mockResolvedValue(undefined);
+      jest
+        .spyOn(
+          service as unknown as { findYamlFiles: jest.Mock },
+          "findYamlFiles",
+        )
         .mockResolvedValue([
           "/tmp/fake/file1/catalog-info.yaml",
           "/tmp/fake/file2/catalog-info.yaml",
@@ -669,9 +678,14 @@ spec:
     });
 
     it("should log error and skip a file that fails to register, counting only successes", async () => {
-      jest.spyOn(service as any, "gitClone").mockResolvedValue(undefined);
       jest
-        .spyOn(service as any, "findYamlFiles")
+        .spyOn(service as unknown as { gitClone: jest.Mock }, "gitClone")
+        .mockResolvedValue(undefined);
+      jest
+        .spyOn(
+          service as unknown as { findYamlFiles: jest.Mock },
+          "findYamlFiles",
+        )
         .mockResolvedValue([
           "/tmp/fake/file1/catalog-info.yaml",
           "/tmp/fake/file2/catalog-info.yaml",

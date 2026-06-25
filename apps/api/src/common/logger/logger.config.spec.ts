@@ -15,7 +15,7 @@ describe("LoggerConfig", () => {
     expect(config).toBeDefined();
     expect(config.level).toBe("info");
     // Only the Console transport — no file transports in containerized environments.
-    expect((config.transports as any[]).length).toBe(1);
+    expect((config.transports as Array<object>).length).toBe(1);
   });
 });
 

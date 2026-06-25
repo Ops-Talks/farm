@@ -5,9 +5,7 @@ import { WsAuthAdapter } from "./ws-auth.adapter";
 
 const mockServer = { use: jest.fn() };
 
-jest
-  .spyOn(IoAdapter.prototype, "createIOServer")
-  .mockReturnValue(mockServer as any);
+jest.spyOn(IoAdapter.prototype, "createIOServer").mockReturnValue(mockServer);
 
 describe("WsAuthAdapter", () => {
   let adapter: WsAuthAdapter;
@@ -32,14 +30,17 @@ describe("WsAuthAdapter", () => {
 
   describe("createIOServer", () => {
     function getMiddleware(): (
-      socket: any,
+      socket: Record<string, unknown>,
       next: (err?: Error) => void,
     ) => void {
       const server = adapter.createIOServer(3001);
       expect(server.use).toHaveBeenCalledWith(expect.any(Function));
       const useMock = server.use as jest.Mock;
       const calls = useMock.mock.calls as unknown[][];
-      return calls[0][0] as (socket: any, next: (err?: Error) => void) => void;
+      return calls[0][0] as (
+        socket: Record<string, unknown>,
+        next: (err?: Error) => void,
+      ) => void;
     }
 
     it("registers a middleware on the server", () => {

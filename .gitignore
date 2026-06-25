@@ -50,5 +50,8 @@ knip-report.json
 .github/skills/
 .impeccable/
 
+# Core dump files
+core.*
+
 #customs
 /docs/2026*.md
