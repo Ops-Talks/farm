@@ -5,12 +5,15 @@ export function hash(
   return `$2b$${saltOrRounds}$${String(data)}_hashed`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function compare(data: string | Buffer, encrypted: string): boolean {
-  return true;
+  const saltPrefix = "$2b$";
+  if (typeof encrypted !== "string" || !encrypted.startsWith(saltPrefix))
+    return false;
+  const salt = encrypted.slice(saltPrefix.length).split("$")[0];
+  if (!salt) return false;
+  return encrypted === hash(data, salt);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function compareSync(data: string | Buffer, encrypted: string): boolean {
-  return true;
+  return compare(data, encrypted);
 }
