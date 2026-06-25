@@ -3,18 +3,15 @@ import {
   NestModule,
   MiddlewareConsumer,
   OnApplicationBootstrap,
-  Logger,
 } from "@nestjs/common";
 import { register as promRegister, openMetricsContentType } from "prom-client";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
 import { ThrottlerModule } from "@nestjs/throttler";
-import { CacheModule } from "@nestjs/cache-manager";
 import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ObservabilityInfraModule } from "./infra/observability/observability-infra.module";
-import { DatabaseModule } from "./common/database/database.module";
+import { DataInfraModule } from "./infra/data/data-infra.module";
 import { CircuitBreakerModule } from "./common/circuit-breaker/circuit-breaker.module";
 import { HttpModule } from "./common/http/http.module";
 import { AppController } from "./app.controller";
@@ -56,7 +53,6 @@ import { ElasticsearchModule } from "./modules/elasticsearch/elasticsearch.modul
 import { ElasticsearchIndexModule } from "./modules/elasticsearch-index/elasticsearch-index.module";
 import { ScorecardsModule } from "./modules/scorecards/scorecards.module";
 import { HealthModule } from "./common/health/health.module";
-import { QueuesModule } from "./common/queues/queues.module";
 import { EventsModule } from "./common/events/events.module";
 import { EmailModule } from "./common/email/email.module";
 import { configuration, validationSchema } from "./config/configuration";
@@ -65,7 +61,6 @@ import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
-import KeyvRedis from "@keyv/redis";
 
 // Switch the default Prometheus registry to OpenMetrics content type so that
 // histograms with enableExemplars=true can attach OpenTelemetry exemplars.
@@ -95,98 +90,11 @@ if (typeof _promSetContentType === "function") {
     }),
     ScheduleModule.forRoot(),
     ObservabilityInfraModule,
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const env = configService.get<string>("env");
-        const rawSync = configService.get<boolean>("database.synchronize");
-        if (rawSync && env !== "test") {
-          throw new Error(
-            "DATABASE_SYNC=true is only permitted when NODE_ENV=test. " +
-              "All schema changes in non-test environments must go through migrations.",
-          );
-        }
-        const synchronize = rawSync === true && env === "test";
-        return {
-          type: configService.get<string>("database.type") as "postgres",
-          host: configService.get<string>("database.host"),
-          port: configService.get<number>("database.port"),
-          username: configService.get<string>("database.username"),
-          password: configService.get<string>("database.password"),
-          database: configService.get<string>("database.name"),
-          synchronize,
-          dropSchema: synchronize,
-          autoLoadEntities: true,
-          migrations: [__dirname + "/migrations/*.{ts,js}"],
-          migrationsRun: false,
-          extra: {
-            max: configService.get<number>("database.poolSize") ?? 10,
-            connectionTimeoutMillis:
-              configService.get<number>("database.poolConnectTimeout") ?? 5000,
-            idleTimeoutMillis:
-              configService.get<number>("database.poolIdleTimeout") ?? 10000,
-            statement_timeout:
-              configService.get<number>("database.statementTimeout") ?? 30000,
-          },
-        };
-      },
-    }),
+    DataInfraModule.forRoot(),
     OrganizationModule,
     CircuitBreakerModule,
     HttpModule,
-    DatabaseModule,
     HealthModule,
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      // eslint-disable-next-line @typescript-eslint/require-await -- async is required for TypeScript to accept the union return type against CacheModuleAsyncOptions
-      useFactory: async (configService: ConfigService) => {
-        const logger = new Logger("CacheModule");
-        const ttl = (configService.get<number>("cache.ttl") ?? 30) * 1000;
-        const sentinelHosts = configService.get<string>(
-          "cache.redisSentinelHosts",
-        );
-        const sentinelName =
-          configService.get<string>("cache.redisSentinelName") ?? "mymaster";
-        const redisHost = configService.get<string>("cache.redisHost");
-
-        if (sentinelHosts) {
-          const sentinels = sentinelHosts.split(",").map((h) => {
-            const [host, port] = h.trim().split(":");
-            return { host, port: parseInt(port ?? "26379", 10) };
-          });
-          logger.log("CacheModule: using Redis Sentinel");
-          return {
-            stores: [
-              new KeyvRedis({
-                sentinels,
-                name: sentinelName,
-              } as ConstructorParameters<typeof KeyvRedis>[0]),
-            ],
-            ttl,
-          };
-        }
-
-        if (redisHost) {
-          const redisPort =
-            configService.get<number>("cache.redisPort") ?? 6379;
-          logger.log("CacheModule: using Redis single-host");
-          return {
-            stores: [new KeyvRedis(`redis://${redisHost}:${redisPort}`)],
-            ttl,
-          };
-        }
-
-        logger.warn(
-          "CacheModule: no REDIS_HOST configured — using in-memory cache store. " +
-            "Not suitable for multi-replica deployments.",
-        );
-        return { ttl };
-      },
-    }),
-    QueuesModule.register(),
     EventsModule,
     EmailModule,
     ThrottlerModule.forRootAsync({
