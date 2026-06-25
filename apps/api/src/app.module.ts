@@ -88,6 +88,8 @@ if (typeof _promSetContentType === "function") {
     ScheduleModule.forRoot(),
     ObservabilityInfraModule,
     DataInfraModule.forRoot(),
+    // Direct import needed for OrgRequiredGuard + OrgContextInterceptor at app level.
+    // Also registered via PluginManagerModule.forRoot() below for metadata discovery.
     OrganizationModule,
     SecurityInfraModule.forRoot(),
     HealthModule,
