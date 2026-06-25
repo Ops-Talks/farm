@@ -6,14 +6,12 @@ import {
 } from "@nestjs/common";
 import { register as promRegister, openMetricsContentType } from "prom-client";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { ThrottlerModule } from "@nestjs/throttler";
-import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
+import { APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ObservabilityInfraModule } from "./infra/observability/observability-infra.module";
 import { DataInfraModule } from "./infra/data/data-infra.module";
-import { CircuitBreakerModule } from "./common/circuit-breaker/circuit-breaker.module";
-import { HttpModule } from "./common/http/http.module";
+import { SecurityInfraModule } from "./infra/security/security-infra.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { PluginManagerModule } from "./modules/plugin-manager/plugin-manager.module";
@@ -60,7 +58,6 @@ import { RequestLoggerMiddleware } from "./common/middleware/request-logger.midd
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
-import { PerUserThrottlerGuard } from "./common/guards/per-user-throttler.guard";
 
 // Switch the default Prometheus registry to OpenMetrics content type so that
 // histograms with enableExemplars=true can attach OpenTelemetry exemplars.
@@ -92,24 +89,10 @@ if (typeof _promSetContentType === "function") {
     ObservabilityInfraModule,
     DataInfraModule.forRoot(),
     OrganizationModule,
-    CircuitBreakerModule,
-    HttpModule,
+    SecurityInfraModule.forRoot(),
     HealthModule,
     EventsModule,
     EmailModule,
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        throttlers: [
-          { name: "short", ttl: 1000, limit: 5 },
-          { name: "long", ttl: 60000, limit: 100 },
-        ],
-        skipIf: () =>
-          configService.get<string>("env") === "test" ||
-          process.env.NODE_ENV === "test",
-      }),
-    }),
     PluginManagerModule.forRoot([
       {
         metadata: {
@@ -406,10 +389,6 @@ if (typeof _promSetContentType === "function") {
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: PerUserThrottlerGuard,
-    },
     {
       provide: APP_INTERCEPTOR,
       useClass: OrgContextInterceptor,
