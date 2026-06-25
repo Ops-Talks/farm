@@ -42,11 +42,14 @@ export class DataInfraModule {
               extra: {
                 max: configService.get<number>("database.poolSize") ?? 10,
                 connectionTimeoutMillis:
-                  configService.get<number>("database.poolConnectTimeout") ?? 5000,
+                  configService.get<number>("database.poolConnectTimeout") ??
+                  5000,
                 idleTimeoutMillis:
-                  configService.get<number>("database.poolIdleTimeout") ?? 10000,
+                  configService.get<number>("database.poolIdleTimeout") ??
+                  10000,
                 statement_timeout:
-                  configService.get<number>("database.statementTimeout") ?? 30000,
+                  configService.get<number>("database.statementTimeout") ??
+                  30000,
               },
             };
           },
@@ -55,11 +58,16 @@ export class DataInfraModule {
           isGlobal: true,
           imports: [ConfigModule],
           inject: [ConfigService],
+          // eslint-disable-next-line @typescript-eslint/require-await -- async is required for TypeScript to accept the union return type against CacheModuleAsyncOptions
           useFactory: async (configService: ConfigService) => {
             const logger = new Logger("CacheModule");
             const ttl = (configService.get<number>("cache.ttl") ?? 30) * 1000;
-            const sentinelHosts = configService.get<string>("cache.redisSentinelHosts");
-            const sentinelName = configService.get<string>("cache.redisSentinelName") ?? "mymaster";
+            const sentinelHosts = configService.get<string>(
+              "cache.redisSentinelHosts",
+            );
+            const sentinelName =
+              configService.get<string>("cache.redisSentinelName") ??
+              "mymaster";
             const redisHost = configService.get<string>("cache.redisHost");
 
             if (sentinelHosts) {
@@ -80,7 +88,8 @@ export class DataInfraModule {
             }
 
             if (redisHost) {
-              const redisPort = configService.get<number>("cache.redisPort") ?? 6379;
+              const redisPort =
+                configService.get<number>("cache.redisPort") ?? 6379;
               logger.log("CacheModule: using Redis single-host");
               return {
                 stores: [new KeyvRedis(`redis://${redisHost}:${redisPort}`)],
@@ -98,12 +107,7 @@ export class DataInfraModule {
         DatabaseModule,
         QueuesModule.register(),
       ],
-      exports: [
-        TypeOrmModule,
-        CacheModule,
-        DatabaseModule,
-        QueuesModule,
-      ],
+      exports: [TypeOrmModule, CacheModule, DatabaseModule, QueuesModule],
     };
   }
 }
