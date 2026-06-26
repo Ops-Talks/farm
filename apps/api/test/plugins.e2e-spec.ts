@@ -35,7 +35,7 @@ describe("Plugin Manager (e2e)", () => {
     "core-kubernetes",
     "core-analytics",
     "core-helm",
-    "cloud",
+    "core-cloud",
     "core-tag-governance",
     "core-istio",
     "core-api-specs",

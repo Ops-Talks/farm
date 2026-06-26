@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Global, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { BullModule } from "@nestjs/bullmq";
 import { OrganizationService } from "./organization.service";
@@ -22,6 +22,7 @@ const isTest = process.env.NODE_ENV === "test";
 /**
  * Module for managing organizations and multi-tenant data isolation.
  */
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([
