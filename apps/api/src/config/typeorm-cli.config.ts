@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { config } from "dotenv";
+import { SnakeNamingStrategy } from "../common/database/snake-naming.strategy";
 
 config();
 
@@ -17,4 +18,5 @@ export default new DataSource({
   entities: ["dist/**/*.entity.js"],
   migrations: ["dist/migrations/*.js"],
   synchronize: false,
+  namingStrategy: new SnakeNamingStrategy(),
 });
