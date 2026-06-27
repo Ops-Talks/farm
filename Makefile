@@ -111,7 +111,10 @@ api-test:
 swagger-validate:
 	npm run swagger:validate -w apps/api
 
-check-back: fmt lint api-test test-e2e swagger-validate api-build
+columns-validate:
+	npm run columns:validate -w apps/api
+
+check-back: fmt lint api-test test-e2e swagger-validate columns-validate api-build
 
 api-build:
 	npm run api:build
