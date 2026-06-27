@@ -10,6 +10,7 @@ export class ListComponentsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     description:
       "Filter components by domain group (dev, infra, data, security)",
+    example: ComponentKindGroup.DEV,
     enum: ComponentKindGroup,
   })
   @IsOptional()
