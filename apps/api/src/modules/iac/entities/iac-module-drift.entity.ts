@@ -80,7 +80,7 @@ export class IacModuleDrift {
     nullable: true,
   })
   @Index()
-  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   organizationId: string | null;
 
   @ApiProperty({

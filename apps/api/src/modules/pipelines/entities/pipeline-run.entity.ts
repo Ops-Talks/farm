@@ -79,7 +79,7 @@ export class PipelineRun {
     nullable: true,
   })
   @Index()
-  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   organizationId: string | null;
 
   @ApiProperty({
@@ -166,7 +166,7 @@ export class PipelineRun {
     required: false,
     nullable: true,
   })
-  @Column({ name: "deployment_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   deploymentId: string | null;
 
   @ApiProperty({

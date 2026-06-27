@@ -81,7 +81,7 @@ export class ScorecardResult {
     example: "550e8400-e29b-41d4-a716-446655440002",
     description: "UUID of the evaluated component",
   })
-  @Column({ name: "component_id" })
+  @Column()
   @Index({ unique: true })
   componentId: string;
 
@@ -90,7 +90,7 @@ export class ScorecardResult {
    * Cascade delete ensures scorecard rows are removed when a component is deleted.
    */
   @ManyToOne(() => Component, { onDelete: "CASCADE", nullable: false })
-  @JoinColumn({ name: "component_id" })
+  @JoinColumn()
   component: Component;
 
   @ApiProperty({
@@ -98,7 +98,6 @@ export class ScorecardResult {
     description: "Weighted overall score in the 0-100 range",
   })
   @Column({
-    name: "overall_score",
     type: "decimal",
     precision: 5,
     scale: 2,
@@ -122,7 +121,7 @@ export class ScorecardResult {
     description: "Breakdown of scores per scorecard category",
     nullable: true,
   })
-  @Column({ name: "category_scores", type: "jsonb", nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   categoryScores: ScorecardCategoryScores;
 
   @ApiPropertyOptional({
@@ -137,7 +136,7 @@ export class ScorecardResult {
     description: "UUID of the organization this result belongs to",
     nullable: true,
   })
-  @Column({ name: "organization_id", nullable: true })
+  @Column({ nullable: true })
   organizationId: string;
 
   @ApiPropertyOptional({
@@ -145,20 +144,20 @@ export class ScorecardResult {
     description: "Timestamp of when the evaluation was executed",
     nullable: true,
   })
-  @Column({ type: "timestamp", name: "evaluated_at", nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   evaluatedAt: Date;
 
   @ApiProperty({
     example: "2024-01-15T10:30:00Z",
     description: "Record creation timestamp",
   })
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn()
   createdAt: Date;
 
   @ApiProperty({
     example: "2024-01-15T10:30:00Z",
     description: "Record last-updated timestamp",
   })
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

@@ -109,7 +109,7 @@ export class IacModule {
     nullable: true,
   })
   @Index()
-  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   organizationId: string | null;
 
   @OneToMany(() => IacModuleVersion, (v) => v.module, { cascade: false })
