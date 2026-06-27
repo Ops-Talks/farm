@@ -4,6 +4,17 @@ export class SnakeCaseColumns1777000000000 implements MigrationInterface {
   name = "SnakeCaseColumns1777000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Guard: if no camelCase columns exist, the schema was already created
+    // with SnakeNamingStrategy (fresh install) — skip all renames.
+    const rows = (await queryRunner.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.columns
+        WHERE table_name = 'pipelines' AND column_name = 'organizationId'
+      ) AS "exists"`,
+    )) as { exists: boolean }[];
+    if (!rows[0]?.exists) {
+      return;
+    }
     // pipelines
     await queryRunner.query(
       `ALTER TABLE "pipelines" RENAME COLUMN "organizationId" TO "organization_id"`,
