@@ -11,6 +11,7 @@ import { AwsLambdaExecutor } from "./executors/aws-lambda.executor";
 import { GcpCloudRunExecutor } from "./executors/gcp-cloud-run.executor";
 import { AzureContainerAppsExecutor } from "./executors/azure-container-apps.executor";
 import { IntegrationsModule } from "../integrations/integrations.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for cloud provider integrations.
@@ -48,4 +49,10 @@ import { IntegrationsModule } from "../integrations/integrations.module";
     AzureContainerAppsExecutor,
   ],
 })
-export class CloudModule {}
+export class CloudModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-cloud",
+    version: "1.0.0",
+    description: "Cloud provider integrations (AWS, GCP, Azure)",
+  };
+}

@@ -9,6 +9,7 @@ import { DocumentationBuild } from "./entities/documentation-build.entity";
 import { DocsWebhookController } from "./docs-webhook.controller";
 import { DocsBuildProcessor } from "./docs-build.processor";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -33,4 +34,10 @@ const isTest = process.env.NODE_ENV === "test";
   ],
   exports: [DocumentationService, DocumentationBuildService],
 })
-export class DocumentationModule {}
+export class DocumentationModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-documentation",
+    version: "1.0.0",
+    description: "Technical documentation management",
+  };
+}

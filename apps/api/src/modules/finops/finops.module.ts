@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { BullModule } from "@nestjs/bullmq";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 import { CostEstimate } from "./entities/cost-estimate.entity";
 import { ActualCost } from "./entities/actual-cost.entity";
 import { Component } from "../catalog/entities/component.entity";
@@ -45,4 +46,11 @@ const isTest = process.env.NODE_ENV === "test";
   controllers: [CostController],
   exports: [FinOpsService, OpenCostService],
 })
-export class FinOpsModule {}
+export class FinOpsModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-finops",
+    version: "1.0.0",
+    description:
+      "FinOps: Infracost pipeline integration and OpenCost component cost visibility",
+  };
+}

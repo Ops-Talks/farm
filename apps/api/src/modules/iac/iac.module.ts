@@ -13,6 +13,7 @@ import { IacModule as IacModuleEntity } from "./entities/iac-module.entity";
 import { IacModuleVersion } from "./entities/iac-module-version.entity";
 import { IacResource } from "./entities/iac-resource.entity";
 import { IacResourceDependency } from "./entities/iac-resource-dependency.entity";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for IaC visibility:
@@ -40,4 +41,11 @@ import { IacResourceDependency } from "./entities/iac-resource-dependency.entity
   ],
   exports: [IacService, IacResourceService, IacModuleService],
 })
-export class IacModule {}
+export class IacModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-iac",
+    version: "1.0.0",
+    description:
+      "IaC stack management, run ingestion (Cultivator), and module drift tracking (Agronomist)",
+  };
+}

@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { OpaResult } from "./entities/opa-result.entity";
 import { OpaService } from "./opa.service";
 import { OpaController } from "./opa.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for Open Policy Agent (OPA) integration.
@@ -17,4 +18,11 @@ import { OpaController } from "./opa.controller";
   providers: [OpaService],
   exports: [OpaService],
 })
-export class OpaModule {}
+export class OpaModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-opa",
+    version: "1.0.0",
+    description:
+      "Open Policy Agent (OPA) integration for on-demand policy evaluation",
+  };
+}

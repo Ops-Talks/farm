@@ -11,6 +11,7 @@ import { ComplianceAuditProcessor } from "./compliance-audit.processor";
 import { KyvernoExportService } from "./kyverno-export.service";
 import { CloudModule } from "../cloud/cloud.module";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -44,4 +45,11 @@ const isTest = process.env.NODE_ENV === "test";
   ],
   exports: [TagPolicyService],
 })
-export class TagPolicyModule {}
+export class TagPolicyModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-tag-governance",
+    version: "1.0.0",
+    description:
+      "Resource tagging governance, compliance audit, and violation tracking",
+  };
+}

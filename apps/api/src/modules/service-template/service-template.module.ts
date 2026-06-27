@@ -7,6 +7,7 @@ import { TemplateEngineService } from "./template-engine.service";
 import { ServiceTemplate } from "./entities/service-template.entity";
 import { ScaffoldRequest } from "./entities/scaffold-request.entity";
 import { DatabaseModule } from "../../common/database/database.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Module for managing service templates and scaffold operations
@@ -28,6 +29,13 @@ import { DatabaseModule } from "../../common/database/database.module";
   exports: [ServiceTemplateService],
 })
 export class ServiceTemplateModule implements OnModuleInit {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-service-templates",
+    version: "1.0.0",
+    description:
+      "Service templates and golden paths for developer self-service scaffolding",
+  };
+
   private readonly logger = new Logger(ServiceTemplateModule.name);
 
   constructor(

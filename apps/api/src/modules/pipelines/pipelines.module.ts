@@ -17,6 +17,7 @@ import { Deployment } from "../environments/entities/deployment.entity";
 import { Environment } from "../environments/entities/environment.entity";
 import { IntegrationsModule } from "../integrations/integrations.module";
 import { EnvironmentsModule } from "../environments/environments.module";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 const isTest = process.env.NODE_ENV === "test";
 
@@ -52,4 +53,10 @@ const isTest = process.env.NODE_ENV === "test";
   ],
   exports: [PipelinesService],
 })
-export class PipelinesModule {}
+export class PipelinesModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-pipelines",
+    version: "1.0.0",
+    description: "Pipeline definition and execution",
+  };
+}

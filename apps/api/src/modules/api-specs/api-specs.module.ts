@@ -9,6 +9,7 @@ import {
   ApiSpecsComponentController,
   ConsumedApisController,
 } from "./api-specs.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module for API catalog and lifecycle management.
@@ -28,4 +29,11 @@ import {
   providers: [ApiSpecsService, SpecDiffService],
   exports: [ApiSpecsService],
 })
-export class ApiSpecsModule {}
+export class ApiSpecsModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-api-specs",
+    version: "1.0.0",
+    description:
+      "API catalog and lifecycle management: spec versioning, consumer tracking, and structural diff",
+  };
+}

@@ -10,6 +10,7 @@ import { IncidentUpdateService } from "./incident-update.service";
 import { PostMortemService } from "./post-mortem.service";
 import { IncidentController } from "./incident.controller";
 import { PostMortemController } from "./post-mortem.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Module for incident management, timeline tracking, and post-mortem analysis.
@@ -28,4 +29,10 @@ import { PostMortemController } from "./post-mortem.controller";
   providers: [IncidentService, IncidentUpdateService, PostMortemService],
   exports: [IncidentService],
 })
-export class IncidentModule {}
+export class IncidentModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-incidents",
+    version: "1.0.0",
+    description: "Incident lifecycle management with timeline and post-mortems",
+  };
+}

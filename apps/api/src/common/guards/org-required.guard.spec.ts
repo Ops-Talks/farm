@@ -1,6 +1,6 @@
 import { Reflector } from "@nestjs/core";
 import { ExecutionContext, ForbiddenException } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { Repository } from "typeorm";
 import { OrgRequiredGuard } from "./org-required.guard";
 import { ORG_REQUIRED_KEY } from "../decorators/org-required.decorator";
 import { UserOrganization } from "../../modules/organization/entities/user-organization.entity";
@@ -34,12 +34,9 @@ describe("OrgRequiredGuard", () => {
   beforeEach(() => {
     reflector = new Reflector();
     mockUserOrgRepo = { findOne: jest.fn() };
-    const mockDataSource = {
-      getRepository: jest.fn().mockReturnValue(mockUserOrgRepo),
-    };
     guard = new OrgRequiredGuard(
       reflector,
-      mockDataSource as unknown as DataSource,
+      mockUserOrgRepo as unknown as Repository<UserOrganization>,
     );
   });
 

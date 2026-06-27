@@ -3,11 +3,10 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Inject,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { getDataSourceToken } from "@nestjs/typeorm";
-import { DataSource, Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 import { ORG_REQUIRED_KEY } from "../decorators/org-required.decorator";
 import type { RequestWithOrg } from "../interfaces/request-with-org.interface";
 import { UserOrganization } from "../../modules/organization/entities/user-organization.entity";
@@ -26,8 +25,6 @@ type OrgRequest = Request & RequestWithOrg & { user?: { userId: string } };
  *  2. Verifies the authenticated user holds a membership in that organization.
  *  3. Sets req.organizationId so downstream handlers can scope queries.
  *
- * Uses DataSource directly (available globally via TypeOrmModule.forRoot) so the
- * guard can be applied in any controller module without additional forFeature imports.
  *
  * Throws ForbiddenException when:
  *  - The @OrgRequired() metadata is present AND the header is absent.
@@ -35,14 +32,11 @@ type OrgRequest = Request & RequestWithOrg & { user?: { userId: string } };
  */
 @Injectable()
 export class OrgRequiredGuard implements CanActivate {
-  private readonly userOrgRepo: Repository<UserOrganization>;
-
   constructor(
     private readonly reflector: Reflector,
-    @Inject(getDataSourceToken()) dataSource: DataSource,
-  ) {
-    this.userOrgRepo = dataSource.getRepository(UserOrganization);
-  }
+    @InjectRepository(UserOrganization)
+    private readonly userOrgRepo: Repository<UserOrganization>,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<boolean>(

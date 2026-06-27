@@ -10,6 +10,7 @@ import { SearchConfig } from "./entities/search-config.entity";
 import { SearchService } from "./search.service";
 import { SearchController } from "./search.controller";
 import { SearchConfigController } from "./search-config.controller";
+import { PluginMetadata } from "../plugin-manager/interfaces/plugin.interface";
 
 /**
  * Feature module providing quick search and advanced faceted search
@@ -31,4 +32,11 @@ import { SearchConfigController } from "./search-config.controller";
   providers: [SearchService],
   exports: [SearchService],
 })
-export class SearchModule {}
+export class SearchModule {
+  static readonly PLUGIN_METADATA: PluginMetadata = {
+    name: "core-search",
+    version: "1.0.0",
+    description:
+      "Quick search across catalog, teams, documentation, environments, and pipelines",
+  };
+}
