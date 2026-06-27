@@ -6,28 +6,49 @@ import { OpaResult } from "../entities/opa-result.entity";
  * Maps directly from the OpaResult entity.
  */
 export class OpaResultResponseDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: "c58f9c80-...",
+    description: "Unique evaluation result ID",
+  })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: "550e8400-...",
+    description: "ID of the evaluated component",
+  })
   componentId: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: "policies/rbac.rego",
+    description: "Path to the evaluated policy file",
+  })
   policyPath: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: true,
+    description: "Whether the evaluation passed (allowed=true)",
+  })
   allowed: boolean;
 
   @ApiPropertyOptional({ type: [String] })
   violations: string[];
 
-  @ApiProperty()
+  @ApiProperty({
+    example: "2024-01-15T10:30:00Z",
+    description: "Timestamp when the evaluation was performed",
+  })
   evaluatedAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: "2024-01-15T10:30:00Z",
+    description: "Record creation timestamp",
+  })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: "2024-01-15T10:30:00Z",
+    description: "Record last update timestamp",
+  })
   updatedAt: Date;
 
   /**
