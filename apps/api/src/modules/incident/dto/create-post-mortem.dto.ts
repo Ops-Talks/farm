@@ -68,6 +68,13 @@ export class CreatePostMortemDto {
 
   @ApiPropertyOptional({
     type: [ActionItemDto],
+    example: [
+      {
+        title: "Add connection pool alerts",
+        assignee: "ops-team",
+        done: false,
+      },
+    ],
     description: "Follow-up action items",
   })
   @IsArray()
