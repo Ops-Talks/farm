@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_OPTIONS=--max-old-space-size=4096 jest --config ./test/jest-e2e.json --runInBand",
+    "swagger:validate": "NODE_ENV=test ts-node --project tsconfig.scripts.json scripts/validate-swagger.ts",
     "release": "release-it",
     "changelog:sync": "node ./scripts/sync-changelog.mjs",
     "typeorm": "npm run build && npx typeorm -d dist/config/typeorm-cli.config.js",

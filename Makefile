@@ -108,7 +108,10 @@ fmt:
 api-test:
 	npm run api:test
 
-check-back: fmt lint api-test test-e2e api-build
+swagger-validate:
+	npm run swagger:validate -w apps/api
+
+check-back: fmt lint api-test test-e2e swagger-validate api-build
 
 api-build:
 	npm run api:build
