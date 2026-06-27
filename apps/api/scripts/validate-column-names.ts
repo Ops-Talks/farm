@@ -1,9 +1,23 @@
-import { readFileSync } from "fs";
-import { globSync } from "glob";
-import { resolve } from "path";
+import { readFileSync, readdirSync, statSync } from "fs";
+import { extname, join, resolve } from "path";
 
 const ENTITIES_DIR = resolve(__dirname, "../src/modules");
-const entityFiles = globSync(`${ENTITIES_DIR}/**/entities/*.entity.ts`);
+
+function findEntityFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const stat = statSync(full);
+    if (stat.isDirectory()) {
+      files.push(...findEntityFiles(full));
+    } else if (entry.endsWith(".entity.ts")) {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+const entityFiles = findEntityFiles(ENTITIES_DIR);
 
 let violations = 0;
 
