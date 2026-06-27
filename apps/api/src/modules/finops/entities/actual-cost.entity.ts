@@ -43,7 +43,7 @@ export class ActualCost {
   componentId: string;
 
   @ManyToOne(() => Component, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component;
 
   @ApiProperty({

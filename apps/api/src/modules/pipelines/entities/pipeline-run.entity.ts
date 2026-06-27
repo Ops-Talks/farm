@@ -52,7 +52,7 @@ export class PipelineRun {
   @ManyToOne(() => Pipeline, (pipeline) => pipeline.runs, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "pipelineId" })
+  @JoinColumn({ name: "pipeline_id" })
   pipeline: Pipeline;
 
   @ApiProperty({

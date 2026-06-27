@@ -105,7 +105,7 @@ export class PostMortem {
   organizationId: string;
 
   @OneToOne(() => Incident)
-  @JoinColumn({ name: "incidentId" })
+  @JoinColumn({ name: "incident_id" })
   incident: Incident;
 
   @ApiProperty({

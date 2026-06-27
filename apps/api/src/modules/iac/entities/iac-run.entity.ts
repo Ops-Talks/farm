@@ -58,7 +58,7 @@ export class IacRun {
   stackId: string;
 
   @ManyToOne(() => IacStack, (stack) => stack.runs, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "stackId" })
+  @JoinColumn({ name: "stack_id" })
   stack: IacStack;
 
   @ApiProperty({

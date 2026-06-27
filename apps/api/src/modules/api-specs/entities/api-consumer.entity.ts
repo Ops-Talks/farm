@@ -26,7 +26,7 @@ export class ApiConsumer {
   apiSpecId: string;
 
   @ManyToOne(() => ApiSpec, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "apiSpecId" })
+  @JoinColumn({ name: "api_spec_id" })
   apiSpec: ApiSpec;
 
   @ApiProperty({
@@ -37,7 +37,7 @@ export class ApiConsumer {
   consumerComponentId: string | null;
 
   @ManyToOne(() => Component, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "consumerComponentId" })
+  @JoinColumn({ name: "consumer_component_id" })
   consumerComponent: Component | null;
 
   @ApiProperty({

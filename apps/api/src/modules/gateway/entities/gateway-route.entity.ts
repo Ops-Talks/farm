@@ -63,7 +63,7 @@ export class GatewayRoute {
   componentId: string | null;
 
   @ManyToOne(() => Component, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component | null;
 
   @ApiProperty({

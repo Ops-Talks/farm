@@ -52,13 +52,13 @@ export class UserOrganization {
   role: OrgRole;
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "userId" })
+  @JoinColumn({ name: "user_id" })
   user: User;
 
   @ManyToOne(() => Organization, (org) => org.userOrganizations, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "organizationId" })
+  @JoinColumn({ name: "organization_id" })
   organization: Organization;
 
   @ApiProperty({

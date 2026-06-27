@@ -51,7 +51,7 @@ export class IacModuleVersion {
   moduleId: string;
 
   @ManyToOne(() => IacModule, (m) => m.versions, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "moduleId" })
+  @JoinColumn({ name: "module_id" })
   module: IacModule;
 
   @ApiProperty({

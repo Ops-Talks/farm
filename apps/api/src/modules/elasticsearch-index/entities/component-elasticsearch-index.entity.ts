@@ -46,7 +46,7 @@ export class ComponentElasticsearchIndex {
    * loaded to keep per-component queries cheap.
    */
   @ManyToOne(() => Component, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component?: Component;
 
   @ApiProperty({

@@ -172,15 +172,15 @@ export class CostController {
               (qb) =>
                 qb
                   .subQuery()
-                  .select("latest.componentId", "componentId")
-                  .addSelect("MAX(latest.syncedAt)", "latestSyncedAt")
+                  .select("latest.component_id", "component_id")
+                  .addSelect("MAX(latest.synced_at)", "latest_synced_at")
                   .from(ActualCost, "latest")
-                  .where("latest.componentId IN (:...ids)", {
+                  .where("latest.component_id IN (:...ids)", {
                     ids: componentIds,
                   })
-                  .groupBy("latest.componentId"),
+                  .groupBy("latest.component_id"),
               "latest_per_component",
-              'latest_per_component."componentId" = ac."componentId" AND latest_per_component."latestSyncedAt" = ac."syncedAt"',
+              'latest_per_component."component_id" = ac."component_id" AND latest_per_component."latest_synced_at" = ac."synced_at"',
             )
             .getMany()
         : [];
@@ -238,12 +238,12 @@ export class CostController {
         (qb) =>
           qb
             .subQuery()
-            .select("latest.componentId", "componentId")
-            .addSelect("MAX(latest.syncedAt)", "latestSync")
+            .select("latest.component_id", "component_id")
+            .addSelect("MAX(latest.synced_at)", "latest_sync")
             .from(ActualCost, "latest")
-            .groupBy("latest.componentId"),
+            .groupBy("latest.component_id"),
         "latest_per_component",
-        'latest_per_component."componentId" = ac."componentId" AND latest_per_component."latestSync" = ac."syncedAt"',
+        'latest_per_component."component_id" = ac."component_id" AND latest_per_component."latest_sync" = ac."synced_at"',
       )
       .orderBy("ac.totalCost", "DESC")
       .limit(n)

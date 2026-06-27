@@ -71,7 +71,7 @@ export class IncidentUpdate {
   @ManyToOne(() => Incident, (incident) => incident.updates, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "incidentId" })
+  @JoinColumn({ name: "incident_id" })
   incident: Incident;
 
   @ApiProperty({
