@@ -3,11 +3,18 @@ import { ApiProperty } from "@nestjs/swagger";
 import { OrgRole } from "@farm/types";
 
 export class UpdateUserRoleDto {
-  @ApiProperty({ description: "Organization id" })
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440000",
+    description: "Organization id",
+  })
   @IsUUID()
   orgId: string;
 
-  @ApiProperty({ enum: OrgRole, description: "New org role" })
+  @ApiProperty({
+    enum: OrgRole,
+    example: OrgRole.VIEWER,
+    description: "New org role",
+  })
   @IsEnum(OrgRole)
   role: OrgRole;
 }
