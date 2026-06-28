@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Transform, Type } from "class-transformer";
+import { Transform } from "class-transformer";
 import {
   IsArray,
   IsInt,
@@ -55,7 +55,6 @@ export class AdvancedSearchQueryDto {
   tags?: string[];
 
   @IsOptional()
-  @Type(() => Number)
   @IsInt()
   @Min(1)
   @ApiProperty({
@@ -66,7 +65,6 @@ export class AdvancedSearchQueryDto {
   page?: number;
 
   @IsOptional()
-  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)

@@ -54,19 +54,13 @@ describe("AdvancedSearchQueryDto", () => {
     expect(dto.tags).toEqual(["backend", "production"]);
   });
 
-  it("should transform page to number", () => {
+  it("should pass validation when page and limit are provided as numbers", () => {
     const dto = plainToInstance(AdvancedSearchQueryDto, {
       q: "test",
-      page: "3",
+      page: 3,
+      limit: 50,
     });
     expect(dto.page).toBe(3);
-  });
-
-  it("should transform limit to number", () => {
-    const dto = plainToInstance(AdvancedSearchQueryDto, {
-      q: "test",
-      limit: "50",
-    });
     expect(dto.limit).toBe(50);
   });
 

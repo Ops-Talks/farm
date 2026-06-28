@@ -7,7 +7,7 @@ import {
   Min,
   Max,
 } from "class-validator";
-import { Transform } from "class-transformer";
+import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /**
@@ -45,11 +45,7 @@ export class ListViolationsDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }: { value: unknown }) => {
-    if (value === "true") return true;
-    if (value === "false") return false;
-    return value;
-  })
+  @Type(() => Boolean)
   resolved?: boolean;
 
   @ApiPropertyOptional({
@@ -61,7 +57,6 @@ export class ListViolationsDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Transform(({ value }: { value: unknown }) => Number(value))
   skip?: number = 0;
 
   @ApiPropertyOptional({
@@ -75,6 +70,5 @@ export class ListViolationsDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  @Transform(({ value }: { value: unknown }) => Number(value))
   take?: number = 20;
 }
