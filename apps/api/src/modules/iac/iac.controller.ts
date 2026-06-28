@@ -399,6 +399,7 @@ export class IacController {
    * @param authorization - Authorization header containing the static bearer token
    * @param dto - Resource topology payload
    */
+  @Public()
   @Post("stacks/:id/resources/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
