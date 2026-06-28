@@ -3,7 +3,6 @@ import { CloudResourceController } from "./cloud-resource.controller";
 import { CloudResourceService } from "./cloud-resource.service";
 import { CloudCostService } from "./cloud-cost.service";
 import { CloudSecretsService } from "./cloud-secrets.service";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CloudResource } from "./interfaces/cloud-resource.interface";
 import { DiscoverResourcesDto } from "./dto/discover-resources.dto";
 import { CloudCostDto } from "./dto/cloud-cost.dto";
@@ -49,8 +48,6 @@ describe("CloudResourceController", () => {
         { provide: CloudSecretsService, useValue: mockCloudSecretsService },
       ],
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
       .compile();
 
     controller = module.get<CloudResourceController>(CloudResourceController);
@@ -97,8 +94,6 @@ describe("CloudResourceController", () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
       })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
         .compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
@@ -147,8 +142,6 @@ describe("CloudResourceController", () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
       })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
         .compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
@@ -182,8 +175,6 @@ describe("CloudResourceController", () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
       })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
         .compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
@@ -218,8 +209,6 @@ describe("CloudResourceController", () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
       })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
         .compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 

@@ -7,7 +7,6 @@ import {
 import { OrgRole } from "@farm/types";
 import { InvitationController } from "../invitation.controller";
 import { InvitationService } from "../invitation.service";
-import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../../common/guards/org-roles.guard";
 
 const mockReq = (userId = "u-1") =>
@@ -48,8 +47,6 @@ describe("InvitationController (Phase 37)", () => {
       controllers: [InvitationController],
       providers: [{ provide: InvitationService, useValue: svc }],
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
       .overrideGuard(OrgRolesGuard)
       .useValue({ canActivate: () => true })
       .compile();

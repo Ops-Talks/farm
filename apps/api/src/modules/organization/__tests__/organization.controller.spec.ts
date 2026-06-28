@@ -7,7 +7,6 @@ import { MemberResponseDto } from "../dto/member-response.dto";
 import { InvitationResponseDto } from "../dto/invitation-response.dto";
 import { InvitationStatus } from "../entities/org-invitation.entity";
 import { PaginatedResponseDto } from "../../../common/dto";
-import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../../common/guards/org-roles.guard";
 import { OrgRole } from "@farm/types";
 
@@ -78,8 +77,6 @@ describe("OrganizationController", () => {
         },
       ],
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
       .overrideGuard(OrgRolesGuard)
       .useValue({ canActivate: () => true })
       .compile();

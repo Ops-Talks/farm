@@ -3,7 +3,6 @@ import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
 import { TeamType } from "./entities/team.entity";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 
@@ -64,8 +63,6 @@ describe("TeamsController", () => {
         },
       ],
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue(mockGuard)
       .overrideGuard(OrgRequiredGuard)
       .useValue(mockGuard)
       .overrideGuard(PermissionGuard)

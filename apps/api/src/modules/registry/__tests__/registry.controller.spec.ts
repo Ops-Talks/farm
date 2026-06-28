@@ -7,7 +7,6 @@ import {
 import { RegistryController } from "../registry.controller";
 import { RegistryService } from "../registry.service";
 import { VulnerabilityService } from "../vulnerability.service";
-import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { getQueueToken } from "@nestjs/bullmq";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import {
@@ -71,8 +70,6 @@ describe("RegistryController", () => {
         { provide: VulnerabilityService, useValue: mockVulnService },
       ],
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
       .overrideGuard(OrgRequiredGuard)
       .useValue({ canActivate: () => true })
       .compile();
@@ -238,8 +235,6 @@ describe("RegistryController — additional endpoints", () => {
       controllers: [RegistryController],
       providers,
     })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
       .overrideGuard(OrgRequiredGuard)
       .useValue({ canActivate: () => true })
       .compile();
