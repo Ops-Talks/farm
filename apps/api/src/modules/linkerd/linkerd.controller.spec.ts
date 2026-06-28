@@ -1,6 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { Reflector } from "@nestjs/core";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { LinkerdController } from "./linkerd.controller";
 import { LinkerdService } from "./linkerd.service";
 import { LinkerdMetricsService } from "./linkerd-metrics.service";
@@ -100,10 +99,7 @@ describe("LinkerdController", () => {
         { provide: LinkerdMetricsService, useValue: mockLinkerdMetricsService },
         Reflector,
       ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
     controller = module.get<LinkerdController>(LinkerdController);
   });

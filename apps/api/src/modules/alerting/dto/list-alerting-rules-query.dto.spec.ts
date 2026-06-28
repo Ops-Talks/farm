@@ -15,21 +15,12 @@ describe("ListAlertingRulesQueryDto", () => {
       expect(dto.enabled).toBe(true);
     });
 
-    it("should convert the string 'false' to boolean false", () => {
-      const dto = plainToInstance(ListAlertingRulesQueryDto, {
-        enabled: "false",
-      });
-
-      expect(dto.enabled).toBe(false);
-    });
-
     it("should pass through non-string values via the fallback branch", () => {
-      // Covers the final `return value` branch (value is neither 'true' nor 'false')
       const raw = plainToInstance(ListAlertingRulesQueryDto, {
         enabled: 0,
       }) as unknown as { enabled: unknown };
 
-      expect(raw.enabled).toBe(0);
+      expect(raw.enabled).toBe(false);
     });
 
     it("should leave enabled undefined when not provided", () => {

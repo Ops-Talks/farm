@@ -1,15 +1,32 @@
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import {
+  ExecutionContext,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";
 import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 
-/**
- * Guard that protects routes using JWT authentication.
- * Distinguishes between expired tokens (routine, DEBUG) and invalid
- * signatures (potential tampering, WARN) for better log signal-to-noise.
- */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard("jwt") {
   private readonly logger = new Logger(JwtAuthGuard.name);
+
+  constructor(private readonly reflector: Reflector) {
+    super();
+  }
+
+  override canActivate(context: ExecutionContext): boolean {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
+    return super.canActivate(context) as boolean;
+  }
 
   handleRequest<TUser = unknown>(
     err: unknown,
@@ -22,10 +39,8 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
     }
     if (info instanceof JsonWebTokenError) {
       this.logger.warn(
-        "Invalid JWT signature received — possible token tampering",
-        {
-          context: JwtAuthGuard.name,
-        },
+        "Invalid JWT signature received - possible token tampering",
+        { context: JwtAuthGuard.name },
       );
       throw new UnauthorizedException("Invalid token");
     }

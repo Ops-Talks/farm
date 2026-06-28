@@ -36,7 +36,6 @@ import { Dashboard } from "./entities/dashboard.entity";
 import { DashboardWidget } from "./entities/dashboard-widget.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
@@ -54,7 +53,7 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
+@UseGuards(OrgRequiredGuard, RolesGuard)
 @Controller("dashboards")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

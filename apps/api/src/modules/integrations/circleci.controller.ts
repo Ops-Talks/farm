@@ -16,7 +16,6 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { CircleCIService, CircleCIPipeline } from "./circleci.service";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -27,7 +26,7 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("CircleCI")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("circleci")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

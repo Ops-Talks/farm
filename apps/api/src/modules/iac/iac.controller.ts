@@ -26,7 +26,6 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -43,6 +42,7 @@ import { StackListQueryDto } from "./dto/stack-list-query.dto";
 import { StackDetailDto } from "./dto/stack-detail.dto";
 import { IacRun } from "./entities/iac-run.entity";
 import { IacModuleDrift } from "./entities/iac-module-drift.entity";
+import { Public } from "../../common/decorators/public.decorator";
 
 /**
  * Extracts the raw bearer token value from an Authorization header string.
@@ -100,6 +100,7 @@ export class IacController {
    * @param dto - Run report payload
    * @returns The persisted IacRun record
    */
+  @Public()
   @Post("runs/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
@@ -140,6 +141,7 @@ export class IacController {
    * @param dto - Stack list payload
    * @returns Created and updated record counts
    */
+  @Public()
   @Post("stacks/import")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 2 } })
@@ -185,6 +187,7 @@ export class IacController {
    * @param authorization - Authorization header containing the static bearer token
    * @param dto - Module drift payload
    */
+  @Public()
   @Post("module-drift/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
@@ -221,7 +224,7 @@ export class IacController {
    * @returns Array of StackDetailDto
    */
   @Get("stacks")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -256,7 +259,7 @@ export class IacController {
    * @returns StackDetailDto
    */
   @Get("stacks/:id")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -297,7 +300,7 @@ export class IacController {
    * @returns Paginated run list with total count
    */
   @Get("stacks/:id/runs")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -336,7 +339,7 @@ export class IacController {
    * @returns DashboardDto with per-environment stack summaries
    */
   @Get("dashboard")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -365,7 +368,7 @@ export class IacController {
    * @returns Array of IacModuleDrift records
    */
   @Get("module-drift")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -396,6 +399,7 @@ export class IacController {
    * @param authorization - Authorization header containing the static bearer token
    * @param dto - Resource topology payload
    */
+  @Public()
   @Post("stacks/:id/resources/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
@@ -440,7 +444,7 @@ export class IacController {
    * @returns ResourceMapDto
    */
   @Get("stacks/:id/resources")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",

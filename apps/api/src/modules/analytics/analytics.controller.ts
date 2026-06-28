@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  HttpStatus,
-  Query,
-  Res,
-  UseGuards,
-} from "@nestjs/common";
+import { Controller, Get, HttpStatus, Query, Res } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -18,7 +11,6 @@ import { AnalyticsService } from "./analytics.service";
 import { CatalogAnalyticsDto } from "./dto/catalog-analytics.dto";
 import { DoraAnalyticsDto } from "./dto/dora-analytics.dto";
 import { UsageAnalyticsDto } from "./dto/usage-analytics.dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
 /**
@@ -46,7 +38,6 @@ function toCsv(rows: Record<string, string | number>[]): string {
  */
 @ApiTags("Analytics")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("analytics")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

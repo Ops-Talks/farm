@@ -8,7 +8,6 @@ import {
 import { InvitationsController } from "../invitations.controller";
 import { OrganizationService } from "../organization.service";
 import { MemberResponseDto } from "../dto/member-response.dto";
-import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { OrgRole } from "@farm/types";
 
 interface AuthenticatedRequest extends ExpressRequest {
@@ -46,10 +45,7 @@ describe("InvitationsController", () => {
           },
         },
       ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
     controller = module.get<InvitationsController>(InvitationsController);
     service = module.get<OrganizationService>(OrganizationService);

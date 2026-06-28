@@ -19,6 +19,7 @@ import { Request } from "express";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
 import { DocsWebhookDto } from "./dto/docs-webhook.dto";
 import { DocsBuildJobData } from "./docs-build.processor";
+import { Public } from "../../common/decorators/public.decorator";
 
 /**
  * Regex that identifies file paths relevant to documentation builds.
@@ -52,6 +53,7 @@ function hasRelevantChanges(commits: DocsWebhookDto["commits"]): boolean {
  * environment variable must be configured; requests are rejected with HTTP 403
  * when the secret is not set.
  */
+@Public()
 @ApiTags("Documentation")
 @Controller("docs")
 export class DocsWebhookController {

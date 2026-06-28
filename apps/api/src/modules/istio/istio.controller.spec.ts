@@ -1,7 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { IstioController } from "./istio.controller";
 import { IstioService } from "./istio.service";
 import { IstioMetricsService } from "./istio-metrics.service";
@@ -91,10 +90,7 @@ describe("IstioController", () => {
         { provide: IstioMetricsService, useValue: mockIstioMetricsService },
         Reflector,
       ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
     controller = module.get<IstioController>(IstioController);
   });

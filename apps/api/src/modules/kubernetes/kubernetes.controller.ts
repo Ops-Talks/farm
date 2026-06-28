@@ -7,7 +7,6 @@ import {
   Query,
   Body,
   Req,
-  UseGuards,
   HttpStatus,
   HttpCode,
   Optional,
@@ -23,7 +22,6 @@ import {
   ApiOkResponse,
   ApiCreatedResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import {
   KubernetesService,
   KubernetesWorkload,
@@ -78,7 +76,6 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Kubernetes")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("kubernetes")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Req } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -6,7 +6,6 @@ import {
   ApiQuery,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SearchService, QuickSearchResult } from "./search.service";
 import { AdvancedSearchQueryDto } from "./dto/advanced-search-query.dto";
@@ -18,7 +17,6 @@ import type { AdvancedSearchResult } from "./interfaces/advanced-search-result.i
  */
 @ApiTags("Search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: 401,
   description: "Unauthorized — missing or invalid JWT.",

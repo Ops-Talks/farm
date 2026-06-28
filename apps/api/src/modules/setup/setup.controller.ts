@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards, Req } from "@nestjs/common";
+import { Controller, Get, Post, Param, Req } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
@@ -6,7 +6,6 @@ import {
   ApiResponse,
   ApiParam,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { SetupService, SetupChecklistItem } from "./setup.service";
 
@@ -15,7 +14,6 @@ import { SetupService, SetupChecklistItem } from "./setup.service";
  */
 @ApiTags("Setup")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: 401,
   description: "Unauthorized — missing or invalid JWT.",

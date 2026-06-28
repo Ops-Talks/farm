@@ -32,7 +32,6 @@ import { User } from "../auth/entities/user.entity";
 import { Component } from "../catalog/entities/component.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
@@ -52,7 +51,7 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@UseGuards(OrgRequiredGuard, PermissionGuard)
 @Controller("teams")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

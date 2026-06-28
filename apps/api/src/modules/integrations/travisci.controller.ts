@@ -16,7 +16,6 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { TravisCIService, TravisCIBuild } from "./travisci.service";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -27,7 +26,7 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Travis CI")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("travisci")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

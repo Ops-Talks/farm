@@ -28,7 +28,6 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -65,7 +64,7 @@ import { Component } from "../catalog/entities/component.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard)
+@UseGuards(OrgRequiredGuard)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",

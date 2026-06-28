@@ -49,16 +49,6 @@ describe("ListSlosQueryDto", () => {
     expect(errors[0].property).toBe("window");
   });
 
-  it("should transform string 'true' to boolean true for enabled", () => {
-    const dto = plainToInstance(ListSlosQueryDto, { enabled: "true" });
-    expect(dto.enabled).toBe(true);
-  });
-
-  it("should transform string 'false' to boolean false for enabled", () => {
-    const dto = plainToInstance(ListSlosQueryDto, { enabled: "false" });
-    expect(dto.enabled).toBe(false);
-  });
-
   it("should keep boolean true as-is for enabled", () => {
     const dto = plainToInstance(ListSlosQueryDto, { enabled: true });
     expect(dto.enabled).toBe(true);

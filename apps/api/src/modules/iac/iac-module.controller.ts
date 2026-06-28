@@ -9,7 +9,6 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  UseGuards,
   UseInterceptors,
   ClassSerializerInterceptor,
 } from "@nestjs/common";
@@ -24,7 +23,6 @@ import {
   ApiParam,
   ApiQuery,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { IacModuleService } from "./iac-module.service";
 import { IacModuleSyncService } from "./iac-module-sync.service";
@@ -43,7 +41,6 @@ import { IacModuleVersion } from "./entities/iac-module-version.entity";
  * All endpoints require JWT authentication.
  */
 @ApiTags("IaC Modules")
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("iac-modules")

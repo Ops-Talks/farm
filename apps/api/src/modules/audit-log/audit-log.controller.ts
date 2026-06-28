@@ -16,7 +16,6 @@ import {
 } from "@nestjs/swagger";
 import { AuditLogService } from "./audit-log.service";
 import { AuditLog } from "./entities/audit-log.entity";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -38,7 +37,7 @@ class AuditLogsQueryDto {
  */
 @ApiTags("Audit Log")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("audit-logs")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

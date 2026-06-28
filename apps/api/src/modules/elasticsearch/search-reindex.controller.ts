@@ -12,7 +12,6 @@ import {
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -24,7 +23,7 @@ import { SearchIndexService } from "./search-index.service";
  */
 @ApiTags("Search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("search")
 export class SearchReindexController {
   constructor(private readonly searchIndexService: SearchIndexService) {}

@@ -5,7 +5,6 @@ import {
   Query,
   Param,
   Body,
-  UseGuards,
   Logger,
   HttpCode,
   HttpStatus,
@@ -19,7 +18,6 @@ import {
   ApiParam,
   ApiQuery,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { CloudResourceService } from "./cloud-resource.service";
 import { CloudCostService } from "./cloud-cost.service";
 import { CloudSecretsService } from "./cloud-secrets.service";
@@ -34,7 +32,6 @@ import { CloudResource } from "./interfaces/cloud-resource.interface";
  */
 @ApiTags("Cloud")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

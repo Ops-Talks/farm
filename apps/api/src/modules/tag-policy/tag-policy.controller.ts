@@ -21,7 +21,6 @@ import {
   ApiNoContentResponse,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -40,7 +39,7 @@ import { ComplianceSummaryDto } from "./dto/compliance-summary.dto";
  */
 @ApiTags("Tag Policies")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("tag-policies")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

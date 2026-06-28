@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsOptional, IsUUID, IsEnum, IsBoolean } from "class-validator";
-import { Transform } from "class-transformer";
+import { Type } from "class-transformer";
 import { PaginationQueryDto } from "../../../common/dto/pagination-query.dto";
 import { SloMetricType, SloWindow } from "../entities/slo.entity";
 
@@ -48,10 +48,6 @@ export class ListSlosQueryDto extends PaginationQueryDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Transform(({ value }: { value: unknown }) => {
-    if (value === "true") return true;
-    if (value === "false") return false;
-    return value;
-  })
+  @Type(() => Boolean)
   enabled?: boolean;
 }

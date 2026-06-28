@@ -21,12 +21,14 @@ import {
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { FarmEvent } from "../../common/events/events.interfaces";
 import { createHmac, timingSafeEqual } from "crypto";
+import { Public } from "../../common/decorators/public.decorator";
 
 /**
  * Controller for receiving inbound CI/CD webhook payloads.
  * All endpoints are unauthenticated (webhook secrets are validated
  * at the service layer if required) and return HTTP 200.
  */
+@Public()
 @ApiTags("Webhooks")
 @Controller("webhooks")
 export class WebhookReceiverController {

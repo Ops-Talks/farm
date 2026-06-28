@@ -3,7 +3,6 @@ import { NotFoundException, ForbiddenException } from "@nestjs/common";
 import { OrgRole } from "@farm/types";
 import { UserManagementController } from "../user-management.controller";
 import { UserManagementService } from "../user-management.service";
-import { JwtAuthGuard } from "../../../common/guards/jwt-auth.guard";
 import { AuditLogService } from "../../audit-log/audit-log.service";
 
 const mockUser = {
@@ -55,10 +54,7 @@ describe("UserManagementController", () => {
         { provide: UserManagementService, useValue: svc },
         { provide: AuditLogService, useValue: auditLog },
       ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
-      .compile();
+    }).compile();
 
     controller = module.get(UserManagementController);
   });
@@ -289,10 +285,7 @@ describe("UserManagementController", () => {
       const module2: TestingModule = await Test.createTestingModule({
         controllers: [UserManagementController],
         providers: [{ provide: UserManagementService, useValue: svc }],
-      })
-        .overrideGuard(JwtAuthGuard)
-        .useValue({ canActivate: () => true })
-        .compile();
+      }).compile();
 
       const ctrl2 = module2.get(UserManagementController);
       svc.getUser.mockResolvedValue(makeView());

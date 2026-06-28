@@ -11,7 +11,6 @@ import {
   Post,
   Query,
   Request,
-  UseGuards,
   Optional,
   Inject,
 } from "@nestjs/common";
@@ -27,7 +26,6 @@ import {
 } from "@nestjs/swagger";
 import { Request as ExpressRequest } from "express";
 import { OrgRole } from "@farm/types";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import {
   ManagedUserView,
   UserListResult,
@@ -48,7 +46,6 @@ interface AuthenticatedRequest extends ExpressRequest {
  */
 @ApiTags("User Management")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

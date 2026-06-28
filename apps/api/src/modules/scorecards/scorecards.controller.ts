@@ -7,7 +7,6 @@ import {
   Post,
   Query,
   Req,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -17,7 +16,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ScorecardLevel } from "./entities/scorecard-result.entity";
 import { ScorecardsService } from "./scorecards.service";
@@ -34,7 +32,6 @@ import {
  */
 @ApiTags("Scorecards")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

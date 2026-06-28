@@ -1,4 +1,4 @@
-import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, HttpStatus, Query } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -6,7 +6,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { LinkerdService } from "./linkerd.service";
 import { LinkerdMetricsService } from "./linkerd-metrics.service";
 import {
@@ -25,7 +24,6 @@ import {
  */
 @ApiTags("Linkerd")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("linkerd")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

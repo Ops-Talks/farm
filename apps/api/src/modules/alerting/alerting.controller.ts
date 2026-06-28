@@ -28,7 +28,6 @@ import { ListAlertingRulesQueryDto } from "./dto/list-alerting-rules-query.dto";
 import { AlertingRule } from "./entities/alerting-rule.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 
@@ -37,7 +36,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
  */
 @ApiTags("Alerting Rules")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("alerting-rules")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

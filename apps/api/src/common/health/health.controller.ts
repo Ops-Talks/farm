@@ -9,11 +9,13 @@ import {
   HealthCheckResult,
 } from "@nestjs/terminus";
 import { ConfigService } from "@nestjs/config";
+import { Public } from "../decorators/public.decorator";
 
 /**
  * Health controller providing advanced monitoring of system resources
  * and database connectivity using Terminus.
  */
+@Public()
 @ApiTags("Health")
 @Controller({ path: "health", version: VERSION_NEUTRAL })
 export class HealthController {

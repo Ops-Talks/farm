@@ -1,6 +1,5 @@
 import { IsIn, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
 
 /**
  * DTO for requesting cloud cost data.
@@ -23,7 +22,6 @@ export class CloudCostDto {
     default: 30,
   })
   @IsOptional()
-  @Type(() => Number)
   @IsNumber()
   @Min(1)
   days?: number;

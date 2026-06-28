@@ -38,7 +38,6 @@ import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { User } from "./entities/user.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
@@ -46,6 +45,7 @@ import { KeycloakSyncJobData } from "./keycloak-sync.service";
 import { LdapAuthGuard } from "./guards/ldap-auth.guard";
 import { KeycloakDynamicGuard } from "./guards/keycloak-auth.guard";
 import { KeycloakCallbackGuard } from "./guards/keycloak-callback.guard";
+import { Public } from "../../common/decorators/public.decorator";
 
 /**
  * Controller for authentication and user management operations.
@@ -78,6 +78,7 @@ export class AuthController {
    * @param loginDto - Login credentials
    * @returns The authenticated user, access token, and refresh token
    */
+  @Public()
   @Post("login")
   @HttpCode(HttpStatus.OK)
   @SkipThrottle({ long: true })
@@ -114,6 +115,7 @@ export class AuthController {
    * @param refreshTokenDto - Username and current refresh token
    * @returns A new access token and rotated refresh token
    */
+  @Public()
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @Throttle({ short: { ttl: 60000, limit: 10 } })
@@ -153,7 +155,7 @@ export class AuthController {
    * @returns An array of all user profiles
    */
   @Get("users")
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get all users (admin only)" })
@@ -182,7 +184,6 @@ export class AuthController {
    * @returns The authenticated user entity
    */
   @Get("profile")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get current user profile" })
@@ -209,7 +210,6 @@ export class AuthController {
    * @returns The updated user entity
    */
   @Patch("profile")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Update current user profile" })
@@ -242,7 +242,6 @@ export class AuthController {
    * @param dto - Current password, new password, and confirmation
    */
   @Patch("profile/password")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Change current user password" })
@@ -268,6 +267,7 @@ export class AuthController {
   }
 
   /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
+  @Public()
   @Get("github")
   @UseGuards(AuthGuard("github"))
   @SkipThrottle()
@@ -277,6 +277,7 @@ export class AuthController {
   }
 
   /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
+  @Public()
   @Get("github/callback")
   @UseGuards(AuthGuard("github"))
   @SkipThrottle()
@@ -302,6 +303,7 @@ export class AuthController {
   }
 
   /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
+  @Public()
   @Get("google")
   @UseGuards(AuthGuard("google"))
   @SkipThrottle()
@@ -311,6 +313,7 @@ export class AuthController {
   }
 
   /** OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI. */
+  @Public()
   @Get("google/callback")
   @UseGuards(AuthGuard("google"))
   @SkipThrottle()
@@ -342,6 +345,7 @@ export class AuthController {
    *
    * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
    */
+  @Public()
   @Get("keycloak")
   @UseGuards(KeycloakDynamicGuard)
   @SkipThrottle()
@@ -356,6 +360,7 @@ export class AuthController {
    *
    * OAuth callback — browser redirect flow, not a REST endpoint. Excluded from Swagger UI.
    */
+  @Public()
   @Get("keycloak/callback")
   @UseGuards(KeycloakCallbackGuard)
   @SkipThrottle()
@@ -373,6 +378,7 @@ export class AuthController {
    * @param req - Express request carrying the validated LDAP user
    * @returns JWT tokens and user profile
    */
+  @Public()
   @Post("login/ldap")
   @HttpCode(HttpStatus.OK)
   @UseGuards(LdapAuthGuard)
@@ -390,6 +396,7 @@ export class AuthController {
    * Always includes "local". Other providers are listed when their
    * required environment variables are set.
    */
+  @Public()
   @Get("providers")
   @SkipThrottle()
   @HttpCode(HttpStatus.OK)
@@ -434,7 +441,7 @@ export class AuthController {
    * @returns Whether the job was successfully enqueued
    */
   @Post("keycloak/sync/:orgId")
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles("admin")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
