@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { register as promRegister, openMetricsContentType } from "prom-client";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
+import { APP_GUARD, APP_INTERCEPTOR, ModuleRef } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ObservabilityInfraModule } from "./infra/observability/observability-infra.module";
@@ -57,6 +57,7 @@ import { configuration, validationSchema } from "./config/configuration";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 
+import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
 import { OrgContextInterceptor } from "./common/interceptors/org-context.interceptor";
 
 // Switch the default Prometheus registry to OpenMetrics content type so that
@@ -135,6 +136,10 @@ if (typeof _promSetContentType === "function") {
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: OrgContextInterceptor,
