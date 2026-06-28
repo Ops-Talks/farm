@@ -32,6 +32,40 @@ export class CreatePipelineDto {
 
   @ApiPropertyOptional({
     description: "Ordered list of pipeline stages",
+    example: [
+      {
+        id: "550e8400-e29b-41d4-a716-446655440010",
+        name: "Build",
+        type: "build",
+        config: { command: "npm run build" },
+        order: 1,
+        backend: {
+          provider: "github-actions",
+          ref: "main",
+          workflowId: "ci.yml",
+        },
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440011",
+        name: "Approval",
+        type: "approval",
+        config: { requiredApprovers: 1 },
+        order: 2,
+      },
+      {
+        id: "550e8400-e29b-41d4-a716-446655440012",
+        name: "Deploy",
+        type: "deploy",
+        config: { environment: "production" },
+        order: 3,
+        backend: {
+          provider: "argocd",
+          appName: "my-app",
+          componentId: "550e8400-e29b-41d4-a716-446655440001",
+          environmentId: "550e8400-e29b-41d4-a716-446655440002",
+        },
+      },
+    ],
     type: "array",
     items: {
       type: "object",

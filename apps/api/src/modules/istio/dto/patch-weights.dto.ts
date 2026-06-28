@@ -1,3 +1,4 @@
+import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
   IsArray,
@@ -15,15 +16,20 @@ import {
  */
 class WeightEntryDto {
   /** Kubernetes service host name (destination). */
+  @ApiProperty({ example: "reviews", description: "Destination service name" })
   @IsString()
   @IsNotEmpty()
-  destination!: string;
+  destination: string;
 
   /** Traffic weight assigned to this destination (0-100). */
+  @ApiProperty({
+    example: 80,
+    description: "Traffic weight percentage (0-100)",
+  })
   @IsInt()
   @Min(0)
   @Max(100)
-  weight!: number;
+  weight: number;
 }
 
 /**
@@ -36,8 +42,13 @@ class WeightEntryDto {
  */
 export class PatchWeightsDto {
   /** Ordered list of destination/weight pairs. */
+  @ApiProperty({
+    type: [WeightEntryDto],
+    description: "Array of destination-to-weight mappings",
+    example: [{ destination: "reviews", weight: 80 }],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WeightEntryDto)
-  weights!: WeightEntryDto[];
+  weights: WeightEntryDto[];
 }

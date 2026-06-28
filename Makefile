@@ -108,6 +108,12 @@ fmt:
 api-test:
 	npm run api:test
 
+swagger-validate:
+	npm run swagger:validate -w apps/api
+
+columns-validate:
+	npm run columns:validate -w apps/api
+
 check-back: fmt lint api-test test-e2e api-build
 
 api-build:

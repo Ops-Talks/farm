@@ -163,7 +163,7 @@ export class Pipeline {
     nullable: true,
   })
   @Index()
-  @Column({ name: "component_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   componentId: string | null;
 
   @ManyToOne(() => Component, {
@@ -171,7 +171,7 @@ export class Pipeline {
     nullable: true,
     eager: false,
   })
-  @JoinColumn({ name: "component_id" })
+  @JoinColumn()
   component: Component | null;
 
   @OneToMany(() => PipelineRun, (run) => run.pipeline)

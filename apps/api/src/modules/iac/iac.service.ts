@@ -312,15 +312,15 @@ export class IacService {
           (qb) =>
             qb
               .subQuery()
-              .select("latest.stackId", "stackId")
-              .addSelect("MAX(latest.startedAt)", "startedAt")
+              .select("latest.stack_id", "stack_id")
+              .addSelect("MAX(latest.started_at)", "started_at")
               .from(IacRun, "latest")
-              .where("latest.stackId IN (:...stackIds)", { stackIds })
-              .groupBy("latest.stackId"),
+              .where("latest.stack_id IN (:...stackIds)", { stackIds })
+              .groupBy("latest.stack_id"),
           "latest_run",
-          'latest_run."stackId" = run."stackId" AND latest_run."startedAt" = run."startedAt"',
+          'latest_run."stack_id" = run."stack_id" AND latest_run."started_at" = run."started_at"',
         )
-        .where('run."stackId" IN (:...stackIds)', { stackIds })
+        .where('run."stack_id" IN (:...stackIds)', { stackIds })
         .getMany();
 
       for (const run of latestRuns) {
@@ -446,18 +446,18 @@ export class IacService {
         (qb) =>
           qb
             .subQuery()
-            .select("latest.stackId", "stackId")
+            .select("latest.stack_id", "stack_id")
             .addSelect(
-              "MAX(COALESCE(latest.startedAt, latest.createdAt))",
-              "effectiveStartedAt",
+              "MAX(COALESCE(latest.started_at, latest.created_at))",
+              "effective_started_at",
             )
             .from(IacRun, "latest")
-            .where("latest.stackId IN (:...stackIds)", { stackIds })
-            .groupBy("latest.stackId"),
+            .where("latest.stack_id IN (:...stackIds)", { stackIds })
+            .groupBy("latest.stack_id"),
         "latest_run",
-        'latest_run."stackId" = run."stackId" AND latest_run."effectiveStartedAt" = COALESCE(run."startedAt", run."createdAt")',
+        'latest_run."stack_id" = run."stack_id" AND latest_run."effective_started_at" = COALESCE(run."started_at", run."created_at")',
       )
-      .where('run."stackId" IN (:...stackIds)', { stackIds })
+      .where('run."stack_id" IN (:...stackIds)', { stackIds })
       .getMany();
 
     const map = new Map<string, IacRun>();

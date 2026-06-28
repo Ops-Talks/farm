@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import KeyvRedis from "@keyv/redis";
 import { CacheModule } from "@nestjs/cache-manager";
 import { DatabaseModule } from "../../common/database/database.module";
+import { SnakeNamingStrategy } from "../../common/database/snake-naming.strategy";
 import { QueuesModule } from "../../common/queues/queues.module";
 import { join } from "path";
 
@@ -51,6 +52,7 @@ export class DataInfraModule {
                   configService.get<number>("database.statementTimeout") ??
                   30000,
               },
+              namingStrategy: new SnakeNamingStrategy(),
             };
           },
         }),

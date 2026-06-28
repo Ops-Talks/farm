@@ -1,23 +1,35 @@
-import { IsString, MinLength, MaxLength } from "class-validator";
+import { IsNotEmpty, IsString, MinLength } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 
 /**
  * Data transfer object for changing the authenticated user's password.
  */
 export class ChangePasswordDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: "OldPass1",
+    description: "The user's current password",
+  })
   @IsString()
+  @IsNotEmpty()
   currentPassword: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({
+    minLength: 8,
+    example: "NewPass1",
+    description: "The new password",
+  })
   @IsString()
   @MinLength(8)
-  @MaxLength(128)
+  @IsNotEmpty()
   newPassword: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({
+    minLength: 8,
+    example: "NewPass1",
+    description: "Confirmation of the new password",
+  })
   @IsString()
   @MinLength(8)
-  @MaxLength(128)
+  @IsNotEmpty()
   confirmPassword: string;
 }

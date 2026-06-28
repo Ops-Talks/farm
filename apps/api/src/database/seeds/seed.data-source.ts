@@ -1,6 +1,7 @@
 import path from "path";
 import { DataSource } from "typeorm";
 import { config } from "dotenv";
+import { SnakeNamingStrategy } from "../../common/database/snake-naming.strategy";
 
 // Compiled output lives at apps/api/dist/database/seeds/.
 // Search for .env in apps/api/ first, then monorepo root as fallback.
@@ -24,5 +25,6 @@ export default new DataSource({
   database: process.env.DATABASE_NAME || "farm",
   entities: ["dist/**/*.entity.js"],
   migrations: ["dist/migrations/*.js"],
+  namingStrategy: new SnakeNamingStrategy(),
   synchronize: process.env.DATABASE_SYNC === "true",
 });

@@ -39,7 +39,7 @@ export class OrgInvitation {
   organizationId: string;
 
   @ManyToOne(() => Organization, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "organizationId" })
+  @JoinColumn({ name: "organization_id" })
   organization: Organization;
 
   @ApiProperty({ description: "Email address of the invitee" })

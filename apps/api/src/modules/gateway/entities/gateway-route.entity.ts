@@ -59,11 +59,11 @@ export class GatewayRoute {
     description: "Associated catalog component ID",
     nullable: true,
   })
-  @Column({ nullable: true })
+  @Column({ type: "uuid", nullable: true })
   componentId: string | null;
 
   @ManyToOne(() => Component, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component | null;
 
   @ApiProperty({

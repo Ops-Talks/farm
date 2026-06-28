@@ -102,7 +102,7 @@ export class Deployment {
     nullable: true,
   })
   @Index()
-  @Column({ name: "pipeline_run_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   pipelineRunId: string | null;
 
   @ApiProperty({
@@ -121,7 +121,7 @@ export class Deployment {
   componentId: string;
 
   @ManyToOne(() => Component, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component;
 
   @ApiProperty({
@@ -132,7 +132,7 @@ export class Deployment {
   environmentId: string;
 
   @ManyToOne(() => Environment, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "environmentId" })
+  @JoinColumn({ name: "environment_id" })
   environment: Environment;
 
   @ApiProperty({

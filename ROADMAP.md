@@ -91,7 +91,7 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 | Phase 58: CI/CD Pipeline Fixes | 1 | 3 | `DONE` |
 | Phase 59: Security Vulnerability Remediation | 4 | 25 | `DONE` |
 | Phase 60: ESLint Strict Mode, Type Safety & Test Infrastructure | 2 | 5 | `DONE` |
-| Phase 61: NestJS Code Quality | 3 | 12 | `TODO` |
+| Phase 61: NestJS Code Quality | 3 | 12 | `DONE` |
 | Phase 62: API Docs & DB Hygiene | 2 | 7 | `TODO` |
 | Phase 63: Security & Validation Hardening | 2 | 11 | `TODO` |
 | Phase 64: ESM Build & Import Modernization | 1 | 4 | `TODO` |
@@ -101,7 +101,7 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 
 ## Future
 
-Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. Phase 60 completed (ESLint strict mode, 2 stories). Phase 64 (ESM Build) extracted from deferred portions of Phase 60. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md). [Phase 61 implementation plan](docs/superpowers/plans/2026-06-25-phase61-nestjs-code-quality.md).
+Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. Phase 60 completed (ESLint strict mode, 2 stories). Phase 64 (ESM Build) extracted from deferred portions of Phase 60. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md). [Phase 61 plan](docs/superpowers/plans/2026-06-25-phase61-nestjs-code-quality.md). [Phase 62 plan](docs/superpowers/plans/2026-06-26-phase62-api-docs-db-hygiene.md).
 
 New phases should be added following the existing hierarchy and added to the Summary table above.
 

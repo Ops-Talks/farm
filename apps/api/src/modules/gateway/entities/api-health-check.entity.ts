@@ -35,11 +35,11 @@ export class ApiHealthCheck {
   latencyMs: number | null;
 
   @ApiProperty({ description: "Associated API spec ID", nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: "uuid", nullable: true })
   apiSpecId: string | null;
 
   @ManyToOne(() => ApiSpec, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "apiSpecId" })
+  @JoinColumn({ name: "api_spec_id" })
   apiSpec: ApiSpec | null;
 
   @ApiProperty({ description: "Timestamp when the check was performed" })

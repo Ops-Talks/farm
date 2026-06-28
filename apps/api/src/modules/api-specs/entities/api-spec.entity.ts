@@ -28,7 +28,7 @@ export class ApiSpec {
   componentId: string;
 
   @ManyToOne(() => Component, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component;
 
   @ApiProperty({ description: "Human-readable name of the spec" })

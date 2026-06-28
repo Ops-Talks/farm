@@ -31,7 +31,7 @@ export class CostEstimate {
     nullable: true,
   })
   @Index()
-  @Column({ name: "organization_id", type: "uuid", nullable: true })
+  @Column({ type: "uuid", nullable: true })
   organizationId: string | null;
 
   @ApiProperty({
@@ -43,7 +43,7 @@ export class CostEstimate {
   componentId: string;
 
   @ManyToOne(() => Component, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "componentId" })
+  @JoinColumn({ name: "component_id" })
   component: Component;
 
   @ApiProperty({

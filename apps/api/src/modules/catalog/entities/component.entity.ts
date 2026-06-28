@@ -198,7 +198,7 @@ export class Component {
   teamId: string;
 
   @ManyToOne(() => Team, { nullable: true, onDelete: "SET NULL" })
-  @JoinColumn({ name: "teamId" })
+  @JoinColumn({ name: "team_id" })
   team: Team;
 
   @ApiProperty({

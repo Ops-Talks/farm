@@ -119,6 +119,6 @@ export class DashboardWidget {
   @ManyToOne(() => Dashboard, (dashboard) => dashboard.widgets, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "dashboardId" })
+  @JoinColumn({ name: "dashboard_id" })
   dashboard: Dashboard;
 }

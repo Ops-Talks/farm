@@ -31,6 +31,906 @@
         ]
       }
     },
+    "/observability/summary": {
+      "get": {
+        "description": "Returns process uptime, memory usage, HTTP request counts by status, latency percentiles, and external tool links.",
+        "operationId": "ObservabilityController_getSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Metrics summary retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservabilitySummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get observability metrics summary",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/metrics/query": {
+      "get": {
+        "description": "Proxies an instant PromQL query to Prometheus /api/v1/query.",
+        "operationId": "ObservabilityController_prometheusQuery",
+        "parameters": [
+          {
+            "name": "time",
+            "required": false,
+            "in": "query",
+            "description": "Evaluation timestamp (Unix or RFC3339)",
+            "schema": {}
+          },
+          {
+            "name": "query",
+            "required": true,
+            "in": "query",
+            "description": "PromQL expression",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prometheus instant query result."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Instant PromQL query",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/metrics/query-range": {
+      "get": {
+        "description": "Proxies a range PromQL query to Prometheus /api/v1/query_range.",
+        "operationId": "ObservabilityController_prometheusQueryRange",
+        "parameters": [
+          {
+            "name": "step",
+            "required": true,
+            "in": "query",
+            "description": "Query resolution step (e.g. 15s, 1m)",
+            "schema": {}
+          },
+          {
+            "name": "end",
+            "required": true,
+            "in": "query",
+            "description": "End timestamp (Unix or RFC3339)",
+            "schema": {}
+          },
+          {
+            "name": "start",
+            "required": true,
+            "in": "query",
+            "description": "Start timestamp (Unix or RFC3339)",
+            "schema": {}
+          },
+          {
+            "name": "query",
+            "required": true,
+            "in": "query",
+            "description": "PromQL expression",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prometheus range query result."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Range PromQL query",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/metrics/labels": {
+      "get": {
+        "description": "Proxies a label names request to Prometheus /api/v1/labels.",
+        "operationId": "ObservabilityController_prometheusLabels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Prometheus labels list."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Prometheus label names",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/traces": {
+      "get": {
+        "description": "Proxies a trace search request to Tempo /api/search.",
+        "operationId": "ObservabilityController_tempoTraces",
+        "parameters": [
+          {
+            "name": "lookback",
+            "required": false,
+            "in": "query",
+            "description": "Lookback duration in seconds (e.g. 3600 or 3600s). Used as an alternative to explicit start/end.",
+            "schema": {}
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "End timestamp (Unix seconds)",
+            "schema": {}
+          },
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "Start timestamp (Unix seconds)",
+            "schema": {}
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of traces to return (default 20)",
+            "schema": {}
+          },
+          {
+            "name": "service",
+            "required": false,
+            "in": "query",
+            "description": "Service name to filter traces (maps to service.name tag)",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tempo trace search result (Jaeger-compatible)."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search traces",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/traces/services": {
+      "get": {
+        "description": "Returns service names from Tempo /api/search/tag/service.name/values.",
+        "operationId": "ObservabilityController_tempoServices",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tempo service names (Jaeger-compatible { data: string[] })."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List traced services",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/traces/{traceId}": {
+      "get": {
+        "description": "Proxies a trace detail request to Tempo /api/traces/:traceId.",
+        "operationId": "ObservabilityController_tempoTrace",
+        "parameters": [
+          {
+            "name": "traceId",
+            "required": true,
+            "in": "path",
+            "description": "The trace identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tempo trace detail (Jaeger-compatible { data: JaegerTrace[] })."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get trace by ID",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/logs": {
+      "get": {
+        "description": "Proxies a log query to Loki /loki/api/v1/query_range.",
+        "operationId": "ObservabilityController_lokiLogs",
+        "parameters": [
+          {
+            "name": "direction",
+            "required": false,
+            "in": "query",
+            "description": "Log order: forward or backward",
+            "schema": {}
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of log lines to return (default 100)",
+            "schema": {}
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "End timestamp (Unix nanoseconds or RFC3339)",
+            "schema": {}
+          },
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "Start timestamp (Unix nanoseconds or RFC3339)",
+            "schema": {}
+          },
+          {
+            "name": "query",
+            "required": true,
+            "in": "query",
+            "description": "LogQL expression",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Loki log query result."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Query logs",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/logs/labels": {
+      "get": {
+        "description": "Proxies a label names request to Loki /loki/api/v1/labels.",
+        "operationId": "ObservabilityController_lokiLabels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Loki label names."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List Loki label names",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/observability/logs/label/{name}/values": {
+      "get": {
+        "description": "Proxies a label values request to Loki /loki/api/v1/label/:name/values.",
+        "operationId": "ObservabilityController_lokiLabelValues",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "The label name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Loki label values."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Loki label values",
+        "tags": [
+          "Observability"
+        ]
+      }
+    },
+    "/traces/ingest": {
+      "post": {
+        "description": "Receives OTLP/JSON trace data from the browser and forwards it to the configured OTLP collector (Tempo). Requires a valid JWT — the browser OTel SDK attaches the token via the TracingInit component.",
+        "operationId": "TracesIngestController_ingestTrace",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Spans accepted by the collector."
+          }
+        },
+        "summary": "Ingest browser OTLP traces",
+        "tags": [
+          "Traces"
+        ]
+      }
+    },
+    "/queues": {
+      "get": {
+        "operationId": "QueuesController_listQueues",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Queue list retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueInfoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all queues with job counts",
+        "tags": [
+          "Queues"
+        ]
+      }
+    },
+    "/queues/{name}": {
+      "get": {
+        "operationId": "QueuesController_getQueue",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Queue name",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue info retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueInfoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Queue not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get queue info by name",
+        "tags": [
+          "Queues"
+        ]
+      }
+    },
+    "/queues/{name}/jobs": {
+      "get": {
+        "operationId": "QueuesController_listJobs",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Queue name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by job status (active, completed, failed, delayed, waiting)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "Offset for pagination (default 0)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Max results to return (default 20)",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job list retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobInfoDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Queue not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List jobs in a queue",
+        "tags": [
+          "Queues"
+        ]
+      }
+    },
+    "/queues/{name}/jobs/{jobId}": {
+      "get": {
+        "operationId": "QueuesController_getJob",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Queue name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "description": "Job ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job detail retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobInfoDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job or queue not found."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get job detail",
+        "tags": [
+          "Queues"
+        ]
+      }
+    },
+    "/queues/{name}/jobs/{jobId}/retry": {
+      "post": {
+        "operationId": "QueuesController_retryJob",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Queue name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "jobId",
+            "required": true,
+            "in": "path",
+            "description": "Job ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Job retry initiated."
+          },
+          "401": {
+            "description": "Unauthorized - Authentication token is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Job or queue not found, or job is not in failed state."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retry a failed job",
+        "tags": [
+          "Queues"
+        ]
+      }
+    },
     "/organizations": {
       "post": {
         "operationId": "OrganizationController_create",
@@ -1745,906 +2645,6 @@
         "summary": "Check application and database health status",
         "tags": [
           "Health"
-        ]
-      }
-    },
-    "/observability/summary": {
-      "get": {
-        "description": "Returns process uptime, memory usage, HTTP request counts by status, latency percentiles, and external tool links.",
-        "operationId": "ObservabilityController_getSummary",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Metrics summary retrieved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ObservabilitySummaryDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get observability metrics summary",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/metrics/query": {
-      "get": {
-        "description": "Proxies an instant PromQL query to Prometheus /api/v1/query.",
-        "operationId": "ObservabilityController_prometheusQuery",
-        "parameters": [
-          {
-            "name": "time",
-            "required": false,
-            "in": "query",
-            "description": "Evaluation timestamp (Unix or RFC3339)",
-            "schema": {}
-          },
-          {
-            "name": "query",
-            "required": true,
-            "in": "query",
-            "description": "PromQL expression",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Prometheus instant query result."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Instant PromQL query",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/metrics/query-range": {
-      "get": {
-        "description": "Proxies a range PromQL query to Prometheus /api/v1/query_range.",
-        "operationId": "ObservabilityController_prometheusQueryRange",
-        "parameters": [
-          {
-            "name": "step",
-            "required": true,
-            "in": "query",
-            "description": "Query resolution step (e.g. 15s, 1m)",
-            "schema": {}
-          },
-          {
-            "name": "end",
-            "required": true,
-            "in": "query",
-            "description": "End timestamp (Unix or RFC3339)",
-            "schema": {}
-          },
-          {
-            "name": "start",
-            "required": true,
-            "in": "query",
-            "description": "Start timestamp (Unix or RFC3339)",
-            "schema": {}
-          },
-          {
-            "name": "query",
-            "required": true,
-            "in": "query",
-            "description": "PromQL expression",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Prometheus range query result."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Range PromQL query",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/metrics/labels": {
-      "get": {
-        "description": "Proxies a label names request to Prometheus /api/v1/labels.",
-        "operationId": "ObservabilityController_prometheusLabels",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Prometheus labels list."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List Prometheus label names",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/traces": {
-      "get": {
-        "description": "Proxies a trace search request to Tempo /api/search.",
-        "operationId": "ObservabilityController_tempoTraces",
-        "parameters": [
-          {
-            "name": "lookback",
-            "required": false,
-            "in": "query",
-            "description": "Lookback duration in seconds (e.g. 3600 or 3600s). Used as an alternative to explicit start/end.",
-            "schema": {}
-          },
-          {
-            "name": "end",
-            "required": false,
-            "in": "query",
-            "description": "End timestamp (Unix seconds)",
-            "schema": {}
-          },
-          {
-            "name": "start",
-            "required": false,
-            "in": "query",
-            "description": "Start timestamp (Unix seconds)",
-            "schema": {}
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Maximum number of traces to return (default 20)",
-            "schema": {}
-          },
-          {
-            "name": "service",
-            "required": false,
-            "in": "query",
-            "description": "Service name to filter traces (maps to service.name tag)",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Tempo trace search result (Jaeger-compatible)."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Search traces",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/traces/services": {
-      "get": {
-        "description": "Returns service names from Tempo /api/search/tag/service.name/values.",
-        "operationId": "ObservabilityController_tempoServices",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Tempo service names (Jaeger-compatible { data: string[] })."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List traced services",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/traces/{traceId}": {
-      "get": {
-        "description": "Proxies a trace detail request to Tempo /api/traces/:traceId.",
-        "operationId": "ObservabilityController_tempoTrace",
-        "parameters": [
-          {
-            "name": "traceId",
-            "required": true,
-            "in": "path",
-            "description": "The trace identifier",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Tempo trace detail (Jaeger-compatible { data: JaegerTrace[] })."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get trace by ID",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/logs": {
-      "get": {
-        "description": "Proxies a log query to Loki /loki/api/v1/query_range.",
-        "operationId": "ObservabilityController_lokiLogs",
-        "parameters": [
-          {
-            "name": "direction",
-            "required": false,
-            "in": "query",
-            "description": "Log order: forward or backward",
-            "schema": {}
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Maximum number of log lines to return (default 100)",
-            "schema": {}
-          },
-          {
-            "name": "end",
-            "required": false,
-            "in": "query",
-            "description": "End timestamp (Unix nanoseconds or RFC3339)",
-            "schema": {}
-          },
-          {
-            "name": "start",
-            "required": false,
-            "in": "query",
-            "description": "Start timestamp (Unix nanoseconds or RFC3339)",
-            "schema": {}
-          },
-          {
-            "name": "query",
-            "required": true,
-            "in": "query",
-            "description": "LogQL expression",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Loki log query result."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Query logs",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/logs/labels": {
-      "get": {
-        "description": "Proxies a label names request to Loki /loki/api/v1/labels.",
-        "operationId": "ObservabilityController_lokiLabels",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Loki label names."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List Loki label names",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/observability/logs/label/{name}/values": {
-      "get": {
-        "description": "Proxies a label values request to Loki /loki/api/v1/label/:name/values.",
-        "operationId": "ObservabilityController_lokiLabelValues",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "The label name",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Loki label values."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get Loki label values",
-        "tags": [
-          "Observability"
-        ]
-      }
-    },
-    "/traces/ingest": {
-      "post": {
-        "description": "Receives OTLP/JSON trace data from the browser and forwards it to the configured OTLP collector (Tempo). Requires a valid JWT — the browser OTel SDK attaches the token via the TracingInit component.",
-        "operationId": "TracesIngestController_ingestTrace",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Spans accepted by the collector."
-          }
-        },
-        "summary": "Ingest browser OTLP traces",
-        "tags": [
-          "Traces"
-        ]
-      }
-    },
-    "/queues": {
-      "get": {
-        "operationId": "QueuesController_listQueues",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Queue list retrieved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/QueueInfoDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List all queues with job counts",
-        "tags": [
-          "Queues"
-        ]
-      }
-    },
-    "/queues/{name}": {
-      "get": {
-        "operationId": "QueuesController_getQueue",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Queue name",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Queue info retrieved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueueInfoDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Queue not found."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get queue info by name",
-        "tags": [
-          "Queues"
-        ]
-      }
-    },
-    "/queues/{name}/jobs": {
-      "get": {
-        "operationId": "QueuesController_listJobs",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Queue name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Filter by job status (active, completed, failed, delayed, waiting)",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start",
-            "required": false,
-            "in": "query",
-            "description": "Offset for pagination (default 0)",
-            "schema": {
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Max results to return (default 20)",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job list retrieved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/JobInfoDto"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Queue not found."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List jobs in a queue",
-        "tags": [
-          "Queues"
-        ]
-      }
-    },
-    "/queues/{name}/jobs/{jobId}": {
-      "get": {
-        "operationId": "QueuesController_getJob",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Queue name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "jobId",
-            "required": true,
-            "in": "path",
-            "description": "Job ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job detail retrieved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobInfoDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job or queue not found."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get job detail",
-        "tags": [
-          "Queues"
-        ]
-      }
-    },
-    "/queues/{name}/jobs/{jobId}/retry": {
-      "post": {
-        "operationId": "QueuesController_retryJob",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Queue name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "jobId",
-            "required": true,
-            "in": "path",
-            "description": "Job ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Job retry initiated."
-          },
-          "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - Insufficient role.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Job or queue not found, or job is not in failed state."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Retry a failed job",
-        "tags": [
-          "Queues"
         ]
       }
     },
@@ -7120,6 +7120,7 @@
             "in": "query",
             "description": "Filter by component UUID",
             "schema": {
+              "example": "550e8400-e29b-41d4-a716-446655440001",
               "type": "string"
             }
           },
@@ -7129,6 +7130,7 @@
             "in": "query",
             "description": "Filter by environment UUID",
             "schema": {
+              "example": "550e8400-e29b-41d4-a716-446655440010",
               "type": "string"
             }
           },
@@ -24260,6 +24262,298 @@
           "message"
         ]
       },
+      "MemoryUsageDto": {
+        "type": "object",
+        "properties": {
+          "heapUsed": {
+            "type": "number",
+            "example": 52428800,
+            "description": "Heap memory used in bytes"
+          },
+          "heapTotal": {
+            "type": "number",
+            "example": 104857600,
+            "description": "Total heap size in bytes"
+          },
+          "rss": {
+            "type": "number",
+            "example": 157286400,
+            "description": "Resident set size in bytes"
+          },
+          "external": {
+            "type": "number",
+            "example": 5242880,
+            "description": "External memory in bytes"
+          }
+        },
+        "required": [
+          "heapUsed",
+          "heapTotal",
+          "rss",
+          "external"
+        ]
+      },
+      "RequestsByStatusDto": {
+        "type": "object",
+        "properties": {
+          "2xx": {
+            "type": "number",
+            "example": 1400,
+            "description": "Successful responses (2xx)"
+          },
+          "4xx": {
+            "type": "number",
+            "example": 80,
+            "description": "Client errors (4xx)"
+          },
+          "5xx": {
+            "type": "number",
+            "example": 20,
+            "description": "Server errors (5xx)"
+          },
+          "other": {
+            "type": "number",
+            "example": 0,
+            "description": "Other status codes"
+          }
+        },
+        "required": [
+          "2xx",
+          "4xx",
+          "5xx",
+          "other"
+        ]
+      },
+      "LatencyPercentilesDto": {
+        "type": "object",
+        "properties": {
+          "p50": {
+            "type": "number",
+            "example": 0.005,
+            "description": "50th percentile in seconds"
+          },
+          "p90": {
+            "type": "number",
+            "example": 0.025,
+            "description": "90th percentile in seconds"
+          },
+          "p95": {
+            "type": "number",
+            "example": 0.1,
+            "description": "95th percentile in seconds"
+          },
+          "p99": {
+            "type": "number",
+            "example": 0.5,
+            "description": "99th percentile in seconds"
+          }
+        },
+        "required": [
+          "p50",
+          "p90",
+          "p95",
+          "p99"
+        ]
+      },
+      "ObservabilitySummaryDto": {
+        "type": "object",
+        "properties": {
+          "uptime": {
+            "type": "number",
+            "example": 86400.5,
+            "description": "Process uptime in seconds"
+          },
+          "memory": {
+            "$ref": "#/components/schemas/MemoryUsageDto"
+          },
+          "totalRequests": {
+            "type": "number",
+            "example": 1500,
+            "description": "Total HTTP requests"
+          },
+          "requestsByStatus": {
+            "$ref": "#/components/schemas/RequestsByStatusDto"
+          },
+          "latencyPercentiles": {
+            "$ref": "#/components/schemas/LatencyPercentilesDto"
+          },
+          "grafanaUrl": {
+            "type": "object",
+            "example": "http://localhost:3002",
+            "nullable": true,
+            "description": "Grafana dashboard URL if configured"
+          }
+        },
+        "required": [
+          "uptime",
+          "memory",
+          "totalRequests",
+          "requestsByStatus",
+          "latencyPercentiles",
+          "grafanaUrl"
+        ]
+      },
+      "JobCountsDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "number",
+            "example": 0,
+            "description": "Number of active jobs"
+          },
+          "completed": {
+            "type": "number",
+            "example": 15,
+            "description": "Number of completed jobs"
+          },
+          "failed": {
+            "type": "number",
+            "example": 2,
+            "description": "Number of failed jobs"
+          },
+          "delayed": {
+            "type": "number",
+            "example": 0,
+            "description": "Number of delayed jobs"
+          },
+          "waiting": {
+            "type": "number",
+            "example": 0,
+            "description": "Number of waiting jobs"
+          },
+          "paused": {
+            "type": "number",
+            "example": 0,
+            "description": "Number of paused jobs"
+          },
+          "prioritized": {
+            "type": "number",
+            "example": 0,
+            "description": "Number of prioritized jobs"
+          }
+        },
+        "required": [
+          "active",
+          "completed",
+          "failed",
+          "delayed",
+          "waiting",
+          "paused",
+          "prioritized"
+        ]
+      },
+      "QueueInfoDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "catalog-discovery"
+          },
+          "isPaused": {
+            "type": "boolean",
+            "example": false
+          },
+          "jobCounts": {
+            "$ref": "#/components/schemas/JobCountsDto"
+          }
+        },
+        "required": [
+          "name",
+          "isPaused",
+          "jobCounts"
+        ]
+      },
+      "JobInfoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "1"
+          },
+          "queueName": {
+            "type": "string",
+            "example": "catalog-discovery"
+          },
+          "name": {
+            "type": "string",
+            "example": "__default__"
+          },
+          "status": {
+            "type": "string",
+            "example": "completed",
+            "enum": [
+              "active",
+              "completed",
+              "failed",
+              "delayed",
+              "waiting",
+              "paused",
+              "unknown"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "example": {
+              "url": "https://github.com/org/repo"
+            }
+          },
+          "returnValue": {
+            "type": "object",
+            "example": 3,
+            "description": "Return value of a completed job"
+          },
+          "failedReason": {
+            "type": "string",
+            "example": "Connection refused",
+            "description": "Error message for failed jobs"
+          },
+          "attemptsMade": {
+            "type": "number",
+            "example": 1,
+            "description": "Number of attempts made"
+          },
+          "progress": {
+            "type": "object",
+            "example": 0,
+            "description": "Job progress (0-100 or object)"
+          },
+          "timestamp": {
+            "type": "number",
+            "example": 1709913600000,
+            "description": "Unix timestamp when job was created"
+          },
+          "processedOn": {
+            "type": "number",
+            "example": 1709913605000,
+            "description": "Unix timestamp when job started processing"
+          },
+          "finishedOn": {
+            "type": "number",
+            "example": 1709913610000,
+            "description": "Unix timestamp when job finished"
+          },
+          "stacktrace": {
+            "example": [
+              "Error: Connection refused\n    at ..."
+            ],
+            "description": "Stack trace for failed jobs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "queueName",
+          "name",
+          "status",
+          "data",
+          "attemptsMade",
+          "progress",
+          "timestamp"
+        ]
+      },
       "CreateOrganizationDto": {
         "type": "object",
         "properties": {
@@ -24651,298 +24945,6 @@
           "actorId",
           "actorUsername",
           "createdAt"
-        ]
-      },
-      "MemoryUsageDto": {
-        "type": "object",
-        "properties": {
-          "heapUsed": {
-            "type": "number",
-            "example": 52428800,
-            "description": "Heap memory used in bytes"
-          },
-          "heapTotal": {
-            "type": "number",
-            "example": 104857600,
-            "description": "Total heap size in bytes"
-          },
-          "rss": {
-            "type": "number",
-            "example": 157286400,
-            "description": "Resident set size in bytes"
-          },
-          "external": {
-            "type": "number",
-            "example": 5242880,
-            "description": "External memory in bytes"
-          }
-        },
-        "required": [
-          "heapUsed",
-          "heapTotal",
-          "rss",
-          "external"
-        ]
-      },
-      "RequestsByStatusDto": {
-        "type": "object",
-        "properties": {
-          "2xx": {
-            "type": "number",
-            "example": 1400,
-            "description": "Successful responses (2xx)"
-          },
-          "4xx": {
-            "type": "number",
-            "example": 80,
-            "description": "Client errors (4xx)"
-          },
-          "5xx": {
-            "type": "number",
-            "example": 20,
-            "description": "Server errors (5xx)"
-          },
-          "other": {
-            "type": "number",
-            "example": 0,
-            "description": "Other status codes"
-          }
-        },
-        "required": [
-          "2xx",
-          "4xx",
-          "5xx",
-          "other"
-        ]
-      },
-      "LatencyPercentilesDto": {
-        "type": "object",
-        "properties": {
-          "p50": {
-            "type": "number",
-            "example": 0.005,
-            "description": "50th percentile in seconds"
-          },
-          "p90": {
-            "type": "number",
-            "example": 0.025,
-            "description": "90th percentile in seconds"
-          },
-          "p95": {
-            "type": "number",
-            "example": 0.1,
-            "description": "95th percentile in seconds"
-          },
-          "p99": {
-            "type": "number",
-            "example": 0.5,
-            "description": "99th percentile in seconds"
-          }
-        },
-        "required": [
-          "p50",
-          "p90",
-          "p95",
-          "p99"
-        ]
-      },
-      "ObservabilitySummaryDto": {
-        "type": "object",
-        "properties": {
-          "uptime": {
-            "type": "number",
-            "example": 86400.5,
-            "description": "Process uptime in seconds"
-          },
-          "memory": {
-            "$ref": "#/components/schemas/MemoryUsageDto"
-          },
-          "totalRequests": {
-            "type": "number",
-            "example": 1500,
-            "description": "Total HTTP requests"
-          },
-          "requestsByStatus": {
-            "$ref": "#/components/schemas/RequestsByStatusDto"
-          },
-          "latencyPercentiles": {
-            "$ref": "#/components/schemas/LatencyPercentilesDto"
-          },
-          "grafanaUrl": {
-            "type": "object",
-            "example": "http://localhost:3002",
-            "nullable": true,
-            "description": "Grafana dashboard URL if configured"
-          }
-        },
-        "required": [
-          "uptime",
-          "memory",
-          "totalRequests",
-          "requestsByStatus",
-          "latencyPercentiles",
-          "grafanaUrl"
-        ]
-      },
-      "JobCountsDto": {
-        "type": "object",
-        "properties": {
-          "active": {
-            "type": "number",
-            "example": 0,
-            "description": "Number of active jobs"
-          },
-          "completed": {
-            "type": "number",
-            "example": 15,
-            "description": "Number of completed jobs"
-          },
-          "failed": {
-            "type": "number",
-            "example": 2,
-            "description": "Number of failed jobs"
-          },
-          "delayed": {
-            "type": "number",
-            "example": 0,
-            "description": "Number of delayed jobs"
-          },
-          "waiting": {
-            "type": "number",
-            "example": 0,
-            "description": "Number of waiting jobs"
-          },
-          "paused": {
-            "type": "number",
-            "example": 0,
-            "description": "Number of paused jobs"
-          },
-          "prioritized": {
-            "type": "number",
-            "example": 0,
-            "description": "Number of prioritized jobs"
-          }
-        },
-        "required": [
-          "active",
-          "completed",
-          "failed",
-          "delayed",
-          "waiting",
-          "paused",
-          "prioritized"
-        ]
-      },
-      "QueueInfoDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "catalog-discovery"
-          },
-          "isPaused": {
-            "type": "boolean",
-            "example": false
-          },
-          "jobCounts": {
-            "$ref": "#/components/schemas/JobCountsDto"
-          }
-        },
-        "required": [
-          "name",
-          "isPaused",
-          "jobCounts"
-        ]
-      },
-      "JobInfoDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "1"
-          },
-          "queueName": {
-            "type": "string",
-            "example": "catalog-discovery"
-          },
-          "name": {
-            "type": "string",
-            "example": "__default__"
-          },
-          "status": {
-            "type": "string",
-            "example": "completed",
-            "enum": [
-              "active",
-              "completed",
-              "failed",
-              "delayed",
-              "waiting",
-              "paused",
-              "unknown"
-            ]
-          },
-          "data": {
-            "type": "object",
-            "example": {
-              "url": "https://github.com/org/repo"
-            }
-          },
-          "returnValue": {
-            "type": "object",
-            "example": 3,
-            "description": "Return value of a completed job"
-          },
-          "failedReason": {
-            "type": "string",
-            "example": "Connection refused",
-            "description": "Error message for failed jobs"
-          },
-          "attemptsMade": {
-            "type": "number",
-            "example": 1,
-            "description": "Number of attempts made"
-          },
-          "progress": {
-            "type": "object",
-            "example": 0,
-            "description": "Job progress (0-100 or object)"
-          },
-          "timestamp": {
-            "type": "number",
-            "example": 1709913600000,
-            "description": "Unix timestamp when job was created"
-          },
-          "processedOn": {
-            "type": "number",
-            "example": 1709913605000,
-            "description": "Unix timestamp when job started processing"
-          },
-          "finishedOn": {
-            "type": "number",
-            "example": 1709913610000,
-            "description": "Unix timestamp when job finished"
-          },
-          "stacktrace": {
-            "example": [
-              "Error: Connection refused\n    at ..."
-            ],
-            "description": "Stack trace for failed jobs",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "queueName",
-          "name",
-          "status",
-          "data",
-          "attemptsMade",
-          "progress",
-          "timestamp"
         ]
       },
       "PluginMetadata": {
@@ -26396,15 +26398,18 @@
         "properties": {
           "firstName": {
             "type": "string",
-            "example": "John"
+            "example": "John",
+            "description": "User's first name"
           },
           "lastName": {
             "type": "string",
-            "example": "Doe"
+            "example": "Doe",
+            "description": "User's last name"
           },
           "email": {
             "type": "string",
-            "example": "john@example.com"
+            "example": "john@example.com",
+            "description": "User's email address"
           },
           "gender": {
             "type": "string",
@@ -26412,7 +26417,9 @@
               "male",
               "female",
               "non_binary"
-            ]
+            ],
+            "example": "male",
+            "description": "User's gender"
           }
         }
       },
@@ -26420,15 +26427,21 @@
         "type": "object",
         "properties": {
           "currentPassword": {
-            "type": "string"
+            "type": "string",
+            "example": "OldPass1",
+            "description": "The user's current password"
           },
           "newPassword": {
             "type": "string",
-            "minLength": 8
+            "minLength": 8,
+            "example": "NewPass1",
+            "description": "The new password"
           },
           "confirmPassword": {
             "type": "string",
-            "minLength": 8
+            "minLength": 8,
+            "example": "NewPass1",
+            "description": "Confirmation of the new password"
           }
         },
         "required": [
@@ -26496,6 +26509,7 @@
         "properties": {
           "orgId": {
             "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000",
             "description": "Organization id"
           },
           "role": {
@@ -26506,6 +26520,7 @@
               "member",
               "viewer"
             ],
+            "example": "viewer",
             "description": "New org role"
           }
         },
@@ -26519,6 +26534,7 @@
         "properties": {
           "suspended": {
             "type": "boolean",
+            "example": true,
             "description": "Whether to suspend or unsuspend the user"
           }
         },
@@ -27063,6 +27079,46 @@
           "stages": {
             "type": "array",
             "description": "Ordered list of pipeline stages",
+            "example": [
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440010",
+                "name": "Build",
+                "type": "build",
+                "config": {
+                  "command": "npm run build"
+                },
+                "order": 1,
+                "backend": {
+                  "provider": "github-actions",
+                  "ref": "main",
+                  "workflowId": "ci.yml"
+                }
+              },
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440011",
+                "name": "Approval",
+                "type": "approval",
+                "config": {
+                  "requiredApprovers": 1
+                },
+                "order": 2
+              },
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440012",
+                "name": "Deploy",
+                "type": "deploy",
+                "config": {
+                  "environment": "production"
+                },
+                "order": 3,
+                "backend": {
+                  "provider": "argocd",
+                  "appName": "my-app",
+                  "componentId": "550e8400-e29b-41d4-a716-446655440001",
+                  "environmentId": "550e8400-e29b-41d4-a716-446655440002"
+                }
+              }
+            ],
             "items": {
               "type": "object",
               "properties": {
@@ -27312,6 +27368,46 @@
           "stages": {
             "type": "array",
             "description": "Ordered list of pipeline stages",
+            "example": [
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440010",
+                "name": "Build",
+                "type": "build",
+                "config": {
+                  "command": "npm run build"
+                },
+                "order": 1,
+                "backend": {
+                  "provider": "github-actions",
+                  "ref": "main",
+                  "workflowId": "ci.yml"
+                }
+              },
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440011",
+                "name": "Approval",
+                "type": "approval",
+                "config": {
+                  "requiredApprovers": 1
+                },
+                "order": 2
+              },
+              {
+                "id": "550e8400-e29b-41d4-a716-446655440012",
+                "name": "Deploy",
+                "type": "deploy",
+                "config": {
+                  "environment": "production"
+                },
+                "order": 3,
+                "backend": {
+                  "provider": "argocd",
+                  "appName": "my-app",
+                  "componentId": "550e8400-e29b-41d4-a716-446655440001",
+                  "environmentId": "550e8400-e29b-41d4-a716-446655440002"
+                }
+              }
+            ],
             "items": {
               "type": "object",
               "properties": {
@@ -28719,9 +28815,45 @@
           }
         }
       },
+      "WeightEntryDto": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string",
+            "example": "reviews",
+            "description": "Destination service name"
+          },
+          "weight": {
+            "type": "number",
+            "example": 80,
+            "description": "Traffic weight percentage (0-100)"
+          }
+        },
+        "required": [
+          "destination",
+          "weight"
+        ]
+      },
       "PatchWeightsDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "weights": {
+            "description": "Array of destination-to-weight mappings",
+            "example": [
+              {
+                "destination": "reviews",
+                "weight": 80
+              }
+            ],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WeightEntryDto"
+            }
+          }
+        },
+        "required": [
+          "weights"
+        ]
       },
       "ApiSpec": {
         "type": "object",
@@ -29764,6 +29896,13 @@
             }
           },
           "actionItems": {
+            "example": [
+              {
+                "title": "Add connection pool alerts",
+                "assignee": "ops-team",
+                "done": false
+              }
+            ],
             "description": "Follow-up action items",
             "type": "array",
             "items": {
@@ -29897,6 +30036,13 @@
             }
           },
           "actionItems": {
+            "example": [
+              {
+                "title": "Add connection pool alerts",
+                "assignee": "ops-team",
+                "done": false
+              }
+            ],
             "description": "Follow-up action items",
             "type": "array",
             "items": {
@@ -30928,7 +31074,28 @@
       },
       "UpdateSearchConfigDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "titleBoost": {
+            "type": "number",
+            "example": 2,
+            "description": "Boost multiplier for title matches"
+          },
+          "tagsBoost": {
+            "type": "number",
+            "example": 1.5,
+            "description": "Boost multiplier for tag matches"
+          },
+          "descriptionBoost": {
+            "type": "number",
+            "example": 1,
+            "description": "Boost multiplier for description matches"
+          },
+          "fuzziness": {
+            "type": "string",
+            "example": "AUTO",
+            "description": "Fuzziness level for text search"
+          }
+        }
       },
       "OpaStatusResponseDto": {
         "type": "object",
@@ -30972,16 +31139,24 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "example": "c58f9c80-...",
+            "description": "Unique evaluation result ID"
           },
           "componentId": {
-            "type": "string"
+            "type": "string",
+            "example": "550e8400-...",
+            "description": "ID of the evaluated component"
           },
           "policyPath": {
-            "type": "string"
+            "type": "string",
+            "example": "policies/rbac.rego",
+            "description": "Path to the evaluated policy file"
           },
           "allowed": {
-            "type": "boolean"
+            "type": "boolean",
+            "example": true,
+            "description": "Whether the evaluation passed (allowed=true)"
           },
           "violations": {
             "type": "array",
@@ -30991,15 +31166,21 @@
           },
           "evaluatedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": "string",
+            "example": "2024-01-15T10:30:00Z",
+            "description": "Timestamp when the evaluation was performed"
           },
           "createdAt": {
             "format": "date-time",
-            "type": "string"
+            "type": "string",
+            "example": "2024-01-15T10:30:00Z",
+            "description": "Record creation timestamp"
           },
           "updatedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": "string",
+            "example": "2024-01-15T10:30:00Z",
+            "description": "Record last update timestamp"
           }
         },
         "required": [
