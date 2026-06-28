@@ -45,8 +45,7 @@ describe("InvitationsController", () => {
           },
         },
       ],
-    })
-      .compile();
+    }).compile();
 
     controller = module.get<InvitationsController>(InvitationsController);
     service = module.get<OrganizationService>(OrganizationService);

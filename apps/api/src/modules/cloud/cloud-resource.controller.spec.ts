@@ -47,8 +47,7 @@ describe("CloudResourceController", () => {
         { provide: CloudCostService, useValue: mockCloudCostService },
         { provide: CloudSecretsService, useValue: mockCloudSecretsService },
       ],
-    })
-      .compile();
+    }).compile();
 
     controller = module.get<CloudResourceController>(CloudResourceController);
   });
@@ -93,8 +92,7 @@ describe("CloudResourceController", () => {
     it("should return empty array when service is not available", async () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
-      })
-        .compile();
+      }).compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
       const result = await ctrl.discoverResources({ orgId: ORG_ID });
@@ -141,8 +139,7 @@ describe("CloudResourceController", () => {
     it("should return empty array when cost service is not available", async () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
-      })
-        .compile();
+      }).compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
       const result = await ctrl.getCost({ orgId: ORG_ID });
@@ -174,8 +171,7 @@ describe("CloudResourceController", () => {
     it("should throw when secrets service is not available", async () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
-      })
-        .compile();
+      }).compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
       await expect(
@@ -208,8 +204,7 @@ describe("CloudResourceController", () => {
     it("should return empty providers when service is not available", async () => {
       const module: TestingModule = await Test.createTestingModule({
         controllers: [CloudResourceController],
-      })
-        .compile();
+      }).compile();
       const ctrl = module.get<CloudResourceController>(CloudResourceController);
 
       const result = await ctrl.listConnectedProviders(ORG_ID);

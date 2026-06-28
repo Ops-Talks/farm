@@ -54,8 +54,7 @@ describe("UserManagementController", () => {
         { provide: UserManagementService, useValue: svc },
         { provide: AuditLogService, useValue: auditLog },
       ],
-    })
-      .compile();
+    }).compile();
 
     controller = module.get(UserManagementController);
   });
@@ -286,8 +285,7 @@ describe("UserManagementController", () => {
       const module2: TestingModule = await Test.createTestingModule({
         controllers: [UserManagementController],
         providers: [{ provide: UserManagementService, useValue: svc }],
-      })
-        .compile();
+      }).compile();
 
       const ctrl2 = module2.get(UserManagementController);
       svc.getUser.mockResolvedValue(makeView());

@@ -99,8 +99,7 @@ describe("LinkerdController", () => {
         { provide: LinkerdMetricsService, useValue: mockLinkerdMetricsService },
         Reflector,
       ],
-    })
-      .compile();
+    }).compile();
 
     controller = module.get<LinkerdController>(LinkerdController);
   });

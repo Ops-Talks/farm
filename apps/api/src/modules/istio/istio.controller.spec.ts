@@ -90,8 +90,7 @@ describe("IstioController", () => {
         { provide: IstioMetricsService, useValue: mockIstioMetricsService },
         Reflector,
       ],
-    })
-      .compile();
+    }).compile();
 
     controller = module.get<IstioController>(IstioController);
   });
