@@ -4,7 +4,6 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-  UseGuards,
   Request,
 } from "@nestjs/common";
 import {
@@ -19,7 +18,6 @@ import { Request as ExpressRequest } from "express";
 import { OrganizationService } from "./organization.service";
 import { MemberResponseDto } from "./dto/member-response.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 
 interface AuthenticatedRequest extends ExpressRequest {
   user: {
@@ -35,7 +33,6 @@ interface AuthenticatedRequest extends ExpressRequest {
  */
 @ApiTags("Invitations")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

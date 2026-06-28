@@ -5,7 +5,6 @@ import {
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -19,7 +18,7 @@ import type { SearchConfig } from "./entities/search-config.entity";
  */
 @ApiTags("Search")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Roles("admin")
 @Controller("search/config")
 @ApiResponse({

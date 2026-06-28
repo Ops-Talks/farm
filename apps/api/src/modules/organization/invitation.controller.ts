@@ -16,7 +16,6 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Request as ExpressRequest } from "express";
 import { Throttle } from "@nestjs/throttler";
 import { OrgRole } from "@farm/types";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../common/guards/org-roles.guard";
 import { OrgRoles } from "../../common/decorators/org-roles.decorator";
 import { InvitationPreview, InvitationService } from "./invitation.service";
@@ -44,7 +43,7 @@ export class InvitationController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, OrgRolesGuard)
+  @UseGuards(OrgRolesGuard)
   @OrgRoles(OrgRole.ADMIN)
   @Throttle({ short: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: "Create org invitations (batch)" })
@@ -57,7 +56,7 @@ export class InvitationController {
 
   @Get()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, OrgRolesGuard)
+  @UseGuards(OrgRolesGuard)
   @OrgRoles(OrgRole.MEMBER)
   @ApiOperation({ summary: "List invitations for an organization" })
   async list(
@@ -93,7 +92,6 @@ export class InvitationController {
 
   @Patch(":id/resend")
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Resend an invitation email" })
   async resend(
     @Param("id") id: string,
@@ -105,7 +103,6 @@ export class InvitationController {
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Revoke a pending invitation" })
   async revoke(
     @Param("id") id: string,

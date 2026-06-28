@@ -38,7 +38,6 @@ import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { User } from "./entities/user.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { QUEUE_NAMES } from "../../common/queues/queue-names";
@@ -156,7 +155,7 @@ export class AuthController {
    * @returns An array of all user profiles
    */
   @Get("users")
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles("admin")
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get all users (admin only)" })
@@ -185,7 +184,6 @@ export class AuthController {
    * @returns The authenticated user entity
    */
   @Get("profile")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get current user profile" })
@@ -212,7 +210,6 @@ export class AuthController {
    * @returns The updated user entity
    */
   @Patch("profile")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Update current user profile" })
@@ -245,7 +242,6 @@ export class AuthController {
    * @param dto - Current password, new password, and confirmation
    */
   @Patch("profile/password")
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Change current user password" })
@@ -445,7 +441,7 @@ export class AuthController {
    * @returns Whether the job was successfully enqueued
    */
   @Post("keycloak/sync/:orgId")
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(RolesGuard)
   @Roles("admin")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()

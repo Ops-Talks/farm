@@ -28,7 +28,6 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
@@ -58,7 +57,7 @@ import { PipelineRun } from "./entities/pipeline-run.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@UseGuards(OrgRequiredGuard, PermissionGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @Controller("pipelines")
 @ApiResponse({

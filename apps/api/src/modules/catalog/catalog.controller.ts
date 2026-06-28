@@ -42,7 +42,6 @@ import { Component, ComponentKindGroup } from "./entities/component.entity";
 import { ListComponentsQueryDto } from "./dto/list-components-query.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
@@ -71,7 +70,7 @@ import { Pipeline } from "../pipelines/entities/pipeline.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@UseGuards(OrgRequiredGuard, PermissionGuard)
 @Controller("catalog")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

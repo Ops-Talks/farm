@@ -17,7 +17,6 @@ import {
   ApiQuery,
 } from "@nestjs/swagger";
 import { JenkinsService, JenkinsJob, JenkinsBuild } from "./jenkins.service";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -28,7 +27,7 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Jenkins")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("jenkins")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

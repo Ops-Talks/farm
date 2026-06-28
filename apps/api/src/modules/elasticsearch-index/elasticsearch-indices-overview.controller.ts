@@ -6,7 +6,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -52,7 +51,7 @@ export interface OverviewComponentGroup {
  */
 @ApiTags("Elasticsearch Indices")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("elasticsearch/indices")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

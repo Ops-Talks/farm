@@ -31,7 +31,6 @@ import { ReviewEnvironmentRequestDto } from "./dto/review-environment-request.dt
 import { EnvironmentRequest } from "./entities/environment-request.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -42,7 +41,7 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
  */
 @ApiTags("Environment Requests")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("environment-requests")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

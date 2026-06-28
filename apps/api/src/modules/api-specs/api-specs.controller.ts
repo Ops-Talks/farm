@@ -21,7 +21,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ApiSpecsService } from "./api-specs.service";
@@ -39,7 +38,7 @@ import { SpecDiffResult } from "./spec-diff.service";
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",
@@ -77,7 +76,7 @@ export class ApiSpecsComponentController {
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",
@@ -107,7 +106,7 @@ export class ConsumedApisController {
  */
 @ApiTags("API Specs")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

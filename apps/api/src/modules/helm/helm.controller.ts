@@ -13,7 +13,6 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { HelmService } from "./helm.service";
@@ -26,7 +25,6 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Helm")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("helm")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

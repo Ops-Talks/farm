@@ -26,7 +26,6 @@ import {
   ApiHeader,
 } from "@nestjs/swagger";
 import { SkipThrottle, Throttle } from "@nestjs/throttler";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -225,7 +224,7 @@ export class IacController {
    * @returns Array of StackDetailDto
    */
   @Get("stacks")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -260,7 +259,7 @@ export class IacController {
    * @returns StackDetailDto
    */
   @Get("stacks/:id")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -301,7 +300,7 @@ export class IacController {
    * @returns Paginated run list with total count
    */
   @Get("stacks/:id/runs")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -340,7 +339,7 @@ export class IacController {
    * @returns DashboardDto with per-environment stack summaries
    */
   @Get("dashboard")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -369,7 +368,7 @@ export class IacController {
    * @returns Array of IacModuleDrift records
    */
   @Get("module-drift")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",
@@ -444,7 +443,7 @@ export class IacController {
    * @returns ResourceMapDto
    */
   @Get("stacks/:id/resources")
-  @UseGuards(JwtAuthGuard, OrgRequiredGuard)
+  @UseGuards(OrgRequiredGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: "X-Organization-Id",

@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -17,7 +16,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OpaService } from "./opa.service";
 import { EvaluateOpaDto } from "./dto/evaluate-opa.dto";
 import { OpaResultResponseDto } from "./dto/opa-result-response.dto";
@@ -29,7 +27,6 @@ import { OpaStatusResponseDto } from "./dto/opa-status-response.dto";
  */
 @ApiTags("OPA")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
   description: "Unauthorized — missing or invalid JWT.",

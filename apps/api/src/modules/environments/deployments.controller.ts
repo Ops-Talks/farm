@@ -31,7 +31,6 @@ import {
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { ListDeploymentsQueryDto } from "./dto/list-deployments-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 
@@ -40,7 +39,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
  */
 @ApiTags("Deployments")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("deployments")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

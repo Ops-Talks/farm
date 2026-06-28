@@ -11,7 +11,6 @@ import {
   ParseUUIDPipe,
   Post,
   Req,
-  UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
@@ -23,7 +22,6 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { ComponentElasticsearchIndexService } from "./component-elasticsearch-index.service";
@@ -53,7 +51,6 @@ export interface ComponentIndexStatsResponse {
  */
 @ApiTags("Elasticsearch Indices")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("components/:id/elasticsearch-indices")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

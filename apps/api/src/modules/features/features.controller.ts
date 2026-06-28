@@ -1,11 +1,10 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { FeaturesService, FeatureAvailabilityMap } from "./features.service";
 
 /**
@@ -13,7 +12,6 @@ import { FeaturesService, FeatureAvailabilityMap } from "./features.service";
  */
 @ApiTags("Features")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: 401,
   description: "Unauthorized — missing or invalid JWT.",

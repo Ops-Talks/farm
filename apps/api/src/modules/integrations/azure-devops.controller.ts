@@ -1,11 +1,10 @@
-import { Controller, Get, UseGuards, Req } from "@nestjs/common";
+import { Controller, Get, Req } from "@nestjs/common";
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
 } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
 import { AzureDevOpsService } from "./azure-devops.service";
 
@@ -14,7 +13,6 @@ import { AzureDevOpsService } from "./azure-devops.service";
  */
 @ApiTags("Integrations")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @ApiResponse({
   status: 401,
   description: "Unauthorized — missing or invalid JWT.",

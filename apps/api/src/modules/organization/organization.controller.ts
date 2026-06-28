@@ -36,7 +36,6 @@ import { InvitationResponseDto } from "./dto/invitation-response.dto";
 import { Organization } from "./entities/organization.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginationQueryDto, PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRolesGuard } from "../../common/guards/org-roles.guard";
 import { PermissionGuard } from "../../common/guards/permission.guard";
 import { OrgRoles } from "../../common/decorators/org-roles.decorator";
@@ -59,7 +58,6 @@ type AuthOrgRequest = AuthenticatedRequest & RequestWithOrg;
  */
 @ApiTags("Organizations")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller("organizations")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

@@ -34,7 +34,6 @@ import {
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { ListDocumentationQueryDto } from "./dto/list-documentation-query.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -53,7 +52,7 @@ import type { RequestWithOrg } from "../../common/interfaces/request-with-org.in
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, RolesGuard)
+@UseGuards(OrgRequiredGuard, RolesGuard)
 @Controller("docs")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

@@ -23,7 +23,6 @@ import { IntegrationCredentialService } from "./integration-credential.service";
 import { CreateIntegrationCredentialDto } from "./dto/create-integration-credential.dto";
 import { UpdateIntegrationCredentialDto } from "./dto/update-integration-credential.dto";
 import { IntegrationCredential } from "./entities/integration-credential.entity";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import type { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -35,7 +34,7 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
  */
 @ApiTags("Integration Credentials")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("integrations/credentials")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,

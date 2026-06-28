@@ -23,7 +23,6 @@ import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { OrgRequiredGuard } from "../../common/guards/org-required.guard";
 import { OrgRequired } from "../../common/decorators/org-required.decorator";
 import { RequestWithOrg } from "../../common/interfaces/request-with-org.interface";
@@ -44,7 +43,7 @@ import { Team } from "../teams/entities/team.entity";
     "Organization context — all resources are scoped to this organization.",
 })
 @OrgRequired()
-@UseGuards(JwtAuthGuard, OrgRequiredGuard)
+@UseGuards(OrgRequiredGuard)
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,
   description: "Bad Request - Validation failed.",

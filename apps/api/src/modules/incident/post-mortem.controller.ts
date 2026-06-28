@@ -26,7 +26,6 @@ import { CreatePostMortemDto } from "./dto/create-post-mortem.dto";
 import { UpdatePostMortemDto } from "./dto/update-post-mortem.dto";
 import { PostMortem } from "./entities/post-mortem.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 
@@ -35,7 +34,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
  */
 @ApiTags("Post-Mortems")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("post-mortems")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

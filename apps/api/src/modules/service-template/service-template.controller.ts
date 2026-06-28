@@ -37,7 +37,6 @@ import { ServiceTemplate } from "./entities/service-template.entity";
 import { ScaffoldRequest } from "./entities/scaffold-request.entity";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 import { PaginatedResponseDto } from "../../common/dto";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 
@@ -47,7 +46,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
  */
 @ApiTags("Service Templates")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("service-templates")
 @ApiResponse({
   status: HttpStatus.BAD_REQUEST,

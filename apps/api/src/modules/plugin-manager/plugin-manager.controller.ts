@@ -28,7 +28,6 @@ import {
   PluginRouteContribution,
   PluginManifest,
 } from "./interfaces/plugin.interface";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
@@ -43,7 +42,7 @@ import { PluginRegistryEntry } from "./entities/plugin-registry-entry.entity";
 
 @ApiTags("Plugins")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Controller("plugins")
 @ApiResponse({
   status: HttpStatus.UNAUTHORIZED,
