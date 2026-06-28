@@ -92,8 +92,8 @@ export class Team {
   @ManyToMany(() => User, { eager: false })
   @JoinTable({
     name: "team_members",
-    joinColumn: { name: "teamId", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "userId", referencedColumnName: "id" },
+    joinColumn: { name: "team_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "user_id", referencedColumnName: "id" },
   })
   members: User[];
 

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class SnakeCaseColumns1777000000000 implements MigrationInterface {
-  name = "SnakeCaseColumns1777000000000";
+export class SnakeCaseColumns9990000000000 implements MigrationInterface {
+  name = "SnakeCaseColumns9990000000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Guard: if no camelCase columns exist, the schema was already created
@@ -278,6 +278,20 @@ export class SnakeCaseColumns1777000000000 implements MigrationInterface {
       `ALTER TABLE "teams" RENAME COLUMN "updatedAt" TO "updated_at"`,
     );
 
+    // incident_components (JoinTable)
+    await queryRunner.query(
+      `ALTER TABLE "incident_components" RENAME COLUMN "incidentsId" TO "incidents_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "incident_components" RENAME COLUMN "componentsId" TO "components_id"`,
+    );
+    // incident_environments (JoinTable)
+    await queryRunner.query(
+      `ALTER TABLE "incident_environments" RENAME COLUMN "incidentsId" TO "incidents_id"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "incident_environments" RENAME COLUMN "environmentsId" TO "environments_id"`,
+    );
     // team_members (JoinTable)
     await queryRunner.query(
       `ALTER TABLE "team_members" RENAME COLUMN "teamId" TO "team_id"`,
@@ -1810,6 +1824,20 @@ export class SnakeCaseColumns1777000000000 implements MigrationInterface {
     );
     await queryRunner.query(
       `ALTER TABLE "team_members" RENAME COLUMN "team_id" TO "teamId"`,
+    );
+    // incident_environments
+    await queryRunner.query(
+      `ALTER TABLE "incident_environments" RENAME COLUMN "environments_id" TO "environmentsId"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "incident_environments" RENAME COLUMN "incidents_id" TO "incidentsId"`,
+    );
+    // incident_components
+    await queryRunner.query(
+      `ALTER TABLE "incident_components" RENAME COLUMN "components_id" TO "componentsId"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "incident_components" RENAME COLUMN "incidents_id" TO "incidentsId"`,
     );
 
     // teams

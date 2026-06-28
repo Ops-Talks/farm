@@ -96,7 +96,11 @@ export class Incident {
     required: false,
   })
   @ManyToMany(() => Component)
-  @JoinTable({ name: "incident_components" })
+  @JoinTable({
+    name: "incident_components",
+    joinColumn: { name: "incidents_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "components_id", referencedColumnName: "id" },
+  })
   affectedComponents: Component[];
 
   @ApiProperty({
@@ -105,7 +109,11 @@ export class Incident {
     required: false,
   })
   @ManyToMany(() => Environment)
-  @JoinTable({ name: "incident_environments" })
+  @JoinTable({
+    name: "incident_environments",
+    joinColumn: { name: "incidents_id", referencedColumnName: "id" },
+    inverseJoinColumn: { name: "environments_id", referencedColumnName: "id" },
+  })
   affectedEnvironments: Environment[];
 
   @ApiProperty({
