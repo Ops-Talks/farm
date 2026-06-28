@@ -4,7 +4,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { JwtStrategy } from "../../modules/auth/strategies/jwt.strategy";
-import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 
 describe("JwtAuthGuard", () => {
@@ -36,7 +35,7 @@ describe("JwtAuthGuard", () => {
   beforeEach(() => {
     mockContext = {
       getHandler: () => mockHandler,
-      getClass: () => ({} as any),
+      getClass: () => ({}) as unknown as jest.Mock,
       switchToHttp: jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue({ headers: {} }),
         getResponse: jest.fn().mockReturnValue({}),
@@ -70,9 +69,9 @@ describe("JwtAuthGuard", () => {
         "jwt expired",
         new Date(Date.now() - 3600000),
       );
-      expect(() =>
-        guard.handleRequest(null, null, expiredError),
-      ).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(null, null, expiredError)).toThrow(
+        UnauthorizedException,
+      );
     });
 
     it("should throw UnauthorizedException when token signature is invalid", () => {
@@ -90,9 +89,9 @@ describe("JwtAuthGuard", () => {
 
     it("should throw the original error when err is provided", () => {
       const customError = new Error("custom auth error");
-      expect(() =>
-        guard.handleRequest(customError, null, null),
-      ).toThrow(customError);
+      expect(() => guard.handleRequest(customError, null, null)).toThrow(
+        customError,
+      );
     });
 
     it("should return user when no error and user is valid", () => {
