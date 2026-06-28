@@ -28,8 +28,9 @@ Web components at `apps/web/src/` (app/, components/, hooks/, lib/).
 
 ## Key Conventions
 
-- **Guard chain**: `@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)` + `@RequiresPermission(Permission.X)`.
-  `RolesGuard` only for global admin ops, never with `PermissionGuard`.
+- **Guard chain**: `@UseGuards(OrgRequiredGuard, PermissionGuard)` + `@RequiresPermission(Permission.X)`.
+  `JwtAuthGuard` is global (registered as `APP_GUARD`). `RolesGuard` only for global admin ops, never with `PermissionGuard`.
+  Mark intentionally unprotected routes with `@Public()` from `common/decorators/public.decorator.ts`.
 - **External HTTP**: Use `HttpCircuitBreakerService` (first arg = integration scope name).
   Native `fetch()` is flagged by ESLint `no-native-fetch` rule (error in src/).
   Exception: `opa.service.ts` (test interception, documented).
