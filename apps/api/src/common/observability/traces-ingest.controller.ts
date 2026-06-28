@@ -11,6 +11,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { ApiTags, ApiOperation, ApiOkResponse } from "@nestjs/swagger";
 import type { Request, Response } from "express";
+import { Public } from "../decorators/public.decorator";
 
 /**
  * TracesIngestController — lightweight OTLP proxy for browser spans.
@@ -32,6 +33,7 @@ import type { Request, Response } from "express";
  * sensitive information.  In production you can rate-limit it at the
  * load-balancer / ingress level.
  */
+@Public()
 @ApiTags("Traces")
 @Controller("traces")
 export class TracesIngestController {

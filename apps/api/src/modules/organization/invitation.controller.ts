@@ -22,6 +22,7 @@ import { OrgRoles } from "../../common/decorators/org-roles.decorator";
 import { InvitationPreview, InvitationService } from "./invitation.service";
 import { CreateInvitationDto } from "./dto/create-invitation.dto";
 import { InvitationToken } from "./entities/invitation-token.entity";
+import { Public } from "../../common/decorators/public.decorator";
 
 interface AuthenticatedRequest extends ExpressRequest {
   user?: {
@@ -71,6 +72,7 @@ export class InvitationController {
     return this.invitationService.listInvitations(orgId, status);
   }
 
+  @Public()
   @Get("by-token/:token")
   @ApiOperation({
     summary: "Public preview of an invitation (no token leak in response)",
@@ -79,6 +81,7 @@ export class InvitationController {
     return this.invitationService.getPreview(token);
   }
 
+  @Public()
   @Post("by-token/:token/accept")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Accept an invitation by token" })

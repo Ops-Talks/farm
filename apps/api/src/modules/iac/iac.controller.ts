@@ -43,6 +43,7 @@ import { StackListQueryDto } from "./dto/stack-list-query.dto";
 import { StackDetailDto } from "./dto/stack-detail.dto";
 import { IacRun } from "./entities/iac-run.entity";
 import { IacModuleDrift } from "./entities/iac-module-drift.entity";
+import { Public } from "../../common/decorators/public.decorator";
 
 /**
  * Extracts the raw bearer token value from an Authorization header string.
@@ -100,6 +101,7 @@ export class IacController {
    * @param dto - Run report payload
    * @returns The persisted IacRun record
    */
+  @Public()
   @Post("runs/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
@@ -140,6 +142,7 @@ export class IacController {
    * @param dto - Stack list payload
    * @returns Created and updated record counts
    */
+  @Public()
   @Post("stacks/import")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 2 } })
@@ -185,6 +188,7 @@ export class IacController {
    * @param authorization - Authorization header containing the static bearer token
    * @param dto - Module drift payload
    */
+  @Public()
   @Post("module-drift/ingest")
   @SkipThrottle({ long: true })
   @Throttle({ short: { ttl: 1000, limit: 3 } })
