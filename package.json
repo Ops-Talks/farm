@@ -21,16 +21,16 @@
     "lint": "npm run lint -w apps/api && npm run web:lint"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.10",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "eslint": "^10.5.0",
-    "knip": "^6.17.1"
+    "eslint": "^10.6.0",
+    "knip": "^6.24.0"
   },
   "optionalDependencies": {
-    "@next/swc-linux-x64-musl": "16.2.9",
-    "@rollup/rollup-linux-x64-musl": "4.62.0",
-    "@tailwindcss/oxide-linux-x64-musl": "4.3.1",
+    "@next/swc-linux-x64-musl": "16.2.10",
+    "@rollup/rollup-linux-x64-musl": "4.62.2",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.2",
     "@unrs/resolver-binding-linux-x64-musl": "1.12.2",
     "lightningcss-linux-x64-musl": "1.32.0"
   },
