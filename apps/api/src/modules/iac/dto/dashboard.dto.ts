@@ -43,13 +43,19 @@ export class StackSummaryDto {
  * Top-level IaC dashboard response.
  */
 export class DashboardDto {
-  @ApiProperty({ example: 12 })
+  @ApiProperty({ example: 12, description: "Total number of IaC stacks" })
   totalStacks: number;
 
-  @ApiProperty({ example: 2 })
+  @ApiProperty({
+    example: 2,
+    description: "Number of stacks with a failed last run",
+  })
   failedLastRun: number;
 
-  @ApiProperty({ example: ["production", "staging"] })
+  @ApiProperty({
+    example: ["production", "staging"],
+    description: "Distinct deployment environments",
+  })
   environments: string[];
 
   @ApiProperty({

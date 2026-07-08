@@ -30,7 +30,10 @@ export class OpaResultResponseDto {
   })
   allowed: boolean;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional({
+    type: [String],
+    description: "Policy violations returned by OPA evaluation",
+  })
   violations: string[];
 
   @ApiProperty({
