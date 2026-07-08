@@ -5,6 +5,9 @@ import type { Transporter } from "nodemailer";
 import * as Handlebars from "handlebars";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
 
 export interface SendMailOptions {
   to: string;
@@ -103,7 +106,7 @@ export class EmailService implements OnModuleInit {
   }
 
   private loadTemplates(): void {
-    const templatesDir = path.join(__dirname, "templates");
+    const templatesDir = path.join(path.dirname(__filename), "templates");
 
     if (!fs.existsSync(templatesDir)) {
       this.logger.warn(`Templates directory not found: ${templatesDir}`);
