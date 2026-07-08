@@ -8,7 +8,8 @@ import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 const _filename =
   typeof __filename !== "undefined"
     ? __filename
-    : fileURLToPath(eval("import.meta.url") as string);
+    : /* istanbul ignore next -- ESM fallback */
+      fileURLToPath(eval("import.meta.url") as string);
 
 /**
  * Known permission scopes that plugins may declare.

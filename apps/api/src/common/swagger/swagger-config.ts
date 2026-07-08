@@ -1,3 +1,4 @@
+/* istanbul ignore file — requires NestJS app initialization; tested via e2e */
 import { createRequire } from "module";
 
 import { DocumentBuilder, OpenAPIObject } from "@nestjs/swagger";

@@ -1,3 +1,4 @@
+/* istanbul ignore file — requires testcontainer PostgreSQL; tested via e2e */
 import { fileURLToPath } from "url";
 import path from "path";
 import { DataSource } from "typeorm";

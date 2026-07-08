@@ -19,7 +19,8 @@ export class PyroscopeInitService implements OnModuleInit {
       const _require =
         typeof __filename !== "undefined"
           ? createRequire(__filename)
-          : createRequire(eval("import.meta.url") as string);
+          : /* istanbul ignore next -- ESM fallback */
+            createRequire(eval("import.meta.url") as string);
       const Pyroscope = _require("@pyroscope/nodejs");
       const serverAddress =
         this.configService.get<string>("pyroscope.url") ??

@@ -5,7 +5,8 @@ import * as Joi from "joi";
 const _require =
   typeof __filename !== "undefined"
     ? createRequire(__filename)
-    : createRequire(eval("import.meta.url") as string);
+    : /* istanbul ignore next — ESM fallback cannot be tested in CJS */
+      createRequire(eval("import.meta.url") as string);
 const { version: pkgVersion } = _require("../../package.json") as {
   version: string;
 };
