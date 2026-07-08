@@ -5,7 +5,7 @@ import { DocumentBuilder, OpenAPIObject } from "@nestjs/swagger";
 const _require =
   typeof __filename !== "undefined"
     ? createRequire(__filename)
-    : createRequire(eval("import.meta.url"));
+    : createRequire(eval("import.meta.url") as string);
 const { version } = _require("../../../package.json") as {
   version: string;
 };

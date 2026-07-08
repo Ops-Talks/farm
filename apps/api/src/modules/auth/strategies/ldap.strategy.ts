@@ -8,7 +8,7 @@ import { createRequire } from "module";
 const _require =
   typeof __filename !== "undefined"
     ? createRequire(__filename)
-    : createRequire(eval("import.meta.url"));
+    : createRequire(eval("import.meta.url") as string);
 const LdapStrategy = _require("passport-ldapauth");
 
 /**

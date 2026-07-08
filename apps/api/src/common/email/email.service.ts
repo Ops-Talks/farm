@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 const _filename =
   typeof __filename !== "undefined"
     ? __filename
-    : fileURLToPath(eval("import.meta.url"));
+    : fileURLToPath(eval("import.meta.url") as string);
 
 export interface SendMailOptions {
   to: string;

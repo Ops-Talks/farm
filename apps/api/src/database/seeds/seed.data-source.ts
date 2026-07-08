@@ -7,7 +7,7 @@ import { SnakeNamingStrategy } from "../../common/database/snake-naming.strategy
 const _filename =
   typeof __filename !== "undefined"
     ? __filename
-    : fileURLToPath(eval("import.meta.url"));
+    : fileURLToPath(eval("import.meta.url") as string);
 
 // Compiled output lives at apps/api/dist/database/seeds/.
 // Search for .env in apps/api/ first, then monorepo root as fallback.
