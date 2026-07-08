@@ -57,7 +57,7 @@ export class SearchReindexController {
     },
   })
   @ApiResponse({ status: 401, description: "Unauthorized." })
-  @ApiResponse({ status: 403, description: "Forbidden — admin role required." })
+  @ApiResponse({ status: 403, description: "Forbidden - admin role required." })
   async reindex(
     @Req() req: RequestWithOrg,
   ): Promise<{ message: string; indexed: number }> {
