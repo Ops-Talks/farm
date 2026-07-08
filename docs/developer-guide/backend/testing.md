@@ -67,7 +67,7 @@ npm run test:cov
 Run E2E tests:
 
 ```bash
-npm run test:e2e
+npm run api:test:e2e
 ```
 
 ### Debug Tests

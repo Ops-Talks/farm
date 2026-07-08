@@ -192,7 +192,7 @@ SARIF results are uploaded to the **GitHub Security** tab (Code Scanning) and al
 
 When Trivy reports a CRITICAL CVE:
 
-1. Check if the vulnerability is in the Node.js base image — update `FROM node:20-alpine` to a patched version
+1. Check if the vulnerability is in the Node.js base image — update `FROM node:26-alpine` to a patched version
 2. Check if it is in a direct dependency — `npm update <package> -w apps/api`
 3. Check if it is in a transitive dependency — add a resolution override in `package.json` if a safe version is available
 

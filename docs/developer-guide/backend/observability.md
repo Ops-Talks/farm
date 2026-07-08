@@ -355,7 +355,7 @@ async queryNewTool(params: Record<string, string>): Promise<unknown> {
 // 2. Add to ObservabilityController
 @Get('newtool/query')
 @Roles('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 async queryNewTool(@Query() query: Record<string, string>) {
   return this.observabilityService.queryNewTool(query);
 }
