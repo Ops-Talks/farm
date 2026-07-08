@@ -55,3 +55,5 @@ core.*
 
 #customs
 /docs/2026*.md
+docs/plans/
+docs/specs/
