@@ -2,8 +2,6 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { createRequire } from "module";
 
-const localRequire = createRequire(import.meta.url);
-
 @Injectable()
 export class PyroscopeInitService implements OnModuleInit {
   private readonly logger = new Logger(PyroscopeInitService.name);
@@ -18,7 +16,11 @@ export class PyroscopeInitService implements OnModuleInit {
     }
 
     try {
-      const Pyroscope = localRequire("@pyroscope/nodejs");
+      const _require =
+        typeof __filename !== "undefined"
+          ? createRequire(__filename)
+          : createRequire(eval("import.meta.url"));
+      const Pyroscope = _require("@pyroscope/nodejs");
       const serverAddress =
         this.configService.get<string>("pyroscope.url") ??
         "http://pyroscope:4040";

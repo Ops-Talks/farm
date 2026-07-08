@@ -2,8 +2,11 @@ import { createRequire } from "module";
 
 import { DocumentBuilder, OpenAPIObject } from "@nestjs/swagger";
 
-const requireJson = createRequire(import.meta.url);
-const { version } = requireJson("../../../package.json") as {
+const _require =
+  typeof __filename !== "undefined"
+    ? createRequire(__filename)
+    : createRequire(eval("import.meta.url"));
+const { version } = _require("../../../package.json") as {
   version: string;
 };
 

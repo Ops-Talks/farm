@@ -5,8 +5,11 @@ import { AuthService } from "../auth.service";
 import { User } from "../entities/user.entity";
 import { createRequire } from "module";
 
-const localRequire = createRequire(import.meta.url);
-const LdapStrategy = localRequire("passport-ldapauth");
+const _require =
+  typeof __filename !== "undefined"
+    ? createRequire(__filename)
+    : createRequire(eval("import.meta.url"));
+const LdapStrategy = _require("passport-ldapauth");
 
 /**
  * Minimal shape of a user object returned by passport-ldapauth after a

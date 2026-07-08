@@ -5,7 +5,10 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
 
-const __filename = fileURLToPath(import.meta.url);
+const _filename =
+  typeof __filename !== "undefined"
+    ? __filename
+    : fileURLToPath(eval("import.meta.url"));
 
 /**
  * Known permission scopes that plugins may declare.
@@ -38,7 +41,7 @@ export const KNOWN_PERMISSION_SCOPES: readonly string[] = [
 function readFarmVersion(): string {
   try {
     const pkgPath = path.resolve(
-      path.dirname(__filename),
+      path.dirname(_filename),
       "../../../../package.json",
     );
     const raw = fs.readFileSync(pkgPath, "utf-8");

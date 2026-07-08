@@ -7,7 +7,10 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
+const _filename =
+  typeof __filename !== "undefined"
+    ? __filename
+    : fileURLToPath(eval("import.meta.url"));
 
 export interface SendMailOptions {
   to: string;
@@ -106,7 +109,7 @@ export class EmailService implements OnModuleInit {
   }
 
   private loadTemplates(): void {
-    const templatesDir = path.join(path.dirname(__filename), "templates");
+    const templatesDir = path.join(path.dirname(_filename), "templates");
 
     if (!fs.existsSync(templatesDir)) {
       this.logger.warn(`Templates directory not found: ${templatesDir}`);

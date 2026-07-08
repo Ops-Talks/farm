@@ -4,14 +4,17 @@ import { DataSource } from "typeorm";
 import { config } from "dotenv";
 import { SnakeNamingStrategy } from "../../common/database/snake-naming.strategy";
 
-const __filename = fileURLToPath(import.meta.url);
+const _filename =
+  typeof __filename !== "undefined"
+    ? __filename
+    : fileURLToPath(eval("import.meta.url"));
 
 // Compiled output lives at apps/api/dist/database/seeds/.
 // Search for .env in apps/api/ first, then monorepo root as fallback.
 // dotenv silently ignores missing files, so order matters: more specific first.
-config({ path: path.resolve(path.dirname(__filename), "../../../.env") });
+config({ path: path.resolve(path.dirname(_filename), "../../../.env") });
 config({
-  path: path.resolve(path.dirname(__filename), "../../../../../.env"),
+  path: path.resolve(path.dirname(_filename), "../../../../../.env"),
   override: false,
 });
 
