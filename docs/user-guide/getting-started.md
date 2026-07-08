@@ -6,8 +6,8 @@ This guide will help you get Farm up and running quickly.
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js**: Version 20 or higher
-- **npm**: Version 10 or higher
+- **Node.js**: Version 26 or higher
+- **npm**: Version 11 or higher
 - **Docker & Docker Compose**: For containerized environment (Recommended)
 
 ## Installation (Docker - Recommended)
@@ -92,24 +92,38 @@ After installation, you can:
 2. **Add Components**: Register software components in the catalog
 3. **Create Documentation**: Add documentation entries for your components
 
-## Example: Registering Your First User
+## Example: Logging In
+
+After seeding the database (see Development Setup), you can log in with the default admin account:
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/auth/register \
+curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
-    "email": "admin@example.com",
-    "password": "SecurePass1",
-    "displayName": "Admin User"
+    "password": "Admin1234"
   }'
 ```
 
+The response includes a JWT access token and a refresh token. Use the access token in subsequent requests:
+
+```bash
+curl -X GET http://localhost:3000/api/v1/catalog/components \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
+```
+
+Users are created via the database seed (development) or by an existing admin through the admin user management API (production).
+
 ## Example: Adding Your First Component
+
+After logging in, register a component in the catalog:
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/catalog/components \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>" \
   -d '{
     "name": "my-first-service",
     "kind": "service",
