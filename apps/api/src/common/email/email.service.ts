@@ -5,6 +5,13 @@ import type { Transporter } from "nodemailer";
 import * as Handlebars from "handlebars";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
+
+const _filename =
+  typeof __filename !== "undefined"
+    ? __filename
+    : /* istanbul ignore next -- ESM fallback */
+      fileURLToPath(eval("import.meta.url") as string);
 
 export interface SendMailOptions {
   to: string;
@@ -103,7 +110,7 @@ export class EmailService implements OnModuleInit {
   }
 
   private loadTemplates(): void {
-    const templatesDir = path.join(__dirname, "templates");
+    const templatesDir = path.join(path.dirname(_filename), "templates");
 
     if (!fs.existsSync(templatesDir)) {
       this.logger.warn(`Templates directory not found: ${templatesDir}`);

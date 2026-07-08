@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { createRequire } from "module";
 
 @Injectable()
 export class PyroscopeInitService implements OnModuleInit {
@@ -15,8 +16,12 @@ export class PyroscopeInitService implements OnModuleInit {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
-      const Pyroscope = require("@pyroscope/nodejs");
+      const _require =
+        typeof __filename !== "undefined"
+          ? createRequire(__filename)
+          : /* istanbul ignore next -- ESM fallback */
+            createRequire(eval("import.meta.url") as string);
+      const Pyroscope = _require("@pyroscope/nodejs");
       const serverAddress =
         this.configService.get<string>("pyroscope.url") ??
         "http://pyroscope:4040";

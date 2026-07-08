@@ -1,6 +1,13 @@
+import { createRequire } from "module";
+
 import * as Joi from "joi";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { version: pkgVersion } = require("../../package.json") as {
+
+const _require =
+  typeof __filename !== "undefined"
+    ? createRequire(__filename)
+    : /* istanbul ignore next — ESM fallback cannot be tested in CJS */
+      createRequire(eval("import.meta.url") as string);
+const { version: pkgVersion } = _require("../../package.json") as {
   version: string;
 };
 

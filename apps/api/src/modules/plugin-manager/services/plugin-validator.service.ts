@@ -2,7 +2,14 @@ import { Injectable } from "@nestjs/common";
 import * as semver from "semver";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { PluginManifestV2 } from "../interfaces/plugin-manifest-v2.interface";
+
+const _filename =
+  typeof __filename !== "undefined"
+    ? __filename
+    : /* istanbul ignore next -- ESM fallback */
+      fileURLToPath(eval("import.meta.url") as string);
 
 /**
  * Known permission scopes that plugins may declare.
@@ -34,7 +41,10 @@ export const KNOWN_PERMISSION_SCOPES: readonly string[] = [
  */
 function readFarmVersion(): string {
   try {
-    const pkgPath = path.resolve(__dirname, "../../../../package.json");
+    const pkgPath = path.resolve(
+      path.dirname(_filename),
+      "../../../../package.json",
+    );
     const raw = fs.readFileSync(pkgPath, "utf-8");
     const pkg = JSON.parse(raw) as { version?: string };
     return pkg.version ?? "0.0.0";

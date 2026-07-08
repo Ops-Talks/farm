@@ -79,6 +79,10 @@
   "knip": {
     "ignoreBinaries": [
       "jq"
+    ],
+    "ignoreDependencies": [
+      "@pyroscope/nodejs",
+      "passport-ldapauth"
     ]
   }
 }

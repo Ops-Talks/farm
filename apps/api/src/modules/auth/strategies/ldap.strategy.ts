@@ -3,10 +3,14 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ConfigService } from "@nestjs/config";
 import { AuthService } from "../auth.service";
 import { User } from "../entities/user.entity";
+import { createRequire } from "module";
 
-// Inline type declaration — passport-ldapauth has no official @types package.
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
-const LdapStrategy = require("passport-ldapauth");
+const _require =
+  typeof __filename !== "undefined"
+    ? createRequire(__filename)
+    : /* istanbul ignore next -- ESM fallback */
+      createRequire(eval("import.meta.url") as string);
+const LdapStrategy = _require("passport-ldapauth");
 
 /**
  * Minimal shape of a user object returned by passport-ldapauth after a
