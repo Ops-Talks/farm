@@ -1,9 +1,6 @@
 import {
   Controller,
-  Get,
   Post,
-  Patch,
-  Delete,
   Param,
   HttpCode,
   HttpStatus,
@@ -20,7 +17,6 @@ import {
 import { Request as ExpressRequest } from "express";
 import { OrganizationService } from "./organization.service";
 import { MemberResponseDto } from "./dto/member-response.dto";
-import { InvitationResponseDto } from "./dto/invitation-response.dto";
 import { ErrorResponseDto } from "../../common/dto/error-response.dto";
 
 interface AuthenticatedRequest extends ExpressRequest {
@@ -83,66 +79,5 @@ export class InvitationsController {
     @Request() req: AuthenticatedRequest,
   ): Promise<MemberResponseDto> {
     return this.organizationService.acceptInvitation(token, req.user.userId);
-  }
-
-  /**
-   * Creates a new organization invitation and sends an email to the invitee.
-   */
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Create an organization invitation" })
-  @ApiResponse({ status: 401, description: "Authentication required" })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: "The invitation has been successfully created.",
-    type: InvitationResponseDto,
-  })
-  async createInvitation(): Promise<void> {
-    // Implementation delegated to org-scoped endpoint
-  }
-
-  /**
-   * Lists all pending invitations for the current user's organization.
-   */
-  @Get()
-  @ApiOperation({ summary: "List pending invitations" })
-  @ApiResponse({ status: 401, description: "Authentication required" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Successfully retrieved invitation list.",
-    type: [InvitationResponseDto],
-  })
-  async listInvitations(): Promise<void> {
-    // Implementation delegated to org-scoped endpoint
-  }
-
-  /**
-   * Resends a pending invitation email.
-   */
-  @Patch(":id/resend")
-  @ApiOperation({ summary: "Resend an invitation" })
-  @ApiResponse({ status: 401, description: "Authentication required" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Invitation resent successfully.",
-    type: InvitationResponseDto,
-  })
-  async resendInvitation(): Promise<void> {
-    // Implementation delegated to org-scoped endpoint
-  }
-
-  /**
-   * Deletes/cancels a pending invitation.
-   */
-  @Delete(":id")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: "Delete an invitation" })
-  @ApiResponse({ status: 401, description: "Authentication required" })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: "Invitation deleted successfully.",
-  })
-  async removeInvitation(): Promise<void> {
-    // Implementation delegated to org-scoped endpoint
   }
 }
