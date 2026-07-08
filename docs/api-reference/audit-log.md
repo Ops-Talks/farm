@@ -65,7 +65,7 @@ Returns an array of audit log entries ordered newest first.
 ## Access Control
 
 All audit log endpoints require:
-- A valid JWT Bearer token (`JwtAuthGuard`)
+- A valid JWT Bearer token
 - The `admin` role (`RolesGuard`)
 
 Regular users cannot query audit logs. Requests without the admin role return `403 Forbidden`.
