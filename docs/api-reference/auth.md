@@ -1,34 +1,10 @@
 # Authentication API
 
-The Authentication API provides endpoints for user registration, login, token refresh, user management, and profile management.
+The Authentication API provides endpoints for login, token refresh, user management, and profile management.
 
 For interactive documentation, including all available endpoints, data models, and request/response examples, please refer to the [Swagger UI](/api/docs).
 
 ## Endpoints
-
-### POST /api/v1/auth/register
-
-Registers a new user account.
-
-**Rate limit:** 5 requests per minute.
-
-**Request body:**
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| username | string | Yes | Unique username, 3-50 chars, only `a-z`, `A-Z`, `0-9`, `_`, `-` |
-| email | string | Yes | Valid email address |
-| password | string | Yes | Password (min 8 chars, must contain uppercase, lowercase, and digit) |
-| displayName | string | Yes | Human-readable display name (1-100 chars) |
-
-**Responses:**
-
-- `201 Created` — User registered successfully. Returns the user object.
-- `400 Bad Request` — Validation failed (weak password, missing fields, etc.).
-- `409 Conflict` — Username or email already exists.
-- `429 Too Many Requests` — Rate limit exceeded.
-
----
 
 ### POST /api/v1/auth/login
 
@@ -203,7 +179,6 @@ Refresh tokens are 40 random bytes (hex-encoded), stored as bcrypt hashes. The `
 Authentication endpoints are rate-limited to prevent brute force attacks:
 
 - **Login**: 5 requests per minute
-- **Register**: 5 requests per minute
 - **Refresh**: 10 requests per minute
 
 ### Best Practices

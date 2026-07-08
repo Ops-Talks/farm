@@ -6,12 +6,11 @@ Farm provides user authentication and management capabilities to control access 
 
 The authentication system in Farm supports:
 
-- User registration with password strength validation
 - User login with JWT access tokens
 - Refresh token rotation for session continuity
 - Social login via GitHub and Google (OAuth 2.0)
 - LDAP / Active Directory login
-- User listing for administration
+- User management for administration
 
 ```mermaid
 sequenceDiagram
@@ -24,7 +23,7 @@ sequenceDiagram
     API->>DB: Verify credentials
     DB-->>API: User found
     API->>API: Generate JWT + Refresh Token
-    API->>Cache: Store refresh token
+    API->>DB: Store refresh token (bcrypt hash)
     API-->>Client: { accessToken, refreshToken, user }
 
     Note over Client,API: Subsequent requests
@@ -34,8 +33,8 @@ sequenceDiagram
 
     Note over Client,API: Token refresh
     Client->>API: POST /api/v1/auth/refresh<br/>(refreshToken)
-    API->>Cache: Validate refresh token
-    Cache-->>API: Valid
+    API->>DB: Validate refresh token hash
+    DB-->>API: Valid
     API-->>Client: { accessToken, refreshToken }
 ```
 
@@ -54,35 +53,6 @@ Each user in Farm has the following properties:
 | `updatedAt` | Timestamp when the user was last updated |
 
 ## User Operations
-
-### Registering a User
-
-To create a new user account:
-
-```bash
-curl -X POST http://localhost:3000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "johndoe",
-    "email": "john.doe@example.com",
-    "password": "SecurePass1",
-    "displayName": "John Doe"
-  }'
-```
-
-Response:
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "username": "johndoe",
-  "email": "john.doe@example.com",
-  "displayName": "John Doe",
-  "roles": ["user"],
-  "createdAt": "2024-01-15T10:30:00.000Z",
-  "updatedAt": "2024-01-15T10:30:00.000Z"
-}
-```
 
 ### Logging In via LDAP
 
@@ -171,15 +141,6 @@ curl http://localhost:3000/api/v1/auth/users \
 
 ## Error Handling
 
-### Registration Errors
-
-| Error | HTTP Status | Description |
-|-------|-------------|-------------|
-| Username or email already in use | 409 Conflict | The username or email is already registered |
-| Validation error | 400 Bad Request | Required fields are missing or invalid |
-| Weak password | 400 Bad Request | Password does not meet strength requirements |
-| Too many requests | 429 Too Many Requests | Rate limit exceeded (5 per minute) |
-
 ### Login Errors
 
 | Error | HTTP Status | Description |
@@ -217,7 +178,6 @@ Passwords are validated with the following rules:
 Authentication endpoints are rate-limited to prevent brute force attacks:
 
 - **Login**: 5 requests per minute
-- **Register**: 5 requests per minute
 - **Refresh**: 10 requests per minute
 
 ### Best Practices
