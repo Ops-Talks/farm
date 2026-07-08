@@ -176,6 +176,7 @@ export class AlertingController {
     description: "The UUID of the alerting rule to remove",
   })
   @ApiNoContentResponse({ description: "Alerting rule successfully removed." })
+  @ApiResponse({ status: 204, description: "Alerting rule deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

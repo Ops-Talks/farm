@@ -323,6 +323,7 @@ export class PluginManagerController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Uninstall a plugin instance" })
   @ApiParam({ name: "id", description: "Plugin instance UUID" })
+  @ApiResponse({ status: 204, description: "Plugin uninstalled" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Plugin instance successfully uninstalled.",

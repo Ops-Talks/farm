@@ -217,6 +217,7 @@ export class OrganizationController {
     description: "The UUID of the organization to remove",
   })
   @ApiNoContentResponse({ description: "Organization successfully removed." })
+  @ApiResponse({ status: 204, description: "Organization deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",
@@ -412,6 +413,7 @@ export class OrganizationController {
     description: "The UUID of the member to remove",
   })
   @ApiNoContentResponse({ description: "Member successfully removed." })
+  @ApiResponse({ status: 204, description: "Member removed from organization" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Member not found.",
@@ -504,6 +506,7 @@ export class OrganizationController {
   @ApiParam({ name: "id", description: "The UUID of the organization" })
   @ApiParam({ name: "invitationId", description: "The UUID of the invitation" })
   @ApiNoContentResponse({ description: "Invitation successfully cancelled." })
+  @ApiResponse({ status: 204, description: "Invitation cancelled" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Invitation not found.",

@@ -194,6 +194,7 @@ export class TeamsController {
   @ApiOperation({ summary: "Delete a team" })
   @ApiParam({ name: "id", description: "The UUID of the team to remove" })
   @ApiNoContentResponse({ description: "Team successfully removed." })
+  @ApiResponse({ status: 204, description: "Team deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

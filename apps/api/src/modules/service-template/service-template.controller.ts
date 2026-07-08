@@ -198,6 +198,7 @@ export class ServiceTemplateController {
   @ApiNoContentResponse({
     description: "Service template successfully removed.",
   })
+  @ApiResponse({ status: 204, description: "Service template deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

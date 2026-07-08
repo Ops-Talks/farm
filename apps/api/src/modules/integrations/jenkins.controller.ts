@@ -120,6 +120,7 @@ export class JenkinsController {
   @Roles("admin")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Trigger a Jenkins build" })
+  @ApiResponse({ status: 200, description: "Jenkins job triggered" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Build triggered successfully.",

@@ -202,6 +202,7 @@ export class PipelinesController {
   @ApiOperation({ summary: "Delete a pipeline" })
   @ApiParam({ name: "id", description: "Pipeline UUID" })
   @ApiNoContentResponse({ description: "Pipeline successfully removed." })
+  @ApiResponse({ status: 204, description: "Pipeline deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Pipeline not found.",

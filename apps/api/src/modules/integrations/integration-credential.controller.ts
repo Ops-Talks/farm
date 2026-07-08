@@ -158,6 +158,7 @@ export class IntegrationCredentialController {
   @Roles("admin")
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Delete an integration credential" })
+  @ApiResponse({ status: 204, description: "Integration credential deleted" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Credential deleted successfully.",

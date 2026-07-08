@@ -171,6 +171,7 @@ export class UserManagementController {
   @ApiParam({ name: "id", type: String, description: "User UUID" })
   @ApiOperation({ summary: "Remove user from org or delete globally" })
   @ApiNoContentResponse({ description: "User removed." })
+  @ApiResponse({ status: 204, description: "User deleted" })
   async remove(
     @Param("id") id: string,
     @Request() req: AuthenticatedRequest,

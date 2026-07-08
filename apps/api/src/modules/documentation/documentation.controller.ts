@@ -337,6 +337,7 @@ export class DocumentationController {
   @Roles("admin")
   @ApiOperation({ summary: "Delete documentation" })
   @ApiParam({ name: "id", description: "The UUID of the documentation" })
+  @ApiResponse({ status: 204, description: "Document deleted" })
   @ApiResponse({ status: HttpStatus.NO_CONTENT, description: "Deleted." })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,

@@ -115,6 +115,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.ACCEPTED)
   @RequiresPermission(Permission.CATALOG_WRITE)
   @ApiOperation({ summary: "Register a new location for discovery" })
+  @ApiResponse({ status: 201, description: "Catalog location registered" })
   @ApiResponse({
     status: HttpStatus.ACCEPTED,
     description: "The discovery process has been initiated.",
@@ -308,6 +309,7 @@ export class CatalogController {
   @ApiOperation({ summary: "Delete a component" })
   @ApiParam({ name: "id", description: "The UUID of the component to remove" })
   @ApiNoContentResponse({ description: "Component successfully removed." })
+  @ApiResponse({ status: 204, description: "Component deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

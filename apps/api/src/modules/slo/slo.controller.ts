@@ -204,6 +204,7 @@ export class SloController {
     description: "The UUID of the SLO to remove",
   })
   @ApiNoContentResponse({ description: "SLO successfully removed." })
+  @ApiResponse({ status: 204, description: "SLO deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",
