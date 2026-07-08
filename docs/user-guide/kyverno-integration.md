@@ -6,8 +6,8 @@ Farm integrates with [Kyverno](https://kyverno.io/) to provide two-way policy sy
 
 The integration covers two workflows:
 
-1. **PolicyReport reader** — Farm reads Kyverno `PolicyReport` and `ClusterPolicyReport` CRDs from the cluster and surfaces violations on the relevant catalog component
-2. **ClusterPolicy export** — Farm generates a Kyverno `ClusterPolicy` YAML from a Farm tag policy that can be applied to the cluster
+1. **PolicyReport reader** -- Farm reads Kyverno `PolicyReport` and `ClusterPolicyReport` CRDs from the cluster and surfaces violations on the relevant catalog component
+2. **ClusterPolicy export** -- Farm generates a Kyverno `ClusterPolicy` YAML from a Farm tag policy that can be applied to the cluster
 
 ## Prerequisites
 

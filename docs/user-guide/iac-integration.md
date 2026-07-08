@@ -3,9 +3,9 @@
 Farm integrates with two companion tools that feed Infrastructure-as-Code
 visibility data into the portal:
 
-- **Cultivator** — discovers IaC stacks in a repository and reports Terraform
+- **Cultivator** -- discovers IaC stacks in a repository and reports Terraform
   or OpenTofu plan/apply run outcomes to Farm.
-- **Agronomist** — scans pinned Terraform module versions across stacks and
+- **Agronomist** -- scans pinned Terraform module versions across stacks and
   reports drift (how many semver versions behind the latest release each
   module is).
 
@@ -19,7 +19,7 @@ API server:
 
 ```bash
 # .env / docker-compose.yml / Kubernetes Secret
-IAC_INGEST_TOKEN=<a long random string — treat it like a password>
+IAC_INGEST_TOKEN=<a long random string -- treat it like a password>
 ```
 
 Generate a secure value with:
@@ -33,7 +33,7 @@ If `IAC_INGEST_TOKEN` is empty, every ingest request will be rejected with
 
 ---
 
-## 2. Cultivator — Reporting Run Results
+## 2. Cultivator -- Reporting Run Results
 
 After each `terraform plan` or `terraform apply` step in CI, post the outcome
 to Farm using the `POST /api/v1/iac/runs/ingest` endpoint.
@@ -78,7 +78,7 @@ to Farm using the `POST /api/v1/iac/runs/ingest` endpoint.
 
 | Field | Required | Description |
 |---|---|---|
-| `stackName` | Yes | Stack identifier — unique within an environment |
+| `stackName` | Yes | Stack identifier -- unique within an environment |
 | `environment` | Yes | Target environment (`production`, `staging`, etc.) |
 | `provider` | No | `terraform` (default) or `opentofu` |
 | `type` | Yes | `plan` or `apply` |
@@ -92,7 +92,7 @@ to Farm using the `POST /api/v1/iac/runs/ingest` endpoint.
 
 ---
 
-## 3. Cultivator — Importing Stacks via Discovery
+## 3. Cultivator -- Importing Stacks via Discovery
 
 The `cultivator discover` command scans a repository for IaC stack roots and
 writes a JSON manifest. Pass that manifest to Farm with
@@ -136,7 +136,7 @@ the payload.
 
 ---
 
-## 4. Agronomist — Reporting Module Drift
+## 4. Agronomist -- Reporting Module Drift
 
 After running `agronomist report --json report.json`, post the drift data to
 Farm using `POST /api/v1/iac/module-drift/ingest`.

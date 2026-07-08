@@ -2,14 +2,14 @@
 
 Farm's IaC section gives platform engineers and DevOps teams a single place to track the state of every Terraform, OpenTofu, and Pulumi stack in the organization. Rather than switching between Terraform Cloud workspaces, Atlantis logs, and pull-request comments to understand what changed and when, you can see run outcomes, resource change counts, module version drift, and the full dependency graph of your infrastructure from the Farm portal.
 
-The IaC section is populated by two companion tools — **Cultivator**, which reports plan and apply outcomes from CI, and **Agronomist**, which scans module version pins and reports drift. Data arrives via authenticated ingest endpoints; no polling or cloud-provider credentials are required on the Farm server side. See [IaC Integration: Cultivator and Agronomist](iac-integration.md) for setup instructions.
+The IaC section is populated by two companion tools -- **Cultivator**, which reports plan and apply outcomes from CI, and **Agronomist**, which scans module version pins and reports drift. Data arrives via authenticated ingest endpoints; no polling or cloud-provider credentials are required on the Farm server side. See [IaC Integration: Cultivator and Agronomist](iac-integration.md) for setup instructions.
 
 ## Navigation
 
 The sidebar groups IaC into two entries under the **Infrastructure** section:
 
-- **IaC** — opens the IaC Dashboard, the primary overview of all stacks.
-- **IaC Modules** — opens the Module Catalog, where registered Terraform, OpenTofu, and Pulumi modules are browsable.
+- **IaC** -- opens the IaC Dashboard, the primary overview of all stacks.
+- **IaC Modules** -- opens the Module Catalog, where registered Terraform, OpenTofu, and Pulumi modules are browsable.
 
 The **Stacks** sub-page (`/iac/stacks`) is reachable from the IaC sidebar entry and provides a flat, filterable table of every stack registered in Farm.
 
@@ -17,7 +17,7 @@ The **Stacks** sub-page (`/iac/stacks`) is reachable from the IaC sidebar entry 
 
 ## IaC Dashboard
 
-The dashboard at `/iac` is the main at-a-glance view of your infrastructure estate. Stacks are grouped into environment tabs — for example, **production**, **staging**, and **development** — so you can focus on one environment at a time without losing context about the others.
+The dashboard at `/iac` is the main at-a-glance view of your infrastructure estate. Stacks are grouped into environment tabs -- for example, **production**, **staging**, and **development** -- so you can focus on one environment at a time without losing context about the others.
 
 ### Reading a stack card
 
@@ -86,7 +86,7 @@ The list is ordered from newest to oldest. Use the pagination controls at the bo
 
 ### Resource Map tab
 
-The Resource Map tab renders an interactive directed graph of all Terraform or OpenTofu resources in the stack. Each node is labeled with the resource address in the form `type.name` — for example, `aws_vpc.main` or `aws_subnet.private`. Directed edges between nodes represent explicit `depends_on` relationships or implicit references detected in the configuration.
+The Resource Map tab renders an interactive directed graph of all Terraform or OpenTofu resources in the stack. Each node is labeled with the resource address in the form `type.name` -- for example, `aws_vpc.main` or `aws_subnet.private`. Directed edges between nodes represent explicit `depends_on` relationships or implicit references detected in the configuration.
 
 The graph uses a force-directed layout. You can drag nodes to rearrange them and zoom in or out with the scroll wheel. Hovering a node highlights its direct dependencies and dependents.
 

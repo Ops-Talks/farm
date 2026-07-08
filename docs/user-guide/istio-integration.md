@@ -1,6 +1,6 @@
 # Istio Service Mesh Integration
 
-Farm integrates with Istio to surface live traffic metrics, security posture, and canary traffic controls directly on each catalog component — without requiring users to switch to the Istio dashboard or kubectl.
+Farm integrates with Istio to surface live traffic metrics, security posture, and canary traffic controls directly on each catalog component -- without requiring users to switch to the Istio dashboard or kubectl.
 
 ## Overview
 
@@ -39,6 +39,7 @@ Or update it via the Farm API:
 
 ```http
 PATCH /api/v1/catalog/:id
+Authorization: Bearer <token>
 Content-Type: application/json
 
 { "namespace": "payments" }
@@ -122,7 +123,7 @@ All Istio tabs handle unavailability gracefully:
 - If Istio is not installed, all three tabs display an informational empty state
 - If Prometheus is unreachable, the Traffic tab shows an empty state instead of an error
 - If no resources exist in the namespace, each tab shows a contextual empty state with guidance
-- Individual query failures do not break the page — other tabs continue to work independently
+- Individual query failures do not break the page -- other tabs continue to work independently
 
 ---
 

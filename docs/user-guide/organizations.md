@@ -1,6 +1,6 @@
 # Organizations
 
-Organizations are the top-level multi-tenant isolation unit in Farm. Every resource — catalog components, teams, pipelines, and environments — can be scoped to an organization. This allows multiple independent teams or business units to share a single Farm installation without their data overlapping.
+Organizations are the top-level multi-tenant isolation unit in Farm. Every resource -- catalog components, teams, pipelines, and environments -- can be scoped to an organization. This allows multiple independent teams or business units to share a single Farm installation without their data overlapping.
 
 ---
 
@@ -108,7 +108,7 @@ Each member of an organization is assigned exactly one of the following roles:
 - Only the `owner` can promote another user to `owner`.
 - An `admin` cannot change another `admin`'s role.
 - An `admin` cannot remove another `admin`.
-- The `owner` role is immutable — it cannot be downgraded via the API.
+- The `owner` role is immutable -- it cannot be downgraded via the API.
 
 ---
 
@@ -119,14 +119,14 @@ Beyond the four org roles, Farm enforces fine-grained **named permissions** on e
 | Permission | `viewer` | `member` | `admin` | `owner` |
 |---|:---:|:---:|:---:|:---:|
 | `catalog:read` | Yes | Yes | Yes | Yes |
-| `catalog:write` | — | — | Yes | Yes |
-| `catalog:delete` | — | — | — | Yes |
+| `catalog:write` | -- | -- | Yes | Yes |
+| `catalog:delete` | -- | -- | -- | Yes |
 | `team:read` | Yes | Yes | Yes | Yes |
-| `team:manage` | — | — | Yes | Yes |
+| `team:manage` | -- | -- | Yes | Yes |
 | `environment:read` | Yes | Yes | Yes | Yes |
-| `environment:write` | — | — | Yes | Yes |
+| `environment:write` | -- | -- | Yes | Yes |
 | `pipeline:read` | Yes | Yes | Yes | Yes |
-| `pipeline:trigger` | — | Yes | Yes | Yes |
+| `pipeline:trigger` | -- | Yes | Yes | Yes |
 
 If your role does not include the required permission for an endpoint, Farm returns `403 Forbidden`. The web UI automatically hides write-action buttons (register, edit, delete) based on your current permissions.
 
@@ -149,8 +149,8 @@ Resources without an `organizationId` are considered global and may appear regar
 
 ## Further Reading
 
-- [Organizations API Reference](../api-reference/organizations.md) — full endpoint documentation
-- [Multi-Tenancy and RBAC](../developer-guide/backend/multi-tenancy.md) — developer guide for the multi-tenant implementation
+- [Organizations API Reference](../api-reference/organizations.md) -- full endpoint documentation
+- [Multi-Tenancy and RBAC](../developer-guide/backend/multi-tenancy.md) -- developer guide for the multi-tenant implementation
 
 
 

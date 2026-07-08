@@ -1,6 +1,6 @@
 # Using Pipelines
 
-Pipelines allow you to define, trigger, and monitor automated sequences of steps — called stages — directly from Farm. They are not the same as your external CI/CD pipelines (e.g., GitHub Actions); they are Farm-native automations that can orchestrate deployments, approvals, notifications, and custom scripts across your catalog components.
+Pipelines allow you to define, trigger, and monitor automated sequences of steps -- called stages -- directly from Farm. They are not the same as your external CI/CD pipelines (e.g., GitHub Actions); they are Farm-native automations that can orchestrate deployments, approvals, notifications, and custom scripts across your catalog components.
 
 ## Core Concepts
 
@@ -31,7 +31,7 @@ flowchart LR
 
 ### Pipeline Run
 
-Every time a pipeline is triggered, Farm creates a **Pipeline Run** — a record of that specific execution. Each run tracks its status, the result of every stage, accumulated logs, start time, finish time, and total duration.
+Every time a pipeline is triggered, Farm creates a **Pipeline Run** -- a record of that specific execution. Each run tracks its status, the result of every stage, accumulated logs, start time, finish time, and total duration.
 
 ### Run Status
 
@@ -66,6 +66,7 @@ stateDiagram-v2
 ```bash
 curl -X POST http://localhost:3000/api/v1/pipelines \
   -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "deploy-to-production",
@@ -107,21 +108,24 @@ curl -X POST http://localhost:3000/api/v1/pipelines \
 
 ```bash
 curl http://localhost:3000/api/v1/pipelines \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 Filter by organization:
 
 ```bash
 curl "http://localhost:3000/api/v1/pipelines?organizationId=<org-uuid>" \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ### Getting a Pipeline
 
 ```bash
 curl http://localhost:3000/api/v1/pipelines/<pipeline-id> \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ### Updating a Pipeline
@@ -129,6 +133,7 @@ curl http://localhost:3000/api/v1/pipelines/<pipeline-id> \
 ```bash
 curl -X PATCH http://localhost:3000/api/v1/pipelines/<pipeline-id> \
   -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>" \
   -H "Content-Type: application/json" \
   -d '{ "description": "Updated description" }'
 ```
@@ -137,7 +142,8 @@ curl -X PATCH http://localhost:3000/api/v1/pipelines/<pipeline-id> \
 
 ```bash
 curl -X DELETE http://localhost:3000/api/v1/pipelines/<pipeline-id> \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ## Triggering and Monitoring
@@ -146,7 +152,8 @@ curl -X DELETE http://localhost:3000/api/v1/pipelines/<pipeline-id> \
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/trigger \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 Farm creates a `PipelineRun` with status `queued`, enqueues a background job, and returns the run record immediately.
@@ -177,7 +184,8 @@ The Farm web UI connects automatically and displays logs in the pipeline run det
 
 ```bash
 curl http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 Returns the last 50 runs, ordered by most recent first.
@@ -186,7 +194,8 @@ Returns the last 50 runs, ordered by most recent first.
 
 ```bash
 curl http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id> \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ## Managing Runs
@@ -202,11 +211,13 @@ When a pipeline includes an `approval` stage, the run pauses at that stage and e
 ```bash
 # Approve
 curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/approve \
-  -H "Authorization: Bearer <admin-token>"
+  -H "Authorization: Bearer <admin-token>" \
+  -H "X-Organization-Id: <org-id>"
 
 # Reject
 curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/reject \
-  -H "Authorization: Bearer <admin-token>"
+  -H "Authorization: Bearer <admin-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ### Cancelling a Run
@@ -219,7 +230,8 @@ You can cancel a run that is in `queued`, `running`, or `waiting_approval` statu
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/runs/<run-id>/cancel \
-  -H "Authorization: Bearer <admin-token>"
+  -H "Authorization: Bearer <admin-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 Cancellation takes effect at the next stage boundary. In-progress stage execution is not interrupted mid-command.
@@ -234,7 +246,8 @@ If a run has `failed` or `cancelled` status, you can trigger a fresh run of the 
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/pipelines/<pipeline-id>/trigger \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ## Best Practices

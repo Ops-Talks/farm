@@ -45,6 +45,7 @@ To create a new documentation entry:
 curl -X POST http://localhost:3000/api/v1/docs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   -d '{
     "title": "User Service API Guide",
     "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/user-service.md",
@@ -60,6 +61,7 @@ You can optionally nest the entry under a parent and control sort order:
 curl -X POST http://localhost:3000/api/v1/docs \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   -d '{
     "title": "Authentication",
     "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/auth.md",
@@ -76,6 +78,7 @@ To retrieve all documentation entries:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   http://localhost:3000/api/v1/docs
 ```
 
@@ -85,6 +88,7 @@ To get documentation for a specific component:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   "http://localhost:3000/api/v1/docs?componentId={component-id}"
 ```
 
@@ -94,6 +98,7 @@ To search documentation entries by title, with an optional component scope:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   "http://localhost:3000/api/v1/docs/search?q=api&componentId={component-id}"
 ```
 
@@ -103,6 +108,7 @@ To retrieve a hierarchical navigation tree for a component's documentation:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   "http://localhost:3000/api/v1/docs/tree?componentId={component-id}"
 ```
 
@@ -112,6 +118,7 @@ To retrieve a documentation entry's metadata by ID:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   http://localhost:3000/api/v1/docs/{doc-id}
 ```
 
@@ -121,6 +128,7 @@ To fetch the raw Markdown content from the `sourceUrl`:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   http://localhost:3000/api/v1/docs/{doc-id}/content
 ```
 
@@ -130,6 +138,7 @@ To fetch the Markdown content rendered and sanitized as HTML:
 
 ```bash
 curl -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   http://localhost:3000/api/v1/docs/{doc-id}/rendered
 ```
 
@@ -141,6 +150,7 @@ To update an existing documentation entry:
 curl -X PATCH http://localhost:3000/api/v1/docs/{doc-id} \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}" \
   -d '{
     "sourceUrl": "https://raw.githubusercontent.com/org/repo/main/docs/user-service-v2.md",
     "version": "1.1.0"
@@ -153,7 +163,8 @@ To remove a documentation entry:
 
 ```bash
 curl -X DELETE http://localhost:3000/api/v1/docs/{doc-id} \
-  -H "Authorization: Bearer {token}"
+  -H "Authorization: Bearer {token}" \
+  -H "X-Organization-Id: {org-id}"
 ```
 
 ## Best Practices

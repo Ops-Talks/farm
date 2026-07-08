@@ -54,7 +54,7 @@ The component detail page includes a **Helm** tab that displays the chart metada
 
 ## Release Discovery
 
-Farm reads Helm release state directly from Kubernetes Secrets — no Helm CLI required on the Farm server.
+Farm reads Helm release state directly from Kubernetes Secrets -- no Helm CLI required on the Farm server.
 
 **How it works:**
 
@@ -119,7 +119,7 @@ Farm pipelines support a `deploy` stage type with `config.engine: "helm"` to run
 
 ### Availability
 
-The executor requires the `helm` CLI to be available in `PATH` on the Farm API server. When `helm` is not found, the stage logs a warning and is marked as failed with a descriptive message — it does not crash the server.
+The executor requires the `helm` CLI to be available in `PATH` on the Farm API server. When `helm` is not found, the stage logs a warning and is marked as failed with a descriptive message -- it does not crash the server.
 
 ---
 

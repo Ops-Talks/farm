@@ -6,8 +6,8 @@ Farm's tag governance feature enforces resource tagging standards across cloud p
 
 Tag governance consists of two components:
 
-- **Tag Policies** — define which tags are required for a given resource type and how strictly violations are enforced
-- **Compliance Audit** — a background job that scans resources against all active policies and records violations
+- **Tag Policies** -- define which tags are required for a given resource type and how strictly violations are enforced
+- **Compliance Audit** -- a background job that scans resources against all active policies and records violations
 
 ## Tag Policies
 
@@ -51,13 +51,13 @@ Navigate to **Compliance** to view the current compliance state across all organ
 
 The dashboard shows:
 
-- **Compliance Rate** — percentage of resources with no open violations (green ≥90%, amber ≥70%, red <70%)
-- **Total Resources** — count of all audited resources
-- **Open Violations** — count of unresolved tag violations
-- **Resolved Today** — violations resolved in the last 24 hours
-- **By Provider** breakdown — per-cloud-provider compliance rate with progress bars
-- **By Resource Type** breakdown — per-type compliance rate
-- **Violations Table** — paginated list of all violations with filters by provider, resource type, and resolution status
+- **Compliance Rate** -- percentage of resources with no open violations (green ≥90%, amber ≥70%, red <70%)
+- **Total Resources** -- count of all audited resources
+- **Open Violations** -- count of unresolved tag violations
+- **Resolved Today** -- violations resolved in the last 24 hours
+- **By Provider** breakdown -- per-cloud-provider compliance rate with progress bars
+- **By Resource Type** breakdown -- per-type compliance rate
+- **Violations Table** -- paginated list of all violations with filters by provider, resource type, and resolution status
 
 ### Resolving Violations
 

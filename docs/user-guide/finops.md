@@ -102,7 +102,7 @@ Cost tabs and cards display an empty state when OpenCost is unavailable.
 
 ## Background Sync
 
-Cost data is automatically refreshed by a scheduled BullMQ processor. The sync schedule is controlled by the `COST_SYNC_CRON` environment variable (default: `0 3 * * *` — daily at 03:00 UTC). The processor:
+Cost data is automatically refreshed by a scheduled BullMQ processor. The sync schedule is controlled by the `COST_SYNC_CRON` environment variable (default: `0 3 * * *` -- daily at 03:00 UTC). The processor:
 
 1. Queries OpenCost for cost data for each catalog component
 2. Persists the results to the database
@@ -117,7 +117,7 @@ No manual action is needed. The sync runs on the configured cron schedule as lon
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENCOST_URL` | Yes | Base URL of the OpenCost instance (default: `http://localhost:9090`) |
-| `COST_SYNC_CRON` | No | Cron expression for the background cost sync schedule (default: `0 3 * * *` — daily at 03:00 UTC) |
+| `COST_SYNC_CRON` | No | Cron expression for the background cost sync schedule (default: `0 3 * * *` -- daily at 03:00 UTC) |
 
 ---
 

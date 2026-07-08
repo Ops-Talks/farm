@@ -9,7 +9,7 @@ FARM-E41 delivers three capabilities:
 | Story | Feature |
 |-------|---------|
 | S153 | Per-org Keycloak OIDC login via `passport-openidconnect` |
-| S154 | Hourly group sync — Keycloak Groups map to Farm Teams |
+| S154 | Hourly group sync -- Keycloak Groups map to Farm Teams |
 | S155 | `keycloak://realm/client` URI scheme as pipeline secret resolver |
 
 ## Prerequisites
@@ -79,7 +79,7 @@ At execution time, Farm fetches a `client_credentials` grant for `my-service-cli
 
 ## Environment Variables
 
-No additional server-side environment variables are required — Keycloak config is stored per-organization in the database (encrypted via AES-256-GCM).
+No additional server-side environment variables are required -- Keycloak config is stored per-organization in the database (encrypted via AES-256-GCM).
 
 The frontend login button is always visible. To pre-fill the org ID in the deep-link, append `?keycloakOrgId={orgId}` to the login URL.
 
