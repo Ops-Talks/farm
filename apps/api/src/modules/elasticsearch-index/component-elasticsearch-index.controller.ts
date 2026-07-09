@@ -198,6 +198,7 @@ export class ComponentElasticsearchIndexController {
     description: "ComponentElasticsearchIndex UUID",
   })
   @ApiNoContentResponse({ description: "Link removed successfully." })
+  @ApiResponse({ status: 204, description: "Elasticsearch index link removed" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Link not found for the given component.",

@@ -145,6 +145,7 @@ export class IstioController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @ApiOperation({ summary: "Patch VirtualService route weights (admin only)" })
   @ApiQuery({ name: "kubeconfig", required: false })
+  @ApiResponse({ status: 200, description: "Traffic weights updated" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Weights updated.",

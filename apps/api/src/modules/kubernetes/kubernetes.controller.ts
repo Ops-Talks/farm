@@ -459,6 +459,7 @@ export class KubernetesController {
   @Delete("operators/:name/bindings")
   @ApiOperation({ summary: "Remove an operator-to-component binding" })
   @ApiParam({ name: "name", description: "Operator name" })
+  @ApiResponse({ status: 204, description: "Operator bindings removed" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Binding removed",
@@ -696,6 +697,7 @@ export class KubernetesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Remove a Flux-component binding" })
   @ApiParam({ name: "id", description: "Binding UUID" })
+  @ApiResponse({ status: 204, description: "Flux binding deleted" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Binding removed",
@@ -857,6 +859,7 @@ export class KubernetesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: "Remove a KEDA-component binding" })
   @ApiParam({ name: "id", description: "Binding UUID" })
+  @ApiResponse({ status: 204, description: "KEDA binding deleted" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Binding removed",

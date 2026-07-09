@@ -282,7 +282,7 @@ Org roles are stored in the `UserOrganization` join table and resolved at reques
 Organization management routes (update, delete, member management) use `OrgRolesGuard`:
 
 ```typescript
-@UseGuards(JwtAuthGuard, OrgRolesGuard)
+@UseGuards(OrgRolesGuard)
 @OrgRoles("admin")
 @Patch(':id')
 update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
@@ -293,7 +293,7 @@ update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
 Resource endpoints (catalog, pipelines, teams, environments) use the three-guard chain:
 
 ```typescript
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@UseGuards(OrgRequiredGuard, PermissionGuard)
 @RequiresPermission(Permission.CATALOG_WRITE)
 @Post()
 create(@Req() req: RequestWithOrg, @Body() dto: CreateComponentDto) { ... }
@@ -363,9 +363,7 @@ app.useGlobalPipes(
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
+    transformOptions: {},
   }),
 );
 ```
@@ -373,7 +371,6 @@ app.useGlobalPipes(
 - `whitelist`: Strips properties that do not have any decorators in the DTO.
 - `forbidNonWhitelisted`: Throws an error if non-whitelisted properties are present.
 - `transform`: Automatically transforms payloads to be objects typed according to their DTO classes.
-- `enableImplicitConversion`: Allows for automatic type conversion based on the TypeScript types in the DTO.
 
 ## API Prefix
 

@@ -117,7 +117,7 @@ Farm provides a built-in [observability hub](observability.md) that aggregates m
 
 ### Elasticsearch Index Visibility
 
-The [Elasticsearch Index](observability.md#elasticsearch-index-visibility) section on each catalog component lets you link one or more Elasticsearch index patterns and monitor their health — document count, store size, and cluster health — without leaving Farm. A Kibana deep-link is generated automatically when `NEXT_PUBLIC_KIBANA_URL` is configured.
+The [Elasticsearch Index](observability.md#elasticsearch-index-visibility) section on each catalog component lets you link one or more Elasticsearch index patterns and monitor their health -- document count, store size, and cluster health -- without leaving Farm. A Kibana deep-link is generated automatically when `NEXT_PUBLIC_KIBANA_URL` is configured.
 
 ### Cloud Providers
 

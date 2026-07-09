@@ -85,6 +85,8 @@ To register a component via YAML content:
 ```bash
 curl -X POST http://localhost:3000/api/v1/catalog/register-yaml \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>" \
   -d '{
     "yaml": "apiVersion: farm.io/v1alpha1\nkind: Component\nmetadata:\n  name: user-service\n  description: Handles user profiles\nspec:\n  type: service\n  owner: platform-team\n  lifecycle: production"
   }'
@@ -112,6 +114,8 @@ To automatically discover and register all `catalog-info.yaml` files from a git 
 ```bash
 curl -X POST http://localhost:3000/api/v1/catalog/locations \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>" \
   -d '{
     "url": "https://github.com/my-org/my-repository.git"
   }'
@@ -124,20 +128,28 @@ This will trigger an asynchronous process to clone the repository and register a
 To retrieve all components:
 
 ```bash
-curl http://localhost:3000/api/v1/catalog/components
+curl http://localhost:3000/api/v1/catalog/components \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 To filter components by domain group:
 
 ```bash
 # List only infrastructure components
-curl http://localhost:3000/api/v1/catalog/components?kindGroup=infra
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=infra \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 
 # List only data team components
-curl http://localhost:3000/api/v1/catalog/components?kindGroup=data
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=data \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 
 # List only security components
-curl http://localhost:3000/api/v1/catalog/components?kindGroup=security
+curl http://localhost:3000/api/v1/catalog/components?kindGroup=security \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ### Getting a Specific Component
@@ -145,7 +157,9 @@ curl http://localhost:3000/api/v1/catalog/components?kindGroup=security
 To retrieve a component by ID:
 
 ```bash
-curl http://localhost:3000/api/v1/catalog/components/{component-id}
+curl http://localhost:3000/api/v1/catalog/components/{component-id} \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ### Updating a Component
@@ -155,6 +169,8 @@ To update an existing component:
 ```bash
 curl -X PATCH http://localhost:3000/api/v1/catalog/components/{component-id} \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>" \
   -d '{
     "description": "Updated description",
     "lifecycle": "production"
@@ -166,7 +182,9 @@ curl -X PATCH http://localhost:3000/api/v1/catalog/components/{component-id} \
 To remove a component from the catalog:
 
 ```bash
-curl -X DELETE http://localhost:3000/api/v1/catalog/components/{component-id}
+curl -X DELETE http://localhost:3000/api/v1/catalog/components/{component-id} \
+  -H "Authorization: Bearer <your-token>" \
+  -H "X-Organization-Id: <org-id>"
 ```
 
 ## Best Practices

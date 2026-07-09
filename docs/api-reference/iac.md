@@ -33,7 +33,7 @@ Authorization: Bearer <jwt>
 
 ### IAC_INGEST_TOKEN (machine-to-machine ingest endpoints)
 
-Ingest endpoints are called by automated tooling (Cultivator, Agronomist, CI pipelines) and do not use JwtAuthGuard. Instead they validate a static bearer token configured on the API server via the `IAC_INGEST_TOKEN` environment variable.
+Ingest endpoints are called by automated tooling (Cultivator, Agronomist, CI pipelines) and use a dedicated token mechanism instead of JWT. They validate a static bearer token configured on the API server via the `IAC_INGEST_TOKEN` environment variable.
 
 ```yaml
 Authorization: Bearer <iac-ingest-token>

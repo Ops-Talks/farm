@@ -24,24 +24,30 @@ class JobCountsDto {
 }
 
 export class QueueInfoDto {
-  @ApiProperty({ example: "catalog-discovery" })
+  @ApiProperty({ example: "catalog-discovery", description: "Queue name" })
   name: string;
 
-  @ApiProperty({ example: false })
+  @ApiProperty({ example: false, description: "Whether the queue is paused" })
   isPaused: boolean;
 
-  @ApiProperty({ type: JobCountsDto })
+  @ApiProperty({
+    type: JobCountsDto,
+    description: "Job count breakdown by status",
+  })
   jobCounts: JobCountsDto;
 }
 
 export class JobInfoDto {
-  @ApiProperty({ example: "1" })
+  @ApiProperty({ example: "1", description: "Job ID" })
   id: string;
 
-  @ApiProperty({ example: "catalog-discovery" })
+  @ApiProperty({
+    example: "catalog-discovery",
+    description: "Queue the job belongs to",
+  })
   queueName: string;
 
-  @ApiProperty({ example: "__default__" })
+  @ApiProperty({ example: "__default__", description: "Job name" })
   name: string;
 
   @ApiProperty({
@@ -55,10 +61,14 @@ export class JobInfoDto {
       "paused",
       "unknown",
     ],
+    description: "Current job status",
   })
   status: string;
 
-  @ApiProperty({ example: { url: "https://github.com/org/repo" } })
+  @ApiProperty({
+    example: { url: "https://github.com/org/repo" },
+    description: "Job payload data",
+  })
   data: Record<string, unknown>;
 
   @ApiProperty({

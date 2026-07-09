@@ -228,6 +228,7 @@ export class IncidentController {
     description: "The UUID of the incident to remove",
   })
   @ApiNoContentResponse({ description: "Incident successfully removed." })
+  @ApiResponse({ status: 204, description: "Incident deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

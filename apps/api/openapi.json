@@ -893,6 +893,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Job retry queued"
+          },
           "204": {
             "description": "Job retry initiated."
           },
@@ -967,14 +970,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1068,14 +1064,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1145,14 +1134,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1240,14 +1222,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1315,7 +1290,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Organization successfully removed."
+            "description": "Organization deleted\n\nOrganization successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -1415,14 +1390,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1527,14 +1495,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1612,14 +1573,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1728,14 +1682,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -1804,7 +1751,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Member successfully removed."
+            "description": "Member removed from organization\n\nMember successfully removed."
           },
           "400": {
             "description": "Cannot remove the owner, or cannot remove yourself.",
@@ -1914,14 +1861,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -2002,14 +1942,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - Authentication token is missing or invalid.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
+            "description": "Authentication required"
           },
           "403": {
             "description": "Forbidden - User does not have sufficient permissions.",
@@ -2068,7 +2001,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Invitation successfully cancelled."
+            "description": "Invitation cancelled\n\nInvitation successfully cancelled."
           },
           "400": {
             "description": "Invitation is no longer pending.",
@@ -3419,7 +3352,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Plugin instance successfully uninstalled."
+            "description": "Plugin instance successfully uninstalled.\n\nPlugin uninstalled"
           },
           "401": {
             "description": "Unauthorized - Authentication token is missing or invalid.",
@@ -3561,6 +3494,9 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "Catalog location registered"
+          },
           "202": {
             "description": "The discovery process has been initiated."
           },
@@ -4145,7 +4081,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Component successfully removed."
+            "description": "Component deleted\n\nComponent successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -5312,7 +5248,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Deleted."
+            "description": "Deleted.\n\nDocument deleted"
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -5950,7 +5886,7 @@
         },
         "responses": {
           "204": {
-            "description": "Password changed successfully."
+            "description": "Password changed successfully.\n\nPassword changed"
           },
           "400": {
             "description": "Passwords do not match.",
@@ -6302,7 +6238,7 @@
         ],
         "responses": {
           "204": {
-            "description": "User removed."
+            "description": "User deleted\n\nUser removed."
           },
           "401": {
             "description": "Unauthorized — missing or invalid JWT.",
@@ -6946,7 +6882,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Environment successfully removed."
+            "description": "Environment deleted\n\nEnvironment successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -8017,7 +7953,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Team successfully removed."
+            "description": "Team deleted\n\nTeam successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -8937,7 +8873,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Pipeline successfully removed."
+            "description": "Pipeline deleted\n\nPipeline successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -10294,7 +10230,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Alerting rule successfully removed."
+            "description": "Alerting rule deleted\n\nAlerting rule successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -10616,7 +10552,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Credential deleted successfully."
+            "description": "Credential deleted successfully.\n\nIntegration credential deleted"
           },
           "401": {
             "description": "Unauthorized - Authentication token is missing or invalid.",
@@ -11088,6 +11024,9 @@
           }
         ],
         "responses": {
+          "200": {
+            "description": "Jenkins job triggered"
+          },
           "204": {
             "description": "Build triggered successfully."
           },
@@ -12032,7 +11971,7 @@
         },
         "responses": {
           "204": {
-            "description": "Binding removed"
+            "description": "Binding removed\n\nOperator bindings removed"
           },
           "401": {
             "description": "Unauthorized - Authentication token is missing or invalid.",
@@ -12443,7 +12382,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Binding removed"
+            "description": "Binding removed\n\nFlux binding deleted"
           },
           "401": {
             "description": "Unauthorized - Authentication token is missing or invalid.",
@@ -12738,7 +12677,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Binding removed"
+            "description": "Binding removed\n\nKEDA binding deleted"
           },
           "401": {
             "description": "Unauthorized - Authentication token is missing or invalid.",
@@ -14135,7 +14074,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Tag policy successfully deleted."
+            "description": "Tag policy deleted\n\nTag policy successfully deleted."
           },
           "401": {
             "description": "Unauthorized — authentication token is missing or invalid.",
@@ -14435,6 +14374,9 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "Traffic weights updated"
+          },
           "204": {
             "description": "Weights updated."
           },
@@ -15195,7 +15137,7 @@
         ],
         "responses": {
           "204": {
-            "description": ""
+            "description": "API spec deleted"
           },
           "401": {
             "description": "Unauthorized — missing or invalid JWT."
@@ -15338,7 +15280,7 @@
         ],
         "responses": {
           "204": {
-            "description": ""
+            "description": "Consumer removed from API spec"
           },
           "401": {
             "description": "Unauthorized — missing or invalid JWT."
@@ -17003,7 +16945,7 @@
         ],
         "responses": {
           "204": {
-            "description": "SLO successfully removed."
+            "description": "SLO deleted\n\nSLO successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -17635,7 +17577,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Incident successfully removed."
+            "description": "Incident deleted\n\nIncident successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -18897,7 +18839,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Dashboard successfully removed."
+            "description": "Dashboard deleted\n\nDashboard successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -19412,7 +19354,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Widget successfully removed."
+            "description": "Widget removed from dashboard\n\nWidget successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -19890,7 +19832,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Service template successfully removed."
+            "description": "Service template deleted\n\nService template successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -20758,7 +20700,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Environment request successfully removed."
+            "description": "Environment request deleted\n\nEnvironment request successfully removed."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -23049,7 +22991,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Module deleted successfully."
+            "description": "IaC module deleted\n\nModule deleted successfully."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -23504,7 +23446,7 @@
             "description": "Unauthorized."
           },
           "403": {
-            "description": "Forbidden — admin role required."
+            "description": "Forbidden - admin role required."
           }
         },
         "security": [
@@ -23738,7 +23680,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Link removed successfully."
+            "description": "Elasticsearch index link removed\n\nLink removed successfully."
           },
           "400": {
             "description": "Bad Request - Validation failed.",
@@ -24447,14 +24389,21 @@
         "properties": {
           "name": {
             "type": "string",
-            "example": "catalog-discovery"
+            "example": "catalog-discovery",
+            "description": "Queue name"
           },
           "isPaused": {
             "type": "boolean",
-            "example": false
+            "example": false,
+            "description": "Whether the queue is paused"
           },
           "jobCounts": {
-            "$ref": "#/components/schemas/JobCountsDto"
+            "description": "Job count breakdown by status",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JobCountsDto"
+              }
+            ]
           }
         },
         "required": [
@@ -24468,15 +24417,18 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "1"
+            "example": "1",
+            "description": "Job ID"
           },
           "queueName": {
             "type": "string",
-            "example": "catalog-discovery"
+            "example": "catalog-discovery",
+            "description": "Queue the job belongs to"
           },
           "name": {
             "type": "string",
-            "example": "__default__"
+            "example": "__default__",
+            "description": "Job name"
           },
           "status": {
             "type": "string",
@@ -24489,13 +24441,15 @@
               "waiting",
               "paused",
               "unknown"
-            ]
+            ],
+            "description": "Current job status"
           },
           "data": {
             "type": "object",
             "example": {
               "url": "https://github.com/org/repo"
-            }
+            },
+            "description": "Job payload data"
           },
           "returnValue": {
             "type": "object",
@@ -28051,11 +28005,13 @@
         "properties": {
           "operatorNamespace": {
             "type": "string",
-            "example": "monitoring"
+            "example": "monitoring",
+            "description": "Kubernetes namespace where the operator is deployed"
           },
           "componentId": {
             "type": "string",
-            "example": "550e8400-e29b-41d4-a716-446655440001"
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "description": "ID of the component to bind"
           }
         },
         "required": [
@@ -28068,11 +28024,13 @@
         "properties": {
           "operatorNamespace": {
             "type": "string",
-            "example": "monitoring"
+            "example": "monitoring",
+            "description": "Kubernetes namespace where the operator is deployed"
           },
           "componentId": {
             "type": "string",
-            "example": "550e8400-e29b-41d4-a716-446655440001"
+            "example": "550e8400-e29b-41d4-a716-446655440001",
+            "description": "ID of the component to unbind"
           }
         },
         "required": [
@@ -29178,23 +29136,29 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Unique vulnerability record identifier"
           },
           "componentId": {
-            "type": "string"
+            "type": "string",
+            "description": "ID of the associated component"
           },
           "organizationId": {
             "type": "object",
-            "nullable": true
+            "nullable": true,
+            "description": "ID of the owning organization"
           },
           "registry": {
-            "type": "string"
+            "type": "string",
+            "description": "Container registry hostname"
           },
           "image": {
-            "type": "string"
+            "type": "string",
+            "description": "Container image name"
           },
           "tag": {
-            "type": "string"
+            "type": "string",
+            "description": "Container image tag"
           },
           "severity": {
             "type": "string",
@@ -29205,29 +29169,36 @@
               "LOW",
               "INFORMATIONAL",
               "UNDEFINED"
-            ]
+            ],
+            "description": "Vulnerability severity level"
           },
           "cveId": {
-            "type": "string"
+            "type": "string",
+            "description": "CVE identifier for the vulnerability"
           },
           "packageName": {
-            "type": "string"
+            "type": "string",
+            "description": "Name of the affected package"
           },
           "installedVersion": {
             "type": "object",
-            "nullable": true
+            "nullable": true,
+            "description": "Currently installed package version"
           },
           "fixedVersion": {
             "type": "object",
-            "nullable": true
+            "nullable": true,
+            "description": "Version where the vulnerability is fixed"
           },
           "description": {
             "type": "object",
-            "nullable": true
+            "nullable": true,
+            "description": "Vulnerability description text"
           },
           "scannedAt": {
             "format": "date-time",
-            "type": "string"
+            "type": "string",
+            "description": "Timestamp when the vulnerability was scanned"
           }
         },
         "required": [
@@ -31159,6 +31130,7 @@
             "description": "Whether the evaluation passed (allowed=true)"
           },
           "violations": {
+            "description": "Policy violations returned by OPA evaluation",
             "type": "array",
             "items": {
               "type": "string"
@@ -31533,7 +31505,8 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "run-uuid-1"
+            "example": "run-uuid-1",
+            "description": "Unique run identifier"
           },
           "status": {
             "type": "string",
@@ -31542,7 +31515,8 @@
               "failed",
               "cancelled"
             ],
-            "example": "succeeded"
+            "example": "succeeded",
+            "description": "Run status"
           },
           "type": {
             "type": "string",
@@ -31550,12 +31524,14 @@
               "plan",
               "apply"
             ],
-            "example": "plan"
+            "example": "plan",
+            "description": "Run type"
           },
           "startedAt": {
             "type": "object",
             "example": "2024-01-01T10:00:00Z",
-            "nullable": true
+            "nullable": true,
+            "description": "Timestamp when the run started"
           }
         },
         "required": [
@@ -31570,46 +31546,56 @@
         "properties": {
           "id": {
             "type": "string",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "description": "Unique stack identifier"
           },
           "name": {
             "type": "string",
-            "example": "core-networking"
+            "example": "core-networking",
+            "description": "Stack display name"
           },
           "environment": {
             "type": "string",
-            "example": "production"
+            "example": "production",
+            "description": "Deployment environment"
           },
           "provider": {
             "type": "string",
-            "example": "terraform"
+            "example": "terraform",
+            "description": "IaC provider type"
           },
           "repositoryUrl": {
             "type": "object",
             "example": "https://github.com/acme/infra",
-            "nullable": true
+            "nullable": true,
+            "description": "URL of the source repository"
           },
           "basePath": {
             "type": "object",
             "example": "stacks/core-networking",
-            "nullable": true
+            "nullable": true,
+            "description": "Path within the repository"
           },
           "externalToolUrl": {
             "type": "object",
             "example": "https://app.terraform.io/app/acme/workspaces/core-networking",
-            "nullable": true
+            "nullable": true,
+            "description": "URL to the external IaC tool workspace"
           },
           "componentId": {
             "type": "object",
             "example": "comp-uuid-1234",
-            "nullable": true
+            "nullable": true,
+            "description": "ID of the linked component"
           },
           "autoImported": {
             "type": "boolean",
-            "example": false
+            "example": false,
+            "description": "Whether the stack was auto-imported"
           },
           "lastRun": {
             "nullable": true,
+            "description": "Summary of the most recent run",
             "type": "object",
             "allOf": [
               {
@@ -31620,12 +31606,14 @@
           "createdAt": {
             "format": "date-time",
             "type": "string",
-            "example": "2024-01-01T00:00:00Z"
+            "example": "2024-01-01T00:00:00Z",
+            "description": "Timestamp when the stack was created"
           },
           "updatedAt": {
             "format": "date-time",
             "type": "string",
-            "example": "2024-01-01T00:00:00Z"
+            "example": "2024-01-01T00:00:00Z",
+            "description": "Timestamp when the stack was last updated"
           }
         },
         "required": [
@@ -31648,17 +31636,20 @@
         "properties": {
           "totalStacks": {
             "type": "number",
-            "example": 12
+            "example": 12,
+            "description": "Total number of IaC stacks"
           },
           "failedLastRun": {
             "type": "number",
-            "example": 2
+            "example": 2,
+            "description": "Number of stacks with a failed last run"
           },
           "environments": {
             "example": [
               "production",
               "staging"
             ],
+            "description": "Distinct deployment environments",
             "type": "array",
             "items": {
               "type": "string"
@@ -31764,19 +31755,23 @@
         "properties": {
           "address": {
             "type": "string",
-            "example": "aws_instance.web"
+            "example": "aws_instance.web",
+            "description": "Resource address in the IaC state"
           },
           "resourceType": {
             "type": "string",
-            "example": "aws_instance"
+            "example": "aws_instance",
+            "description": "Resource type"
           },
           "resourceName": {
             "type": "string",
-            "example": "web"
+            "example": "web",
+            "description": "Resource name"
           },
           "provider": {
             "type": "string",
-            "example": "aws"
+            "example": "aws",
+            "description": "IaC provider"
           }
         },
         "required": [
@@ -31791,11 +31786,13 @@
         "properties": {
           "source": {
             "type": "string",
-            "example": "aws_instance.web"
+            "example": "aws_instance.web",
+            "description": "Source resource address of the dependency edge"
           },
           "target": {
             "type": "string",
-            "example": "aws_security_group.web"
+            "example": "aws_security_group.web",
+            "description": "Target resource address of the dependency edge"
           }
         },
         "required": [
@@ -31807,12 +31804,14 @@
         "type": "object",
         "properties": {
           "resources": {
+            "description": "List of resources to ingest",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceItemDto"
             }
           },
           "dependencies": {
+            "description": "List of dependency edges between resources",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DependencyItemDto"
@@ -31829,19 +31828,23 @@
         "properties": {
           "address": {
             "type": "string",
-            "example": "aws_instance.web"
+            "example": "aws_instance.web",
+            "description": "Resource address in the IaC state"
           },
           "resourceType": {
             "type": "string",
-            "example": "aws_instance"
+            "example": "aws_instance",
+            "description": "Resource type"
           },
           "resourceName": {
             "type": "string",
-            "example": "web"
+            "example": "web",
+            "description": "Resource name"
           },
           "provider": {
             "type": "string",
-            "example": "aws"
+            "example": "aws",
+            "description": "IaC provider"
           }
         },
         "required": [
@@ -31856,11 +31859,13 @@
         "properties": {
           "source": {
             "type": "string",
-            "example": "aws_instance.web"
+            "example": "aws_instance.web",
+            "description": "Source resource address"
           },
           "target": {
             "type": "string",
-            "example": "aws_security_group.web"
+            "example": "aws_security_group.web",
+            "description": "Target resource address"
           }
         },
         "required": [
@@ -31872,12 +31877,14 @@
         "type": "object",
         "properties": {
           "resources": {
+            "description": "List of resource nodes in the topology",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceNodeDto"
             }
           },
           "dependencies": {
+            "description": "List of dependency edges in the topology",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ResourceEdgeDto"

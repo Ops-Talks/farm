@@ -77,7 +77,7 @@ Farm polls `argoproj.io/v1alpha1` Rollout resources every 30 seconds and streams
 ### Supported Strategies
 
 **Canary:**
-- Current canary weight (0–100%)
+- Current canary weight (0-100%)
 - Progress bar displayed in the rollout card
 
 **Blue-Green:**

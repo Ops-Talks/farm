@@ -245,6 +245,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Change current user password" })
+  @ApiResponse({ status: 204, description: "Password changed" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Password changed successfully.",

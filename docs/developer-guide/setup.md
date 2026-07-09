@@ -87,7 +87,12 @@ This creates default users and sample catalog entries. The seeder is idempotent 
 | User | Password | Role |
 |------|----------|------|
 | admin | Admin1234 | admin |
-| developer | Developer1 | user |
+| org-owner | OrgOwner1 | user |
+| org-admin | OrgAdmin1 | user |
+| org-member | OrgMember1 | user |
+| cross-org-member | CrossOrg1 | user |
+| team-lead | TeamLead1 | user |
+| viewer | Viewer1234 | user |
 
 #### Option B: Backend Only (Docker)
 
@@ -168,7 +173,7 @@ farm/
           api-specs/       # API specification lifecycle and consumer tracking
           features/        # Feature availability aggregator and status flags
           setup/           # Admin onboarding checklist and setup state
-      test/                # End-to-end tests (supertest + SQLite in-memory)
+      test/                # End-to-end tests (supertest + PostgreSQL via testcontainers)
     apps/web/              # Next.js frontend
       src/
         app/               # App Router pages

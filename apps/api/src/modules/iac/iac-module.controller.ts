@@ -167,6 +167,7 @@ export class IacModuleController {
   @ApiOperation({ summary: "Delete an IaC module" })
   @ApiParam({ name: "id", description: "IacModule UUID" })
   @ApiNoContentResponse({ description: "Module deleted successfully." })
+  @ApiResponse({ status: 204, description: "IaC module deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Module not found.",

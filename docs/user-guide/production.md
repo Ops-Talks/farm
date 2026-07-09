@@ -54,13 +54,13 @@ graph TB
 | Variable | Example | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | `production` | Enables strict validation (JWT_SECRET becomes required) |
-| `JWT_SECRET` | *(see below)* | JWT signing secret — minimum 32 characters |
+| `JWT_SECRET` | *(see below)* | JWT signing secret -- minimum 32 characters |
 | `DATABASE_HOST` | `db.internal` | PostgreSQL host |
 | `DATABASE_PORT` | `5432` | PostgreSQL port |
 | `DATABASE_USER` | `farm` | PostgreSQL user |
 | `DATABASE_PASSWORD` | *(strong password)* | PostgreSQL password |
 | `DATABASE_NAME` | `farm` | PostgreSQL database name |
-| `DATABASE_SYNC` | `false` | **Never set to `true` in production** — use migrations |
+| `DATABASE_SYNC` | `false` | **Never set to `true` in production** -- use migrations |
 
 Generate a secure JWT secret:
 
@@ -72,20 +72,20 @@ openssl rand -hex 32
 
 | Variable | Recommended value | Description |
 |----------|-------------------|-------------|
-| `ALLOWED_ORIGINS` | `https://yourdomain.com` | CORS allowed origins — never use `*` in production |
+| `ALLOWED_ORIGINS` | `https://yourdomain.com` | CORS allowed origins -- never use `*` in production |
 | `JWT_EXPIRATION` | `900s` | Access token lifetime (15 min is more secure than the default 1 hour) |
 | `THROTTLE_TTL` | `60000` | Rate limit window in milliseconds |
 | `THROTTLE_LIMIT` | `30` | Max requests per window per IP |
 | `SWAGGER_USER` | *(custom user)* | HTTP Basic Auth user for `/api/docs` |
 | `SWAGGER_PASSWORD` | *(strong password)* | HTTP Basic Auth password for `/api/docs` |
 | `LOG_LEVEL` | `warn` | Reduces log volume in production (`error`, `warn`, `info`) |
-| `DATABASE_POOL_SIZE` | `20` | Connection pool size — tune based on load |
+| `DATABASE_POOL_SIZE` | `20` | Connection pool size -- tune based on load |
 
 #### Redis (required for pipelines and real-time notifications)
 
 | Variable | Example | Description |
 |----------|---------|-------------|
-| `REDIS_HOST` | `redis.internal` | Redis hostname — leave empty to disable queues |
+| `REDIS_HOST` | `redis.internal` | Redis hostname -- leave empty to disable queues |
 | `REDIS_PORT` | `6379` | Redis port |
 | `CACHE_TTL` | `60` | In-memory cache TTL in seconds |
 
@@ -134,7 +134,7 @@ Leave all six empty to disable social login. See the [OAuth Social Login](../dev
 | `SLACK_WEBHOOK_URL` | `https://hooks.slack.com/...` | Slack incoming webhook for pipeline notifications |
 | `TEAMS_WEBHOOK_URL` | `https://outlook.office.com/...` | Microsoft Teams webhook for pipeline notifications |
 
-Credentials for ArgoCD, CircleCI, Jenkins, and Travis CI are stored per-organization in the database (encrypted with AES-256-GCM) and managed through the Integration Settings page — no env vars required.
+Credentials for ArgoCD, CircleCI, Jenkins, and Travis CI are stored per-organization in the database (encrypted with AES-256-GCM) and managed through the Integration Settings page -- no env vars required.
 
 #### Kubernetes and Helm (optional)
 
@@ -275,7 +275,7 @@ All subsequent role management can be done through the API using an admin JWT.
 - **TLS**: Terminate TLS at your load balancer or reverse proxy (nginx, Traefik, AWS ALB). The API itself does not handle TLS directly.
 - **Swagger UI**: Restrict `/api/docs` at the network level if possible, in addition to the HTTP Basic Auth already in place. Consider disabling it entirely in production by not exposing the route.
 - **Secrets management**: Use your platform's secret store (AWS Secrets Manager, HashiCorp Vault, Kubernetes Secrets) instead of plain `.env` files.
-- **Database**: Use a dedicated PostgreSQL user with only the permissions required (`SELECT`, `INSERT`, `UPDATE`, `DELETE` on the `farm` database — no superuser).
+- **Database**: Use a dedicated PostgreSQL user with only the permissions required (`SELECT`, `INSERT`, `UPDATE`, `DELETE` on the `farm` database -- no superuser).
 - **Redis**: Enable authentication (`requirepass`) and restrict network access to the API container only.
 
 

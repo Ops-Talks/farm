@@ -94,8 +94,8 @@ The observability stack ships three pre-configured Grafana dashboards at `http:/
 | Dashboard | Description |
 |---|---|
 | **Farm API Overview** | Request rate, latency percentiles, error rate, traces, and business metrics |
-| **Farm — Application Logs** | Log throughput, error/warn counts, and live log panels per container |
-| **Farm — Infrastructure** | Host CPU, memory, disk I/O, network, and filesystem usage |
+| **Farm -- Application Logs** | Log throughput, error/warn counts, and live log panels per container |
+| **Farm -- Infrastructure** | Host CPU, memory, disk I/O, network, and filesystem usage |
 
 All dashboards are provisioned automatically from `observability/grafana/provisioning/dashboards/`. No login is required in local development.
 
@@ -174,8 +174,8 @@ Platform admins can see all Elasticsearch index links across every component fro
 
 | Variable | Description | Default |
 |---|---|---|
-| `ELASTICSEARCH_URL` | Default cluster URL used when no per-index URL is set | — |
-| `NEXT_PUBLIC_KIBANA_URL` | Kibana base URL for deep-link generation (web app env var; not read by the API) | — |
+| `ELASTICSEARCH_URL` | Default cluster URL used when no per-index URL is set | -- |
+| `NEXT_PUBLIC_KIBANA_URL` | Kibana base URL for deep-link generation (web app env var; not read by the API) | -- |
 
 If `ELASTICSEARCH_URL` is not set, Farm operates without any default Elasticsearch cluster. Per-component indices with an explicit URL still work independently.
 
@@ -189,4 +189,4 @@ All observability proxies return a graceful degradation response when the upstre
 { "error": "Prometheus not available", "data": null }
 ```
 
-The UI handles these responses without displaying a global error — individual cards or tabs show a targeted "unavailable" notice. Other tabs in the Observability hub remain fully functional.
+The UI handles these responses without displaying a global error -- individual cards or tabs show a targeted "unavailable" notice. Other tabs in the Observability hub remain fully functional.

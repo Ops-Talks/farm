@@ -58,8 +58,8 @@ npm run lint
 # Run unit tests
 npm run test
 
-# Run end-to-end tests
-npm run test:e2e
+# Run API end-to-end tests
+npm run api:test:e2e
 ```
 
 When testing flows that depend on roles, multi-tenancy, or team-scoped ownership, log in with one of the seeded personas instead of creating users by hand. See [Test Users](test-users.md) for the full matrix and recipes.

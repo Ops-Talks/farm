@@ -206,6 +206,7 @@ export class EnvironmentsController {
     description: "The UUID of the environment to remove",
   })
   @ApiNoContentResponse({ description: "Environment successfully removed." })
+  @ApiResponse({ status: 204, description: "Environment deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

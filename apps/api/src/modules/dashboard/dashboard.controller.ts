@@ -230,6 +230,7 @@ export class DashboardController {
     description: "The UUID of the dashboard to remove",
   })
   @ApiNoContentResponse({ description: "Dashboard successfully removed." })
+  @ApiResponse({ status: 204, description: "Dashboard deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",
@@ -355,6 +356,7 @@ export class DashboardController {
     description: "The UUID of the widget to remove",
   })
   @ApiNoContentResponse({ description: "Widget successfully removed." })
+  @ApiResponse({ status: 204, description: "Widget removed from dashboard" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Widget not found.",

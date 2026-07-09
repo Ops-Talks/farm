@@ -39,28 +39,46 @@ apps/api/src/modules/cloud/
 
 ## Architecture
 
-```text
-CloudResourceController
-  ├─ GET  /api/v1/cloud/resources       → CloudResourceService.discoverAll / discoverByProvider
-  ├─ GET  /api/v1/cloud/cost            → CloudCostService.getAggregatedCost
-  ├─ POST /api/v1/cloud/secrets/resolve → CloudSecretsService.resolve
-  └─ GET  /api/v1/cloud/providers/:orgId → CloudResourceService.listConnectedProviders
+```mermaid
+graph TB
+    subgraph Controllers
+        CRC["CloudResourceController"]
+    end
 
-CloudResourceService (orchestrator)
-  ├─ AwsService     → AWS Resource Groups Tagging API, Cost Explorer
-  ├─ GcpService     → Cloud Asset API, Cloud Billing API
-  └─ AzureService   → ARM ResourceManagementClient, Cost Management API
+    subgraph Services
+        CRS["CloudResourceService"]
+        CSS["CloudSecretsService"]
+    end
 
-CloudSecretsService (secret resolution)
-  ├─ AwsService.resolveSecret   → AWS Secrets Manager
-  ├─ GcpService.resolveSecret   → GCP Secret Manager
-  └─ AzureService.resolveSecret → Azure Key Vault
+    subgraph Providers
+        AwsProv["AWS — Resource Groups Tagging API, Cost Explorer"]
+        GcpProv["GCP — Cloud Asset API, Cloud Billing API"]
+        AzProv["Azure — ARM ResourceManagementClient, Cost Management"]
+    end
 
-Pipeline Executors (consumed by PipelineProcessor)
-  ├─ AwsEcsExecutor              → AwsService.deployToEcs
-  ├─ AwsLambdaExecutor           → AwsService.deployToLambda
-  ├─ GcpCloudRunExecutor         → GcpService.deployToCloudRun
-  └─ AzureContainerAppsExecutor  → AzureService.deployToContainerApps
+    subgraph Executors
+        AwsEcs["AwsEcsExecutor → deployToEcs"]
+        AwsLambda["AwsLambdaExecutor → deployToLambda"]
+        GcpRun["GcpCloudRunExecutor → deployToCloudRun"]
+        AzContainers["AzureContainerAppsExecutor → deployToContainerApps"]
+    end
+
+    CRC -->|"GET   /cloud/resources"| CRS
+    CRC -->|"GET   /cloud/cost"| CRS
+    CRC -->|"POST /cloud/secrets/resolve"| CSS
+    CRC -->|"GET   /cloud/providers/:orgId"| CRS
+
+    CRS -.->|discover| AwsProv
+    CRS -.->|discover| GcpProv
+    CRS -.->|discover| AzProv
+    CSS -.->|resolveSecret| AwsProv
+    CSS -.->|resolveSecret| GcpProv
+    CSS -.->|resolveSecret| AzProv
+
+    AwsEcs -.-> AwsProv
+    AwsLambda -.-> AwsProv
+    GcpRun -.-> GcpProv
+    AzContainers -.-> AzProv
 ```
 
 ## Credential Storage

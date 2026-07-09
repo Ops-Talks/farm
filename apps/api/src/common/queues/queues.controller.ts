@@ -135,6 +135,7 @@ export class QueuesController {
   @ApiOperation({ summary: "Retry a failed job" })
   @ApiParam({ name: "name", description: "Queue name" })
   @ApiParam({ name: "jobId", description: "Job ID" })
+  @ApiResponse({ status: 200, description: "Job retry queued" })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: "Job retry initiated.",

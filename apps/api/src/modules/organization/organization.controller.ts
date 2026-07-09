@@ -91,6 +91,7 @@ export class OrganizationController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: "Create a new organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiCreatedResponse({
     description: "The organization has been successfully created.",
     type: Organization,
@@ -117,6 +118,7 @@ export class OrganizationController {
    */
   @Get()
   @ApiOperation({ summary: "List organizations the current user belongs to" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "Successfully retrieved organization list.",
     type: PaginatedResponseDto,
@@ -146,6 +148,7 @@ export class OrganizationController {
   @Get(":id")
   @ApiOperation({ summary: "Get organization by ID" })
   @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "The organization was found.",
     type: Organization,
@@ -175,6 +178,7 @@ export class OrganizationController {
     name: "id",
     description: "The UUID of the organization to update",
   })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "The organization has been successfully updated.",
     type: Organization,
@@ -217,6 +221,7 @@ export class OrganizationController {
     description: "The UUID of the organization to remove",
   })
   @ApiNoContentResponse({ description: "Organization successfully removed." })
+  @ApiResponse({ status: 204, description: "Organization deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",
@@ -247,6 +252,7 @@ export class OrganizationController {
     summary: "Get the current user's membership in an organization",
   })
   @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "Successfully retrieved current user's membership.",
     type: MemberResponseDto,
@@ -285,6 +291,7 @@ export class OrganizationController {
     required: false,
     description: "Number of records to return",
   })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "Successfully retrieved member list.",
     type: PaginatedResponseDto,
@@ -320,6 +327,7 @@ export class OrganizationController {
   @OrgRoles("admin")
   @ApiOperation({ summary: "Add a member to an organization" })
   @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiCreatedResponse({
     description: "The member has been successfully added.",
     type: MemberResponseDto,
@@ -365,6 +373,7 @@ export class OrganizationController {
     name: "userId",
     description: "The UUID of the member to update",
   })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "The member role has been successfully updated.",
     type: MemberResponseDto,
@@ -412,6 +421,7 @@ export class OrganizationController {
     description: "The UUID of the member to remove",
   })
   @ApiNoContentResponse({ description: "Member successfully removed." })
+  @ApiResponse({ status: 204, description: "Member removed from organization" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Member not found.",
@@ -448,6 +458,7 @@ export class OrganizationController {
   @OrgRoles("admin")
   @ApiOperation({ summary: "Create an organization invitation" })
   @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiCreatedResponse({
     description: "The invitation has been successfully created.",
     type: InvitationResponseDto,
@@ -480,6 +491,7 @@ export class OrganizationController {
   @OrgRoles("admin")
   @ApiOperation({ summary: "List pending invitations for an organization" })
   @ApiParam({ name: "id", description: "The UUID of the organization" })
+  @ApiResponse({ status: 401, description: "Authentication required" })
   @ApiOkResponse({
     description: "Successfully retrieved invitation list.",
     type: [InvitationResponseDto],
@@ -504,6 +516,7 @@ export class OrganizationController {
   @ApiParam({ name: "id", description: "The UUID of the organization" })
   @ApiParam({ name: "invitationId", description: "The UUID of the invitation" })
   @ApiNoContentResponse({ description: "Invitation successfully cancelled." })
+  @ApiResponse({ status: 204, description: "Invitation cancelled" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Invitation not found.",

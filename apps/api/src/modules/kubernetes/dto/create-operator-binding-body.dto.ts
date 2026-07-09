@@ -7,12 +7,18 @@ import { ApiProperty } from "@nestjs/swagger";
  * and the organization is inferred from the authenticated request.
  */
 export class CreateOperatorBindingBodyDto {
-  @ApiProperty({ example: "monitoring" })
+  @ApiProperty({
+    example: "monitoring",
+    description: "Kubernetes namespace where the operator is deployed",
+  })
   @IsString()
   @IsNotEmpty()
   operatorNamespace: string;
 
-  @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440001" })
+  @ApiProperty({
+    example: "550e8400-e29b-41d4-a716-446655440001",
+    description: "ID of the component to bind",
+  })
   @IsUUID()
   componentId: string;
 }

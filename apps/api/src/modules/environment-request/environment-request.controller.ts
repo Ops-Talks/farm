@@ -203,6 +203,7 @@ export class EnvironmentRequestController {
   @ApiNoContentResponse({
     description: "Environment request successfully removed.",
   })
+  @ApiResponse({ status: 204, description: "Environment request deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Not Found.",

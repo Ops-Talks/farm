@@ -6,10 +6,10 @@ Farm integrates with AWS, GCP, and Azure to provide cloud resource discovery, co
 
 The Cloud Provider Integrations feature (FARM-E38) enables:
 
-- **Resource Discovery** — automatically discover tagged cloud resources and link them to catalog components
-- **Cost Visibility** — view monthly cloud spend per environment on the Environments page
-- **Cloud Deployments** — deploy workloads to ECS, Lambda, Cloud Run, and Azure Container Apps from the pipeline builder
-- **Secret Resolution** — reference secrets from AWS Secrets Manager, GCP Secret Manager, and Azure Key Vault in pipeline configurations
+- **Resource Discovery** -- automatically discover tagged cloud resources and link them to catalog components
+- **Cost Visibility** -- view monthly cloud spend per environment on the Environments page
+- **Cloud Deployments** -- deploy workloads to ECS, Lambda, Cloud Run, and Azure Container Apps from the pipeline builder
+- **Secret Resolution** -- reference secrets from AWS Secrets Manager, GCP Secret Manager, and Azure Key Vault in pipeline configurations
 
 ## Connecting a Cloud Provider
 
@@ -58,10 +58,10 @@ Required fields:
 
 The service account must have the following roles:
 
-- `roles/cloudasset.viewer` — resource discovery
-- `roles/run.admin` — Cloud Run deployments
-- `roles/secretmanager.secretAccessor` — secret resolution
-- `roles/billing.viewer` — cost visibility (optional)
+- `roles/cloudasset.viewer` -- resource discovery
+- `roles/run.admin` -- Cloud Run deployments
+- `roles/secretmanager.secretAccessor` -- secret resolution
+- `roles/billing.viewer` -- cost visibility (optional)
 
 ### Azure
 
@@ -76,10 +76,10 @@ Required fields:
 
 The service principal must have the following role assignments:
 
-- `Reader` — resource discovery
-- `Contributor` on the target resource group — Container Apps deployments
-- `Key Vault Secrets User` — secret resolution
-- `Cost Management Reader` — cost visibility (optional)
+- `Reader` -- resource discovery
+- `Contributor` on the target resource group -- Container Apps deployments
+- `Key Vault Secrets User` -- secret resolution
+- `Cost Management Reader` -- cost visibility (optional)
 
 ## Resource Discovery
 
@@ -105,9 +105,9 @@ The **Environments** page displays a monthly spend summary widget showing:
 
 Cost data is retrieved from:
 
-- **AWS** — Cost Explorer API (grouped by `farm:environment` tag)
-- **GCP** — Cloud Billing API (placeholder data when BigQuery export is not configured)
-- **Azure** — Cost Management query API (grouped by `farm:environment` tag)
+- **AWS** -- Cost Explorer API (grouped by `farm:environment` tag)
+- **GCP** -- Cloud Billing API (placeholder data when BigQuery export is not configured)
+- **Azure** -- Cost Management query API (grouped by `farm:environment` tag)
 
 ## Cloud Deployments in Pipelines
 
@@ -123,7 +123,7 @@ Deploys a new container image to an existing ECS service.
 | Service | ECS service name |
 | Image | Full container image URI (e.g. `123456.dkr.ecr.us-east-1.amazonaws.com/app:latest`) |
 | Region | AWS region override (optional) |
-| Credential ID | Integration credential ID (optional — uses org default) |
+| Credential ID | Integration credential ID (optional -- uses org default) |
 
 ### aws-lambda
 

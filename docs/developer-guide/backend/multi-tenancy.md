@@ -74,7 +74,7 @@ Global roles are stored as a `string[]` on the `User` entity and included in the
 Example:
 
 ```typescript
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Roles('admin')
 @Delete(':id')
 remove(@Param('id') id: string) { ... }
@@ -125,7 +125,7 @@ The guard performs a **minimum-weight check**: `@OrgRoles("admin")` allows both 
 Example:
 
 ```typescript
-@UseGuards(JwtAuthGuard, OrgRolesGuard)
+@UseGuards(OrgRolesGuard)
 @OrgRoles('admin')
 @Patch(':id')
 update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
@@ -134,7 +134,7 @@ update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) { ... }
 Combining both tiers (global admin bypasses org role check):
 
 ```typescript
-@UseGuards(JwtAuthGuard, RolesGuard, OrgRolesGuard)
+@UseGuards(RolesGuard, OrgRolesGuard)
 @Roles('admin')
 @OrgRoles('member')
 @Get()
@@ -164,7 +164,7 @@ Phase 46 introduced a fine-grained permission model layered on top of org roles.
 **Guard chain for resource endpoints:**
 
 ```typescript
-@UseGuards(JwtAuthGuard, OrgRequiredGuard, PermissionGuard)
+@UseGuards(OrgRequiredGuard, PermissionGuard)
 @RequiresPermission(Permission.CATALOG_WRITE)
 @Post()
 create(@Req() req: RequestWithOrg, @Body() dto: CreateComponentDto) { ... }
@@ -387,7 +387,7 @@ The `OrgSwitcher` dropdown in the sidebar lets users switch between their organi
 
 | Guard | Decorator | When to use |
 |-------|-----------|-------------|
-| `JwtAuthGuard` | (applied via `@UseGuards`) | All authenticated endpoints; verifies JWT and populates `req.user` |
+| `JwtAuthGuard` | global (`APP_GUARD`) | All authenticated endpoints; verifies JWT and populates `req.user` |
 | `RolesGuard` | `@Roles('admin')` | Global admin-only operations not scoped to an organization |
 | `OrgRolesGuard` | `@OrgRoles('admin')` | Organization management routes (org CRUD, member management) |
 | `OrgRequiredGuard` | — | Org-scoped resource endpoints; validates membership and sets `req.orgRole` |

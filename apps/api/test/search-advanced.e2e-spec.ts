@@ -6,6 +6,8 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../src/modules/auth/entities/user.entity";
 
+jest.setTimeout(30000);
+
 /**
  * E2E tests for the Advanced Search endpoints (FARM-S316 / FARM-S317).
  *

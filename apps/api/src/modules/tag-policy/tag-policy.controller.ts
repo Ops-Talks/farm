@@ -261,6 +261,7 @@ export class TagPolicyController {
   @ApiOperation({ summary: "Delete a tag policy" })
   @ApiParam({ name: "id", description: "Tag policy UUID" })
   @ApiNoContentResponse({ description: "Tag policy successfully deleted." })
+  @ApiResponse({ status: 204, description: "Tag policy deleted" })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: "Policy not found.",

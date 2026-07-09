@@ -1,6 +1,6 @@
 # Linkerd Service Mesh Integration
 
-Farm integrates with Linkerd 2.x to surface live traffic metrics, security posture, ServiceProfile route rules, and a service topology graph directly on each catalog component — without requiring users to switch to the Linkerd dashboard or kubectl.
+Farm integrates with Linkerd 2.x to surface live traffic metrics, security posture, ServiceProfile route rules, and a service topology graph directly on each catalog component -- without requiring users to switch to the Linkerd dashboard or kubectl.
 
 ## Overview
 
@@ -134,7 +134,7 @@ All Linkerd tabs handle unavailability gracefully:
 - If Linkerd is not installed, all tabs display an informational empty state
 - If Prometheus is unreachable, the Traffic tab shows an empty state instead of an error
 - If no resources exist in the namespace, each tab shows a contextual empty state with guidance
-- Individual query failures do not break the page — other tabs continue to work independently
+- Individual query failures do not break the page -- other tabs continue to work independently
 
 ---
 
