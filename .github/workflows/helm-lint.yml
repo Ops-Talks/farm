@@ -84,10 +84,15 @@ jobs:
 
       - name: Validate manifests with kubeconform
         run: |
-          kubeconform -strict -summary \
-            -schema-location default \
-            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-            /tmp/manifests-dev.yaml
+          # Retry up to 3 times — raw.githubusercontent.com is subject to rate limiting
+          for i in 1 2 3; do
+            kubeconform -strict -summary -cache /tmp/.kubeconform-cache \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              /tmp/manifests-dev.yaml && break
+            echo "kubeconform attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
 
       - name: Chart testing lint
         run: ct lint --config deploy/helm/ct.yaml
