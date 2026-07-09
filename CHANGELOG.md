@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-07-09
+
+### Changed
+- Feat/documentation audit cleanup (#257).
+- Feat/phase 64 esm build modernization (#255).
+- Feat/phase 63 security validation hardening (#249).
+- Feat/phase 62 api docs db hygiene (#248).
+- Feat/phase 61 nest js code quality (#247).
+- Phase/60 dev experience build (#238).
+
 ## [0.26.1] - 2026-06-18
 
 ### Changed
