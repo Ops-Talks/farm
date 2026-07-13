@@ -19,6 +19,13 @@ updates:
         applies-to: version-updates
         update-types: ["minor", "patch"]
         patterns: ["*"]
+    ignore:
+      # js-yaml v5 dropped the ESM default export that swagger-client and
+      # swagger-ui-react (apps/web, via @nestjs/swagger UI) depend on via
+      # `import jsYaml from 'js-yaml'`, breaking the Turbopack production
+      # build. Re-evaluate once swagger-client ships a v5-compatible release.
+      - dependency-name: "js-yaml"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions — keep action versions and SHA pins up to date
   - package-ecosystem: github-actions
