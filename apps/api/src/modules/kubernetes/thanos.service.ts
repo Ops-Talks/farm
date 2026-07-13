@@ -11,20 +11,11 @@ import { CircuitBreakerService } from "../../common/circuit-breaker/circuit-brea
 
 /** The role a discovered Thanos component plays in the metrics pipeline. */
 export type ThanosComponentType =
-  | "querier"
-  | "store-gateway"
-  | "compactor"
-  | "ruler"
-  | "receiver"
-  | "sidecar";
+  "querier" | "store-gateway" | "compactor" | "ruler" | "receiver" | "sidecar";
 
 /** The type of the Prometheus-compatible metrics backend that was probed. */
 export type MetricsBackendType =
-  | "prometheus"
-  | "thanos"
-  | "mimir"
-  | "cortex"
-  | "unknown";
+  "prometheus" | "thanos" | "mimir" | "cortex" | "unknown";
 
 /**
  * Represents a Thanos component managed by the Thanos operator

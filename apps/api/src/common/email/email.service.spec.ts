@@ -84,10 +84,7 @@ describe("EmailService", () => {
               get: jest.fn(
                 (key: string) =>
                   mockConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
+                    string | number | boolean | undefined,
               ),
             },
           },
@@ -180,10 +177,7 @@ describe("EmailService", () => {
               get: jest.fn(
                 (key: string) =>
                   mockConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
+                    string | number | boolean | undefined,
               ),
             },
           },
@@ -229,10 +223,7 @@ describe("EmailService", () => {
               get: jest.fn(
                 (key: string) =>
                   mockConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
+                    string | number | boolean | undefined,
               ),
             },
           },
@@ -278,10 +269,7 @@ describe("EmailService", () => {
               get: jest.fn(
                 (key: string) =>
                   mockConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
+                    string | number | boolean | undefined,
               ),
             },
           },
@@ -330,10 +318,7 @@ describe("EmailService", () => {
               get: jest.fn(
                 (key: string) =>
                   mockConfigValues[key] as
-                    | string
-                    | number
-                    | boolean
-                    | undefined,
+                    string | number | boolean | undefined,
               ),
             },
           },
