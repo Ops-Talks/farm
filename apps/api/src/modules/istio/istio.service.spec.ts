@@ -1127,11 +1127,7 @@ describe("IstioService — null items and deeper ?? paths", () => {
             metadata: { namespace: "prod" },
             spec: {
               hosts: ["my-svc"],
-              http: [
-                {
-                  /* No route field */
-                },
-              ],
+              http: [{/* No route field */}],
             },
           },
         ],

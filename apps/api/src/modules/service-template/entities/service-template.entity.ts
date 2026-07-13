@@ -13,11 +13,7 @@ import { ApiProperty } from "@nestjs/swagger";
  * Stored as a discriminator to drive frontend rendering logic.
  */
 export type TemplateVariableType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "enum"
-  | "multiselect";
+  "string" | "number" | "boolean" | "enum" | "multiselect";
 
 /**
  * Conditional visibility rule for a template variable.

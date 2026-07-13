@@ -71,8 +71,7 @@ export class OpenCostService {
       const allocations = data?.data;
       if (!allocations) return null;
       const entry = Object.values(allocations)[0] as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (!entry) return null;
       return {
         cpuCost: Number(entry.cpuCost ?? 0),

@@ -17,8 +17,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
       const { statusCode } = res;
       const duration = Date.now() - startTime;
       const user = (req as unknown as Record<string, unknown>).user as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       // Resolve the human-readable identifier using the shape produced by
       // JwtStrategy.validate() ({ userId, username, roles }) and fall back
       // to the raw JWT subject claim ("sub") for any legacy guards that

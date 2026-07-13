@@ -32,8 +32,7 @@ export interface IndexStats {
  * any of the per-pattern requests fails (network, timeout, non-2xx).
  */
 export type IndexStatsResult =
-  | { reachable: false }
-  | { reachable: true; stats: IndexStats[] };
+  { reachable: false } | { reachable: true; stats: IndexStats[] };
 
 /** Raw row returned by ES _cat/indices API in JSON format. */
 interface CatIndicesEntry {

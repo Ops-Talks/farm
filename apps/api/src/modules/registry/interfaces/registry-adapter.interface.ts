@@ -24,12 +24,7 @@ export interface ManifestDto {
 export interface VulnerabilityDto {
   cveId: string;
   severity:
-    | "CRITICAL"
-    | "HIGH"
-    | "MEDIUM"
-    | "LOW"
-    | "INFORMATIONAL"
-    | "UNDEFINED";
+    "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFORMATIONAL" | "UNDEFINED";
   packageName: string;
   installedVersion?: string;
   fixedVersion?: string;

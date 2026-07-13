@@ -2,11 +2,7 @@
  * Supported document types that can be indexed in Elasticsearch.
  */
 export type SearchDocumentType =
-  | "component"
-  | "team"
-  | "documentation"
-  | "environment"
-  | "pipeline";
+  "component" | "team" | "documentation" | "environment" | "pipeline";
 
 /**
  * Represents a normalized document stored in the farm-search Elasticsearch index.

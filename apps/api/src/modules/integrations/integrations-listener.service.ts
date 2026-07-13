@@ -69,8 +69,7 @@ export class IntegrationsListenerService {
     if (source === "github-actions") {
       const action = payload["action"] as string | undefined;
       const workflowRun = payload["workflow_run"] as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
 
       if (
         action === "completed" &&

@@ -71,11 +71,7 @@ export class SearchSubscriber
     }
 
     const entity = event.entity as
-      | Component
-      | Team
-      | Documentation
-      | Environment
-      | Pipeline;
+      Component | Team | Documentation | Environment | Pipeline;
 
     void Promise.resolve()
       .then(() => this.searchIndexService.indexDocument(entity, type))
@@ -99,11 +95,7 @@ export class SearchSubscriber
     }
 
     const entity = event.entity as
-      | Component
-      | Team
-      | Documentation
-      | Environment
-      | Pipeline;
+      Component | Team | Documentation | Environment | Pipeline;
 
     void Promise.resolve()
       .then(() => this.searchIndexService.indexDocument(entity, type))
