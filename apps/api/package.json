@@ -90,7 +90,7 @@
     "handlebars": "^4.7.9",
     "helmet": "^8.2.0",
     "joi": "^18.2.2",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^5.2.1",
     "jsonwebtoken": "9.0.3",
     "marked": "^18.0.5",
     "nest-winston": "^1.10.2",
