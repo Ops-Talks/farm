@@ -29,10 +29,13 @@ updates:
       # TypeScript 7 is the native Go rewrite ("Corsa"), shipped as a preview.
       # It removes node/node10 module resolution (TS5108), lacks declaration
       # emit (required by @farm/types and apps/api), and is rejected by
-      # ts-jest (peer <7) and typescript-eslint (peer <6.1.0). Revisit once
-      # the toolchain supports it. See Phase 65 in ROADMAP.md.
+      # ts-jest (peer <7) and typescript-eslint (peer <6.1.0). TypeScript 6.x
+      # is NOT blocked here -- it still runs on the classic JS compiler
+      # (declaration emit, ts-jest, and typescript-eslint all support it) and
+      # is a viable intermediate upgrade. Revisit >=7.0.0 once the toolchain
+      # supports it. See Phase 65 in ROADMAP.md.
       - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
+        versions: [">= 7.0.0"]
 
   # GitHub Actions — keep action versions and SHA pins up to date
   - package-ecosystem: github-actions
