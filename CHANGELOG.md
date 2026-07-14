@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.1] - 2026-07-14
+
+### Changed
+- **deps**: block TypeScript 7 major bump (Phase 65) (#269).
+- **deps**: bump opossum from 9.0.0 to 10.0.0 (#267).
+- **deps**: bump docker/build-push-action from 7.2.0 to 7.3.0 (#265).
+- **deps**: bump docker/setup-buildx-action from 4.1.0 to 4.2.0 (#264).
+- **deps**: bump github/codeql-action/upload-sarif (#263).
+- **deps**: bump docker/login-action from 4.2.0 to 4.4.0 (#262).
+- Chore/dependabot fixes july 2026 (#261).
+- **deps**: bump softprops/action-gh-release from 3.0.1 to 3.0.2 (#246).
+- Chore/deps batch july 2026 (#258).
+
+### Fixed
+- **deps**: narrow TypeScript Dependabot ignore to >=7.0.0 (#270).
+
 ## [0.27.0] - 2026-07-09
 
 ### Changed
