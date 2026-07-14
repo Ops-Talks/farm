@@ -96,9 +96,9 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 | Phase 63: Security & Validation Hardening | 2 | 11 | `TODO` |
 | Phase 64: ESM Build & Import Modernization | 1 | 4 | `TODO` |
 | Phase 65: Dependency Update Governance — TypeScript 7 Block | 1 | 3 | `DONE` |
-| Phase 66: TypeScript 6 — Config Preparation | 1 | 3 | `TODO` |
-| Phase 67: TypeScript 6 — Version Bump | 1 | 3 | `TODO` |
-| Phase 68: TypeScript 6 — Deprecation Cleanup | 1 | 3 | `TODO` |
+| Phase 66: TypeScript 6 — Config Preparation | 1 | 3 | `DONE` |
+| Phase 67: TypeScript 6 — Version Bump | 1 | 3 | `DONE` |
+| Phase 68: TypeScript 6 — Deprecation Cleanup | 1 | 3 | `DONE` |
 | **Total** | **189** | **736** | |
 
 ---
