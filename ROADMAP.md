@@ -95,13 +95,16 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 | Phase 62: API Docs & DB Hygiene | 2 | 7 | `TODO` |
 | Phase 63: Security & Validation Hardening | 2 | 11 | `TODO` |
 | Phase 64: ESM Build & Import Modernization | 1 | 4 | `TODO` |
-| **Total** | **185** | **724** | |
+| Phase 65: Dependency Update Governance — TypeScript 7 Block | 1 | 3 | `DONE` |
+| **Total** | **186** | **727** | |
 
 ---
 
 ## Future
 
 Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-20 architecture audit. Phase 60 completed (ESLint strict mode, 2 stories). Phase 64 (ESM Build) extracted from deferred portions of Phase 60. [Design spec](docs/specs/2026-06-20-nestjs-best-practices-remediation-design.md). [Phase 61 plan](docs/superpowers/plans/2026-06-25-phase61-nestjs-code-quality.md). [Phase 62 plan](docs/superpowers/plans/2026-06-26-phase62-api-docs-db-hygiene.md).
+
+Phase 65 blocks the premature TypeScript 7 major bump (Dependabot #268). TS7 is the native Go rewrite ("Corsa") shipped as a preview: it removes `node`/`node10` module resolution (`TS5108`), does not support declaration emit (required by `@farm/types` and `apps/api`), and is rejected by `ts-jest` (peer `<7`) and `typescript-eslint` (peer `<6.1.0`). Blocked at the ecosystem level, not by our config. [Phase 65 plan](docs/superpowers/plans/2026-07-13-typescript-7-block.md).
 
 New phases should be added following the existing hierarchy and added to the Summary table above.
 
