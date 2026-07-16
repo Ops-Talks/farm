@@ -729,15 +729,10 @@ describe("ScaffoldService", () => {
 
     it("should catch non-Error thrown by generateFileTreePreview and add message", async () => {
       templateService.findOne.mockResolvedValue(noVarsTemplate);
-      jest
-        .spyOn(
-          service as unknown as { generateFileTreePreview: () => string[] },
-          "generateFileTreePreview",
-        )
-        .mockImplementation(() => {
-          // eslint-disable-next-line @typescript-eslint/only-throw-error
-          throw "plain string error from file tree";
-        });
+      jest.spyOn(service, "generateFileTreePreview").mockImplementation(() => {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw "plain string error from file tree";
+      });
 
       const result = await service.dryRun("tpl-uuid-1", {});
 

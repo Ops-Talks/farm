@@ -611,7 +611,7 @@ describe("PipelineProcessor", () => {
           .mockResolvedValue({ success: true, output: "deployed" }),
         isHelmAvailable: jest.fn().mockResolvedValue(true),
         buildCommand: jest.fn().mockReturnValue("helm upgrade --install ..."),
-      } as unknown as jest.Mocked<HelmDeployExecutor>;
+      };
 
       const module: TestingModule = await Test.createTestingModule({
         providers: [

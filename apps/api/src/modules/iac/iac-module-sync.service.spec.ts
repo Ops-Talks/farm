@@ -282,7 +282,7 @@ describe("IacModuleSyncService", () => {
       mockSpawnSync.mockReturnValueOnce({
         status: 0,
         stdout: Buffer.from(lsRemoteOutput),
-      } as never);
+      });
 
       const tags = service.listRemoteTags("https://github.com/example/repo");
 
@@ -293,7 +293,7 @@ describe("IacModuleSyncService", () => {
     });
 
     it("returns an empty array when spawnSync reports non-zero status", () => {
-      mockSpawnSync.mockReturnValueOnce({ status: 1, stdout: null } as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 1, stdout: null });
 
       const tags = service.listRemoteTags("https://github.com/example/repo");
 
@@ -315,7 +315,7 @@ output "bucket_arn" {
   value       = aws_s3_bucket.main.arn
 }
 `;
-      mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 0 });
       mockExistsSync.mockReturnValueOnce(true).mockReturnValueOnce(true);
       mockReadFileSync
         .mockReturnValueOnce(variablesTf)
@@ -333,7 +333,7 @@ output "bucket_arn" {
     });
 
     it("returns empty arrays when variables.tf and outputs.tf do not exist", () => {
-      mockSpawnSync.mockReturnValueOnce({ status: 0 } as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 0 });
       mockExistsSync.mockReturnValue(false);
 
       const result = service.cloneAndParse(
@@ -346,7 +346,7 @@ output "bucket_arn" {
     });
 
     it("returns empty arrays when git clone fails", () => {
-      mockSpawnSync.mockReturnValueOnce({ status: 1 } as never);
+      mockSpawnSync.mockReturnValueOnce({ status: 1 });
 
       const result = service.cloneAndParse(
         "https://github.com/example/repo",

@@ -69,11 +69,11 @@ describe("MarkdownBuilder", () => {
         .mockResolvedValueOnce([
           { isFile: () => true, name: "README.md" },
           { isFile: () => true, name: "index.ts" },
-        ] as unknown as Awaited<ReturnType<typeof fs.readdir>>)
+        ] as unknown)
         // docs/ directory contains one .md file.
         .mockResolvedValueOnce([
           { isFile: () => true, name: "guide.md" },
-        ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+        ] as unknown);
 
       mockedFs.rm.mockResolvedValue(undefined);
 
@@ -180,7 +180,7 @@ describe("MarkdownBuilder", () => {
         { isFile: () => false, name: "images" },
         { isFile: () => true, name: "diagram.png" },
         { isFile: () => true, name: "guide.md" },
-      ] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
+      ] as unknown);
 
       mockedFs.rm.mockResolvedValue(undefined);
 

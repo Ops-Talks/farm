@@ -1,5 +1,5 @@
-import { DocBuilder } from "./builders/doc-builder.interface";
 import { MkDocsBuilder } from "./builders/mkdocs.builder";
+import { DocBuilder } from "./builders/doc-builder.interface";
 import { Test, TestingModule } from "@nestjs/testing";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Job } from "bullmq";
@@ -59,16 +59,15 @@ describe("DocsBuildProcessor", () => {
     buildService.create.mockResolvedValue(build);
     buildService.updateStatus.mockResolvedValue(makeBuild({ status: "ready" }));
 
-    const mockBuilder = {
+    const mockBuilder: DocBuilder = {
+      supports: jest.fn().mockReturnValue(true),
       build: jest.fn().mockResolvedValue({
         status: "ready",
         artifactsPath: "/artifacts/acme/main",
         buildLog: "Build completed successfully",
       }),
     };
-    jest
-      .spyOn(DocBuilderFactory, "resolve")
-      .mockResolvedValue(mockBuilder as unknown as DocBuilder);
+    jest.spyOn(DocBuilderFactory, "resolve").mockResolvedValue(mockBuilder);
 
     const job = makeJob({
       repoUrl: "https://github.com/acme/docs.git",
@@ -113,15 +112,14 @@ describe("DocsBuildProcessor", () => {
       makeBuild({ status: "failed" }),
     );
 
-    const mockBuilder = {
+    const mockBuilder: DocBuilder = {
+      supports: jest.fn().mockReturnValue(true),
       build: jest.fn().mockResolvedValue({
         status: "failed",
         buildLog: "mkdocs command not found",
       }),
     };
-    jest
-      .spyOn(DocBuilderFactory, "resolve")
-      .mockResolvedValue(mockBuilder as unknown as DocBuilder);
+    jest.spyOn(DocBuilderFactory, "resolve").mockResolvedValue(mockBuilder);
 
     const job = makeJob({
       repoUrl: "https://github.com/acme/docs.git",
@@ -147,16 +145,15 @@ describe("DocsBuildProcessor", () => {
     buildService.create.mockResolvedValue(build);
     buildService.updateStatus.mockResolvedValue(makeBuild({ status: "ready" }));
 
-    const mockBuilder = {
+    const mockBuilder: DocBuilder = {
+      supports: jest.fn().mockReturnValue(true),
       build: jest.fn().mockResolvedValue({
         status: "ready",
         artifactsPath: "/artifacts/acme/main",
         buildLog: "ok",
       }),
     };
-    jest
-      .spyOn(DocBuilderFactory, "resolve")
-      .mockResolvedValue(mockBuilder as unknown as DocBuilder);
+    jest.spyOn(DocBuilderFactory, "resolve").mockResolvedValue(mockBuilder);
 
     const job = makeJob({
       repoUrl: "https://github.com/acme/docs.git",
@@ -238,12 +235,11 @@ describe("DocsBuildProcessor", () => {
     buildService.create.mockResolvedValue(build);
     buildService.updateStatus.mockResolvedValue(makeBuild({ status: "ready" }));
 
-    const mockBuilder = {
+    const mockBuilder: DocBuilder = {
+      supports: jest.fn().mockReturnValue(true),
       build: jest.fn().mockResolvedValue({ status: "ready", buildLog: "" }),
     };
-    jest
-      .spyOn(DocBuilderFactory, "resolve")
-      .mockResolvedValue(mockBuilder as unknown as DocBuilder);
+    jest.spyOn(DocBuilderFactory, "resolve").mockResolvedValue(mockBuilder);
 
     const job = makeJob({
       repoUrl: "https://github.com/acme/docs.git",

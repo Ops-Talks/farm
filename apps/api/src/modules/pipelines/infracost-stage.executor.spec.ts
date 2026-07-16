@@ -188,7 +188,7 @@ describe("InfracostStageExecutor", () => {
         },
       );
 
-      runRepository.save.mockResolvedValue({} as PipelineRun);
+      runRepository.save.mockResolvedValue({});
 
       const run = buildRun();
       const stage = buildStage({ terraformDir: "./infra" });
@@ -226,7 +226,7 @@ describe("InfracostStageExecutor", () => {
         },
       );
 
-      runRepository.save.mockResolvedValue({} as PipelineRun);
+      runRepository.save.mockResolvedValue({});
 
       const run = buildRun();
       const stage = buildStage({ componentId: "comp-uuid-1" });
@@ -265,7 +265,7 @@ describe("InfracostStageExecutor", () => {
         },
       );
 
-      runRepository.save.mockResolvedValue({} as PipelineRun);
+      runRepository.save.mockResolvedValue({});
 
       const run = buildRun();
       const stage = buildStage(); // no terraformDir

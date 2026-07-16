@@ -272,9 +272,7 @@ describe("PipelinesController", () => {
         avgDurationMs: 30000,
         lastRunAt: new Date(),
       };
-      jest
-        .spyOn(service, "getRunStats" as keyof PipelinesService)
-        .mockResolvedValue(mockStats);
+      jest.spyOn(service, "getRunStats").mockResolvedValue(mockStats);
 
       const result = await controller.getRunStats("pipeline-uuid-1");
 
@@ -289,9 +287,7 @@ describe("PipelinesController", () => {
         runB: { id: "run-b", status: PipelineRunStatus.FAILED },
         stageDiff: [],
       };
-      jest
-        .spyOn(service, "compareRuns" as keyof PipelinesService)
-        .mockResolvedValue(mockComparison as never);
+      jest.spyOn(service, "compareRuns").mockResolvedValue(mockComparison);
 
       const result = await controller.compareRuns(
         "pipeline-uuid-1",

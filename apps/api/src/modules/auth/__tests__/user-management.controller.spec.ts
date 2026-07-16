@@ -41,12 +41,12 @@ describe("UserManagementController", () => {
       deleteUser: jest.fn(),
       isPlatformAdmin: jest.fn(),
       getAdminOrgIds: jest.fn(),
-    } as unknown as jest.Mocked<UserManagementService>;
+    };
 
     auditLog = {
       findAll: jest.fn().mockResolvedValue([]),
       log: jest.fn(),
-    } as unknown as jest.Mocked<AuditLogService>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UserManagementController],
@@ -150,7 +150,7 @@ describe("UserManagementController", () => {
         userId: "u-1",
         organizationId: "org-1",
         role: OrgRole.ADMIN,
-      } as never);
+      });
 
       const out = await controller.updateRole(
         "u-1",
@@ -175,7 +175,7 @@ describe("UserManagementController", () => {
       svc.setSuspended.mockResolvedValue({
         id: "u-1",
         suspended: true,
-      } as never);
+      });
 
       const out = await controller.suspend("u-1", { suspended: true }, mockReq);
 
@@ -187,7 +187,7 @@ describe("UserManagementController", () => {
       svc.setSuspended.mockResolvedValue({
         id: "u-1",
         suspended: false,
-      } as never);
+      });
 
       const out = await controller.suspend(
         "u-1",
@@ -267,7 +267,7 @@ describe("UserManagementController", () => {
     it("returns entries from audit log when available", async () => {
       const entries = [{ id: "e1" }];
       svc.getUser.mockResolvedValue(makeView());
-      auditLog.findAll.mockResolvedValue(entries as never);
+      auditLog.findAll.mockResolvedValue(entries);
 
       const out = await controller.auditTrail("u-1", mockReq);
 

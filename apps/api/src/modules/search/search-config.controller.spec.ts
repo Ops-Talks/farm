@@ -51,7 +51,7 @@ describe("SearchConfigController", () => {
 
   describe("getConfig()", () => {
     it("calls searchService.getConfig with the orgId from request and returns result", async () => {
-      searchService.getConfig.mockResolvedValue(mockConfig as SearchConfig);
+      searchService.getConfig.mockResolvedValue(mockConfig);
       const req = { organizationId: "org-1" } as RequestWithOrg;
 
       const result = await controller.getConfig(req);
