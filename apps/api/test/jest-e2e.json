@@ -6,11 +6,17 @@
   "globalSetup": "<rootDir>/helpers/global-setup.ts",
   "globalTeardown": "<rootDir>/helpers/global-teardown.ts",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": "./tsconfig.jest.json"
+      }
+    ]
   },
   "transformIgnorePatterns": ["node_modules/(?!marked|change-case|uuid)"],
   "moduleNameMapper": {
-    "^@kubernetes/client-node$": "<rootDir>/__mocks__/kubernetes-client-node.ts"
+    "^@kubernetes/client-node$": "<rootDir>/__mocks__/kubernetes-client-node.ts",
+    "^bcrypt$": "<rootDir>/../src/__mocks__/bcrypt.ts"
   },
   "reporters": [
     "default",

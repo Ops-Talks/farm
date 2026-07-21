@@ -161,10 +161,7 @@
       "^.+\\.(t|j)s$": [
         "ts-jest",
         {
-          "tsconfig": {
-            "rootDir": ".",
-            "ignoreDeprecations": "6.0"
-          }
+          "tsconfig": "./tsconfig.jest.json"
         }
       ]
     },
