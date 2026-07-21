@@ -36,6 +36,9 @@ const UPSTREAM_UNFIXABLE = new Set([
   "GHSA-xf7r-hgr6-v32p", // multer: DoS via malformed requests (CVE-2026-3304) — fixed in multer >=2.1.0, we're on 2.1.1
   "GHSA-v52c-386h-88mc", // multer: DoS via malformed requests (CVE-2026-2359) — fixed in multer >=2.1.0, we're on 2.1.1
   "GHSA-44fp-w29j-9vj5", // multer: DoS via memory leak (CVE-2025-47935) — fixed in multer >=2.0.0, we're on 2.1.1
+  "GHSA-3jxr-9vmj-r5cp", // brace-expansion: ReDoS — pinned at 1.1.13 (latest v1); v2+ breaks minimatch consumers
+  "GHSA-v56q-mh7h-f735", // immutable: prototype pollution — pinned at 3.8.3 (latest v3) by swagger-ui-react
+  "GHSA-xvcm-6775-5m9r", // immutable: prototype pollution (same root) — pinned by swagger-ui-react
 ]);
 
 const workspace = process.argv[2];
