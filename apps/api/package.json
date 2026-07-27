@@ -38,7 +38,7 @@
     "@aws-sdk/client-lambda": "^3.1085.0",
     "@aws-sdk/client-resource-groups-tagging-api": "^3.1085.0",
     "@aws-sdk/client-secrets-manager": "^3.1085.0",
-    "@azure/arm-costmanagement": "^1.0.0-beta.1",
+    "@azure/arm-costmanagement": "^1.0.0",
     "@azure/arm-resources": "^8.0.0",
     "@azure/identity": "^4.13.0",
     "@azure/keyvault-secrets": "^4.10.0",
