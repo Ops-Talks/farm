@@ -27,9 +27,7 @@ describe("LoggerConfig — traceIdFormat integration", () => {
   it("should inject trace_id and span_id into a log entry when an active span exists", () => {
     const mockCtx = { traceId: "trace-id-123", spanId: "span-id-456" };
     const mockSpan = { spanContext: jest.fn().mockReturnValue(mockCtx) };
-    jest
-      .spyOn(otelApi.trace, "getActiveSpan")
-      .mockReturnValue(mockSpan as unknown as otelApi.Span);
+    jest.spyOn(otelApi.trace, "getActiveSpan").mockReturnValue(mockSpan);
 
     // Build a production config that uses the traceIdFormat transport chain.
     const config = loggerConfigFactory("production", "info");

@@ -52,12 +52,8 @@ describe("EnvironmentsService", () => {
   describe("create", () => {
     it("should create an environment", async () => {
       jest.spyOn(repository, "findOne").mockResolvedValue(null);
-      jest
-        .spyOn(repository, "create")
-        .mockReturnValue(mockEnvironment as Environment);
-      jest
-        .spyOn(repository, "save")
-        .mockResolvedValue(mockEnvironment as Environment);
+      jest.spyOn(repository, "create").mockReturnValue(mockEnvironment);
+      jest.spyOn(repository, "save").mockResolvedValue(mockEnvironment);
 
       const result = await service.create({
         name: "production",
@@ -70,12 +66,8 @@ describe("EnvironmentsService", () => {
 
     it("should assign organizationId when provided", async () => {
       jest.spyOn(repository, "findOne").mockResolvedValue(null);
-      jest
-        .spyOn(repository, "create")
-        .mockReturnValue(mockEnvironment as Environment);
-      jest
-        .spyOn(repository, "save")
-        .mockResolvedValue(mockEnvironment as Environment);
+      jest.spyOn(repository, "create").mockReturnValue(mockEnvironment);
+      jest.spyOn(repository, "save").mockResolvedValue(mockEnvironment);
 
       await service.create(
         { name: "production", type: EnvironmentType.PRODUCTION },
@@ -88,9 +80,7 @@ describe("EnvironmentsService", () => {
     });
 
     it("should throw ConflictException if name exists", async () => {
-      jest
-        .spyOn(repository, "findOne")
-        .mockResolvedValue(mockEnvironment as Environment);
+      jest.spyOn(repository, "findOne").mockResolvedValue(mockEnvironment);
 
       await expect(
         service.create({
@@ -122,9 +112,7 @@ describe("EnvironmentsService", () => {
 
   describe("findOne", () => {
     it("should return an environment by ID", async () => {
-      jest
-        .spyOn(repository, "findOne")
-        .mockResolvedValue(mockEnvironment as Environment);
+      jest.spyOn(repository, "findOne").mockResolvedValue(mockEnvironment);
 
       const result = await service.findOne("env-uuid-1");
 
@@ -143,11 +131,9 @@ describe("EnvironmentsService", () => {
   describe("update", () => {
     it("should update an environment", async () => {
       const updated = { ...mockEnvironment, description: "Updated" };
-      jest
-        .spyOn(repository, "findOne")
-        .mockResolvedValue(mockEnvironment as Environment);
-      jest.spyOn(repository, "merge").mockReturnValue(updated as Environment);
-      jest.spyOn(repository, "save").mockResolvedValue(updated as Environment);
+      jest.spyOn(repository, "findOne").mockResolvedValue(mockEnvironment);
+      jest.spyOn(repository, "merge").mockReturnValue(updated);
+      jest.spyOn(repository, "save").mockResolvedValue(updated);
 
       const result = await service.update("env-uuid-1", {
         description: "Updated",
@@ -164,8 +150,8 @@ describe("EnvironmentsService", () => {
       };
       jest
         .spyOn(repository, "findOne")
-        .mockResolvedValueOnce(mockEnvironment as Environment)
-        .mockResolvedValueOnce(otherEnv as Environment);
+        .mockResolvedValueOnce(mockEnvironment)
+        .mockResolvedValueOnce(otherEnv);
 
       await expect(
         service.update("env-uuid-1", { name: "staging" }),
@@ -175,12 +161,8 @@ describe("EnvironmentsService", () => {
 
   describe("remove", () => {
     it("should remove an environment", async () => {
-      jest
-        .spyOn(repository, "findOne")
-        .mockResolvedValue(mockEnvironment as Environment);
-      jest
-        .spyOn(repository, "remove")
-        .mockResolvedValue(mockEnvironment as Environment);
+      jest.spyOn(repository, "findOne").mockResolvedValue(mockEnvironment);
+      jest.spyOn(repository, "remove").mockResolvedValue(mockEnvironment);
 
       await service.remove("env-uuid-1");
 

@@ -174,9 +174,7 @@ describe("MetricsInterceptor", () => {
     const mockSpan = {
       spanContext: jest.fn().mockReturnValue(mockSpanContext),
     };
-    jest
-      .spyOn(otelApi.trace, "getActiveSpan")
-      .mockReturnValue(mockSpan as unknown as otelApi.Span);
+    jest.spyOn(otelApi.trace, "getActiveSpan").mockReturnValue(mockSpan);
     jest.spyOn(otelApi, "isValidTraceId").mockReturnValue(true);
 
     const req = {

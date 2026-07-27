@@ -96,7 +96,10 @@ All 59 phases are complete. Detailed per-story breakdowns have been moved to git
 | Phase 63: Security & Validation Hardening | 2 | 11 | `TODO` |
 | Phase 64: ESM Build & Import Modernization | 1 | 4 | `TODO` |
 | Phase 65: Dependency Update Governance — TypeScript 7 Block | 1 | 3 | `DONE` |
-| **Total** | **186** | **727** | |
+| Phase 66: TypeScript 6 — Config Preparation | 1 | 3 | `DONE` |
+| Phase 67: TypeScript 6 — Version Bump | 1 | 3 | `DONE` |
+| Phase 68: TypeScript 6 — Deprecation Cleanup | 1 | 3 | `DONE` |
+| **Total** | **189** | **736** | |
 
 ---
 
@@ -106,6 +109,6 @@ Phases 60-64 cover NestJS best-practices remediation identified in the 2026-06-2
 
 Phase 65 blocks the premature TypeScript 7 major bump (Dependabot #268). TS7 is the native Go rewrite ("Corsa") shipped as a preview: it removes `node`/`node10` module resolution (`TS5108`), does not support declaration emit (required by `@farm/types` and `apps/api`), and is rejected by `ts-jest` (peer `<7`) and `typescript-eslint` (peer `<6.1.0`). Blocked at the ecosystem level, not by our config. The Dependabot ignore rule only excludes `>=7.0.0` -- TypeScript 6.x still runs on the classic JS compiler (declaration emit, `ts-jest`, and `typescript-eslint` all support it up to `6.1.0`) and remains a viable future upgrade. [Phase 65 plan](docs/superpowers/plans/2026-07-13-typescript-7-block.md).
 
-New phases should be added following the existing hierarchy and added to the Summary table above.
+Phases 66-68 migrate the monorepo from TypeScript 5.x to TypeScript 6.0.x. TS6 removes deprecated `moduleResolution: "node10"/"node"` (used in three tsconfig files) and is supported by `ts-jest` (peer `<7`) and `typescript-eslint` (peer `<6.1.0`). The migration uses a config-first, version-bump-last approach: Phase 66 replaces deprecated module resolution settings, Phase 67 bumps the version, Phase 68 cleans up deprecation warnings. [Design spec](docs/specs/2026-07-14-typescript-6-migration-design.md). [Implementation plan](docs/plans/2026-07-14-typescript-6-migration.md).
 
 _See git log and release notes for per-story implementation details._

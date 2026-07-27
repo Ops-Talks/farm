@@ -38,7 +38,7 @@ describe("LocalStrategy", () => {
   });
 
   it("should return user when credentials are valid", async () => {
-    jest.spyOn(authService, "validateUser").mockResolvedValue(mockUser as User);
+    jest.spyOn(authService, "validateUser").mockResolvedValue(mockUser);
 
     const result = (await strategy.validate("john_doe", "password123")) as User;
 

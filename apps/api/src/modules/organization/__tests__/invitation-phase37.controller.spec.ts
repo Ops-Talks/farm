@@ -41,7 +41,7 @@ describe("InvitationController (Phase 37)", () => {
       acceptInvitation: jest.fn(),
       resendInvitation: jest.fn(),
       revokeInvitation: jest.fn(),
-    } as unknown as jest.Mocked<InvitationService>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [InvitationController],
