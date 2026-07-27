@@ -48,22 +48,26 @@ describe("OpaService", () => {
   // ---------------------------------------------------------------------------
 
   describe("isReachable", () => {
+    let fetchMock: jest.Mock;
+
+    beforeEach(() => {
+      fetchMock = jest.fn().mockResolvedValue({ status: 200 });
+      globalThis.fetch = fetchMock;
+    });
+
     it("should return true when OPA health endpoint responds with 200", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({ status: 200 });
       const result = await service.isReachable();
       expect(result).toBe(true);
     });
 
     it("should return false when OPA health endpoint responds with non-200", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({ status: 503 });
+      fetchMock.mockResolvedValue({ status: 503 });
       const result = await service.isReachable();
       expect(result).toBe(false);
     });
 
     it("should return false when fetch throws", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("Connection refused"));
+      fetchMock.mockRejectedValue(new Error("Connection refused"));
       const result = await service.isReachable();
       expect(result).toBe(false);
     });
@@ -74,15 +78,20 @@ describe("OpaService", () => {
   // ---------------------------------------------------------------------------
 
   describe("evaluate", () => {
-    it("should return allowed: true when OPA returns { result: { allow: true } }", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+    let fetchMock: jest.Mock;
+
+    beforeEach(() => {
+      fetchMock = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
         text: jest
           .fn()
           .mockResolvedValue(JSON.stringify({ result: { allow: true } })),
       });
+      globalThis.fetch = fetchMock;
+    });
 
+    it("should return allowed: true when OPA returns { result: { allow: true } }", async () => {
       const result = await service.evaluate("app/rbac/allow", {
         user: "alice",
       });
@@ -91,7 +100,7 @@ describe("OpaService", () => {
     });
 
     it("should return violations when OPA returns them", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
         text: jest.fn().mockResolvedValue(
@@ -100,88 +109,79 @@ describe("OpaService", () => {
           }),
         ),
       });
-
       const result = await service.evaluate("app/policy", { resource: {} });
       expect(result.allowed).toBe(false);
       expect(result.violations).toEqual(["missing label env"]);
     });
 
     it("should handle OPA returning a plain boolean result (true)", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
         text: jest.fn().mockResolvedValue(JSON.stringify({ result: true })),
       });
-
       const result = await service.evaluate("app/allow", {});
       expect(result.allowed).toBe(true);
       expect(result.violations).toEqual([]);
     });
 
     it("should handle OPA returning a plain boolean result (false)", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
         text: jest.fn().mockResolvedValue(JSON.stringify({ result: false })),
       });
-
       const result = await service.evaluate("app/allow", {});
       expect(result.allowed).toBe(false);
     });
 
     it("should re-throw when fetch throws", async () => {
-      globalThis.fetch = jest
-        .fn()
-        .mockRejectedValue(new Error("OPA unreachable"));
+      fetchMock.mockRejectedValue(new Error("OPA unreachable"));
       await expect(service.evaluate("app/allow", {})).rejects.toThrow(
         "OPA unreachable",
       );
     });
 
     it("should handle result with allowed field instead of allow", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
         text: jest
           .fn()
           .mockResolvedValue(JSON.stringify({ result: { allowed: true } })),
       });
-
       const result = await service.evaluate("app/allow", {});
       expect(result.allowed).toBe(true);
     });
 
     it("should throw BadRequestException when OPA returns non-2xx status", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: false,
         status: 404,
         text: jest.fn().mockResolvedValue("policy not found"),
       });
-
       await expect(service.evaluate("app/missing", {})).rejects.toThrow(
         "OPA policy evaluation failed with status 404: policy not found",
       );
     });
 
     it("should throw BadRequestException when OPA returns non-2xx with empty body", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: false,
         status: 500,
         text: jest.fn().mockResolvedValue(""),
       });
-
       await expect(service.evaluate("app/allow", {})).rejects.toThrow(
         "OPA policy evaluation failed with status 500",
       );
     });
 
     it("should throw BadRequestException when OPA returns invalid JSON", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+      fetchMock.mockResolvedValue({
         ok: true,
         status: 200,
         text: jest.fn().mockResolvedValue("<html>not json</html>"),
       });
-
       await expect(service.evaluate("app/allow", {})).rejects.toThrow(
         "OPA policy evaluation returned invalid JSON with status 200",
       );
@@ -293,13 +293,18 @@ describe("OpaService", () => {
   });
 
   describe("evaluate — edge cases", () => {
-    it("should return allowed: false when OPA returns no result field", async () => {
-      globalThis.fetch = jest.fn().mockResolvedValue({
+    let fetchMock: jest.Mock;
+
+    beforeEach(() => {
+      fetchMock = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
         text: jest.fn().mockResolvedValue(JSON.stringify({})),
       });
+      globalThis.fetch = fetchMock;
+    });
 
+    it("should return allowed: false when OPA returns no result field", async () => {
       const result = await service.evaluate("app/allow", {});
       expect(result.allowed).toBe(false);
       expect(result.violations).toEqual([]);
